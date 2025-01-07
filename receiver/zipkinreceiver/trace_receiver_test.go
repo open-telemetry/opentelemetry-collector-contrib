@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 )
 
 const (
@@ -62,7 +62,7 @@ func TestNew(t *testing.T) {
 					Endpoint: tt.args.address,
 				},
 			}
-			got, err := newReceiver(cfg, tt.args.nextConsumer, receivertest.NewNopCreateSettings())
+			got, err := newReceiver(cfg, tt.args.nextConsumer, receivertest.NewNopSettings())
 			require.Equal(t, tt.wantErr, err)
 			if tt.wantErr == nil {
 				require.NotNil(t, got)
@@ -84,7 +84,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 			Endpoint: "localhost:" + portStr,
 		},
 	}
-	traceReceiver, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopCreateSettings())
+	traceReceiver, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopSettings())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -132,14 +132,14 @@ func TestStartTraceReception(t *testing.T) {
 					Endpoint: "localhost:0",
 				},
 			}
-			zr, err := newReceiver(cfg, sink, receivertest.NewNopCreateSettings())
+			zr, err := newReceiver(cfg, sink, receivertest.NewNopSettings())
 			require.NoError(t, err)
 			require.NotNil(t, zr)
 
 			err = zr.Start(context.Background(), tt.host)
 			assert.Equal(t, tt.wantErr, err != nil)
 			if !tt.wantErr {
-				require.Nil(t, zr.Shutdown(context.Background()))
+				require.NoError(t, zr.Shutdown(context.Background()))
 			}
 		})
 	}
@@ -215,7 +215,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			r := httptest.NewRequest("POST", test.endpoint, requestBody)
+			r := httptest.NewRequest(http.MethodPost, test.endpoint, requestBody)
 			r.Header.Add("content-type", test.content)
 			r.Header.Add("content-encoding", test.encoding)
 
@@ -225,7 +225,7 @@ func TestReceiverContentTypes(t *testing.T) {
 					Endpoint: "",
 				},
 			}
-			zr, err := newReceiver(cfg, next, receivertest.NewNopCreateSettings())
+			zr, err := newReceiver(cfg, next, receivertest.NewNopSettings())
 			require.NoError(t, err)
 
 			req := httptest.NewRecorder()
@@ -243,7 +243,7 @@ func TestReceiverContentTypes(t *testing.T) {
 func TestReceiverInvalidContentType(t *testing.T) {
 	body := `{ invalid json `
 
-	r := httptest.NewRequest("POST", "/api/v2/spans",
+	r := httptest.NewRequest(http.MethodPost, "/api/v2/spans",
 		bytes.NewBuffer([]byte(body)))
 	r.Header.Add("content-type", "application/json")
 
@@ -252,7 +252,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 			Endpoint: "",
 		},
 	}
-	zr, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopCreateSettings())
+	zr, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -266,7 +266,7 @@ func TestReceiverConsumerError(t *testing.T) {
 	body, err := os.ReadFile(zipkinV2Single)
 	require.NoError(t, err)
 
-	r := httptest.NewRequest("POST", "/api/v2/spans", bytes.NewBuffer(body))
+	r := httptest.NewRequest(http.MethodPost, "/api/v2/spans", bytes.NewBuffer(body))
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
@@ -274,7 +274,7 @@ func TestReceiverConsumerError(t *testing.T) {
 			Endpoint: "localhost:9411",
 		},
 	}
-	zr, err := newReceiver(cfg, consumertest.NewErr(errors.New("consumer error")), receivertest.NewNopCreateSettings())
+	zr, err := newReceiver(cfg, consumertest.NewErr(errors.New("consumer error")), receivertest.NewNopSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -288,7 +288,7 @@ func TestReceiverConsumerPermanentError(t *testing.T) {
 	body, err := os.ReadFile(zipkinV2Single)
 	require.NoError(t, err)
 
-	r := httptest.NewRequest("POST", "/api/v2/spans", bytes.NewBuffer(body))
+	r := httptest.NewRequest(http.MethodPost, "/api/v2/spans", bytes.NewBuffer(body))
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
@@ -296,7 +296,7 @@ func TestReceiverConsumerPermanentError(t *testing.T) {
 			Endpoint: "localhost:9411",
 		},
 	}
-	zr, err := newReceiver(cfg, consumertest.NewErr(consumererror.NewPermanent(errors.New("consumer error"))), receivertest.NewNopCreateSettings())
+	zr, err := newReceiver(cfg, consumertest.NewErr(consumererror.NewPermanent(errors.New("consumer error"))), receivertest.NewNopSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -413,7 +413,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	body, err := os.ReadFile(zipkinV2Single)
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 
-	r := httptest.NewRequest("POST", "/api/v2/spans", bytes.NewBuffer(body))
+	r := httptest.NewRequest(http.MethodPost, "/api/v2/spans", bytes.NewBuffer(body))
 	r.Header.Add("content-type", "application/json")
 
 	next := new(consumertest.TracesSink)
@@ -423,7 +423,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 		},
 		ParseStringTags: true,
 	}
-	zr, err := newReceiver(cfg, next, receivertest.NewNopCreateSettings())
+	zr, err := newReceiver(cfg, next, receivertest.NewNopSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -464,7 +464,7 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 		},
 		ParseStringTags: true,
 	}
-	zi, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopCreateSettings())
+	zi, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopSettings())
 	require.NoError(t, err)
 
 	hdr := make(http.Header)

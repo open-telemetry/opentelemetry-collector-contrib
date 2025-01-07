@@ -38,13 +38,13 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				PrivateKey:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 				AppName:       "APP_NAME",
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version
 				SubSystem:       "SUBSYSTEM_NAME",
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 				DomainSettings: configgrpc.ClientConfig{
 					Compression: configcompression.TypeGzip,
 				},
@@ -93,13 +93,13 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "all"),
 			expected: &Config{
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				PrivateKey:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 				AppName:       "APP_NAME",
 				// Deprecated: [v0.47.0] SubSystem will remove in the next version
 				SubSystem:       "SUBSYSTEM_NAME",
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 				DomainSettings: configgrpc.ClientConfig{
 					Compression: configcompression.TypeGzip,
 				},
@@ -156,7 +156,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -172,9 +172,9 @@ func TestTraceExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	te, err := newTracesExporter(cfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
@@ -190,10 +190,10 @@ func TestMetricsExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "metrics").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, component.ValidateConfig(cfg))
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 
 	me, err := newMetricsExporter(cfg, params)
 	require.NoError(t, err)
@@ -210,10 +210,10 @@ func TestLogsExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "logs").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, component.ValidateConfig(cfg))
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 
 	le, err := newLogsExporter(cfg, params)
 	require.NoError(t, err)
@@ -230,9 +230,9 @@ func TestDomainWithAllExporters(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "domain").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	te, err := newTracesExporter(cfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
@@ -260,9 +260,9 @@ func TestEndpoindsAndDomainWithAllExporters(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "domain_endoints").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	te, err := newTracesExporter(cfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
@@ -293,6 +293,10 @@ func TestGetMetadataFromResource(t *testing.T) {
 	r2.Attributes().PutStr("k8s.node.name", "node-test")
 	r2.Attributes().PutStr("k8s.namespace.name", "namespace-test")
 
+	r3 := pcommon.NewResource()
+	r3.Attributes().PutStr("cx.application.name", "application")
+	r3.Attributes().PutStr("cx.subsystem.name", "subsystem")
+
 	c := &Config{
 		AppNameAttributes:   []string{"k8s.container.name", "k8s.deployment.name", "k8s.node.name"},
 		SubSystemAttributes: []string{"k8s.namespace.name", "k8s.node.name"},
@@ -305,4 +309,8 @@ func TestGetMetadataFromResource(t *testing.T) {
 	appName, subSystemName = c.getMetadataFromResource(r2)
 	assert.Equal(t, "node-test", appName)
 	assert.Equal(t, "namespace-test", subSystemName)
+
+	appName, subSystemName = c.getMetadataFromResource(r3)
+	assert.Equal(t, "application", appName)
+	assert.Equal(t, "subsystem", subSystemName)
 }

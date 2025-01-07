@@ -76,9 +76,7 @@ func timeout(deadline time.Time, timeout time.Duration) time.Duration {
 // is a bit awkward here, because the SFTP checks are not enabled by default and they would panic on nil
 // ref to the underlying Conn when SSH checks failed.
 func (s *sshcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err error) {
-	var (
-		to time.Duration
-	)
+	var to time.Duration
 	// check cancellation
 	select {
 	case <-ctx.Done():
@@ -125,7 +123,7 @@ func (s *sshcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err er
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
 }
 
-func newScraper(conf *Config, settings receiver.CreateSettings) *sshcheckScraper {
+func newScraper(conf *Config, settings receiver.Settings) *sshcheckScraper {
 	return &sshcheckScraper{
 		Config:   conf,
 		settings: settings.TelemetrySettings,

@@ -187,7 +187,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{scans}'
         scope:
-          name: otelcol/aerospikereceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver
   - resource:
       attributes:
         - key: namespace
@@ -376,7 +376,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{scans}'
         scope:
-          name: otelcol/aerospikereceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver
   - resource:
       attributes:
         - key: namespace
@@ -565,4 +565,4 @@ resourceMetrics:
               isMonotonic: true
             unit: '{scans}'
         scope:
-          name: otelcol/aerospikereceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver

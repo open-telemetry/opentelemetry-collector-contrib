@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/grpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/http"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				LegacyConfig: http.LegacyConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
+						Endpoint: testutil.EndpointForPort(defaultHTTPPort),
 					},
 					Path: "/",
 				},
@@ -81,13 +81,13 @@ func TestLoadConfig(t *testing.T) {
 				LegacyConfig: http.LegacyConfig{
 					UseV2: true,
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
+						Endpoint: testutil.EndpointForPort(defaultHTTPPort),
 					},
 					Path: "/",
 				},
 				HTTPConfig: &http.Config{
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
+						Endpoint: testutil.EndpointForPort(defaultHTTPPort),
 					},
 					Status: http.PathConfig{
 						Enabled: true,
@@ -101,7 +101,7 @@ func TestLoadConfig(t *testing.T) {
 				GRPCConfig: &grpc.Config{
 					ServerConfig: configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
-							Endpoint:  localhostgate.EndpointForPort(defaultGRPCPort),
+							Endpoint:  testutil.EndpointForPort(defaultGRPCPort),
 							Transport: "tcp",
 						},
 					},
@@ -119,7 +119,7 @@ func TestLoadConfig(t *testing.T) {
 				LegacyConfig: http.LegacyConfig{
 					UseV2: true,
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
+						Endpoint: testutil.EndpointForPort(defaultHTTPPort),
 					},
 					Path: "/",
 				},
@@ -148,7 +148,7 @@ func TestLoadConfig(t *testing.T) {
 				LegacyConfig: http.LegacyConfig{
 					UseV2: true,
 					ServerConfig: confighttp.ServerConfig{
-						Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
+						Endpoint: testutil.EndpointForPort(defaultHTTPPort),
 					},
 					Path: "/",
 				},
@@ -180,7 +180,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 			if tt.expectedErr != nil {
 				assert.ErrorIs(t, component.ValidateConfig(cfg), tt.expectedErr)
 				return

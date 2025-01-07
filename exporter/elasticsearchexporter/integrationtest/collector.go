@@ -8,11 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/process"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -34,7 +35,7 @@ import (
 
 // createConfigYaml creates a yaml config for an otel collector for testing.
 func createConfigYaml(
-	t testing.TB,
+	tb testing.TB,
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
 	processors map[string]string,
@@ -42,13 +43,16 @@ func createConfigYaml(
 	pipelineType string,
 	debug bool,
 ) string {
-	t.Helper()
+	tb.Helper()
 
 	processorSection, processorList := createConfigSection(processors)
 	extensionSection, extensionList := createConfigSection(extensions)
+	exporters := []string{receiver.ProtocolName()}
 	debugVerbosity := "basic"
+	logLevel := "INFO"
 	if debug {
-		debugVerbosity = "detailed"
+		exporters = append(exporters, "debug")
+		logLevel = "DEBUG"
 	}
 
 	format := `
@@ -67,12 +71,16 @@ service:
   telemetry:
     metrics:
       address: 127.0.0.1:%d
+    logs:
+      level: %s
+      sampling:
+        enabled: false
   extensions: [%s]
   pipelines:
     %s:
       receivers: [%v]
       processors: [%s]
-      exporters: [%v]
+      exporters: [%s]
 `
 
 	return fmt.Sprintf(
@@ -82,12 +90,13 @@ service:
 		debugVerbosity,
 		processorSection,
 		extensionSection,
-		testutil.GetAvailablePort(t),
+		testutil.GetAvailablePort(tb),
+		logLevel,
 		extensionList,
 		pipelineType,
 		sender.ProtocolName(),
 		processorList,
-		receiver.ProtocolName(),
+		strings.Join(exporters, ","),
 	)
 }
 
@@ -120,7 +129,7 @@ type recreatableOtelCol struct {
 	col *otelcol.Collector
 }
 
-func newRecreatableOtelCol(t testing.TB) *recreatableOtelCol {
+func newRecreatableOtelCol(tb testing.TB) *recreatableOtelCol {
 	var (
 		err       error
 		factories otelcol.Factories
@@ -128,20 +137,20 @@ func newRecreatableOtelCol(t testing.TB) *recreatableOtelCol {
 	factories.Receivers, err = receiver.MakeFactoryMap(
 		otlpreceiver.NewFactory(),
 	)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	factories.Extensions, err = extension.MakeFactoryMap(
 		filestorage.NewFactory(),
 	)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	factories.Processors, err = processor.MakeFactoryMap()
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	factories.Exporters, err = exporter.MakeFactoryMap(
 		elasticsearchexporter.NewFactory(),
 		debugexporter.NewFactory(),
 	)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	return &recreatableOtelCol{
-		tempDir:   t.TempDir(),
+		tempDir:   tb.TempDir(),
 		factories: factories,
 	}
 }

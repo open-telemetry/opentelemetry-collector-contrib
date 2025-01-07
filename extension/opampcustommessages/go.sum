@@ -1,8 +1,8 @@
 github.com/google/go-cmp v0.5.6 h1:BKbKCqvP6I+rmFHt06ZmyQtvB8xAkWdhFyr0ZUNZcxQ=
 github.com/google/go-cmp v0.5.6/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
-github.com/open-telemetry/opamp-go v0.14.0 h1:KoziIK+wsFojhUXNTkCSTnCPf0eCMqFAaccOs0HrWIY=
-github.com/open-telemetry/opamp-go v0.14.0/go.mod h1:XOGCigljsLSTZ8FfLwvat0M1QDj3conIIgRa77BWrKs=
+github.com/open-telemetry/opamp-go v0.17.0 h1:3R4+B/6Sy8mknLBbzO3gqloqwTT02rCSRcr4ac2B124=
+github.com/open-telemetry/opamp-go v0.17.0/go.mod h1:SGDhUoAx7uGutO4ENNMQla/tiSujxgZmMPJXIOPGBdk=
 golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 h1:go1bK/D/BFZV2I8cIQd1NKEZ+0owSTG1fDTci4IqFcE=
 golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
-google.golang.org/protobuf v1.33.0 h1:uNO2rsAINq/JlFpSdYEKIZ0uKD/R9cpdv0T+yoGwGmI=
-google.golang.org/protobuf v1.33.0/go.mod h1:c6P6GXX6sHbq/GpV6MGZEdwhWPcYBgnhAHhKbcUYpos=
+google.golang.org/protobuf v1.34.2 h1:6xV6lTsCfpGD21XK49h7MhtcApnLqkfYgPcdHftf6hg=
+google.golang.org/protobuf v1.34.2/go.mod h1:qYOHts0dSfpeUzUFpOMr/WGzszTmLH+DiWniOlNbLDw=

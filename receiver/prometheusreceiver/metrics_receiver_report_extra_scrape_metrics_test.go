@@ -47,11 +47,11 @@ func TestReportExtraScrapeMetrics(t *testing.T) {
 func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetrics bool) {
 	ctx := context.Background()
 	mp, cfg, err := setupMockPrometheus(targets...)
-	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+	require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(receivertest.NewNopCreateSettings(), &Config{
+	receiver := newPrometheusReceiver(receivertest.NewNopSettings(), &Config{
 		PrometheusConfig:         cfg,
 		UseStartTimeMetric:       false,
 		StartTimeMetricRegex:     "",
@@ -64,7 +64,7 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 		// verify state after shutdown is called
 		assert.Lenf(t, flattenTargets(receiver.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
 		require.NoError(t, receiver.Shutdown(context.Background()))
-		assert.Len(t, flattenTargets(receiver.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
+		assert.Empty(t, flattenTargets(receiver.scrapeManager.TargetsAll()), "expected scrape manager to have no targets")
 	})
 
 	// waitgroup Wait() is strictly from a server POV indicating the sufficient number and type of requests have been seen
@@ -92,7 +92,7 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 			name := target.name
 			scrapes := pResults[name]
 			if !target.validateScrapes {
-				scrapes = getValidScrapes(t, pResults[name], target.normalizedName)
+				scrapes = getValidScrapes(t, pResults[name], target)
 				assert.GreaterOrEqual(t, 1, len(scrapes))
 				if reportExtraScrapeMetrics {
 					// scrapes has 2 prom metrics + 5 internal scraper metrics + 3 internal extra scraper metrics = 10

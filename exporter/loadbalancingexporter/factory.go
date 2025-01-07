@@ -7,19 +7,23 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"fmt"
 
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
 
+const (
+	zapEndpointKey = "endpoint"
+)
+
 // NewFactory creates a factory for the exporter.
 func NewFactory() exporter.Factory {
-	_ = view.Register(metricViews()...)
-
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
@@ -35,20 +39,110 @@ func createDefaultConfig() component.Config {
 	otlpDefaultCfg.Endpoint = "placeholder:4317"
 
 	return &Config{
+		// By default we disable resilience options on loadbalancing exporter level
+		// to maintain compatibility with workflow in previous versions
 		Protocol: Protocol{
 			OTLP: *otlpDefaultCfg,
 		},
 	}
 }
 
-func createTracesExporter(_ context.Context, params exporter.CreateSettings, cfg component.Config) (exporter.Traces, error) {
-	return newTracesExporter(params, cfg)
+func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
+	oCfg := cfg.Protocol.OTLP
+	oCfg.Endpoint = endpoint
+
+	return oCfg
 }
 
-func createLogsExporter(_ context.Context, params exporter.CreateSettings, cfg component.Config) (exporter.Logs, error) {
-	return newLogsExporter(params, cfg)
+func buildExporterSettings(params exporter.Settings, endpoint string) exporter.Settings {
+	// Override child exporter ID to segregate metrics from loadbalancing top level
+	childName := endpoint
+	if params.ID.Name() != "" {
+		childName = fmt.Sprintf("%s_%s", params.ID.Name(), childName)
+	}
+	params.ID = component.NewIDWithName(params.ID.Type(), childName)
+	// Add "endpoint" attribute to child exporter logger to segregate logs from loadbalancing top level
+	params.Logger = params.Logger.With(zap.String(zapEndpointKey, endpoint))
+
+	return params
 }
 
-func createMetricsExporter(_ context.Context, params exporter.CreateSettings, cfg component.Config) (exporter.Metrics, error) {
-	return newMetricsExporter(params, cfg)
+func buildExporterResilienceOptions(options []exporterhelper.Option, cfg *Config) []exporterhelper.Option {
+	if cfg.TimeoutSettings.Timeout > 0 {
+		options = append(options, exporterhelper.WithTimeout(cfg.TimeoutSettings))
+	}
+	if cfg.QueueSettings.Enabled {
+		options = append(options, exporterhelper.WithQueue(cfg.QueueSettings))
+	}
+	if cfg.BackOffConfig.Enabled {
+		options = append(options, exporterhelper.WithRetry(cfg.BackOffConfig))
+	}
+
+	return options
+}
+
+func createTracesExporter(ctx context.Context, params exporter.Settings, cfg component.Config) (exporter.Traces, error) {
+	c := cfg.(*Config)
+	exp, err := newTracesExporter(params, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("cannot configure loadbalancing traces exporter: %w", err)
+	}
+
+	options := []exporterhelper.Option{
+		exporterhelper.WithStart(exp.Start),
+		exporterhelper.WithShutdown(exp.Shutdown),
+		exporterhelper.WithCapabilities(exp.Capabilities()),
+	}
+
+	return exporterhelper.NewTraces(
+		ctx,
+		params,
+		cfg,
+		exp.ConsumeTraces,
+		buildExporterResilienceOptions(options, c)...,
+	)
+}
+
+func createLogsExporter(ctx context.Context, params exporter.Settings, cfg component.Config) (exporter.Logs, error) {
+	c := cfg.(*Config)
+	exporter, err := newLogsExporter(params, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("cannot configure loadbalancing logs exporter: %w", err)
+	}
+
+	options := []exporterhelper.Option{
+		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithCapabilities(exporter.Capabilities()),
+	}
+
+	return exporterhelper.NewLogs(
+		ctx,
+		params,
+		cfg,
+		exporter.ConsumeLogs,
+		buildExporterResilienceOptions(options, c)...,
+	)
+}
+
+func createMetricsExporter(ctx context.Context, params exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
+	c := cfg.(*Config)
+	exporter, err := newMetricsExporter(params, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("cannot configure loadbalancing metrics exporter: %w", err)
+	}
+
+	options := []exporterhelper.Option{
+		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithCapabilities(exporter.Capabilities()),
+	}
+
+	return exporterhelper.NewMetrics(
+		ctx,
+		params,
+		cfg,
+		exporter.ConsumeMetrics,
+		buildExporterResilienceOptions(options, c)...,
+	)
 }

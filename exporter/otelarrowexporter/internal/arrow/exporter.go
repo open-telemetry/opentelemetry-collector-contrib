@@ -7,20 +7,53 @@ import (
 	"context"
 	"errors"
 	"math/rand"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
+)
+
+// Defaults settings should use relatively few resources, so that
+// users are required to explicitly configure large instances.
+var (
+	// DefaultNumStreams is half the number of CPUs.  This is
+	// selected as an estimate of relatively how much work is
+	// being performed by the exporter compared with other
+	// components in the system.
+	DefaultNumStreams = max(1, runtime.NumCPU()/2)
+)
+
+const (
+	// DefaultMaxStreamLifetime is 30 seconds, because the
+	// marginal compression benefit of a longer OTel-Arrow stream
+	// is limited after 100s of batches.
+	DefaultMaxStreamLifetime = 30 * time.Second
+
+	// DefaultPayloadCompression is "zstd" so that Arrow IPC
+	// payloads use Arrow-configured Zstd over the payload
+	// independently of whatever compression gRPC may have
+	// configured.  This is on by default, achieving "double
+	// compression" because:
+	// (a) relatively cheap in CPU terms
+	// (b) minor compression benefit
+	// (c) helps stay under gRPC request size limits
+	DefaultPayloadCompression configcompression.Type = "zstd"
 )
 
 // Exporter is 1:1 with exporter, isolates arrow-specific
@@ -32,9 +65,7 @@ type Exporter struct {
 	// prioritizerName the name of a balancer policy.
 	prioritizerName PrioritizerName
 
-	// maxStreamLifetime is a limit on duration for streams.  A
-	// slight "jitter" is applied relative to this value on a
-	// per-stream basis.
+	// maxStreamLifetime is a limit on duration for streams.
 	maxStreamLifetime time.Duration
 
 	// disableDowngrade prevents downgrade from occurring, supports
@@ -156,7 +187,7 @@ func (e *Exporter) Start(ctx context.Context) error {
 	downCtx, downDc := newDoneCancel(ctx)
 
 	var sws []*streamWorkState
-	e.ready, sws = newStreamPrioritizer(downDc, e.prioritizerName, e.numStreams)
+	e.ready, sws = newStreamPrioritizer(downDc, e.prioritizerName, e.numStreams, e.maxStreamLifetime)
 
 	for _, ws := range sws {
 		e.startArrowStream(downCtx, ws)
@@ -236,7 +267,6 @@ func (e *Exporter) runArrowStream(ctx context.Context, dc doneCancel, state *str
 	producer := e.newProducer()
 
 	stream := newStream(producer, e.ready, e.telemetry, e.netReporter, state)
-	stream.maxStreamLifetime = addJitter(e.maxStreamLifetime)
 
 	defer func() {
 		if err := producer.Close(); err != nil {
@@ -258,6 +288,14 @@ func (e *Exporter) runArrowStream(ctx context.Context, dc doneCancel, state *str
 //
 // consumer should fall back to standard OTLP, (true, nil)
 func (e *Exporter) SendAndWait(ctx context.Context, data any) (bool, error) {
+	// If the incoming context is already canceled, return the
+	// same error condition a unary gRPC or HTTP exporter would do.
+	select {
+	case <-ctx.Done():
+		return false, status.Errorf(codes.Canceled, "context done before send: %v", ctx.Err())
+	default:
+	}
+
 	errCh := make(chan error, 1)
 
 	// Note that if the OTLP exporter's gRPC Headers field was
@@ -302,6 +340,10 @@ func (e *Exporter) SendAndWait(ctx context.Context, data any) (bool, error) {
 	}
 	md["otlp-pdata-size"] = strconv.Itoa(uncompSize)
 
+	if dead, ok := ctx.Deadline(); ok {
+		md["grpc-timeout"] = grpcutil.EncodeTimeout(time.Until(dead))
+	}
+
 	wri := writeItem{
 		records:     data,
 		md:          md,
@@ -320,7 +362,6 @@ func (e *Exporter) SendAndWait(ctx context.Context, data any) (bool, error) {
 		err := writer.sendAndWait(ctx, errCh, wri)
 		if err != nil && errors.Is(err, ErrStreamRestarting) {
 			continue // an internal retry
-
 		}
 		// result from arrow server (may be nil, may be
 		// permanent, etc.)
@@ -343,7 +384,7 @@ func waitForWrite(ctx context.Context, errCh <-chan error, down <-chan struct{})
 	select {
 	case <-ctx.Done():
 		// This caller's context timed out.
-		return ctx.Err()
+		return status.Errorf(codes.Canceled, "send wait: %v", ctx.Err())
 	case <-down:
 		return ErrStreamRestarting
 	case err := <-errCh:

@@ -30,7 +30,7 @@ func TestWriteLineProtocol_v2API(t *testing.T) {
 	}
 	nextConsumer := new(mockConsumer)
 
-	receiver, outerErr := NewFactory().CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, nextConsumer)
+	receiver, outerErr := NewFactory().CreateMetrics(context.Background(), receivertest.NewNopSettings(), config, nextConsumer)
 	require.NoError(t, outerErr)
 	require.NotNil(t, receiver)
 
@@ -55,7 +55,7 @@ func TestWriteLineProtocol_v2API(t *testing.T) {
 		require.NoError(t, err)
 
 		metrics := nextConsumer.lastMetricsConsumed
-		if assert.NotNil(t, metrics) && assert.Less(t, 0, metrics.DataPointCount()) {
+		if assert.NotNil(t, metrics) && assert.Positive(t, metrics.DataPointCount()) {
 			assert.Equal(t, 1, metrics.MetricCount())
 			metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 			assert.Equal(t, "cpu_temp", metric.Name())
@@ -77,7 +77,7 @@ func TestWriteLineProtocol_v2API(t *testing.T) {
 		require.NoError(t, err)
 
 		metrics := nextConsumer.lastMetricsConsumed
-		if assert.NotNil(t, metrics) && assert.Less(t, 0, metrics.DataPointCount()) {
+		if assert.NotNil(t, metrics) && assert.Positive(t, metrics.DataPointCount()) {
 			assert.Equal(t, 1, metrics.MetricCount())
 			metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 			assert.Equal(t, "cpu_temp", metric.Name())

@@ -24,7 +24,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 		name              string
 		transport         Transport
 		buildServerFn     func(transport Transport, addr string) (Server, error)
-		getFreeEndpointFn func(t testing.TB, transport string) string
+		getFreeEndpointFn func(tb testing.TB, transport string) string
 		buildClientFn     func(transport string, address string) (*client.StatsD, error)
 	}{
 		{
@@ -89,7 +89,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			assert.NoError(t, err)
 
 			wgListenAndServe.Wait()
-			assert.Equal(t, 1, len(transferChan))
+			assert.Len(t, transferChan, 1)
 		})
 	}
 }

@@ -6,16 +6,12 @@ package otelarrowexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"errors"
-	"fmt"
-	"runtime"
 	"time"
 
-	arrowPkg "github.com/apache/arrow/go/v14/arrow"
-	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
-	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -35,7 +31,21 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
+
+type exp interface {
+	getSettings() exporter.Settings
+	getConfig() component.Config
+
+	start(context.Context, component.Host) error
+	shutdown(context.Context) error
+
+	pushTraces(context.Context, ptrace.Traces) error
+	pushMetrics(context.Context, pmetric.Metrics) error
+	pushLogs(context.Context, plog.Logs) error
+}
 
 type baseExporter struct {
 	// Input configuration.
@@ -48,7 +58,7 @@ type baseExporter struct {
 	clientConn     *grpc.ClientConn
 	metadata       metadata.MD
 	callOptions    []grpc.CallOption
-	settings       exporter.CreateSettings
+	settings       exporter.Settings
 	netReporter    *netstats.NetworkReporter
 
 	// Default user-agent header.
@@ -60,29 +70,17 @@ type baseExporter struct {
 	streamClientFactory streamClientFactory
 }
 
+var _ exp = (*baseExporter)(nil)
+
 type streamClientFactory func(conn *grpc.ClientConn) arrow.StreamClientFunc
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg component.Config, set exporter.CreateSettings, streamClientFactory streamClientFactory) (*baseExporter, error) {
+func newExporter(cfg component.Config, set exporter.Settings, streamClientFactory streamClientFactory, userAgent string, netReporter *netstats.NetworkReporter) (exp, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {
 		return nil, errors.New("OTLP exporter config requires an Endpoint")
-	}
-
-	netReporter, err := netstats.NewExporterNetworkReporter(set)
-	if err != nil {
-		return nil, err
-	}
-	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
-		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
-
-	if !oCfg.Arrow.Disabled {
-		// Ignoring an error because Validate() was called.
-		_ = zstd.SetEncoderConfig(oCfg.Arrow.Zstd)
-
-		userAgent += fmt.Sprintf(" ApacheArrow/%s (NumStreams/%d)", arrowPkg.PkgVersion, oCfg.Arrow.NumStreams)
 	}
 
 	return &baseExporter{
@@ -94,16 +92,31 @@ func newExporter(cfg component.Config, set exporter.CreateSettings, streamClient
 	}, nil
 }
 
+func (e *baseExporter) getSettings() exporter.Settings {
+	return e.settings
+}
+
+func (e *baseExporter) getConfig() component.Config {
+	return e.config
+}
+
+func (e *baseExporter) setMetadata(md metadata.MD) {
+	e.metadata = metadata.Join(e.metadata, md)
+}
+
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
-	dialOpts := []grpc.DialOption{
-		grpc.WithUserAgent(e.userAgent),
+	dialOpts := []configgrpc.ToClientConnOption{
+		configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent)),
 	}
 	if e.netReporter != nil {
-		dialOpts = append(dialOpts, grpc.WithStatsHandler(e.netReporter.Handler()))
+		dialOpts = append(dialOpts, configgrpc.WithGrpcDialOption(grpc.WithStatsHandler(e.netReporter.Handler())))
 	}
-	dialOpts = append(dialOpts, e.config.UserDialOptions...)
+	for _, opt := range e.config.UserDialOptions {
+		dialOpts = append(dialOpts, configgrpc.WithGrpcDialOption(opt))
+	}
+
 	if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host, e.settings.TelemetrySettings, dialOpts...); err != nil {
 		return err
 	}
@@ -114,7 +127,8 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 	for k, v := range e.config.ClientConfig.Headers {
 		headers[k] = string(v)
 	}
-	e.metadata = metadata.New(headers)
+	headerMetadata := metadata.New(headers)
+	e.metadata = metadata.Join(e.metadata, headerMetadata)
 	e.callOptions = []grpc.CallOption{
 		grpc.WaitForReady(e.config.ClientConfig.WaitForReady),
 	}
@@ -126,7 +140,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 		var perRPCCreds credentials.PerRPCCredentials
 		if e.config.ClientConfig.Auth != nil {
 			// Get the auth extension, we'll use it to enrich the request context.
-			authClient, err := e.config.ClientConfig.Auth.GetClientAuthenticator(host.GetExtensions())
+			authClient, err := e.config.ClientConfig.Auth.GetClientAuthenticator(ctx, host.GetExtensions())
 			if err != nil {
 				return err
 			}

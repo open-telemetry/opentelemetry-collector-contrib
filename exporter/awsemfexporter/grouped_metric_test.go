@@ -116,11 +116,11 @@ func TestAddToGroupedMetric(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			assert.Equal(t, 1, len(groupedMetrics))
+			assert.Len(t, groupedMetrics, 1)
 			for _, v := range groupedMetrics {
 				assert.Equal(t, len(tc.expectedMetricInfo), len(v.metrics))
 				assert.Equal(t, tc.expectedMetricInfo, v.metrics)
-				assert.Equal(t, 2, len(v.labels))
+				assert.Len(t, v.labels, 2)
 				assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, tc.expectedMetricType), v.metadata)
 				assert.Equal(t, tc.expectedLabels, v.labels)
 			}
@@ -158,7 +158,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			assert.NoError(t, err)
 		}
 
-		assert.Equal(t, 4, len(groupedMetrics))
+		assert.Len(t, groupedMetrics, 4)
 		for _, group := range groupedMetrics {
 			for metricName, metricInfo := range group.metrics {
 				switch metricName {
@@ -230,7 +230,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			assert.NoError(t, err)
 		}
 
-		assert.Equal(t, 4, len(groupedMetrics))
+		assert.Len(t, groupedMetrics, 4)
 		for _, group := range groupedMetrics {
 			for metricName, metricInfo := range group.metrics {
 				switch metricName {
@@ -348,7 +348,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			)
 			assert.NoError(t, err)
 		}
-		assert.Equal(t, 1, len(groupedMetrics))
+		assert.Len(t, groupedMetrics, 1)
 
 		labels := map[string]string{
 			oTellibDimensionKey: instrumentationLibName,
@@ -389,7 +389,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			emfCalcs,
 		)
 		assert.NoError(t, err)
-		assert.Equal(t, 0, len(groupedMetrics))
+		assert.Empty(t, groupedMetrics)
 
 		// Test output warning logs
 		expectedLogs := []observer.LoggedEntry{
@@ -405,7 +405,6 @@ func TestAddToGroupedMetric(t *testing.T) {
 		assert.Equal(t, 1, logs.Len())
 		assert.Equal(t, expectedLogs, logs.AllUntimed())
 	})
-
 }
 
 func TestAddKubernetesWrapper(t *testing.T) {
@@ -435,7 +434,7 @@ func TestAddKubernetesWrapper(t *testing.T) {
 
 		jsonBytes, _ := json.Marshal(expectedCreatedObj)
 		addKubernetesWrapper(inputs)
-		assert.Equal(t, string(jsonBytes), inputs["kubernetes"], "The created and expected objects should be the same")
+		assert.JSONEq(t, string(jsonBytes), inputs["kubernetes"], "The created and expected objects should be the same")
 	})
 }
 
@@ -462,7 +461,7 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 		for i := 0; i < numMetrics; i++ {
 			metadata := generateTestMetricMetadata("namespace", int64(1596151098037), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type())
 			err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, nil, testCfg, emfCalcs)
-			assert.Nil(b, err)
+			assert.NoError(b, err)
 		}
 	}
 }
@@ -489,10 +488,12 @@ func TestTranslateUnit(t *testing.T) {
 	translateUnitCases := map[string]string{
 		"Count": "Count",
 		"ms":    "Milliseconds",
+		"ns":    "",
+		"1":     "",
 		"s":     "Seconds",
 		"us":    "Microseconds",
 		"By":    "Bytes",
-		"Bi":    "Bits",
+		"bit":   "Bits",
 	}
 	for input, output := range translateUnitCases {
 		t.Run(input, func(_ *testing.T) {

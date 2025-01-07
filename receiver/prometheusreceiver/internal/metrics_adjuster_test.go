@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.8.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -26,6 +26,7 @@ var (
 	percent0 = []float64{10, 50, 90}
 
 	sum1                  = "sum1"
+	sum2                  = "sum2"
 	gauge1                = "gauge1"
 	histogram1            = "histogram1"
 	summary1              = "summary1"
@@ -98,6 +99,37 @@ func TestSum(t *testing.T) {
 			description: "Sum: round 5 - instance adjusted based on round 4",
 			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t5, t5, 72))),
 			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t5, 72))),
+		},
+	}
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+}
+
+func TestSumWithDifferentResources(t *testing.T) {
+	script := []*metricsAdjusterTest{
+		{
+			description: "Sum: round 1 - initial instance, start time is established",
+			metrics:     metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))), resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t1, t1, 44)))),
+			adjusted:    metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))), resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t1, t1, 44)))),
+		},
+		{
+			description: "Sum: round 2 - instance adjusted based on round 1 (metrics in different order)",
+			metrics:     metricsFromResourceMetrics(resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t2, t2, 66))), resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t2, t2, 66)))),
+			adjusted:    metricsFromResourceMetrics(resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t1, t2, 66))), resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 66)))),
+		},
+		{
+			description: "Sum: round 3 - instance reset (value less than previous value), start time is reset",
+			metrics:     metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 55))), resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t3, t3, 55)))),
+			adjusted:    metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 55))), resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t3, t3, 55)))),
+		},
+		{
+			description: "Sum: round 4 - instance adjusted based on round 3",
+			metrics:     metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 72))), resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t4, t4, 72)))),
+			adjusted:    metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t3, t4, 72))), resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t3, t4, 72)))),
+		},
+		{
+			description: "Sum: round 5 - instance adjusted based on round 4, sum2 metric resets but sum1 doesn't",
+			metrics:     metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t5, t5, 72))), resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t5, t5, 10)))),
+			adjusted:    metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t3, t5, 72))), resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t5, t5, 10)))),
 		},
 	}
 	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
@@ -710,14 +742,32 @@ func runScript(t *testing.T, ma MetricsAdjuster, job, instance string, tests []*
 		t.Run(test.description, func(t *testing.T) {
 			adjusted := pmetric.NewMetrics()
 			test.metrics.CopyTo(adjusted)
-			// Add the instance/job to the input metrics.
-			adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
-			adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceName, job)
+			// Add the instance/job to the input metrics if they aren't already present.
+			for i := 0; i < adjusted.ResourceMetrics().Len(); i++ {
+				rm := adjusted.ResourceMetrics().At(i)
+				_, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
+				if !found {
+					rm.Resource().Attributes().PutStr(semconv.AttributeServiceName, job)
+				}
+				_, found = rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
+				if !found {
+					rm.Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
+				}
+			}
 			assert.NoError(t, ma.AdjustMetrics(adjusted))
 
-			// Add the instance/job to the expected metrics as well.
-			test.adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
-			test.adjusted.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceName, job)
+			// Add the instance/job to the expected metrics as well if they aren't already present.
+			for i := 0; i < test.adjusted.ResourceMetrics().Len(); i++ {
+				rm := test.adjusted.ResourceMetrics().At(i)
+				_, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
+				if !found {
+					rm.Resource().Attributes().PutStr(semconv.AttributeServiceName, job)
+				}
+				_, found = rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
+				if !found {
+					rm.Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
+				}
+			}
 			assert.EqualValues(t, test.adjusted, adjusted)
 		})
 	}

@@ -1,13 +1,12 @@
 type: k8sobjects
-scope_name: otelcol/k8sobjectsreceiver
 
 status:
   class: receiver
   stability:
     beta: [logs]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   codeowners:
-    active: [dmitryax, hvaghani221, TylerHelmuth]
+    active: [dmitryax, hvaghani221, TylerHelmuth, ChrsMark]
 
 tests:
   config:

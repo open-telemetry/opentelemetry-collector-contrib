@@ -33,6 +33,8 @@ all_set:
       enabled: true
     k8s.container.cpu_request_utilization:
       enabled: true
+    k8s.container.memory.node.utilization:
+      enabled: true
     k8s.container.memory_limit_utilization:
       enabled: true
     k8s.container.memory_request_utilization:
@@ -67,6 +69,8 @@ all_set:
       enabled: true
     k8s.node.uptime:
       enabled: true
+    k8s.pod.cpu.node.utilization:
+      enabled: true
     k8s.pod.cpu.time:
       enabled: true
     k8s.pod.cpu.usage:
@@ -86,6 +90,8 @@ all_set:
     k8s.pod.memory.available:
       enabled: true
     k8s.pod.memory.major_page_faults:
+      enabled: true
+    k8s.pod.memory.node.utilization:
       enabled: true
     k8s.pod.memory.page_faults:
       enabled: true
@@ -180,6 +186,8 @@ none_set:
       enabled: false
     k8s.container.cpu_request_utilization:
       enabled: false
+    k8s.container.memory.node.utilization:
+      enabled: false
     k8s.container.memory_limit_utilization:
       enabled: false
     k8s.container.memory_request_utilization:
@@ -214,6 +222,8 @@ none_set:
       enabled: false
     k8s.node.uptime:
       enabled: false
+    k8s.pod.cpu.node.utilization:
+      enabled: false
     k8s.pod.cpu.time:
       enabled: false
     k8s.pod.cpu.usage:
@@ -233,6 +243,8 @@ none_set:
     k8s.pod.memory.available:
       enabled: false
     k8s.pod.memory.major_page_faults:
+      enabled: false
+    k8s.pod.memory.node.utilization:
       enabled: false
     k8s.pod.memory.page_faults:
       enabled: false

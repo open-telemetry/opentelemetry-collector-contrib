@@ -4,20 +4,24 @@
 package ucal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/ucal"
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v4/cpu"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var normalizeProcessCPUUtilizationFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.hostmetrics.normalizeProcessCPUUtilization",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, normalizes the process.cpu.utilization metric onto the interval [0-1] by dividing the value by the number of logical processors."),
-	featuregate.WithRegisterFromVersion("v0.97.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31368"),
-)
+func init() {
+	_ = featuregate.GlobalRegistry().MustRegister(
+		"receiver.hostmetrics.normalizeProcessCPUUtilization",
+		featuregate.StageStable,
+		featuregate.WithRegisterDescription("When enabled, normalizes the process.cpu.utilization metric onto the interval [0-1] by dividing the value by the number of logical processors."),
+		featuregate.WithRegisterFromVersion("v0.97.0"),
+		featuregate.WithRegisterToVersion("v0.112.0"),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31368"),
+	)
+}
 
 // CPUUtilization stores the utilization percents [0-1] for the different cpu states
 type CPUUtilization struct {
@@ -37,6 +41,10 @@ type CPUUtilizationCalculator struct {
 // stored []cpu.TimesStat and time.Time and current []cpu.TimesStat and current time.Time
 // If no previous data is stored it will return empty slice of CPUUtilization and no error
 func (c *CPUUtilizationCalculator) CalculateAndRecord(now pcommon.Timestamp, logicalCores int, currentCPUStats *cpu.TimesStat, recorder func(pcommon.Timestamp, CPUUtilization)) error {
+	if logicalCores < 1 {
+		return fmt.Errorf("number of logical cores is %d", logicalCores)
+	}
+
 	if c.previousCPUStats != nil {
 		recorder(now, cpuUtilization(logicalCores, c.previousCPUStats, c.previousReadTime, currentCPUStats, now))
 	}
@@ -57,12 +65,9 @@ func cpuUtilization(logicalCores int, startStats *cpu.TimesStat, startTime pcomm
 	systemUtilization := (endStats.System - startStats.System) / elapsedTime
 	ioWaitUtilization := (endStats.Iowait - startStats.Iowait) / elapsedTime
 
-	if normalizeProcessCPUUtilizationFeatureGate.IsEnabled() && logicalCores > 0 {
-		// Normalize onto the [0-1] interval by dividing by the number of logical cores
-		userUtilization /= float64(logicalCores)
-		systemUtilization /= float64(logicalCores)
-		ioWaitUtilization /= float64(logicalCores)
-	}
+	userUtilization /= float64(logicalCores)
+	systemUtilization /= float64(logicalCores)
+	ioWaitUtilization /= float64(logicalCores)
 
 	return CPUUtilization{
 		User:   userUtilization,

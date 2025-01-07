@@ -1,5 +1,4 @@
 type: active_directory_ds
-scope_name: otelcol/activedirectorydsreceiver
 
 status:
   class: receiver
@@ -7,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, BinaryFissionGames]
+    active: [pjanotti]
     seeking_new: true
   unsupported_platforms: [darwin, linux]
 

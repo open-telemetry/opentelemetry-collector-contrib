@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -14,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -23,16 +24,19 @@ import (
 
 type topicScraper struct {
 	client       sarama.Client
-	settings     receiver.CreateSettings
+	clusterAdmin sarama.ClusterAdmin
+	settings     receiver.Settings
 	topicFilter  *regexp.Regexp
 	saramaConfig *sarama.Config
 	config       Config
 	mb           *metadata.MetricsBuilder
 }
 
-func (s *topicScraper) Name() string {
-	return topicsScraperName
-}
+const (
+	minInsyncRelicas = "min.insync.replicas"
+	retentionMs      = "retention.ms"
+	retentionBytes   = "retention.bytes"
+)
 
 func (s *topicScraper) shutdown(context.Context) error {
 	if s.client != nil && !s.client.Closed() {
@@ -61,10 +65,11 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
-	var scrapeErrors = scrapererror.ScrapeErrors{}
+	scrapeErrors := scrapererror.ScrapeErrors{}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
+	s.scrapeTopicConfigs(now, scrapeErrors)
 	for _, topic := range topics {
 		if !s.topicFilter.MatchString(topic) {
 			continue
@@ -103,10 +108,68 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			}
 		}
 	}
-	return s.mb.Emit(), scrapeErrors.Combine()
+
+	rb := s.mb.NewResourceBuilder()
+	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
+
+	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrors.Combine()
 }
 
-func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, settings receiver.CreateSettings) (scraperhelper.Scraper, error) {
+func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapererror.ScrapeErrors) {
+	if !s.config.Metrics.KafkaTopicLogRetentionPeriod.Enabled &&
+		!s.config.Metrics.KafkaTopicLogRetentionSize.Enabled &&
+		!s.config.Metrics.KafkaTopicMinInsyncReplicas.Enabled &&
+		!s.config.Metrics.KafkaTopicReplicationFactor.Enabled {
+		return
+	}
+	if s.clusterAdmin == nil {
+		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
+		if err != nil {
+			s.settings.Logger.Error("Error creating kafka client with admin priviledges", zap.Error(err))
+			return
+		}
+		s.clusterAdmin = admin
+	}
+	topics, err := s.clusterAdmin.ListTopics()
+	if err != nil {
+		s.settings.Logger.Error("Error fetching cluster topic configurations", zap.Error(err))
+		return
+	}
+
+	for name, topic := range topics {
+		s.mb.RecordKafkaTopicReplicationFactorDataPoint(now, int64(topic.ReplicationFactor), name)
+		configEntries, _ := s.clusterAdmin.DescribeConfig(sarama.ConfigResource{
+			Type:        sarama.TopicResource,
+			Name:        name,
+			ConfigNames: []string{minInsyncRelicas, retentionMs, retentionBytes},
+		})
+
+		for _, config := range configEntries {
+			switch config.Name {
+			case minInsyncRelicas:
+				if val, err := strconv.Atoi(config.Value); err == nil {
+					s.mb.RecordKafkaTopicMinInsyncReplicasDataPoint(now, int64(val), name)
+				} else {
+					errors.AddPartial(1, err)
+				}
+			case retentionMs:
+				if val, err := strconv.Atoi(config.Value); err == nil {
+					s.mb.RecordKafkaTopicLogRetentionPeriodDataPoint(now, int64(val/1000), name)
+				} else {
+					errors.AddPartial(1, err)
+				}
+			case retentionBytes:
+				if val, err := strconv.Atoi(config.Value); err == nil {
+					s.mb.RecordKafkaTopicLogRetentionSizeDataPoint(now, int64(val), name)
+				} else {
+					errors.AddPartial(1, err)
+				}
+			}
+		}
+	}
+}
+
+func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, settings receiver.Settings) (scraper.Metrics, error) {
 	topicFilter, err := regexp.Compile(cfg.TopicMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
@@ -117,10 +180,9 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 		saramaConfig: saramaConfig,
 		config:       cfg,
 	}
-	return scraperhelper.NewScraper(
-		s.Name(),
+	return scraper.NewMetrics(
 		s.scrape,
-		scraperhelper.WithStart(s.start),
-		scraperhelper.WithShutdown(s.shutdown),
+		scraper.WithStart(s.start),
+		scraper.WithShutdown(s.shutdown),
 	)
 }

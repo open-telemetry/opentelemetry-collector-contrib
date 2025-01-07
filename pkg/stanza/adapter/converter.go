@@ -4,240 +4,54 @@
 package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
 import (
-	"context"
 	"encoding/binary"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"math"
-	"runtime"
 	"sort"
 	"sync"
 
 	"github.com/cespare/xxhash/v2"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
-// Converter converts a batch of entry.Entry into plog.Logs aggregating translated
-// entries into logs coming from the same Resource.
-//
-// The diagram below illustrates the internal communication inside the Converter:
-//
-//	          ┌─────────────────────────────────┐
-//	          │ Batch()                         │
-//	┌─────────┤  Ingests batches of log entries │
-//	│         │  and sends them onto workerChan │
-//	│         └─────────────────────────────────┘
-//	│
-//	│ ┌───────────────────────────────────────────────────┐
-//	├─► workerLoop()                                      │
-//	│ │ ┌─────────────────────────────────────────────────┴─┐
-//	├─┼─► workerLoop()                                      │
-//	│ │ │ ┌─────────────────────────────────────────────────┴─┐
-//	└─┼─┼─► workerLoop()                                      │
-//	  └─┤ │   consumes sent log entries from workerChan,      │
-//	    │ │   translates received entries to plog.LogRecords, │
-//	    └─┤   and sends them on flushChan                     │
-//	      └─────────────────────────┬─────────────────────────┘
-//	                                │
-//	                                ▼
-//	    ┌─────────────────────────────────────────────────────┐
-//	    │ flushLoop()                                         │
-//	    │   receives log records from flushChan and sends     │
-//	    │   them onto pLogsChan which is consumed by          │
-//	    │   downstream consumers via OutChannel()             │
-//	    └─────────────────────────────────────────────────────┘
-type Converter struct {
-	set component.TelemetrySettings
+func ConvertEntries(entries []*entry.Entry) plog.Logs {
+	resourceHashToIdx := make(map[uint64]int)
+	scopeIdxByResource := make(map[uint64]map[string]int)
 
-	// pLogsChan is a channel on which aggregated logs will be sent to.
-	pLogsChan chan plog.Logs
+	pLogs := plog.NewLogs()
+	var sl plog.ScopeLogs
 
-	stopOnce sync.Once
-	stopChan chan struct{}
+	for _, e := range entries {
+		resourceID := HashResource(e.Resource)
+		var rl plog.ResourceLogs
 
-	// workerChan is an internal communication channel that gets the log
-	// entries from Batch() calls and it receives the data in workerLoop().
-	workerChan chan []*entry.Entry
-	// workerCount configures the amount of workers started.
-	workerCount int
+		resourceIdx, ok := resourceHashToIdx[resourceID]
+		if !ok {
+			resourceHashToIdx[resourceID] = pLogs.ResourceLogs().Len()
 
-	// flushChan is an internal channel used for transporting batched plog.Logs.
-	flushChan chan plog.Logs
+			rl = pLogs.ResourceLogs().AppendEmpty()
+			upsertToMap(e.Resource, rl.Resource().Attributes())
 
-	// wg is a WaitGroup that makes sure that we wait for spun up goroutines exit
-	// when Stop() is called.
-	wg sync.WaitGroup
-}
-
-type converterOption interface {
-	apply(*Converter)
-}
-
-func withWorkerCount(workerCount int) converterOption {
-	return workerCountOption{workerCount}
-}
-
-type workerCountOption struct {
-	workerCount int
-}
-
-func (o workerCountOption) apply(c *Converter) {
-	c.workerCount = o.workerCount
-}
-
-func NewConverter(set component.TelemetrySettings, opts ...converterOption) *Converter {
-	set.Logger = set.Logger.With(zap.String("component", "converter"))
-	c := &Converter{
-		set:         set,
-		workerChan:  make(chan []*entry.Entry),
-		workerCount: int(math.Max(1, float64(runtime.NumCPU()/4))),
-		pLogsChan:   make(chan plog.Logs),
-		stopChan:    make(chan struct{}),
-		flushChan:   make(chan plog.Logs),
-	}
-	for _, opt := range opts {
-		opt.apply(c)
-	}
-	return c
-}
-
-func (c *Converter) Start() {
-	c.set.Logger.Debug("Starting log converter", zap.Int("worker_count", c.workerCount))
-
-	c.wg.Add(c.workerCount)
-	for i := 0; i < c.workerCount; i++ {
-		go c.workerLoop()
-	}
-
-	c.wg.Add(1)
-	go c.flushLoop()
-}
-
-func (c *Converter) Stop() {
-	c.stopOnce.Do(func() {
-		close(c.stopChan)
-		c.wg.Wait()
-		close(c.pLogsChan)
-	})
-}
-
-// OutChannel returns the channel on which converted entries will be sent to.
-func (c *Converter) OutChannel() <-chan plog.Logs {
-	return c.pLogsChan
-}
-
-// workerLoop is responsible for obtaining log entries from Batch() calls,
-// converting them to plog.LogRecords batched by Resource, and sending them
-// on flushChan.
-func (c *Converter) workerLoop() {
-	defer c.wg.Done()
-
-	for {
-
-		select {
-		case <-c.stopChan:
-			return
-
-		case entries, ok := <-c.workerChan:
+			scopeIdxByResource[resourceID] = map[string]int{e.ScopeName: 0}
+			sl = rl.ScopeLogs().AppendEmpty()
+			sl.Scope().SetName(e.ScopeName)
+		} else {
+			rl = pLogs.ResourceLogs().At(resourceIdx)
+			scopeIdxInResource, ok := scopeIdxByResource[resourceID][e.ScopeName]
 			if !ok {
-				return
-			}
-
-			resourceHashToIdx := make(map[uint64]int)
-			scopeIdxByResource := make(map[uint64]map[string]int)
-
-			pLogs := plog.NewLogs()
-			var sl plog.ScopeLogs
-
-			for _, e := range entries {
-				resourceID := HashResource(e.Resource)
-				var rl plog.ResourceLogs
-
-				resourceIdx, ok := resourceHashToIdx[resourceID]
-				if !ok {
-					resourceHashToIdx[resourceID] = pLogs.ResourceLogs().Len()
-
-					rl = pLogs.ResourceLogs().AppendEmpty()
-					upsertToMap(e.Resource, rl.Resource().Attributes())
-
-					scopeIdxByResource[resourceID] = map[string]int{e.ScopeName: 0}
-					sl = rl.ScopeLogs().AppendEmpty()
-					sl.Scope().SetName(e.ScopeName)
-				} else {
-					rl = pLogs.ResourceLogs().At(resourceIdx)
-					scopeIdxInResource, ok := scopeIdxByResource[resourceID][e.ScopeName]
-					if !ok {
-						scopeIdxByResource[resourceID][e.ScopeName] = rl.ScopeLogs().Len()
-						sl = rl.ScopeLogs().AppendEmpty()
-						sl.Scope().SetName(e.ScopeName)
-					} else {
-						sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(scopeIdxInResource)
-					}
-				}
-				convertInto(e, sl.LogRecords().AppendEmpty())
-			}
-
-			// Send plogs directly to flushChan
-			select {
-			case c.flushChan <- pLogs:
-			case <-c.stopChan:
+				scopeIdxByResource[resourceID][e.ScopeName] = rl.ScopeLogs().Len()
+				sl = rl.ScopeLogs().AppendEmpty()
+				sl.Scope().SetName(e.ScopeName)
+			} else {
+				sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(scopeIdxInResource)
 			}
 		}
+		convertInto(e, sl.LogRecords().AppendEmpty())
 	}
-}
-
-func (c *Converter) flushLoop() {
-	defer c.wg.Done()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	for {
-		select {
-		case <-c.stopChan:
-			return
-
-		case pLogs := <-c.flushChan:
-			if err := c.flush(ctx, pLogs); err != nil {
-				c.set.Logger.Debug("Problem sending log entries",
-					zap.Error(err),
-				)
-			}
-		}
-	}
-}
-
-// flush flushes provided plog.Logs entries onto a channel.
-func (c *Converter) flush(ctx context.Context, pLogs plog.Logs) error {
-	doneChan := ctx.Done()
-
-	select {
-	case <-doneChan:
-		return fmt.Errorf("flushing log entries interrupted, err: %w", ctx.Err())
-
-	case c.pLogsChan <- pLogs:
-
-	// The converter has been stopped so bail the flush.
-	case <-c.stopChan:
-		return errors.New("logs converter has been stopped")
-	}
-
-	return nil
-}
-
-// Batch takes in an entry.Entry and sends it to an available worker for processing.
-func (c *Converter) Batch(e []*entry.Entry) error {
-	select {
-	case c.workerChan <- e:
-		return nil
-	case <-c.stopChan:
-		return errors.New("logs converter has been stopped")
-	}
+	return pLogs
 }
 
 // convert converts one entry.Entry into plog.LogRecord allocating it.
@@ -276,7 +90,7 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 		copy(buffer[0:8], ent.SpanID)
 		dest.SetSpanID(buffer)
 	}
-	if ent.TraceFlags != nil && len(ent.TraceFlags) > 0 {
+	if len(ent.TraceFlags) > 0 {
 		// The 8 least significant bits are the trace flags as defined in W3C Trace
 		// Context specification. Don't override the 24 reserved bits.
 		flags := uint32(ent.TraceFlags[0])
@@ -322,6 +136,7 @@ func upsertToAttributeVal(value any, dest pcommon.Value) {
 		upsertToMap(t, dest.SetEmptyMap())
 	case []any:
 		upsertToSlice(t, dest.SetEmptySlice())
+	case nil:
 	default:
 		dest.SetStr(fmt.Sprintf("%v", t))
 	}

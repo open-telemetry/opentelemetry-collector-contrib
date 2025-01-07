@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver/internal/metadata"
@@ -29,6 +30,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(metadata.Type),
 			expected: &Config{
+				ClientConfig: confighttp.NewDefaultClientConfig(),
 				Settings: &Settings{
 					ReloadIntervals: &ReloadIntervals{
 						Array:   15 * time.Second,
@@ -47,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

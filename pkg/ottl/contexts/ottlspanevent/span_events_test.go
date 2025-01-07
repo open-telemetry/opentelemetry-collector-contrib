@@ -17,9 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
-var (
-	spanID2 = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
-)
+var spanID2 = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
 
 func Test_newPathGetSetter(t *testing.T) {
 	refSpanEvent, refSpan, refIS, refResource := createTelemetry()
@@ -449,7 +447,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			spanEvent, span, il, resource := createTelemetry()
 
-			tCtx := NewTransformContext(spanEvent, span, il, resource)
+			tCtx := NewTransformContext(spanEvent, span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
 
 			got, err := accessor.Get(context.Background(), tCtx)
 			assert.NoError(t, err)
@@ -571,7 +569,7 @@ func Test_ParseEnum(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			actual, err := parseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
 			assert.NoError(t, err)
-			assert.Equal(t, *actual, tt.want)
+			assert.Equal(t, tt.want, *actual)
 		})
 	}
 }

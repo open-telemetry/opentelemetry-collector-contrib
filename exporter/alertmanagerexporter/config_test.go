@@ -35,7 +35,6 @@ func TestLoadConfig(t *testing.T) {
 		id       component.ID
 		expected component.Config
 	}{
-
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: defaultCfg,
@@ -46,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 				GeneratorURL:      "opentelemetry-collector",
 				DefaultSeverity:   "info",
 				SeverityAttribute: "foo",
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
 				BackoffConfig: configretry.BackOffConfig{
@@ -57,27 +56,29 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
-				ClientConfig: confighttp.ClientConfig{
-					Headers: map[string]configopaque.String{
+				ClientConfig: func() confighttp.ClientConfig {
+					client := confighttp.NewDefaultClientConfig()
+					client.Headers = map[string]configopaque.String{
 						"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
 						"header1":                "234",
 						"another":                "somevalue",
-					},
-					Endpoint: "a.new.alertmanager.target:9093",
-					TLSSetting: configtls.ClientConfig{
+					}
+					client.Endpoint = "a.new.alertmanager.target:9093"
+					client.TLSSetting = configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "/var/lib/mycert.pem",
 						},
-					},
-					ReadBufferSize:  0,
-					WriteBufferSize: 524288,
-					Timeout:         time.Second * 10,
-				},
+					}
+					client.ReadBufferSize = 0
+					client.WriteBufferSize = 524288
+					client.Timeout = time.Second * 10
+					return client
+				}(),
 			},
 		},
 	}
@@ -89,7 +90,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

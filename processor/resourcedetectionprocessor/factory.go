@@ -12,8 +12,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
@@ -70,12 +73,13 @@ func NewFactory() processor.Factory {
 		providers:               map[component.ID]*internal.ResourceProvider{},
 	}
 
-	return processor.NewFactory(
+	return xprocessor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
-		processor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
-		processor.WithLogs(f.createLogsProcessor, metadata.LogsStability))
+		xprocessor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
+		xprocessor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
+		xprocessor.WithLogs(f.createLogsProcessor, metadata.LogsStability),
+		xprocessor.WithProfiles(f.createProfilesProcessor, metadata.ProfilesStability))
 }
 
 // Type gets the type of the Option config created by this factory.
@@ -103,7 +107,7 @@ func defaultClientConfig() confighttp.ClientConfig {
 
 func (f *factory) createTracesProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
@@ -112,7 +116,7 @@ func (f *factory) createTracesProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewTracesProcessor(
+	return processorhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -124,7 +128,7 @@ func (f *factory) createTracesProcessor(
 
 func (f *factory) createMetricsProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
@@ -133,7 +137,7 @@ func (f *factory) createMetricsProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -145,7 +149,7 @@ func (f *factory) createMetricsProcessor(
 
 func (f *factory) createLogsProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
@@ -154,7 +158,7 @@ func (f *factory) createLogsProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewLogsProcessor(
+	return processorhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
@@ -164,8 +168,29 @@ func (f *factory) createLogsProcessor(
 		processorhelper.WithStart(rdp.Start))
 }
 
+func (f *factory) createProfilesProcessor(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	nextConsumer xconsumer.Profiles,
+) (xprocessor.Profiles, error) {
+	rdp, err := f.getResourceDetectionProcessor(set, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return xprocessorhelper.NewProfiles(
+		ctx,
+		set,
+		cfg,
+		nextConsumer,
+		rdp.processProfiles,
+		xprocessorhelper.WithCapabilities(consumerCapabilities),
+		xprocessorhelper.WithStart(rdp.Start))
+}
+
 func (f *factory) getResourceDetectionProcessor(
-	params processor.CreateSettings,
+	params processor.Settings,
 	cfg component.Config,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
@@ -186,7 +211,7 @@ func (f *factory) getResourceDetectionProcessor(
 }
 
 func (f *factory) getResourceProvider(
-	params processor.CreateSettings,
+	params processor.Settings,
 	timeout time.Duration,
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,

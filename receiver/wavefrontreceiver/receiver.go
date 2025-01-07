@@ -19,12 +19,12 @@ var _ receiver.Metrics = (*metricsReceiver)(nil)
 
 type metricsReceiver struct {
 	cfg            *Config
-	set            receiver.CreateSettings
+	set            receiver.Settings
 	nextConsumer   consumer.Metrics
 	carbonReceiver receiver.Metrics
 }
 
-func newMetricsReceiver(cfg *Config, set receiver.CreateSettings, nextConsumer consumer.Metrics) *metricsReceiver {
+func newMetricsReceiver(cfg *Config, set receiver.Settings, nextConsumer consumer.Metrics) *metricsReceiver {
 	return &metricsReceiver{
 		cfg:          cfg,
 		set:          set,
@@ -55,7 +55,7 @@ func (r *metricsReceiver) Start(ctx context.Context, host component.Host) error 
 		},
 	}
 
-	carbonReceiver, err := fact.CreateMetricsReceiver(ctx, r.set, carbonCfg, r.nextConsumer)
+	carbonReceiver, err := fact.CreateMetrics(ctx, r.set, carbonCfg, r.nextConsumer)
 	if err != nil {
 		return err
 	}

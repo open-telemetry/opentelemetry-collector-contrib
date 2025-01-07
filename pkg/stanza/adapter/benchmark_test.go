@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -32,7 +33,7 @@ func TestEndToEnd(t *testing.T) {
 	cfg.BenchOpConfig.NumHosts = numHosts
 	sink := new(consumertest.LogsSink)
 
-	rcvr, err := f.CreateLogsReceiver(ctx, receivertest.NewNopCreateSettings(), cfg, sink)
+	rcvr, err := f.CreateLogs(ctx, receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
@@ -61,7 +62,7 @@ func (bc benchCase) run(b *testing.B) {
 		cfg.BenchOpConfig.NumHosts = numHosts
 		sink := new(consumertest.LogsSink)
 
-		rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
+		rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 		require.NoError(b, err)
 
 		b.ReportAllocs()
@@ -85,7 +86,6 @@ const (
 )
 
 func BenchmarkEndToEnd(b *testing.B) {
-
 	// These values may have meaningful performance implications, so benchmarks
 	// should cover a variety of values in order to highlight impacts.
 	var (
@@ -197,7 +197,10 @@ func (b *Input) Start(_ operator.Persister) error {
 				return
 			default:
 			}
-			b.Write(ctx, b.entries[n])
+			err := b.Write(ctx, b.entries[n])
+			if err != nil {
+				b.Logger().Error("failed to write entry", zap.Error(err))
+			}
 		}
 	}()
 	return nil

@@ -7,9 +7,9 @@ import (
 	"context"
 	"os"
 
-	"github.com/shirou/gopsutil/v3/common"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/mem"
+	"github.com/shirou/gopsutil/v4/common"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/mem"
 	"go.uber.org/zap"
 )
 

@@ -27,13 +27,13 @@ func NewFactory() processor.Factory {
 	)
 }
 
-func createMetricsProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, c consumer.Metrics) (processor.Metrics, error) {
+func createMetricsProcessor(ctx context.Context, params processor.Settings, cfg component.Config, c consumer.Metrics) (processor.Metrics, error) {
 	rCfg := cfg.(*Config)
 	p := processors.GetOrAdd(cfg, func() component.Component {
 		return newProcessor(params, rCfg)
 	})
 	fn := p.Unwrap().(*wsprocessor).ConsumeMetrics
-	return processorhelper.NewMetricsProcessor(ctx, params, cfg, c,
+	return processorhelper.NewMetrics(ctx, params, cfg, c,
 		fn,
 		processorhelper.WithCapabilities(consumer.Capabilities{
 			MutatesData: false,
@@ -42,13 +42,13 @@ func createMetricsProcessor(ctx context.Context, params processor.CreateSettings
 		processorhelper.WithShutdown(p.Shutdown))
 }
 
-func createLogsProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, c consumer.Logs) (processor.Logs, error) {
+func createLogsProcessor(ctx context.Context, params processor.Settings, cfg component.Config, c consumer.Logs) (processor.Logs, error) {
 	rCfg := cfg.(*Config)
 	p := processors.GetOrAdd(cfg, func() component.Component {
 		return newProcessor(params, rCfg)
 	})
 	fn := p.Unwrap().(*wsprocessor).ConsumeLogs
-	return processorhelper.NewLogsProcessor(ctx, params, cfg, c,
+	return processorhelper.NewLogs(ctx, params, cfg, c,
 		fn,
 		processorhelper.WithCapabilities(consumer.Capabilities{
 			MutatesData: false,
@@ -57,13 +57,13 @@ func createLogsProcessor(ctx context.Context, params processor.CreateSettings, c
 		processorhelper.WithShutdown(p.Shutdown))
 }
 
-func createTraceProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, c consumer.Traces) (processor.Traces, error) {
+func createTraceProcessor(ctx context.Context, params processor.Settings, cfg component.Config, c consumer.Traces) (processor.Traces, error) {
 	rCfg := cfg.(*Config)
 	p := processors.GetOrAdd(cfg, func() component.Component {
 		return newProcessor(params, rCfg)
 	})
 	fn := p.Unwrap().(*wsprocessor).ConsumeTraces
-	return processorhelper.NewTracesProcessor(ctx, params, cfg, c,
+	return processorhelper.NewTraces(ctx, params, cfg, c,
 		fn,
 		processorhelper.WithCapabilities(consumer.Capabilities{
 			MutatesData: false,

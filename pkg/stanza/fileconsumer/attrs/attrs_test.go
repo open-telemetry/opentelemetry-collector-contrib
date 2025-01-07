@@ -18,8 +18,7 @@ func TestResolver(t *testing.T) {
 	t.Parallel()
 
 	for i := 0; i < 64; i++ {
-
-		// Create a 4 bit string where each bit represents the value of a config option
+		// Create a 6 bit string where each bit represents the value of a config option
 		bitString := fmt.Sprintf("%06b", i)
 
 		// Create a resolver with a config that matches the bit pattern of i
@@ -54,7 +53,7 @@ func TestResolver(t *testing.T) {
 				assert.Empty(t, attributes[LogFilePath])
 			}
 
-			// We don't have an independent way to resolve the path, so the only meangingful validate
+			// We don't have an independent way to resolve the path, so the only meaningful validate
 			// is to ensure that the resolver returns nothing vs something based on the config.
 			if r.IncludeFileNameResolved {
 				expectLen++
@@ -86,7 +85,7 @@ func TestResolver(t *testing.T) {
 				assert.Empty(t, attributes[LogFileOwnerGroupName])
 				assert.Empty(t, attributes[LogFileOwnerGroupName])
 			}
-			assert.Equal(t, expectLen, len(attributes))
+			assert.Len(t, attributes, expectLen)
 		})
 	}
 }

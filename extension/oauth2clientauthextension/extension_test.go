@@ -11,8 +11,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/confighttp"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -83,8 +82,7 @@ func TestOAuthClientSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			rc, err := newClientAuthenticator(test.settings, zap.NewNop())
 			if test.shouldError {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), test.expectedError)
+				assert.ErrorContains(t, err, test.expectedError)
 				return
 			}
 			assert.NoError(t, err)
@@ -117,7 +115,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 		settings             *Config
 		expectedClientConfig *clientcredentials.Config
 		shouldError          bool
-		expectedError        *error
+		expectedError        error
 	}{
 		{
 			name: "client_id_file",
@@ -152,7 +150,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 				ClientSecret: "testsecret",
 			},
 			shouldError:   true,
-			expectedError: &errNoClientIDProvided,
+			expectedError: errNoClientIDProvided,
 		},
 		{
 			name: "missing_client_creds_file",
@@ -161,7 +159,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 				ClientSecretFile: testCredsMissingFile,
 			},
 			shouldError:   true,
-			expectedError: &errNoClientSecretProvided,
+			expectedError: errNoClientSecretProvided,
 		},
 	}
 
@@ -171,7 +169,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			cfg, err := rc.clientCredentials.createConfig()
 			if test.shouldError {
 				assert.Error(t, err)
-				assert.ErrorAs(t, err, test.expectedError)
+				assert.ErrorIs(t, err, test.expectedError)
 				return
 			}
 			assert.NoError(t, err)
@@ -275,42 +273,42 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 
 func TestFailContactingOAuth(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("not-json"))
 		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
 	serverURL, err := url.Parse(server.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	oauth2Authenticator, err := newClientAuthenticator(&Config{
 		ClientID:     "dummy",
 		ClientSecret: "ABC",
 		TokenURL:     serverURL.String(),
 	}, zap.NewNop())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Test for gRPC connections
 	credential, err := oauth2Authenticator.perRPCCredentials()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = credential.GetRequestMetadata(context.Background())
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
-	assert.Contains(t, err.Error(), serverURL.String())
+	assert.ErrorContains(t, err, serverURL.String())
 
-	// Test for HTTP connections
-	setting := confighttp.ClientConfig{
-		Endpoint: "http://example.com/",
-		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-			return oauth2Authenticator.roundTripper(next)
-		},
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	baseRoundTripper := (http.RoundTripper)(transport)
+	roundTripper, err := oauth2Authenticator.roundTripper(baseRoundTripper)
+	require.NoError(t, err)
+
+	client := &http.Client{
+		Transport: roundTripper,
 	}
 
-	client, _ := setting.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-	req, err := http.NewRequest("POST", setting.Endpoint, nil)
-	assert.NoError(t, err)
+	req, err := http.NewRequest(http.MethodPost, "http://example.com/", nil)
+	require.NoError(t, err)
 	_, err = client.Do(req)
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
-	assert.Contains(t, err.Error(), serverURL.String())
+	assert.ErrorContains(t, err, serverURL.String())
 }

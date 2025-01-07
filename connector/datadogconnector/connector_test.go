@@ -18,9 +18,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
@@ -29,9 +30,15 @@ var _ component.Component = (*traceToMetricConnector)(nil) // testing that the c
 
 // create test to create a connector, check that basic code compiles
 func TestNewConnector(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
+	assert.NoError(t, err)
+	defer func() {
+		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
+	}()
+
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopCreateSettings()
+	creationParams := connectortest.NewNopSettings()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	traceToMetricsConnector, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -42,9 +49,15 @@ func TestNewConnector(t *testing.T) {
 }
 
 func TestTraceToTraceConnector(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
+	assert.NoError(t, err)
+	defer func() {
+		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
+	}()
+
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopCreateSettings()
+	creationParams := connectortest.NewNopSettings()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	traceToTracesConnector, err := factory.CreateTracesToTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -101,11 +114,18 @@ func fillSpanOne(span ptrace.Span) {
 }
 
 func creteConnector(t *testing.T) (*traceToMetricConnector, *consumertest.MetricsSink) {
+	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
+	assert.NoError(t, err)
+	defer func() {
+		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
+	}()
+
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopCreateSettings()
+	creationParams := connectortest.NewNopSettings()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Traces.ResourceAttributesAsContainerTags = []string{semconv.AttributeCloudAvailabilityZone, semconv.AttributeCloudRegion, "az"}
+	cfg.Traces.BucketInterval = 1 * time.Second
 
 	metricsSink := &consumertest.MetricsSink{}
 
@@ -138,7 +158,7 @@ func TestContainerTags(t *testing.T) {
 	err = connector.ConsumeTraces(context.Background(), trace2)
 	assert.NoError(t, err)
 	// check if the container tags are added to the cache
-	assert.Equal(t, 1, len(connector.containerTagCache.Items()))
+	assert.Len(t, connector.containerTagCache.Items(), 1)
 	count := 0
 	connector.containerTagCache.Items()["my-container-id"].Object.(*sync.Map).Range(func(_, _ any) bool {
 		count++
@@ -155,7 +175,7 @@ func TestContainerTags(t *testing.T) {
 
 	// check if the container tags are added to the metrics
 	metrics := metricsSink.AllMetrics()
-	assert.Equal(t, 1, len(metrics))
+	assert.Len(t, metrics, 1)
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
@@ -168,7 +188,7 @@ func TestContainerTags(t *testing.T) {
 	require.NoError(t, err)
 
 	tags := sp.Stats[0].Tags
-	assert.Equal(t, 3, len(tags))
+	assert.Len(t, tags, 3)
 	assert.ElementsMatch(t, []string{"region:my-region", "zone:my-zone", "az:my-az"}, tags)
 }
 

@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
@@ -255,25 +255,28 @@ func NewInitialPointAdjuster(logger *zap.Logger, gcInterval time.Duration, useCr
 // AdjustMetrics takes a sequence of metrics and adjust their start times based on the initial and
 // previous points in the timeseriesMap.
 func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
-	// By contract metrics will have at least 1 data point, so for sure will have at least one ResourceMetrics.
-
-	job, found := metrics.ResourceMetrics().At(0).Resource().Attributes().Get(semconv.AttributeServiceName)
-	if !found {
-		return errors.New("adjusting metrics without job")
-	}
-
-	instance, found := metrics.ResourceMetrics().At(0).Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
-	if !found {
-		return errors.New("adjusting metrics without instance")
-	}
-	tsm := a.jobsMap.get(job.Str(), instance.Str())
-
-	// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
-	// nothing else can modify the data used for adjustment.
-	tsm.Lock()
-	defer tsm.Unlock()
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
+		_, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
+		if !found {
+			return errors.New("adjusting metrics without job")
+		}
+
+		_, found = rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
+		if !found {
+			return errors.New("adjusting metrics without instance")
+		}
+	}
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		job, _ := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
+		instance, _ := rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
+		tsm := a.jobsMap.get(job.Str(), instance.Str())
+
+		// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
+		// nothing else can modify the data used for adjustment.
+		tsm.Lock()
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
@@ -303,6 +306,7 @@ func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 				}
 			}
 		}
+		tsm.Unlock()
 	}
 	return nil
 }

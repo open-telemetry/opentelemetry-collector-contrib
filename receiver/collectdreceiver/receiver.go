@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -30,7 +31,7 @@ type collectdReceiver struct {
 	defaultAttrsPrefix string
 	nextConsumer       consumer.Metrics
 	obsrecv            *receiverhelper.ObsReport
-	createSettings     receiver.CreateSettings
+	createSettings     receiver.Settings
 	config             *Config
 }
 
@@ -40,8 +41,8 @@ func newCollectdReceiver(
 	cfg *Config,
 	defaultAttrsPrefix string,
 	nextConsumer consumer.Metrics,
-	createSettings receiver.CreateSettings) (receiver.Metrics, error) {
-
+	createSettings receiver.Settings,
+) (receiver.Metrics, error) {
 	r := &collectdReceiver{
 		logger:             logger,
 		nextConsumer:       nextConsumer,
@@ -75,7 +76,7 @@ func (cdr *collectdReceiver) Start(ctx context.Context, host component.Host) err
 	}
 	go func() {
 		if err := cdr.server.Serve(l); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			cdr.createSettings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil
@@ -94,7 +95,7 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ctx = cdr.obsrecv.StartMetricsOp(ctx)
 
-	if r.Method != "POST" {
+	if r.Method != http.MethodPost {
 		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, errors.New("invalid http verb"))
 		w.WriteHeader(http.StatusBadRequest)
 		return

@@ -27,11 +27,12 @@ func createDefaultConfig() component.Config {
 		Server: &OpAMPServer{},
 		Capabilities: Capabilities{
 			ReportsEffectiveConfig: true,
+			ReportsHealth:          true,
 		},
 		PPIDPollInterval: 5 * time.Second,
 	}
 }
 
-func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	return newOpampAgent(cfg.(*Config), set)
 }

@@ -7,11 +7,12 @@ import (
 )
 
 var (
-	Type = component.MustNewType("geoip")
+	Type      = component.MustNewType("geoip")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor"
 )
 
 const (
-	TracesStability  = component.StabilityLevelDevelopment
-	MetricsStability = component.StabilityLevelDevelopment
-	LogsStability    = component.StabilityLevelDevelopment
+	TracesStability  = component.StabilityLevelAlpha
+	MetricsStability = component.StabilityLevelAlpha
+	LogsStability    = component.StabilityLevelAlpha
 )

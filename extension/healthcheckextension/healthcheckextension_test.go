@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 
@@ -175,134 +174,6 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "WithCheckCollectorPipeline",
-			config: Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
-				},
-				CheckCollectorPipeline: checkCollectorPipelineSettings{
-					Enabled:                  true,
-					Interval:                 "5m",
-					ExporterFailureThreshold: 1,
-				},
-				Path: "/",
-			},
-			teststeps: []teststep{
-				{
-					expectedStatusCode: http.StatusInternalServerError,
-				},
-				{
-					step: func(hcExt *healthCheckExtension) error {
-						hcExt.exporter.mu.Lock()
-						defer hcExt.exporter.mu.Unlock()
-						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
-						return hcExt.Ready()
-					},
-					expectedStatusCode: http.StatusOK,
-				},
-				{
-					step:               func(hcExt *healthCheckExtension) error { return hcExt.NotReady() },
-					expectedStatusCode: http.StatusInternalServerError,
-				},
-				{
-					step: func(hcExt *healthCheckExtension) error {
-						hcExt.exporter.mu.Lock()
-						defer hcExt.exporter.mu.Unlock()
-						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
-						return hcExt.Ready()
-					},
-					expectedStatusCode: http.StatusInternalServerError,
-				},
-			},
-		},
-		{
-			name: "WithCustomPathWithCheckCollectorPipeline",
-			config: Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
-				},
-				CheckCollectorPipeline: checkCollectorPipelineSettings{
-					Enabled:                  true,
-					Interval:                 "5m",
-					ExporterFailureThreshold: 1,
-				},
-				Path: "/health",
-			},
-			teststeps: []teststep{
-				{
-					expectedStatusCode: http.StatusInternalServerError,
-				},
-				{
-					step: func(hcExt *healthCheckExtension) error {
-						hcExt.exporter.mu.Lock()
-						defer hcExt.exporter.mu.Unlock()
-						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
-						return hcExt.Ready()
-					},
-					expectedStatusCode: http.StatusOK,
-				},
-				{
-					step:               func(hcExt *healthCheckExtension) error { return hcExt.NotReady() },
-					expectedStatusCode: http.StatusInternalServerError,
-				},
-				{
-					step: func(hcExt *healthCheckExtension) error {
-						hcExt.exporter.mu.Lock()
-						defer hcExt.exporter.mu.Unlock()
-						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
-						return hcExt.Ready()
-					},
-					expectedStatusCode: http.StatusInternalServerError,
-				},
-			},
-		},
-		{
-			name: "WithCustomStaticResponseBodyWithCheckCollectorPipeline",
-			config: Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: testutil.GetAvailableLocalAddress(t),
-				},
-				CheckCollectorPipeline: checkCollectorPipelineSettings{
-					Enabled:                  true,
-					Interval:                 "5m",
-					ExporterFailureThreshold: 1,
-				},
-				Path:         "/",
-				ResponseBody: &ResponseBodySettings{Healthy: "ALL OK", Unhealthy: "NOT OK"},
-			},
-			teststeps: []teststep{
-				{
-					expectedStatusCode: http.StatusInternalServerError,
-					expectedBody:       "NOT OK",
-				},
-				{
-					step: func(hcExt *healthCheckExtension) error {
-						hcExt.exporter.mu.Lock()
-						defer hcExt.exporter.mu.Unlock()
-						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
-						return hcExt.Ready()
-					},
-					expectedStatusCode: http.StatusOK,
-					expectedBody:       "ALL OK",
-				},
-				{
-					step:               func(hcExt *healthCheckExtension) error { return hcExt.NotReady() },
-					expectedStatusCode: http.StatusInternalServerError,
-					expectedBody:       "NOT OK",
-				},
-				{
-					step: func(hcExt *healthCheckExtension) error {
-						hcExt.exporter.mu.Lock()
-						defer hcExt.exporter.mu.Unlock()
-						hcExt.exporter.exporterFailureQueue = append(hcExt.exporter.exporterFailureQueue, viewData())
-						return hcExt.Ready()
-					},
-					expectedStatusCode: http.StatusInternalServerError,
-					expectedBody:       "NOT OK",
-				},
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -411,15 +282,4 @@ func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 	require.NotNil(t, hcExt)
 
 	require.NoError(t, hcExt.Shutdown(context.Background()))
-}
-
-func viewData() *view.Data {
-	currentTime := time.Now()
-	vd := &view.Data{
-		View:  &view.View{Name: exporterFailureView},
-		Start: currentTime.Add(-1 * time.Minute),
-		End:   currentTime,
-		Rows:  nil,
-	}
-	return vd
 }

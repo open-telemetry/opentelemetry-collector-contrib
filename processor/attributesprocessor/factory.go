@@ -38,7 +38,7 @@ func createDefaultConfig() component.Config {
 
 func createTracesProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
@@ -51,7 +51,7 @@ func createTracesProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTracesProcessor(
+	return processorhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -62,7 +62,7 @@ func createTracesProcessor(
 
 func createLogsProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
@@ -77,7 +77,7 @@ func createLogsProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewLogsProcessor(
+	return processorhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
@@ -88,11 +88,10 @@ func createLogsProcessor(
 
 func createMetricsProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
-
 	oCfg := cfg.(*Config)
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
@@ -107,7 +106,7 @@ func createMetricsProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,

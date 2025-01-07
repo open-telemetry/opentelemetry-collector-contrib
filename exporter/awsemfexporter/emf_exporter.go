@@ -27,6 +27,10 @@ const (
 	// OutputDestination Options
 	outputDestinationCloudWatch = "cloudwatch"
 	outputDestinationStdout     = "stdout"
+
+	// AppSignals EMF config
+	appSignalsMetricNamespace    = "ApplicationSignals"
+	appSignalsLogGroupNamePrefix = "/aws/application-signals/"
 )
 
 type emfExporter struct {
@@ -42,7 +46,7 @@ type emfExporter struct {
 }
 
 // newEmfExporter creates a new exporter using exporterhelper
-func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, error) {
+func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error) {
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
 	}
@@ -55,10 +59,23 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 		return nil, err
 	}
 
-	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(set.Logger, awsConfig, set.BuildInfo, config.LogGroupName, config.LogRetention, config.Tags, session, metadata.Type.String())
-	collectorIdentifier, err := uuid.NewRandom()
+	var userAgentExtras []string
+	if config.isAppSignalsEnabled() {
+		userAgentExtras = append(userAgentExtras, "AppSignals")
+	}
 
+	// create CWLogs client with aws session config
+	svcStructuredLog := cwlogs.NewClient(set.Logger,
+		awsConfig,
+		set.BuildInfo,
+		config.LogGroupName,
+		config.LogRetention,
+		config.Tags,
+		session,
+		metadata.Type.String(),
+		cwlogs.WithUserAgentExtras(userAgentExtras...),
+	)
+	collectorIdentifier, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +135,6 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 				fmt.Println(*putLogEvent.InputLogEvent.Message)
 			}
 		} else if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
-
 			emfPusher := emf.getPusher(putLogEvent.StreamKey)
 			if emfPusher != nil {
 				returnError := emfPusher.AddLogEntry(putLogEvent)
@@ -149,7 +165,6 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 }
 
 func (emf *emfExporter) getPusher(key cwlogs.StreamKey) cwlogs.Pusher {
-
 	var ok bool
 	if _, ok = emf.pusherMap[key]; !ok {
 		emf.pusherMap[key] = cwlogs.NewPusher(key, emf.retryCnt, *emf.svcStructuredLog, emf.config.logger)

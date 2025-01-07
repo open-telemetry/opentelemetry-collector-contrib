@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -69,7 +70,7 @@ func TestTelemetryEnabled(t *testing.T) {
 	registry := telemetry.NewRegistry()
 	sink := telemetrytest.NewSenderSink()
 	// preload the sender that the exporter will use
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	sender, loaded := registry.LoadOrStore(set.ID, sink)
 	require.False(t, loaded)
 	require.NotNil(t, sender)
@@ -104,21 +105,21 @@ func BenchmarkForTracesExporter(b *testing.B) {
 	}
 }
 
-func initializeTracesExporter(t testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
-	t.Helper()
+func initializeTracesExporter(tb testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
+	tb.Helper()
 	mconn := new(awsutil.Conn)
-	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopCreateSettings(), mconn, registry)
+	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopSettings(), mconn, registry)
 	if err != nil {
 		panic(err)
 	}
 	return traceExporter
 }
 
-func generateConfig(t testing.TB) *Config {
-	t.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
-	t.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
-	t.Setenv("AWS_DEFAULT_REGION", "us-east-1")
-	t.Setenv("AWS_REGION", "us-east-1")
+func generateConfig(tb testing.TB) *Config {
+	tb.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
+	tb.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
+	tb.Setenv("AWS_DEFAULT_REGION", "us-east-1")
+	tb.Setenv("AWS_REGION", "us-east-1")
 	factory := NewFactory()
 	exporterConfig := factory.CreateDefaultConfig().(*Config)
 	exporterConfig.Region = "us-east-1"
@@ -184,7 +185,7 @@ func constructResource() pcommon.Resource {
 
 func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPStatusCode] = 200
 	endTime := time.Now().Round(time.Second)
@@ -211,7 +212,7 @@ func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 
 func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
 	attributes[conventions.AttributeHTTPStatusCode] = 200

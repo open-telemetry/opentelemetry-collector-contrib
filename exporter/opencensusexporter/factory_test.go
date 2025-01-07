@@ -26,7 +26,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name             string
@@ -152,7 +152,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			set := exportertest.NewNopCreateSettings()
+			set := exportertest.NewNopSettings()
 			tExporter, tErr := createTracesExporter(context.Background(), set, tt.config)
 			checkErrorsAndStartAndShutdown(t, tExporter, tErr, tt.mustFailOnCreate, tt.mustFailOnStart)
 			mExporter, mErr := createMetricsExporter(context.Background(), set, tt.config)

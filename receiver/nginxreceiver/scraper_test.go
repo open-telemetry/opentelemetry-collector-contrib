@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -30,7 +31,7 @@ func TestScraper(t *testing.T) {
 	cfg.Endpoint = nginxMock.URL + "/status"
 	require.NoError(t, component.ValidateConfig(cfg))
 
-	scraper := newNginxScraper(receivertest.NewNopCreateSettings(), cfg)
+	scraper := newNginxScraper(receivertest.NewNopSettings(), cfg)
 
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -52,14 +53,14 @@ func TestScraper(t *testing.T) {
 func TestScraperError(t *testing.T) {
 	nginxMock := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/status" {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, _ = rw.Write([]byte(`Bad status page`))
 			return
 		}
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 	}))
 	t.Run("404", func(t *testing.T) {
-		sc := newNginxScraper(receivertest.NewNopCreateSettings(), &Config{
+		sc := newNginxScraper(receivertest.NewNopSettings(), &Config{
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: nginxMock.URL + "/badpath",
 			},
@@ -71,7 +72,7 @@ func TestScraperError(t *testing.T) {
 	})
 
 	t.Run("parse error", func(t *testing.T) {
-		sc := newNginxScraper(receivertest.NewNopCreateSettings(), &Config{
+		sc := newNginxScraper(receivertest.NewNopSettings(), &Config{
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: nginxMock.URL + "/status",
 			},
@@ -85,7 +86,7 @@ func TestScraperError(t *testing.T) {
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newNginxScraper(receivertest.NewNopCreateSettings(), &Config{
+	sc := newNginxScraper(receivertest.NewNopSettings(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "localhost:8080",
 			TLSSetting: configtls.ClientConfig{
@@ -102,15 +103,15 @@ func TestScraperFailedStart(t *testing.T) {
 func newMockServer(t *testing.T) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/status" {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err := rw.Write([]byte(`Active connections: 291
 server accepts handled requests
  16630948 16630946 31070465
 Reading: 6 Writing: 179 Waiting: 106
 `))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 	}))
 }

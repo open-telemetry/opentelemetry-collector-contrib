@@ -12,20 +12,20 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
 )
 
-type scraper struct {
+type fsScraper struct {
 	include string
 	logger  *zap.Logger
 	mb      *metadata.MetricsBuilder
 }
 
-func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *fsScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	matches, err := doublestar.FilepathGlob(s.include)
 	if err != nil {
 		return pmetric.NewMetrics(), err
@@ -60,8 +60,8 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), nil
 }
 
-func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
-	return &scraper{
+func newScraper(cfg *Config, settings receiver.Settings) *fsScraper {
+	return &fsScraper{
 		include: cfg.Include,
 		logger:  settings.TelemetrySettings.Logger,
 		mb:      metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),

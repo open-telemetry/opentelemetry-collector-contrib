@@ -32,7 +32,7 @@ func TestBadAlertsReceiver(t *testing.T) {
 	cfg.Alerts.TLS = &configtls.ServerConfig{
 		ClientCAFile: "/not/a/file",
 	}
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 
 	_, err := createCombinedLogReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	require.Error(t, err)
@@ -51,7 +51,7 @@ func TestBadStorageExtension(t *testing.T) {
 		PollInterval: time.Minute,
 	}
 
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	lr, err := createCombinedLogReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 

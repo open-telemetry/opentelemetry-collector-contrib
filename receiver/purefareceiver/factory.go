@@ -29,14 +29,15 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ArrayName:    "foobar.example.com",
-		ClientConfig: confighttp.ClientConfig{},
+		Namespace:    "purefa",
+		ClientConfig: confighttp.NewDefaultClientConfig(),
 		Settings: &Settings{
 			ReloadIntervals: &ReloadIntervals{
-				Array:       15 * time.Second,
-				Hosts:       15 * time.Second,
-				Directories: 15 * time.Second,
-				Pods:        15 * time.Second,
-				Volumes:     15 * time.Second,
+				Array:       60 * time.Second,
+				Hosts:       60 * time.Second,
+				Directories: 60 * time.Second,
+				Pods:        60 * time.Second,
+				Volumes:     60 * time.Second,
 			},
 		},
 	}
@@ -44,7 +45,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	rCfg component.Config,
 	next consumer.Metrics,
 ) (receiver.Metrics, error) {

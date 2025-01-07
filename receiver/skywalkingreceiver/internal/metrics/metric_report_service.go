@@ -26,7 +26,7 @@ type Receiver struct {
 }
 
 // NewReceiver creates a new Receiver reference.
-func NewReceiver(nextConsumer consumer.Metrics, set receiver.CreateSettings) (*Receiver, error) {
+func NewReceiver(nextConsumer consumer.Metrics, set receiver.Settings) (*Receiver, error) {
 	grpcObsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              grpcTransport,
@@ -65,5 +65,4 @@ func consumeMetrics(ctx context.Context, collection *agent.JVMMetricCollection, 
 	}
 	pmd := SwMetricsToMetrics(collection)
 	return nextConsumer.ConsumeMetrics(ctx, pmd)
-
 }

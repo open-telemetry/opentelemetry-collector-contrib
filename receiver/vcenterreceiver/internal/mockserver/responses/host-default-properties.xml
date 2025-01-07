@@ -1,83 +1,111 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Body>
-        <RetrievePropertiesResponse xmlns="urn:vim25">
+        <RetrievePropertiesExResponse xmlns="urn:vim25">
             <returnval>
-                <obj type="HostSystem">host-1002</obj>
+                <objects>
+                    <obj type="HostSystem">host-1002</obj>
+                    <propSet>
+                        <name>name</name>
+                        <val xsi:type="xsd:string">esxi-27971.cf5e88ac.australia-southeast1.gve.goog</val>
+                    </propSet>
+                    <propSet>
+                        <name>parent</name>
+                        <val type="ClusterComputeResource" xsi:type="ManagedObjectReference">domain-c8</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.hardware.cpuMhz</name>
+                        <val xsi:type="xsd:int">2593</val>
+                    </propSet>
+                    <propSet>
+                        <name>config.vsanHostConfig.clusterInfo.nodeUuid</name>
+                        <val xsi:type="xsd:string">920136ec-4156-48cc-b5e8-2980dfda2b35</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.hardware.memorySize</name>
+                        <val xsi:type="xsd:long">822763126784</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.hardware.numCpuCores</name>
+                        <val xsi:type="xsd:short">36</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.overallCpuUsage</name>
+                        <val xsi:type="xsd:int">6107</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.overallMemoryUsage</name>
+                        <val xsi:type="xsd:int">140833</val>
+                    </propSet>
                 <propSet>
-                    <name>name</name>
-                    <val xsi:type="xsd:string">esxi-27971.cf5e88ac.australia-southeast1.gve.goog</val>
+                    <name>runtime.powerState</name>
+                    <val xsi:type="HostSystemPowerState">poweredOn</val>
                 </propSet>
                 <propSet>
-                    <name>parent</name>
-                    <val type="ClusterComputeResource" xsi:type="ManagedObjectReference">domain-c8</val>
+                    <name>summary.overallStatus</name>
+                    <val xsi:type="ManagedEntityStatus">green</val>
                 </propSet>
-                <propSet>
-                    <name>summary.hardware.cpuMhz</name>
-                    <val xsi:type="xsd:int">2593</val>
-                </propSet>
-                <propSet>
-                    <name>summary.hardware.memorySize</name>
-                    <val xsi:type="xsd:long">822763126784</val>
-                </propSet>
-                <propSet>
-                    <name>summary.hardware.numCpuCores</name>
-                    <val xsi:type="xsd:short">36</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.overallCpuUsage</name>
-                    <val xsi:type="xsd:int">6107</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.overallMemoryUsage</name>
-                    <val xsi:type="xsd:int">140833</val>
-                </propSet>
-                <propSet>
-                    <name>vm</name>
-                    <val xsi:type="ArrayOfManagedObjectReference">
-                        <ManagedObjectReference type="VirtualMachine" xsi:type="ManagedObjectReference">vm-1040</ManagedObjectReference>
-                        <ManagedObjectReference type="VirtualMachine" xsi:type="ManagedObjectReference">vm-6004</ManagedObjectReference>
-                        <ManagedObjectReference type="VirtualMachine" xsi:type="ManagedObjectReference">vm-template</ManagedObjectReference>
-                    </val>
-                </propSet>
+                    <propSet>
+                        <name>vm</name>
+                        <val xsi:type="ArrayOfManagedObjectReference">
+                            <ManagedObjectReference type="VirtualMachine" xsi:type="ManagedObjectReference">vm-1040</ManagedObjectReference>
+                            <ManagedObjectReference type="VirtualMachine" xsi:type="ManagedObjectReference">vm-6004</ManagedObjectReference>
+                            <ManagedObjectReference type="VirtualMachine" xsi:type="ManagedObjectReference">vm-template</ManagedObjectReference>
+                        </val>
+                    </propSet>
+                </objects>
             </returnval>
             <returnval>
-                <obj type="HostSystem">host-1003</obj>
+                <objects>
+                    <obj type="HostSystem">host-1003</obj>
+                    <propSet>
+                        <name>name</name>
+                        <val xsi:type="xsd:string">esxi-111.europe-southeast1.gve.goog</val>
+                    </propSet>
+                    <propSet>
+                        <name>parent</name>
+                        <val type="ComputeResource" xsi:type="ManagedObjectReference">domain-c9</val>
+                    </propSet>
+                    <propSet>
+                        <name>config.vsanHostConfig.clusterInfo.nodeUuid</name>
+                        <val xsi:type="xsd:string">02a0afaf-94b3-4db9-b2de-b0194a8e1f69</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.hardware.cpuMhz</name>
+                        <val xsi:type="xsd:int">2593</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.hardware.memorySize</name>
+                        <val xsi:type="xsd:long">822763126784</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.hardware.numCpuCores</name>
+                        <val xsi:type="xsd:short">36</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.overallCpuUsage</name>
+                        <val xsi:type="xsd:int">6107</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.overallMemoryUsage</name>
+                        <val xsi:type="xsd:int">140833</val>
+                    </propSet>
                 <propSet>
-                    <name>name</name>
-                    <val xsi:type="xsd:string">esxi-111.europe-southeast1.gve.goog</val>
+                    <name>runtime.powerState</name>
+                    <val xsi:type="HostSystemPowerState">poweredOn</val>
                 </propSet>
                 <propSet>
-                    <name>parent</name>
-                    <val type="ComputeResource" xsi:type="ManagedObjectReference">domain-c9</val>
+                    <name>summary.overallStatus</name>
+                    <val xsi:type="ManagedEntityStatus">green</val>
                 </propSet>
-                <propSet>
-                    <name>summary.hardware.cpuMhz</name>
-                    <val xsi:type="xsd:int">2593</val>
-                </propSet>
-                <propSet>
-                    <name>summary.hardware.memorySize</name>
-                    <val xsi:type="xsd:long">822763126784</val>
-                </propSet>
-                <propSet>
-                    <name>summary.hardware.numCpuCores</name>
-                    <val xsi:type="xsd:short">36</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.overallCpuUsage</name>
-                    <val xsi:type="xsd:int">6107</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.overallMemoryUsage</name>
-                    <val xsi:type="xsd:int">140833</val>
-                </propSet>
-                <propSet>
-                    <name>vm</name>
-                    <val xsi:type="ArrayOfManagedObjectReference">
-                        <ManagedObjectReference type="VirtualMachine" xsi:type="ManagedObjectReference">vm-6005</ManagedObjectReference>
-                    </val>
-                </propSet>
+                    <propSet>
+                        <name>vm</name>
+                        <val xsi:type="ArrayOfManagedObjectReference">
+                            <ManagedObjectReference type="VirtualMachine" xsi:type="ManagedObjectReference">vm-6005</ManagedObjectReference>
+                        </val>
+                    </propSet>
+                </objects>
             </returnval>
-        </RetrievePropertiesResponse>
+        </RetrievePropertiesExResponse>
     </soapenv:Body>
 </soapenv:Envelope>

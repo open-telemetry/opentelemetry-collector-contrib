@@ -40,15 +40,13 @@ func newDefaultConfig() component.Config {
 }
 
 func createTracesExporter(ctx context.Context,
-	set exporter.CreateSettings,
-	cfg component.Config) (exporter.Traces, error) {
+	set exporter.Settings,
+	cfg component.Config,
+) (exporter.Traces, error) {
 	c := cfg.(*Config)
-	te, e := newSSOTracesExporter(c, set)
-	if e != nil {
-		return nil, e
-	}
+	te := newSSOTracesExporter(c, set)
 
-	return exporterhelper.NewTracesExporter(ctx, set, cfg,
+	return exporterhelper.NewTraces(ctx, set, cfg,
 		te.pushTraceData,
 		exporterhelper.WithStart(te.Start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -57,15 +55,13 @@ func createTracesExporter(ctx context.Context,
 }
 
 func createLogsExporter(ctx context.Context,
-	set exporter.CreateSettings,
-	cfg component.Config) (exporter.Logs, error) {
+	set exporter.Settings,
+	cfg component.Config,
+) (exporter.Logs, error) {
 	c := cfg.(*Config)
-	le, e := newLogExporter(c, set)
-	if e != nil {
-		return nil, e
-	}
+	le := newLogExporter(c, set)
 
-	return exporterhelper.NewLogsExporter(ctx, set, cfg,
+	return exporterhelper.NewLogs(ctx, set, cfg,
 		le.pushLogData,
 		exporterhelper.WithStart(le.Start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),

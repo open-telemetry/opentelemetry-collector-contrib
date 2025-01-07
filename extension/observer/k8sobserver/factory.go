@@ -35,7 +35,7 @@ func createDefaultConfig() component.Config {
 // CreateExtension creates the extension based on this config.
 func createExtension(
 	_ context.Context,
-	params extension.CreateSettings,
+	params extension.Settings,
 	cfg component.Config,
 ) (extension.Extension, error) {
 	return newObserver(cfg.(*Config), params)

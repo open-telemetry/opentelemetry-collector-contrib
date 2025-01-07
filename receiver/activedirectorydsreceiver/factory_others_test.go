@@ -14,10 +14,10 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	t.Parallel()
 
-	recv, err := createMetricsReceiver(context.Background(), receiver.CreateSettings{}, &Config{}, &consumertest.MetricsSink{})
+	recv, err := createMetricsReceiver(context.Background(), receiver.Settings{}, &Config{}, &consumertest.MetricsSink{})
 	require.Nil(t, recv)
 	require.ErrorIs(t, err, errReceiverNotSupported)
 }

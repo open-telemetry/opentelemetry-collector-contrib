@@ -31,12 +31,12 @@ func NewFactory() processor.Factory {
 
 func createLogsProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {
 	processor := newsumologicProcessor(set, cfg.(*Config))
-	return processorhelper.NewLogsProcessor(
+	return processorhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
@@ -49,12 +49,12 @@ func createLogsProcessor(
 
 func createMetricsProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
 	processor := newsumologicProcessor(set, cfg.(*Config))
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -67,12 +67,12 @@ func createMetricsProcessor(
 
 func createTracesProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
 	processor := newsumologicProcessor(set, cfg.(*Config))
-	return processorhelper.NewTracesProcessor(
+	return processorhelper.NewTraces(
 		ctx,
 		set,
 		cfg,

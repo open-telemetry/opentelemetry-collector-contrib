@@ -19,12 +19,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 )
 
-func TestCreateLogsReceiver(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	createReceiver := createLogsReceiverFunc(fakeDBConnect, mkFakeClient)
 	ctx := context.Background()
 	receiver, err := createReceiver(
 		ctx,
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		&Config{
 			Config: sqlquery.Config{
 				ControllerConfig: scraperhelper.ControllerConfig{
@@ -48,12 +48,12 @@ func TestCreateLogsReceiver(t *testing.T) {
 	require.NoError(t, receiver.Shutdown(ctx))
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	createReceiver := createMetricsReceiverFunc(fakeDBConnect, mkFakeClient)
 	ctx := context.Background()
 	receiver, err := createReceiver(
 		ctx,
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		&Config{
 			Config: sqlquery.Config{
 				ControllerConfig: scraperhelper.ControllerConfig{

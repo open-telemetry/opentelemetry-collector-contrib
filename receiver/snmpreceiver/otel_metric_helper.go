@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/metadata"
 )
 
 // generalResourceKey is the resource key for the no general "no attribute" resource
@@ -80,11 +82,11 @@ type otelMetricHelper struct {
 	// This is the timestamp that should be added to all created data points
 	dataPointTime pcommon.Timestamp
 	// This is used so that we can put the proper version on the scope metrics
-	settings receiver.CreateSettings
+	settings receiver.Settings
 }
 
 // newOtelMetricHelper returns a new otelMetricHelper with an initialized master Metrics
-func newOTELMetricHelper(settings receiver.CreateSettings, scraperStartTime pcommon.Timestamp) *otelMetricHelper {
+func newOTELMetricHelper(settings receiver.Settings, scraperStartTime pcommon.Timestamp) *otelMetricHelper {
 	metrics := pmetric.NewMetrics()
 	omh := otelMetricHelper{
 		metrics:              metrics,
@@ -111,7 +113,7 @@ func (h *otelMetricHelper) createResource(resourceKey string, resourceAttributes
 		resourceMetrics.Resource().Attributes().PutStr(key, value)
 	}
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
-	scopeMetrics.Scope().SetName("otelcol/snmpreceiver")
+	scopeMetrics.Scope().SetName(metadata.ScopeName)
 	scopeMetrics.Scope().SetVersion(h.settings.BuildInfo.Version)
 	h.resourcesByKey[resourceKey] = &resourceMetrics
 	h.metricsByResource[resourceKey] = map[string]*pmetric.Metric{}

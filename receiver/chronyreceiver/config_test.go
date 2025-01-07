@@ -4,7 +4,6 @@
 package chronyreceiver
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -31,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "custom").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	scs := scraperhelper.NewDefaultControllerConfig()
 	scs.Timeout = 10 * time.Second
@@ -90,7 +89,7 @@ func TestValidate(t *testing.T) {
 		{
 			scenario: "Valid unix path",
 			conf: Config{
-				Endpoint: fmt.Sprintf("unix://%s", t.TempDir()),
+				Endpoint: "unix://" + t.TempDir(),
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Minute,
 					InitialDelay:       time.Second,

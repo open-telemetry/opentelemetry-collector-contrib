@@ -11,6 +11,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -36,21 +37,20 @@ func (i *Input) Stop() error {
 	return i.fileConsumer.Stop()
 }
 
-func (i *Input) emit(ctx context.Context, token []byte, attrs map[string]any) error {
-	if len(token) == 0 {
+func (i *Input) emit(ctx context.Context, token emit.Token) error {
+	if len(token.Body) == 0 {
 		return nil
 	}
 
-	ent, err := i.NewEntry(i.toBody(token))
+	ent, err := i.NewEntry(i.toBody(token.Body))
 	if err != nil {
 		return fmt.Errorf("create entry: %w", err)
 	}
 
-	for k, v := range attrs {
+	for k, v := range token.Attributes {
 		if err := ent.Set(entry.NewAttributeField(k), v); err != nil {
 			i.Logger().Error("set attribute", zap.Error(err))
 		}
 	}
-	i.Write(ctx, ent)
-	return nil
+	return i.Write(ctx, ent)
 }

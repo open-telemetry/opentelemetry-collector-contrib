@@ -41,7 +41,6 @@ func TestFilterClusters(t *testing.T) {
 	ic, err := filterClusters(clusters, includeProject)
 	require.NoError(t, err)
 	require.Equal(t, []mongodbatlas.Cluster{{Name: "cluster1", ID: "1"}, {Name: "cluster3", ID: "3"}}, ic)
-
 }
 
 func TestDefaultLoggingConfig(t *testing.T) {
@@ -49,7 +48,7 @@ func TestDefaultLoggingConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Logs.Enabled = true
 
-	recv, err := createCombinedLogReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	recv, err := createCombinedLogReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, recv, "receiver creation failed")
 
@@ -64,7 +63,7 @@ func TestNoLoggingEnabled(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	recv, err := createCombinedLogReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	recv, err := createCombinedLogReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	require.Error(t, err)
 	require.Nil(t, recv, "receiver creation failed")
 }

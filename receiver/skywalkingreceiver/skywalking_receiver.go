@@ -13,6 +13,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -48,7 +49,7 @@ type swReceiver struct {
 
 	goroutines sync.WaitGroup
 
-	settings receiver.CreateSettings
+	settings receiver.Settings
 
 	traceReceiver *trace.Receiver
 
@@ -60,7 +61,7 @@ type swReceiver struct {
 // newSkywalkingReceiver creates a TracesReceiver that receives traffic as a Skywalking collector
 func newSkywalkingReceiver(
 	config *configuration,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 ) *swReceiver {
 	return &swReceiver{
 		config:   config,
@@ -149,7 +150,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		go func() {
 			defer sr.goroutines.Done()
 			if errHTTP := sr.collectorServer.Serve(cln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-				sr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 			}
 		}()
 	}
@@ -184,7 +185,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		go func() {
 			defer sr.goroutines.Done()
 			if errGrpc := sr.grpc.Serve(gln); !errors.Is(errGrpc, grpc.ErrServerStopped) && errGrpc != nil {
-				sr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errGrpc))
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errGrpc))
 			}
 		}()
 	}

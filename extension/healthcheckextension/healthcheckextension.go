@@ -8,11 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/healthcheck"
@@ -24,14 +23,12 @@ type healthCheckExtension struct {
 	state    *healthcheck.HealthCheck
 	server   *http.Server
 	stopCh   chan struct{}
-	exporter *healthCheckExporter
 	settings component.TelemetrySettings
 }
 
-var _ extension.PipelineWatcher = (*healthCheckExtension)(nil)
+var _ extensioncapabilities.PipelineWatcher = (*healthCheckExtension)(nil)
 
 func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) error {
-
 	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
 	ln, err := hc.config.ToListener(ctx)
 	if err != nil {
@@ -43,58 +40,19 @@ func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) 
 		return err
 	}
 
-	if !hc.config.CheckCollectorPipeline.Enabled {
-		// Mount HC handler
-		mux := http.NewServeMux()
-		mux.Handle(hc.config.Path, hc.baseHandler())
-		hc.server.Handler = mux
-		hc.stopCh = make(chan struct{})
-		go func() {
-			defer close(hc.stopCh)
+	// Mount HC handler
+	mux := http.NewServeMux()
+	mux.Handle(hc.config.Path, hc.baseHandler())
+	hc.server.Handler = mux
+	hc.stopCh = make(chan struct{})
+	go func() {
+		defer close(hc.stopCh)
 
-			// The listener ownership goes to the server.
-			if err = hc.server.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
-				hc.settings.ReportStatus(component.NewFatalErrorEvent(err))
-			}
-		}()
-	} else {
-		// collector pipeline health check
-		hc.exporter = newHealthCheckExporter()
-		view.RegisterExporter(hc.exporter)
-
-		interval, err := time.ParseDuration(hc.config.CheckCollectorPipeline.Interval)
-		if err != nil {
-			return err
+		// The listener ownership goes to the server.
+		if err = hc.server.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
-
-		// ticker used by collector pipeline health check for rotation
-		ticker := time.NewTicker(time.Second)
-
-		mux := http.NewServeMux()
-		mux.Handle(hc.config.Path, hc.checkCollectorPipelineHandler())
-		hc.server.Handler = mux
-		hc.stopCh = make(chan struct{})
-		go func() {
-			defer close(hc.stopCh)
-			defer view.UnregisterExporter(hc.exporter)
-
-			go func() {
-				for {
-					select {
-					case <-ticker.C:
-						hc.exporter.rotate(interval)
-					case <-hc.stopCh:
-						return
-					}
-				}
-			}()
-
-			if errHTTP := hc.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-				hc.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
-			}
-
-		}()
-	}
+	}()
 
 	return nil
 }
@@ -113,27 +71,6 @@ func (hc *healthCheckExtension) baseHandler() http.Handler {
 		})
 	}
 	return hc.state.Handler()
-}
-
-// new handler function used for check collector pipeline
-func (hc *healthCheckExtension) checkCollectorPipelineHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		if hc.check() && hc.state.Get() == healthcheck.Ready {
-			w.WriteHeader(http.StatusOK)
-			if hc.config.ResponseBody != nil {
-				_, _ = w.Write([]byte(hc.config.ResponseBody.Healthy))
-			}
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-			if hc.config.ResponseBody != nil {
-				_, _ = w.Write([]byte(hc.config.ResponseBody.Unhealthy))
-			}
-		}
-	})
-}
-
-func (hc *healthCheckExtension) check() bool {
-	return hc.exporter.checkHealthStatus(hc.config.CheckCollectorPipeline.ExporterFailureThreshold)
 }
 
 func (hc *healthCheckExtension) Shutdown(context.Context) error {

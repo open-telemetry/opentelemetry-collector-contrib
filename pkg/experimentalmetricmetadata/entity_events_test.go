@@ -19,6 +19,7 @@ func Test_Entity_State(t *testing.T) {
 	event.ID().PutStr("k8s.pod.uid", "123")
 	state := event.SetEntityState()
 	state.SetEntityType("k8s.pod")
+	state.SetInterval(1 * time.Hour)
 	state.Attributes().PutStr("label1", "value1")
 
 	actual := slice.At(0)
@@ -34,6 +35,8 @@ func Test_Entity_State(t *testing.T) {
 	assert.Equal(t, "value1", v.Str())
 
 	assert.Equal(t, "k8s.pod", actual.EntityStateDetails().EntityType())
+
+	assert.Equal(t, 1*time.Hour, actual.EntityStateDetails().Interval())
 }
 
 func Test_Entity_Delete(t *testing.T) {
@@ -88,7 +91,7 @@ func Test_EntityEventsSlice_ConvertAndMoveToLogs(t *testing.T) {
 	// Check the Scope
 	v, ok := scopeLogs.Scope().Attributes().Get(semconvOtelEntityEventAsScope)
 	assert.True(t, ok)
-	assert.Equal(t, true, v.Bool())
+	assert.True(t, v.Bool())
 
 	records := scopeLogs.LogRecords()
 	assert.Equal(t, 2, records.Len())

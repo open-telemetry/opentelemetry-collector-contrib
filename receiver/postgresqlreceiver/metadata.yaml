@@ -1,5 +1,4 @@
 type: postgresql
-scope_name: otelcol/postgresqlreceiver
 
 status:
   class: receiver
@@ -135,11 +134,11 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
       value_type: int
-    unit: 1
+    unit: "1"
   postgresql.blocks_read:
     enabled: true
     description: The number of blocks read.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -148,7 +147,7 @@ metrics:
   postgresql.commits:
     enabled: true
     description: The number of commits.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -179,7 +178,7 @@ metrics:
   postgresql.backends:
     enabled: true
     description: The number of backends.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: false
@@ -193,7 +192,7 @@ metrics:
   postgresql.rows:
     enabled: true
     description: The number of rows in the database.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: false
@@ -216,7 +215,7 @@ metrics:
   postgresql.operations:
     enabled: true
     description: The number of db row operations.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -232,7 +231,7 @@ metrics:
   postgresql.rollbacks:
     enabled: true
     description: The number of rollbacks.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -311,6 +310,61 @@ metrics:
       value_type: double
     extended_documentation: |
       This metric requires WAL to be enabled with at least one replica.
-  
+  postgresql.tup_updated:
+    enabled: false
+    description: Number of rows updated by queries in the database.
+    unit: "{tup_updated}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative  
+  postgresql.tup_returned:
+    enabled: false
+    description: Number of rows returned by queries in the database.
+    unit: "{tup_returned}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative  
+  postgresql.tup_fetched:
+    enabled: false
+    description: Number of rows fetched by queries in the database.
+    unit: "{tup_fetched}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative  
+  postgresql.tup_inserted:
+    enabled: false
+    description: Number of rows inserted by queries in the database.
+    unit: "{tup_inserted}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative  
+  postgresql.tup_deleted:
+    enabled: false
+    description: Number of rows deleted by queries in the database.
+    unit: "{tup_deleted}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  postgresql.blks_hit:
+    enabled: false
+    description: Number of times disk blocks were found already in the buffer cache. 
+    unit: "{blks_hit}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  postgresql.blks_read:
+    enabled: false
+    description: Number of disk blocks read in this database. 
+    unit: "{blks_read}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative                             
 tests:
   config:

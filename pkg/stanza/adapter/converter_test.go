@@ -4,20 +4,15 @@
 package adapter
 
 import (
-	"context"
 	"fmt"
 	"sort"
 	"strconv"
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
@@ -40,10 +35,6 @@ func BenchmarkConvertComplex(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		convert(ent)
 	}
-}
-
-func complexEntries(count int) []*entry.Entry {
-	return complexEntriesForNDifferentHosts(count, 1)
 }
 
 func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
@@ -392,161 +383,23 @@ func TestAllConvertedEntriesScopeGrouping(t *testing.T) {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			t.Parallel()
 
-			set := componenttest.NewNopTelemetrySettings()
-			set.Logger = zaptest.NewLogger(t)
-			converter := NewConverter(set)
-			converter.Start()
-			defer converter.Stop()
+			entries := complexEntriesForNDifferentHostsMDifferentScopes(100, 1, tc.numberOFScopes)
 
-			go func() {
-				entries := complexEntriesForNDifferentHostsMDifferentScopes(100, 1, tc.numberOFScopes)
-				assert.NoError(t, converter.Batch(entries))
-			}()
+			pLogs := ConvertEntries(entries)
 
-			var (
-				timeoutTimer = time.NewTimer(10 * time.Second)
-				ch           = converter.OutChannel()
-			)
-			defer timeoutTimer.Stop()
+			rLogs := pLogs.ResourceLogs()
+			rLog := rLogs.At(0)
 
-			select {
-			case pLogs, ok := <-ch:
-				if !ok {
-					break
-				}
+			ills := rLog.ScopeLogs()
+			require.Equal(t, ills.Len(), tc.numberOFScopes)
 
-				rLogs := pLogs.ResourceLogs()
-				rLog := rLogs.At(0)
-
-				ills := rLog.ScopeLogs()
-				require.Equal(t, ills.Len(), tc.numberOFScopes)
-
-				for i := 0; i < tc.numberOFScopes; i++ {
-					sl := ills.At(i)
-					require.Equal(t, sl.Scope().Name(), fmt.Sprintf("scope-%d", i%tc.numberOFScopes))
-					require.Equal(t, sl.LogRecords().Len(), tc.logsPerScope)
-				}
-
-			case <-timeoutTimer.C:
-				break
+			for i := 0; i < tc.numberOFScopes; i++ {
+				sl := ills.At(i)
+				require.Equal(t, sl.Scope().Name(), fmt.Sprintf("scope-%d", i%tc.numberOFScopes))
+				require.Equal(t, sl.LogRecords().Len(), tc.logsPerScope)
 			}
 		})
 	}
-}
-
-func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
-	t.Parallel()
-
-	testcases := []struct {
-		entries       int
-		maxFlushCount uint
-	}{
-		{
-			entries:       10,
-			maxFlushCount: 10,
-		},
-		{
-			entries:       10,
-			maxFlushCount: 3,
-		},
-		{
-			entries:       100,
-			maxFlushCount: 20,
-		},
-	}
-
-	for i, tc := range testcases {
-		tc := tc
-
-		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			t.Parallel()
-
-			set := componenttest.NewNopTelemetrySettings()
-			set.Logger = zaptest.NewLogger(t)
-			converter := NewConverter(set)
-			converter.Start()
-			defer converter.Stop()
-
-			go func() {
-				entries := complexEntries(tc.entries)
-				for from := 0; from < tc.entries; from += int(tc.maxFlushCount) {
-					to := from + int(tc.maxFlushCount)
-					if to > tc.entries {
-						to = tc.entries
-					}
-					assert.NoError(t, converter.Batch(entries[from:to]))
-				}
-			}()
-
-			var (
-				actualCount  int
-				timeoutTimer = time.NewTimer(10 * time.Second)
-				ch           = converter.OutChannel()
-			)
-			defer timeoutTimer.Stop()
-
-		forLoop:
-			for {
-				if tc.entries == actualCount {
-					break
-				}
-
-				select {
-				case pLogs, ok := <-ch:
-					if !ok {
-						break forLoop
-					}
-
-					rLogs := pLogs.ResourceLogs()
-					require.Equal(t, 1, rLogs.Len())
-
-					rLog := rLogs.At(0)
-					ills := rLog.ScopeLogs()
-					require.Equal(t, 1, ills.Len())
-
-					sl := ills.At(0)
-
-					actualCount += sl.LogRecords().Len()
-
-					assert.LessOrEqual(t, uint(sl.LogRecords().Len()), tc.maxFlushCount,
-						"Received more log records in one flush than configured by maxFlushCount",
-					)
-
-				case <-timeoutTimer.C:
-					break forLoop
-				}
-			}
-
-			assert.Equal(t, tc.entries, actualCount,
-				"didn't receive expected number of entries after conversion",
-			)
-		})
-	}
-}
-
-func TestConverterCancelledContextCancellsTheFlush(t *testing.T) {
-	set := componenttest.NewNopTelemetrySettings()
-	set.Logger = zaptest.NewLogger(t)
-	converter := NewConverter(set)
-	converter.Start()
-	defer converter.Stop()
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	go func() {
-		defer wg.Done()
-		pLogs := plog.NewLogs()
-		ills := pLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
-
-		lr := convert(complexEntry())
-		lr.CopyTo(ills.LogRecords().AppendEmpty())
-
-		assert.Error(t, converter.flush(ctx, pLogs))
-	}()
-	wg.Wait()
 }
 
 func TestConvertMetadata(t *testing.T) {
@@ -566,6 +419,7 @@ func TestConvertMetadata(t *testing.T) {
 			"int":    123,
 			"double": 12.34,
 			"string": "hello",
+			"empty":  nil,
 		},
 	}
 	e.Body = true
@@ -595,7 +449,7 @@ func TestConvertMetadata(t *testing.T) {
 	require.True(t, ok)
 
 	mapVal := attVal.Map()
-	require.Equal(t, 4, mapVal.Len())
+	require.Equal(t, 5, mapVal.Len())
 
 	attVal, ok = mapVal.Get("bool")
 	require.True(t, ok)
@@ -612,6 +466,10 @@ func TestConvertMetadata(t *testing.T) {
 	attVal, ok = mapVal.Get("string")
 	require.True(t, ok)
 	require.Equal(t, "hello", attVal.Str())
+
+	attVal, ok = mapVal.Get("empty")
+	require.True(t, ok)
+	require.Equal(t, pcommon.ValueTypeEmpty, attVal.Type())
 
 	bod := result.Body()
 	require.Equal(t, pcommon.ValueTypeBool, bod.Type())
@@ -890,7 +748,8 @@ func TestConvertTrace(t *testing.T) {
 		},
 		TraceFlags: []byte{
 			0x01,
-		}})
+		},
+	})
 
 	require.Equal(t, pcommon.TraceID(
 		[16]byte{
@@ -911,7 +770,8 @@ func TestConvertTraceEmptyFlags(t *testing.T) {
 		SpanID: []byte{
 			0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		},
-		TraceFlags: []byte{}})
+		TraceFlags: []byte{},
+	})
 
 	require.Equal(t, pcommon.TraceID(
 		[16]byte{
@@ -939,55 +799,17 @@ func BenchmarkConverter(b *testing.B) {
 	for _, wc := range workerCounts {
 		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				set := componenttest.NewNopTelemetrySettings()
-				set.Logger = zaptest.NewLogger(b)
-				converter := NewConverter(set, withWorkerCount(wc))
-				converter.Start()
-				defer converter.Stop()
-
 				b.ReportAllocs()
 
-				go func() {
-					for from := 0; from < entryCount; from += int(batchSize) {
-						to := from + int(batchSize)
-						if to > entryCount {
-							to = entryCount
-						}
-						assert.NoError(b, converter.Batch(entries[from:to]))
+				for from := 0; from < entryCount; from += int(batchSize) {
+					to := from + int(batchSize)
+					if to > entryCount {
+						to = entryCount
 					}
-				}()
-
-				var (
-					timeoutTimer = time.NewTimer(10 * time.Second)
-					ch           = converter.OutChannel()
-				)
-				defer timeoutTimer.Stop()
-
-				var n int
-			forLoop:
-				for {
-					if n == entryCount {
-						break
-					}
-
-					select {
-					case pLogs, ok := <-ch:
-						if !ok {
-							break forLoop
-						}
-
-						rLogs := pLogs.ResourceLogs()
-						require.Equal(b, hostsCount, rLogs.Len())
-						n += pLogs.LogRecordCount()
-
-					case <-timeoutTimer.C:
-						break forLoop
-					}
+					pLogs := ConvertEntries(entries[from:to])
+					rLogs := pLogs.ResourceLogs()
+					require.Equal(b, hostsCount, rLogs.Len())
 				}
-
-				assert.Equal(b, entryCount, n,
-					"didn't receive expected number of entries after conversion",
-				)
 			}
 		})
 	}

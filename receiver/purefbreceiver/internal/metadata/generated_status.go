@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	Type = component.MustNewType("purefb")
+	Type      = component.MustNewType("purefb")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver"
 )
 
 const (
-	MetricsStability = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelAlpha
 )

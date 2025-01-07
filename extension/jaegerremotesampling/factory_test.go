@@ -18,9 +18,9 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	// prepare and test
 	expected := &Config{
-		HTTPServerConfig: &confighttp.ServerConfig{Endpoint: "0.0.0.0:5778"},
+		HTTPServerConfig: &confighttp.ServerConfig{Endpoint: "localhost:5778"},
 		GRPCServerConfig: &configgrpc.ServerConfig{NetAddr: confignet.AddrConfig{
-			Endpoint:  "0.0.0.0:14250",
+			Endpoint:  "localhost:14250",
 			Transport: confignet.TransportTypeTCP,
 		}},
 	}
@@ -33,10 +33,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateExtension(t *testing.T) {
+func TestCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
-	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
 }

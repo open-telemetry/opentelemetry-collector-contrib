@@ -4,7 +4,6 @@
 package datasetexporter
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -12,32 +11,11 @@ import (
 
 	"github.com/scalyr/dataset-go/pkg/api/add_events"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
-
-func TestCreateTracesExporter(t *testing.T) {
-	ctx := context.Background()
-	createSettings := exportertest.NewNopCreateSettings()
-	tests := createExporterTests()
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(*testing.T) {
-			logs, err := createTracesExporter(ctx, createSettings, tt.config)
-
-			if err == nil {
-				assert.Nil(t, tt.expectedError)
-				assert.NotNil(t, logs)
-			} else {
-				assert.Equal(t, tt.expectedError.Error(), err.Error())
-				assert.Nil(t, logs)
-			}
-		})
-	}
-}
 
 func generateTEvent1Raw() *add_events.Event {
 	return &add_events.Event{
@@ -455,29 +433,41 @@ func TestBuildEventsFromTracesFromTwoSpansSameResourceOneDifferent(t *testing.T)
 	assert.Equal(t, expected, was)
 }
 
-var span0Id = [8]byte{1, 1, 1, 1, 1, 1, 1, 1}
-var span00Id = [8]byte{1, 2, 1, 1, 1, 1, 1, 1}
-var span01Id = [8]byte{1, 3, 1, 1, 1, 1, 1, 1}
-var span000Id = [8]byte{1, 2, 2, 1, 1, 1, 1, 1}
-var span001Id = [8]byte{1, 2, 3, 1, 1, 1, 1, 1}
-var span002Id = [8]byte{1, 2, 4, 1, 1, 1, 1, 1}
+var (
+	span0Id   = [8]byte{1, 1, 1, 1, 1, 1, 1, 1}
+	span00Id  = [8]byte{1, 2, 1, 1, 1, 1, 1, 1}
+	span01Id  = [8]byte{1, 3, 1, 1, 1, 1, 1, 1}
+	span000Id = [8]byte{1, 2, 2, 1, 1, 1, 1, 1}
+	span001Id = [8]byte{1, 2, 3, 1, 1, 1, 1, 1}
+	span002Id = [8]byte{1, 2, 4, 1, 1, 1, 1, 1}
+)
 
-var span1Id = [8]byte{2, 2, 2, 2, 2, 2, 2, 2}
-var span10Id = [8]byte{2, 3, 2, 2, 2, 2, 2, 2}
+var (
+	span1Id  = [8]byte{2, 2, 2, 2, 2, 2, 2, 2}
+	span10Id = [8]byte{2, 3, 2, 2, 2, 2, 2, 2}
+)
 
-var span21Id = [8]byte{3, 3, 3, 3, 3, 3, 3, 3}
-var span22Id = [8]byte{3, 4, 3, 3, 3, 3, 3, 3}
+var (
+	span21Id = [8]byte{3, 3, 3, 3, 3, 3, 3, 3}
+	span22Id = [8]byte{3, 4, 3, 3, 3, 3, 3, 3}
+)
 
-var span21PId = [8]byte{3, 5, 3, 3, 3, 3, 3, 3}
-var span22PId = [8]byte{3, 6, 3, 3, 3, 3, 3, 3}
+var (
+	span21PId = [8]byte{3, 5, 3, 3, 3, 3, 3, 3}
+	span22PId = [8]byte{3, 6, 3, 3, 3, 3, 3, 3}
+)
 
-var span3Id = [8]byte{4, 4, 4, 4, 4, 4, 4, 4}
-var span30Id = [8]byte{4, 5, 4, 4, 4, 4, 4, 4}
+var (
+	span3Id  = [8]byte{4, 4, 4, 4, 4, 4, 4, 4}
+	span30Id = [8]byte{4, 5, 4, 4, 4, 4, 4, 4}
+)
 
-var trace0Id = [16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-var trace1Id = [16]byte{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}
-var trace2Id = [16]byte{3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3}
-var trace3Id = [16]byte{4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4}
+var (
+	trace0Id = [16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+	trace1Id = [16]byte{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}
+	trace2Id = [16]byte{3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3}
+	trace3Id = [16]byte{4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4}
+)
 
 func generateTracesTreesAndOrphans() ptrace.Traces {
 	td := ptrace.NewTraces()

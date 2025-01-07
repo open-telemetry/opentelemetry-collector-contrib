@@ -40,8 +40,7 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	}
 
 	if !filtered {
-		t.Write(ctx, entry)
-		return nil
+		return t.Write(ctx, entry)
 	}
 
 	i, err := randInt(rand.Reader, upperBound)
@@ -50,7 +49,10 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	}
 
 	if i.Cmp(t.dropCutoff) >= 0 {
-		t.Write(ctx, entry)
+		err := t.Write(ctx, entry)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

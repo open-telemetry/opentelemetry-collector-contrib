@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver/internal/metadata"
@@ -31,7 +31,7 @@ type riakScraper struct {
 }
 
 // newScraper creates a new scraper
-func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *riakScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings receiver.Settings) *riakScraper {
 	return &riakScraper{
 		logger:   logger,
 		cfg:      cfg,

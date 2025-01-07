@@ -1,0 +1,182 @@
+  sum:
+  sum/custom_description:
+    spans:
+      my.span.sum:
+        description: My span record sum.
+        source_attribute: my.attribute
+    spanevents:
+      my.spanevent.sum:
+        description: My spanevent sum.
+        source_attribute: my.attribute
+    metrics:
+      my.metric.sum:
+        description: My metric sum.
+        source_attribute: my.attribute
+    datapoints:
+      my.datapoint.sum:
+        description: My datapoint sum.
+        source_attribute: my.attribute
+    logs:
+      my.logrecord.sum:
+        description: My log sum.
+        source_attribute: my.attribute
+  sum/custom_metric:
+    spans:
+      my.span.sum:
+        source_attribute: my.attribute
+    spanevents:
+      my.spanevent.sum:
+        source_attribute: my.attribute
+    metrics:
+      my.metric.sum:
+        source_attribute: my.attribute
+    datapoints:
+      my.datapoint.sum:
+        source_attribute: my.attribute
+    logs:
+      my.logrecord.sum:
+        source_attribute: my.attribute
+  sum/condition:
+    spans:
+      my.span.sum:
+        source_attribute: my.attribute
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-s")
+    spanevents:
+      my.spanevent.sum:
+        source_attribute: my.attribute
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-e")
+    metrics:
+      my.metric.sum:
+        source_attribute: my.attribute
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-m")
+    datapoints:
+      my.datapoint.sum:
+        source_attribute: my.attribute
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-d")
+    logs:
+      my.logrecord.sum:
+        source_attribute: my.attribute
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-l")
+  sum/multiple_condition:
+    spans:
+      my.span.sum:
+        source_attribute: my.attribute
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-s")
+          - IsMatch(resource.attributes["foo"], "bar-s")
+    spanevents:
+      my.spanevent.sum:
+        source_attribute: my.attribute
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-e")
+          - IsMatch(resource.attributes["foo"], "bar-e")
+    metrics:
+      my.metric.sum:
+        source_attribute: my.attribute
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-m")
+          - IsMatch(resource.attributes["foo"], "bar-m")
+    datapoints:
+      my.datapoint.sum:
+        source_attribute: my.attribute
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-d")
+          - IsMatch(resource.attributes["foo"], "bar-d")
+    logs:
+      my.logrecord.sum:
+        source_attribute: my.attribute
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-l")
+          - IsMatch(resource.attributes["foo"], "bar-l")
+  sum/attribute:
+    spans:
+      my.span.sum:
+        source_attribute: my.attribute
+        attributes:
+          - key: env
+    spanevents:
+      my.spanevent.sum:
+        source_attribute: my.attribute
+        attributes:
+          - key: env
+    metrics:
+      my.metric.sum:
+        source_attribute: my.attribute
+        # Metrics do not have attributes.
+    datapoints:
+      my.datapoint.sum:
+        source_attribute: my.attribute
+        attributes:
+          - key: env
+    logs:
+      my.logrecord.sum:
+        source_attribute: my.attribute
+        attributes:
+          - key: env
+  sum/multiple_metrics:
+    spans:
+      my.span.sum:
+        description: My span sum.
+        source_attribute: my.attribute
+      limited.span.sum:
+        description: Limited span sum.
+        source_attribute: my.attribute
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-s")
+        attributes:
+          - key: env
+          - key: component
+            default_value: other
+    spanevents:
+      my.spanevent.sum:
+        description: My span event sum.
+        source_attribute: my.attribute
+      limited.spanevent.sum:
+        description: Limited span event sum.
+        source_attribute: my.attribute
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-e")
+        attributes:
+          - key: env
+          - key: component
+            default_value: other
+    metrics:
+      my.metric.sum:
+        description: My metric sum.
+        source_attribute: my.attribute
+      limited.metric.sum:
+        description: Limited metric sum.
+        source_attribute: my.attribute
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-m")
+    datapoints:
+      my.datapoint.sum:
+        description: My data point sum.
+        source_attribute: my.attribute
+      limited.datapoint.sum:
+        description: Limited data point sum.
+        source_attribute: my.attribute
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-d")
+        attributes:
+          - key: env
+          - key: component
+            default_value: other
+    logs:
+      my.logrecord.sum:
+        description: My log record sum.
+        source_attribute: my.attribute
+      limited.logrecord.sum:
+        description: Limited log record sum.
+        source_attribute: my.attribute
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-l")
+        attributes:
+          - key: env
+          - key: component
+            default_value: other

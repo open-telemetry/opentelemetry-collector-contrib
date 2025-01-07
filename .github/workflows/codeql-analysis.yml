@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - '**/README.md'
+      - "**/README.md"
 
 jobs:
   CodeQL-Build:
@@ -14,13 +14,13 @@ jobs:
       # Force CodeQL to run the extraction on the files compiled by our custom
       # build command, as opposed to letting the autobuilder figure it out.
       # See: https://github.com/github/codeql-action/issues/1101#issuecomment-1157729589
-      CODEQL_EXTRACTOR_GO_BUILD_TRACING: 'on'
+      CODEQL_EXTRACTOR_GO_BUILD_TRACING: "on"
 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21.10"
+          go-version: "1.22.8"
           cache: false
 
       # Initializes the CodeQL tools for scanning.
@@ -31,9 +31,9 @@ jobs:
 
       - name: Build Artifact
         run: |
+          make genotelcontribcol
           make otelcontribcol
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         timeout-minutes: 60
-

@@ -47,7 +47,7 @@ func TestDefaultConfig(t *testing.T) {
 	require.Equal(t, expectedConf, testConf)
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	tests := []struct {
 		desc string
 		run  func(t *testing.T)
@@ -64,7 +64,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 				_, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopCreateSettings(),
+					receivertest.NewNopSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)

@@ -9,7 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -409,7 +409,7 @@ func TestLogGroups(t *testing.T) {
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
-	assert.Equal(t, 2, len(awsData.CWLogs))
+	assert.Len(t, awsData.CWLogs, 2)
 	assert.Contains(t, awsData.CWLogs, cwl1)
 	assert.Contains(t, awsData.CWLogs, cwl2)
 }
@@ -437,7 +437,7 @@ func TestLogGroupsFromArns(t *testing.T) {
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
-	assert.Equal(t, 2, len(awsData.CWLogs))
+	assert.Len(t, awsData.CWLogs, 2)
 	assert.Contains(t, awsData.CWLogs, cwl1)
 	assert.Contains(t, awsData.CWLogs, cwl2)
 }
@@ -456,8 +456,63 @@ func TestLogGroupsFromStringResourceAttribute(t *testing.T) {
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
-	assert.Equal(t, 1, len(awsData.CWLogs))
+	assert.Len(t, awsData.CWLogs, 1)
 	assert.Contains(t, awsData.CWLogs, cwl1)
+}
+
+func TestLogGroupsWithAmpersandFromStringResourceAttribute(t *testing.T) {
+	cwl1 := awsxray.LogGroupMetadata{
+		LogGroup: awsxray.String("group1"),
+	}
+	cwl2 := awsxray.LogGroupMetadata{
+		LogGroup: awsxray.String("group2"),
+	}
+
+	attributes := make(map[string]pcommon.Value)
+	resource := pcommon.NewResource()
+
+	// normal cases
+	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupNames, "group1&group2")
+	filtered, awsData := makeAws(attributes, resource, nil)
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Len(t, awsData.CWLogs, 2)
+	assert.Contains(t, awsData.CWLogs, cwl1)
+	assert.Contains(t, awsData.CWLogs, cwl2)
+
+	// with extra & at end
+	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupNames, "group1&group2&")
+	filtered, awsData = makeAws(attributes, resource, nil)
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Len(t, awsData.CWLogs, 2)
+	assert.Contains(t, awsData.CWLogs, cwl1)
+	assert.Contains(t, awsData.CWLogs, cwl2)
+
+	// with extra & in the middle
+	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupNames, "group1&&group2")
+	filtered, awsData = makeAws(attributes, resource, nil)
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Len(t, awsData.CWLogs, 2)
+	assert.Contains(t, awsData.CWLogs, cwl1)
+	assert.Contains(t, awsData.CWLogs, cwl2)
+
+	// with extra & at the beginning
+	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupNames, "&group1&group2")
+	filtered, awsData = makeAws(attributes, resource, nil)
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Len(t, awsData.CWLogs, 2)
+	assert.Contains(t, awsData.CWLogs, cwl1)
+	assert.Contains(t, awsData.CWLogs, cwl2)
+
+	// with only &
+	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupNames, "&")
+	filtered, awsData = makeAws(attributes, resource, nil)
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Empty(t, awsData.CWLogs)
 }
 
 func TestLogGroupsInvalidType(t *testing.T) {
@@ -469,7 +524,7 @@ func TestLogGroupsInvalidType(t *testing.T) {
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
-	assert.Equal(t, 0, len(awsData.CWLogs))
+	assert.Empty(t, awsData.CWLogs)
 }
 
 // Simulate Log groups arns being set using OTEL_RESOURCE_ATTRIBUTES
@@ -489,8 +544,34 @@ func TestLogGroupsArnsFromStringResourceAttributes(t *testing.T) {
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
-	assert.Equal(t, 1, len(awsData.CWLogs))
+	assert.Len(t, awsData.CWLogs, 1)
 	assert.Contains(t, awsData.CWLogs, cwl1)
+}
+
+func TestLogGroupsArnsWithAmpersandFromStringResourceAttributes(t *testing.T) {
+	group1 := "arn:aws:logs:us-east-1:123456789123:log-group:group1"
+	group2 := "arn:aws:logs:us-east-1:123456789123:log-group:group2"
+
+	cwl1 := awsxray.LogGroupMetadata{
+		LogGroup: awsxray.String("group1"),
+		Arn:      awsxray.String(group1),
+	}
+	cwl2 := awsxray.LogGroupMetadata{
+		LogGroup: awsxray.String("group2"),
+		Arn:      awsxray.String(group2),
+	}
+
+	attributes := make(map[string]pcommon.Value)
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupARNs, "arn:aws:logs:us-east-1:123456789123:log-group:group1&arn:aws:logs:us-east-1:123456789123:log-group:group2")
+
+	filtered, awsData := makeAws(attributes, resource, nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Len(t, awsData.CWLogs, 2)
+	assert.Contains(t, awsData.CWLogs, cwl1)
+	assert.Contains(t, awsData.CWLogs, cwl2)
 }
 
 func TestLogGroupsFromConfig(t *testing.T) {
@@ -508,7 +589,7 @@ func TestLogGroupsFromConfig(t *testing.T) {
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
-	assert.Equal(t, 2, len(awsData.CWLogs))
+	assert.Len(t, awsData.CWLogs, 2)
 	assert.Contains(t, awsData.CWLogs, cwl1)
 	assert.Contains(t, awsData.CWLogs, cwl2)
 }

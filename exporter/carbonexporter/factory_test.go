@@ -19,9 +19,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateMetricsExporter(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig()
-	_, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	_, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 }
 
@@ -29,9 +29,9 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig()
-	exp, err := factory.CreateMetricsExporter(
+	exp, err := factory.CreateMetrics(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -39,9 +39,9 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	// Set values that don't have a valid default.
 	// expCfg := cfg.(*Config)
 
-	exp, err = factory.CreateMetricsExporter(
+	exp, err = factory.CreateMetrics(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)

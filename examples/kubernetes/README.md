@@ -47,12 +47,13 @@ Following table shows result of example run:
 
 Test                                    |Result|Duration|CPU Avg%|CPU Max%|RAM Avg MiB|RAM Max MiB|Sent Items|Received Items|
 ----------------------------------------|------|-------:|-------:|-------:|----------:|----------:|---------:|-------------:|
-Log10kDPS/OTLP                          |PASS  |     15s|    15.2|    15.7|         69|         73|    149900|        149900|
-Log10kDPS/filelog                       |PASS  |     15s|    16.5|    18.0|         61|         74|    150000|        150000|
-Log10kDPS/kubernetes_containers         |PASS  |     15s|    42.3|    44.0|         66|         80|    150000|        150000|
-Log10kDPS/k8s_CRI-Containerd            |PASS  |     15s|    36.7|    38.0|         64|         78|    150000|        150000|
-Log10kDPS/k8s_CRI-Containerd_no_attr_ops|PASS  |     15s|    28.9|    29.7|         64|         77|    150000|        150000|
-Log10kDPS/CRI-Containerd                |PASS  |     15s|    19.0|    21.0|         63|         77|    150000|        150000|
+Log10kDPS/OTLP                          |PASS  |     15s|    10.4|    11.0|         68|         94|    150100|        150100|
+Log10kDPS/filelog                       |PASS  |     15s|     7.8|     8.7|         65|         93|    150100|        150100|
+Log10kDPS/kubernetes_containers         |PASS  |     15s|    18.3|    19.7|         67|         96|    150100|        150100|
+Log10kDPS/kubernetes_containers_parser  |PASS  |     15s|    18.2|    19.0|         66|         95|    150100|        150100|
+Log10kDPS/k8s_CRI-Containerd            |PASS  |     15s|    15.4|    16.3|         66|         95|    150100|        150100|
+Log10kDPS/k8s_CRI-Containerd_no_attr_ops|PASS  |     15s|    15.1|    16.3|         66|         95|    150100|        150100|
+Log10kDPS/CRI-Containerd                |PASS  |     15s|    11.1|    13.0|         65|         93|    150100|        150100|
 
 ## ToDo
 

@@ -94,14 +94,14 @@ func TestDetect(t *testing.T) {
 				md.On("Detect").Return(res, nil)
 
 				mockDetectorType := DetectorType(fmt.Sprintf("mockdetector%v", i))
-				mockDetectors[mockDetectorType] = func(processor.CreateSettings, DetectorConfig) (Detector, error) {
+				mockDetectors[mockDetectorType] = func(processor.Settings, DetectorConfig) (Detector, error) {
 					return md, nil
 				}
 				mockDetectorTypes = append(mockDetectorTypes, mockDetectorType)
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(processortest.NewNopCreateSettings(), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(processortest.NewNopSettings(), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			got, _, err := p.Get(context.Background(), http.DefaultClient)
@@ -115,18 +115,18 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(processortest.NewNopCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
 func TestDetectResource_DetectoryFactoryError(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{
-		mockDetectorKey: func(processor.CreateSettings, DetectorConfig) (Detector, error) {
+		mockDetectorKey: func(processor.Settings, DetectorConfig) (Detector, error) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(processortest.NewNopCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
@@ -221,7 +221,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			detected, _, err := p.Get(context.Background(), http.DefaultClient)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 		}()
 	}
@@ -281,7 +281,7 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 	_, ok = attr.Get("host.id")
 	assert.False(t, ok)
 
-	assert.EqualValues(t, droppedAttributes, []string{"host.name", "host.id"})
+	assert.EqualValues(t, []string{"host.name", "host.id"}, droppedAttributes)
 }
 
 func TestFilterAttributes_NilAttributes(t *testing.T) {
@@ -298,7 +298,7 @@ func TestFilterAttributes_NilAttributes(t *testing.T) {
 	_, ok = attr.Get("host.id")
 	assert.True(t, ok)
 
-	assert.Equal(t, len(droppedAttributes), 0)
+	assert.Empty(t, droppedAttributes)
 }
 
 func TestFilterAttributes_NoAttributes(t *testing.T) {
@@ -315,5 +315,5 @@ func TestFilterAttributes_NoAttributes(t *testing.T) {
 	_, ok = attr.Get("host.id")
 	assert.True(t, ok)
 
-	assert.Equal(t, len(droppedAttributes), 0)
+	assert.Empty(t, droppedAttributes)
 }

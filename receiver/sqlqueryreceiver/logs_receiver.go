@@ -26,7 +26,7 @@ import (
 
 type logsReceiver struct {
 	config           *Config
-	settings         receiver.CreateSettings
+	settings         receiver.Settings
 	createConnection sqlquery.DbProviderFunc
 	createClient     sqlquery.ClientProviderFunc
 	queryReceivers   []*logsQueryReceiver
@@ -43,12 +43,11 @@ type logsReceiver struct {
 
 func newLogsReceiver(
 	config *Config,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	sqlOpenerFunc sqlquery.SQLOpenerFunc,
 	createClient sqlquery.ClientProviderFunc,
 	nextConsumer consumer.Logs,
 ) (*logsReceiver, error) {
-
 	obsr, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		ReceiverCreateSettings: settings,
@@ -268,7 +267,6 @@ func (queryReceiver *logsQueryReceiver) retrieveTrackingValue(ctx context.Contex
 	}
 
 	return string(storedTrackingValueBytes)
-
 }
 
 func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs, error) {
@@ -291,7 +289,7 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 	for logsConfigIndex, logsConfig := range queryReceiver.query.Logs {
 		for _, row := range rows {
 			logRecord := scopeLogs.AppendEmpty()
-			rowToLog(row, logsConfig, logRecord)
+			errs = append(errs, rowToLog(row, logsConfig, logRecord))
 			logRecord.SetObservedTimestamp(observedAt)
 			if logsConfigIndex == 0 {
 				errs = append(errs, queryReceiver.storeTrackingValue(ctx, row))
@@ -315,8 +313,24 @@ func (queryReceiver *logsQueryReceiver) storeTrackingValue(ctx context.Context, 
 	return nil
 }
 
-func rowToLog(row sqlquery.StringMap, config sqlquery.LogsCfg, logRecord plog.LogRecord) {
-	logRecord.Body().SetStr(row[config.BodyColumn])
+func rowToLog(row sqlquery.StringMap, config sqlquery.LogsCfg, logRecord plog.LogRecord) error {
+	var errs []error
+	value, found := row[config.BodyColumn]
+	if !found {
+		errs = append(errs, fmt.Errorf("rowToLog: body_column '%s' not found in result set", config.BodyColumn))
+	} else {
+		logRecord.Body().SetStr(value)
+	}
+	attrs := logRecord.Attributes()
+
+	for _, columnName := range config.AttributeColumns {
+		if attrVal, found := row[columnName]; found {
+			attrs.PutStr(columnName, attrVal)
+		} else {
+			errs = append(errs, fmt.Errorf("rowToLog: attribute_column '%s' not found in result set", columnName))
+		}
+	}
+	return errors.Join(errs...)
 }
 
 func (queryReceiver *logsQueryReceiver) shutdown(_ context.Context) error {

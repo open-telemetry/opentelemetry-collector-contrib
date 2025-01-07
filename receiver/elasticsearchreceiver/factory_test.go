@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	testCases := []struct {
 		desc string
 		run  func(t *testing.T)
@@ -24,7 +24,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 				_, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopCreateSettings(),
+					receivertest.NewNopSettings(),
 					createDefaultConfig(),
 					consumertest.NewNop(),
 				)
@@ -39,7 +39,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 				_, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopCreateSettings(),
+					receivertest.NewNopSettings(),
 					nil,
 					consumertest.NewNop(),
 				)

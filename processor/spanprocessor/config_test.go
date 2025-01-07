@@ -46,7 +46,19 @@ func TestLoadingConfig(t *testing.T) {
 			expected: &Config{
 				Rename: Name{
 					ToAttributes: &ToAttributes{
-						Rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`},
+						Rules:            []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`},
+						KeepOriginalName: false,
+					},
+				},
+			},
+		},
+		{
+			id: component.MustNewIDWithName("span", "to_attributes_keep_original_name"),
+			expected: &Config{
+				Rename: Name{
+					ToAttributes: &ToAttributes{
+						Rules:            []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`},
+						KeepOriginalName: true,
 					},
 				},
 			},
@@ -108,7 +120,7 @@ func TestLoadingConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

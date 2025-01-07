@@ -5,7 +5,6 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"sort"
-	"time"
 
 	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -16,7 +15,7 @@ type Key string
 
 type HistogramMetrics interface {
 	GetOrCreate(key Key, attributes pcommon.Map) Histogram
-	BuildMetrics(pmetric.Metric, pcommon.Timestamp, pmetric.AggregationTemporality)
+	BuildMetrics(pmetric.Metric, generateStartTimestamp, pcommon.Timestamp, pmetric.AggregationTemporality)
 	ClearExemplars()
 }
 
@@ -59,6 +58,8 @@ type exponentialHistogram struct {
 	maxExemplarCount *int
 }
 
+type generateStartTimestamp = func(Key) pcommon.Timestamp
+
 func NewExponentialHistogramMetrics(maxSize int32, maxExemplarCount *int) HistogramMetrics {
 	return &exponentialHistogramMetrics{
 		metrics:          make(map[Key]*exponentialHistogram),
@@ -93,16 +94,16 @@ func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map) 
 
 func (m *explicitHistogramMetrics) BuildMetrics(
 	metric pmetric.Metric,
-	start pcommon.Timestamp,
+	startTimestamp generateStartTimestamp,
+	timestamp pcommon.Timestamp,
 	temporality pmetric.AggregationTemporality,
 ) {
 	metric.SetEmptyHistogram().SetAggregationTemporality(temporality)
 	dps := metric.Histogram().DataPoints()
 	dps.EnsureCapacity(len(m.metrics))
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	for _, h := range m.metrics {
+	for k, h := range m.metrics {
 		dp := dps.AppendEmpty()
-		dp.SetStartTimestamp(start)
+		dp.SetStartTimestamp(startTimestamp(k))
 		dp.SetTimestamp(timestamp)
 		dp.ExplicitBounds().FromRaw(h.bounds)
 		dp.BucketCounts().FromRaw(h.bucketCounts)
@@ -138,7 +139,6 @@ func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Ma
 			maxExemplarCount: m.maxExemplarCount,
 		}
 		m.metrics[key] = h
-
 	}
 
 	return h
@@ -146,16 +146,16 @@ func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Ma
 
 func (m *exponentialHistogramMetrics) BuildMetrics(
 	metric pmetric.Metric,
-	start pcommon.Timestamp,
+	startTimestamp generateStartTimestamp,
+	timestamp pcommon.Timestamp,
 	temporality pmetric.AggregationTemporality,
 ) {
 	metric.SetEmptyExponentialHistogram().SetAggregationTemporality(temporality)
 	dps := metric.ExponentialHistogram().DataPoints()
 	dps.EnsureCapacity(len(m.metrics))
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	for _, m := range m.metrics {
+	for k, m := range m.metrics {
 		dp := dps.AppendEmpty()
-		dp.SetStartTimestamp(start)
+		dp.SetStartTimestamp(startTimestamp(k))
 		dp.SetTimestamp(timestamp)
 		expoHistToExponentialDataPoint(m.histogram, dp)
 		for i := 0; i < m.exemplars.Len(); i++ {
@@ -284,7 +284,8 @@ func (s *Sum) AddExemplar(traceID pcommon.TraceID, spanID pcommon.SpanID, value 
 
 func (m *SumMetrics) BuildMetrics(
 	metric pmetric.Metric,
-	start pcommon.Timestamp,
+	startTimestamp generateStartTimestamp,
+	timestamp pcommon.Timestamp,
 	temporality pmetric.AggregationTemporality,
 ) {
 	metric.SetEmptySum().SetIsMonotonic(true)
@@ -292,10 +293,9 @@ func (m *SumMetrics) BuildMetrics(
 
 	dps := metric.Sum().DataPoints()
 	dps.EnsureCapacity(len(m.metrics))
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	for _, s := range m.metrics {
+	for k, s := range m.metrics {
 		dp := dps.AppendEmpty()
-		dp.SetStartTimestamp(start)
+		dp.SetStartTimestamp(startTimestamp(k))
 		dp.SetTimestamp(timestamp)
 		dp.SetIntValue(int64(s.count))
 		for i := 0; i < s.exemplars.Len(); i++ {

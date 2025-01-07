@@ -49,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				CollectionInterval: 30 * time.Second,
 				MetricsPath:        "/v2/metrics",
+				JobName:            "job123",
 				Params:             url.Values{"columns": []string{"name", "messages"}, "key": []string{"foo", "bar"}},
 				UseServiceAccount:  true,
 			},
@@ -85,7 +86,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

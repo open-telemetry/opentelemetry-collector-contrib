@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 						"x-header-1": "value1",
 						"x-header-2": "value2",
 					},
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 5 * time.Second,
 					},
 				},
@@ -77,7 +77,7 @@ func TestLoadConfig(t *testing.T) {
 				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 5 * time.Second,
 					},
 				},
@@ -92,7 +92,7 @@ func TestLoadConfig(t *testing.T) {
 				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 5 * time.Second,
 					},
 				},
@@ -108,7 +108,7 @@ func TestLoadConfig(t *testing.T) {
 				CollectionInterval: -100 * time.Millisecond,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 5 * time.Second,
 					},
 				},
@@ -124,7 +124,7 @@ func TestLoadConfig(t *testing.T) {
 				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: -100 * time.Millisecond,
 					},
 				},
@@ -142,7 +142,7 @@ func TestLoadConfig(t *testing.T) {
 				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 5 * time.Second,
 					},
 				},
@@ -158,7 +158,7 @@ func TestLoadConfig(t *testing.T) {
 				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 5 * time.Second,
 					},
 				},
@@ -175,7 +175,7 @@ func TestLoadConfig(t *testing.T) {
 				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 5 * time.Second,
 					},
 				},
@@ -191,7 +191,7 @@ func TestLoadConfig(t *testing.T) {
 				CollectionInterval: 10 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "0.0.0.0:0",
-					TimeoutSettings: exporterhelper.TimeoutSettings{
+					TimeoutSettings: exporterhelper.TimeoutConfig{
 						Timeout: 5 * time.Second,
 					},
 				},
@@ -211,7 +211,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expectedErr != "" {
 				assert.ErrorContains(t, cfg.(*Config).Validate(), tt.expectedErr)
@@ -237,7 +237,7 @@ func TestCustomMetricsGathererConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "invalidtargetsystem").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	conf := cfg.(*Config)
 

@@ -4,16 +4,17 @@ The `json_parser` operator parses the string-type field selected by `parse_from`
 
 ### Configuration Fields
 
-| Field         | Default          | Description |
-| ---           | ---              | ---         |
-| `id`          | `json_parser`    | A unique identifier for the operator. |
-| `output`      | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
-| `parse_from`  | `body`           | The [field](../types/field.md) from which the value will be parsed. |
-| `parse_to`    | `attributes`     | The [field](../types/field.md) to which the value will be parsed. |
-| `on_error`    | `send`           | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md). |
-| `if`          |                  | An [expression](../types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
-| `timestamp`   | `nil`            | An optional [timestamp](../types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator. |
-| `severity`    | `nil`            | An optional [severity](../types/severity.md) block which will parse a severity field before passing the entry to the output operator. |
+| Field        | Default          | Description |
+| ---          | ---              | ---         |
+| `id`         | `json_parser`    | A unique identifier for the operator. |
+| `output`     | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
+| `parse_from` | `body`           | The [field](../types/field.md) from which the value will be parsed. |
+| `parse_to`   | `attributes`     | The [field](../types/field.md) to which the value will be parsed. |
+| `on_error`   | `send`           | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md). |
+| `if`         |                  | An [expression](../types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
+| `timestamp`  | `nil`            | An optional [timestamp](../types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator. |
+| `severity`   | `nil`            | An optional [severity](../types/severity.md) block which will parse a severity field before passing the entry to the output operator. |
+| `parse_ints` | `false`          | Numbers like `int` and `float` are parsed as `float64` by default. When `parse_ints` is enabled, numbers are parsed as `json.Number` and then converted to `int64` or `float64` based on the value. However, this also introduces additional overhead. |
 
 ### Embedded Operations
 

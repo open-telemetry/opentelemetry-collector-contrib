@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter/internal/publisher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/rabbitmq"
 )
 
 const (
@@ -27,9 +28,9 @@ const (
 	metricsRoutingKey = "otlp_metrics"
 	logsRoutingKey    = "otlp_logs"
 
-	spansConnectionName   = "otel-collector-spans"
-	metricsConnectionName = "otel-collector-metrics"
-	logsConnectionName    = "otel-collector-logs"
+	defaultSpansConnectionName   = "otel-collector-spans"
+	defaultMetricsConnectionName = "otel-collector-metrics"
+	defaultLogsConnectionName    = "otel-collector-logs"
 )
 
 func NewFactory() exporter.Factory {
@@ -59,15 +60,19 @@ func createDefaultConfig() component.Config {
 
 func createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	config := cfg.(*Config)
 
 	routingKey := getRoutingKeyOrDefault(config, spansRoutingKey)
-	r := newRabbitmqExporter(config, set.TelemetrySettings, newPublisherFactory(set), newTLSFactory(config), routingKey, spansConnectionName)
+	connectionName := defaultSpansConnectionName
+	if config.Connection.Name != "" {
+		connectionName = config.Connection.Name
+	}
+	r := newRabbitmqExporter(config, set.TelemetrySettings, newPublisherFactory(set), newTLSFactory(config), routingKey, connectionName)
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -81,15 +86,20 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	config := (cfg.(*Config))
 
 	routingKey := getRoutingKeyOrDefault(config, metricsRoutingKey)
-	r := newRabbitmqExporter(config, set.TelemetrySettings, newPublisherFactory(set), newTLSFactory(config), routingKey, metricsConnectionName)
 
-	return exporterhelper.NewMetricsExporter(
+	connectionName := defaultMetricsConnectionName
+	if config.Connection.Name != "" {
+		connectionName = config.Connection.Name
+	}
+	r := newRabbitmqExporter(config, set.TelemetrySettings, newPublisherFactory(set), newTLSFactory(config), routingKey, connectionName)
+
+	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -103,15 +113,19 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	config := (cfg.(*Config))
 
 	routingKey := getRoutingKeyOrDefault(config, logsRoutingKey)
-	r := newRabbitmqExporter(config, set.TelemetrySettings, newPublisherFactory(set), newTLSFactory(config), routingKey, logsConnectionName)
+	connectionName := defaultLogsConnectionName
+	if config.Connection.Name != "" {
+		connectionName = config.Connection.Name
+	}
+	r := newRabbitmqExporter(config, set.TelemetrySettings, newPublisherFactory(set), newTLSFactory(config), routingKey, connectionName)
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
@@ -131,9 +145,9 @@ func getRoutingKeyOrDefault(config *Config, fallback string) string {
 	return routingKey
 }
 
-func newPublisherFactory(set exporter.CreateSettings) publisherFactory {
+func newPublisherFactory(set exporter.Settings) publisherFactory {
 	return func(dialConfig publisher.DialConfig) (publisher.Publisher, error) {
-		return publisher.NewConnection(set.Logger, publisher.NewAmqpClient(), dialConfig)
+		return publisher.NewConnection(set.Logger, rabbitmq.NewAmqpClient(set.Logger), dialConfig)
 	}
 }
 

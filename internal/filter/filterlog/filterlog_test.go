@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
@@ -151,11 +151,11 @@ func TestLogRecord_Matching_False(t *testing.T) {
 			assert.NoError(t, err)
 			require.NotNil(t, expr)
 
-			val, err := expr.Eval(context.Background(), ottllog.NewTransformContext(lr, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			val, err := expr.Eval(context.Background(), ottllog.NewTransformContext(lr, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
 			require.NoError(t, err)
 			assert.False(t, val)
 
-			val, err = expr.Eval(context.Background(), ottllog.NewTransformContext(lrm, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			val, err = expr.Eval(context.Background(), ottllog.NewTransformContext(lrm, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
 			require.NoError(t, err)
 			assert.False(t, val)
 		})
@@ -228,12 +228,12 @@ func TestLogRecord_Matching_True(t *testing.T) {
 			require.NotNil(t, expr)
 
 			assert.NotNil(t, lr)
-			val, err := expr.Eval(context.Background(), ottllog.NewTransformContext(lr, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			val, err := expr.Eval(context.Background(), ottllog.NewTransformContext(lr, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
 			require.NoError(t, err)
 			assert.True(t, val)
 
 			assert.NotNil(t, lrm)
-			val, err = expr.Eval(context.Background(), ottllog.NewTransformContext(lrm, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			val, err = expr.Eval(context.Background(), ottllog.NewTransformContext(lrm, pcommon.NewInstrumentationScope(), pcommon.NewResource(), plog.NewScopeLogs(), plog.NewResourceLogs()))
 			require.NoError(t, err)
 			assert.True(t, val)
 		})
@@ -1304,7 +1304,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 
 			scope := pcommon.NewInstrumentationScope()
 
-			tCtx := ottllog.NewTransformContext(log, scope, resource)
+			tCtx := ottllog.NewTransformContext(log, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 
 			boolExpr, err := NewSkipExpr(tt.condition)
 			require.NoError(t, err)
@@ -1378,7 +1378,7 @@ func BenchmarkFilterlog_NewSkipExpr(b *testing.B) {
 
 		scope := pcommon.NewInstrumentationScope()
 
-		tCtx := ottllog.NewTransformContext(log, scope, resource)
+		tCtx := ottllog.NewTransformContext(log, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 
 		b.Run(tt.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {

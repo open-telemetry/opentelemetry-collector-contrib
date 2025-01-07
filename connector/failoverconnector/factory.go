@@ -34,7 +34,7 @@ func createDefaultConfig() component.Config {
 
 func createTracesToTraces(
 	_ context.Context,
-	set connector.CreateSettings,
+	set connector.Settings,
 	cfg component.Config,
 	traces consumer.Traces,
 ) (connector.Traces, error) {
@@ -43,7 +43,7 @@ func createTracesToTraces(
 
 func createMetricsToMetrics(
 	_ context.Context,
-	set connector.CreateSettings,
+	set connector.Settings,
 	cfg component.Config,
 	metrics consumer.Metrics,
 ) (connector.Metrics, error) {
@@ -52,7 +52,7 @@ func createMetricsToMetrics(
 
 func createLogsToLogs(
 	_ context.Context,
-	set connector.CreateSettings,
+	set connector.Settings,
 	cfg component.Config,
 	logs consumer.Logs,
 ) (connector.Logs, error) {

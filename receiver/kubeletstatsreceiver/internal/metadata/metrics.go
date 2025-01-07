@@ -37,6 +37,7 @@ var PodCPUMetrics = CPUMetrics{
 	Time:               (*MetricsBuilder).RecordK8sPodCPUTimeDataPoint,
 	Usage:              (*MetricsBuilder).RecordK8sPodCPUUsageDataPoint,
 	Utilization:        (*MetricsBuilder).RecordK8sPodCPUUtilizationDataPoint,
+	NodeUtilization:    (*MetricsBuilder).RecordK8sPodCPUNodeUtilizationDataPoint,
 	LimitUtilization:   (*MetricsBuilder).RecordK8sPodCPULimitUtilizationDataPoint,
 	RequestUtilization: (*MetricsBuilder).RecordK8sPodCPURequestUtilizationDataPoint,
 }
@@ -53,6 +54,7 @@ var ContainerCPUMetrics = CPUMetrics{
 type MemoryMetrics struct {
 	Available          RecordIntDataPointFunc
 	Usage              RecordIntDataPointFunc
+	NodeUtilization    RecordDoubleDataPointFunc
 	LimitUtilization   RecordDoubleDataPointFunc
 	RequestUtilization RecordDoubleDataPointFunc
 	Rss                RecordIntDataPointFunc
@@ -73,6 +75,7 @@ var NodeMemoryMetrics = MemoryMetrics{
 var PodMemoryMetrics = MemoryMetrics{
 	Available:          (*MetricsBuilder).RecordK8sPodMemoryAvailableDataPoint,
 	Usage:              (*MetricsBuilder).RecordK8sPodMemoryUsageDataPoint,
+	NodeUtilization:    (*MetricsBuilder).RecordK8sPodMemoryNodeUtilizationDataPoint,
 	LimitUtilization:   (*MetricsBuilder).RecordK8sPodMemoryLimitUtilizationDataPoint,
 	RequestUtilization: (*MetricsBuilder).RecordK8sPodMemoryRequestUtilizationDataPoint,
 	Rss:                (*MetricsBuilder).RecordK8sPodMemoryRssDataPoint,
@@ -84,6 +87,7 @@ var PodMemoryMetrics = MemoryMetrics{
 var ContainerMemoryMetrics = MemoryMetrics{
 	Available:          (*MetricsBuilder).RecordContainerMemoryAvailableDataPoint,
 	Usage:              (*MetricsBuilder).RecordContainerMemoryUsageDataPoint,
+	NodeUtilization:    (*MetricsBuilder).RecordK8sContainerMemoryNodeUtilizationDataPoint,
 	LimitUtilization:   (*MetricsBuilder).RecordK8sContainerMemoryLimitUtilizationDataPoint,
 	RequestUtilization: (*MetricsBuilder).RecordK8sContainerMemoryRequestUtilizationDataPoint,
 	Rss:                (*MetricsBuilder).RecordContainerMemoryRssDataPoint,

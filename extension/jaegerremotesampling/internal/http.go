@@ -12,28 +12,27 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/strategystore"
+	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/samplingstrategy"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-var (
-	errMissingStrategyStore = errors.New("the strategy store has not been provided")
-)
+var errMissingStrategyStore = errors.New("the strategy store has not been provided")
 
 var _ component.Component = (*SamplingHTTPServer)(nil)
 
 type SamplingHTTPServer struct {
 	telemetry     component.TelemetrySettings
 	settings      confighttp.ServerConfig
-	strategyStore strategystore.StrategyStore
+	strategyStore samplingstrategy.Provider
 
 	mux        *http.ServeMux
 	srv        *http.Server
 	shutdownWG *sync.WaitGroup
 }
 
-func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.ServerConfig, strategyStore strategystore.StrategyStore) (*SamplingHTTPServer, error) {
+func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.ServerConfig, strategyStore samplingstrategy.Provider) (*SamplingHTTPServer, error) {
 	if strategyStore == nil {
 		return nil, errMissingStrategyStore
 	}
@@ -72,7 +71,7 @@ func (h *SamplingHTTPServer) Start(ctx context.Context, host component.Host) err
 		defer h.shutdownWG.Done()
 
 		if err := h.srv.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			h.telemetry.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 

@@ -31,10 +31,9 @@ func (dd *datadogDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ c
 	cfg := factory.CreateDefaultConfig().(*datadogreceiver.Config)
 	cfg.Endpoint = "0.0.0.0:8126"
 
-	set := receiver.CreateSettings{}
+	set := receiver.Settings{}
 	var err error
-	dd.receiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
-
+	dd.receiver, err = factory.CreateTraces(context.Background(), set, cfg, tc)
 	if err != nil {
 		return err
 	}

@@ -26,6 +26,8 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				SamplingPercentage: 15.3,
+				SamplingPrecision:  4,
+				Mode:               "proportional",
 				AttributeSource:    "traceID",
 				FailClosed:         true,
 			},
@@ -34,7 +36,9 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "logs"),
 			expected: &Config{
 				SamplingPercentage: 15.3,
+				SamplingPrecision:  defaultPrecision,
 				HashSeed:           22,
+				Mode:               "",
 				AttributeSource:    "record",
 				FromAttribute:      "foo",
 				SamplingPriority:   "bar",
@@ -55,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := processors.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -68,7 +72,11 @@ func TestLoadInvalidConfig(t *testing.T) {
 		file     string
 		contains string
 	}{
-		{"invalid_negative.yaml", "negative sampling rate"},
+		{"invalid_negative.yaml", "sampling rate is negative"},
+		{"invalid_small.yaml", "sampling rate is too small"},
+		{"invalid_inf.yaml", "sampling rate is invalid: +Inf%"},
+		{"invalid_prec.yaml", "sampling precision is too great"},
+		{"invalid_zero.yaml", "invalid sampling precision"},
 	} {
 		t.Run(test.file, func(t *testing.T) {
 			factories, err := otelcoltest.NopFactories()
@@ -76,7 +84,8 @@ func TestLoadInvalidConfig(t *testing.T) {
 
 			factory := NewFactory()
 			factories.Processors[metadata.Type] = factory
-
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+			// nolint:staticcheck
 			_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", test.file), factories)
 			require.ErrorContains(t, err, test.contains)
 		})

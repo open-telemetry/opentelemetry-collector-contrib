@@ -62,14 +62,14 @@ func (md *mockMetaDataProvider) FetchContainerMetadata() (*ecsutil.ContainerMeta
 
 func Test_ecsNewDetector(t *testing.T) {
 	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
-	d, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettings(), CreateDefaultConfig())
 
 	assert.NoError(t, err)
 	assert.NotNil(t, d)
 }
 
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
-	d, _ := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	d, _ := NewDetector(processortest.NewNopSettings(), CreateDefaultConfig())
 	res, _, err := d.Detect(context.TODO())
 
 	assert.NoError(t, err)

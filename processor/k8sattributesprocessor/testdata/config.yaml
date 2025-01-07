@@ -14,6 +14,7 @@ k8sattributes/2:
       # extract the following well-known metadata fields from pods and namespaces
       - k8s.pod.name
       - k8s.pod.uid
+      - k8s.pod.ip
       - k8s.deployment.name
       - k8s.namespace.name
       - k8s.node.name
@@ -104,6 +105,17 @@ k8sattributes/too_many_sources:
           name: host.name
         - from: connection
           name: ip
+
+k8sattributes/deprecated-regex:
+  passthrough: false
+  auth_type: "kubeConfig"
+  extract:
+    labels:
+      - regex: field=(?P<value>.+)
+        from: pod
+    annotations:
+      - regex: field=(?P<value>.+)
+        from: pod
 
 k8sattributes/bad_keys_labels:
   extract:

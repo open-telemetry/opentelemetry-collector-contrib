@@ -45,7 +45,7 @@ func TestClientReadDB(t *testing.T) {
 
 	client := snowflakeClient{
 		client: db,
-		logger: receivertest.NewNopCreateSettings().Logger,
+		logger: receivertest.NewNopSettings().Logger,
 	}
 
 	ctx := context.Background()
@@ -146,15 +146,19 @@ func TestMetricQueries(t *testing.T) {
 		{
 			desc:  "FetchDbMetrics",
 			query: dbMetricsQuery,
-			columns: []string{"schemaname", "execution_status", "error_message",
+			columns: []string{
+				"schemaname", "execution_status", "error_message",
 				"query_type", "wh_name", "db_name", "wh_size", "username",
 				"count_queryid", "queued_overload", "queued_repair", "queued_provision",
 				"total_elapsed", "execution_time", "comp_time", "bytes_scanned",
 				"bytes_written", "bytes_deleted", "bytes_spilled_local", "bytes_spilled_remote",
 				"percentage_cache", "partitions_scanned", "rows_unloaded", "rows_deleted",
-				"rows_updated", "rows_inserted", "rows_produced"},
-			params: []driver.Value{"a", "b", "c", "d", "e", "f", "g", "h", 1, 2.0, 3.0, 4.0, 5.0, 6.0,
-				7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0},
+				"rows_updated", "rows_inserted", "rows_produced",
+			},
+			params: []driver.Value{
+				"a", "b", "c", "d", "e", "f", "g", "h", 1, 2.0, 3.0, 4.0, 5.0, 6.0,
+				7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0,
+			},
 			expect: dbMetric{
 				attributes: dbMetricAttributes{
 					userName: sql.NullString{
@@ -266,7 +270,7 @@ func TestMetricQueries(t *testing.T) {
 
 			client := snowflakeClient{
 				client: db,
-				logger: receivertest.NewNopCreateSettings().Logger,
+				logger: receivertest.NewNopSettings().Logger,
 			}
 			ctx := context.Background()
 

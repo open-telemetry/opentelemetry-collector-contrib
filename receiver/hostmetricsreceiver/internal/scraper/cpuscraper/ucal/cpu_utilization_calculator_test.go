@@ -6,7 +6,7 @@ package ucal
 import (
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -171,7 +171,6 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 }
 
 func Test_cpuUtilization(t *testing.T) {
-
 	timeStart := cpu.TimesStat{
 		CPU:    "cpu0",
 		User:   1.5,
@@ -196,7 +195,6 @@ func Test_cpuUtilization(t *testing.T) {
 	assert.InDelta(t, expectedUtilization.User, actualUtilization.User, 0.00001)
 	assert.InDelta(t, expectedUtilization.System, actualUtilization.System, 0.00001)
 	assert.InDelta(t, expectedUtilization.Idle, actualUtilization.Idle, 0.00001)
-
 }
 
 func Test_cpuTimeByCpu(t *testing.T) {

@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
@@ -35,7 +35,7 @@ type timeconstraints struct {
 	resolution string
 }
 
-func newMongoDBAtlasReceiver(settings receiver.CreateSettings, cfg *Config) *mongodbatlasreceiver {
+func newMongoDBAtlasReceiver(settings receiver.Settings, cfg *Config) *mongodbatlasreceiver {
 	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger)
 	for _, p := range cfg.Projects {
 		p.populateIncludesAndExcludes()
@@ -50,8 +50,8 @@ func newMongoDBAtlasReceiver(settings receiver.CreateSettings, cfg *Config) *mon
 	}
 }
 
-func newMongoDBAtlasScraper(recv *mongodbatlasreceiver) (scraperhelper.Scraper, error) {
-	return scraperhelper.NewScraper(metadata.Type.String(), recv.scrape, scraperhelper.WithShutdown(recv.shutdown))
+func newMongoDBAtlasScraper(recv *mongodbatlasreceiver) (scraper.Metrics, error) {
+	return scraper.NewMetrics(recv.scrape, scraper.WithShutdown(recv.shutdown))
 }
 
 func (s *mongodbatlasreceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
@@ -211,7 +211,6 @@ func (s *mongodbatlasreceiver) getNodeClusterNameMap(
 			// Remove the port from the node
 			n, _, _ := strings.Cut(node, ":")
 			clusterMap[n] = cluster.Name
-
 		}
 
 		providerMap[cluster.Name] = providerValues{

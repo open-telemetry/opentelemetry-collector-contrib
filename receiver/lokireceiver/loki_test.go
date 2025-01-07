@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -23,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -65,7 +67,7 @@ func sendToCollector(endpoint string, contentType string, contentEncoding string
 		}
 	}
 
-	req, err := http.NewRequest("POST", endpoint, &buf)
+	req, err := http.NewRequest(http.MethodPost, endpoint, &buf)
 	if err != nil {
 		return err
 	}
@@ -99,7 +101,7 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 	}
 	sink := new(consumertest.LogsSink)
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	lr, err := newLokiReceiver(config, sink, set)
 	require.NoError(t, err)
 
@@ -123,7 +125,7 @@ func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
 	}
 	sink := new(consumertest.LogsSink)
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	lr, err := newLokiReceiver(config, sink, set)
 	require.NoError(t, err)
 
@@ -358,6 +360,79 @@ func TestSendingPushRequestToGRPCEndpoint(t *testing.T) {
 
 			gotLogs := sink.AllLogs()
 			require.NoError(t, plogtest.CompareLogs(tt.expected, gotLogs[i], plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
+func TestExpectedStatus(t *testing.T) {
+	testcases := []struct {
+		name              string
+		err               error
+		expectedGrpcError string
+		expectedHTTPError string
+	}{
+		{
+			name:              "permanent-error",
+			err:               consumererror.NewPermanent(errors.New("permanent")),
+			expectedGrpcError: "rpc error: code = Unknown desc = Permanent error: permanent",
+			expectedHTTPError: "failed to upload logs; HTTP status code: 400",
+		},
+		{
+			name:              "non-permanent-error",
+			err:               errors.New("non-permanent"),
+			expectedGrpcError: "rpc error: code = Unavailable desc = non-permanent",
+			expectedHTTPError: "failed to upload logs; HTTP status code: 503",
+		},
+	}
+	for _, tt := range testcases {
+		t.Run(tt.name, func(t *testing.T) {
+			httpAddr := testutil.GetAvailableLocalAddress(t)
+			config := &Config{
+				Protocols: Protocols{
+					GRPC: &configgrpc.ServerConfig{
+						NetAddr: confignet.AddrConfig{
+							Endpoint:  testutil.GetAvailableLocalAddress(t),
+							Transport: confignet.TransportTypeTCP,
+						},
+					},
+					HTTP: &confighttp.ServerConfig{
+						Endpoint: httpAddr,
+					},
+				},
+				KeepTimestamp: true,
+			}
+
+			consumer := consumertest.NewErr(tt.err)
+			lr, err := newLokiReceiver(config, consumer, receivertest.NewNopSettings())
+			require.NoError(t, err)
+
+			require.NoError(t, lr.Start(context.Background(), componenttest.NewNopHost()))
+			t.Cleanup(func() { require.NoError(t, lr.Shutdown(context.Background())) })
+			conn, err := grpc.NewClient(config.GRPC.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			require.NoError(t, err)
+			defer conn.Close()
+			grpcClient := push.NewPusherClient(conn)
+
+			body := &push.PushRequest{
+				Streams: []push.Stream{
+					{
+						Labels: "{foo=\"bar\"}",
+						Entries: []push.Entry{
+							{
+								Timestamp: time.Unix(0, 1676888496000000000),
+								Line:      "logline 1",
+							},
+						},
+					},
+				},
+			}
+
+			_, err = grpcClient.Push(context.Background(), body)
+			require.EqualError(t, err, tt.expectedGrpcError)
+
+			_, port, _ := net.SplitHostPort(httpAddr)
+			collectorAddr := fmt.Sprintf("http://localhost:%s/loki/api/v1/push", port)
+			require.EqualError(t, sendToCollector(collectorAddr, "application/json", "", []byte(`{"streams": [{"stream": {"foo": "bar"},"values": [[ "1676888496000000000", "logline 1" ]]}]}`)), tt.expectedHTTPError)
 		})
 	}
 }

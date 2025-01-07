@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "all_fields"),
 			expected: &Config{
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				APIKey:        "test-apikey",
 				APIURL:        "https://api.testhost.io",
@@ -87,7 +87,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
 				err = component.ValidateConfig(cfg)

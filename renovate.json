@@ -5,10 +5,13 @@
       "dependencies"
     ],
     "constraints": {
-      "go": "1.21.0"
+      "go": "1.22.0"
     },
     "schedule": ["every tuesday"],
-    "extends": ["config:recommended"],
+    "extends": [
+      "config:recommended",
+      "customManagers:githubActionsVersions"
+    ],
     "ignorePaths": [
       "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
       "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_16_3",
@@ -69,8 +72,18 @@
       },
       {
         "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/build-tools"],
+        "matchPackagePrefixes": ["go.opentelemetry.io/build-tools"],
         "groupName": "All go.opentelemetry.io/build-tools packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/otel"],
+        "groupName": "All go.opentelemetry.io/otel packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchPackagePrefixes": ["cloud.google.com/go"],
+        "groupName": "All cloud.google.com/go packages"
       },
       {
         "matchManagers": ["gomod"],
@@ -91,15 +104,25 @@
       },
       {
         "matchManagers": ["gomod"],
+        "matchSourceUrls": ["https://github.com/open-telemetry/opentelemetry-collector-contrib"],
+        "groupName": "All OpenTelemetry Collector Contrib packages",
+        "matchUpdateTypes": ["major", "minor", "patch"]
+      },
+      {
+        "matchManagers": ["gomod"],
         "matchSourceUrls": [
           "https://github.com/open-telemetry/opentelemetry-go-contrib"
         ],
         "groupName": "All opentelemetry-go-contrib packages"
+      },
+      {
+        "matchPackageNames": ["google.golang.org/grpc"],
+        "allowedVersions": "!/v1.68.0$/"
       }
     ],
     "ignoreDeps": [
-      "github.com/mattn/go-ieproxy",
-      "github.com/DataDog/datadog-agent/pkg/trace/exportable"
+      "github.com/DataDog/datadog-agent/pkg/trace/exportable",
+      "github.com/DataDog/datadog-api-client-go"
     ],
     "prConcurrentLimit": 200,
     "suppressNotifications": ["prEditedNotification"]

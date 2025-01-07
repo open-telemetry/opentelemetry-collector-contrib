@@ -37,13 +37,11 @@ func (e *PulsarTracesProducer) tracesPusher(ctx context.Context, td ptrace.Trace
 
 	var errs error
 	for _, message := range messages {
-
 		e.producer.SendAsync(ctx, message, func(_ pulsar.MessageID, _ *pulsar.ProducerMessage, err error) {
 			if err != nil {
 				errs = multierr.Append(errs, err)
 			}
 		})
-
 	}
 
 	return errs
@@ -85,13 +83,11 @@ func (e *PulsarMetricsProducer) metricsDataPusher(ctx context.Context, md pmetri
 
 	var errs error
 	for _, message := range messages {
-
 		e.producer.SendAsync(ctx, message, func(_ pulsar.MessageID, _ *pulsar.ProducerMessage, err error) {
 			if err != nil {
 				errs = multierr.Append(errs, err)
 			}
 		})
-
 	}
 
 	return errs
@@ -133,13 +129,11 @@ func (e *PulsarLogsProducer) logsDataPusher(ctx context.Context, ld plog.Logs) e
 
 	var errs error
 	for _, message := range messages {
-
 		e.producer.SendAsync(ctx, message, func(_ pulsar.MessageID, _ *pulsar.ProducerMessage, err error) {
 			if err != nil {
 				errs = multierr.Append(errs, err)
 			}
 		})
-
 	}
 
 	return errs
@@ -168,7 +162,6 @@ func newPulsarProducer(config Config) (pulsar.Client, pulsar.Producer, error) {
 	options := config.clientOptions()
 
 	client, err := pulsar.NewClient(options)
-
 	if err != nil {
 		return nil, nil, err
 	}
@@ -176,7 +169,6 @@ func newPulsarProducer(config Config) (pulsar.Client, pulsar.Producer, error) {
 	producerOptions := config.getProducerOptions()
 
 	producer, err := client.CreateProducer(producerOptions)
-
 	if err != nil {
 		return nil, nil, err
 	}
@@ -184,7 +176,7 @@ func newPulsarProducer(config Config) (pulsar.Client, pulsar.Producer, error) {
 	return client, producer, nil
 }
 
-func newMetricsExporter(config Config, set exporter.CreateSettings, marshalers map[string]MetricsMarshaler) (*PulsarMetricsProducer, error) {
+func newMetricsExporter(config Config, set exporter.Settings, marshalers map[string]MetricsMarshaler) (*PulsarMetricsProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -196,10 +188,9 @@ func newMetricsExporter(config Config, set exporter.CreateSettings, marshalers m
 		marshaler: marshaler,
 		logger:    set.Logger,
 	}, nil
-
 }
 
-func newTracesExporter(config Config, set exporter.CreateSettings, marshalers map[string]TracesMarshaler) (*PulsarTracesProducer, error) {
+func newTracesExporter(config Config, set exporter.Settings, marshalers map[string]TracesMarshaler) (*PulsarTracesProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -212,7 +203,7 @@ func newTracesExporter(config Config, set exporter.CreateSettings, marshalers ma
 	}, nil
 }
 
-func newLogsExporter(config Config, set exporter.CreateSettings, marshalers map[string]LogsMarshaler) (*PulsarLogsProducer, error) {
+func newLogsExporter(config Config, set exporter.Settings, marshalers map[string]LogsMarshaler) (*PulsarLogsProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -224,5 +215,4 @@ func newLogsExporter(config Config, set exporter.CreateSettings, marshalers map[
 		marshaler: marshaler,
 		logger:    set.Logger,
 	}, nil
-
 }

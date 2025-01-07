@@ -98,7 +98,6 @@ EVENT_LOOP:
 	for {
 		eventCh, errCh := pc.events(ctx, filters)
 		for {
-
 			select {
 			case <-ctx.Done():
 				return
@@ -132,7 +131,6 @@ EVENT_LOOP:
 					}
 				}
 			}
-
 		}
 	}
 }

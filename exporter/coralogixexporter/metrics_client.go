@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -24,7 +25,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func newMetricsExporter(cfg component.Config, set exporter.CreateSettings) (*metricsExporter, error) {
+func newMetricsExporter(cfg component.Config, set exporter.Settings) (*metricsExporter, error) {
 	oCfg := cfg.(*Config)
 
 	if isEmpty(oCfg.Domain) && isEmpty(oCfg.Metrics.Endpoint) {
@@ -51,14 +52,13 @@ type metricsExporter struct {
 }
 
 func (e *metricsExporter) start(ctx context.Context, host component.Host) (err error) {
-
 	switch {
 	case !isEmpty(e.config.Metrics.Endpoint):
-		if e.clientConn, err = e.config.Metrics.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+		if e.clientConn, err = e.config.Metrics.ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 	case !isEmpty(e.config.Domain):
-		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 	}
@@ -77,7 +77,6 @@ func (e *metricsExporter) start(ctx context.Context, host component.Host) (err e
 }
 
 func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
-
 	rss := md.ResourceMetrics()
 	for i := 0; i < rss.Len(); i++ {
 		resourceMetric := rss.At(i)

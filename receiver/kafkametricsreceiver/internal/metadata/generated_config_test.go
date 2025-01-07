@@ -25,17 +25,25 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					KafkaBrokers:                 MetricConfig{Enabled: true},
-					KafkaConsumerGroupLag:        MetricConfig{Enabled: true},
-					KafkaConsumerGroupLagSum:     MetricConfig{Enabled: true},
-					KafkaConsumerGroupMembers:    MetricConfig{Enabled: true},
-					KafkaConsumerGroupOffset:     MetricConfig{Enabled: true},
-					KafkaConsumerGroupOffsetSum:  MetricConfig{Enabled: true},
-					KafkaPartitionCurrentOffset:  MetricConfig{Enabled: true},
-					KafkaPartitionOldestOffset:   MetricConfig{Enabled: true},
-					KafkaPartitionReplicas:       MetricConfig{Enabled: true},
-					KafkaPartitionReplicasInSync: MetricConfig{Enabled: true},
-					KafkaTopicPartitions:         MetricConfig{Enabled: true},
+					KafkaBrokerLogRetentionPeriod: MetricConfig{Enabled: true},
+					KafkaBrokers:                  MetricConfig{Enabled: true},
+					KafkaConsumerGroupLag:         MetricConfig{Enabled: true},
+					KafkaConsumerGroupLagSum:      MetricConfig{Enabled: true},
+					KafkaConsumerGroupMembers:     MetricConfig{Enabled: true},
+					KafkaConsumerGroupOffset:      MetricConfig{Enabled: true},
+					KafkaConsumerGroupOffsetSum:   MetricConfig{Enabled: true},
+					KafkaPartitionCurrentOffset:   MetricConfig{Enabled: true},
+					KafkaPartitionOldestOffset:    MetricConfig{Enabled: true},
+					KafkaPartitionReplicas:        MetricConfig{Enabled: true},
+					KafkaPartitionReplicasInSync:  MetricConfig{Enabled: true},
+					KafkaTopicLogRetentionPeriod:  MetricConfig{Enabled: true},
+					KafkaTopicLogRetentionSize:    MetricConfig{Enabled: true},
+					KafkaTopicMinInsyncReplicas:   MetricConfig{Enabled: true},
+					KafkaTopicPartitions:          MetricConfig{Enabled: true},
+					KafkaTopicReplicationFactor:   MetricConfig{Enabled: true},
+				},
+				ResourceAttributes: ResourceAttributesConfig{
+					KafkaClusterAlias: ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -43,17 +51,25 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					KafkaBrokers:                 MetricConfig{Enabled: false},
-					KafkaConsumerGroupLag:        MetricConfig{Enabled: false},
-					KafkaConsumerGroupLagSum:     MetricConfig{Enabled: false},
-					KafkaConsumerGroupMembers:    MetricConfig{Enabled: false},
-					KafkaConsumerGroupOffset:     MetricConfig{Enabled: false},
-					KafkaConsumerGroupOffsetSum:  MetricConfig{Enabled: false},
-					KafkaPartitionCurrentOffset:  MetricConfig{Enabled: false},
-					KafkaPartitionOldestOffset:   MetricConfig{Enabled: false},
-					KafkaPartitionReplicas:       MetricConfig{Enabled: false},
-					KafkaPartitionReplicasInSync: MetricConfig{Enabled: false},
-					KafkaTopicPartitions:         MetricConfig{Enabled: false},
+					KafkaBrokerLogRetentionPeriod: MetricConfig{Enabled: false},
+					KafkaBrokers:                  MetricConfig{Enabled: false},
+					KafkaConsumerGroupLag:         MetricConfig{Enabled: false},
+					KafkaConsumerGroupLagSum:      MetricConfig{Enabled: false},
+					KafkaConsumerGroupMembers:     MetricConfig{Enabled: false},
+					KafkaConsumerGroupOffset:      MetricConfig{Enabled: false},
+					KafkaConsumerGroupOffsetSum:   MetricConfig{Enabled: false},
+					KafkaPartitionCurrentOffset:   MetricConfig{Enabled: false},
+					KafkaPartitionOldestOffset:    MetricConfig{Enabled: false},
+					KafkaPartitionReplicas:        MetricConfig{Enabled: false},
+					KafkaPartitionReplicasInSync:  MetricConfig{Enabled: false},
+					KafkaTopicLogRetentionPeriod:  MetricConfig{Enabled: false},
+					KafkaTopicLogRetentionSize:    MetricConfig{Enabled: false},
+					KafkaTopicMinInsyncReplicas:   MetricConfig{Enabled: false},
+					KafkaTopicPartitions:          MetricConfig{Enabled: false},
+					KafkaTopicReplicationFactor:   MetricConfig{Enabled: false},
+				},
+				ResourceAttributes: ResourceAttributesConfig{
+					KafkaClusterAlias: ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -61,9 +77,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }
@@ -74,6 +89,49 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
+	require.NoError(t, sub.Unmarshal(&cfg))
+	return cfg
+}
+
+func TestResourceAttributesConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		want ResourceAttributesConfig
+	}{
+		{
+			name: "default",
+			want: DefaultResourceAttributesConfig(),
+		},
+		{
+			name: "all_set",
+			want: ResourceAttributesConfig{
+				KafkaClusterAlias: ResourceAttributeConfig{Enabled: true},
+			},
+		},
+		{
+			name: "none_set",
+			want: ResourceAttributesConfig{
+				KafkaClusterAlias: ResourceAttributeConfig{Enabled: false},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := loadResourceAttributesConfig(t, tt.name)
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
+		})
+	}
+}
+
+func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	sub, err = sub.Sub("resource_attributes")
+	require.NoError(t, err)
+	cfg := DefaultResourceAttributesConfig()
 	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

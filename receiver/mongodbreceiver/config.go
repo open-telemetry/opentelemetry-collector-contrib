@@ -25,11 +25,13 @@ type Config struct {
 	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	Hosts                         []confignet.AddrConfig `mapstructure:"hosts"`
-	Username                      string                 `mapstructure:"username"`
-	Password                      configopaque.String    `mapstructure:"password"`
-	ReplicaSet                    string                 `mapstructure:"replica_set,omitempty"`
-	Timeout                       time.Duration          `mapstructure:"timeout"`
+	// Deprecated - Transport option will be removed in v0.102.0
+	Hosts            []confignet.TCPAddrConfig `mapstructure:"hosts"`
+	Username         string                    `mapstructure:"username"`
+	Password         configopaque.String       `mapstructure:"password"`
+	ReplicaSet       string                    `mapstructure:"replica_set,omitempty"`
+	Timeout          time.Duration             `mapstructure:"timeout"`
+	DirectConnection bool                      `mapstructure:"direct_connection"`
 }
 
 func (c *Config) Validate() error {
@@ -59,7 +61,7 @@ func (c *Config) Validate() error {
 
 func (c *Config) ClientOptions() *options.ClientOptions {
 	clientOptions := options.Client()
-	connString := fmt.Sprintf("mongodb://%s", strings.Join(c.hostlist(), ","))
+	connString := "mongodb://" + strings.Join(c.hostlist(), ",")
 	clientOptions.ApplyURI(connString)
 
 	if c.Timeout > 0 {
@@ -73,6 +75,10 @@ func (c *Config) ClientOptions() *options.ClientOptions {
 
 	if c.ReplicaSet != "" {
 		clientOptions.SetReplicaSet(c.ReplicaSet)
+	}
+
+	if c.DirectConnection {
+		clientOptions.SetDirect(c.DirectConnection)
 	}
 
 	if c.Username != "" && c.Password != "" {

@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.uber.org/zap"
@@ -34,10 +34,7 @@ func TestExtensionStartStop(t *testing.T) {
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = refreshInterval
 		sdCfg.ResultFile = output
-		cs := extensiontest.NewNopCreateSettings()
-		cs.ReportStatus = func(event *component.StatusEvent) {
-			require.NoError(t, event.Err())
-		}
+		cs := extensiontest.NewNopSettings()
 		ext, err := createExtensionWithFetcher(cs, sdCfg, f)
 		require.NoError(t, err)
 		return ext
@@ -47,7 +44,11 @@ func TestExtensionStartStop(t *testing.T) {
 		c := ecsmock.NewCluster()
 		ext := createTestExt(c, "testdata/ut_ext_noop.actual.yaml")
 		require.IsType(t, &ecsObserver{}, ext)
-		require.NoError(t, ext.Start(context.TODO(), componenttest.NewNopHost()))
+		require.NoError(t, ext.Start(context.TODO(), &nopHost{
+			reportFunc: func(event *componentstatus.Event) {
+				require.NoError(t, event.Err())
+			},
+		}))
 		require.NoError(t, ext.Shutdown(context.TODO()))
 	})
 
@@ -58,17 +59,32 @@ func TestExtensionStartStop(t *testing.T) {
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = 100 * time.Millisecond
 		sdCfg.ResultFile = "testdata/ut_ext_critical_error.actual.yaml"
-		cs := extensiontest.NewNopCreateSettings()
-		statusEventChan := make(chan *component.StatusEvent)
-		cs.TelemetrySettings.ReportStatus = func(e *component.StatusEvent) {
-			statusEventChan <- e
-		}
+		cs := extensiontest.NewNopSettings()
+		statusEventChan := make(chan *componentstatus.Event)
 		ext, err := createExtensionWithFetcher(cs, sdCfg, f)
 		require.NoError(t, err)
-		err = ext.Start(context.Background(), componenttest.NewNopHost())
+		err = ext.Start(context.Background(), &nopHost{
+			reportFunc: func(e *componentstatus.Event) {
+				statusEventChan <- e
+			},
+		})
 		require.NoError(t, err)
 		e := <-statusEventChan
 		require.Error(t, e.Err())
 		require.Error(t, hasCriticalError(zap.NewExample(), e.Err()))
 	})
+}
+
+var _ componentstatus.Reporter = (*nopHost)(nil)
+
+type nopHost struct {
+	reportFunc func(event *componentstatus.Event)
+}
+
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) Report(event *componentstatus.Event) {
+	nh.reportFunc(event)
 }

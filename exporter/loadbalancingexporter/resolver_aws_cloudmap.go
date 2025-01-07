@@ -15,9 +15,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery"
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
 
 const (
@@ -29,10 +31,10 @@ var (
 	errNoNamespace   = errors.New("no Cloud Map namespace specified to resolve the backends")
 	errNoServiceName = errors.New("no Cloud Map service_name specified to resolve the backends")
 
-	awsResolverMutator = tag.Upsert(tag.MustNewKey("resolver"), "aws")
-
-	awsResolverSuccessTrueMutators  = []tag.Mutator{awsResolverMutator, successTrueMutator}
-	awsResolverSuccessFalseMutators = []tag.Mutator{awsResolverMutator, successFalseMutator}
+	awsResolverAttr           = attribute.String("resolver", "aws")
+	awsResolverAttrSet        = attribute.NewSet(awsResolverAttr)
+	awsResolverSuccessAttrSet = attribute.NewSet(awsResolverAttr, attribute.Bool("success", true))
+	awsResolverFailureAttrSet = attribute.NewSet(awsResolverAttr, attribute.Bool("success", false))
 )
 
 func createDiscoveryFunction(client *servicediscovery.Client) func(params *servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
@@ -59,10 +61,19 @@ type cloudMapResolver struct {
 	shutdownWg         sync.WaitGroup
 	changeCallbackLock sync.RWMutex
 	discoveryFn        func(params *servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error)
+	telemetry          *metadata.TelemetryBuilder
 }
 
-func newCloudMapResolver(logger *zap.Logger, namespaceName *string, serviceName *string, port *uint16, healthStatus *types.HealthStatusFilter, interval time.Duration, timeout time.Duration) (*cloudMapResolver, error) {
-	// Using the SDK's default configuration, loading additional config
+func newCloudMapResolver(
+	logger *zap.Logger,
+	namespaceName *string,
+	serviceName *string,
+	port *uint16,
+	healthStatus *types.HealthStatusFilter,
+	interval time.Duration,
+	timeout time.Duration,
+	tb *metadata.TelemetryBuilder,
+) (*cloudMapResolver, error) { // Using the SDK's default configuration, loading additional config
 	// and credentials values from the environment variables, shared
 	// credentials, and shared configuration files
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithDefaultRegion("us-east-1"))
@@ -90,7 +101,7 @@ func newCloudMapResolver(logger *zap.Logger, namespaceName *string, serviceName 
 	}
 
 	if healthStatus == nil {
-		var healthStatusFilter = types.HealthStatusFilterHealthy
+		healthStatusFilter := types.HealthStatusFilterHealthy
 		healthStatus = &healthStatusFilter
 	}
 
@@ -104,6 +115,7 @@ func newCloudMapResolver(logger *zap.Logger, namespaceName *string, serviceName 
 		resTimeout:    timeout,
 		stopCh:        make(chan struct{}),
 		discoveryFn:   createDiscoveryFunction(svc),
+		telemetry:     tb,
 	}, nil
 }
 
@@ -165,11 +177,11 @@ func (r *cloudMapResolver) resolve(ctx context.Context) ([]string, error) {
 		QueryParameters:    nil,
 	})
 	if err != nil {
-		_ = stats.RecordWithTags(ctx, awsResolverSuccessFalseMutators, mNumResolutions.M(1))
+		r.telemetry.LoadbalancerNumResolutions.Add(ctx, 1, metric.WithAttributeSet(awsResolverFailureAttrSet))
 		return nil, err
 	}
 
-	_ = stats.RecordWithTags(ctx, awsResolverSuccessTrueMutators, mNumResolutions.M(1))
+	r.telemetry.LoadbalancerNumResolutions.Add(ctx, 1, metric.WithAttributeSet(awsResolverSuccessAttrSet))
 
 	r.logger.Debug("resolver has discovered instances ",
 		zap.Int("Instance Count", len(discoverInstancesOutput.Instances)))
@@ -200,7 +212,8 @@ func (r *cloudMapResolver) resolve(ctx context.Context) ([]string, error) {
 	r.updateLock.Lock()
 	r.endpoints = backends
 	r.updateLock.Unlock()
-	_ = stats.RecordWithTags(ctx, awsResolverSuccessTrueMutators, mNumBackends.M(int64(len(backends))))
+	r.telemetry.LoadbalancerNumBackends.Record(ctx, int64(len(backends)), metric.WithAttributeSet(awsResolverAttrSet))
+	r.telemetry.LoadbalancerNumBackendUpdates.Add(ctx, 1, metric.WithAttributeSet(awsResolverAttrSet))
 
 	// propagate the change
 	r.changeCallbackLock.RLock()

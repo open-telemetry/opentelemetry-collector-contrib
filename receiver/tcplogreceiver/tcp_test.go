@@ -33,7 +33,7 @@ func testTCP(t *testing.T, cfg *TCPLogConfig) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -71,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub("tcplog")
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.NoError(t, component.ValidateConfig(cfg))
 	assert.Equal(t, testdataConfigYaml(), cfg)
@@ -102,7 +102,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			return *c
 		}(),
 	}
-	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), badCfg, consumertest.NewNop())
+	receiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), badCfg, consumertest.NewNop())
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")
 	require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 }

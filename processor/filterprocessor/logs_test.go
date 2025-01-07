@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -578,9 +580,9 @@ func TestFilterLogProcessor(t *testing.T) {
 				},
 			}
 			factory := NewFactory()
-			flp, err := factory.CreateLogsProcessor(
+			flp, err := factory.CreateLogs(
 				context.Background(),
-				processortest.NewNopCreateSettings(),
+				processortest.NewNopSettings(),
 				cfg,
 				next,
 			)
@@ -593,7 +595,7 @@ func TestFilterLogProcessor(t *testing.T) {
 			assert.NoError(t, flp.Start(ctx, nil))
 
 			cErr := flp.ConsumeLogs(context.Background(), test.inLogs)
-			assert.Nil(t, cErr)
+			assert.NoError(t, cErr)
 			got := next.AllLogs()
 
 			require.Len(t, got, 1)
@@ -674,9 +676,9 @@ func requireNotPanicsLogs(t *testing.T, logs plog.Logs) {
 		Exclude: nil,
 	}
 	ctx := context.Background()
-	proc, _ := factory.CreateLogsProcessor(
+	proc, _ := factory.CreateLogs(
 		ctx,
-		processortest.NewNopCreateSettings(),
+		processortest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -747,7 +749,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterLogsProcessor(processortest.NewNopCreateSettings(), &Config{Logs: LogFilters{LogConditions: tt.conditions}})
+			processor, err := newFilterLogsProcessor(processortest.NewNopSettings(), &Config{Logs: LogFilters{LogConditions: tt.conditions}})
 			assert.NoError(t, err)
 
 			got, err := processor.processLogs(context.Background(), constructLogs())
@@ -764,19 +766,35 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 }
 
 func TestFilterLogProcessorTelemetry(t *testing.T) {
-	telemetryTest(t, "FilterLogProcessorTelemetry", func(t *testing.T, tel testTelemetry) {
-		processor, err := newFilterLogsProcessor(tel.NewProcessorCreateSettings(), &Config{
-			Logs: LogFilters{LogConditions: []string{`IsMatch(body, "operationA")`}},
-		})
-		assert.NoError(t, err)
-
-		_, err = processor.processLogs(context.Background(), constructLogs())
-		assert.NoError(t, err)
-
-		tel.assertMetrics(t, expectedMetrics{
-			logsFiltered: 2,
-		})
+	tel := setupTestTelemetry()
+	processor, err := newFilterLogsProcessor(tel.NewSettings(), &Config{
+		Logs: LogFilters{LogConditions: []string{`IsMatch(body, "operationA")`}},
 	})
+	assert.NoError(t, err)
+
+	_, err = processor.processLogs(context.Background(), constructLogs())
+	assert.NoError(t, err)
+
+	want := []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_filter_logs.filtered",
+			Description: "Number of logs dropped by the filter processor",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      2,
+						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
+					},
+				},
+			},
+		},
+	}
+
+	tel.assertMetrics(t, want)
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func constructLogs() plog.Logs {
@@ -807,7 +825,6 @@ func fillLogOne(log plog.LogRecord) {
 	log.Attributes().PutStr("http.path", "/health")
 	log.Attributes().PutStr("http.url", "http://localhost/health")
 	log.Attributes().PutStr("flags", "A|B|C")
-
 }
 
 func fillLogTwo(log plog.LogRecord) {
@@ -818,5 +835,4 @@ func fillLogTwo(log plog.LogRecord) {
 	log.Attributes().PutStr("http.path", "/health")
 	log.Attributes().PutStr("http.url", "http://localhost/health")
 	log.Attributes().PutStr("flags", "C|D")
-
 }

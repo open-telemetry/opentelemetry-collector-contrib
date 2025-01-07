@@ -58,7 +58,7 @@ func TestNewReceiver(t *testing.T) {
 	logger := zap.NewNop()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := newCollectdReceiver(logger, tt.args.config, "", tt.args.nextConsumer, receivertest.NewNopCreateSettings())
+			_, err := newCollectdReceiver(logger, tt.args.config, "", tt.args.nextConsumer, receivertest.NewNopSettings())
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -98,7 +98,7 @@ func TestCollectDServer(t *testing.T) {
 
 	testInvalidHTTPMethodCase := testCase{
 		Name:         "invalid-http-method",
-		HTTPMethod:   "GET",
+		HTTPMethod:   http.MethodGet,
 		RequestBody:  `invalid-body`,
 		ResponseCode: 400,
 		WantData:     []pmetric.Metrics{},
@@ -106,7 +106,7 @@ func TestCollectDServer(t *testing.T) {
 
 	testValidRequestBodyCase := testCase{
 		Name:        "valid-request-body",
-		HTTPMethod:  "POST",
+		HTTPMethod:  http.MethodPost,
 		QueryParams: "dap_attr1=attr1val",
 		RequestBody: `[
     	{
@@ -134,7 +134,7 @@ func TestCollectDServer(t *testing.T) {
 
 	testInValidRequestBodyCase := testCase{
 		Name:         "invalid-request-body",
-		HTTPMethod:   "POST",
+		HTTPMethod:   http.MethodPost,
 		RequestBody:  `invalid-body`,
 		ResponseCode: 400,
 		WantData:     []pmetric.Metrics{},
@@ -145,7 +145,7 @@ func TestCollectDServer(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 
 	logger := zap.NewNop()
-	cdr, err := newCollectdReceiver(logger, config, defaultAttrsPrefix, sink, receivertest.NewNopCreateSettings())
+	cdr, err := newCollectdReceiver(logger, config, defaultAttrsPrefix, sink, receivertest.NewNopSettings())
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
@@ -212,7 +212,6 @@ func createWantedMetrics(wantedRequestBody wantedBody) pmetric.Metrics {
 }
 
 func assertMetricsAreEqual(t *testing.T, expectedData []pmetric.Metrics, actualData []pmetric.Metrics) {
-
 	for i := 0; i < len(expectedData); i++ {
 		err := pmetrictest.CompareMetrics(expectedData[i], actualData[i])
 		require.NoError(t, err)

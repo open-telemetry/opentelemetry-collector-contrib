@@ -90,6 +90,7 @@ func TestLoadConfig(t *testing.T) {
 						Rule:               `type == "port"`,
 						ResourceAttributes: map[string]any{"one": "two"},
 						rule:               portRule,
+						signals:            receiverSignals{true, true, true},
 					},
 					"nop/1": {
 						receiverConfig: receiverConfig{
@@ -102,6 +103,7 @@ func TestLoadConfig(t *testing.T) {
 						Rule:               `type == "port"`,
 						ResourceAttributes: map[string]any{"two": "three"},
 						rule:               portRule,
+						signals:            receiverSignals{true, true, true},
 					},
 				},
 				WatchObservers: []component.ID{
@@ -109,12 +111,14 @@ func TestLoadConfig(t *testing.T) {
 					component.MustNewIDWithName("mock_observer", "with_name"),
 				},
 				ResourceAttributes: map[observer.EndpointType]map[string]string{
-					observer.ContainerType:  {"container.key": "container.value"},
-					observer.PodType:        {"pod.key": "pod.value"},
-					observer.PortType:       {"port.key": "port.value"},
-					observer.HostPortType:   {"hostport.key": "hostport.value"},
-					observer.K8sServiceType: {"k8s.service.key": "k8s.service.value"},
-					observer.K8sNodeType:    {"k8s.node.key": "k8s.node.value"},
+					observer.ContainerType:    {"container.key": "container.value"},
+					observer.PodType:          {"pod.key": "pod.value"},
+					observer.PodContainerType: {"pod.container.key": "pod.container.value"},
+					observer.PortType:         {"port.key": "port.value"},
+					observer.HostPortType:     {"hostport.key": "hostport.value"},
+					observer.K8sServiceType:   {"k8s.service.key": "k8s.service.value"},
+					observer.K8sIngressType:   {"k8s.ingress.key": "k8s.ingress.value"},
+					observer.K8sNodeType:      {"k8s.node.key": "k8s.node.value"},
 				},
 			},
 		},
@@ -127,7 +131,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -143,8 +147,10 @@ func TestInvalidResourceAttributeEndpointType(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-resource-attributes.yaml"), factories)
-	require.Contains(t, err.Error(), "error reading configuration for \"receiver_creator\": resource attributes for unsupported endpoint type \"not.a.real.type\"")
+	require.ErrorContains(t, err, "error reading configuration for \"receiver_creator\": resource attributes for unsupported endpoint type \"not.a.real.type\"")
 	require.Nil(t, cfg)
 }
 
@@ -156,8 +162,10 @@ func TestInvalidReceiverResourceAttributeValueType(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-receiver-resource-attributes.yaml"), factories)
-	require.Contains(t, err.Error(), "error reading configuration for \"receiver_creator\": unsupported `resource_attributes` \"one\" value <nil> in examplereceiver/1")
+	require.ErrorContains(t, err, "error reading configuration for \"receiver_creator\": unsupported `resource_attributes` \"one\" value <nil> in examplereceiver/1")
 	require.Nil(t, cfg)
 }
 
@@ -175,7 +183,7 @@ type nopWithEndpointReceiver struct {
 	consumer.Logs
 	consumer.Metrics
 	consumer.Traces
-	rcvr.CreateSettings
+	rcvr.Settings
 	cfg component.Config
 }
 
@@ -190,39 +198,42 @@ type mockComponent struct {
 	component.ShutdownFunc
 }
 
-func (*nopWithEndpointFactory) CreateLogsReceiver(
+func (*nopWithEndpointFactory) CreateLogs(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Logs) (rcvr.Logs, error) {
+	nextConsumer consumer.Logs,
+) (rcvr.Logs, error) {
 	return &nopWithEndpointReceiver{
-		Logs:           nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Logs:     nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
 
-func (*nopWithEndpointFactory) CreateMetricsReceiver(
+func (*nopWithEndpointFactory) CreateMetrics(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
+	nextConsumer consumer.Metrics,
+) (rcvr.Metrics, error) {
 	return &nopWithEndpointReceiver{
-		Metrics:        nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Metrics:  nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
 
-func (*nopWithEndpointFactory) CreateTracesReceiver(
+func (*nopWithEndpointFactory) CreateTraces(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Traces) (rcvr.Traces, error) {
+	nextConsumer consumer.Traces,
+) (rcvr.Traces, error) {
 	return &nopWithEndpointReceiver{
-		Traces:         nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Traces:   nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
 
@@ -240,7 +251,7 @@ type nopWithoutEndpointReceiver struct {
 	consumer.Logs
 	consumer.Metrics
 	consumer.Traces
-	rcvr.CreateSettings
+	rcvr.Settings
 	cfg component.Config
 }
 
@@ -250,38 +261,41 @@ func (*nopWithoutEndpointFactory) CreateDefaultConfig() component.Config {
 	}
 }
 
-func (*nopWithoutEndpointFactory) CreateLogsReceiver(
+func (*nopWithoutEndpointFactory) CreateLogs(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Logs) (rcvr.Logs, error) {
+	nextConsumer consumer.Logs,
+) (rcvr.Logs, error) {
 	return &nopWithoutEndpointReceiver{
-		Logs:           nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Logs:     nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
 
-func (*nopWithoutEndpointFactory) CreateMetricsReceiver(
+func (*nopWithoutEndpointFactory) CreateMetrics(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
+	nextConsumer consumer.Metrics,
+) (rcvr.Metrics, error) {
 	return &nopWithoutEndpointReceiver{
-		Metrics:        nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Metrics:  nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
 
-func (*nopWithoutEndpointFactory) CreateTracesReceiver(
+func (*nopWithoutEndpointFactory) CreateTraces(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Traces) (rcvr.Traces, error) {
+	nextConsumer consumer.Traces,
+) (rcvr.Traces, error) {
 	return &nopWithoutEndpointReceiver{
-		Traces:         nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Traces:   nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }

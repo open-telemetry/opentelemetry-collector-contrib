@@ -1,14 +1,13 @@
 type: k8s_cluster
-scope_name: otelcol/k8sclusterreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
     development: [logs]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   codeowners:
-    active: [dmitryax, TylerHelmuth, povilasv]
+    active: [dmitryax, TylerHelmuth, povilasv, ChrsMark]
 
 sem_conv_version: 1.18.0
 

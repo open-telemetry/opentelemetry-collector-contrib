@@ -24,16 +24,16 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 		cfg)
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }
 
-func TestFactory_CreateExtension(t *testing.T) {
+func TestFactory_Create(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.TCPAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }

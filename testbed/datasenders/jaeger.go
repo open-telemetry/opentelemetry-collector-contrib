@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -49,7 +48,7 @@ func NewJaegerGRPCDataSender(host string, port int) testbed.TraceDataSender {
 }
 
 func (je *jaegerGRPCDataSender) Start() error {
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
 	exp, err := je.newTracesExporter(params)
@@ -75,9 +74,9 @@ func (je *jaegerGRPCDataSender) ProtocolName() string {
 
 // Config defines configuration for Jaeger gRPC exporter.
 type jaegerConfig struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 }
@@ -95,7 +94,7 @@ func (cfg *jaegerConfig) Validate() error {
 // newTracesExporter returns a new Jaeger gRPC exporter.
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
-func (je *jaegerGRPCDataSender) newTracesExporter(set exporter.CreateSettings) (exporter.Traces, error) {
+func (je *jaegerGRPCDataSender) newTracesExporter(set exporter.Settings) (exporter.Traces, error) {
 	cfg := jaegerConfig{}
 	cfg.Endpoint = je.GetEndpoint().String()
 	cfg.TLSSetting = configtls.ClientConfig{
@@ -112,7 +111,7 @@ func (je *jaegerGRPCDataSender) newTracesExporter(set exporter.CreateSettings) (
 		clientSettings:            &cfg.ClientConfig,
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		context.TODO(), set, cfg, s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),
@@ -146,21 +145,16 @@ func (s *protoGRPCSender) pushTraces(
 	ctx context.Context,
 	td ptrace.Traces,
 ) error {
-
-	batches, err := jaeger.ProtoFromTraces(td)
-	if err != nil {
-		return consumererror.NewPermanent(fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err))
-	}
+	batches := jaeger.ProtoFromTraces(td)
 
 	if s.metadata.Len() > 0 {
 		ctx = metadata.NewOutgoingContext(ctx, s.metadata)
 	}
 
 	for _, batch := range batches {
-		_, err = s.client.PostSpans(
+		_, err := s.client.PostSpans(
 			ctx,
 			&jaegerproto.PostSpansRequest{Batch: *batch}, grpc.WaitForReady(s.waitForReady))
-
 		if err != nil {
 			s.settings.Logger.Debug("failed to push trace data to Jaeger", zap.Error(err))
 			return fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err)

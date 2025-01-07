@@ -576,7 +576,6 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 					assert.Error(t, err)
 					assert.ErrorContains(t, err, tt.errorMsg)
 				}
-
 			} else {
 				parsed, err := mathParser.ParseString("", tt.input)
 				assert.NoError(t, err)
@@ -588,7 +587,6 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 				assert.Nil(t, result)
 				assert.Error(t, err)
 			}
-
 		})
 	}
 }
@@ -623,7 +621,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 	tenHoursetc, err := time.ParseDuration("10h47m48s11ns")
 	require.NoError(t, err)
 
-	var tests = []struct {
+	tests := []struct {
 		name     string
 		mathExpr *mathExpression
 		expected any

@@ -7,7 +7,7 @@
 #####################################################
 #
 # Learn about membership in OpenTelemetry community:
-#  https://github.com/open-telemetry/community/blob/main/community-membership.md
+#  https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md
 #
 #
 # Learn about CODEOWNERS file format:
@@ -24,4 +24,7 @@ internal/common
 ## DEPRECATED components
 
 ## UNMAINTAINED components
-exporter/skywalkingexporter/
+exporter/kineticaexporter/
+exporter/opensearchexporter/
+extension/observer/ecstaskobserver/
+receiver/jmxreceiver/

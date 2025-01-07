@@ -6,7 +6,6 @@ package signalfxexporter
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -33,32 +32,32 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateMetricsExporter(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig()
 	c := cfg.(*Config)
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	_, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 }
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	cfg := createDefaultConfig()
 	c := cfg.(*Config)
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	_, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 }
 
-func TestCreateTracesExporterNoAccessToken(t *testing.T) {
+func TestCreateTracesNoAccessToken(t *testing.T) {
 	cfg := createDefaultConfig()
 	c := cfg.(*Config)
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	_, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.EqualError(t, err, "access_token is required")
 }
 
@@ -70,9 +69,9 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	exp, err := factory.CreateMetricsExporter(
+	exp, err := factory.CreateMetrics(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -81,16 +80,16 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	expCfg := cfg.(*Config)
 	expCfg.AccessToken = "testToken"
 	expCfg.Realm = "us1"
-	exp, err = factory.CreateMetricsExporter(
+	exp, err = factory.CreateMetrics(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
-	logExp, err := factory.CreateLogsExporter(
+	logExp, err := factory.CreateLogs(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, logExp)
@@ -98,7 +97,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
-func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
+func TestCreateMetrics_CustomConfig(t *testing.T) {
 	config := &Config{
 		AccessToken: "testToken",
 		Realm:       "us1",
@@ -111,7 +110,7 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 		},
 	}
 
-	te, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), config)
+	te, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -143,13 +142,13 @@ func TestDefaultTranslationRules(t *testing.T) {
 	dps, ok = metrics["system.disk.operations.total"]
 	require.True(t, ok, "system.disk.operations.total metrics not found")
 	require.Len(t, dps, 4)
-	require.Equal(t, 2, len(dps[0].Dimensions))
+	require.Len(t, dps[0].Dimensions, 2)
 
 	// system.disk.io.total new metric calculation
 	dps, ok = metrics["system.disk.io.total"]
 	require.True(t, ok, "system.disk.io.total metrics not found")
 	require.Len(t, dps, 2)
-	require.Equal(t, 2, len(dps[0].Dimensions))
+	require.Len(t, dps[0].Dimensions, 2)
 	for _, dp := range dps {
 		var directionFound bool
 		for _, dim := range dp.Dimensions {
@@ -173,20 +172,20 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.True(t, ok, "disk_ops.total metrics not found")
 	require.Len(t, dps, 1)
 	require.Equal(t, int64(8e3), *dps[0].Value.IntValue)
-	require.Equal(t, 1, len(dps[0].Dimensions))
+	require.Len(t, dps[0].Dimensions, 1)
 	requireDimension(t, dps[0].Dimensions, "host", "host0")
 
 	// system.network.io.total new metric calculation
 	dps, ok = metrics["system.network.io.total"]
 	require.True(t, ok, "system.network.io.total metrics not found")
 	require.Len(t, dps, 2)
-	require.Equal(t, 4, len(dps[0].Dimensions))
+	require.Len(t, dps[0].Dimensions, 4)
 
 	// system.network.packets.total new metric calculation
 	dps, ok = metrics["system.network.packets.total"]
 	require.True(t, ok, "system.network.packets.total metrics not found")
 	require.Len(t, dps, 1)
-	require.Equal(t, 4, len(dps[0].Dimensions))
+	require.Len(t, dps[0].Dimensions, 4)
 	require.Equal(t, int64(350), *dps[0].Value.IntValue)
 	requireDimension(t, dps[0].Dimensions, "direction", "receive")
 
@@ -194,7 +193,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	dps, ok = metrics["network.total"]
 	require.True(t, ok, "network.total metrics not found")
 	require.Len(t, dps, 1)
-	require.Equal(t, 3, len(dps[0].Dimensions))
+	require.Len(t, dps[0].Dimensions, 3)
 	require.Equal(t, int64(10e9), *dps[0].Value.IntValue)
 }
 
@@ -462,14 +461,14 @@ func TestDefaultDiskTranslations(t *testing.T) {
 
 	du, ok := m["disk.utilization"]
 	require.True(t, ok)
-	require.Equal(t, 4, len(du[0].Dimensions))
+	require.Len(t, du[0].Dimensions, 4)
 	// cheap test for pct conversion
-	require.True(t, *du[0].Value.DoubleValue > 1)
+	require.Greater(t, *du[0].Value.DoubleValue, 1.0)
 
 	dsu, ok := m["disk.summary_utilization"]
 	require.True(t, ok)
-	require.Equal(t, 3, len(dsu[0].Dimensions))
-	require.True(t, *dsu[0].Value.DoubleValue > 1)
+	require.Len(t, dsu[0].Dimensions, 3)
+	require.Greater(t, *dsu[0].Value.DoubleValue, 1.0)
 }
 
 func testGetTranslator(t *testing.T) *translation.MetricTranslator {
@@ -506,21 +505,21 @@ func TestDefaultCPUTranslations(t *testing.T) {
 	}
 
 	cpuUtil := m["cpu.utilization"]
-	require.Equal(t, 1, len(cpuUtil))
+	require.Len(t, cpuUtil, 1)
 	for _, pt := range cpuUtil {
 		require.Equal(t, 66, int(*pt.Value.DoubleValue))
 	}
 
 	cpuUtilPerCore := m["cpu.utilization_per_core"]
-	require.Equal(t, 8, len(cpuUtilPerCore))
+	require.Len(t, cpuUtilPerCore, 8)
 
 	cpuNumProcessors := m["cpu.num_processors"]
-	require.Equal(t, 1, len(cpuNumProcessors))
+	require.Len(t, cpuNumProcessors, 1)
 
 	cpuStateMetrics := []string{"cpu.idle", "cpu.interrupt", "cpu.system", "cpu.user"}
 	for _, metric := range cpuStateMetrics {
 		dps, ok := m[metric]
-		require.True(t, ok, fmt.Sprintf("%s metrics not found", metric))
+		require.Truef(t, ok, "%s metrics not found", metric)
 		require.Len(t, dps, 9)
 	}
 }
@@ -583,9 +582,8 @@ func TestDefaultExcludesTranslated(t *testing.T) {
 
 	// the default cpu.utilization metric is added after applying the default translations
 	// (because cpu.utilization_per_core is supplied) and should not be excluded
-	require.Equal(t, 1, len(dps))
+	require.Len(t, dps, 1)
 	require.Equal(t, "cpu.utilization", dps[0].Metric)
-
 }
 
 func TestDefaultExcludes_not_translated(t *testing.T) {
@@ -601,9 +599,9 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.NoError(t, err)
 
 	md := getMetrics(metrics)
-	require.Equal(t, 69, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	require.Equal(t, 54, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
-	require.Equal(t, 0, len(dps))
+	require.Empty(t, dps)
 }
 
 // Benchmark test for default translation rules on an example hostmetrics dataset.

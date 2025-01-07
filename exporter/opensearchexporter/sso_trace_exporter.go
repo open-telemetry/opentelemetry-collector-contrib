@@ -25,11 +25,7 @@ type ssoTracesExporter struct {
 	telemetry    component.TelemetrySettings
 }
 
-func newSSOTracesExporter(cfg *Config, set exporter.CreateSettings) (*ssoTracesExporter, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
+func newSSOTracesExporter(cfg *Config, set exporter.Settings) *ssoTracesExporter {
 	model := &encodeModel{
 		dataset:   cfg.Dataset,
 		namespace: cfg.Namespace,
@@ -42,7 +38,7 @@ func newSSOTracesExporter(cfg *Config, set exporter.CreateSettings) (*ssoTracesE
 		bulkAction:   cfg.BulkAction,
 		model:        model,
 		httpSettings: cfg.ClientConfig,
-	}, nil
+	}
 }
 
 func (s *ssoTracesExporter) Start(ctx context.Context, host component.Host) error {

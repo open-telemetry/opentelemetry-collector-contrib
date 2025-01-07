@@ -5,7 +5,9 @@ package filterprocessor // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"fmt"
 
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -13,45 +15,35 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
-type trigger int
-
-const (
-	triggerMetricDataPointsDropped trigger = iota
-	triggerLogsDropped
-	triggerSpansDropped
-)
-
-type filterProcessorTelemetry struct {
-	exportCtx context.Context
-
-	processorAttr []attribute.KeyValue
-
-	telemetryBuilder *metadata.TelemetryBuilder
+type filterTelemetry struct {
+	attr    metric.MeasurementOption
+	counter metric.Int64Counter
 }
 
-func newfilterProcessorTelemetry(set processor.CreateSettings) (*filterProcessorTelemetry, error) {
+func newFilterTelemetry(set processor.Settings, signal pipeline.Signal) (*filterTelemetry, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
 
-	return &filterProcessorTelemetry{
-		processorAttr:    []attribute.KeyValue{attribute.String(metadata.Type.String(), set.ID.String())},
-		exportCtx:        context.Background(),
-		telemetryBuilder: telemetryBuilder,
+	var counter metric.Int64Counter
+	switch signal {
+	case pipeline.SignalMetrics:
+		counter = telemetryBuilder.ProcessorFilterDatapointsFiltered
+	case pipeline.SignalLogs:
+		counter = telemetryBuilder.ProcessorFilterLogsFiltered
+	case pipeline.SignalTraces:
+		counter = telemetryBuilder.ProcessorFilterSpansFiltered
+	default:
+		return nil, fmt.Errorf("unsupported signal type: %v", signal)
+	}
+
+	return &filterTelemetry{
+		attr:    metric.WithAttributeSet(attribute.NewSet(attribute.String(metadata.Type.String(), set.ID.String()))),
+		counter: counter,
 	}, nil
 }
 
-func (fpt *filterProcessorTelemetry) record(trigger trigger, dropped int64) {
-	var triggerMeasure metric.Int64Counter
-	switch trigger {
-	case triggerMetricDataPointsDropped:
-		triggerMeasure = fpt.telemetryBuilder.ProcessorFilterDatapointsFiltered
-	case triggerLogsDropped:
-		triggerMeasure = fpt.telemetryBuilder.ProcessorFilterLogsFiltered
-	case triggerSpansDropped:
-		triggerMeasure = fpt.telemetryBuilder.ProcessorFilterSpansFiltered
-	}
-
-	triggerMeasure.Add(fpt.exportCtx, dropped, metric.WithAttributes(fpt.processorAttr...))
+func (fpt *filterTelemetry) record(ctx context.Context, dropped int64) {
+	fpt.counter.Add(ctx, dropped, fpt.attr)
 }

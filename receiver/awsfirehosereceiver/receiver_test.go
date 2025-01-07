@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -57,9 +58,7 @@ func TestStart(t *testing.T) {
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			cfg := &Config{
-				RecordType: defaultRecordType,
-			}
+			cfg := &Config{}
 			ctx := context.TODO()
 			r := testFirehoseReceiver(cfg, nil)
 			got := r.Start(ctx, testCase.host)
@@ -76,7 +75,6 @@ func TestStart(t *testing.T) {
 			require.NoError(t, listener.Close())
 		})
 		cfg := &Config{
-			RecordType: defaultRecordType,
 			ServerConfig: confighttp.ServerConfig{
 				Endpoint: listener.Addr().String(),
 			},
@@ -95,8 +93,7 @@ func TestFirehoseRequest(t *testing.T) {
 	defaultConsumer := newNopFirehoseConsumer(http.StatusOK, nil)
 	firehoseConsumerErr := errors.New("firehose consumer error")
 	cfg := &Config{
-		RecordType: defaultRecordType,
-		AccessKey:  testFirehoseAccessKey,
+		AccessKey: testFirehoseAccessKey,
 	}
 	var noRecords []firehoseRecord
 	testCases := map[string]struct {
@@ -118,6 +115,14 @@ func TestFirehoseRequest(t *testing.T) {
 		"WithDifferentAccessKey": {
 			headers: map[string]string{
 				headerFirehoseAccessKey: "test",
+			},
+			body:           testFirehoseRequest(testFirehoseRequestID, noRecords),
+			wantStatusCode: http.StatusUnauthorized,
+			wantErr:        errInvalidAccessKey,
+		},
+		"WithNoAccessKey": {
+			headers: map[string]string{
+				headerFirehoseAccessKey: "",
 			},
 			body:           testFirehoseRequest(testFirehoseRequestID, noRecords),
 			wantStatusCode: http.StatusUnauthorized,
@@ -184,9 +189,9 @@ func TestFirehoseRequest(t *testing.T) {
 
 			requestBody := bytes.NewBuffer(body)
 
-			request := httptest.NewRequest("POST", "/", requestBody)
+			request := httptest.NewRequest(http.MethodPost, "/", requestBody)
 			request.Header.Set(headerContentType, "application/json")
-			request.Header.Set(headerContentLength, fmt.Sprintf("%d", requestBody.Len()))
+			request.Header.Set(headerContentLength, strconv.Itoa(requestBody.Len()))
 			request.Header.Set(headerFirehoseRequestID, testFirehoseRequestID)
 			request.Header.Set(headerFirehoseAccessKey, testFirehoseAccessKey)
 			if testCase.headers != nil {
@@ -227,7 +232,7 @@ func TestFirehoseRequest(t *testing.T) {
 // testFirehoseReceiver is a convenience function for creating a test firehoseReceiver
 func testFirehoseReceiver(config *Config, consumer firehoseConsumer) *firehoseReceiver {
 	return &firehoseReceiver{
-		settings: receivertest.NewNopCreateSettings(),
+		settings: receivertest.NewNopSettings(),
 		config:   config,
 		consumer: consumer,
 	}

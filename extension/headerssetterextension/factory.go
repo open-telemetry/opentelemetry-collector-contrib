@@ -28,7 +28,7 @@ func createDefaultConfig() component.Config {
 
 func createExtension(
 	_ context.Context,
-	settings extension.CreateSettings,
+	settings extension.Settings,
 	cfg component.Config,
 ) (extension.Extension, error) {
 	return newHeadersSetterExtension(cfg.(*Config), settings.Logger)

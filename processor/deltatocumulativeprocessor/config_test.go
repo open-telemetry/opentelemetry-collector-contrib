@@ -4,6 +4,7 @@
 package deltatocumulativeprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor"
 
 import (
+	"math"
 	"path/filepath"
 	"testing"
 	"time"
@@ -37,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "set-valid-max_stale"),
 			expected: &Config{
 				MaxStale:   2 * time.Minute,
-				MaxStreams: 0,
+				MaxStreams: math.MaxInt,
 			},
 		},
 		{
@@ -56,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

@@ -97,7 +97,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Endpoint = "http://vcsa.host.localnet"
@@ -110,5 +110,4 @@ func TestLoadConfig(t *testing.T) {
 	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
 		t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 	}
-
 }

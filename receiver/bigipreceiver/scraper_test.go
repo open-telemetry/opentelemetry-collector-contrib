@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -27,6 +27,18 @@ import (
 )
 
 func TestScraperStart(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.TLSSetting = configtls.ClientConfig{}
+	clientConfig.Endpoint = defaultEndpoint
+
+	clientConfigNonExistentCA := confighttp.NewDefaultClientConfig()
+	clientConfigNonExistentCA.Endpoint = defaultEndpoint
+	clientConfigNonExistentCA.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "/non/existent",
+		},
+	}
+
 	testcases := []struct {
 		desc        string
 		scraper     *bigipScraper
@@ -36,14 +48,7 @@ func TestScraperStart(t *testing.T) {
 			desc: "Bad Config",
 			scraper: &bigipScraper{
 				cfg: &Config{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint: defaultEndpoint,
-						TLSSetting: configtls.ClientConfig{
-							Config: configtls.Config{
-								CAFile: "/non/existent",
-							},
-						},
-					},
+					ClientConfig: clientConfigNonExistentCA,
 				},
 				settings: componenttest.NewNopTelemetrySettings(),
 			},
@@ -53,10 +58,7 @@ func TestScraperStart(t *testing.T) {
 			desc: "Valid Config",
 			scraper: &bigipScraper{
 				cfg: &Config{
-					ClientConfig: confighttp.ClientConfig{
-						TLSSetting: configtls.ClientConfig{},
-						Endpoint:   defaultEndpoint,
-					},
+					ClientConfig: clientConfig,
 				},
 				settings: componenttest.NewNopTelemetrySettings(),
 			},
@@ -254,7 +256,7 @@ func TestScaperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config), receivertest.NewNopCreateSettings())
+			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config), receivertest.NewNopSettings())
 			scraper.client = tc.setupMockClient(t)
 
 			actualMetrics, err := scraper.scrape(context.Background())

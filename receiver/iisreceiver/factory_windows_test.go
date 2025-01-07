@@ -19,9 +19,9 @@ func TestWindowsFactory(t *testing.T) {
 	cfg := f.CreateDefaultConfig()
 	require.NotNil(t, cfg)
 
-	r, err := f.CreateMetricsReceiver(
+	r, err := f.CreateMetrics(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)

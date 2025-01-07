@@ -4,25 +4,23 @@
 package supervisor
 
 import (
-	"crypto/rand"
 	"errors"
 	"os"
-	"time"
 
-	"github.com/oklog/ulid/v2"
+	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 )
 
 // persistentState represents persistent state for the supervisor
 type persistentState struct {
-	InstanceID ulid.ULID `yaml:"instance_id"`
+	InstanceID uuid.UUID `yaml:"instance_id"`
 
 	// Path to the config file that the state should be saved to.
 	// This is not marshaled.
 	configPath string `yaml:"-"`
 }
 
-func (p *persistentState) SetInstanceID(id ulid.ULID) error {
+func (p *persistentState) SetInstanceID(id uuid.UUID) error {
 	p.InstanceID = id
 	return p.writeState()
 }
@@ -33,7 +31,7 @@ func (p *persistentState) writeState() error {
 		return err
 	}
 
-	return os.WriteFile(p.configPath, by, 0600)
+	return os.WriteFile(p.configPath, by, 0o600)
 }
 
 // loadOrCreatePersistentState attempts to load the persistent state from disk. If it doesn't
@@ -68,7 +66,7 @@ func loadPersistentState(file string) (*persistentState, error) {
 }
 
 func createNewPersistentState(file string) (*persistentState, error) {
-	id, err := generateNewULID()
+	id, err := uuid.NewV7()
 	if err != nil {
 		return nil, err
 	}
@@ -79,14 +77,4 @@ func createNewPersistentState(file string) (*persistentState, error) {
 	}
 
 	return p, p.writeState()
-}
-
-func generateNewULID() (ulid.ULID, error) {
-	entropy := ulid.Monotonic(rand.Reader, 0)
-	id, err := ulid.New(ulid.Timestamp(time.Now()), entropy)
-	if err != nil {
-		return ulid.ULID{}, err
-	}
-
-	return id, nil
 }

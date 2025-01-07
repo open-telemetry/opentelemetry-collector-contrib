@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
@@ -30,21 +31,24 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	queueSettings := exporterhelper.NewDefaultQueueSettings()
-	queueSettings.NumConsumers = 1
-	defaultCreateSchema := true
-
 	return &Config{
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		QueueSettings:    queueSettings,
+		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
+		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
 		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 		ConnectionParams: map[string]string{},
 		Database:         defaultDatabase,
 		LogsTableName:    "otel_logs",
 		TracesTableName:  "otel_traces",
-		MetricsTableName: "otel_metrics",
 		TTL:              0,
-		CreateSchema:     &defaultCreateSchema,
+		CreateSchema:     true,
+		AsyncInsert:      true,
+		MetricsTables: MetricTablesConfig{
+			Gauge:                internal.MetricTypeConfig{Name: defaultMetricTableName + defaultGaugeSuffix},
+			Sum:                  internal.MetricTypeConfig{Name: defaultMetricTableName + defaultSumSuffix},
+			Summary:              internal.MetricTypeConfig{Name: defaultMetricTableName + defaultSummarySuffix},
+			Histogram:            internal.MetricTypeConfig{Name: defaultMetricTableName + defaultHistogramSuffix},
+			ExponentialHistogram: internal.MetricTypeConfig{Name: defaultMetricTableName + defaultExpHistogramSuffix},
+		},
 	}
 }
 
@@ -52,7 +56,7 @@ func createDefaultConfig() component.Config {
 // Logs are directly inserted into ClickHouse.
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	c := cfg.(*Config)
@@ -61,7 +65,7 @@ func createLogsExporter(
 		return nil, fmt.Errorf("cannot configure clickhouse logs exporter: %w", err)
 	}
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
@@ -78,7 +82,7 @@ func createLogsExporter(
 // Traces are directly inserted into ClickHouse.
 func createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	c := cfg.(*Config)
@@ -87,7 +91,7 @@ func createTracesExporter(
 		return nil, fmt.Errorf("cannot configure clickhouse traces exporter: %w", err)
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -102,7 +106,7 @@ func createTracesExporter(
 
 func createMetricExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	c := cfg.(*Config)
@@ -111,7 +115,7 @@ func createMetricExporter(
 		return nil, fmt.Errorf("cannot configure clickhouse metrics exporter: %w", err)
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -124,21 +128,17 @@ func createMetricExporter(
 	)
 }
 
-func generateTTLExpr(ttlDays uint, ttl time.Duration, timeField string) string {
-	if ttlDays > 0 {
-		return fmt.Sprintf(`TTL toDateTime(%s) + toIntervalDay(%d)`, timeField, ttlDays)
-	}
-
+func generateTTLExpr(ttl time.Duration, timeField string) string {
 	if ttl > 0 {
 		switch {
 		case ttl%(24*time.Hour) == 0:
-			return fmt.Sprintf(`TTL toDateTime(%s) + toIntervalDay(%d)`, timeField, ttl/(24*time.Hour))
+			return fmt.Sprintf(`TTL %s + toIntervalDay(%d)`, timeField, ttl/(24*time.Hour))
 		case ttl%(time.Hour) == 0:
-			return fmt.Sprintf(`TTL toDateTime(%s) + toIntervalHour(%d)`, timeField, ttl/time.Hour)
+			return fmt.Sprintf(`TTL %s + toIntervalHour(%d)`, timeField, ttl/time.Hour)
 		case ttl%(time.Minute) == 0:
-			return fmt.Sprintf(`TTL toDateTime(%s) + toIntervalMinute(%d)`, timeField, ttl/time.Minute)
+			return fmt.Sprintf(`TTL %s + toIntervalMinute(%d)`, timeField, ttl/time.Minute)
 		default:
-			return fmt.Sprintf(`TTL toDateTime(%s) + toIntervalSecond(%d)`, timeField, ttl/time.Second)
+			return fmt.Sprintf(`TTL %s + toIntervalSecond(%d)`, timeField, ttl/time.Second)
 		}
 	}
 	return ""

@@ -38,7 +38,7 @@ func TestStartReceiverNoSubscription(t *testing.T) {
 			Endpoint:  srv.Addr,
 			Insecure:  true,
 			ProjectID: "my-project",
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutSettings: exporterhelper.TimeoutConfig{
 				Timeout: 12 * time.Second,
 			},
 			Subscription: "projects/my-project/subscriptions/otlp",
@@ -72,7 +72,7 @@ func TestReceiver(t *testing.T) {
 	assert.NoError(t, err)
 
 	core, _ := observer.New(zap.WarnLevel)
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	traceSink := new(consumertest.TracesSink)
 	metricSink := new(consumertest.MetricsSink)
 	logSink := new(consumertest.LogsSink)
@@ -94,7 +94,7 @@ func TestReceiver(t *testing.T) {
 			Endpoint:  srv.Addr,
 			Insecure:  true,
 			ProjectID: "my-project",
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutSettings: exporterhelper.TimeoutConfig{
 				Timeout: 1 * time.Second,
 			},
 			Subscription: "projects/my-project/subscriptions/otlp",

@@ -18,9 +18,11 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
-func TestNewLogsProcessor(t *testing.T) {
+func TestNewLogs(t *testing.T) {
 	tests := []struct {
 		name         string
 		nextConsumer consumer.Logs
@@ -45,7 +47,7 @@ func TestNewLogsProcessor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.nextConsumer, tt.cfg)
+			got, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(), tt.nextConsumer, tt.cfg)
 			if tt.wantErr {
 				assert.Nil(t, got)
 				assert.Error(t, err)
@@ -78,6 +80,11 @@ func TestLogsSampling(t *testing.T) {
 			name: "nothing",
 			cfg: &Config{
 				SamplingPercentage: 0,
+
+				// FailClosed because the test
+				// includes one empty TraceID which
+				// would otherwise fail open.
+				FailClosed: true,
 			},
 			received: 0,
 		},
@@ -86,6 +93,7 @@ func TestLogsSampling(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 50,
 				AttributeSource:    traceIDAttributeSource,
+				Mode:               HashSeed,
 				FailClosed:         true,
 			},
 			// Note: This count excludes one empty TraceID
@@ -119,7 +127,11 @@ func TestLogsSampling(t *testing.T) {
 				SamplingPercentage: 50,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",
-				FailClosed:         true,
+
+				// FailClosed: true so that we do not
+				// sample when the attribute is
+				// missing.
+				FailClosed: true,
 			},
 			received: 23,
 		},
@@ -129,7 +141,11 @@ func TestLogsSampling(t *testing.T) {
 				SamplingPercentage: 50,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "bar",
-				FailClosed:         true,
+
+				// FailClosed: true so that we do not
+				// sample when the attribute is
+				// missing.
+				FailClosed: true,
 			},
 			received: 29, // probabilistic... doesn't yield the same results as foo
 		},
@@ -155,7 +171,7 @@ func TestLogsSampling(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			processor, err := newLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), sink, tt.cfg)
+			processor, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(), sink, tt.cfg)
 			require.NoError(t, err)
 			logs := plog.NewLogs()
 			lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
@@ -191,6 +207,244 @@ func TestLogsSampling(t *testing.T) {
 	}
 }
 
+func TestLogsSamplingState(t *testing.T) {
+	// This hard-coded TraceID will sample at 50% and not at 49%.
+	// The equivalent randomness is 0x80000000000000.
+	defaultTID := mustParseTID("fefefefefefefefefe80000000000000")
+
+	tests := []struct {
+		name     string
+		cfg      *Config
+		tid      pcommon.TraceID
+		attrs    map[string]any
+		log      string
+		sampled  bool
+		adjCount float64
+		expect   map[string]any
+	}{
+		{
+			name: "100 percent traceID",
+			cfg: &Config{
+				SamplingPercentage: 100,
+				AttributeSource:    traceIDAttributeSource,
+				Mode:               Proportional,
+			},
+			tid: defaultTID,
+			attrs: map[string]any{
+				"ignored": "value",
+			},
+			sampled:  true,
+			adjCount: 1,
+			expect: map[string]any{
+				"sampling.threshold": "0",
+				"ignored":            "value",
+			},
+		},
+		{
+			name: "100 percent traceID hash_seed",
+			cfg: &Config{
+				SamplingPercentage: 100,
+				AttributeSource:    traceIDAttributeSource,
+				Mode:               "hash_seed",
+				HashSeed:           22,
+			},
+			attrs: map[string]any{
+				"K": "V",
+			},
+			tid:      defaultTID,
+			sampled:  true,
+			adjCount: 1,
+			expect: map[string]any{
+				"K":                   "V",
+				"sampling.threshold":  "0",
+				"sampling.randomness": randomnessFromBytes(defaultTID[:], 22).RValue(),
+			},
+		},
+		{
+			name: "100 percent attribute",
+			cfg: &Config{
+				SamplingPercentage: 100,
+				AttributeSource:    recordAttributeSource,
+				FromAttribute:      "veryrandom",
+				HashSeed:           49,
+			},
+			attrs: map[string]any{
+				"veryrandom": "1234",
+			},
+			sampled:  true,
+			adjCount: 1,
+			expect: map[string]any{
+				"sampling.threshold":  "0",
+				"sampling.randomness": randomnessFromBytes([]byte("1234"), 49).RValue(),
+				"veryrandom":          "1234",
+			},
+		},
+		{
+			name: "0 percent traceID",
+			cfg: &Config{
+				SamplingPercentage: 0,
+				AttributeSource:    traceIDAttributeSource,
+			},
+			tid:     defaultTID,
+			sampled: false,
+		},
+		{
+			name: "10 percent priority sampled incoming randomness",
+			cfg: &Config{
+				SamplingPercentage: 0,
+				AttributeSource:    traceIDAttributeSource,
+				SamplingPriority:   "veryrandom",
+				SamplingPrecision:  6,
+			},
+			tid: defaultTID,
+			attrs: map[string]any{
+				"sampling.randomness": "e6147c00000000",
+				"veryrandom":          10.125,
+			},
+			sampled:  true,
+			adjCount: 9.876654321,
+			expect: map[string]any{
+				"sampling.randomness": "e6147c00000000",
+				"sampling.threshold":  "e6147b",
+				"veryrandom":          10.125,
+			},
+		},
+		{
+			name: "25 percent incoming",
+			cfg: &Config{
+				SamplingPercentage: 50,
+				AttributeSource:    traceIDAttributeSource,
+				Mode:               Proportional,
+			},
+			tid: mustParseTID("fefefefefefefefefef0000000000000"),
+			attrs: map[string]any{
+				"sampling.threshold": "c",
+			},
+			sampled:  true,
+			adjCount: 8,
+			expect: map[string]any{
+				"sampling.threshold": "e",
+			},
+		},
+		{
+			name: "25 percent arriving inconsistent",
+			cfg: &Config{
+				SamplingPercentage: 50,
+				AttributeSource:    traceIDAttributeSource,
+				Mode:               Equalizing,
+				FailClosed:         true,
+			},
+			tid: mustParseTID("fefefefefefefefefeb0000000000000"),
+			attrs: map[string]any{
+				// "c" is an invalid threshold for the TraceID
+				// i.e., T <= R is false, should be rejected.
+				"sampling.threshold": "c", // Corresponds with 25%
+			},
+			log:     "inconsistent arriving threshold",
+			sampled: false,
+		},
+		{
+			name: "25 percent arriving equalizing",
+			cfg: &Config{
+				SamplingPercentage: 50,
+				AttributeSource:    traceIDAttributeSource,
+				Mode:               Equalizing,
+				SamplingPriority:   "prio",
+			},
+			tid: mustParseTID("fefefefefefefefefefefefefefefefe"),
+			attrs: map[string]any{
+				"sampling.threshold": "c", // Corresponds with 25%
+				"prio":               37,  // Lower than 50, higher than 25
+			},
+			sampled:  true,
+			adjCount: 4,
+			expect: map[string]any{
+				"sampling.threshold": "c",
+				"prio":               int64(37),
+			},
+			log: "cannot raise existing sampling probability",
+		},
+		{
+			name: "hash_seed with spec randomness",
+			cfg: &Config{
+				SamplingPercentage: 100,
+				AttributeSource:    traceIDAttributeSource,
+				Mode:               HashSeed,
+			},
+			tid: defaultTID,
+			attrs: map[string]any{
+				"sampling.randomness": "f2341234123412",
+			},
+			sampled:  true,
+			adjCount: 0, // No threshold
+			log:      "item has sampling randomness",
+			expect: map[string]any{
+				"sampling.randomness": "f2341234123412",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprint(tt.name), func(t *testing.T) {
+			sink := new(consumertest.LogsSink)
+			cfg := &Config{}
+			if tt.cfg != nil {
+				*cfg = *tt.cfg
+			}
+
+			set := processortest.NewNopSettings()
+			logger, observed := observer.New(zap.DebugLevel)
+			set.Logger = zap.New(logger)
+
+			tsp, err := newLogsProcessor(context.Background(), set, sink, cfg)
+			require.NoError(t, err)
+
+			logs := plog.NewLogs()
+			lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+			record := lr.AppendEmpty()
+			record.SetTimestamp(pcommon.Timestamp(time.Unix(1649400860, 0).Unix()))
+			record.SetSeverityNumber(plog.SeverityNumberDebug)
+			record.SetTraceID(tt.tid)
+			require.NoError(t, record.Attributes().FromRaw(tt.attrs))
+
+			err = tsp.ConsumeLogs(context.Background(), logs)
+			require.NoError(t, err)
+
+			if len(tt.log) == 0 {
+				require.Empty(t, observed.All(), "should not have logs: %v", observed.All())
+				require.Equal(t, "", tt.log)
+			} else {
+				require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
+				require.Contains(t, observed.All()[0].Message, "logs sampler")
+				require.ErrorContains(t, observed.All()[0].Context[0].Interface.(error), tt.log)
+			}
+
+			sampledData := sink.AllLogs()
+
+			if tt.sampled {
+				require.Len(t, sampledData, 1)
+				assert.Equal(t, 1, sink.LogRecordCount())
+				got := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+				gotAttrs := got.Attributes()
+				require.Equal(t, tt.expect, gotAttrs.AsRaw())
+				thVal, hasTh := gotAttrs.Get("sampling.threshold")
+				if tt.adjCount == 0 {
+					require.False(t, hasTh)
+				} else {
+					th, err := sampling.TValueToThreshold(thVal.Str())
+					require.NoError(t, err)
+					if cfg.SamplingPrecision == 0 {
+						assert.InEpsilon(t, tt.adjCount, th.AdjustedCount(), 1e-9,
+							"compare %v %v", tt.adjCount, th.AdjustedCount())
+					} else {
+						assert.InEpsilon(t, tt.adjCount, th.AdjustedCount(), 1e-3,
+							"compare %v %v", tt.adjCount, th.AdjustedCount())
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestLogsMissingRandomness(t *testing.T) {
 	type test struct {
 		pct        float32
@@ -199,68 +453,71 @@ func TestLogsMissingRandomness(t *testing.T) {
 		sampled    bool
 	}
 
-	for _, tt := range []test{
-		{0, recordAttributeSource, true, false},
-		{50, recordAttributeSource, true, false},
-		{100, recordAttributeSource, true, false},
+	for _, mode := range AllModes {
+		for _, tt := range []test{
+			{0, recordAttributeSource, true, false},
+			{50, recordAttributeSource, true, false},
+			{100, recordAttributeSource, true, false},
 
-		{0, recordAttributeSource, false, false},
-		{50, recordAttributeSource, false, true},
-		{100, recordAttributeSource, false, true},
+			{0, recordAttributeSource, false, false},
+			{50, recordAttributeSource, false, true},
+			{100, recordAttributeSource, false, true},
 
-		{0, traceIDAttributeSource, true, false},
-		{50, traceIDAttributeSource, true, false},
-		{100, traceIDAttributeSource, true, false},
+			{0, traceIDAttributeSource, true, false},
+			{50, traceIDAttributeSource, true, false},
+			{100, traceIDAttributeSource, true, false},
 
-		{0, traceIDAttributeSource, false, false},
-		{50, traceIDAttributeSource, false, true},
-		{100, traceIDAttributeSource, false, true},
-	} {
-		t.Run(fmt.Sprint(tt.pct, "_", tt.source, "_", tt.failClosed), func(t *testing.T) {
+			{0, traceIDAttributeSource, false, false},
+			{50, traceIDAttributeSource, false, true},
+			{100, traceIDAttributeSource, false, true},
+		} {
+			t.Run(fmt.Sprint(tt.pct, "_", tt.source, "_", tt.failClosed, "_", mode), func(t *testing.T) {
+				ctx := context.Background()
+				logs := plog.NewLogs()
+				record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+				record.SetTraceID(pcommon.TraceID{}) // invalid TraceID
+				record.Attributes().PutStr("unused", "")
 
-			ctx := context.Background()
-			logs := plog.NewLogs()
-			record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-			record.SetTraceID(pcommon.TraceID{}) // invalid TraceID
+				cfg := &Config{
+					SamplingPercentage: tt.pct,
+					Mode:               mode,
+					HashSeed:           defaultHashSeed,
+					FailClosed:         tt.failClosed,
+					AttributeSource:    tt.source,
+					FromAttribute:      "unused",
+				}
 
-			cfg := &Config{
-				SamplingPercentage: tt.pct,
-				HashSeed:           defaultHashSeed,
-				FailClosed:         tt.failClosed,
-				AttributeSource:    tt.source,
-				FromAttribute:      "unused",
-			}
+				sink := new(consumertest.LogsSink)
+				set := processortest.NewNopSettings()
+				// Note: there is a debug-level log we are expecting when FailClosed
+				// causes a drop.
+				logger, observed := observer.New(zap.DebugLevel)
+				set.Logger = zap.New(logger)
 
-			sink := new(consumertest.LogsSink)
-			set := processortest.NewNopCreateSettings()
-			// Note: there is a debug-level log we are expecting when FailClosed
-			// causes a drop.
-			logger, observed := observer.New(zap.DebugLevel)
-			set.Logger = zap.New(logger)
+				lp, err := newLogsProcessor(ctx, set, sink, cfg)
+				require.NoError(t, err)
 
-			lp, err := newLogsProcessor(ctx, set, sink, cfg)
-			require.NoError(t, err)
+				err = lp.ConsumeLogs(ctx, logs)
+				require.NoError(t, err)
 
-			err = lp.ConsumeLogs(ctx, logs)
-			require.NoError(t, err)
+				sampledData := sink.AllLogs()
+				if tt.sampled {
+					require.Len(t, sampledData, 1)
+					assert.Equal(t, 1, sink.LogRecordCount())
+				} else {
+					require.Empty(t, sampledData)
+					assert.Equal(t, 0, sink.LogRecordCount())
+				}
 
-			sampledData := sink.AllLogs()
-			if tt.sampled {
-				require.Equal(t, 1, len(sampledData))
-				assert.Equal(t, 1, sink.LogRecordCount())
-			} else {
-				require.Equal(t, 0, len(sampledData))
-				assert.Equal(t, 0, sink.LogRecordCount())
-			}
-
-			if tt.pct != 0 {
-				// pct==0 bypasses the randomness check
-				require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
-				require.Contains(t, observed.All()[0].Message, "logs sampler")
-				require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), "missing randomness")
-			} else {
-				require.Equal(t, 0, len(observed.All()), "should have no logs: %v", observed.All())
-			}
-		})
+				if tt.pct != 0 {
+					// pct==0 bypasses the randomness check
+					require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
+					require.Contains(t, observed.All()[0].Message, "logs sampler")
+					require.ErrorContains(t, observed.All()[0].Context[0].Interface.(error), "missing randomness")
+				} else {
+					require.Empty(t, observed.All(), "should have no logs: %v", observed.All())
+				}
+			})
+		}
 	}
 }

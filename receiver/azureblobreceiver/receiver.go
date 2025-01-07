@@ -57,7 +57,6 @@ func (b *blobReceiver) setNextTracesConsumer(nextTracesConsumer consumer.Traces)
 }
 
 func (b *blobReceiver) consumeLogsJSON(ctx context.Context, json []byte) error {
-
 	if b.nextLogsConsumer == nil {
 		return nil
 	}
@@ -96,7 +95,7 @@ func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error
 }
 
 // Returns a new instance of the log receiver
-func newReceiver(set receiver.CreateSettings, blobEventHandler blobEventHandler) (component.Component, error) {
+func newReceiver(set receiver.Settings, blobEventHandler blobEventHandler) (component.Component, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "event",

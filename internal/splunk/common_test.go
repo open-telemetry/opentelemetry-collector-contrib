@@ -16,10 +16,21 @@ func TestGetValues(t *testing.T) {
 		Fields: map[string]any{},
 	}
 	assert.Equal(t, map[string]any{}, metric.GetMetricValues())
+	metric.Fields["metric_name:x"] = "y"
+	assert.Equal(t, map[string]any{"x": "y"}, metric.GetMetricValues())
 	metric.Fields["metric_name:foo"] = "bar"
-	assert.Equal(t, map[string]any{"foo": "bar"}, metric.GetMetricValues())
+	assert.Equal(t, map[string]any{"x": "y", "foo": "bar"}, metric.GetMetricValues())
 	metric.Fields["metric_name:foo2"] = "foobar"
-	assert.Equal(t, map[string]any{"foo": "bar", "foo2": "foobar"}, metric.GetMetricValues())
+	assert.Equal(t, map[string]any{"x": "y", "foo": "bar", "foo2": "foobar"}, metric.GetMetricValues())
+	metric.Fields["metric_name:foo:123_456.Bar"] = "quux"
+	assert.Equal(t, map[string]any{"x": "y", "foo": "bar", "foo2": "foobar", "foo:123_456.Bar": "quux"}, metric.GetMetricValues())
+	// fields that aren't allowed
+	metric.Fields["metric_name:foo bar"] = "baz"             // contains space
+	metric.Fields["metric_name:foo?"] = "baz"                // illegal character
+	metric.Fields["metric_name:1stfoo"] = "baz"              // starts with number
+	metric.Fields["metric_name:_foo"] = "baz"                // starts with underscore
+	metric.Fields["metric_name:foo_metric_name:bar"] = "baz" // name contains "metric_name"
+	assert.Equal(t, map[string]any{"x": "y", "foo": "bar", "foo2": "foobar", "foo:123_456.Bar": "quux"}, metric.GetMetricValues())
 }
 
 func TestSingleValue(t *testing.T) {

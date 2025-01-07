@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter/internal/publisher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/rabbitmq"
 )
 
 type rabbitmqExporter struct {
@@ -27,8 +28,10 @@ type rabbitmqExporter struct {
 	publisher publisher.Publisher
 }
 
-type publisherFactory = func(publisher.DialConfig) (publisher.Publisher, error)
-type tlsFactory = func(context.Context) (*tls.Config, error)
+type (
+	publisherFactory = func(publisher.DialConfig) (publisher.Publisher, error)
+	tlsFactory       = func(context.Context) (*tls.Config, error)
+)
 
 func newRabbitmqExporter(cfg *Config, set component.TelemetrySettings, publisherFactory publisherFactory, tlsFactory tlsFactory, routingKey string, connectionName string) *rabbitmqExporter {
 	exporter := &rabbitmqExporter{
@@ -50,17 +53,19 @@ func (e *rabbitmqExporter) start(ctx context.Context, host component.Host) error
 	e.marshaler = m
 
 	dialConfig := publisher.DialConfig{
-		URL:   e.config.Connection.Endpoint,
-		Vhost: e.config.Connection.VHost,
-		Auth: &amqp.PlainAuth{
-			Username: e.config.Connection.Auth.Plain.Username,
-			Password: e.config.Connection.Auth.Plain.Password,
-		},
 		Durable:                    e.config.Durable,
-		ConnectionName:             e.connectionName,
-		ConnectionTimeout:          e.config.Connection.ConnectionTimeout,
-		Heartbeat:                  e.config.Connection.Heartbeat,
 		PublishConfirmationTimeout: e.config.Connection.PublishConfirmationTimeout,
+		DialConfig: rabbitmq.DialConfig{
+			URL:   e.config.Connection.Endpoint,
+			Vhost: e.config.Connection.VHost,
+			Auth: &amqp.PlainAuth{
+				Username: e.config.Connection.Auth.Plain.Username,
+				Password: e.config.Connection.Auth.Plain.Password,
+			},
+			ConnectionName:    e.connectionName,
+			ConnectionTimeout: e.config.Connection.ConnectionTimeout,
+			Heartbeat:         e.config.Connection.Heartbeat,
+		},
 	}
 
 	tlsConfig, err := e.tlsFactory(ctx)

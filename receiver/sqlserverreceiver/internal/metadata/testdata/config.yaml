@@ -9,7 +9,11 @@ all_set:
       enabled: true
     sqlserver.database.count:
       enabled: true
-    sqlserver.database.io.read_latency:
+    sqlserver.database.io:
+      enabled: true
+    sqlserver.database.latency:
+      enabled: true
+    sqlserver.database.operations:
       enabled: true
     sqlserver.lock.wait.rate:
       enabled: true
@@ -68,7 +72,11 @@ none_set:
       enabled: false
     sqlserver.database.count:
       enabled: false
-    sqlserver.database.io.read_latency:
+    sqlserver.database.io:
+      enabled: false
+    sqlserver.database.latency:
+      enabled: false
+    sqlserver.database.operations:
       enabled: false
     sqlserver.lock.wait.rate:
       enabled: false

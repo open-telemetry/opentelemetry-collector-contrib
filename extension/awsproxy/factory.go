@@ -13,7 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 const (
@@ -34,15 +34,13 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ProxyConfig: proxy.Config{
 			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: localhostgate.EndpointForPort(defaultPort),
+				Endpoint: testutil.EndpointForPort(defaultPort),
 			},
-			TLSSetting: configtls.ClientConfig{
-				Insecure: false,
-			},
+			TLSSetting: configtls.NewDefaultClientConfig(),
 		},
 	}
 }
 
-func createExtension(_ context.Context, params extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, params extension.Settings, cfg component.Config) (extension.Extension, error) {
 	return newXrayProxy(cfg.(*Config), params.TelemetrySettings)
 }

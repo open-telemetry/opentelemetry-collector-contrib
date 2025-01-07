@@ -7,16 +7,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"sync"
 	"time"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -30,16 +27,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
 
 // Stream is 1:1 with gRPC stream.
 type Stream struct {
-	// maxStreamLifetime is the max timeout before stream
-	// should be closed on the client side. This ensures a
-	// graceful shutdown before max_connection_age is reached
-	// on the server side.
-	maxStreamLifetime time.Duration
-
 	// producer is exclusive to the holder of the stream.
 	producer arrowRecord.ProducerAPI
 
@@ -76,6 +69,11 @@ type streamWorkState struct {
 	// toWrite is used to pass pending data between a caller, the
 	// prioritizer and a stream.
 	toWrite chan writeItem
+
+	// maxStreamLifetime is a limit on duration for streams.  A
+	// slight "jitter" is applied relative to this value on a
+	// per-stream basis.
+	maxStreamLifetime time.Duration
 
 	// lock protects waiters
 	lock sync.Mutex
@@ -130,9 +128,9 @@ func (s *Stream) setBatchChannel(batchID int64, errCh chan<- error) {
 	s.workState.waiters[batchID] = errCh
 }
 
-// logStreamError decides how to log an error.  `which` indicates the
-// stream direction, will be "reader" or "writer".
-func (s *Stream) logStreamError(which string, err error) {
+// logStreamError decides how to log an error.  `where` indicates the
+// error location, will be "reader" or "writer".
+func (s *Stream) logStreamError(where string, err error) {
 	var code codes.Code
 	var msg string
 	// gRPC tends to supply status-wrapped errors, so we always
@@ -151,9 +149,9 @@ func (s *Stream) logStreamError(which string, err error) {
 		msg = err.Error()
 	}
 	if code == codes.Canceled {
-		s.telemetry.Logger.Debug("arrow stream shutdown", zap.String("which", which), zap.String("message", msg))
+		s.telemetry.Logger.Debug("arrow stream shutdown", zap.String("message", msg), zap.String("where", where))
 	} else {
-		s.telemetry.Logger.Error("arrow stream error", zap.String("which", which), zap.String("message", msg), zap.Int("code", int(code)))
+		s.telemetry.Logger.Error("arrow stream error", zap.Int("code", int(code)), zap.String("message", msg), zap.String("where", where))
 	}
 }
 
@@ -254,8 +252,8 @@ func (s *Stream) write(ctx context.Context) (retErr error) {
 	hdrsEnc := hpack.NewEncoder(&hdrsBuf)
 
 	var timerCh <-chan time.Time
-	if s.maxStreamLifetime != 0 {
-		timer := time.NewTimer(s.maxStreamLifetime)
+	if s.workState.maxStreamLifetime != 0 {
+		timer := time.NewTimer(s.workState.maxStreamLifetime)
 		timerCh = timer.C
 		defer timer.Stop()
 	}
@@ -269,7 +267,7 @@ func (s *Stream) write(ctx context.Context) (retErr error) {
 			return nil
 		case wri = <-s.workState.toWrite:
 		case <-ctx.Done():
-			return ctx.Err()
+			return status.Errorf(codes.Canceled, "stream input: %v", ctx.Err())
 		}
 
 		err := s.encodeAndSend(wri, &hdrsBuf, hdrsEnc)
@@ -314,8 +312,8 @@ func (s *Stream) encodeAndSend(wri writeItem, hdrsBuf *bytes.Buffer, hdrsEnc *hp
 	if err != nil {
 		// This is some kind of internal error.  We will restart the
 		// stream and mark this record as a permanent one.
-		err = fmt.Errorf("encode: %w", err)
-		wri.errCh <- consumererror.NewPermanent(err)
+		err = status.Errorf(codes.Internal, "encode: %v", err)
+		wri.errCh <- err
 		return err
 	}
 
@@ -331,8 +329,8 @@ func (s *Stream) encodeAndSend(wri writeItem, hdrsBuf *bytes.Buffer, hdrsEnc *hp
 				// This case is like the encode-failure case
 				// above, we will restart the stream but consider
 				// this a permenent error.
-				err = fmt.Errorf("hpack: %w", err)
-				wri.errCh <- consumererror.NewPermanent(err)
+				err = status.Errorf(codes.Internal, "hpack: %v", err)
+				wri.errCh <- err
 				return err
 			}
 		}
@@ -346,13 +344,10 @@ func (s *Stream) encodeAndSend(wri writeItem, hdrsBuf *bytes.Buffer, hdrsEnc *hp
 	// unreliable for arrow transport, so we instrument it
 	// directly here.  Only the primary direction of transport
 	// is instrumented this way.
-	if wri.uncompSize != 0 {
-		var sized netstats.SizesStruct
-		sized.Method = s.method
-		sized.Length = int64(wri.uncompSize)
-		s.netReporter.CountSend(ctx, sized)
-		s.netReporter.SetSpanSizeAttributes(ctx, sized)
-	}
+	var sized netstats.SizesStruct
+	sized.Method = s.method
+	sized.Length = int64(wri.uncompSize)
+	s.netReporter.CountSend(ctx, sized)
 
 	if err := s.client.Send(batch); err != nil {
 		// The error will be sent to errCh during cleanup for this stream.
@@ -380,24 +375,24 @@ func (s *Stream) read(_ context.Context) error {
 		}
 
 		if err = s.processBatchStatus(resp); err != nil {
-			return fmt.Errorf("process: %w", err)
+			return err
 		}
 	}
 }
 
 // getSenderChannel takes the stream lock and removes the corresonding
 // sender channel.
-func (sws *streamWorkState) getSenderChannel(status *arrowpb.BatchStatus) (chan<- error, error) {
+func (sws *streamWorkState) getSenderChannel(bstat *arrowpb.BatchStatus) (chan<- error, error) {
 	sws.lock.Lock()
 	defer sws.lock.Unlock()
 
-	ch, ok := sws.waiters[status.BatchId]
+	ch, ok := sws.waiters[bstat.BatchId]
 	if !ok {
 		// Will break the stream.
-		return nil, fmt.Errorf("unrecognized batch ID: %d", status.BatchId)
+		return nil, status.Errorf(codes.Internal, "unrecognized batch ID: %d", bstat.BatchId)
 	}
 
-	delete(sws.waiters, status.BatchId)
+	delete(sws.waiters, bstat.BatchId)
 	return ch, nil
 }
 
@@ -458,7 +453,7 @@ func (s *Stream) encode(records any) (_ *arrowpb.BatchArrowRecords, retErr error
 				zap.Reflect("recovered", err),
 				zap.Stack("stacktrace"),
 			)
-			retErr = fmt.Errorf("panic in otel-arrow-adapter: %v", err)
+			retErr = status.Errorf(codes.Internal, "panic in otel-arrow-adapter: %v", err)
 		}
 	}()
 	var batch *arrowpb.BatchArrowRecords
@@ -471,7 +466,7 @@ func (s *Stream) encode(records any) (_ *arrowpb.BatchArrowRecords, retErr error
 	case pmetric.Metrics:
 		batch, err = s.producer.BatchArrowRecordsFromMetrics(data)
 	default:
-		return nil, fmt.Errorf("unsupported OTLP type: %T", records)
+		return nil, status.Errorf(codes.Unimplemented, "unsupported OTel-Arrow signal type: %T", records)
 	}
 	return batch, err
 }

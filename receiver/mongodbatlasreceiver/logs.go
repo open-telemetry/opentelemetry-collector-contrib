@@ -40,10 +40,10 @@ type ProjectContext struct {
 	orgName string
 }
 
-// MongoDB Atlas Documentation reccommends a polling interval of 5  minutes: https://www.mongodb.com/docs/atlas/reference/api/logs/#logs
+// MongoDB Atlas Documentation recommends a polling interval of 5 minutes: https://www.mongodb.com/docs/atlas/reference/api/logs/#logs
 const collectionInterval = time.Minute * 5
 
-func newMongoDBAtlasLogsReceiver(settings rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) *logsReceiver {
+func newMongoDBAtlasLogsReceiver(settings rcvr.Settings, cfg *Config, consumer consumer.Logs) *logsReceiver {
 	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger)
 
 	for _, p := range cfg.Logs.Projects {

@@ -1,0 +1,16 @@
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+extensions:
+  health_check/livenesscheck:
+    endpoint: "{{ .HealthCheckEndpoint }}"
+
+service:
+  extensions: [health_check/livenesscheck]
+  pipelines:
+    logs:
+      receivers: [nop]
+      exporters: [nop]

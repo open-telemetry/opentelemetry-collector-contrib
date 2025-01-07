@@ -29,7 +29,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverBatchSQLCompilationRate:            MetricConfig{Enabled: true},
 					SqlserverBatchSQLRecompilationRate:          MetricConfig{Enabled: true},
 					SqlserverDatabaseCount:                      MetricConfig{Enabled: true},
-					SqlserverDatabaseIoReadLatency:              MetricConfig{Enabled: true},
+					SqlserverDatabaseIo:                         MetricConfig{Enabled: true},
+					SqlserverDatabaseLatency:                    MetricConfig{Enabled: true},
+					SqlserverDatabaseOperations:                 MetricConfig{Enabled: true},
 					SqlserverLockWaitRate:                       MetricConfig{Enabled: true},
 					SqlserverLockWaitTimeAvg:                    MetricConfig{Enabled: true},
 					SqlserverPageBufferCacheHitRatio:            MetricConfig{Enabled: true},
@@ -66,7 +68,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverBatchSQLCompilationRate:            MetricConfig{Enabled: false},
 					SqlserverBatchSQLRecompilationRate:          MetricConfig{Enabled: false},
 					SqlserverDatabaseCount:                      MetricConfig{Enabled: false},
-					SqlserverDatabaseIoReadLatency:              MetricConfig{Enabled: false},
+					SqlserverDatabaseIo:                         MetricConfig{Enabled: false},
+					SqlserverDatabaseLatency:                    MetricConfig{Enabled: false},
+					SqlserverDatabaseOperations:                 MetricConfig{Enabled: false},
 					SqlserverLockWaitRate:                       MetricConfig{Enabled: false},
 					SqlserverLockWaitTimeAvg:                    MetricConfig{Enabled: false},
 					SqlserverPageBufferCacheHitRatio:            MetricConfig{Enabled: false},
@@ -99,9 +103,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }
@@ -145,9 +148,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }

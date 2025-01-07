@@ -15,6 +15,26 @@ resourceMetrics:
                   startTimeUnixNano: "1706802467703361527"
                   timeUnixNano: "1706802526712082422"
             unit: "1"
+          - description: Number of times disk blocks were found already in the buffer cache. 
+            name: postgresql.blks_hit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{blks_hit}'
+          - description: Number of disk blocks read in this database. 
+            name: postgresql.blks_read
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{blks_read}'            
           - description: The number of commits.
             name: postgresql.commits
             sum:
@@ -73,8 +93,58 @@ resourceMetrics:
                   timeUnixNano: "1706802526712082422"
               isMonotonic: true
             unit: '{temp_file}'
+          - description: Number of rows deleted by queries in the database.
+            name: postgresql.tup_deleted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{tup_deleted}'  
+          - description: Number of rows fetched by queries in the database.
+            name: postgresql.tup_fetched
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{tup_fetched}'  
+          - description: Number of rows inserted by queries in the database.
+            name: postgresql.tup_inserted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{tup_inserted}'    
+          - description: Number of rows returned by queries in the database.
+            name: postgresql.tup_returned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{tup_returned}'                                        
+          - description: Number of rows updated by queries in the database.
+            name: postgresql.tup_updated
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{tup_updated}'            
         scope:
-          name: otelcol/postgresqlreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
   - resource:
       attributes:
@@ -234,7 +304,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{vacuums}'
         scope:
-          name: otelcol/postgresqlreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
   - resource:
       attributes:
@@ -394,7 +464,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{vacuums}'
         scope:
-          name: otelcol/postgresqlreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
   - resource:
       attributes:
@@ -412,6 +482,26 @@ resourceMetrics:
                   startTimeUnixNano: "1706802467703361527"
                   timeUnixNano: "1706802526712082422"
             unit: "1"
+          - description: Number of times disk blocks were found already in the buffer cache. 
+            name: postgresql.blks_hit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{blks_hit}'
+          - description: Number of disk blocks read in this database. 
+            name: postgresql.blks_read
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{blks_read}'            
           - description: The number of commits.
             name: postgresql.commits
             sum:
@@ -470,8 +560,58 @@ resourceMetrics:
                   timeUnixNano: "1706802526712082422"
               isMonotonic: true
             unit: '{temp_file}'
+          - description: Number of rows deleted by queries in the database.
+            name: postgresql.tup_deleted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{tup_deleted}'  
+          - description: Number of rows fetched by queries in the database.
+            name: postgresql.tup_fetched
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{tup_fetched}'  
+          - description: Number of rows inserted by queries in the database.
+            name: postgresql.tup_inserted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{tup_inserted}'    
+          - description: Number of rows returned by queries in the database.
+            name: postgresql.tup_returned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{tup_returned}'                                        
+          - description: Number of rows updated by queries in the database.
+            name: postgresql.tup_updated
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{tup_updated}'            
         scope:
-          name: otelcol/postgresqlreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
   - resource:
       attributes:
@@ -505,7 +645,7 @@ resourceMetrics:
             name: postgresql.index.size
             unit: By
         scope:
-          name: otelcol/postgresqlreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
   - resource:
       attributes:
@@ -539,7 +679,7 @@ resourceMetrics:
             name: postgresql.index.size
             unit: By
         scope:
-          name: otelcol/postgresqlreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
   - resource:
       attributes:
@@ -699,7 +839,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{vacuums}'
         scope:
-          name: otelcol/postgresqlreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
   - resource:
       attributes:
@@ -859,7 +999,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{vacuums}'
         scope:
-          name: otelcol/postgresqlreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
   - resource:
       attributes:
@@ -877,6 +1017,26 @@ resourceMetrics:
                   startTimeUnixNano: "1706802467703361527"
                   timeUnixNano: "1706802526712082422"
             unit: "1"
+          - description: Number of times disk blocks were found already in the buffer cache. 
+            name: postgresql.blks_hit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{blks_hit}'
+          - description: Number of disk blocks read in this database. 
+            name: postgresql.blks_read
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{blks_read}'            
           - description: The number of commits.
             name: postgresql.commits
             sum:
@@ -935,8 +1095,58 @@ resourceMetrics:
                   timeUnixNano: "1706802526712082422"
               isMonotonic: true
             unit: '{temp_file}'
+          - description: Number of rows deleted by queries in the database.
+            name: postgresql.tup_deleted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{tup_deleted}'  
+          - description: Number of rows fetched by queries in the database.
+            name: postgresql.tup_fetched
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{tup_fetched}'  
+          - description: Number of rows inserted by queries in the database.
+            name: postgresql.tup_inserted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{tup_inserted}'    
+          - description: Number of rows returned by queries in the database.
+            name: postgresql.tup_returned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{tup_returned}'                                        
+          - description: Number of rows updated by queries in the database.
+            name: postgresql.tup_updated
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1706802467703361527"
+                  timeUnixNano: "1706802526712082422"
+              isMonotonic: true
+            unit: '{tup_updated}'            
         scope:
-          name: otelcol/postgresqlreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
   - resource:
       attributes:
@@ -970,7 +1180,7 @@ resourceMetrics:
             name: postgresql.index.size
             unit: By
         scope:
-          name: otelcol/postgresqlreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
   - resource:
       attributes:
@@ -1004,7 +1214,7 @@ resourceMetrics:
             name: postgresql.index.size
             unit: By
         scope:
-          name: otelcol/postgresqlreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
   - resource:
       attributes:
@@ -1038,7 +1248,7 @@ resourceMetrics:
             name: postgresql.index.size
             unit: By
         scope:
-          name: otelcol/postgresqlreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
   - resource:
       attributes:
@@ -1072,7 +1282,7 @@ resourceMetrics:
             name: postgresql.index.size
             unit: By
         scope:
-          name: otelcol/postgresqlreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
   - resource: {}
     scopeMetrics:
@@ -1262,5 +1472,5 @@ resourceMetrics:
             name: postgresql.database.locks
             unit: '{lock}'
         scope:
-          name: otelcol/postgresqlreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest

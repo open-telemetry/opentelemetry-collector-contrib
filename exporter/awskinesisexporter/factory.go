@@ -35,9 +35,9 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		Encoding: Encoding{
 			Name:        defaultEncoding,
 			Compression: defaultCompression,
@@ -50,13 +50,13 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func newTracesExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Traces, error) {
+func newTracesExporter(ctx context.Context, params exporter.Settings, conf component.Config) (exporter.Traces, error) {
 	exp, err := createExporter(ctx, conf, params.Logger)
 	if err != nil {
 		return nil, err
 	}
 	c := conf.(*Config)
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		params,
 		conf,
@@ -68,13 +68,13 @@ func newTracesExporter(ctx context.Context, params exporter.CreateSettings, conf
 	)
 }
 
-func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Metrics, error) {
+func newMetricsExporter(ctx context.Context, params exporter.Settings, conf component.Config) (exporter.Metrics, error) {
 	exp, err := createExporter(ctx, conf, params.Logger)
 	if err != nil {
 		return nil, err
 	}
 	c := conf.(*Config)
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		params,
 		c,
@@ -86,13 +86,13 @@ func newMetricsExporter(ctx context.Context, params exporter.CreateSettings, con
 	)
 }
 
-func newLogsExporter(ctx context.Context, params exporter.CreateSettings, conf component.Config) (exporter.Logs, error) {
+func newLogsExporter(ctx context.Context, params exporter.Settings, conf component.Config) (exporter.Logs, error) {
 	exp, err := createExporter(ctx, conf, params.Logger)
 	if err != nil {
 		return nil, err
 	}
 	c := conf.(*Config)
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		params,
 		c,

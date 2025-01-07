@@ -19,31 +19,31 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateMetricsExporter(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createMetricsExporter(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 }
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createTracesExporter(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 }
 
-func TestCreateLogsExporter(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createLogsExporter(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -54,14 +54,14 @@ func TestUnsupportedMarshalerOptions(t *testing.T) {
 	cfg.(*Config).MarshalerName = SumoIC
 	exp, err := createMetricsExporter(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.Error(t, err)
 	require.Nil(t, exp)
 
 	exp2, err := createTracesExporter(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.Error(t, err)
 	require.Nil(t, exp2)

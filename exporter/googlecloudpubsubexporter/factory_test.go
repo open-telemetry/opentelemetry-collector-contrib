@@ -26,30 +26,30 @@ func TestType(t *testing.T) {
 	assert.Equal(t, metadata.Type, factory.Type())
 }
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
 	eCfg.Endpoint = "http://testing.invalid"
 
-	te, err := factory.CreateTracesExporter(
+	te, err := factory.CreateTraces(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		eCfg,
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 }
 
-func TestCreateMetricsExporter(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
 	eCfg.Endpoint = "http://testing.invalid"
 
-	me, err := factory.CreateMetricsExporter(
+	me, err := factory.CreateMetrics(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		eCfg,
 	)
 	assert.NoError(t, err)
@@ -62,9 +62,9 @@ func TestLogsCreateExporter(t *testing.T) {
 	eCfg := cfg.(*Config)
 	eCfg.Endpoint = "http://testing.invalid"
 
-	me, err := factory.CreateLogsExporter(
+	me, err := factory.CreateLogs(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		eCfg,
 	)
 	assert.NoError(t, err)
@@ -77,7 +77,7 @@ func TestEnsureExporter(t *testing.T) {
 	eCfg := cfg.(*Config)
 	eCfg.Endpoint = "http://testing.invalid"
 
-	exporter1 := ensureExporter(exportertest.NewNopCreateSettings(), eCfg)
-	exporter2 := ensureExporter(exportertest.NewNopCreateSettings(), eCfg)
+	exporter1 := ensureExporter(exportertest.NewNopSettings(), eCfg)
+	exporter2 := ensureExporter(exportertest.NewNopSettings(), eCfg)
 	assert.Equal(t, exporter1, exporter2)
 }

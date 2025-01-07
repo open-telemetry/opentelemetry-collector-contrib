@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
@@ -26,32 +27,32 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.TLSSetting = configtls.ClientConfig{}
+	clientConfig.Endpoint = defaultEndpoint
+	clientConfig.Timeout = 1 * time.Minute
 	return &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
-		ClientConfig: confighttp.ClientConfig{
-			TLSSetting: configtls.ClientConfig{},
-			Endpoint:   defaultEndpoint,
-			Timeout:    1 * time.Minute,
-		},
+		ClientConfig:         clientConfig,
 	}
 }
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 	ns := newCouchdbScraper(params, cfg)
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ns.scrape, scraperhelper.WithStart(ns.start))
+	s, err := scraper.NewMetrics(ns.scrape, scraper.WithStart(ns.start))
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&cfg.ControllerConfig, params, consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraper(metadata.Type, s),
 	)
 }

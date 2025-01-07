@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/metadata"
 )
@@ -33,17 +34,16 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+func createMetricsReceiver(_ context.Context, params receiver.Settings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	cfg, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotNSX
 	}
 	s := newScraper(cfg, params)
 
-	scraper, err := scraperhelper.NewScraper(
-		metadata.Type.String(),
+	sc, err := scraper.NewMetrics(
 		s.scrape,
-		scraperhelper.WithStart(s.start),
+		scraper.WithStart(s.start),
 	)
 	if err != nil {
 		return nil, err
@@ -53,6 +53,6 @@ func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rC
 		&cfg.ControllerConfig,
 		params,
 		consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraper(metadata.Type, sc),
 	)
 }

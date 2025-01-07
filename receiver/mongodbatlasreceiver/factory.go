@@ -31,12 +31,11 @@ func NewFactory() receiver.Factory {
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 		receiver.WithLogs(createCombinedLogReceiver, metadata.LogsStability))
-
 }
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -47,12 +46,12 @@ func createMetricsReceiver(
 		return nil, fmt.Errorf("unable to create a MongoDB Atlas Scaper instance: %w", err)
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(ms))
+	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, ms))
 }
 
 func createCombinedLogReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {

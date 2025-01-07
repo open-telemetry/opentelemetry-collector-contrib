@@ -45,9 +45,9 @@ func TestReceiver(t *testing.T) {
 			cfg := (f.CreateDefaultConfig()).(*Config)
 			cfg.UseServiceAccount = tt.useServiceAccount
 
-			r, err := f.CreateMetricsReceiver(
+			r, err := f.CreateMetrics(
 				context.Background(),
-				receivertest.NewNopCreateSettings(),
+				receivertest.NewNopSettings(),
 				cfg,
 				consumertest.NewNop(),
 			)
@@ -97,6 +97,41 @@ func TestGetPrometheusConfig(t *testing.T) {
 							Scheme:          "http",
 							MetricsPath:     "/metric",
 							Params:          url.Values{"foo": []string{"bar", "foobar"}},
+							ServiceDiscoveryConfigs: discovery.Configs{
+								&discovery.StaticConfig{
+									{
+										Targets: []model.LabelSet{
+											{model.AddressLabel: model.LabelValue("localhost:1234")},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Test with job name",
+			config: &Config{
+				ClientConfig: confighttp.ClientConfig{
+					Endpoint: "localhost:1234",
+				},
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metric",
+				JobName:            "job123",
+			},
+			want: &prometheusreceiver.Config{
+				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
+					ScrapeConfigs: []*config.ScrapeConfig{
+						{
+							ScrapeInterval:  model.Duration(10 * time.Second),
+							ScrapeTimeout:   model.Duration(10 * time.Second),
+							JobName:         "job123",
+							HonorTimestamps: true,
+							Scheme:          "https",
+							MetricsPath:     "/metric",
 							ServiceDiscoveryConfigs: discovery.Configs{
 								&discovery.StaticConfig{
 									{
@@ -186,7 +221,8 @@ func TestGetPrometheusConfig(t *testing.T) {
 										Targets: []model.LabelSet{
 											{
 												model.AddressLabel:     model.LabelValue("localhost:1234"),
-												model.LabelName("key"): model.LabelValue("value")},
+												model.LabelName("key"): model.LabelValue("value"),
+											},
 										},
 									},
 								},
@@ -401,7 +437,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getPrometheusConfigWrapper(tt.config, receivertest.NewNopCreateSettings())
+			got, err := getPrometheusConfigWrapper(tt.config, receivertest.NewNopSettings())
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})

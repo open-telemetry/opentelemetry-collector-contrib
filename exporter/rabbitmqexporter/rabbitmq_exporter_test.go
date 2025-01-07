@@ -29,10 +29,10 @@ func TestStartAndShutdown(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	pub := mockPublisher{}
-	var pubFactory = func(publisher.DialConfig) (publisher.Publisher, error) {
+	pubFactory := func(publisher.DialConfig) (publisher.Publisher, error) {
 		return &pub, nil
 	}
-	exporter := newRabbitmqExporter(cfg, exportertest.NewNopCreateSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
+	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
 
 	err := exporter.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -48,16 +48,15 @@ func TestStart_UnknownMarshallerEncoding(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	pub := mockPublisher{}
-	var pubFactory = func(publisher.DialConfig) (publisher.Publisher, error) {
+	pubFactory := func(publisher.DialConfig) (publisher.Publisher, error) {
 		return &pub, nil
 	}
 
 	unknownExtensionID := component.NewID(component.MustNewType("invalid_encoding"))
 	cfg.EncodingExtensionID = &unknownExtensionID
-	host := mockHost{}
-	exporter := newRabbitmqExporter(cfg, exportertest.NewNopCreateSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
+	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
 
-	err := exporter.start(context.Background(), host)
+	err := exporter.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, "unknown encoding \"invalid_encoding\"")
 
 	err = exporter.shutdown(context.Background())
@@ -67,10 +66,10 @@ func TestStart_UnknownMarshallerEncoding(t *testing.T) {
 func TestStart_PublisherCreationErr(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	var pubFactory = func(publisher.DialConfig) (publisher.Publisher, error) {
+	pubFactory := func(publisher.DialConfig) (publisher.Publisher, error) {
 		return nil, errors.New("simulating error creating publisher")
 	}
-	exporter := newRabbitmqExporter(cfg, exportertest.NewNopCreateSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
+	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
 
 	err := exporter.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, "simulating error creating publisher")
@@ -83,13 +82,13 @@ func TestStart_TLSError(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	pub := mockPublisher{}
-	var pubFactory = func(publisher.DialConfig) (publisher.Publisher, error) {
+	pubFactory := func(publisher.DialConfig) (publisher.Publisher, error) {
 		return &pub, nil
 	}
 	tlsFactory := func(context.Context) (*tls.Config, error) {
 		return nil, errors.New("simulating tls config error")
 	}
-	exporter := newRabbitmqExporter(cfg, exportertest.NewNopCreateSettings().TelemetrySettings, pubFactory, tlsFactory, routingKey, connectionName)
+	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings().TelemetrySettings, pubFactory, tlsFactory, routingKey, connectionName)
 
 	err := exporter.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, "simulating tls config error")
@@ -138,10 +137,10 @@ func exporterForPublishing(t *testing.T) (*mockPublisher, *rabbitmqExporter) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	pub := mockPublisher{}
-	var pubFactory = func(publisher.DialConfig) (publisher.Publisher, error) {
+	pubFactory := func(publisher.DialConfig) (publisher.Publisher, error) {
 		return &pub, nil
 	}
-	exporter := newRabbitmqExporter(cfg, exportertest.NewNopCreateSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
+	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
 
 	err := exporter.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -161,12 +160,4 @@ func (c *mockPublisher) Publish(ctx context.Context, message publisher.Message) 
 func (c *mockPublisher) Close() error {
 	args := c.Called()
 	return args.Error(0)
-}
-
-type mockHost struct {
-	component.Host
-}
-
-func (h mockHost) GetExtensions() map[component.ID]component.Component {
-	return make(map[component.ID]component.Component)
 }

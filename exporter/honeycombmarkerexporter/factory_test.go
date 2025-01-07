@@ -22,13 +22,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestFactory_CreateLogsExporter(t *testing.T) {
+func TestFactory_CreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.APIURL = defaultURL
 	})
-	params := exportertest.NewNopCreateSettings()
-	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
+	params := exportertest.NewNopSettings()
+	exporter, err := factory.CreateLogs(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 

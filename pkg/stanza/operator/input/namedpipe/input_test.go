@@ -22,15 +22,15 @@ import (
 )
 
 // filename attempts to get an unused filename.
-func filename(t testing.TB) string {
-	t.Helper()
+func filename(tb testing.TB) string {
+	tb.Helper()
 
 	file, err := os.CreateTemp("", "")
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	name := file.Name()
-	require.NoError(t, file.Close())
-	require.NoError(t, os.Remove(name))
+	require.NoError(tb, file.Close())
+	require.NoError(tb, os.Remove(name))
 
 	return name
 }
@@ -39,7 +39,7 @@ func filename(t testing.TB) string {
 func TestCreatePipe(t *testing.T) {
 	conf := NewConfig()
 	conf.Path = filename(t)
-	conf.Permissions = 0666
+	conf.Permissions = 0o666
 
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := conf.Build(set)
@@ -62,7 +62,7 @@ func TestCreatePipe(t *testing.T) {
 func TestCreatePipeFailsWithFile(t *testing.T) {
 	conf := NewConfig()
 	conf.Path = filename(t)
-	conf.Permissions = 0666
+	conf.Permissions = 0o666
 
 	pipe, err := os.OpenFile(conf.Path, os.O_CREATE, 0)
 	require.NoError(t, err)
@@ -81,7 +81,7 @@ func TestCreatePipeFailsWithFile(t *testing.T) {
 func TestCreatePipeAlreadyExists(t *testing.T) {
 	conf := NewConfig()
 	conf.Path = filename(t)
-	conf.Permissions = 0666
+	conf.Permissions = 0o666
 
 	require.NoError(t, unix.Mkfifo(conf.Path, conf.Permissions))
 
@@ -99,7 +99,7 @@ func TestPipeWrites(t *testing.T) {
 
 	conf := NewConfig()
 	conf.Path = filename(t)
-	conf.Permissions = 0666
+	conf.Permissions = 0o666
 	conf.OutputIDs = []string{fake.ID()}
 
 	set := componenttest.NewNopTelemetrySettings()

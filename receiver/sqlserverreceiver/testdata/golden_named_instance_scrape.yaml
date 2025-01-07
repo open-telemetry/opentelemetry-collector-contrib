@@ -188,5 +188,5 @@ resourceMetrics:
             name: sqlserver.user.connection.count
             unit: '{connections}'
         scope:
-          name: otelcol/sqlserverreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest

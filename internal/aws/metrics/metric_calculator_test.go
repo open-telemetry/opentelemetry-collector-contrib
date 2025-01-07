@@ -106,14 +106,14 @@ func TestMapWithExpiryAdd(t *testing.T) {
 	store.Set(Key{MetricMetadata: "key1"}, MetricValue{RawValue: value1})
 	val, ok := store.Get(Key{MetricMetadata: "key1"})
 	store.Unlock()
-	assert.Equal(t, true, ok)
+	assert.True(t, ok)
 	assert.Equal(t, value1, val.RawValue)
 
 	store.Lock()
 	defer store.Unlock()
 	val, ok = store.Get(Key{MetricMetadata: "key2"})
-	assert.Equal(t, false, ok)
-	assert.True(t, val == nil)
+	assert.False(t, ok)
+	assert.Nil(t, val)
 	require.NoError(t, store.Shutdown())
 }
 
@@ -134,7 +134,7 @@ func TestMapWithExpiryCleanup(t *testing.T) {
 
 	val, ok := store.Get(Key{MetricMetadata: "key1"})
 
-	assert.Equal(t, true, ok)
+	assert.True(t, ok)
 	assert.Equal(t, value1, val.RawValue.(float64))
 	assert.Equal(t, 1, store.Size())
 	store.Unlock()
@@ -143,8 +143,8 @@ func TestMapWithExpiryCleanup(t *testing.T) {
 	store.CleanUp(time.Now())
 	store.Lock()
 	val, ok = store.Get(Key{MetricMetadata: "key1"})
-	assert.Equal(t, false, ok)
-	assert.True(t, val == nil)
+	assert.False(t, ok)
+	assert.Nil(t, val)
 	assert.Equal(t, 0, store.Size())
 	store.Unlock()
 }
@@ -278,7 +278,5 @@ func TestSweep(t *testing.T) {
 	require.NoError(t, mwe.Shutdown())
 	for range sweepEvent { // nolint
 	}
-	if !closed.Load() {
-		t.Errorf("Sweeper did not terminate.")
-	}
+	assert.True(t, closed.Load(), "Sweeper did not terminate.")
 }

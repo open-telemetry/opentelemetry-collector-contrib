@@ -13,8 +13,9 @@ import (
 
 func TestInitialResolution(t *testing.T) {
 	// prepare
+	_, tb := getTelemetryAssets(t)
 	provided := []string{"endpoint-2", "endpoint-1"}
-	res, err := newStaticResolver(provided)
+	res, err := newStaticResolver(provided, tb)
 	require.NoError(t, err)
 
 	// test
@@ -34,8 +35,9 @@ func TestInitialResolution(t *testing.T) {
 
 func TestResolvedOnlyOnce(t *testing.T) {
 	// prepare
+	_, tb := getTelemetryAssets(t)
 	expected := []string{"endpoint-1", "endpoint-2"}
-	res, err := newStaticResolver(expected)
+	res, err := newStaticResolver(expected, tb)
 	require.NoError(t, err)
 
 	counter := 0
@@ -58,10 +60,11 @@ func TestResolvedOnlyOnce(t *testing.T) {
 
 func TestFailOnMissingEndpoints(t *testing.T) {
 	// prepare
+	_, tb := getTelemetryAssets(t)
 	var expected []string
 
 	// test
-	res, err := newStaticResolver(expected)
+	res, err := newStaticResolver(expected, tb)
 
 	// verify
 	assert.Equal(t, errNoEndpoints, err)

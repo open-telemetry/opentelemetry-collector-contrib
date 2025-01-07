@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver/internal/metadata"
@@ -37,7 +37,7 @@ type bigipScraper struct {
 }
 
 // newScraper creates an initialized bigipScraper
-func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *bigipScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings receiver.Settings) *bigipScraper {
 	return &bigipScraper{
 		logger:   logger,
 		cfg:      cfg,

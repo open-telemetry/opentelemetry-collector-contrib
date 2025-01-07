@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -27,16 +28,19 @@ import (
 var _ processor.Logs = (*logProcessor)(nil)
 
 type logProcessor struct {
-	logger *zap.Logger
-	config *Config
+	logger    *zap.Logger
+	telemetry *metadata.TelemetryBuilder
+	config    *Config
 
 	extractor extractor
 	router    router[exporter.Logs, ottllog.TransformContext]
-
-	nonRoutedLogRecordsCounter metric.Int64Counter
 }
 
 func newLogProcessor(settings component.TelemetrySettings, config component.Config) (*logProcessor, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(settings)
+	if err != nil {
+		return nil, err
+	}
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	logParser, err := ottllog.NewParser(common.Functions[ottllog.TransformContext](), settings)
@@ -44,31 +48,22 @@ func newLogProcessor(settings component.TelemetrySettings, config component.Conf
 		return nil, err
 	}
 
-	meter := settings.MeterProvider.Meter(scopeName + nameSep + "logs")
-	nonRoutedLogRecordsCounter, err := meter.Int64Counter(
-		metadata.Type.String()+metricSep+processorKey+metricSep+nonRoutedLogRecordsKey,
-		metric.WithDescription("Number of log records that were not routed to some or all exporters"),
-	)
-	if err != nil {
-		return nil, err
-	}
-
 	return &logProcessor{
-		logger: settings.Logger,
-		config: cfg,
+		logger:    settings.Logger,
+		telemetry: telemetryBuilder,
+		config:    cfg,
 		router: newRouter[exporter.Logs, ottllog.TransformContext](
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
 			logParser,
 		),
-		extractor:                  newExtractor(cfg.FromAttribute, settings.Logger),
-		nonRoutedLogRecordsCounter: nonRoutedLogRecordsCounter,
+		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}, nil
 }
 
 type getExporters interface {
-	GetExporters() map[component.DataType]map[component.ID]component.Component
+	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }
 
 func (p *logProcessor) Start(_ context.Context, host component.Host) error {
@@ -76,7 +71,7 @@ func (p *logProcessor) Start(_ context.Context, host component.Host) error {
 	if !ok {
 		return fmt.Errorf("unable to get exporters")
 	}
-	err := p.router.registerExporters(ge.GetExporters()[component.DataTypeLogs])
+	err := p.router.registerExporters(ge.GetExporters()[pipeline.SignalLogs])
 	if err != nil {
 		return err
 	}
@@ -117,6 +112,8 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 			plog.NewLogRecord(),
 			pcommon.NewInstrumentationScope(),
 			rlogs.Resource(),
+			plog.NewScopeLogs(),
+			rlogs,
 		)
 
 		matchCount := len(p.router.routes)
@@ -173,7 +170,7 @@ func (p *logProcessor) recordNonRoutedResourceLogs(ctx context.Context, routingK
 		logRecordsCount += sl.At(j).LogRecords().Len()
 	}
 
-	p.nonRoutedLogRecordsCounter.Add(
+	p.telemetry.RoutingProcessorNonRoutedLogRecords.Add(
 		ctx,
 		int64(logRecordsCount),
 		metric.WithAttributes(
@@ -185,8 +182,8 @@ func (p *logProcessor) recordNonRoutedResourceLogs(ctx context.Context, routingK
 func (p *logProcessor) routeForContext(ctx context.Context, l plog.Logs) error {
 	value := p.extractor.extractFromContext(ctx)
 	exporters := p.router.getExporters(value)
-	if value == "" { // "" is a  key for default exporters
-		p.nonRoutedLogRecordsCounter.Add(
+	if value == "" { // "" is a key for default exporters
+		p.telemetry.RoutingProcessorNonRoutedLogRecords.Add(
 			ctx,
 			int64(l.LogRecordCount()),
 			metric.WithAttributes(

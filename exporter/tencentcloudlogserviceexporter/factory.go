@@ -29,7 +29,7 @@ func createDefaultConfig() component.Config {
 
 func createLogsExporter(
 	_ context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exp exporter.Logs, err error) {
 	return newLogsExporter(set, cfg)

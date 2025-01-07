@@ -113,7 +113,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -140,7 +140,7 @@ func TestConfigValidate(t *testing.T) {
 	}
 	assert.NoError(t, component.ValidateConfig(cfg))
 
-	assert.Equal(t, 2, len(cfg.MetricDescriptors))
+	assert.Len(t, cfg.MetricDescriptors, 2)
 	assert.Equal(t, []MetricDescriptor{
 		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
 		{Unit: "Megabytes", MetricName: "memory_usage"},
@@ -159,7 +159,6 @@ func TestRetentionValidateCorrect(t *testing.T) {
 		logger:                      zap.NewNop(),
 	}
 	assert.NoError(t, component.ValidateConfig(cfg))
-
 }
 
 func TestRetentionValidateWrong(t *testing.T) {
@@ -174,7 +173,6 @@ func TestRetentionValidateWrong(t *testing.T) {
 		logger:                      zap.NewNop(),
 	}
 	assert.Error(t, component.ValidateConfig(wrongcfg))
-
 }
 
 func TestValidateTags(t *testing.T) {
@@ -267,6 +265,60 @@ func TestNoDimensionRollupFeatureGate(t *testing.T) {
 	require.NoError(t, err)
 	cfg := createDefaultConfig()
 
-	assert.Equal(t, cfg.(*Config).DimensionRollupOption, "NoDimensionRollup")
+	assert.Equal(t, "NoDimensionRollup", cfg.(*Config).DimensionRollupOption)
 	_ = featuregate.GlobalRegistry().Set("awsemf.nodimrollupdefault", false)
+}
+
+func TestIsApplicationSignalsEnabled(t *testing.T) {
+	tests := []struct {
+		name            string
+		metricNameSpace string
+		logGroupName    string
+		expectedResult  bool
+	}{
+		{
+			"validApplicationSignalsEMF",
+			"ApplicationSignals",
+			"/aws/application-signals/data",
+			true,
+		},
+		{
+			"invalidApplicationSignalsLogsGroup",
+			"ApplicationSignals",
+			"/nonaws/application-signals/eks",
+			false,
+		},
+		{
+			"invalidApplicationSignalsMetricNamespace",
+			"NonApplicationSignals",
+			"/aws/application-signals/data",
+			false,
+		},
+		{
+			"invalidApplicationSignalsEMF",
+			"NonApplicationSignals",
+			"/nonaws/application-signals/eks",
+			false,
+		},
+		{
+			"defaultConfig",
+			"",
+			"",
+			false,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			if len(tc.metricNameSpace) > 0 {
+				cfg.Namespace = tc.metricNameSpace
+			}
+			if len(tc.logGroupName) > 0 {
+				cfg.LogGroupName = tc.logGroupName
+			}
+
+			assert.Equal(t, tc.expectedResult, cfg.isAppSignalsEnabled())
+		})
+	}
 }

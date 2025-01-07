@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
@@ -12,7 +14,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -21,9 +22,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -35,8 +36,6 @@ const (
 	defaultMaxConcurrentFiles = 1024
 	defaultEncoding           = "utf-8"
 	defaultPollInterval       = 200 * time.Millisecond
-	openFilesMetric           = "fileconsumer/open_files"
-	readingFilesMetric        = "fileconsumer/reading_files"
 )
 
 var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
@@ -71,20 +70,24 @@ func NewConfig() *Config {
 
 // Config is the configuration of a file input operator
 type Config struct {
-	matcher.Criteria   `mapstructure:",squash"`
-	attrs.Resolver     `mapstructure:",squash"`
-	PollInterval       time.Duration   `mapstructure:"poll_interval,omitempty"`
-	MaxConcurrentFiles int             `mapstructure:"max_concurrent_files,omitempty"`
-	MaxBatches         int             `mapstructure:"max_batches,omitempty"`
-	StartAt            string          `mapstructure:"start_at,omitempty"`
-	FingerprintSize    helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
-	MaxLogSize         helper.ByteSize `mapstructure:"max_log_size,omitempty"`
-	Encoding           string          `mapstructure:"encoding,omitempty"`
-	SplitConfig        split.Config    `mapstructure:"multiline,omitempty"`
-	TrimConfig         trim.Config     `mapstructure:",squash,omitempty"`
-	FlushPeriod        time.Duration   `mapstructure:"force_flush_period,omitempty"`
-	Header             *HeaderConfig   `mapstructure:"header,omitempty"`
-	DeleteAfterRead    bool            `mapstructure:"delete_after_read,omitempty"`
+	matcher.Criteria        `mapstructure:",squash"`
+	attrs.Resolver          `mapstructure:",squash"`
+	PollInterval            time.Duration   `mapstructure:"poll_interval,omitempty"`
+	MaxConcurrentFiles      int             `mapstructure:"max_concurrent_files,omitempty"`
+	MaxBatches              int             `mapstructure:"max_batches,omitempty"`
+	StartAt                 string          `mapstructure:"start_at,omitempty"`
+	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
+	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
+	Encoding                string          `mapstructure:"encoding,omitempty"`
+	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
+	TrimConfig              trim.Config     `mapstructure:",squash,omitempty"`
+	FlushPeriod             time.Duration   `mapstructure:"force_flush_period,omitempty"`
+	Header                  *HeaderConfig   `mapstructure:"header,omitempty"`
+	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
+	IncludeFileRecordNumber bool            `mapstructure:"include_file_record_number,omitempty"`
+	Compression             string          `mapstructure:"compression,omitempty"`
+	PollsToArchive          int             `mapstructure:"-"` // TODO: activate this config once archiving is set up
+	AcquireFSLock           bool            `mapstructure:"acquire_fs_lock,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -153,56 +156,37 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 
 	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
 	readerFactory := reader.Factory{
-		TelemetrySettings: set,
-		FromBeginning:     startAtBeginning,
-		FingerprintSize:   int(c.FingerprintSize),
-		InitialBufferSize: scanner.DefaultBufferSize,
-		MaxLogSize:        int(c.MaxLogSize),
-		Encoding:          enc,
-		SplitFunc:         splitFunc,
-		TrimFunc:          trimFunc,
-		FlushTimeout:      c.FlushPeriod,
-		EmitFunc:          emit,
-		Attributes:        c.Resolver,
-		HeaderConfig:      hCfg,
-		DeleteAtEOF:       c.DeleteAfterRead,
+		TelemetrySettings:       set,
+		FromBeginning:           startAtBeginning,
+		FingerprintSize:         int(c.FingerprintSize),
+		InitialBufferSize:       scanner.DefaultBufferSize,
+		MaxLogSize:              int(c.MaxLogSize),
+		Encoding:                enc,
+		SplitFunc:               splitFunc,
+		TrimFunc:                trimFunc,
+		FlushTimeout:            c.FlushPeriod,
+		EmitFunc:                emit,
+		Attributes:              c.Resolver,
+		HeaderConfig:            hCfg,
+		DeleteAtEOF:             c.DeleteAfterRead,
+		IncludeFileRecordNumber: c.IncludeFileRecordNumber,
+		Compression:             c.Compression,
+		AcquireFSLock:           c.AcquireFSLock,
 	}
 
-	var t tracker.Tracker
-	if o.noTracking {
-		t = tracker.NewNoStateTracker(set, c.MaxConcurrentFiles/2)
-	} else {
-		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
-	}
-
-	meter := set.MeterProvider.Meter("otelcol/fileconsumer")
-
-	openFiles, err := meter.Int64UpDownCounter(
-		openFilesMetric,
-		metric.WithDescription("Number of open files"),
-		metric.WithUnit("1"),
-	)
-	if err != nil {
-		return nil, err
-	}
-	readingFiles, err := meter.Int64UpDownCounter(
-		readingFilesMetric,
-		metric.WithDescription("Number of open files that are being read"),
-		metric.WithUnit("1"),
-	)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
 		return nil, err
 	}
 	return &Manager{
-		set:           set,
-		readerFactory: readerFactory,
-		fileMatcher:   fileMatcher,
-		pollInterval:  c.PollInterval,
-		maxBatchFiles: c.MaxConcurrentFiles / 2,
-		maxBatches:    c.MaxBatches,
-		tracker:       t,
-		openFiles:     openFiles,
-		readingFiles:  readingFiles,
+		set:              set,
+		readerFactory:    readerFactory,
+		fileMatcher:      fileMatcher,
+		pollInterval:     c.PollInterval,
+		maxBatchFiles:    c.MaxConcurrentFiles / 2,
+		maxBatches:       c.MaxBatches,
+		telemetryBuilder: telemetryBuilder,
+		noTracking:       o.noTracking,
 	}, nil
 }
 
@@ -219,7 +203,7 @@ func (c Config) validate() error {
 		return fmt.Errorf("'max_log_size' must be positive")
 	}
 
-	if c.MaxConcurrentFiles <= 1 {
+	if c.MaxConcurrentFiles < 1 {
 		return fmt.Errorf("'max_concurrent_files' must be positive")
 	}
 

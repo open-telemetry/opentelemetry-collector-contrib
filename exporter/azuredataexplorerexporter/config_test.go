@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "2"),
-			errorMessage: `either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] are needed for auth`,
+			errorMessage: `either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] or ["use_azure_auth"] must be provided for auth`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "3"),
@@ -95,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 				LogTable:       "OTELLogs",
 				TraceTable:     "OTELTraces",
 				IngestionType:  managedIngestType,
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
 				BackOffConfig: configretry.BackOffConfig{
@@ -104,11 +104,23 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:     60 * time.Second,
 					MaxElapsedTime:  10 * time.Minute,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "9"),
+			expected: &Config{
+				ClusterURI:    "https://CLUSTER.kusto.windows.net",
+				Database:      "oteldb",
+				MetricTable:   "OTELMetrics",
+				LogTable:      "OTELLogs",
+				TraceTable:    "OTELTraces",
+				UseAzureAuth:  true,
+				IngestionType: queuedIngestTest,
 			},
 		},
 	}
@@ -120,7 +132,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
 				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)

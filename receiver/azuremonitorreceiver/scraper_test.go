@@ -6,12 +6,14 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
@@ -29,8 +31,8 @@ func TestNewScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	scraper := newScraper(cfg, receivertest.NewNopCreateSettings())
-	require.Len(t, scraper.resources, 0)
+	scraper := newScraper(cfg, receivertest.NewNopSettings())
+	require.Empty(t, scraper.resources)
 }
 
 func azIDCredentialsFuncMock(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error) {
@@ -39,6 +41,14 @@ func azIDCredentialsFuncMock(string, string, string, *azidentity.ClientSecretCre
 
 func azIDWorkloadFuncMock(*azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error) {
 	return &azidentity.WorkloadIdentityCredential{}, nil
+}
+
+func azManagedIdentityFuncMock(*azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error) {
+	return &azidentity.ManagedIdentityCredential{}, nil
+}
+
+func azDefaultCredentialsFuncMock(*azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error) {
+	return &azidentity.DefaultAzureCredential{}, nil
 }
 
 func armClientFuncMock(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error) {
@@ -54,7 +64,6 @@ func armMonitorMetricsClientFuncMock(string, azcore.TokenCredential, *arm.Client
 }
 
 func TestAzureScraperStart(t *testing.T) {
-
 	cfg := createDefaultConfig().(*Config)
 
 	tests := []struct {
@@ -135,6 +144,62 @@ func TestAzureScraperStart(t *testing.T) {
 				}
 				require.NotNil(t, s.cred)
 				require.IsType(t, &azidentity.WorkloadIdentityCredential{}, s.cred)
+			},
+		},
+		{
+			name: "managed_identity",
+			testFunc: func(t *testing.T) {
+				customCfg := &Config{
+					ControllerConfig:              cfg.ControllerConfig,
+					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
+					CacheResources:                24 * 60 * 60,
+					CacheResourcesDefinitions:     24 * 60 * 60,
+					MaximumNumberOfMetricsInACall: 20,
+					Services:                      monitorServices,
+					Authentication:                managedIdentity,
+				}
+				s := &azureScraper{
+					cfg:                             customCfg,
+					azIDCredentialsFunc:             azIDCredentialsFuncMock,
+					azManagedIdentityFunc:           azManagedIdentityFuncMock,
+					armClientFunc:                   armClientFuncMock,
+					armMonitorDefinitionsClientFunc: armMonitorDefinitionsClientFuncMock,
+					armMonitorMetricsClientFunc:     armMonitorMetricsClientFuncMock,
+				}
+
+				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
+					t.Errorf("azureScraper.start() error = %v", err)
+				}
+				require.NotNil(t, s.cred)
+				require.IsType(t, &azidentity.ManagedIdentityCredential{}, s.cred)
+			},
+		},
+		{
+			name: "default_credentials",
+			testFunc: func(t *testing.T) {
+				customCfg := &Config{
+					ControllerConfig:              cfg.ControllerConfig,
+					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
+					CacheResources:                24 * 60 * 60,
+					CacheResourcesDefinitions:     24 * 60 * 60,
+					MaximumNumberOfMetricsInACall: 20,
+					Services:                      monitorServices,
+					Authentication:                defaultCredentials,
+				}
+				s := &azureScraper{
+					cfg:                             customCfg,
+					azIDCredentialsFunc:             azIDCredentialsFuncMock,
+					azDefaultCredentialsFunc:        azDefaultCredentialsFuncMock,
+					armClientFunc:                   armClientFuncMock,
+					armMonitorDefinitionsClientFunc: armMonitorDefinitionsClientFuncMock,
+					armMonitorMetricsClientFunc:     armMonitorMetricsClientFuncMock,
+				}
+
+				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
+					t.Errorf("azureScraper.start() error = %v", err)
+				}
+				require.NotNil(t, s.cred)
+				require.IsType(t, &azidentity.DefaultAzureCredential{}, s.cred)
 			},
 		},
 	}
@@ -229,7 +294,7 @@ func TestAzureScraperScrape(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 
 			armClientMock := &armClientMock{
 				current: 0,
@@ -274,7 +339,6 @@ func TestAzureScraperScrape(t *testing.T) {
 				pmetrictest.IgnoreMetricsOrder(),
 			))
 		})
-
 	}
 }
 
@@ -656,5 +720,66 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 				},
 			},
 		},
+	}
+}
+
+func TestAzureScraperClientOptions(t *testing.T) {
+	type fields struct {
+		cfg *Config
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   *arm.ClientOptions
+	}{
+		{
+			name: "AzureCloud_options",
+			fields: fields{
+				cfg: &Config{
+					Cloud: azureCloud,
+				},
+			},
+			want: &arm.ClientOptions{
+				ClientOptions: azcore.ClientOptions{
+					Cloud: cloud.AzurePublic,
+				},
+			},
+		},
+		{
+			name: "AzureGovernmentCloud_options",
+			fields: fields{
+				cfg: &Config{
+					Cloud: azureGovernmentCloud,
+				},
+			},
+			want: &arm.ClientOptions{
+				ClientOptions: azcore.ClientOptions{
+					Cloud: cloud.AzureGovernment,
+				},
+			},
+		},
+		{
+			name: "AzureChinaCloud_options",
+			fields: fields{
+				cfg: &Config{
+					Cloud: azureChinaCloud,
+				},
+			},
+			want: &arm.ClientOptions{
+				ClientOptions: azcore.ClientOptions{
+					Cloud: cloud.AzureChina,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &azureScraper{
+				cfg: tt.fields.cfg,
+			}
+			if got := s.getArmClientOptions(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getArmClientOptions() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

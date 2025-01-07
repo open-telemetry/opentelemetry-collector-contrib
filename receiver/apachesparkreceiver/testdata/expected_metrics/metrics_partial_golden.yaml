@@ -405,5 +405,5 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{ event }'
         scope:
-          name: otelcol/apachesparkreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
           version: latest

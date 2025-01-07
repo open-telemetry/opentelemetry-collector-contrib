@@ -42,10 +42,21 @@ func createDefaultConfig() component.Config {
 			observer.K8sServiceType: map[string]string{
 				conventions.AttributeK8SNamespaceName: "`namespace`",
 			},
+			observer.K8sIngressType: map[string]string{
+				conventions.AttributeK8SNamespaceName: "`namespace`",
+			},
 			observer.PortType: map[string]string{
 				conventions.AttributeK8SPodName:       "`pod.name`",
 				conventions.AttributeK8SPodUID:        "`pod.uid`",
 				conventions.AttributeK8SNamespaceName: "`pod.namespace`",
+			},
+			observer.PodContainerType: map[string]string{
+				conventions.AttributeK8SPodName:         "`pod.name`",
+				conventions.AttributeK8SPodUID:          "`pod.uid`",
+				conventions.AttributeK8SNamespaceName:   "`pod.namespace`",
+				conventions.AttributeK8SContainerName:   "`container_name`",
+				conventions.AttributeContainerID:        "`container_id`",
+				conventions.AttributeContainerImageName: "`container_image`",
 			},
 			observer.ContainerType: map[string]string{
 				conventions.AttributeContainerName:      "`name`",
@@ -62,7 +73,7 @@ func createDefaultConfig() component.Config {
 
 func createLogsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
@@ -75,7 +86,7 @@ func createLogsReceiver(
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -88,7 +99,7 @@ func createMetricsReceiver(
 
 func createTracesReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Traces,
 ) (receiver.Traces, error) {

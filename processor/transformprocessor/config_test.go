@@ -158,14 +158,14 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			assert.NoError(t, err)
-			assert.NoError(t, component.UnmarshalConfig(sub, cfg))
+			assert.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
 				err = component.ValidateConfig(cfg)
 				assert.Error(t, err)
 
 				if tt.errorLen > 0 {
-					assert.Equal(t, tt.errorLen, len(multierr.Errors(err)))
+					assert.Len(t, multierr.Errors(err), tt.errorLen)
 				}
 
 				return
@@ -187,7 +187,7 @@ func Test_UnknownContextID(t *testing.T) {
 
 	sub, err := cm.Sub(id.String())
 	assert.NoError(t, err)
-	assert.Error(t, component.UnmarshalConfig(sub, cfg))
+	assert.Error(t, sub.Unmarshal(cfg))
 }
 
 func Test_UnknownErrorMode(t *testing.T) {
@@ -201,5 +201,5 @@ func Test_UnknownErrorMode(t *testing.T) {
 
 	sub, err := cm.Sub(id.String())
 	assert.NoError(t, err)
-	assert.Error(t, component.UnmarshalConfig(sub, cfg))
+	assert.Error(t, sub.Unmarshal(cfg))
 }

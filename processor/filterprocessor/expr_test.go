@@ -21,8 +21,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 )
 
-const filteredMetric = "p0_metric_1"
-const filteredAttrKey = "pt-label-key-1"
+const (
+	filteredMetric  = "p0_metric_1"
+	filteredAttrKey = "pt-label-key-1"
+)
 
 var filteredAttrVal = pcommon.NewValueStr("pt-label-val-1")
 
@@ -41,7 +43,7 @@ func testMatchError(t *testing.T, mdType pmetric.MetricType, mvType pmetric.Numb
 		err := proc.ConsumeMetrics(context.Background(), testData("", 1, mdType, mvType))
 		assert.Error(t, err)
 		// assert that metrics not be filtered as a result
-		assert.Len(t, next.AllMetrics(), 0)
+		assert.Empty(t, next.AllMetrics())
 	})
 }
 
@@ -126,9 +128,9 @@ func testProcessor(t *testing.T, include []string, exclude []string) (processor.
 	cfg := exprConfig(factory, include, exclude)
 	ctx := context.Background()
 	next := &consumertest.MetricsSink{}
-	proc, err := factory.CreateMetricsProcessor(
+	proc, err := factory.CreateMetrics(
 		ctx,
-		processortest.NewNopCreateSettings(),
+		processortest.NewNopSettings(),
 		cfg,
 		next,
 	)

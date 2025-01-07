@@ -10,37 +10,37 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 var errMetricsConsumer = errors.New("Error from ConsumeMetrics")
 
 func TestMetricsRegisterConsumers(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird consumertest.MetricsSink
-	metricsFirst := component.NewIDWithName(component.DataTypeMetrics, "metrics/first")
-	metricsSecond := component.NewIDWithName(component.DataTypeMetrics, "metrics/second")
-	metricsThird := component.NewIDWithName(component.DataTypeMetrics, "metrics/third")
+	metricsFirst := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/first")
+	metricsSecond := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/second")
+	metricsThird := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/third")
 
 	cfg := &Config{
-		PipelinePriority: [][]component.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
+		PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
 		RetryInterval:    50 * time.Millisecond,
 		RetryGap:         10 * time.Millisecond,
 		MaxRetries:       10000,
 	}
 
-	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
 		metricsFirst:  &sinkFirst,
 		metricsSecond: &sinkSecond,
 		metricsThird:  &sinkThird,
 	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Metrics))
+		connectortest.NewNopSettings(), cfg, router.(consumer.Metrics))
 
 	failoverConnector := conn.(*metricsFailover)
 	defer func() {
@@ -62,25 +62,25 @@ func TestMetricsRegisterConsumers(t *testing.T) {
 
 func TestMetricsWithValidFailover(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird consumertest.MetricsSink
-	metricsFirst := component.NewIDWithName(component.DataTypeMetrics, "metrics/first")
-	metricsSecond := component.NewIDWithName(component.DataTypeMetrics, "metrics/second")
-	metricsThird := component.NewIDWithName(component.DataTypeMetrics, "metrics/third")
+	metricsFirst := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/first")
+	metricsSecond := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/second")
+	metricsThird := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/third")
 
 	cfg := &Config{
-		PipelinePriority: [][]component.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
+		PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
 		RetryInterval:    50 * time.Millisecond,
 		RetryGap:         10 * time.Millisecond,
 		MaxRetries:       10000,
 	}
 
-	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
 		metricsFirst:  &sinkFirst,
 		metricsSecond: &sinkSecond,
 		metricsThird:  &sinkThird,
 	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Metrics))
+		connectortest.NewNopSettings(), cfg, router.(consumer.Metrics))
 
 	require.NoError(t, err)
 
@@ -99,25 +99,25 @@ func TestMetricsWithValidFailover(t *testing.T) {
 
 func TestMetricsWithFailoverError(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird consumertest.MetricsSink
-	metricsFirst := component.NewIDWithName(component.DataTypeMetrics, "metrics/first")
-	metricsSecond := component.NewIDWithName(component.DataTypeMetrics, "metrics/second")
-	metricsThird := component.NewIDWithName(component.DataTypeMetrics, "metrics/third")
+	metricsFirst := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/first")
+	metricsSecond := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/second")
+	metricsThird := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/third")
 
 	cfg := &Config{
-		PipelinePriority: [][]component.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
+		PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
 		RetryInterval:    50 * time.Millisecond,
 		RetryGap:         10 * time.Millisecond,
 		MaxRetries:       10000,
 	}
 
-	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
 		metricsFirst:  &sinkFirst,
 		metricsSecond: &sinkSecond,
 		metricsThird:  &sinkThird,
 	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Metrics))
+		connectortest.NewNopSettings(), cfg, router.(consumer.Metrics))
 
 	require.NoError(t, err)
 

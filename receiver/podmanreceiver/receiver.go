@@ -16,8 +16,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver/internal/metadata"
@@ -25,7 +26,7 @@ import (
 
 type metricsReceiver struct {
 	config        *Config
-	set           receiver.CreateSettings
+	set           receiver.Settings
 	clientFactory clientFactory
 	scraper       *ContainerScraper
 	mb            *metadata.MetricsBuilder
@@ -33,7 +34,7 @@ type metricsReceiver struct {
 }
 
 func newMetricsReceiver(
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	config *Config,
 	clientFactory clientFactory,
 ) *metricsReceiver {
@@ -51,26 +52,21 @@ func newMetricsReceiver(
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	podmanConfig := config.(*Config)
 
 	recv := newMetricsReceiver(params, podmanConfig, nil)
-	scrp, err := scraperhelper.NewScraper(metadata.Type.String(), recv.scrape, scraperhelper.WithStart(recv.start), scraperhelper.WithShutdown(recv.shutdown))
+	scrp, err := scraper.NewMetrics(recv.scrape, scraper.WithStart(recv.start), scraper.WithShutdown(recv.shutdown))
 	if err != nil {
 		return nil, err
 	}
-	return scraperhelper.NewScraperControllerReceiver(&recv.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewScraperControllerReceiver(&recv.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, scrp))
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
-	err := r.config.Validate()
-	if err != nil {
-		return err
-	}
-
 	podmanClient, err := r.clientFactory(r.set.Logger, r.config)
 	if err != nil {
 		return err

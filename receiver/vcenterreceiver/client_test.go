@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/session"
@@ -219,17 +218,36 @@ func TestPerfMetricsQuery(t *testing.T) {
 	}, esx)
 }
 
-func TestResourcePoolInventoryListObjects(t *testing.T) {
+func TestDatacenterInventoryListObjects(t *testing.T) {
+	vpx := simulator.VPX()
+	vpx.Datacenter = 2
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
 		client := vcenterClient{
 			vimDriver: c,
 			finder:    finder,
 		}
-		rps, err := client.ResourcePoolInventoryListObjects(ctx)
+		dcs, err := client.DatacenterInventoryListObjects(ctx)
+		require.NoError(t, err)
+		require.Len(t, dcs, 2)
+	}, vpx)
+}
+
+func TestResourcePoolInventoryListObjects(t *testing.T) {
+	vpx := simulator.VPX()
+	vpx.Datacenter = 2
+	simulator.Test(func(ctx context.Context, c *vim25.Client) {
+		finder := find.NewFinder(c)
+		client := vcenterClient{
+			vimDriver: c,
+			finder:    finder,
+		}
+		dcs, err := finder.DatacenterList(ctx, "*")
+		require.NoError(t, err)
+		rps, err := client.ResourcePoolInventoryListObjects(ctx, dcs)
 		require.NoError(t, err)
 		require.NotEmpty(t, rps, 0)
-	})
+	}, vpx)
 }
 
 func TestVAppInventoryListObjects(t *testing.T) {
@@ -237,6 +255,7 @@ func TestVAppInventoryListObjects(t *testing.T) {
 	// vApps appears to be broken
 	t.Skip()
 	vpx := simulator.VPX()
+	vpx.Datacenter = 2
 	vpx.App = 2
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
@@ -244,32 +263,34 @@ func TestVAppInventoryListObjects(t *testing.T) {
 			vimDriver: c,
 			finder:    finder,
 		}
-		vApps, err := client.VAppInventoryListObjects(ctx)
+		dcs, err := finder.DatacenterList(ctx, "*")
+		require.NoError(t, err)
+		vApps, err := client.VAppInventoryListObjects(ctx, dcs)
 		require.NoError(t, err)
 		require.NotEmpty(t, vApps, 0)
 	}, vpx)
 }
 
 func TestEmptyVAppInventoryListObjects(t *testing.T) {
+	vpx := simulator.VPX()
+	vpx.Datacenter = 2
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
 		client := vcenterClient{
 			vimDriver: c,
 			finder:    finder,
 		}
-		vApps, err := client.VAppInventoryListObjects(ctx)
+		dcs, err := finder.DatacenterList(ctx, "*")
+		require.NoError(t, err)
+		vApps, err := client.VAppInventoryListObjects(ctx, dcs)
 		require.NoError(t, err)
 		require.Empty(t, vApps, 0)
-	})
+	}, vpx)
 }
 
 func TestSessionReestablish(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		sm := session.NewManager(c)
-		moClient := &govmomi.Client{
-			Client:         c,
-			SessionManager: sm,
-		}
 		pw, _ := simulator.DefaultLogin.Password()
 		client := vcenterClient{
 			vimDriver: c,
@@ -281,19 +302,19 @@ func TestSessionReestablish(t *testing.T) {
 					Insecure: true,
 				},
 			},
-			moClient: moClient,
+			sessionManager: sm,
 		}
 		err := sm.Logout(ctx)
 		require.NoError(t, err)
 
-		connected, err := client.moClient.SessionManager.SessionIsActive(ctx)
+		connected, err := client.sessionManager.SessionIsActive(ctx)
 		require.NoError(t, err)
 		require.False(t, connected)
 
 		err = client.EnsureConnection(ctx)
 		require.NoError(t, err)
 
-		connected, err = client.moClient.SessionManager.SessionIsActive(ctx)
+		connected, err = client.sessionManager.SessionIsActive(ctx)
 		require.NoError(t, err)
 		require.True(t, connected)
 	})

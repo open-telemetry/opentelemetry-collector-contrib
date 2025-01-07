@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
@@ -19,7 +20,7 @@ import (
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	receiverCfg component.Config,
 	metricsConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -29,9 +30,9 @@ func createMetricsReceiver(
 	}
 	sqlServerScraper := newSQLServerPCScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), sqlServerScraper.scrape,
-		scraperhelper.WithStart(sqlServerScraper.start),
-		scraperhelper.WithShutdown(sqlServerScraper.shutdown))
+	scraper, err := scraper.NewMetrics(sqlServerScraper.scrape,
+		scraper.WithStart(sqlServerScraper.start),
+		scraper.WithShutdown(sqlServerScraper.shutdown))
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +42,7 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
-	opts = append(opts, scraperhelper.AddScraper(scraper))
+	opts = append(opts, scraperhelper.AddScraper(metadata.Type, scraper))
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&cfg.ControllerConfig,

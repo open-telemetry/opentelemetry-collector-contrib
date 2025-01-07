@@ -9,16 +9,17 @@ import (
 	"sync"
 	"time"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
@@ -27,24 +28,35 @@ var _ exporter.Logs = (*logExporterImp)(nil)
 type logExporterImp struct {
 	loadBalancer *loadBalancer
 
+	logger     *zap.Logger
 	started    bool
 	shutdownWg sync.WaitGroup
+	telemetry  *metadata.TelemetryBuilder
 }
 
 // Create new logs exporter
-func newLogsExporter(params exporter.CreateSettings, cfg component.Config) (*logExporterImp, error) {
+func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExporterImp, error) {
+	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 	exporterFactory := otlpexporter.NewFactory()
-
-	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Component, error) {
+	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		return exporterFactory.CreateLogsExporter(ctx, params, &oCfg)
-	})
+		oParams := buildExporterSettings(params, endpoint)
+
+		return exporterFactory.CreateLogs(ctx, oParams, &oCfg)
+	}
+
+	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
 	if err != nil {
 		return nil, err
 	}
 
 	return &logExporterImp{
 		loadBalancer: lb,
+		telemetry:    telemetry,
+		logger:       params.Logger,
 	}, nil
 }
 
@@ -87,7 +99,7 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 		balancingKey = random()
 	}
 
-	le, endpoint, err := e.loadBalancer.exporterAndEndpoint(balancingKey[:])
+	le, _, err := e.loadBalancer.exporterAndEndpoint(balancingKey[:])
 	if err != nil {
 		return err
 	}
@@ -98,16 +110,12 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 	start := time.Now()
 	err = le.ConsumeLogs(ctx, ld)
 	duration := time.Since(start)
+	e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(le.endpointAttr))
 	if err == nil {
-		_ = stats.RecordWithTags(
-			ctx,
-			[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
-			mBackendLatency.M(duration.Milliseconds()))
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(le.successAttr))
 	} else {
-		_ = stats.RecordWithTags(
-			ctx,
-			[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
-			mBackendLatency.M(duration.Milliseconds()))
+		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(le.failureAttr))
+		e.logger.Debug("failed to export log", zap.Error(err))
 	}
 
 	return err

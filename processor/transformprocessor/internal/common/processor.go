@@ -20,10 +20,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 )
 
-var _ consumer.Traces = &resourceStatements{}
-var _ consumer.Metrics = &resourceStatements{}
-var _ consumer.Logs = &resourceStatements{}
-var _ baseContext = &resourceStatements{}
+var (
+	_ consumer.Traces  = &resourceStatements{}
+	_ consumer.Metrics = &resourceStatements{}
+	_ consumer.Logs    = &resourceStatements{}
+	_ baseContext      = &resourceStatements{}
+)
 
 type resourceStatements struct {
 	ottl.StatementSequence[ottlresource.TransformContext]
@@ -39,7 +41,7 @@ func (r resourceStatements) Capabilities() consumer.Capabilities {
 func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
-		tCtx := ottlresource.NewTransformContext(rspans.Resource())
+		tCtx := ottlresource.NewTransformContext(rspans.Resource(), rspans)
 		condition, err := r.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
 			return err
@@ -57,7 +59,7 @@ func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rmetrics := md.ResourceMetrics().At(i)
-		tCtx := ottlresource.NewTransformContext(rmetrics.Resource())
+		tCtx := ottlresource.NewTransformContext(rmetrics.Resource(), rmetrics)
 		condition, err := r.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
 			return err
@@ -75,7 +77,7 @@ func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
-		tCtx := ottlresource.NewTransformContext(rlogs.Resource())
+		tCtx := ottlresource.NewTransformContext(rlogs.Resource(), rlogs)
 		condition, err := r.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
 			return err
@@ -90,10 +92,12 @@ func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error
 	return nil
 }
 
-var _ consumer.Traces = &scopeStatements{}
-var _ consumer.Metrics = &scopeStatements{}
-var _ consumer.Logs = &scopeStatements{}
-var _ baseContext = &scopeStatements{}
+var (
+	_ consumer.Traces  = &scopeStatements{}
+	_ consumer.Metrics = &scopeStatements{}
+	_ consumer.Logs    = &scopeStatements{}
+	_ baseContext      = &scopeStatements{}
+)
 
 type scopeStatements struct {
 	ottl.StatementSequence[ottlscope.TransformContext]
@@ -111,7 +115,7 @@ func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspans := rspans.ScopeSpans().At(j)
-			tCtx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource())
+			tCtx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource(), sspans)
 			condition, err := s.BoolExpr.Eval(ctx, tCtx)
 			if err != nil {
 				return err
@@ -132,7 +136,7 @@ func (s scopeStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics)
 		rmetrics := md.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
 			smetrics := rmetrics.ScopeMetrics().At(j)
-			tCtx := ottlscope.NewTransformContext(smetrics.Scope(), rmetrics.Resource())
+			tCtx := ottlscope.NewTransformContext(smetrics.Scope(), rmetrics.Resource(), smetrics)
 			condition, err := s.BoolExpr.Eval(ctx, tCtx)
 			if err != nil {
 				return err
@@ -153,7 +157,7 @@ func (s scopeStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		rlogs := ld.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
 			slogs := rlogs.ScopeLogs().At(j)
-			tCtx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource())
+			tCtx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource(), slogs)
 			condition, err := s.BoolExpr.Eval(ctx, tCtx)
 			if err != nil {
 				return err
@@ -212,11 +216,11 @@ func (pc parserCollection) parseCommonContextStatements(contextStatement Context
 }
 
 func parseGlobalExpr[K any](
-	boolExprFunc func([]string, map[string]ottl.Factory[K], ottl.ErrorMode, component.TelemetrySettings) (expr.BoolExpr[K], error),
+	boolExprFunc func([]string, map[string]ottl.Factory[K], ottl.ErrorMode, component.TelemetrySettings) (*ottl.ConditionSequence[K], error),
 	conditions []string,
 	pc parserCollection,
-	standardFuncs map[string]ottl.Factory[K]) (expr.BoolExpr[K], error) {
-
+	standardFuncs map[string]ottl.Factory[K],
+) (expr.BoolExpr[K], error) {
 	if len(conditions) > 0 {
 		return boolExprFunc(conditions, standardFuncs, pc.errorMode, pc.settings)
 	}

@@ -57,9 +57,9 @@ func TestAccessLogsIntegration(t *testing.T) {
 	sink := &consumertest.LogsSink{}
 	fact := NewFactory()
 
-	recv, err := fact.CreateLogsReceiver(
+	recv, err := fact.CreateLogs(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		&Config{
 			ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			Logs: LogConfig{

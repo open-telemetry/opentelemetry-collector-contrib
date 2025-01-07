@@ -1,5 +1,4 @@
 type: loki
-scope_name: otelcol/lokireceiver
 
 status:
   class: receiver
@@ -8,4 +7,4 @@ status:
   distributions:
   - contrib
   codeowners:
-    active: [mar4uk, jpkrohling]
+    active: [mar4uk]

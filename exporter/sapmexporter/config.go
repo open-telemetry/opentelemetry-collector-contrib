@@ -22,7 +22,6 @@ const (
 
 // Config defines configuration for SAPM exporter.
 type Config struct {
-
 	// Endpoint is the destination to where traces will be sent to in SAPM format.
 	// It must be a full URL and include the scheme, port and path e.g, https://ingest.signalfx.com/v2/trace
 	Endpoint string `mapstructure:"endpoint"`
@@ -49,9 +48,9 @@ type Config struct {
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 }
 
 func (c *Config) Validate() error {

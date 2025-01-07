@@ -6,12 +6,26 @@ package uri // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"context"
 	"fmt"
-	"net/url"
-	"strings"
 
+	"go.opentelemetry.io/collector/featuregate"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/parseutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
+
+const semconvCompliantFeatureGateID = "parser.uri.ecscompliant"
+
+var semconvCompliantFeatureGate *featuregate.Gate
+
+func init() {
+	semconvCompliantFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		semconvCompliantFeatureGateID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled resulting map will be in semconv compliant format."),
+		featuregate.WithRegisterFromVersion("v0.103.0"),
+	)
+}
 
 // Parser is an operator that parses a uri.
 type Parser struct {
@@ -27,95 +41,8 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 func (p *Parser) parse(value any) (any, error) {
 	switch m := value.(type) {
 	case string:
-		return parseURI(m)
+		return parseutils.ParseURI(m, semconvCompliantFeatureGate.IsEnabled())
 	default:
 		return nil, fmt.Errorf("type '%T' cannot be parsed as URI", value)
 	}
-}
-
-// parseURI takes an absolute or relative uri and returns the parsed values.
-func parseURI(value string) (map[string]any, error) {
-	m := make(map[string]any)
-
-	if strings.HasPrefix(value, "?") {
-		// remove the query string '?' prefix before parsing
-		v, err := url.ParseQuery(value[1:])
-		if err != nil {
-			return nil, err
-		}
-		return queryToMap(v, m), nil
-	}
-
-	x, err := url.ParseRequestURI(value)
-	if err != nil {
-		return nil, err
-	}
-	return urlToMap(x, m), nil
-}
-
-// urlToMap converts a url.URL to a map, excludes any values that are not set.
-func urlToMap(p *url.URL, m map[string]any) map[string]any {
-	scheme := p.Scheme
-	if scheme != "" {
-		m["scheme"] = scheme
-	}
-
-	user := p.User.Username()
-	if user != "" {
-		m["user"] = user
-	}
-
-	host := p.Hostname()
-	if host != "" {
-		m["host"] = host
-	}
-
-	port := p.Port()
-	if port != "" {
-		m["port"] = port
-	}
-
-	path := p.EscapedPath()
-	if path != "" {
-		m["path"] = path
-	}
-
-	return queryToMap(p.Query(), m)
-}
-
-// queryToMap converts a query string url.Values to a map.
-func queryToMap(query url.Values, m map[string]any) map[string]any {
-	// no-op if query is empty, do not create the key m["query"]
-	if len(query) == 0 {
-		return m
-	}
-
-	/* 'parameter' will represent url.Values
-	map[string]any{
-		"parameter-a": []any{
-			"a",
-			"b",
-		},
-		"parameter-b": []any{
-			"x",
-			"y",
-		},
-	}
-	*/
-	parameters := map[string]any{}
-	for param, values := range query {
-		parameters[param] = queryParamValuesToMap(values)
-	}
-	m["query"] = parameters
-	return m
-}
-
-// queryParamValuesToMap takes query string parameter values and
-// returns an []interface populated with the values
-func queryParamValuesToMap(values []string) []any {
-	v := make([]any, len(values))
-	for i, value := range values {
-		v[i] = value
-	}
-	return v
 }

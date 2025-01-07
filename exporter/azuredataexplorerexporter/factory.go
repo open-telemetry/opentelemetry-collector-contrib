@@ -52,7 +52,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	config component.Config,
 ) (exporter.Metrics, error) {
 	if config == nil {
@@ -64,12 +64,11 @@ func createMetricsExporter(
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
 	adp, err := newExporter(adxCfg, set.Logger, metricsType, version)
-
 	if err != nil {
 		return nil, err
 	}
 
-	exporter, err := exporterhelper.NewMetricsExporter(
+	exporter, err := exporterhelper.NewMetrics(
 		ctx,
 		set,
 		adxCfg,
@@ -78,7 +77,6 @@ func createMetricsExporter(
 		exporterhelper.WithRetry(adxCfg.BackOffConfig),
 		exporterhelper.WithQueue(adxCfg.QueueSettings),
 		exporterhelper.WithShutdown(adp.Close))
-
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +85,7 @@ func createMetricsExporter(
 
 func createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	config component.Config,
 ) (exporter.Traces, error) {
 	adxCfg := config.(*Config)
@@ -96,12 +94,11 @@ func createTracesExporter(
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
 	adp, err := newExporter(adxCfg, set.Logger, tracesType, version)
-
 	if err != nil {
 		return nil, err
 	}
 
-	exporter, err := exporterhelper.NewTracesExporter(
+	exporter, err := exporterhelper.NewTraces(
 		ctx,
 		set,
 		adxCfg,
@@ -110,7 +107,6 @@ func createTracesExporter(
 		exporterhelper.WithRetry(adxCfg.BackOffConfig),
 		exporterhelper.WithQueue(adxCfg.QueueSettings),
 		exporterhelper.WithShutdown(adp.Close))
-
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +115,7 @@ func createTracesExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	config component.Config,
 ) (exp exporter.Logs, err error) {
 	adxCfg := config.(*Config)
@@ -128,12 +124,11 @@ func createLogsExporter(
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
 	adp, err := newExporter(adxCfg, set.Logger, logsType, version)
-
 	if err != nil {
 		return nil, err
 	}
 
-	exporter, err := exporterhelper.NewLogsExporter(
+	exporter, err := exporterhelper.NewLogs(
 		ctx,
 		set,
 		adxCfg,
@@ -142,7 +137,6 @@ func createLogsExporter(
 		exporterhelper.WithRetry(adxCfg.BackOffConfig),
 		exporterhelper.WithQueue(adxCfg.QueueSettings),
 		exporterhelper.WithShutdown(adp.Close))
-
 	if err != nil {
 		return nil, err
 	}

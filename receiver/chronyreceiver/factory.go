@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/chrony"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/metadata"
@@ -26,19 +27,18 @@ func NewFactory() receiver.Factory {
 
 func newMetricsReceiver(
 	ctx context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	rCfg component.Config,
-	consumer consumer.Metrics) (receiver.Metrics, error) {
+	consumer consumer.Metrics,
+) (receiver.Metrics, error) {
 	cfg, ok := rCfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("wrong config provided: %w", errInvalidValue)
 	}
 
 	s := newScraper(ctx, cfg, set)
-	scraper, err := scraperhelper.NewScraper(
-		metadata.Type.String(),
-		s.scrape,
-		scraperhelper.WithStart(func(_ context.Context, _ component.Host) error {
+	sc, err := scraper.NewMetrics(s.scrape,
+		scraper.WithStart(func(_ context.Context, _ component.Host) error {
 			chronyc, err := chrony.New(cfg.Endpoint, cfg.Timeout)
 			s.client = chronyc
 			return err
@@ -52,6 +52,6 @@ func newMetricsReceiver(
 		&cfg.ControllerConfig,
 		set,
 		consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraper(metadata.Type, sc),
 	)
 }

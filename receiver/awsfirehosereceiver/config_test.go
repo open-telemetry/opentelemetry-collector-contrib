@@ -18,29 +18,40 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
+	for _, configType := range []string{
+		"cwmetrics", "cwlogs", "otlp_v1", "invalid",
+	} {
+		t.Run(configType, func(t *testing.T) {
+			fileName := configType + "_config.yaml"
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", fileName))
+			require.NoError(t, err)
 
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
-	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
 
-	assert.NoError(t, component.ValidateConfig(cfg))
-
-	require.Equal(t, &Config{
-		RecordType: "cwmetrics",
-		AccessKey:  "some_access_key",
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "0.0.0.0:4433",
-			TLSSetting: &configtls.ServerConfig{
-				Config: configtls.Config{
-					CertFile: "server.crt",
-					KeyFile:  "server.key",
-				},
-			},
-		},
-	}, cfg)
+			err = component.ValidateConfig(cfg)
+			if configType == "invalid" {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				require.Equal(t, &Config{
+					RecordType: configType,
+					AccessKey:  "some_access_key",
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "0.0.0.0:4433",
+						TLSSetting: &configtls.ServerConfig{
+							Config: configtls.Config{
+								CertFile: "server.crt",
+								KeyFile:  "server.key",
+							},
+						},
+					},
+				}, cfg)
+			}
+		})
+	}
 }

@@ -1,5 +1,4 @@
 type: googlecloudpubsub
-scope_name: otelcol/googlecloudpubsubreceiver
 
 status:
   class: receiver

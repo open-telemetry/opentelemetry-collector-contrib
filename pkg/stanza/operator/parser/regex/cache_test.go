@@ -34,8 +34,8 @@ func TestNewMemoryCache(t *testing.T) {
 		output := newMemoryCache(tc.maxSize, 0)
 		defer output.stop()
 		require.Equal(t, tc.expect.cache, output.cache)
-		require.Len(t, output.cache, 0, "new memory should always be empty")
-		require.Len(t, output.keys, 0, "new memory should always be empty")
+		require.Empty(t, output.cache, "new memory should always be empty")
+		require.Empty(t, output.keys, "new memory should always be empty")
 		require.Equal(t, tc.expectSize, cap(output.keys), "keys channel should have cap of expected size")
 	}
 }

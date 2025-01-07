@@ -1,5 +1,4 @@
 type: googlecloudspanner
-scope_name: otelcol/googlecloudspannerreceiver
 
 status:
   class: receiver
@@ -7,8 +6,8 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [varunraiko]
-    emeritus: [architjugran, kiranmayib]
+    active: [dashpole, dsimil, KiranmayiB, harishbohara11]
+    emeritus: [architjugran, varunraiko]
 tests:
   config:
   goleak:

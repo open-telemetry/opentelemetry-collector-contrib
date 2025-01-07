@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -20,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -61,11 +60,11 @@ func TestPrometheusExporter(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	for _, tt := range tests {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
-			exp, err := factory.CreateMetricsExporter(context.Background(), set, tt.config)
+			exp, err := factory.CreateMetrics(context.Background(), set, tt.config)
 
 			if tt.wantErr != "" {
 				require.Error(t, err)
@@ -113,8 +112,8 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		},
 	}
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
-	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	set := exportertest.NewNopSettings()
+	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
 
 	tlscs := configtls.ClientConfig{
@@ -135,11 +134,6 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
-		// trigger a get so that the server cleans up our keepalive socket
-		var resp *http.Response
-		resp, err = httpClient.Get("https://localhost:7777/metrics")
-		require.NoError(t, err)
-		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -154,9 +148,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	rsp, err := httpClient.Get("https://localhost:7777/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
-	if g, w := rsp.StatusCode, 200; g != w {
-		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-	}
+	assert.Equal(t, http.StatusOK, rsp.StatusCode, "Mismatched HTTP response status code")
 
 	blob, _ := io.ReadAll(rsp.Body)
 	_ = rsp.Body.Close()
@@ -169,9 +161,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	}
 
 	for _, w := range want {
-		if !strings.Contains(string(blob), w) {
-			t.Errorf("Missing %v from response:\n%v", w, string(blob))
-		}
+		assert.Contains(t, string(blob), w, "Missing %v from response:\n%v", w, string(blob))
 	}
 }
 
@@ -190,17 +180,12 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
-	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	set := exportertest.NewNopSettings()
+	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
-		// trigger a get so that the server cleans up our keepalive socket
-		var resp *http.Response
-		resp, err = http.Get("http://localhost:7777/metrics")
-		require.NoError(t, err)
-		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -218,9 +203,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 		res, err1 := http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
 
-		if g, w := res.StatusCode, 200; g != w {
-			t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-		}
+		assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
 		blob, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
@@ -239,9 +222,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 		}
 
 		for _, w := range want {
-			if !strings.Contains(string(blob), w) {
-				t.Errorf("Missing %v from response:\n%v", w, string(blob))
-			}
+			assert.Contains(t, string(blob), w, "Missing %v from response:\n%v", w, string(blob))
 		}
 	}
 
@@ -252,9 +233,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	res, err := http.Get("http://localhost:7777/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
-	if g, w := res.StatusCode, 200; g != w {
-		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-	}
+	assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
 	blob, _ := io.ReadAll(res.Body)
 	_ = res.Body.Close()
 	require.Emptyf(t, string(blob), "Metrics did not expire")
@@ -274,17 +253,12 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
-	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	set := exportertest.NewNopSettings()
+	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
-		// trigger a get so that the server cleans up our keepalive socket
-		var resp *http.Response
-		resp, err = http.Get("http://localhost:7777/metrics")
-		require.NoError(t, err)
-		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -300,9 +274,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 		res, err1 := http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
 
-		if g, w := res.StatusCode, 200; g != w {
-			t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-		}
+		assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
 		blob, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
@@ -317,9 +289,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 		}
 
 		for _, w := range want {
-			if !strings.Contains(string(blob), w) {
-				t.Errorf("Missing %v from response:\n%v", w, string(blob))
-			}
+			assert.Contains(t, string(blob), w, "Missing %v from response:\n%v", w, string(blob))
 		}
 	}
 
@@ -330,9 +300,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	res, err := http.Get("http://localhost:7777/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
-	if g, w := res.StatusCode, 200; g != w {
-		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-	}
+	assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
 	blob, _ := io.ReadAll(res.Body)
 	_ = res.Body.Close()
 	require.Emptyf(t, string(blob), "Metrics did not expire")
@@ -353,17 +321,12 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
-	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	set := exportertest.NewNopSettings()
+	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
-		// trigger a get so that the server cleans up our keepalive socket
-		var resp *http.Response
-		resp, err = http.Get("http://localhost:7777/metrics")
-		require.NoError(t, err)
-		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -379,9 +342,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 		res, err1 := http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
 
-		if g, w := res.StatusCode, 200; g != w {
-			t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-		}
+		assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
 		blob, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
@@ -396,9 +357,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 		}
 
 		for _, w := range want {
-			if !strings.Contains(string(blob), w) {
-				t.Errorf("Missing %v from response:\n%v", w, string(blob))
-			}
+			assert.Contains(t, string(blob), w, "Missing %v from response:\n%v", w, string(blob))
 		}
 	}
 
@@ -409,9 +368,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	res, err := http.Get("http://localhost:7777/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
-	if g, w := res.StatusCode, 200; g != w {
-		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-	}
+	assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
 	blob, _ := io.ReadAll(res.Body)
 	_ = res.Body.Close()
 	require.Emptyf(t, string(blob), "Metrics did not expire")
@@ -435,17 +392,12 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
-	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	set := exportertest.NewNopSettings()
+	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
-		// trigger a get so that the server cleans up our keepalive socket
-		var resp *http.Response
-		resp, err = http.Get("http://localhost:7777/metrics")
-		require.NoError(t, err, "Failed to perform a scrape")
-		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -459,9 +411,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	rsp, err := http.Get("http://localhost:7777/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
-	if g, w := rsp.StatusCode, 200; g != w {
-		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-	}
+	assert.Equal(t, http.StatusOK, rsp.StatusCode, "Mismatched HTTP response status code")
 
 	blob, _ := io.ReadAll(rsp.Body)
 	_ = rsp.Body.Close()
@@ -474,9 +424,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	}
 
 	for _, w := range want {
-		if !strings.Contains(string(blob), w) {
-			t.Errorf("Missing %v from response:\n%v", w, string(blob))
-		}
+		assert.Contains(t, string(blob), w, "Missing %v from response:\n%v", w, string(blob))
 	}
 }
 

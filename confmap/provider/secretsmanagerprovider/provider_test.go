@@ -5,67 +5,39 @@ package secretsmanagerprovider
 
 import (
 	"context"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
+	"fmt"
 	"testing"
-	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
-	transport "github.com/aws/smithy-go/endpoints"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
 )
 
-type resolver struct {
-	url string
+// Mock AWS secretsmanager
+type testSecretManagerClient struct {
+	secretValue string
 }
 
-func (r resolver) ResolveEndpoint(ctx context.Context, params secretsmanager.EndpointParameters) (transport.Endpoint, error) {
-	region := "us-east-1"
-	params.Region = &region
-	params.Endpoint = &r.url
-
-	old := secretsmanager.NewDefaultEndpointResolverV2()
-	return old.ResolveEndpoint(ctx, params)
+// Implement GetSecretValue()
+func (client *testSecretManagerClient) GetSecretValue(_ context.Context, _ *secretsmanager.GetSecretValueInput,
+	_ ...func(*secretsmanager.Options),
+) (*secretsmanager.GetSecretValueOutput, error) {
+	return &secretsmanager.GetSecretValueOutput{SecretString: &client.secretValue}, nil
 }
 
-// Create a provider mocking s3provider works in normal cases
-func NewTestProvider(url string) confmap.Provider {
-	cfg := aws.NewConfig()
-
-	return &provider{client: secretsmanager.NewFromConfig(*cfg, secretsmanager.WithEndpointResolverV2(resolver{url: url}))}
+// Create a provider using mock secretsmanager client
+func NewTestProvider(secretValue string) confmap.Provider {
+	return &provider{client: &testSecretManagerClient{secretValue: secretValue}}
 }
 
 func TestSecretsManagerFetchSecret(t *testing.T) {
 	secretName := "FOO"
 	secretValue := "BAR"
 
-	s := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.Header.Get("X-Amz-Target") == "secretsmanager.GetSecretValue" {
-			response := &struct {
-				Arn          string `json:"ARN"`
-				CreatedDate  int64  `json:"CreatedDate"`
-				Name         string `json:"Name"`
-				SecretString string `json:"SecretString"`
-			}{
-				Arn:          secretName,
-				CreatedDate:  time.Now().Unix(),
-				Name:         secretName,
-				SecretString: secretValue,
-			}
-
-			b, _ := json.Marshal(response)
-			_, err := writer.Write(b)
-			require.NoError(t, err)
-			writer.WriteHeader(http.StatusOK)
-		}
-	}))
-	defer s.Close()
-	fp := NewTestProvider(s.URL)
+	fp := NewTestProvider(secretValue)
 	result, err := fp.Retrieve(context.Background(), "secretsmanager:"+secretName, nil)
+
 	assert.NoError(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 
@@ -73,6 +45,46 @@ func TestSecretsManagerFetchSecret(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, value)
 	assert.Equal(t, secretValue, value)
+}
+
+func TestFetchSecretsManagerFieldValidJson(t *testing.T) {
+	secretName := "FOO#field1"
+	secretValue := "BAR"
+	secretJSON := fmt.Sprintf("{\"field1\": \"%s\"}", secretValue)
+
+	fp := NewTestProvider(secretJSON)
+	result, err := fp.Retrieve(context.Background(), "secretsmanager:"+secretName, nil)
+
+	assert.NoError(t, err)
+	assert.NoError(t, fp.Shutdown(context.Background()))
+
+	value, err := result.AsRaw()
+	assert.NoError(t, err)
+	assert.NotNil(t, value)
+	assert.Equal(t, secretValue, value)
+}
+
+func TestFetchSecretsManagerFieldInvalidJson(t *testing.T) {
+	secretName := "FOO#field1"
+	secretValue := "BAR"
+
+	fp := NewTestProvider(secretValue)
+	_, err := fp.Retrieve(context.Background(), "secretsmanager:"+secretName, nil)
+
+	assert.Error(t, err)
+	assert.NoError(t, fp.Shutdown(context.Background()))
+}
+
+func TestFetchSecretsManagerFieldMissingInJson(t *testing.T) {
+	secretName := "FOO#field1"
+	secretValue := "BAR"
+	secretJSON := fmt.Sprintf("{\"field0\": \"%s\"}", secretValue)
+
+	fp := NewTestProvider(secretJSON)
+	_, err := fp.Retrieve(context.Background(), "secretsmanager:"+secretName, nil)
+
+	assert.Error(t, err)
+	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestFactory(t *testing.T) {
