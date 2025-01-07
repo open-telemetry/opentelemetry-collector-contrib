@@ -123,7 +123,7 @@ This receiver uses the [GetMetricData](https://docs.aws.amazon.com/AmazonCloudWa
 
 ## Troubleshooting / Debugging
 
-## My metrics are intermittent / not receing any metrics
+## My metrics are intermittent / not receiving any metrics
 
 Try a bigger `poll_interval`. CloudWatch returns no data if the period of the metric, by default for AWS supplied metrics, it's 300 seconds (5 minutes). Try out a period of 600 seconds and a poll interval of 600 seconds.
 
