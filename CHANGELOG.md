@@ -2237,7 +2237,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `pkg/ottl`: Fix parsing of string escapes in OTTL (#23238)
 - `pkg/stanza`: Recombine operator should always recombine partial logs (#30797)
   Previously, certain circumstances could result in partial logs being emitted without any
-  recombiniation. This could occur when using `is_first_entry`, if the first partial log from
+  recombination. This could occur when using `is_first_entry`, if the first partial log from
   a source was emitted before a matching "start of log" indicator was found. This could also
   occur when the collector was shutting down.
   
