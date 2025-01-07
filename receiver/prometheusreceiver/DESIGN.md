@@ -357,12 +357,12 @@ metrics := []*metricspb.Metric{
 
 
 ### Gauge
-Gauge, as described in the [Prometheus Metric Types Document](https://prometheus.io/docs/concepts/metric_types/#guage),
+Gauge, as described in the [Prometheus Metric Types Document](https://prometheus.io/docs/concepts/metric_types/#gauge),
 > is a metric that represents a single numerical value that can arbitrarily go up and down
 
 ```
 # HELP gauge_test some test gauges.
-# TYPE gauge_test gague
+# TYPE gauge_test gauge
 gauge_test{id="1",foo="bar"} 1.0
 gauge_test{id="2",foo=""}    2.0
 
