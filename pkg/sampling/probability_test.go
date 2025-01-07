@@ -75,10 +75,10 @@ func ExampleProbabilityToThreshold_limitedprecision() {
 	// In the range 1/4 to 1/2: 52 bits of precision are available; 3 trailing zero bits;
 	// In the range 1/8 to 1/4: 52 bits of precision are available; 2 trailing zero bits;
 	// In the range 1/16 to 1/8: 52 bits of precision are available; 1 trailing zero bits;
-	// Probabilties less than 1/16: 51 bits of precision are available
-	// Probabilties less than 1/32: 50 bits of precision are available.
+	// Probabilities less than 1/16: 51 bits of precision are available
+	// Probabilities less than 1/32: 50 bits of precision are available.
 	// ...
-	// Probabilties less than 0x1p-N: 55-N bits of precision are available.
+	// Probabilities less than 0x1p-N: 55-N bits of precision are available.
 	// ...
 	// Probabilities less than 0x1p-55: 0 bits of precision.
 	const large = 15.0 / 16
