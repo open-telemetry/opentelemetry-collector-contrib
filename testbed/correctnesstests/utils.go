@@ -214,7 +214,7 @@ func ConstructMetricsSender(t *testing.T, receiver string) testbed.MetricDataSen
 	return sender
 }
 
-// ConstructReceiver creates a testbed receiver from the passed-in recevier identifier.
+// ConstructReceiver creates a testbed receiver from the passed-in receiver identifier.
 func ConstructReceiver(t *testing.T, exporter string) testbed.DataReceiver {
 	var receiver testbed.DataReceiver
 	switch exporter {

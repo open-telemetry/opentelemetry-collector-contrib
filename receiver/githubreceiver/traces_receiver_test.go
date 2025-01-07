@@ -25,7 +25,7 @@ func TestHealthCheck(t *testing.T) {
 	r := receiver
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "failed to start receiver")
 	defer func() {
-		require.NoError(t, r.Shutdown(context.Background()), "failed to shutdown revceiver")
+		require.NoError(t, r.Shutdown(context.Background()), "failed to shutdown receiver")
 	}()
 
 	w := httptest.NewRecorder()

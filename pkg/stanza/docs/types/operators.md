@@ -104,7 +104,7 @@ receivers:
         value: baz
 ```
 
-### Emitting from a reciever
+### Emitting from a receiver
 
 By default, the last operator in a sequence will emit logs from the receiver.
 
