@@ -213,6 +213,7 @@ type converter struct {
 }
 
 func (c *converter) accept(v grammarVisitor) {
+	v.visitConverter(c)
 	if c.Arguments != nil {
 		for _, a := range c.Arguments {
 			a.accept(v)
@@ -531,6 +532,7 @@ func (e *grammarCustomError) Unwrap() []error {
 type grammarVisitor interface {
 	visitPath(v *path)
 	visitEditor(v *editor)
+	visitConverter(v *converter)
 	visitValue(v *value)
 	visitMathExprLiteral(v *mathExprLiteral)
 }
@@ -554,6 +556,8 @@ func (g *grammarCustomErrorsVisitor) join() error {
 func (g *grammarCustomErrorsVisitor) visitPath(_ *path) {}
 
 func (g *grammarCustomErrorsVisitor) visitValue(_ *value) {}
+
+func (g *grammarCustomErrorsVisitor) visitConverter(_ *converter) {}
 
 func (g *grammarCustomErrorsVisitor) visitEditor(v *editor) {
 	if v.Keys != nil {

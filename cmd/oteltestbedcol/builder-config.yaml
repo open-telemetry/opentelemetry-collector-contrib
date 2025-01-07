@@ -10,14 +10,14 @@ dist:
   version: 0.116.0-dev
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.116.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.116.1-0.20241220212031-7c2639723f67
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.116.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.116.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.116.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.116.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.116.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.116.1-0.20241220212031-7c2639723f67
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.116.1-0.20241220212031-7c2639723f67
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.116.1-0.20241220212031-7c2639723f67
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.116.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.116.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.116.0
@@ -29,15 +29,15 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.116.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.116.0
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.116.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.116.1-0.20241220212031-7c2639723f67
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.116.1-0.20241220212031-7c2639723f67
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.116.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.116.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.116.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.116.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.116.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.116.1-0.20241220212031-7c2639723f67
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.116.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.116.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.116.0
@@ -53,11 +53,11 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.116.0
 
 providers:
-  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.22.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.22.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.22.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.22.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.22.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.22.1-0.20241220212031-7c2639723f67
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.22.1-0.20241220212031-7c2639723f67
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.22.1-0.20241220212031-7c2639723f67
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.22.1-0.20241220212031-7c2639723f67
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.22.1-0.20241220212031-7c2639723f67
 
 replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
@@ -111,3 +111,6 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
   - github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ../../extension/ackextension
+  - go.opentelemetry.io/collector/scraper/scraperhelper v0.116.0 => go.opentelemetry.io/collector/scraper/scraperhelper v0.0.0-20250106214556-67fdcd1f4267
+  - go.opentelemetry.io/collector/extension/xextension v0.116.0 => go.opentelemetry.io/collector/extension/xextension v0.0.0-20250106214556-67fdcd1f4267
+  - go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.116.0 => go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.116.1-0.20250106221047-6c99ba055859
