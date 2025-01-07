@@ -81,9 +81,10 @@ var baseProviderMock = providerMock{
 }
 
 var testCases = []struct {
-	name      string
-	goldenDir string
-	context   ContextID
+	name       string
+	goldenDir  string
+	context    ContextID
+	attributes []attribute.Key
 }{
 	{
 		name:      "default source.address attribute, not found",
@@ -121,9 +122,10 @@ var testCases = []struct {
 		context:   record,
 	},
 	{
-		name:      "custom address located in the record attributes",
-		goldenDir: "record_custom_address",
-		context:   record,
+		name:       "custom address located in the record attributes",
+		goldenDir:  "record_custom_address",
+		context:    record,
+		attributes: []attribute.Key{"source.address", "client.address", "custom.address"},
 	},
 }
 
@@ -221,7 +223,11 @@ func TestProcessor(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{Context: tt.context, Providers: map[string]provider.Config{providerKey: &providerConfigMock{}}, Attributes: []attribute.Key{"source.address", "client.address", "custom.address"}}
+			var attributes []attribute.Key = defaultAttributes
+			if tt.attributes != nil {
+				attributes = tt.attributes
+			}
+			cfg := &Config{Context: tt.context, Providers: map[string]provider.Config{providerKey: &providerConfigMock{}}, Attributes: attributes}
 			compareAllSignals(cfg, tt.goldenDir)(t)
 		})
 	}
