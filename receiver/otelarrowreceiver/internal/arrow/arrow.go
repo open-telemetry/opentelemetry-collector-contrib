@@ -354,7 +354,7 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 	pendingCh := make(chan batchResp, runtime.NumCPU())
 
 	// wg is used to ensure this thread returns after both
-	// sender and recevier threads return.
+	// sender and receiver threads return.
 	var sendWG sync.WaitGroup
 	var recvWG sync.WaitGroup
 	sendWG.Add(1)
