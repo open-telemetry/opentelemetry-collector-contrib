@@ -224,7 +224,7 @@ log retention size of a topic in Bytes, The value (-1) indicates infinite size.
 
 ### kafka.topic.min_insync_replicas
 
-minimum insync replicas of a topic.
+minimum in-sync replicas of a topic.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
