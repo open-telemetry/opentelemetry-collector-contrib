@@ -33,13 +33,13 @@ func createPodKeyFromMetaData(pod *corev1.Pod) string {
 
 func createPodKeyFromMetric(metric CIMetric) string {
 	namespace := metric.GetTag(ci.K8sNamespace)
-	podName := metric.GetTag(ci.PodNameKey)
+	podName := metric.GetTag(ci.K8sPodNameKey)
 	return k8sutil.CreatePodKey(namespace, podName)
 }
 
 func createContainerKeyFromMetric(metric CIMetric) string {
 	namespace := metric.GetTag(ci.K8sNamespace)
-	podName := metric.GetTag(ci.PodNameKey)
+	podName := metric.GetTag(ci.K8sPodNameKey)
 	containerName := metric.GetTag(ci.ContainerNamekey)
 	return k8sutil.CreateContainerKey(namespace, podName, containerName)
 }
@@ -193,7 +193,7 @@ func tagMetricSourceWindows(metric CIMetric) {
 }
 
 func AddKubernetesInfo(metric CIMetric, kubernetesBlob map[string]any, retainContainerNameTag bool) {
-	needMoveToKubernetes := map[string]string{ci.PodNameKey: "pod_name", ci.PodIDKey: "pod_id"}
+	needMoveToKubernetes := map[string]string{ci.K8sPodNameKey: "pod_name", ci.PodIDKey: "pod_id"}
 	needCopyToKubernetes := map[string]string{ci.K8sNamespace: "namespace_name", ci.TypeService: "service_name", ci.NodeNameKey: "host"}
 
 	if retainContainerNameTag {

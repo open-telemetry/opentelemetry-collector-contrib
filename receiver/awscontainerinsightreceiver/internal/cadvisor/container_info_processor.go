@@ -124,7 +124,7 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 		pKey = &podKey{cgroupPath: podPath, podName: podName, podID: podID, namespace: namespace}
 
 		tags[ci.PodIDKey] = podID
-		tags[ci.PodNameKey] = podName
+		tags[ci.K8sPodNameKey] = podName
 		tags[ci.K8sNamespace] = namespace
 		switch containerName {
 		// For docker, pause container name is set to POD while containerd does not set it.
@@ -179,7 +179,7 @@ func processPod(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, 
 
 	tags := map[string]string{}
 	tags[ci.PodIDKey] = podKey.podID
-	tags[ci.PodNameKey] = podKey.podName
+	tags[ci.K8sPodNameKey] = podKey.podName
 	tags[ci.K8sNamespace] = podKey.namespace
 
 	tags[ci.Timestamp] = strconv.FormatInt(extractors.GetStats(info).Timestamp.UnixNano(), 10)

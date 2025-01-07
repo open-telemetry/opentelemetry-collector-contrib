@@ -193,7 +193,7 @@ func (s *Scraper) GetMetrics() []pmetric.Metrics {
 		}
 		for _, m := range podContainerMetrics {
 			m.AddTag(ci.K8sNamespace, containerInfo.Namespace)
-			m.AddTag(ci.PodNameKey, containerInfo.PodName)
+			m.AddTag(ci.K8sPodNameKey, containerInfo.PodName)
 			m.AddTag(ci.ContainerNamekey, containerInfo.ContainerName)
 		}
 

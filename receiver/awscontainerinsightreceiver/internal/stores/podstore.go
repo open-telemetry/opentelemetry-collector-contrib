@@ -218,7 +218,7 @@ func (p *PodStore) RefreshTick(ctx context.Context) {
 func (p *PodStore) Decorate(ctx context.Context, metric CIMetric, kubernetesBlob map[string]any) bool {
 	if metric.GetTag(ci.MetricType) == ci.TypeNode {
 		p.decorateNode(metric)
-	} else if metric.GetTag(ci.PodNameKey) != "" {
+	} else if metric.GetTag(ci.K8sPodNameKey) != "" {
 		podKey := createPodKeyFromMetric(metric)
 		if podKey == "" {
 			p.logger.Error("podKey is unavailable when decorating pod")

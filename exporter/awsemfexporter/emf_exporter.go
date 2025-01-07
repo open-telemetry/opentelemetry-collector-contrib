@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
@@ -77,7 +78,6 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 		processResourceLabels: func(map[string]string) {},
 	}
 
-	// TODO(kausyas): Check why this isnt in upstream
 	if config.IsAppSignalsEnabled() {
 		userAgent := appsignals.NewUserAgent()
 		emfExporter.processResourceLabels = userAgent.Process
@@ -104,7 +104,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 		}
 	}
 	emf.config.logger.Debug("Start processing resource metrics", zap.Any("labels", labels))
-	emf.processResourceLabels(labels) // TODO(kausyas): Check why this isnt in upstream
+	emf.processResourceLabels(labels)
 
 	groupedMetrics := make(map[any]*groupedMetric)
 	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
@@ -204,6 +204,8 @@ func (emf *emfExporter) start(_ context.Context, host component.Host) error {
 	if err != nil {
 		return err
 	}
+
+	awsConfig.LogLevel = aws.LogLevel(aws.LogDebugWithHTTPBody)
 
 	var userAgentExtras []string
 	if emf.config.IsAppSignalsEnabled() {

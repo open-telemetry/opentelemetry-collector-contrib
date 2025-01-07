@@ -146,7 +146,7 @@ func TestGetPodMetrics(t *testing.T) {
 	podMetric := metrics[0]
 	assert.Equal(t, ci.TypePodNet, podMetric.GetMetricType())
 	assert.NotNil(t, podMetric.GetTag(ci.PodIDKey))
-	assert.NotNil(t, podMetric.GetTag(ci.PodNameKey))
+	assert.NotNil(t, podMetric.GetTag(ci.K8sPodNameKey))
 	assert.NotNil(t, podMetric.GetTag(ci.K8sNamespace))
 	assert.NotNil(t, podMetric.GetTag(ci.Timestamp))
 	assert.NotNil(t, podMetric.GetTag(ci.SourcesKey))

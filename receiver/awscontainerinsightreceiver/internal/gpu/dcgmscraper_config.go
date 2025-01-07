@@ -116,7 +116,7 @@ func getMetricRelabelConfig(hostInfoProvider hostInfoProvider) []*relabel.Config
 		// additional k8s podname for service name and k8s blob decoration
 		{
 			SourceLabels: model.LabelNames{"pod"},
-			TargetLabel:  ci.PodNameKey,
+			TargetLabel:  ci.K8sPodNameKey,
 			Regex:        relabel.MustNewRegexp("(.*)"),
 			Replacement:  "${1}",
 			Action:       relabel.Replace,

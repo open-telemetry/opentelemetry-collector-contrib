@@ -131,7 +131,7 @@ func TestUtils_addKubernetesInfo(t *testing.T) {
 	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	tags := map[string]string{
 		ci.ContainerNamekey: "testContainer",
-		ci.PodNameKey:       "testPod",
+		ci.K8sPodNameKey:    "testPod",
 		ci.PodIDKey:         "123",
 		ci.K8sNamespace:     "testNamespace",
 		ci.TypeService:      "testService",
@@ -147,7 +147,7 @@ func TestUtils_addKubernetesInfo(t *testing.T) {
 	kubernetesBlob := map[string]any{}
 	AddKubernetesInfo(metric, kubernetesBlob, false)
 	assert.Equal(t, "", metric.GetTag(ci.ContainerNamekey))
-	assert.Equal(t, "", metric.GetTag(ci.PodNameKey))
+	assert.Equal(t, "", metric.GetTag(ci.K8sPodNameKey))
 	assert.Equal(t, "", metric.GetTag(ci.PodIDKey))
 	assert.Equal(t, "testNamespace", metric.GetTag(ci.K8sNamespace))
 	assert.Equal(t, "testService", metric.GetTag(ci.TypeService))
@@ -161,7 +161,7 @@ func TestUtils_addKubernetesInfoRetainContainerNameTag(t *testing.T) {
 	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	tags := map[string]string{
 		ci.ContainerNamekey: "testContainer",
-		ci.PodNameKey:       "testPod",
+		ci.K8sPodNameKey:    "testPod",
 		ci.PodIDKey:         "123",
 		ci.K8sNamespace:     "testNamespace",
 		ci.TypeService:      "testService",
@@ -177,7 +177,7 @@ func TestUtils_addKubernetesInfoRetainContainerNameTag(t *testing.T) {
 	kubernetesBlob := map[string]any{}
 	AddKubernetesInfo(metric, kubernetesBlob, true)
 	assert.Equal(t, "testContainer", metric.GetTag(ci.ContainerNamekey))
-	assert.Equal(t, "", metric.GetTag(ci.PodNameKey))
+	assert.Equal(t, "", metric.GetTag(ci.K8sPodNameKey))
 	assert.Equal(t, "", metric.GetTag(ci.PodIDKey))
 	assert.Equal(t, "testNamespace", metric.GetTag(ci.K8sNamespace))
 	assert.Equal(t, "testService", metric.GetTag(ci.TypeService))

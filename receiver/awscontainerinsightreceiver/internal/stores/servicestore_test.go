@@ -36,8 +36,8 @@ func TestServiceStore(t *testing.T) {
 	// test the case when it decorates metrics successfully
 	metric := &mockCIMetric{
 		tags: map[string]string{
-			ci.PodNameKey:   "test-pod",
-			ci.K8sNamespace: "default",
+			ci.K8sPodNameKey: "test-pod",
+			ci.K8sNamespace:  "default",
 		},
 	}
 	kubernetesBlob := map[string]any{}
@@ -48,7 +48,7 @@ func TestServiceStore(t *testing.T) {
 	// test the case when it fails to decorate metrics
 	metric = &mockCIMetric{
 		tags: map[string]string{
-			ci.PodNameKey: "test-pod",
+			ci.K8sPodNameKey: "test-pod",
 		},
 	}
 	kubernetesBlob = map[string]any{}

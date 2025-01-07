@@ -134,7 +134,7 @@ func (hp *HCSStatsProvider) getPodMetrics() ([]*stores.CIMetricImpl, error) {
 		tags := map[string]string{}
 
 		tags[ci.PodIDKey] = pod.PodId
-		tags[ci.PodNameKey] = pod.PodName
+		tags[ci.K8sPodNameKey] = pod.PodName
 		tags[ci.K8sNamespace] = pod.PodNamespace
 
 		for _, container := range pod.Containers {

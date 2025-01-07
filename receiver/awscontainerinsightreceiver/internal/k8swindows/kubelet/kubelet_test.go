@@ -67,7 +67,7 @@ func TestGetPodMetrics(t *testing.T) {
 	podMetric := metrics[1]
 	assert.Equal(t, ci.TypePod, podMetric.GetMetricType())
 	assert.NotNil(t, podMetric.GetTag(ci.PodIDKey))
-	assert.NotNil(t, podMetric.GetTag(ci.PodNameKey))
+	assert.NotNil(t, podMetric.GetTag(ci.K8sPodNameKey))
 	assert.NotNil(t, podMetric.GetTag(ci.K8sNamespace))
 	assert.NotNil(t, podMetric.GetTag(ci.Timestamp))
 	assert.NotNil(t, podMetric.GetTag(ci.SourcesKey))
@@ -75,7 +75,7 @@ func TestGetPodMetrics(t *testing.T) {
 	containerMetric := metrics[len(metrics)-1]
 	assert.Equal(t, ci.TypeContainer, containerMetric.GetMetricType())
 	assert.NotNil(t, containerMetric.GetTag(ci.PodIDKey))
-	assert.NotNil(t, containerMetric.GetTag(ci.PodNameKey))
+	assert.NotNil(t, containerMetric.GetTag(ci.K8sPodNameKey))
 	assert.NotNil(t, containerMetric.GetTag(ci.K8sNamespace))
 	assert.NotNil(t, containerMetric.GetTag(ci.Timestamp))
 	assert.NotNil(t, containerMetric.GetTag(ci.ContainerNamekey))
@@ -97,7 +97,7 @@ func TestGetContainerMetrics(t *testing.T) {
 	containerMetric := metrics[1]
 	assert.Equal(t, ci.TypeContainer, containerMetric.GetMetricType())
 	assert.NotNil(t, containerMetric.GetTag(ci.PodIDKey))
-	assert.NotNil(t, containerMetric.GetTag(ci.PodNameKey))
+	assert.NotNil(t, containerMetric.GetTag(ci.K8sPodNameKey))
 	assert.NotNil(t, containerMetric.GetTag(ci.K8sNamespace))
 	assert.NotNil(t, containerMetric.GetTag(ci.Timestamp))
 	assert.NotNil(t, containerMetric.GetTag(ci.ContainerNamekey))

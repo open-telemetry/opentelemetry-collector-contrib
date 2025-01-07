@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
-	kueuescraper "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightskueuereceiver/internal/kueuescraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightskueuereceiver/internal/kueuescraper"
 )
 
 var _ receiver.Metrics = (*awsContainerInsightKueueReceiver)(nil)

@@ -60,7 +60,6 @@ func TestGetMetricKey(t *testing.T) {
 			ci.ContainerNamekey: "containerName",
 		},
 	}
-	// TODO(kausyas): Make sure this isnt exported anywhere
 	assert.Equal(t, "metricType:Container,podId:podID,containerName:containerName", getMetricKey(c))
 
 	c = &stores.CIMetricImpl{

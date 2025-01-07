@@ -83,7 +83,7 @@ func (sp *SummaryProvider) getContainerMetrics(pod stats.PodStats) ([]*stores.CI
 		tags := map[string]string{}
 
 		tags[ci.PodIDKey] = pod.PodRef.UID
-		tags[ci.PodNameKey] = pod.PodRef.Name
+		tags[ci.K8sPodNameKey] = pod.PodRef.Name
 		tags[ci.K8sNamespace] = pod.PodRef.Namespace
 		tags[ci.ContainerNamekey] = container.Name
 		containerID := fmt.Sprintf("%s-%s", pod.PodRef.UID, container.Name)
@@ -119,7 +119,7 @@ func (sp *SummaryProvider) getPodMetrics(summary *stats.Summary) ([]*stores.CIMe
 		tags := map[string]string{}
 
 		tags[ci.PodIDKey] = pod.PodRef.UID
-		tags[ci.PodNameKey] = pod.PodRef.Name
+		tags[ci.K8sPodNameKey] = pod.PodRef.Name
 		tags[ci.K8sNamespace] = pod.PodRef.Namespace
 
 		rawMetric := extractors.ConvertPodToRaw(pod)

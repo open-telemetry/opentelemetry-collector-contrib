@@ -120,7 +120,7 @@ func (pdc *PodAttributesDecoratorConsumer) getContainerInfoForNeuronDeviceIndex(
 func populateAttributes(attributes *pcommon.Map, containerInfo *stores.ContainerInfo) {
 	if containerInfo != nil {
 		attributes.PutStr(ci.ContainerNamekey, containerInfo.ContainerName)
-		attributes.PutStr(ci.PodNameKey, containerInfo.PodName)
+		attributes.PutStr(ci.K8sPodNameKey, containerInfo.PodName)
 		attributes.PutStr(ci.K8sNamespace, containerInfo.Namespace)
 	}
 }
