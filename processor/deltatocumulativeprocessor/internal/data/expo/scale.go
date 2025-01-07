@@ -47,7 +47,7 @@ func Downscale(bs Buckets, from, to Scale) {
 	case from < to:
 		// because even distribution within the buckets cannot be assumed, it is
 		// not possible to correctly upscale (split) buckets.
-		// any attempt to do so would yield erronous data.
+		// any attempt to do so would yield erroneous data.
 		panic(fmt.Sprintf("cannot upscale without introducing error (%d -> %d)", from, to))
 	}
 
