@@ -11,8 +11,8 @@ Parser operators can parse a severity and attach the resulting value to a log en
 | Field            | Default   | Description |
 | ---              | ---       | ---         |
 | `parse_from`     | required  | The [field](../types/field.md) from which the value will be parsed. |
-| `preset`         | `default` | A predefined set of values that should be interpretted at specific severity levels. |
-| `mapping`        |           | A custom set of values that should be interpretted at designated severity levels. |
+| `preset`         | `default` | A predefined set of values that should be interpreted at specific severity levels. |
+| `mapping`        |           | A custom set of values that should be interpreted at designated severity levels. |
 | `overwrite_text` | `false`   | If `true`, the severity text will be set to the [recommeneded short name](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#displaying-severity) corresponding to the severity number. |
 
 Note that by default the severity _text_ will be set to the original value which was interpreted into a severity number. In order to set the severity text to a standard short name (e.g. `ERROR`, `INFO3`, etc.), set `overwrite_text` to `true`.

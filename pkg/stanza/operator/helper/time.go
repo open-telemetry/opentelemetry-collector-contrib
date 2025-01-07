@@ -125,7 +125,7 @@ func (t *TimeParser) setLocation() error {
 	}
 
 	if strings.HasSuffix(t.Layout, "Z") {
-		// If a timestamp ends with 'Z', it should be interpretted at Zulu (UTC) time
+		// If a timestamp ends with 'Z', it should be interpreted at Zulu (UTC) time
 		t.location = time.UTC
 		return nil
 	}

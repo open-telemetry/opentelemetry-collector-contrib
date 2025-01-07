@@ -74,7 +74,7 @@ The `epoch` layout type uses can consume epoch-based timestamps. The following l
 | `s.us` | Seconds plus microseconds since the epoch | 1136214245.123456    | `string`, `int64`<sup>[1]</sup>, `float64`               |
 | `s.ns` | Seconds plus nanoseconds since the epoch  | 1136214245.123456789 | `string`, `int64`<sup>[1]</sup>, `float64`<sup>[2]</sup> |
 
-<sub>[1] Interpretted as seconds. Equivalent to using `s` layout.</sub><br/>
+<sub>[1] Interpreted as seconds. Equivalent to using `s` layout.</sub><br/>
 <sub>[2] Due to floating point precision limitations, loss of up to 100ns may be expected.</sub>
 
 
