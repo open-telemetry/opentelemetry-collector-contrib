@@ -16,7 +16,7 @@ import (
 const (
 	defaultEncoding     = "otlp_proto"
 	defaultTraceTopic   = "otlp_spans"
-	defaultMeticsTopic  = "otlp_metrics"
+	defaultMetricsTopic = "otlp_metrics"
 	defaultLogsTopic    = "otlp_logs"
 	defaultConsumerName = ""
 	defaultSubscription = "otlp_subscription"
@@ -103,7 +103,7 @@ func (f *pulsarReceiverFactory) createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	c := *(cfg.(*Config))
 	if len(c.Topic) == 0 {
-		c.Topic = defaultMeticsTopic
+		c.Topic = defaultMetricsTopic
 	}
 	r, err := newMetricsReceiver(c, set, f.metricsUnmarshalers, nextConsumer)
 	if err != nil {
