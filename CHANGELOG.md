@@ -7139,7 +7139,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 ### 🚀 New components 🚀
 
 - `zookeeper` receiver: Collects metrics from a Zookeeper instance using the `mntr` command
-- `loadbalacing` exporter: Consistently exports spans belonging to the same trace to the same backend
+- `loadbalancing` exporter: Consistently exports spans belonging to the same trace to the same backend
 - `windowsperfcounters` receiver: Captures the configured system, application, or custom performance counter data from the Windows registry using the PDH interface
 - `awsprometheusremotewrite` exporter:  Sends metrics data in Prometheus TimeSeries format to a Prometheus Remote Write Backend and signs each outgoing HTTP request following the AWS Signature Version 4 signing process
 
