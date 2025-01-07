@@ -1081,7 +1081,7 @@ func TestLogsConsumerGroupHandler_unmarshal_text(t *testing.T) {
 		enc  string
 	}{
 		{
-			name: "unmarshal test for Englist (ASCII characters) with text_utf8",
+			name: "unmarshal test for English (ASCII characters) with text_utf8",
 			text: "ASCII characters test",
 			enc:  "utf8",
 		},
