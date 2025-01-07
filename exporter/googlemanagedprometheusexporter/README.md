@@ -317,5 +317,5 @@ exporters:
 ```
 
 That can help identify which metric sources are colliding, so you know which
-applications or metrics need additional attributes to ditinguish them from
+applications or metrics need additional attributes to distinguish them from
 one-another.
