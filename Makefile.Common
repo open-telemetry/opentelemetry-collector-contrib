@@ -29,9 +29,11 @@ GO_BUILD_TAGS=""
 GO_BUILD_LDFLAGS="-s -w"
 GOTEST_TIMEOUT?= 600s
 GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
-GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4
+GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4 -skip Sudo
+GOTEST_INTEGRATION_OPT_SUDO= $(GOTEST_INTEGRATION_OPT) -exec sudo -run Sudo
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS)
+GOTEST_OPT_WITH_INTEGRATION_SUDO=$(GOTEST_INTEGRATION_OPT_SUDO) -tags=integration,$(GO_BUILD_TAGS)
 GOTEST_OPT_WITH_INTEGRATION_COVERAGE=$(GOTEST_OPT_WITH_INTEGRATION) -coverprofile=integration-coverage.txt -covermode=atomic
 GOCMD?= go
 GOOS=$(shell $(GOCMD) env GOOS)
@@ -152,12 +154,13 @@ endif
 runbuilttest: $(GOTESTSUM)
 ifneq (,$(wildcard ./builtunitetest.test))
 	$(GOTESTSUM) --raw-command -- $(GOCMD) tool test2json -p "./..." -t ./builtunitetest.test -test.v -test.failfast -test.timeout $(GOTEST_TIMEOUT)
-endif	
+endif
 
 .PHONY: mod-integration-test
 mod-integration-test: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration test ./... in `pwd`"
 	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION)
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION_SUDO)
 	@if [ -e integration-coverage.txt ]; then \
 		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
 	fi
@@ -214,7 +217,7 @@ fmt: $(GOFUMPT) $(GOIMPORTS)
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
-	$(LINT) run --allow-parallel-runners --verbose --build-tags integration --timeout=30m --path-prefix $(shell basename "$(CURDIR)")
+	$(LINT) run --allow-parallel-runners --build-tags integration --timeout=30m --path-prefix $(shell basename "$(CURDIR)")
 
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)
