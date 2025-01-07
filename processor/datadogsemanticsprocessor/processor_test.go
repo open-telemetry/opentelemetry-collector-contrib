@@ -5,9 +5,10 @@ package datadogsemanticsprocessor
 
 import (
 	"context"
+	"testing"
+
 	"github.com/DataDog/datadog-agent/pkg/trace/testutil"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,7 +39,7 @@ type multiTest struct {
 
 	nextTrace *consumertest.TracesSink
 
-	//ddspTrace   *datadogsemanticsprocessor
+	// ddspTrace   *datadogsemanticsprocessor
 }
 
 func newMultiTest(

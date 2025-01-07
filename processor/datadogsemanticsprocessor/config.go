@@ -1,4 +1,7 @@
-package datadogsemanticsprocessor
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package datadogsemanticsprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor"
 
 // Config defines configuration for Datadog semantics processor.
 type Config struct {

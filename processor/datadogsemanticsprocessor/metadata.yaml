@@ -3,7 +3,7 @@ type: datadogsemantics
 status:
   class: processor
   stability:
-    development: [logs, metrics, traces]
+    development: [traces]
   distributions: [contrib]
   codeowners:
     active: [songy23, IbraheemA]

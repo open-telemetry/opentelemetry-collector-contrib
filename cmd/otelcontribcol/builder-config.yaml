@@ -104,6 +104,7 @@ processors:
   - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.117.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.117.0
@@ -164,7 +165,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver v0.117.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver v0.117.0  
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.117.0
@@ -512,3 +513,4 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension => ../../extension/storage/redisstorageextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver => ../../receiver/huaweicloudcesreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
+  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor => ../../processor/datadogsemanticsprocessor
