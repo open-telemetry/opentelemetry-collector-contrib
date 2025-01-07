@@ -254,7 +254,7 @@ func CompareProfile(expected, actual pprofile.Profile) error {
 	}
 
 	if !reflect.DeepEqual(expected.LocationIndices(), actual.LocationIndices()) {
-		errs = multierr.Append(errs, fmt.Errorf("locationIndicies do not match expected"))
+		errs = multierr.Append(errs, fmt.Errorf("locationIndices do not match expected"))
 	}
 
 	if !reflect.DeepEqual(expected.CommentStrindices(), actual.CommentStrindices()) {
