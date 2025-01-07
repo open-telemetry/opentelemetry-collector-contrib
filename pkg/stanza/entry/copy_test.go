@@ -138,7 +138,7 @@ func TestCopyUnknownValueValid(t *testing.T) {
 	require.Equal(t, expectedValue, copiedValue)
 }
 
-func TestCopyUnknownValueInalid(t *testing.T) {
+func TestCopyUnknownValueInvalid(t *testing.T) {
 	unknownValue := map[string]any{
 		"foo": make(chan int),
 	}

@@ -21,7 +21,7 @@ func TestBuildValid(t *testing.T) {
 	require.IsType(t, &Output{}, op)
 }
 
-func TestBuildIvalid(t *testing.T) {
+func TestBuildInvalid(t *testing.T) {
 	cfg := NewConfig("test")
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = nil
