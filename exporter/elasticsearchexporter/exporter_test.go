@@ -736,6 +736,7 @@ func TestExporterLogs(t *testing.T) {
 	})
 
 	t.Run("publish logs with dynamic id", func(t *testing.T) {
+		t.Parallel()
 		exampleDocID := "abc123"
 		tableTests := []struct {
 			name          string
@@ -794,33 +795,48 @@ func TestExporterLogs(t *testing.T) {
 			},
 		}
 
+		cfgs := map[string]func(*Config){
+			"sync": func(cfg *Config) {
+				batcherEnabled := false
+				cfg.Batcher.Enabled = &batcherEnabled
+			},
+			"async": func(cfg *Config) {
+				batcherEnabled := true
+				cfg.Batcher.Enabled = &batcherEnabled
+				cfg.Batcher.FlushTimeout = 10 * time.Millisecond
+			},
+		}
 		for _, tt := range tableTests {
-			t.Run(tt.name, func(t *testing.T) {
-				rec := newBulkRecorder()
-				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-					rec.Record(docs)
+			for cfgName, cfgFn := range cfgs {
+				t.Run(tt.name+"/"+cfgName, func(t *testing.T) {
+					t.Parallel()
+					rec := newBulkRecorder()
+					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+						rec.Record(docs)
 
-					if tt.expectedDocID == nil {
-						assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
-					} else {
-						assert.Equal(t, *tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
-					}
-					return itemsAllOK(docs)
+						if tt.expectedDocID == nil {
+							assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
+						} else {
+							assert.Equal(t, *tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+						}
+						return itemsAllOK(docs)
+					})
+
+					exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+						cfg.LogsDynamicID.Enabled = true
+						cfgFn(cfg)
+					})
+					logs := newLogsWithAttributes(
+						tt.recordAttrs,
+						tt.scopeAttrs,
+						tt.resourceAttrs,
+					)
+					logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
+					mustSendLogs(t, exporter, logs)
+
+					rec.WaitItems(1)
 				})
-
-				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-					cfg.LogsDynamicID.Enabled = true
-				})
-				logs := newLogsWithAttributes(
-					tt.recordAttrs,
-					tt.scopeAttrs,
-					tt.resourceAttrs,
-				)
-				logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
-				mustSendLogs(t, exporter, logs)
-
-				rec.WaitItems(1)
-			})
+			}
 		}
 	})
 }
