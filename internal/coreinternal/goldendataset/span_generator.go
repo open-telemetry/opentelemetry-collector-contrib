@@ -355,7 +355,7 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
 	attrMap.PutStr("application.create.location", "https://api.opentelemetry.io/blog/posts/806673B9-4F4D-4284-9635-3A3E3E3805BE")
 	stages := attrMap.PutEmptySlice("application.stages")
 	stages.AppendEmpty().SetStr("Launch")
-	stages.AppendEmpty().SetStr("Injestion")
+	stages.AppendEmpty().SetStr("Ingestion")
 	stages.AppendEmpty().SetStr("Validation")
 	subMap := attrMap.PutEmptyMap("application.abflags")
 	subMap.PutBool("UIx", false)
