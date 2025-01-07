@@ -73,7 +73,7 @@ A metric descriptor section allows the schema of a metric to be overwritten befo
 | Name              | Description                                                            | Default |
 | :---------------- | :--------------------------------------------------------------------- | ------- |
 | `metric_name`      | The name of the metric to be overwritten.                             |         |
-| `unit` | The overwritten value of unit. The [MetricDatum](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_MetricDatum.html) contains a ful list of supported unit values. |         |
+| `unit` | The overwritten value of unit. The [MetricDatum](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_MetricDatum.html) contains a full list of supported unit values. |         |
 | `overwrite` | `true` if the schema should be overwritten with the given specification, otherwise it will only be configured if empty. |   false   |
 
 
