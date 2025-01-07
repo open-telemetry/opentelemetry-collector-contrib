@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/corein
 go 1.22.0
 
 require (
-	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cenkalti/backoff/v5 v5.0.0
 	github.com/docker/go-connections v0.5.0
 	github.com/elastic/lunes v0.1.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.116.0
