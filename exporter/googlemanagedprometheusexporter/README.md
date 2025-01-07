@@ -202,7 +202,7 @@ processors:
 
 Error: `Value type for metric <metric name> conflicts with the existing value type`
 
-Google Managed Service for Promethueus (and Google Cloud Monitoring) have fixed
+Google Managed Service for Prometheus (and Google Cloud Monitoring) have fixed
 value types (INT and DOUBLE) for metrics. Once a metric has been written as an
 INT or DOUBLE, attempting to write the other type will fail with the error
 above. This commonly occurs when a metric's value type has changed, or when a
@@ -224,7 +224,7 @@ written as a double going forward. The simplest way to do this is by using the
 
 Error: `One or more points were written more frequently than the maximum sampling period configured for the metric.`
 
-Google Managed Service for Promethueus (and Google Cloud Monitoring)
+Google Managed Service for Prometheus (and Google Cloud Monitoring)
 [limit](https://cloud.google.com/monitoring/quotas#custom_metrics_quotas) the
 rate at which points can be written to one point every 5 seconds. If you try to
 write points more frequently, you will encounter the error above. If you know
