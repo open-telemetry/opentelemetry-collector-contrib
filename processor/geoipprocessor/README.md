@@ -51,9 +51,9 @@ The following settings can be configured:
 processors:
     # processor name: geoip
     geoip:
-      context: resource
       providers:
         maxmind:
           database_path: /tmp/mygeodb
+      context: record
       attributes: [client.address, source.address, custom.address]
 ```
