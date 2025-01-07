@@ -6,4 +6,4 @@ status:
     development: [logs, metrics, traces]
   distributions: [contrib]
   codeowners:
-    active: [IbraheemA]
+    active: [songy23, IbraheemA]
