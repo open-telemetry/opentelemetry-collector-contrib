@@ -372,7 +372,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) unmarshalBaggage(toMap pcommon.Map, b
 	return nil
 }
 
-// insertUserProperty will instert a user property value with the given key to an attribute if possible.
+// insertUserProperty will insert a user property value with the given key to an attribute if possible.
 // Since AttributeMap only supports int64 integer types, uint64 data may be misrepresented.
 func (u *brokerTraceReceiveUnmarshallerV1) insertUserProperty(toMap pcommon.Map, key string, value any) {
 	const (
