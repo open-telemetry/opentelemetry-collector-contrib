@@ -310,7 +310,7 @@ func TestCheck(t *testing.T) {
 				},
 				{
 					step: func() {
-						// permament error will be ignored
+						// permanent error will be ignored
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
 							componentstatus.NewPermanentErrorEvent(assert.AnError),
@@ -467,7 +467,7 @@ func TestCheck(t *testing.T) {
 				},
 				{
 					step: func() {
-						// permament error included
+						// permanent error included
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
 							componentstatus.NewPermanentErrorEvent(assert.AnError),
