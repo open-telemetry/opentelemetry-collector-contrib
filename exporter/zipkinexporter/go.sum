@@ -30,8 +30,6 @@ github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKeRZfjY=
 github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
-github.com/jaegertracing/jaeger v1.64.0 h1:fc45qwaBZpBE2DeXwJlm8hK1q2PACrzGKXKgIcHLPMw=
-github.com/jaegertracing/jaeger v1.64.0/go.mod h1:9yVeL3z2Q9AGrW7j7TTeqohUy7Bbp9XWXgUDG3rVdO0=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
@@ -74,7 +72,6 @@ github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOf
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.opentelemetry.io/collector v0.115.0 h1:qUZ0bTeNBudMxNQ7FJKS//TxTjeJ7tfU/z22mcFavWU=
 go.opentelemetry.io/collector/client v1.22.1-0.20241220212031-7c2639723f67 h1:BTV+6AaoMlM76lVHkGQg3FofIOk0pgqM3OEb7amk6f0=
 go.opentelemetry.io/collector/client v1.22.1-0.20241220212031-7c2639723f67/go.mod h1:s5AONzPkWX+rs2ZbNz4SwSgkB7ZW7j8bJfnR2WDkwbM=
 go.opentelemetry.io/collector/component v0.116.1-0.20241220212031-7c2639723f67 h1:yQp5VcaPVHSGbwbDUspEThk7w6k6GzyYH2E8mGxdOQk=

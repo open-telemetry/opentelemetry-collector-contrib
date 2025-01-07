@@ -5,7 +5,6 @@ go 1.22.7
 toolchain go1.22.8
 
 require (
-	github.com/jaegertracing/jaeger v1.64.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.116.0
