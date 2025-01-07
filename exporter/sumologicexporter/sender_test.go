@@ -1284,7 +1284,7 @@ func TestSendMetricsSplitFailedAll(t *testing.T) {
 }
 
 func TestSendMetricsUnexpectedFormat(t *testing.T) {
-	// Expect no requestes
+	// Expect no requests
 	test := prepareSenderTest(t, NoCompression, nil)
 	test.s.config.MetricFormat = "invalid"
 
