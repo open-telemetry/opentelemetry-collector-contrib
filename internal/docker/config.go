@@ -31,7 +31,7 @@ type Config struct {
 }
 
 func (config *Config) Unmarshal(conf *confmap.Conf) error {
-	// WithIgonreUnused needed because this configuration is embedded inside other configurations
+	// WithIgnoreUnused needed because this configuration is embedded inside other configurations
 	err := conf.Unmarshal(config, confmap.WithIgnoreUnused())
 	if err != nil {
 		if floatAPIVersion, ok := conf.Get("api_version").(float64); ok {
