@@ -392,7 +392,7 @@ The pseudocode showing the overall flow.
 
 ```
 NewECSSD() {
-  session := awsconfig.NewSssion()
+  session := awsconfig.NewSession()
   ecsClient := awsecs.NewClient(session)
   filters := config.NewFilters()
   decorator := awsec2.NewClient(session)
