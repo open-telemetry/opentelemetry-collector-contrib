@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.22.1-0.20250107062214-ced38e8af2ae
 	go.opentelemetry.io/collector/receiver v0.116.1-0.20250107062214-ced38e8af2ae
 	go.opentelemetry.io/collector/receiver/receivertest v0.116.1-0.20250107062214-ced38e8af2ae
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.116.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/oauth2 v0.24.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20241118233622-e639e219e697
@@ -29,7 +30,6 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.116.1-0.20250107062214-ced38e8af2ae // indirect
 	go.opentelemetry.io/collector/pipeline v0.116.1-0.20250107062214-ced38e8af2ae // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.116.1-0.20250107062214-ced38e8af2ae // indirect
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.116.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect

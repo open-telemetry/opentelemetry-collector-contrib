@@ -160,7 +160,6 @@ require (
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.116.1-0.20250107062214-ced38e8af2ae // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.116.1-0.20250107062214-ced38e8af2ae // indirect
 	go.opentelemetry.io/collector/extension/auth v0.116.1-0.20250107062214-ced38e8af2ae // indirect
-	go.opentelemetry.io/collector/extension/experimental/storage v0.116.1-0.20250107062214-ced38e8af2ae // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.116.1-0.20250107062214-ced38e8af2ae // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.116.1-0.20250107062214-ced38e8af2ae // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.116.0 // indirect
