@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
@@ -58,7 +58,6 @@ func newFileSystemScraper(_ context.Context, settings receiver.Settings, cfg *Co
 }
 
 func (s *filesystemsScraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -69,7 +68,6 @@ func (s *filesystemsScraper) start(ctx context.Context, _ component.Host) error 
 }
 
 func (s *filesystemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	var errors scrapererror.ScrapeErrors

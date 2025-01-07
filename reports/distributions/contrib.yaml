@@ -13,6 +13,7 @@ components:
         - routing
         - servicegraph
         - spanmetrics
+        - sum
     exporter:
         - alibabacloud_logservice
         - awscloudwatchlogs
@@ -28,6 +29,7 @@ components:
         - coralogix
         - datadog
         - dataset
+        - doris
         - elasticsearch
         - file
         - googlecloud
@@ -78,6 +80,7 @@ components:
         - oidc
         - opamp
         - pprof
+        - redis_storage
         - sigv4auth
     processor:
         - attributes
@@ -133,6 +136,7 @@ components:
         - fluentforward
         - github
         - googlecloudmonitoring
+        - googlecloudpubsub
         - googlecloudspanner
         - haproxy
         - hostmetrics
@@ -148,6 +152,7 @@ components:
         - kafka
         - kafkametrics
         - kubeletstats
+        - libhoney
         - loki
         - memcached
         - mongodb
@@ -156,6 +161,7 @@ components:
         - namedpipe
         - nginx
         - nsxt
+        - ntp
         - opencensus
         - oracledb
         - otelarrow
@@ -178,6 +184,7 @@ components:
         - snowflake
         - solace
         - splunk_hec
+        - splunkenterprise
         - sqlquery
         - sqlserver
         - sshcheck

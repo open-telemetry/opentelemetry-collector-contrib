@@ -8,14 +8,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal"
@@ -50,7 +49,6 @@ func newCPUScraper(_ context.Context, settings receiver.Settings, cfg *Config) *
 }
 
 func (s *cpuScraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -60,7 +58,6 @@ func (s *cpuScraper) start(ctx context.Context, _ component.Host) error {
 }
 
 func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(s.now())
 	cpuTimes, err := s.times(ctx, true /*percpu=*/)
 	if err != nil {

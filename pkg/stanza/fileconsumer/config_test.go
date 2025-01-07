@@ -642,7 +642,6 @@ func TestBuild(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			tc := tc
 			t.Parallel()
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
@@ -712,7 +711,6 @@ func TestBuildWithSplitFunc(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			tc := tc
 			t.Parallel()
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
@@ -805,7 +803,6 @@ func TestBuildWithHeader(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			tc := tc
 			t.Parallel()
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)

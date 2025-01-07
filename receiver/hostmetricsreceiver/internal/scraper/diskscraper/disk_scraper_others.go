@@ -10,14 +10,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
@@ -66,7 +65,6 @@ func newDiskScraper(_ context.Context, settings receiver.Settings, cfg *Config) 
 }
 
 func (s *diskScraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -78,8 +76,6 @@ func (s *diskScraper) start(ctx context.Context, _ component.Host) error {
 }
 
 func (s *diskScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
-
 	now := pcommon.NewTimestampFromTime(time.Now())
 	ioCounters, err := s.ioCounters(ctx)
 	if err != nil {

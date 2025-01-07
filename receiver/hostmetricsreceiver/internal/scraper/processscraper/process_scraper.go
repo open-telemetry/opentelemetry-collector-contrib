@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/process"
@@ -18,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/handlecount"
@@ -118,7 +117,7 @@ func (s *processScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		host.EnableBootTimeCache(true)
 	}
 
-	data, err := s.getProcessMetadata()
+	data, err := s.getProcessMetadata(ctx)
 	if err != nil {
 		var partialErr scrapererror.PartialScrapeError
 		if !errors.As(err, &partialErr) {
@@ -129,7 +128,6 @@ func (s *processScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	presentPIDs := make(map[int32]struct{}, len(data))
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 
 	for _, md := range data {
 		presentPIDs[md.pid] = struct{}{}
@@ -198,8 +196,7 @@ func (s *processScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 // for all currently running processes. If errors occur obtaining information
 // for some processes, an error will be returned, but any processes that were
 // successfully obtained will still be returned.
-func (s *processScraper) getProcessMetadata() ([]*processMetadata, error) {
-	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
+func (s *processScraper) getProcessMetadata(ctx context.Context) ([]*processMetadata, error) {
 	handles, err := s.getProcessHandles(ctx)
 	if err != nil {
 		return nil, err

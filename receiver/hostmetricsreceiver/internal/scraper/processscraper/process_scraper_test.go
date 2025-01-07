@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
@@ -90,7 +90,7 @@ func TestScrape(t *testing.T) {
 				test.mutateMetricsConfig(t, &metricsBuilderConfig.Metrics)
 			}
 			cfg := &Config{MetricsBuilderConfig: metricsBuilderConfig}
-			cfg.EnvMap = common.EnvMap{
+			envMap := common.EnvMap{
 				common.HostProcEnvKey:    "/proc",
 				common.HostSysEnvKey:     "/sys",
 				common.HostEtcEnvKey:     "/etc",
@@ -99,16 +99,17 @@ func TestScrape(t *testing.T) {
 				common.HostDevEnvKey:     "/dev",
 				common.HostProcMountinfo: "",
 			}
+			ctx := context.WithValue(context.Background(), common.EnvKey, envMap)
 			scraper, err := newProcessScraper(receivertest.NewNopSettings(), cfg)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
 			scraper.getProcessCreateTime = func(processHandle, context.Context) (int64, error) { return createTime, nil }
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
-			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			err = scraper.start(ctx, componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(ctx)
 			// may receive some partial errors as a result of attempting to:
 			// a) read native system processes on Windows (e.g. Registry process)
 			// b) read info on processes that have just terminated
@@ -125,7 +126,7 @@ func TestScrape(t *testing.T) {
 			}
 
 			require.Greater(t, md.ResourceMetrics().Len(), 1)
-			assertProcessResourceAttributesExist(t, md.ResourceMetrics())
+			assertValidProcessResourceAttributes(t, md.ResourceMetrics())
 			assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			if metricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled {
 				assertCPUUtilizationMetricValid(t, md.ResourceMetrics(), expectedStartTime)
@@ -170,16 +171,31 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
+// assertValidProcessResourceAttributes will assert that each process resource contains at least
+// the most important identifying attribute (the PID attribute) and only contains permissible
+// resource attributes defined by the process scraper metadata.yaml/Process Semantic Conventions.
+func assertValidProcessResourceAttributes(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
+	requiredResourceAttributes := []string{
+		conventions.AttributeProcessPID,
+	}
+	permissibleResourceAttributes := []string{
+		conventions.AttributeProcessPID,
+		conventions.AttributeProcessExecutableName,
+		conventions.AttributeProcessExecutablePath,
+		conventions.AttributeProcessCommand,
+		conventions.AttributeProcessCommandLine,
+		conventions.AttributeProcessOwner,
+		"process.parent_pid", // TODO: use this from conventions when it is available
+	}
 	for i := 0; i < resourceMetrics.Len(); i++ {
-		attr := resourceMetrics.At(0).Resource().Attributes()
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessPID)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessExecutableName)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessExecutablePath)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommand)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommandLine)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessOwner)
-		internal.AssertContainsAttribute(t, attr, "process.parent_pid")
+		attrs := resourceMetrics.At(i).Resource().Attributes().AsRaw()
+		for _, attr := range requiredResourceAttributes {
+			_, ok := attrs[attr]
+			require.True(t, ok, "resource %s missing required attribute %s", attrs, attr)
+		}
+		for attr := range attrs {
+			require.Contains(t, permissibleResourceAttributes, attr, "resource %s contained unknown attribute %s", attrs, attr)
+		}
 	}
 }
 
