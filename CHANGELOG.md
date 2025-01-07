@@ -2308,7 +2308,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `receiver/filelog`: fix panic after upgrading from v0.71.0 when using storage (#30235)
 - `clickhouseexporter`: Fix clickhouse exporter insert metrics data bug (#30210)
 - `prometheusremotewriteexporter`: Check if the context was canceled by a timeout in the component level to avoid unnecessary retries. (#30308)
-- `elasticsearchreceifver`: Fix nil panic on non-linux systems (#30140)
+- `elasticsearchreceiver`: Fix nil panic on non-linux systems (#30140)
 - `kafkareceiver`: The Kafka receiver now exports some partition-specific metrics per-partition, with a `partition` tag (#30177)
   The following metrics now render per partition:
     - kafka_receiver_messages
@@ -4634,7 +4634,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   - Add mysql.client.network.io metric (#14744)
 
 - `elasticsearchreceiver`: Add metrics related to GET operations (#14635)
-- `elastisearchreceiver`: Add new metrics related to segments, aggregated by all shards (#14635)
+- `elasticsearchreceiver`: Add new metrics related to segments, aggregated by all shards (#14635)
 - `elasticsearchreceiver`: add store size metric for index level (#14635)
 - `elasticsearchreceiver`: Add metrics related to merge operations with aggregated for all shards (#14635)
 - `elasticsearchreceiver`: add translog metrics on index level (#14635)
