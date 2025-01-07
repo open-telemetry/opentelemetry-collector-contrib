@@ -124,7 +124,7 @@ func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter *hel
 		return nil, fmt.Errorf("failed to resolve internal recombine config: %w", err)
 	}
 
-	// set the LogEmmiter as the output of the recombine parser
+	// set the LogEmitter as the output of the recombine parser
 	recombineParser.SetOutputIDs([]string{cLogEmitter.OperatorID})
 	if err := recombineParser.SetOutputs([]operator.Operator{cLogEmitter}); err != nil {
 		return nil, fmt.Errorf("failed to set outputs of internal recombine")
