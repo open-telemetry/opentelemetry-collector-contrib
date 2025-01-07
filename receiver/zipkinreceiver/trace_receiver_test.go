@@ -358,7 +358,7 @@ func compressZlib(body []byte) (*bytes.Buffer, error) {
 	return &buf, nil
 }
 
-func TestConvertSpansToTraceSpans_JSONWithoutSerivceName(t *testing.T) {
+func TestConvertSpansToTraceSpans_JSONWithoutServiceName(t *testing.T) {
 	blob, err := os.ReadFile("./testdata/sample2.json")
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 	zi := newTestZipkinReceiver()
