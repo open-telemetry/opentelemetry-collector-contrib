@@ -117,7 +117,7 @@ func getStringifiedOptions(options ...Option) string {
 }
 
 // Get returns a singleton instance of k8s client
-// If the intialization fails, it returns nil
+// If the initialization fails, it returns nil
 func Get(logger *zap.Logger, options ...Option) *K8sClient {
 	strOptions := getStringifiedOptions(options...)
 
