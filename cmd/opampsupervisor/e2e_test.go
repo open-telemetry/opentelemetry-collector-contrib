@@ -1225,14 +1225,14 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 
 	t.Logf("Supervisor connected")
 
-	var newRecievedAgentID []byte
+	var newReceivedAgentID []byte
 	select {
-	case newRecievedAgentID = <-agentIDChan:
+	case newReceivedAgentID = <-agentIDChan:
 	case <-time.After(1 * time.Second):
 		t.Fatalf("failed to get second agent ID")
 	}
 
-	require.Equal(t, newID, uuid.UUID(newRecievedAgentID))
+	require.Equal(t, newID, uuid.UUID(newReceivedAgentID))
 }
 
 func TestSupervisorWritesAgentFilesToStorageDir(t *testing.T) {
