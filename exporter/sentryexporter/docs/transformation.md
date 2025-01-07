@@ -18,7 +18,7 @@ The interface for a Sentry Span can be found [here](https://develop.sentry.dev/s
 | Span.EndTimestamp   | span.EndTime                            |                                                                                                                   |
 | Span.Status         | Span.Status                             |                                                                                                                   |
 
-As can be seen by the table above, the OpenTelemetry span and Sentry span map fairly reasonably. Currently the OpenTelemtry `Span.Link` and `Span.TraceState` properties are not used when constructing a `SentrySpan`
+As can be seen by the table above, the OpenTelemetry span and Sentry span map fairly reasonably. Currently the OpenTelemetry `Span.Link` and `Span.TraceState` properties are not used when constructing a `SentrySpan`
 
 ## Transactions
 

@@ -28,7 +28,7 @@ receivers:
       cert_file: server.crt
       key_file: server.key
 ```
-The configuration includes the Opentelemetry collector's server [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#server-configuration),
+The configuration includes the OpenTelemetry collector's server [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#server-configuration),
 which allows for a variety of settings. Only the most relevant ones will be discussed here, but all are available.
 The AWS Kinesis Data Firehose Delivery Streams currently only support HTTPS endpoints using port 443. This can be potentially circumvented
 using a Load Balancer.
