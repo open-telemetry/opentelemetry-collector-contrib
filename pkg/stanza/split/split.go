@@ -93,12 +93,12 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPattern bool, flushAtEOF bool) bu
 			return len(data), data, nil
 		}
 
-		secondLocOfset := firstMatchEnd + 1
-		secondLoc := re.FindIndex(data[secondLocOfset:])
+		secondLocOffset := firstMatchEnd + 1
+		secondLoc := re.FindIndex(data[secondLocOffset:])
 		if secondLoc == nil {
 			return 0, nil, nil // read more data and try again
 		}
-		secondMatchStart := secondLoc[0] + secondLocOfset
+		secondMatchStart := secondLoc[0] + secondLocOffset
 		if omitPattern {
 			return secondMatchStart, data[firstMatchEnd:secondMatchStart], nil
 		}
