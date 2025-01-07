@@ -78,7 +78,7 @@ metrics:
     attributes: [topic]
   kafka.topic.min_insync_replicas:
     enabled: false
-    description: minimum insync replicas of a topic.
+    description: minimum in-sync replicas of a topic.
     unit: "{replicas}"
     gauge:
       value_type: int

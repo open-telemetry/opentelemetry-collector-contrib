@@ -386,7 +386,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["kafka.topic.min_insync_replicas"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "minimum insync replicas of a topic.", ms.At(i).Description())
+					assert.Equal(t, "minimum in-sync replicas of a topic.", ms.At(i).Description())
 					assert.Equal(t, "{replicas}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
