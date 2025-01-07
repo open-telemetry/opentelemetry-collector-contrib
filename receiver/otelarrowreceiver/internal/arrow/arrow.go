@@ -524,7 +524,7 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 // data.
 //
 // This handles constructing an inFlightData object, which itself
-// tracks everything that needs to be used by instrumention when the
+// tracks everything that needs to be used by instrumentation when the
 // batch finishes.
 func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStreamServer, hrcv *headerReceiver, pendingCh chan<- batchResp, method string, ac arrowRecord.ConsumerAPI) (retErr error) {
 	// Receive a batch corresponding with one ptrace.Traces, pmetric.Metrics,

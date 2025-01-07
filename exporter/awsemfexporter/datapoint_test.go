@@ -1968,7 +1968,7 @@ func TestCreateLabels(t *testing.T) {
 	labels := createLabels(labelsMap, "")
 	assert.Equal(t, expectedLabels, labels)
 
-	// With isntrumentation library name
+	// With instrumentation library name
 	labels = createLabels(labelsMap, "cloudwatch-otel")
 	expectedLabels[oTellibDimensionKey] = "cloudwatch-otel"
 	assert.Equal(t, expectedLabels, labels)
