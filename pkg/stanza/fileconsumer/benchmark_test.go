@@ -222,7 +222,7 @@ func BenchmarkFileInput(b *testing.B) {
 			}
 
 			// Timer continues to run until all files have been read
-			for dones := 0; dones < len(files); dones++ {
+			for done := 0; done < len(files); done++ {
 				<-doneChan
 			}
 			wg.Wait()
