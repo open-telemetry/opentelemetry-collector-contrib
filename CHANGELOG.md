@@ -4981,7 +4981,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `prometheusreceiver/prometheusremotewriteexporter`: Leave the sum unset in histograms without sums, and don't produce _sum metric points for histograms without sums (#7546)
 - `processor/redaction`: Update redaction attributes in case if data sent through the processor more than once, not ignore them. (#13854)
 - `chloggen`: changelog generation tool moved to https://github.com/open-telemetry/opentelemetry-go-build-tools (#14022)
-- `exporter/AlibabaCloudLogServiceExporter`: Fix issue that promethus occurring error when the resource metric labels contains dot (#3429)
+- `exporter/AlibabaCloudLogServiceExporter`: Fix issue that prometheus occurring error when the resource metric labels contains dot (#3429)
 - `exporter/tanzuobservabilityexporter`: This change causes tanzuobservabilityexporter to depend on 0.10.4 of the
 wavefront-sdk-go library.
  (#13417)
