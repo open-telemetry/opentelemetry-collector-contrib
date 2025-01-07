@@ -106,7 +106,7 @@ func (a *activeDirectoryDSScraper) scrape(_ context.Context) (pmetric.Metrics, e
 	draInboundValuesDNs, dnsErr := a.w.Scrape(draInboundValuesDNs)
 	multiErr = multierr.Append(multiErr, dnsErr)
 	if dnsErr == nil {
-		a.mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(now, draInboundValuesDNs, metadata.AttributeDirectionReceived, metadata.AttributeValueTypeDistingushedNames)
+		a.mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(now, draInboundValuesDNs, metadata.AttributeDirectionReceived, metadata.AttributeValueTypeDistinguishedNames)
 	}
 
 	draInboundValuesTotal, totalErr := a.w.Scrape(draInboundValuesTotal)
@@ -120,7 +120,7 @@ func (a *activeDirectoryDSScraper) scrape(_ context.Context) (pmetric.Metrics, e
 	draOutboundValuesDNs, dnsErr := a.w.Scrape(draOutboundValuesDNs)
 	multiErr = multierr.Append(multiErr, dnsErr)
 	if dnsErr == nil {
-		a.mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(now, draOutboundValuesDNs, metadata.AttributeDirectionSent, metadata.AttributeValueTypeDistingushedNames)
+		a.mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(now, draOutboundValuesDNs, metadata.AttributeDirectionSent, metadata.AttributeValueTypeDistinguishedNames)
 	}
 
 	draOutboundValuesTotal, totalErr := a.w.Scrape(draOutboundValuesTotal)
