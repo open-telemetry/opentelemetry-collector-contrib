@@ -42,7 +42,7 @@ require (
 
 require (
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.138 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.140 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.60.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.60.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/types v0.60.1 // indirect
@@ -213,7 +213,7 @@ require (
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
-	github.com/shirou/gopsutil/v4 v4.24.11 // indirect
+	github.com/shirou/gopsutil/v4 v4.24.12 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.7.0 // indirect
@@ -384,3 +384,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdata
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../pkg/experimentalmetricmetadata
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog => ../../pkg/datadog
+
+replace go.opentelemetry.io/collector/scraper/scraperhelper v0.116.0 => go.opentelemetry.io/collector/scraper/scraperhelper v0.0.0-20250106214556-67fdcd1f4267
+
+replace go.opentelemetry.io/collector/extension/xextension v0.116.0 => go.opentelemetry.io/collector/extension/xextension v0.0.0-20250106214556-67fdcd1f4267

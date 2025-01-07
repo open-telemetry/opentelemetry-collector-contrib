@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.116.0
-	github.com/shirou/gopsutil/v4 v4.24.11
+	github.com/shirou/gopsutil/v4 v4.24.12
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.34.0
 	go.opentelemetry.io/collector/component v0.116.1-0.20241220212031-7c2639723f67
@@ -139,3 +139,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace go.opentelemetry.io/collector/scraper/scraperhelper v0.116.0 => go.opentelemetry.io/collector/scraper/scraperhelper v0.0.0-20250106214556-67fdcd1f4267
+
+replace go.opentelemetry.io/collector/extension/xextension v0.116.0 => go.opentelemetry.io/collector/extension/xextension v0.0.0-20250106214556-67fdcd1f4267

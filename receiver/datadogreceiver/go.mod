@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.22.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.138
+	github.com/DataDog/agent-payload/v5 v5.0.140
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.60.1
 	github.com/DataDog/datadog-agent/pkg/proto v0.60.1
 	github.com/DataDog/datadog-agent/pkg/trace v0.60.1
@@ -130,3 +130,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace go.opentelemetry.io/collector/scraper/scraperhelper v0.116.0 => go.opentelemetry.io/collector/scraper/scraperhelper v0.0.0-20250106214556-67fdcd1f4267
+
+replace go.opentelemetry.io/collector/extension/xextension v0.116.0 => go.opentelemetry.io/collector/extension/xextension v0.0.0-20250106214556-67fdcd1f4267

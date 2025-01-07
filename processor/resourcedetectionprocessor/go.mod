@@ -12,7 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.116.0
-	github.com/shirou/gopsutil/v4 v4.24.11
+	github.com/shirou/gopsutil/v4 v4.24.12
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/component/componenttest v0.116.1-0.20241220212031-7c2639723f67
@@ -172,3 +172,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sco
 
 // openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
 replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
+
+replace go.opentelemetry.io/collector/scraper/scraperhelper v0.116.0 => go.opentelemetry.io/collector/scraper/scraperhelper v0.0.0-20250106214556-67fdcd1f4267
+
+replace go.opentelemetry.io/collector/extension/xextension v0.116.0 => go.opentelemetry.io/collector/extension/xextension v0.0.0-20250106214556-67fdcd1f4267
