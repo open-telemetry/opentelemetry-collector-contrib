@@ -34,7 +34,7 @@ Number of cell coverings for query region queried. Aerospike metric geo_region_q
 
 Number of points outside the region.
 
-Total query result points is geo_region_query_points + geo_region_query_falsepos. Aerospike metric geo_regio_query_falspos.
+Total query result points is geo_region_query_points + geo_region_query_falsepos. Aerospike metric geo_regio_query_falsepos.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
