@@ -267,7 +267,7 @@ func TestScrape(t *testing.T) {
 			newErrRegex: "^error creating exclude_fs_types filter:",
 		},
 		{
-			name: "Invalid Include Moountpoints Filter",
+			name: "Invalid Include Mountpoints Filter",
 			config: Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				IncludeMountPoints:   MountPointMatchConfig{MountPoints: []string{"test"}},
@@ -275,7 +275,7 @@ func TestScrape(t *testing.T) {
 			newErrRegex: "^error creating include_mount_points filter:",
 		},
 		{
-			name: "Invalid Exclude Moountpoints Filter",
+			name: "Invalid Exclude Mountpoints Filter",
 			config: Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				ExcludeMountPoints:   MountPointMatchConfig{MountPoints: []string{"test"}},
