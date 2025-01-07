@@ -71,7 +71,7 @@ func TestParseURI(t *testing.T) {
 			true,
 		},
 		{
-			"sheme-port",
+			"scheme-port",
 			"http://:8080",
 			map[string]any{
 				"scheme": "http",
