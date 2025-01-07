@@ -55,7 +55,7 @@ typed_config:
 ### Generate Certificates
 To generate various self-signed certificates, including those for Envoy and the OpenTelemetry Collector receiver, as well as tracing client certificate, we utilize the widely renowned open-source tool [OpenSSL](https://www.openssl.org/source/), OpenSSL 3.1.0 14 was tested. 
 
-In the `certs` folder, you can find a set of `.ext` files which define the properties for a certificate. A `MakeFile` is provided to facilate the process. 
+In the `certs` folder, you can find a set of `.ext` files which define the properties for a certificate. A `MakeFile` is provided to facilitate the process. 
 
 ```
 $ cd certs
