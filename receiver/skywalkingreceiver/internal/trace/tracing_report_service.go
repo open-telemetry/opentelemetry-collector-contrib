@@ -89,7 +89,7 @@ func (r *Receiver) CollectInSync(ctx context.Context, segments *agent.SegmentCol
 		if err != nil {
 			fmt.Printf("cannot consume traces, %v", err)
 		}
-		fmt.Printf("receivec data:%s", marshaledSegment)
+		fmt.Printf("received data:%s", marshaledSegment)
 	}
 	return &common.Commands{}, nil
 }
