@@ -69,7 +69,7 @@ type taskFetcherOptions struct {
 func newTaskFetcherFromConfig(cfg Config, logger *zap.Logger) (*taskFetcher, error) {
 	svcNameFilter, err := serviceConfigsToFilter(cfg.Services)
 	if err != nil {
-		return nil, fmt.Errorf("init serivce name filter failed: %w", err)
+		return nil, fmt.Errorf("init service name filter failed: %w", err)
 	}
 	return newTaskFetcher(taskFetcherOptions{
 		Logger:            logger,
