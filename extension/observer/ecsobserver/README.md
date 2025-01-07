@@ -407,7 +407,7 @@ NewECSSD() {
       decorator.Apply(filteredTask)
       // Generate output
       if writeResultFile {
-         writeFile(fileteredTasks, /etc/ecs_sd.yaml)
+         writeFile(filteredTasks, /etc/ecs_sd.yaml)
       } else {
           notifyObserver()
       }
