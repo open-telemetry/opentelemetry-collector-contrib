@@ -1,0 +1,9 @@
+leaderelector/foo:
+  auth_type: kubeConfig
+  lease_name: foo
+  lease_namespace: default
+leaderelector/bar:
+  auth_type: kubeConfig
+  lease_name: bar
+  lease_namespace: default
+  lease_duration: 20s

@@ -15,7 +15,6 @@ func CreateDefaultConfig() component.Config {
 		LeaseDuration: 15 * time.Second,
 		RenewDuration: 10 * time.Second,
 		RetryPeriod:   2 * time.Second,
-		// Set default values for your configuration
 	}
 }
 

@@ -55,8 +55,7 @@ func (lee *leaderElectionExtension) AmILeader() bool {
 
 // Start begins the extension's processing.
 func (lee *leaderElectionExtension) Start(_ context.Context, host component.Host) error {
-	// Implement your start logic here
-	lee.logger.Info("Starting Leader Elector	")
+	lee.logger.Info("Starting Leader Elector")
 
 	ctx := context.Background()
 	ctx, lee.cancel = context.WithCancel(ctx)
@@ -69,8 +68,16 @@ func (lee *leaderElectionExtension) Start(_ context.Context, host component.Host
 	}
 
 	go func() {
+		// Leader election loop stops if context is canceled or the leader elector loses the lease.
+		// The loop allows continued participation in leader election, even if the lease is lost.
 		for {
 			leaderElector.Run(ctx)
+
+			if ctx.Err() != nil {
+				break
+			}
+
+			lee.logger.Info("Leader lease lost. Returning to standby mode...")
 		}
 	}()
 
@@ -79,7 +86,9 @@ func (lee *leaderElectionExtension) Start(_ context.Context, host component.Host
 
 // Shutdown cleans up the extension when stopping.
 func (lee *leaderElectionExtension) Shutdown(ctx context.Context) error {
-	// Implement your shutdown logic here
 	lee.logger.Info("Stopping Leader Elector")
+	if lee.cancel != nil {
+		lee.cancel()
+	}
 	return nil
 }
