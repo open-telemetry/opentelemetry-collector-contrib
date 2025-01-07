@@ -2160,7 +2160,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 ### 🚀 New components 🚀
 
 - `sumologicextension`: add configuration and readme (#29601)
-- `failoverconnector`: Refactor of connector to seperate concerns between managing indexes and core failover component (#20766)
+- `failoverconnector`: Refactor of connector to separate concerns between managing indexes and core failover component (#20766)
 - `otelarrow`: Skeleton of new OpenTelemetry Protocol with Apache Arrow Receiver (#26491)
 - `processor/interval`: Adds the initial structure for a new processor that aggregates metrics and periodically forwards the latest values to the next component in the pipeline. (#29461)
   As per the CONTRIBUTING.md recommendations, this PR only creates the basic structure of the processor. The concrete implementation will come as a separate followup PR
