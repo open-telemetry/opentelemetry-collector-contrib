@@ -100,7 +100,7 @@ func createLogsToMetrics(
 	c := cfg.(*config.Config)
 	parser, err := ottllog.NewParser(customottl.LogFuncs(), set.TelemetrySettings)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create OTTL statement parser for datapoints: %w", err)
+		return nil, fmt.Errorf("failed to create OTTL statement parser for logs: %w", err)
 	}
 
 	metricDefs := make([]model.MetricDef[ottllog.TransformContext], 0, len(c.Logs))
