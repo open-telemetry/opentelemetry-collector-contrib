@@ -3,7 +3,7 @@
 // Copyright (c) 2018 Uber Technologies, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-package zipkinv1
+package zipkinv1 // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
 
 import (
 	"context"
@@ -17,11 +17,11 @@ import (
 func SerializeThrift(ctx context.Context, spans []*zipkincore.Span) []byte {
 	t := thrift.NewTMemoryBuffer()
 	p := thrift.NewTBinaryProtocolConf(t, &thrift.TConfiguration{})
-	p.WriteListBegin(ctx, thrift.STRUCT, len(spans))
+	_ = p.WriteListBegin(ctx, thrift.STRUCT, len(spans))
 	for _, s := range spans {
-		s.Write(ctx, p)
+		_ = s.Write(ctx, p)
 	}
-	p.WriteListEnd(ctx)
+	_ = p.WriteListEnd(ctx)
 	return t.Buffer.Bytes()
 }
 
