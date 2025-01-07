@@ -452,7 +452,7 @@ func CompareProfileSample(expected, actual pprofile.Sample) error {
 	}
 
 	if expected.LocationsLength() != actual.LocationsLength() {
-		errs = multierr.Append(errs, fmt.Errorf("expected locationLenght '%d', got '%d'", expected.LocationsLength(), actual.LocationsLength()))
+		errs = multierr.Append(errs, fmt.Errorf("expected locationLength '%d', got '%d'", expected.LocationsLength(), actual.LocationsLength()))
 	}
 
 	if !reflect.DeepEqual(expected.TimestampsUnixNano().AsRaw(), actual.TimestampsUnixNano().AsRaw()) {

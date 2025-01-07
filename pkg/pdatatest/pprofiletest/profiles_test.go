@@ -1032,7 +1032,7 @@ func TestCompareProfileSampleSlice(t *testing.T) {
 				return l
 			}(),
 			err: multierr.Combine(
-				fmt.Errorf(`sample "attributes: [1 2 3]": %w`, fmt.Errorf(`expected locationLenght '2', got '3'`)),
+				fmt.Errorf(`sample "attributes: [1 2 3]": %w`, fmt.Errorf(`expected locationLength '2', got '3'`)),
 			),
 		},
 		{
@@ -1123,7 +1123,7 @@ func TestCompareProfileSample(t *testing.T) {
 			}(),
 			err: multierr.Combine(
 				errors.New(`expected locationStartIndex '1', got '2'`),
-				errors.New(`expected locationLenght '1', got '3'`),
+				errors.New(`expected locationLength '1', got '3'`),
 				errors.New(`expected attributes '[1 2]', got '[1 2 3]'`),
 			),
 		},
