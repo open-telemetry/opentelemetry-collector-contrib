@@ -55,7 +55,7 @@ func TestScraper(t *testing.T) {
 	options := &scraperOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
-	r, err := newKubletScraper(
+	r, err := newKubeletScraper(
 		&fakeRestClient{},
 		receivertest.NewNopSettings(),
 		options,
@@ -105,7 +105,7 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 		},
 		k8sAPIClient: client,
 	}
-	r, err := newKubletScraper(
+	r, err := newKubeletScraper(
 		&fakeRestClient{},
 		receivertest.NewNopSettings(),
 		options,
@@ -185,7 +185,7 @@ func TestScraperWithMemoryNodeUtilization(t *testing.T) {
 		},
 		k8sAPIClient: client,
 	}
-	r, err := newKubletScraper(
+	r, err := newKubeletScraper(
 		&fakeRestClient{},
 		receivertest.NewNopSettings(),
 		options,
@@ -277,7 +277,7 @@ func TestScraperWithMetadata(t *testing.T) {
 				extraMetadataLabels:   tt.metadataLabels,
 				metricGroupsToCollect: tt.metricGroups,
 			}
-			r, err := newKubletScraper(
+			r, err := newKubeletScraper(
 				&fakeRestClient{},
 				receivertest.NewNopSettings(),
 				options,
@@ -469,7 +469,7 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 		},
 		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
 	}
-	r, err := newKubletScraper(
+	r, err := newKubeletScraper(
 		&fakeRestClient{},
 		receivertest.NewNopSettings(),
 		options,
@@ -545,7 +545,7 @@ func TestScraperWithMetricGroups(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			r, err := newKubletScraper(
+			r, err := newKubeletScraper(
 				&fakeRestClient{},
 				receivertest.NewNopSettings(),
 				&scraperOptions{
@@ -707,7 +707,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			r, err := newKubletScraper(
+			r, err := newKubeletScraper(
 				&fakeRestClient{},
 				receivertest.NewNopSettings(),
 				&scraperOptions{
@@ -795,7 +795,7 @@ func TestClientErrors(t *testing.T) {
 				extraMetadataLabels:   test.extraMetadataLabels,
 				metricGroupsToCollect: test.metricGroupsToCollect,
 			}
-			r, err := newKubletScraper(
+			r, err := newKubeletScraper(
 				&fakeRestClient{
 					statsSummaryFail: test.statsSummaryFail,
 					podsFail:         test.podsFail,
