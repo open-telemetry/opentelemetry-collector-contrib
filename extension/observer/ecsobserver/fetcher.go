@@ -275,7 +275,7 @@ func (f *taskFetcher) attachContainerInstance(ctx context.Context, tasks []*task
 		containerInstance := aws.StringValue(t.Task.ContainerInstanceArn)
 		ec2Info, ok := ciToEC2[containerInstance]
 		if !ok {
-			return fmt.Errorf("container instance ec2 info not found containerInstnace=%q", containerInstance)
+			return fmt.Errorf("container instance ec2 info not found containerInstance=%q", containerInstance)
 		}
 		t.EC2 = ec2Info
 	}
