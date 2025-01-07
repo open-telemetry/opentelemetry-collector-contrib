@@ -105,7 +105,7 @@ func (r *IPResolver) GetHostFromIP(ip string) (host string) {
 	return host
 }
 
-// lookupIPAddr resturns hostname based on ip address
+// lookupIPAddr returns hostname based on ip address
 func (r *IPResolver) lookupIPAddr(ip string) (host string) {
 	res, err := net.LookupAddr(ip)
 	if err != nil || len(res) == 0 {
