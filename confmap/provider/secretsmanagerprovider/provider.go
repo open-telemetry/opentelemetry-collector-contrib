@@ -73,7 +73,7 @@ func (provider *provider) Retrieve(ctx context.Context, uri string, _ confmap.Wa
 
 	response, err := provider.client.GetSecretValue(ctx, input)
 	if err != nil {
-		return nil, fmt.Errorf("error gtting secret: %w", err)
+		return nil, fmt.Errorf("error getting secret: %w", err)
 	}
 
 	if response.SecretString == nil {
