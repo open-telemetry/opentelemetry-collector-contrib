@@ -41,7 +41,7 @@ type ec2Tags struct {
 	client                ec2TagsClient
 	clusterName           string
 	autoScalingGroupName  string
-	isSucess              chan bool // only used in testing
+	isSuccess             chan bool // only used in testing
 	logger                *zap.Logger
 }
 
@@ -135,13 +135,13 @@ func (et *ec2Tags) refresh(ctx context.Context) {
 	et.logger.Info("Fetch ec2 tags to detect cluster name and auto scaling group name", zap.String("instanceId", et.autoScalingGroupName))
 	et.logger.Info("Fetch ec2 tags to detect cluster name and auto scaling group name", zap.String("instanceId", et.clusterName))
 	if et.containerOrchestrator == ci.ECS {
-		if et.isSucess != nil && et.autoScalingGroupName != "" {
-			close(et.isSucess)
+		if et.isSuccess != nil && et.autoScalingGroupName != "" {
+			close(et.isSuccess)
 		}
 	} else {
-		if et.isSucess != nil && et.autoScalingGroupName != "" && et.clusterName != "" {
+		if et.isSuccess != nil && et.autoScalingGroupName != "" && et.clusterName != "" {
 			// this will be executed only in testing
-			close(et.isSucess)
+			close(et.isSuccess)
 		}
 	}
 }
