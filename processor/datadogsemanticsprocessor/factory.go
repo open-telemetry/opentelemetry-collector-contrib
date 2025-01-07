@@ -1,13 +1,18 @@
-package datadogsemanticsprocessor
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package datadogsemanticsprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor"
 
 import (
 	"context"
+
 	"github.com/DataDog/datadog-agent/pkg/trace/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor/internal/metadata"
 )
 
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
@@ -30,8 +35,10 @@ func newTracesProcessor(cfg *Config) *tracesProcessor {
 	return &tracesProcessor{
 		agentCfg: &config.AgentConfig{
 			OTLPReceiver: &config.OTLP{SpanNameAsResourceName: false, SpanNameRemappings: nil},
-			Features: map[string]struct{}{"enable_otlp_compute_top_level_by_span_kind": {},
-				"enable_operation_and_resource_name_logic_v2": {}},
+			Features: map[string]struct{}{
+				"enable_otlp_compute_top_level_by_span_kind":  {},
+				"enable_operation_and_resource_name_logic_v2": {},
+			},
 		},
 		overrideIncomingDatadogFields: cfg.OverrideIncomingDatadogFields,
 	}
