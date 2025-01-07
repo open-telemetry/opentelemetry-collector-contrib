@@ -304,7 +304,7 @@ func RandomNonPermanentError() error {
 	return nil
 }
 
-func GenerateNonPernamentErrorUntil(ch chan bool) error {
+func GenerateNonPermanentErrorUntil(ch chan bool) error {
 	code := codes.Unavailable
 	s := status.New(code, errNonPermanent.Error())
 	defaultReturn := s.Err()

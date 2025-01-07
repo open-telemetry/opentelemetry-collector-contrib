@@ -54,7 +54,7 @@ type TestCase struct {
 	errorCause     string
 	resultsSummary TestResultsSummary
 
-	// decision makes mockbackend return permanent/non-permament errors at random basis
+	// decision makes mockbackend return permanent/non-permanent errors at random basis
 	decision decisionFunc
 }
 

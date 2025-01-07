@@ -408,7 +408,7 @@ func ScenarioSendingQueuesFull(
 		},
 		resultsSummary,
 		testbed.WithResourceLimits(resourceSpec),
-		testbed.WithDecisionFunc(func() error { return testbed.GenerateNonPernamentErrorUntil(dataChannel) }),
+		testbed.WithDecisionFunc(func() error { return testbed.GenerateNonPermanentErrorUntil(dataChannel) }),
 	)
 
 	t.Cleanup(tc.Stop)
@@ -421,7 +421,7 @@ func ScenarioSendingQueuesFull(
 
 	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, time.Second*time.Duration(sleepTime), "load generator started")
 
-	// searchFunc checks for "sending queue is full" communicate and sends the signal to GenerateNonPernamentErrorUntil
+	// searchFunc checks for "sending queue is full" communicate and sends the signal to GenerateNonPermanentErrorUntil
 	// to generate only successes from that time on
 	tc.WaitForN(func() bool {
 		logFound := tc.AgentLogsContains("sending queue is full")
@@ -583,7 +583,7 @@ func ScenarioMemoryLimiterHit(
 		agentProc,
 		&testbed.CorrectnessLogTestValidator{},
 		resultsSummary,
-		testbed.WithDecisionFunc(func() error { return testbed.GenerateNonPernamentErrorUntil(dataChannel) }),
+		testbed.WithDecisionFunc(func() error { return testbed.GenerateNonPermanentErrorUntil(dataChannel) }),
 	)
 	t.Cleanup(tc.Stop)
 	tc.MockBackend.EnableRecording()

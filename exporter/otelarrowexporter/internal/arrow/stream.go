@@ -328,7 +328,7 @@ func (s *Stream) encodeAndSend(wri writeItem, hdrsBuf *bytes.Buffer, hdrsEnc *hp
 			if err != nil {
 				// This case is like the encode-failure case
 				// above, we will restart the stream but consider
-				// this a permenent error.
+				// this a permanent error.
 				err = status.Errorf(codes.Internal, "hpack: %v", err)
 				wri.errCh <- err
 				return err
