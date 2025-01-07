@@ -90,7 +90,7 @@ func request(ctx context.Context, endpoint string, client doer) ([]byte, error) 
 	}
 
 	if len(body) == maxHTTPResponseLength {
-		return nil, fmt.Errorf("response from %s, execeeds the maximum length: %v", endpoint, maxHTTPResponseLength)
+		return nil, fmt.Errorf("response from %s, exceeds the maximum length: %v", endpoint, maxHTTPResponseLength)
 	}
 	return body, nil
 }
