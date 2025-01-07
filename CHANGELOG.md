@@ -3014,7 +3014,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   This allows OTTL to pass Converters themselves as a parameter so they can be executed within the function.
   
 - `resourcedetectionprocessor`: GCP resource detection processor can automatically add `gcp.gce.instance.hostname` and `gcp.gce.instance.name` attributes. (#24598)
-- `splunkhecexporter`: Add heartbeat check while startup and new config param, heartbeat/startup (defaults to false). This is different than the healtcheck_startup, as the latter doesn't take token or index into account. (#24411)
+- `splunkhecexporter`: Add heartbeat check while startup and new config param, heartbeat/startup (defaults to false). This is different than the healthcheck_startup, as the latter doesn't take token or index into account. (#24411)
 - `hostmetricsreceiver`: Report  logical and physical number of CPUs as metric. (#22099)
   Use the `system.cpu.logical.count::enabled` and `system.cpu.physical.count::enabled` flags to enable them
   
