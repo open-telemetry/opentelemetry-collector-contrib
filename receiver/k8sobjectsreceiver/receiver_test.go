@@ -149,7 +149,7 @@ func TestWatchObject(t *testing.T) {
 	assert.NoError(t, r.Shutdown(ctx))
 }
 
-func TestExludeDeletedTrue(t *testing.T) {
+func TestExcludeDeletedTrue(t *testing.T) {
 	t.Parallel()
 
 	mockClient := newMockDynamicClient()
