@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.22.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/semconv v0.116.1-0.20241220212031-7c2639723f67
 	go.uber.org/goleak v1.3.0
-	google.golang.org/protobuf v1.36.1
+	google.golang.org/protobuf v1.36.2
 )
 
 require (
@@ -34,7 +34,7 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241015192408-796eee8c2d53 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 // indirect
-	google.golang.org/grpc v1.69.0 // indirect
+	google.golang.org/grpc v1.69.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
