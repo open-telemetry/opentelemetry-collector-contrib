@@ -249,7 +249,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 		levelAttribute       string
 		expectedLabel        string
 		expectedLines        []string
-		defaultLebelsEnabled map[string]bool
+		defaultLabelsEnabled map[string]bool
 	}{
 		{
 			desc: "with attribute to label and regular attribute",
@@ -313,7 +313,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 		{
 			desc:     "with severity to label, but default_labels_enable disables level label",
 			severity: plog.SeverityNumberDebug4,
-			defaultLebelsEnabled: map[string]bool{
+			defaultLabelsEnabled: map[string]bool{
 				levelLabel: false,
 			},
 			expectedLabel: `{exporter="OTLP"}`,
@@ -338,7 +338,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 			desc:           "with severity, already existing level, but default_labels_enable disables level label",
 			severity:       plog.SeverityNumberDebug4,
 			levelAttribute: "dummy",
-			defaultLebelsEnabled: map[string]bool{
+			defaultLabelsEnabled: map[string]bool{
 				levelLabel: false,
 			},
 			expectedLabel: `{exporter="OTLP"}`,
@@ -475,7 +475,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 			}
 
 			// test
-			requests := LogsToLokiRequests(ld, tt.defaultLebelsEnabled)
+			requests := LogsToLokiRequests(ld, tt.defaultLabelsEnabled)
 			assert.Len(t, requests, 1)
 			request := requests[""]
 
