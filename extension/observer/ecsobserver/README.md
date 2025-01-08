@@ -329,7 +329,7 @@ Additional information from ECS and EC2.
 - Labels, all the label value are encoded as string. (e.g. strconv.Itoa(123)).
 - Go struct, all the non string types are converted. labels and tags are passed as `map[string]string`
   instead of `[]KeyValue`
-- Prometheus target, each `taget`
+- Prometheus target, each `target`
 
 ```go
 // PrometheusECSTarget contains address and labels extracted from a running ECS task 
