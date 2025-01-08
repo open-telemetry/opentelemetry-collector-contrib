@@ -355,6 +355,24 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(resource.attributes[attributes["flags"]], "something33")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetResource().Attributes().PutStr("A|B|C", "something33")
+			},
+		},
+		{
+			statement: `set(resource.attributes[resource.attributes[attributes["flags"]]], "something33")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetResource().Attributes().PutStr("newValue", "something33")
+			},
+		},
+		{
+			statement: `set(attributes[resource.attributes[attributes["flags"]]], "something33")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("newValue", "something33")
+			},
+		},
+		{
 			statement: `set(body, attributes["array"])`,
 			want: func(tCtx ottllog.TransformContext) {
 				arr := tCtx.GetLogRecord().Body().SetEmptySlice()
@@ -1178,6 +1196,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 func constructLogTransformContext() ottllog.TransformContext {
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr("host.name", "localhost")
+	resource.Attributes().PutStr("A|B|C", "newValue")
 
 	scope := pcommon.NewInstrumentationScope()
 	scope.SetName("scope")

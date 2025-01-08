@@ -224,27 +224,27 @@ func (p *Parser[K]) newKeys(keys []key) ([]Key[K], error) {
 	}
 	ks := make([]Key[K], len(keys))
 	for i := range keys {
-		var par Getter[K]
+		var getter Getter[K]
 		if keys[i].Expression != nil {
 			if keys[i].Expression.Path != nil {
-				arg, err := p.buildGetSetterFromPath(keys[i].Expression.Path)
+				g, err := p.buildGetSetterFromPath(keys[i].Expression.Path)
 				if err != nil {
 					return nil, err
 				}
-				par = arg
+				getter = g
 			}
 			if keys[i].Expression.Converter != nil {
 				g, err := p.newGetterFromConverter(*keys[i].Expression.Converter)
 				if err != nil {
 					return nil, err
 				}
-				par = g
+				getter = g
 			}
 		}
 		ks[i] = &baseKey[K]{
 			s: keys[i].String,
 			i: keys[i].Int,
-			g: par,
+			g: getter,
 		}
 	}
 	return ks, nil
