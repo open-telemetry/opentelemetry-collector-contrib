@@ -79,7 +79,7 @@ service:
 
 ## Collect specific metrics and update metric names
 
-The previous configurations collect all the metrics and sends them to Amazon CloudWatch using default names. Customers can use `filter` and `metrictransform` processors to send specific metrics and rename them respectively.
+The previous configurations collect all the metrics and sends them to Amazon CloudWatch using default names. Customers can use `filter` and `metricstransform` processors to send specific metrics and rename them respectively.
 
 The following configuration example collects only the `ecs.task.memory.utilized` metric and renames it to `MemoryUtilized` before sending to CloudWatch.
 
