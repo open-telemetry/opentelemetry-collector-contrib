@@ -134,6 +134,14 @@ The number of extents.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {extents} | Sum | Int | Cumulative | false |
 
+### mongodb.flushes_per_sec
+
+The number of flushes executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {flush}/s | Gauge | Double |
+
 ### mongodb.getmores_per_sec
 
 The number of getmores executed per second.

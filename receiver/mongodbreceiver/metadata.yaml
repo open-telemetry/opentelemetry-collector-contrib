@@ -406,6 +406,14 @@ metrics:
       value_type: double
       aggregation_temporality: delta
       monotonic: false
+  mongodb.flushes_per_sec:
+    description: The number of flushes executed per second.
+    unit: "{flush}/s"
+    enabled: true
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false      
   mongodb.repl_queries_per_sec:
     description: The number of replicated queries executed per second.
     unit: "{query}/s"

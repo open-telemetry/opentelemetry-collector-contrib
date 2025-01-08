@@ -39,28 +39,32 @@ var (
 )
 
 type mongodbScraper struct {
-	logger            *zap.Logger
-	config            *Config
-	client            client
-	secondaryClients  []client
-	mongoVersion      *version.Version
-	mb                *metadata.MetricsBuilder
-	prevTimestamp     pcommon.Timestamp
-	prevReplTimestamp pcommon.Timestamp
-	prevCounts        map[string]int64
-	prevReplCounts    map[string]int64
+	logger             *zap.Logger
+	config             *Config
+	client             client
+	secondaryClients   []client
+	mongoVersion       *version.Version
+	mb                 *metadata.MetricsBuilder
+	prevTimestamp      pcommon.Timestamp
+	prevReplTimestamp  pcommon.Timestamp
+	prevFlushTimestamp pcommon.Timestamp
+	prevCounts         map[string]int64
+	prevReplCounts     map[string]int64
+	prevFlushCount     int64
 }
 
 func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScraper {
 	return &mongodbScraper{
-		logger:            settings.Logger,
-		config:            config,
-		mb:                metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		mongoVersion:      unknownVersion(),
-		prevTimestamp:     pcommon.Timestamp(0),
-		prevReplTimestamp: pcommon.Timestamp(0),
-		prevCounts:        make(map[string]int64),
-		prevReplCounts:    make(map[string]int64),
+		logger:             settings.Logger,
+		config:             config,
+		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		mongoVersion:       unknownVersion(),
+		prevTimestamp:      pcommon.Timestamp(0),
+		prevReplTimestamp:  pcommon.Timestamp(0),
+		prevFlushTimestamp: pcommon.Timestamp(0),
+		prevCounts:         make(map[string]int64),
+		prevReplCounts:     make(map[string]int64),
+		prevFlushCount:     0,
 	}
 }
 
@@ -256,6 +260,7 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 	s.recordHealth(now, document, errs)
 	s.recordActiveWrites(now, document, errs)
 	s.recordActiveReads(now, document, errs)
+	s.recordFlushesPerSecond(now, document, errs)
 }
 
 func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
@@ -281,44 +286,6 @@ func serverAddressAndPort(serverStatus bson.M) (string, int64, error) {
 		return "", 0, fmt.Errorf("unexpected host format: %s", host)
 	}
 }
-
-// func (s *mongodbScraper) findSecondaryHosts(ctx context.Context) ([]string, error) {
-// 	s.logger.Debug("Attempting to find secondary hosts")
-// 	result, err := s.client.RunCommand(ctx, "admin", bson.M{"replSetGetStatus": 1})
-// 	if err != nil {
-// 		s.logger.Error("Failed to get replica set status", zap.Error(err))
-// 		return nil, fmt.Errorf("failed to get replica set status: %w", err)
-// 	}
-
-// 	s.logger.Debug("Received replSetGetStatus response", zap.Any("result", result))
-// 	s.logger.Debug("LOOKING INTO MEMBERS", zap.Any("members", result["members"]))
-
-// 	var hosts []string
-// 	if members, ok := result["members"].([]interface{}); ok {
-// 		for _, member := range members {
-// 			s.logger.Debug("Processing member", zap.Any("member", member))
-
-// 			if m, ok := member.(bson.M); ok {
-// 				state, stateOk := m["stateStr"].(string)
-// 				host, hostOk := m["name"].(string) // Changed from "host" to "name"
-
-// 				if stateOk && hostOk {
-// 					s.logger.Debug("Found member",
-// 						zap.String("state", state),
-// 						zap.String("host", host))
-
-// 					if state == "SECONDARY" {
-// 						s.logger.Info("Found secondary host", zap.String("host", host))
-// 						hosts = append(hosts, host)
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	s.logger.Debug("Found secondary hosts", zap.Strings("hosts", hosts))
-// 	return hosts, nil
-// }
 
 func (s *mongodbScraper) findSecondaryHosts(ctx context.Context) ([]string, error) {
 	result, err := s.client.RunCommand(ctx, "admin", bson.M{"replSetGetStatus": 1})

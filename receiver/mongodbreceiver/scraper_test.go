@@ -114,6 +114,7 @@ var (
 				"failed to collect metric mongodb.uptime: could not find key for metric",
 				"failed to collect metric mongodb.active.reads: could not find key for metric",
 				"failed to collect metric mongodb.active.writes: could not find key for metric",
+				"failed to collect metric mongodb.flushes_per_sec: could not find key for metric",
 			}, "; "))
 	errAllClientFailedFetch = errors.New(
 		strings.Join(

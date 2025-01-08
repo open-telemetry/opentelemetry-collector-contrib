@@ -41,6 +41,7 @@ type MetricsConfig struct {
 	MongodbDeletesPerSec          MetricConfig `mapstructure:"mongodb.deletes_per_sec"`
 	MongodbDocumentOperationCount MetricConfig `mapstructure:"mongodb.document.operation.count"`
 	MongodbExtentCount            MetricConfig `mapstructure:"mongodb.extent.count"`
+	MongodbFlushesPerSec          MetricConfig `mapstructure:"mongodb.flushes_per_sec"`
 	MongodbGetmoresPerSec         MetricConfig `mapstructure:"mongodb.getmores_per_sec"`
 	MongodbGlobalLockTime         MetricConfig `mapstructure:"mongodb.global_lock.time"`
 	MongodbHealth                 MetricConfig `mapstructure:"mongodb.health"`
@@ -113,6 +114,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		MongodbExtentCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbFlushesPerSec: MetricConfig{
 			Enabled: true,
 		},
 		MongodbGetmoresPerSec: MetricConfig{

@@ -288,6 +288,30 @@ func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M,
 	s.prevReplTimestamp = now
 }
 
+func (s *mongodbScraper) recordFlushesPerSecond(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"wiredTiger", "checkpoint", "total succeed number of checkpoints"}
+	metricName := "mongodb.flushes_per_sec"
+	currentFlushes, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+
+	if s.prevFlushTimestamp > 0 {
+		timeDelta := float64(now-s.prevFlushTimestamp) / 1e9
+		if timeDelta > 0 {
+			if prevFlushCount := s.prevFlushCount; true {
+				delta := currentFlushes - prevFlushCount
+				flushesPerSec := float64(delta) / timeDelta
+				s.mb.RecordMongodbFlushesPerSecDataPoint(now, flushesPerSec)
+			}
+		}
+	}
+
+	s.prevFlushCount = currentFlushes
+	s.prevFlushTimestamp = now
+}
+
 func (s *mongodbScraper) recordReplOperationPerSecond(now pcommon.Timestamp, operationVal string, currentCount int64) {
 	if s.prevReplTimestamp > 0 {
 		timeDelta := float64(now-s.prevReplTimestamp) / 1e9

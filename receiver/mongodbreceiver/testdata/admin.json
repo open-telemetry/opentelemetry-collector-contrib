@@ -398,6 +398,11 @@
 			"open session count": {
 				"$numberInt": "19"
 			}
+		},
+		"checkpoint": {
+			"total succeed number of checkpoints": {
+				"$numberInt": "42"
+			}
 		}
 	},
 	"version": "4.0.25"

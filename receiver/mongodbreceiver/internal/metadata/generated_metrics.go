@@ -915,6 +915,55 @@ func newMetricMongodbExtentCount(cfg MetricConfig) metricMongodbExtentCount {
 	return m
 }
 
+type metricMongodbFlushesPerSec struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.flushes_per_sec metric with initial data.
+func (m *metricMongodbFlushesPerSec) init() {
+	m.data.SetName("mongodb.flushes_per_sec")
+	m.data.SetDescription("The number of flushes executed per second.")
+	m.data.SetUnit("{flush}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMongodbFlushesPerSec) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbFlushesPerSec) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbFlushesPerSec) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbFlushesPerSec(cfg MetricConfig) metricMongodbFlushesPerSec {
+	m := metricMongodbFlushesPerSec{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMongodbGetmoresPerSec struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2519,6 +2568,7 @@ type MetricsBuilder struct {
 	metricMongodbDeletesPerSec          metricMongodbDeletesPerSec
 	metricMongodbDocumentOperationCount metricMongodbDocumentOperationCount
 	metricMongodbExtentCount            metricMongodbExtentCount
+	metricMongodbFlushesPerSec          metricMongodbFlushesPerSec
 	metricMongodbGetmoresPerSec         metricMongodbGetmoresPerSec
 	metricMongodbGlobalLockTime         metricMongodbGlobalLockTime
 	metricMongodbHealth                 metricMongodbHealth
@@ -2589,6 +2639,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMongodbDeletesPerSec:          newMetricMongodbDeletesPerSec(mbc.Metrics.MongodbDeletesPerSec),
 		metricMongodbDocumentOperationCount: newMetricMongodbDocumentOperationCount(mbc.Metrics.MongodbDocumentOperationCount),
 		metricMongodbExtentCount:            newMetricMongodbExtentCount(mbc.Metrics.MongodbExtentCount),
+		metricMongodbFlushesPerSec:          newMetricMongodbFlushesPerSec(mbc.Metrics.MongodbFlushesPerSec),
 		metricMongodbGetmoresPerSec:         newMetricMongodbGetmoresPerSec(mbc.Metrics.MongodbGetmoresPerSec),
 		metricMongodbGlobalLockTime:         newMetricMongodbGlobalLockTime(mbc.Metrics.MongodbGlobalLockTime),
 		metricMongodbHealth:                 newMetricMongodbHealth(mbc.Metrics.MongodbHealth),
@@ -2723,6 +2774,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMongodbDeletesPerSec.emit(ils.Metrics())
 	mb.metricMongodbDocumentOperationCount.emit(ils.Metrics())
 	mb.metricMongodbExtentCount.emit(ils.Metrics())
+	mb.metricMongodbFlushesPerSec.emit(ils.Metrics())
 	mb.metricMongodbGetmoresPerSec.emit(ils.Metrics())
 	mb.metricMongodbGlobalLockTime.emit(ils.Metrics())
 	mb.metricMongodbHealth.emit(ils.Metrics())
@@ -2848,6 +2900,11 @@ func (mb *MetricsBuilder) RecordMongodbDocumentOperationCountDataPoint(ts pcommo
 // RecordMongodbExtentCountDataPoint adds a data point to mongodb.extent.count metric.
 func (mb *MetricsBuilder) RecordMongodbExtentCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricMongodbExtentCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMongodbFlushesPerSecDataPoint adds a data point to mongodb.flushes_per_sec metric.
+func (mb *MetricsBuilder) RecordMongodbFlushesPerSecDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricMongodbFlushesPerSec.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbGetmoresPerSecDataPoint adds a data point to mongodb.getmores_per_sec metric.

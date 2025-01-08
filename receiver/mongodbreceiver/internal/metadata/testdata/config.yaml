@@ -27,6 +27,8 @@ all_set:
       enabled: true
     mongodb.extent.count:
       enabled: true
+    mongodb.flushes_per_sec:
+      enabled: true
     mongodb.getmores_per_sec:
       enabled: true
     mongodb.global_lock.time:
@@ -123,6 +125,8 @@ none_set:
     mongodb.document.operation.count:
       enabled: false
     mongodb.extent.count:
+      enabled: false
+    mongodb.flushes_per_sec:
       enabled: false
     mongodb.getmores_per_sec:
       enabled: false
