@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/goccy/go-json v0.10.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.116.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.117.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.117.0
 	go.opentelemetry.io/collector/component/componenttest v0.117.0
