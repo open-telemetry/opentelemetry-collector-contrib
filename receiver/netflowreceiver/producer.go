@@ -39,13 +39,11 @@ func (o *OtelLogsProducerWrapper) Produce(msg any, args *producer.ProduceArgs) (
 
 	// A single netflow packet can contain multiple flow messages
 	for _, msg := range flowMessageSet {
-
 		logRecord := logRecords.AppendEmpty()
 		parseErr := addMessageAttributes(msg, &logRecord)
 		if parseErr != nil {
 			continue
 		}
-
 	}
 
 	if len(flowMessageSet) == 0 {

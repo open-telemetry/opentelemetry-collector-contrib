@@ -62,7 +62,7 @@ func newNetflowLogsReceiver(params receiver.Settings, cfg Config, consumer consu
 	return nr, nil
 }
 
-func (nr *netflowReceiver) Start(ctx context.Context, host component.Host) error {
+func (nr *netflowReceiver) Start(_ context.Context, _ component.Host) error {
 	nr.logger.Info("NetFlow receiver is starting...")
 
 	// The function that will decode packets
