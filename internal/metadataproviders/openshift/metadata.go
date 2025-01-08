@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-// Provider gets cluster metadata from Openshift.
+// Provider gets cluster metadata from OpenShift.
 type Provider interface {
 	K8SClusterVersion(context.Context) (string, error)
 	OpenShiftClusterVersion(context.Context) (string, error)

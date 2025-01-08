@@ -481,11 +481,11 @@ and add this to your workload:
                 fieldPath: spec.nodeName
 ```
 
-### Openshift
+### OpenShift
 
 Queries the OpenShift and Kubernetes API to retrieve related resource attributes.
 
-The list of the populated resource attributes can be found at [Openshift Detector Resource Attributes](./internal/openshift/documentation.md).
+The list of the populated resource attributes can be found at [OpenShift Detector Resource Attributes](./internal/openshift/documentation.md).
 
 The following permissions are required:
 ```yaml
