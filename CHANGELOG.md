@@ -1581,7 +1581,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 - `filelogreceiver`: Add container operator parser (#31959)
 - `jsonlogencodingextension`: Move jsonlogencodingextension to alpha (#32697)
-- `exceptionsconnector`: Make span name a default dimension for ouput metrics and log records. (#32162)
+- `exceptionsconnector`: Make span name a default dimension for output metrics and log records. (#32162)
 - `azureblobreceiver`: Support service principal authentication for Blob storage (#32705)
 - `deltatocumulativeprocessor`: exponential histogram accumulation (#31340)
   accumulates exponential histogram datapoints by adding respective bucket counts. also handles downscaling, changing zero-counts, offset adaptions and optional fields
