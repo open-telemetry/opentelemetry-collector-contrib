@@ -53,17 +53,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "sflow"),
 			expected: &Config{
 				Scheme:    "sflow",
-				Port:      2055,
-				Sockets:   1,
-				Workers:   1,
-				QueueSize: 1000,
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "flow"),
-			expected: &Config{
-				Scheme:    "flow",
-				Port:      2055,
+				Port:      6343,
 				Sockets:   1,
 				Workers:   1,
 				QueueSize: 1000,
@@ -98,7 +88,7 @@ func TestInvalidConfig(t *testing.T) {
 	}{
 		{
 			id:  component.NewIDWithName(metadata.Type, "invalid_schema"),
-			err: "scheme must be one of sflow, netflow, or flow",
+			err: "scheme must be netflow or sflow",
 		},
 		{
 			id:  component.NewIDWithName(metadata.Type, "invalid_port"),

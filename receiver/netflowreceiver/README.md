@@ -61,7 +61,7 @@ You would then configure your network devices to send netflow, sflow, or ipfix d
 
 | Field | Description | Examples | Default |
 |-------|-------------|--------| ------- |
-| scheme | The type of flow data that to receive | `sflow`, `netflow`, `flow` | `netflow` |
+| scheme | The type of flow data that to receive | `sflow`, `netflow` | `netflow` |
 | hostname | The hostname or IP address to bind to | `localhost` | `0.0.0.0` |
 | port | The port to bind to | `2055` or `6343` | `2055` |
 | sockets | The number of sockets to use | 1 | 1 |

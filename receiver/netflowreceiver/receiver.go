@@ -125,8 +125,6 @@ func (nr *netflowReceiver) buildDecodeFunc() (utils.DecoderFunc, error) {
 		p = utils.NewSFlowPipe(cfgPipe)
 	case "netflow":
 		p = utils.NewNetFlowPipe(cfgPipe)
-	case "flow":
-		p = utils.NewFlowPipe(cfgPipe)
 	default:
 		return nil, fmt.Errorf("scheme does not exist: %s", nr.config.Scheme)
 	}
