@@ -93,7 +93,7 @@ func (t *fileTracker) GetClosedFile(fp *fingerprint.Fingerprint) *reader.Metadat
 }
 
 func (t *fileTracker) GetMetadata() []*reader.Metadata {
-	// return all known metadata for checkpoining
+	// return all known metadata for checkpointing
 	allCheckpoints := make([]*reader.Metadata, 0, t.TotalReaders())
 	for _, knownFiles := range t.knownFiles {
 		allCheckpoints = append(allCheckpoints, knownFiles.Get()...)
