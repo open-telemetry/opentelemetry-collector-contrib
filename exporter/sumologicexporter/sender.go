@@ -722,11 +722,11 @@ func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Re
 }
 
 func (s *sender) addStickySessionCookie(req *http.Request) {
-	currectCookieValue := s.stickySessionCookieFunc()
-	if currectCookieValue != "" {
+	currentCookieValue := s.stickySessionCookieFunc()
+	if currentCookieValue != "" {
 		cookie := &http.Cookie{
 			Name:  stickySessionKey,
-			Value: currectCookieValue,
+			Value: currentCookieValue,
 		}
 		req.AddCookie(cookie)
 	}
