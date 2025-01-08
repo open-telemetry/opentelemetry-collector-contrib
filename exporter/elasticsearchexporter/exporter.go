@@ -44,8 +44,11 @@ func newExporter(
 	index string,
 	dynamicIndex bool,
 ) *elasticsearchExporter {
+	dedot := cfg.MappingMode() == MappingECS
+
 	model := &encodeModel{
-		mode: cfg.MappingMode(),
+		dedot: dedot,
+		mode:  cfg.MappingMode(),
 	}
 
 	otel := model.mode == MappingOTel
