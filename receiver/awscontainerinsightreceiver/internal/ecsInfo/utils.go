@@ -29,10 +29,10 @@ func GetContainerInstanceIDFromArn(arn string) (containerInstanceID string, err 
 	// container-instance/47c0ab6e-2c2c-475e-9c30-b878fa7a8c3d or
 	// container-instance/cluster-name/47c0ab6e-2c2c-475e-9c30-b878fa7a8c3d
 	err = nil
-	if splitedList := strings.Split(arn, ":"); len(splitedList) >= 6 {
+	if splitList := strings.Split(arn, ":"); len(splitList) >= 6 {
 		// Further splitting tmpResult with "/", it could be splitted into either 2 or 3
 		// Characters of "cluster-name" is only allowed to be letters, numbers and hyphens
-		tmpResult := strings.Split(splitedList[5], "/")
+		tmpResult := strings.Split(splitList[5], "/")
 		if len(tmpResult) == 2 {
 			containerInstanceID = tmpResult[1]
 			return
