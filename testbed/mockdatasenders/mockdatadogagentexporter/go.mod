@@ -5,13 +5,13 @@ go 1.22.0
 require (
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
 	github.com/tinylib/msgp v1.2.5
-	go.opentelemetry.io/collector/component v0.116.1-0.20250107062214-ced38e8af2ae
-	go.opentelemetry.io/collector/component/componenttest v0.116.1-0.20250107062214-ced38e8af2ae
-	go.opentelemetry.io/collector/config/confighttp v0.116.1-0.20250107062214-ced38e8af2ae
-	go.opentelemetry.io/collector/consumer v1.22.1-0.20250107062214-ced38e8af2ae
-	go.opentelemetry.io/collector/consumer/consumererror v0.116.1-0.20250107062214-ced38e8af2ae
-	go.opentelemetry.io/collector/exporter v0.116.1-0.20250107062214-ced38e8af2ae
-	go.opentelemetry.io/collector/pdata v1.22.1-0.20250107062214-ced38e8af2ae
+	go.opentelemetry.io/collector/component v0.117.0
+	go.opentelemetry.io/collector/component/componenttest v0.117.0
+	go.opentelemetry.io/collector/config/confighttp v0.117.0
+	go.opentelemetry.io/collector/consumer v1.23.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.117.0
+	go.opentelemetry.io/collector/exporter v0.117.0
+	go.opentelemetry.io/collector/pdata v1.23.0
 )
 
 require (
@@ -34,19 +34,19 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
-	go.opentelemetry.io/collector/client v1.22.1-0.20250107062214-ced38e8af2ae // indirect
-	go.opentelemetry.io/collector/config/configauth v0.116.1-0.20250107062214-ced38e8af2ae // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.22.1-0.20250107062214-ced38e8af2ae // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.22.1-0.20250107062214-ced38e8af2ae // indirect
-	go.opentelemetry.io/collector/config/configretry v1.22.1-0.20250107062214-ced38e8af2ae // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.116.1-0.20250107062214-ced38e8af2ae // indirect
-	go.opentelemetry.io/collector/config/configtls v1.22.1-0.20250107062214-ced38e8af2ae // indirect
-	go.opentelemetry.io/collector/extension v0.116.1-0.20250107062214-ced38e8af2ae // indirect
-	go.opentelemetry.io/collector/extension/auth v0.116.1-0.20250107062214-ced38e8af2ae // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.116.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.22.1-0.20250107062214-ced38e8af2ae // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.116.1-0.20250107062214-ced38e8af2ae // indirect
-	go.opentelemetry.io/collector/pipeline v0.116.1-0.20250107062214-ced38e8af2ae // indirect
+	go.opentelemetry.io/collector/client v1.23.0 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.117.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.23.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.23.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.23.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.117.0 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.23.0 // indirect
+	go.opentelemetry.io/collector/extension v0.117.0 // indirect
+	go.opentelemetry.io/collector/extension/auth v0.117.0 // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.117.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.23.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.117.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.117.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
@@ -60,7 +60,7 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241104194629-dd2ea8efbc28 // indirect
 	google.golang.org/grpc v1.69.2 // indirect
-	google.golang.org/protobuf v1.36.1 // indirect
+	google.golang.org/protobuf v1.36.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -69,6 +69,6 @@ retract (
 	v0.76.1
 )
 
-replace go.opentelemetry.io/collector/scraper/scraperhelper v0.116.0 => go.opentelemetry.io/collector/scraper/scraperhelper v0.0.0-20250107062214-ced38e8af2ae
+replace go.opentelemetry.io/collector/scraper/scraperhelper v0.116.0 => go.opentelemetry.io/collector/scraper/scraperhelper v0.117.0
 
-replace go.opentelemetry.io/collector/extension/xextension v0.116.0 => go.opentelemetry.io/collector/extension/xextension v0.0.0-20250107062214-ced38e8af2ae
+replace go.opentelemetry.io/collector/extension/xextension v0.116.0 => go.opentelemetry.io/collector/extension/xextension v0.117.0
