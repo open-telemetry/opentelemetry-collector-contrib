@@ -195,7 +195,7 @@ func (rs *redisScraper) recordCmdMetrics(ts pcommon.Timestamp, inf info) {
 	}
 }
 
-// recordCmdStatsMetrics records metrics for a particlar Redis command.
+// recordCmdStatsMetrics records metrics for a particular Redis command.
 // Only 'calls' and 'usec' are recorded at the moment.
 // 'cmd' is the Redis command, 'val' is the values string (e.g. "calls=1685,usec=6032,usec_per_call=3.58,rejected_calls=0,failed_calls=0").
 func (rs *redisScraper) recordCmdStatsMetrics(ts pcommon.Timestamp, cmd, val string) {
