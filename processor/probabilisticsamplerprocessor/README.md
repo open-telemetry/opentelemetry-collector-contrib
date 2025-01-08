@@ -183,7 +183,7 @@ for every 4 items input.
 
 ### Equalizing
 
-This mode uses the same randomness mechanism as the propotional
+This mode uses the same randomness mechanism as the proportional
 sampling mode, in this case considering how much each item was already
 sampled by preceding samplers.  This mode can be used to lower
 sampling probability to a minimum value across a whole pipeline, 
