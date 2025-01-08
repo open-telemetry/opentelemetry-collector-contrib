@@ -125,7 +125,7 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 	if s.clusterAdmin == nil {
 		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
 		if err != nil {
-			s.settings.Logger.Error("Error creating kafka client with admin priviledges", zap.Error(err))
+			s.settings.Logger.Error("Error creating kafka client with admin privileges", zap.Error(err))
 			return
 		}
 		s.clusterAdmin = admin
