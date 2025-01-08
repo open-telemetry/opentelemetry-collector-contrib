@@ -19,11 +19,13 @@ import (
 	"go.uber.org/zap"
 )
 
+var _ utils.ReceiverCallback = (*dropHandler)(nil)
+
 type dropHandler struct {
 	logger *zap.Logger
 }
 
-func (d *dropHandler) Dropped(msg utils.Message) {
+func (d dropHandler) Dropped(msg utils.Message) {
 	d.logger.Warn("Dropped netflow message", zap.Any("msg", msg))
 }
 
