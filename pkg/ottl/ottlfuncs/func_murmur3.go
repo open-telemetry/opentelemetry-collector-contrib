@@ -43,22 +43,22 @@ type Murmur3Arguments[K any] struct {
 }
 
 func NewMurmur3HashFactory[K any]() ottl.Factory[K] {
-	return NewMurmur3Factory[K](Murmur3Hash)
+	return newMurmur3Factory[K](Murmur3Hash)
 }
 
 func NewMurmur3Hash128Factory[K any]() ottl.Factory[K] {
-	return NewMurmur3Factory[K](Murmur3Hash128)
+	return newMurmur3Factory[K](Murmur3Hash128)
 }
 
 func NewMurmur3HexFactory[K any]() ottl.Factory[K] {
-	return NewMurmur3Factory[K](Murmur3Hex)
+	return newMurmur3Factory[K](Murmur3Hex)
 }
 
 func NewMurmur3Hex128Factory[K any]() ottl.Factory[K] {
-	return NewMurmur3Factory[K](Murmur3Hex128)
+	return newMurmur3Factory[K](Murmur3Hex128)
 }
 
-func NewMurmur3Factory[K any](variant murmur3Variant) ottl.Factory[K] {
+func newMurmur3Factory[K any](variant murmur3Variant) ottl.Factory[K] {
 	return ottl.NewFactory(variant.String(), &Murmur3Arguments[K]{}, func(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
 		return createMurmur3Function[K](oArgs, variant)
 	})
@@ -67,7 +67,7 @@ func NewMurmur3Factory[K any](variant murmur3Variant) ottl.Factory[K] {
 func createMurmur3Function[K any](oArgs ottl.Arguments, variant murmur3Variant) (ottl.ExprFunc[K], error) {
 	args, ok := oArgs.(*Murmur3Arguments[K])
 	if !ok {
-		return nil, fmt.Errorf("%s args must be of type *Murmur3Arguments[K]", variant.String())
+		return nil, fmt.Errorf("%sFactory args must be of type *Murmur3Arguments[K]", variant.String())
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
