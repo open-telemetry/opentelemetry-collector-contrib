@@ -154,7 +154,7 @@ func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
 	// index       | ▶  │ 0 │  ▶  │ 1 │  ▶      ...       ▶ │ polls_to_archive │ |
 	//             | ▲  └───┘     └───┘                     └──────────────────┘ |
 	//             | ▲    ▲                                                ▼     |
-	//             | ▲    │ Roll over overriting older offsets, if any     ◀     |
+	//             | ▲    │ Roll over overwriting older offsets, if any    ◀     |
 	//             └──────│──────────────────────────────────────────────────────┘
 	//                    │
 	//                    │
