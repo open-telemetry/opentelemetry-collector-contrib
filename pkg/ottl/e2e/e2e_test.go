@@ -328,12 +328,12 @@ func Test_e2e_converters(t *testing.T) {
 	}{
 		{
 			statement: `set(attributes["newOne"], attributes[1])`,
-			want:      func(tCtx ottllog.TransformContext) {},
+			want:      func(_ ottllog.TransformContext) {},
 			errMsg:    "unable to resolve a string index in map: invalid key type",
 		},
 		{
 			statement: `set(attributes["array"][0.0], "bar")`,
-			want:      func(tCtx ottllog.TransformContext) {},
+			want:      func(_ ottllog.TransformContext) {},
 			errMsg:    "unable to resolve an integer index in slice: invalid key type",
 		},
 		{
