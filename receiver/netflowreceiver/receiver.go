@@ -71,7 +71,7 @@ func (nr *netflowReceiver) Start(ctx context.Context, host component.Host) error
 		return err
 	}
 
-	nr.logger.Info("Start listening for NetFlow on UDP", zap.Any("config", nr.config))
+	nr.logger.Info("Start listening for NetFlow over UDP with port", zap.Int("port", nr.config.Port))
 	if err := nr.udpReceiver.Start(nr.config.Hostname, nr.config.Port, decodeFunc); err != nil {
 		return err
 	}
