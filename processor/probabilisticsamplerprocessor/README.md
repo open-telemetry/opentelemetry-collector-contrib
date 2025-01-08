@@ -60,7 +60,7 @@ instead of using the parent-based approach (e.g., using the
 `TraceIDRatioBased` sampler for a non-root span), incompleteness may
 result, and when spans and log records are independently sampled in a
 processor, as by this component, the same potential for completeness
-arises.  The consistency guarantee helps minimimize this issue.
+arises.  The consistency guarantee helps minimize this issue.
 
 Consistent probability samplers can be safely used with a mixture of
 probabilities and preserve sub-trace completeness, provided that child
