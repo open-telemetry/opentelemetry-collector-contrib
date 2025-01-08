@@ -68,8 +68,6 @@ github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+
 github.com/gorilla/mux v1.8.1 h1:TuBL49tXwgrFYWhqrNgrUNEY92u81SPhu7sTdzQEiWY=
 github.com/gorilla/mux v1.8.1/go.mod h1:AKf9I4AEqPTmMytcMc0KkNouC66V3BtZ4qD5fmWSiMQ=
 github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFbcEtjT1g+wF4CSlocrBnw=
-github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKeRZfjY=
-github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
@@ -157,8 +155,6 @@ go.opentelemetry.io/collector/extension/auth v0.117.0 h1:tXQdYIdcABXalWyFZP22pRE
 go.opentelemetry.io/collector/extension/auth v0.117.0/go.mod h1:ofrV2BuE46+k7Su/h0ccrMl5Zk5Y7NVlzOb3AwU7Dzw=
 go.opentelemetry.io/collector/extension/auth/authtest v0.117.0 h1:wV4OIiWrt7gteQrxL8MCmGvjGhMiu5TplKJHOfVZO6Y=
 go.opentelemetry.io/collector/extension/auth/authtest v0.117.0/go.mod h1:nHxcAOyo26JnuYwKIoQM9mDlSXpERQrbjIw3Dtp9hug=
-go.opentelemetry.io/collector/featuregate v1.23.0 h1:N033ROo85qKrsK16QzR6RV+3UWOWF7kpOO8FSnX99s0=
-go.opentelemetry.io/collector/featuregate v1.23.0/go.mod h1:3GaXqflNDVwWndNGBJ1+XJFy3Fv/XrFgjMN60N3z7yg=
 go.opentelemetry.io/collector/pdata v1.23.0 h1:tEk0dkfB8RdSukoOMfEa8duB938gfZowdfRkrJxGDrw=
 go.opentelemetry.io/collector/pdata v1.23.0/go.mod h1:I2jggpBMiO8A+7TXhzNpcJZkJtvi1cU0iVNIi+6bc+o=
 go.opentelemetry.io/collector/pdata/pprofile v0.117.0 h1:AyOK+rkNGeawmLGUqF84wYks22BSGJtEV++3YSfvD1I=
