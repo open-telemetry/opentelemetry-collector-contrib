@@ -89,7 +89,7 @@ func TestPartitionKeyInputsBucketPrefix(t *testing.T) {
 			expect: "/year=2024/month=01/day=24/hour=06/minute=40",
 		},
 		{
-			name: "unknown partition trunction value",
+			name: "unknown partition truncation value",
 			inputs: &PartitionKeyBuilder{
 				PartitionTruncation: "weekly",
 			},
