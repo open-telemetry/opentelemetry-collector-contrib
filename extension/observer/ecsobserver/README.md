@@ -424,7 +424,7 @@ otel's own /metrics.
 | Name                                 | Type | Description                                                                                                                                                     |
 |--------------------------------------|------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `discovered_targets`                 | int  | Number of targets exported                                                                                                                                      |
-| `discovered_taskss`                  | int  | Number of tasks that contains scrape target, should be smaller than targets unless each task only contains one target                                           |
+| `discovered_tasks`                   | int  | Number of tasks that contains scrape target, should be smaller than targets unless each task only contains one target                                           |
 | `ignored_tasks`                      | int  | Tasks ignored by filter, `discovered_tasks` and  `ignored_tasks` should add up to `api_ecs_list_task_results`, one exception is API paging failed in the middle |
 | `targets_matched_by_service`         | int  | ECS Service name based filter                                                                                                                                   |
 | `targets_matched_by_task_definition` | int  | ECS TaskDefinition based filter                                                                                                                                 |
