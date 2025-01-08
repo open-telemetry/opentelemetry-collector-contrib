@@ -414,7 +414,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(0),
 			newVal: int64(1),
-			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			modified: func(_ ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 			},
 		},
 	}
@@ -531,7 +531,6 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 }
 
 func createTelemetry() (ptrace.SpanEvent, ptrace.Span, pcommon.InstrumentationScope, pcommon.Resource) {
-
 	span := ptrace.NewSpan()
 	span.SetName("test")
 

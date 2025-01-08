@@ -353,15 +353,11 @@ func accessSpanEventDroppedAttributeCount() ottl.StandardGetSetter[TransformCont
 
 func accessSpanEventIndex() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
+		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			return tCtx.eventIndex, nil
 		},
-		Setter: func(_ context.Context, tCtx TransformContext, val any) error {
-			if newIndex, ok := val.(int64); ok {
-				tCtx.eventIndex = newIndex
-			}
+		Setter: func(_ context.Context, _ TransformContext, _ any) error {
 			return nil
 		},
 	}
-
 }
