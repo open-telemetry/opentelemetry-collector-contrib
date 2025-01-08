@@ -84,6 +84,8 @@ go.opentelemetry.io/collector/receiver/receivertest v0.117.0 h1:aN4zOuWsiARa+RG9
 go.opentelemetry.io/collector/receiver/receivertest v0.117.0/go.mod h1:1wnGEowDmlO89feq1P+b4tQI2G/+iJxRrMallw7zeJE=
 go.opentelemetry.io/collector/receiver/xreceiver v0.117.0 h1:HJjBj6P3/WQoYaRKZkWZHnUUCVFpBieqGKzKHcT6HUw=
 go.opentelemetry.io/collector/receiver/xreceiver v0.117.0/go.mod h1:K1qMjIiAg6i3vHA+/EpM8nkhna3uIgoEellE2yuhz7A=
+go.opentelemetry.io/collector/semconv v0.117.0 h1:SavOvSbHPVD/QdAnXlI/cMca+yxCNyXStY1mQzerHs4=
+go.opentelemetry.io/collector/semconv v0.117.0/go.mod h1:N6XE8Q0JKgBN2fAhkUQtqK9LT7rEGR6+Wu/Rtbal1iI=
 go.opentelemetry.io/otel v1.32.0 h1:WnBN+Xjcteh0zdk01SVqV55d/m62NJLJdIyb4y/WO5U=
 go.opentelemetry.io/otel v1.32.0/go.mod h1:00DCVSB0RQcnzlwyTfqtxSm+DRr9hpYrHjNGiBHVQIg=
 go.opentelemetry.io/otel/metric v1.32.0 h1:xV2umtmNcThh2/a/aCP+h64Xx5wsj8qqnkYZktzNa0M=

@@ -10,8 +10,10 @@ require (
 	go.opentelemetry.io/collector/confmap v1.23.0
 	go.opentelemetry.io/collector/consumer v1.23.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.117.0
+	go.opentelemetry.io/collector/pdata v1.23.0
 	go.opentelemetry.io/collector/receiver v0.117.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.117.0
+	go.opentelemetry.io/collector/semconv v0.117.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -36,7 +38,6 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.117.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.117.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.117.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.23.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.117.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.117.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.117.0 // indirect
