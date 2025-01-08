@@ -39,11 +39,15 @@ func itemRequestsSortFunc(a, b itemRequest) int {
 }
 
 func assertRecordedItems(t *testing.T, expected []itemRequest, recorder *bulkRecorder, assertOrder bool) { // nolint:unparam
+	t.Helper()
+
 	recorder.WaitItems(len(expected))
 	assertItemRequests(t, expected, recorder.Items(), assertOrder)
 }
 
 func assertItemRequests(t *testing.T, expected, actual []itemRequest, assertOrder bool) { // nolint:unparam
+	t.Helper()
+
 	expectedItems := expected
 	actualItems := actual
 	if !assertOrder {
