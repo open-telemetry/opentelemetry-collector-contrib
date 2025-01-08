@@ -1062,7 +1062,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   "vcenter.resource_pool.memory.swapped", "vcenter.resource_pool.memory.ballooned", and "vcenter.resource_pool.memory.granted". The 
   "resourcePoolMemoryUsageAttribute" has also been bumped up to release v.0.107.0
   
-- `googlemanagedprometheusexporter`: Fix typo in `exporter.googlemanagedpromethues.intToDouble` feature gate (#34232)
+- `googlemanagedprometheusexporter`: Fix typo in `exporter.googlemanagedprometheus.intToDouble` feature gate (#34232)
 
 ### 🚩 Deprecations 🚩
 
