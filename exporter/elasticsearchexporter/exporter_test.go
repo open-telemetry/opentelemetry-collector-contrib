@@ -742,8 +742,6 @@ func TestExporterLogs(t *testing.T) {
 			name          string
 			expectedDocID *string // nil means the _id will not be set
 			recordAttrs   map[string]any
-			scopeAttrs    map[string]any
-			resourceAttrs map[string]any
 		}{
 			{
 				name:          "missing document id attribute should not set _id",
@@ -754,43 +752,6 @@ func TestExporterLogs(t *testing.T) {
 				expectedDocID: &exampleDocID,
 				recordAttrs: map[string]any{
 					documentIDAttributeName: exampleDocID,
-				},
-			},
-			{
-				name:          "scope attributes",
-				expectedDocID: &exampleDocID,
-				scopeAttrs: map[string]any{
-					documentIDAttributeName: exampleDocID,
-				},
-			},
-			{
-				name:          "resource attributes",
-				expectedDocID: &exampleDocID,
-				resourceAttrs: map[string]any{
-					documentIDAttributeName: exampleDocID,
-				},
-			},
-			{
-				name:          "record attributes takes precedence over others",
-				expectedDocID: &exampleDocID,
-				recordAttrs: map[string]any{
-					documentIDAttributeName: exampleDocID,
-				},
-				scopeAttrs: map[string]any{
-					documentIDAttributeName: "id1",
-				},
-				resourceAttrs: map[string]any{
-					documentIDAttributeName: "id2",
-				},
-			},
-			{
-				name:          "scope attributes takes precedence over resource attributes",
-				expectedDocID: &exampleDocID,
-				scopeAttrs: map[string]any{
-					documentIDAttributeName: exampleDocID,
-				},
-				resourceAttrs: map[string]any{
-					documentIDAttributeName: "id1",
 				},
 			},
 		}
@@ -828,8 +789,8 @@ func TestExporterLogs(t *testing.T) {
 					})
 					logs := newLogsWithAttributes(
 						tt.recordAttrs,
-						tt.scopeAttrs,
-						tt.resourceAttrs,
+						map[string]any{},
+						map[string]any{},
 					)
 					logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
 					mustSendLogs(t, exporter, logs)
