@@ -5337,7 +5337,7 @@ This version has been skipped.
 - `dockerobserver`: incorporate observer.EndpointsWatcher in preparation of multiple event subscribers and use existing internal event loop watcher (#10830, #11541)
 - `hostmetrics`: Adding connection tracking count and max metrics for linux (#11769)
 - `hostmetricsreceiver`: New config setting scrape_process_delay is used to indicate the minimum amount of time a process must be running before process metrics can be scraped for it. The default value is 0 seconds ("0s"). (#8976)
-- `transformprocessor`: Add ability to interact with enums via sybmols. (#10349)
+- `transformprocessor`: Add ability to interact with enums via symbols. (#10349)
 - `telemetryquerylanguage`: Adds to the grammar the ability to interpret Enums. (#11751)
 - `transformprocessor`: Update the transform processor to use the Telemetry Query Language package (#11751)
 - `transformprocessor`: Add `delete_key` and `delete_matching_keys` which allow deleting keys from maps. (#11823)
