@@ -3804,7 +3804,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 - `clickhouseexporter`: Insert instrumentation scope name and version to SpanAttributes column in traces table (#17408)
 - `stanza`: Enhancement pkg/stanza/flatten to support resource and attributes (#20448)
-- `azuredataexplorerexporter`: Migrate stablity to beta. All the dependent libraries have moved to beta. (#19161)
+- `azuredataexplorerexporter`: Migrate stability to beta. All the dependent libraries have moved to beta. (#19161)
 - `awsecscontainermetricsreceiver`: Add ServiceName from task metadata endpoint (#19728)
 - `mdatagen`: Warnings can now be specified in metadata.yaml to be included in the generated status table. (#20242)
 - `coralogixexporter`: Change coralogixexporter to default to gzip compression for logs and traces (#20337)
