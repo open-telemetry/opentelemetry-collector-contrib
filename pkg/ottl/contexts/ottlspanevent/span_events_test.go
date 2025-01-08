@@ -407,6 +407,16 @@ func Test_newPathGetSetter(t *testing.T) {
 				spanEvent.SetDroppedAttributesCount(20)
 			},
 		},
+		{
+			name: "event_index",
+			path: &internal.TestPath[TransformContext]{
+				N: "event_index",
+			},
+			orig:   int64(0),
+			newVal: int64(1),
+			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+			},
+		},
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
 	// It ensures all exiting field access also work when the path context is set.
@@ -521,7 +531,11 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 }
 
 func createTelemetry() (ptrace.SpanEvent, ptrace.Span, pcommon.InstrumentationScope, pcommon.Resource) {
-	spanEvent := ptrace.NewSpanEvent()
+
+	span := ptrace.NewSpan()
+	span.SetName("test")
+
+	spanEvent := span.Events().AppendEmpty()
 
 	spanEvent.SetName("bear")
 	spanEvent.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
@@ -561,9 +575,6 @@ func createTelemetry() (ptrace.SpanEvent, ptrace.Span, pcommon.InstrumentationSc
 
 	s := spanEvent.Attributes().PutEmptySlice("slice")
 	s.AppendEmpty().SetEmptyMap().PutStr("map", "pass")
-
-	span := ptrace.NewSpan()
-	span.SetName("test")
 
 	il := pcommon.NewInstrumentationScope()
 	il.SetName("library")
