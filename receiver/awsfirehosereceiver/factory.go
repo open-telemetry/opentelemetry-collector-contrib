@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
@@ -22,8 +21,7 @@ import (
 )
 
 const (
-	defaultEndpoint = "0.0.0.0:4433"
-	defaultPort     = 4433
+	defaultEndpoint = "localhost:4433"
 )
 
 var (
@@ -78,7 +76,7 @@ func defaultLogsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.LogsUnma
 func createDefaultConfig() component.Config {
 	return &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: testutil.EndpointForPort(defaultPort),
+			Endpoint: defaultEndpoint,
 		},
 	}
 }
