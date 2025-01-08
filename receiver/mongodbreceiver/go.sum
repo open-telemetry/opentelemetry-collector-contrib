@@ -151,6 +151,8 @@ github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 go.mongodb.org/mongo-driver v1.17.1 h1:Wic5cJIwJgSpBhe3lx3+/RybR5PiYRMpVFgO7cOHyIM=
 go.mongodb.org/mongo-driver v1.17.1/go.mod h1:wwWm/+BuOddhcq3n68LKRmgk2wXzmF6s0SFOa0GINL4=
+go.mongodb.org/mongo-driver v1.17.2 h1:gvZyk8352qSfzyZ2UMWcpDpMSGEr1eqE4T793SqyhzM=
+go.mongodb.org/mongo-driver v1.17.2/go.mod h1:Hy04i7O2kC4RS06ZrhPRqj/u4DTYkFDAAccj+rVKqgQ=
 go.opentelemetry.io/collector/component v0.117.0 h1:A3Im4PqLyfduAdVyUgbOZdUs7J/USegdpnkoIAOuN3Y=
 go.opentelemetry.io/collector/component v0.117.0/go.mod h1:+SxJgeMwNV6y3aKNR2sP0PfovcUlRwC0+pEv4tTYdXA=
 go.opentelemetry.io/collector/component/componenttest v0.117.0 h1:r3k0BsU/cJlqVQRtgFjxfduNEGaM2qCAU7JitIGkRds=
