@@ -70,4 +70,3 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages => ../opampcustommessages
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status => ../../pkg/status
-

@@ -49,4 +49,3 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../
-

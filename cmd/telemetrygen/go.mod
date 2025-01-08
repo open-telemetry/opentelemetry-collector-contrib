@@ -64,4 +64,3 @@ retract (
 
 // IMPORTANT NOTE: Do not add replace statements to this go.mod. This will break go install.
 // See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27855.
-

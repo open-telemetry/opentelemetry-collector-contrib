@@ -29,4 +29,3 @@ require (
 	google.golang.org/grpc v1.69.2 // indirect
 	google.golang.org/protobuf v1.36.2 // indirect
 )
-

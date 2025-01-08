@@ -94,4 +94,3 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension => ../../extension/sumologicextension
-
