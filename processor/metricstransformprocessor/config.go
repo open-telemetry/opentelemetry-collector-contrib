@@ -152,7 +152,7 @@ const (
 	// Combine combines multiple metrics into a single metric.
 	Combine ConfigAction = "combine"
 
-	// Group groups mutiple metrics matching the predicate into multiple ResourceMetrics messages
+	// Group groups multiple metrics matching the predicate into multiple ResourceMetrics messages
 	Group ConfigAction = "group"
 )
 
