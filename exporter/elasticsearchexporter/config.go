@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/zap"
 )
 
 // Config defines configuration for Elastic exporter.
@@ -37,14 +36,6 @@ type Config struct {
 
 	// NumWorkers configures the number of workers publishing bulk requests.
 	NumWorkers int `mapstructure:"num_workers"`
-
-	// Index configures the index, index alias, or data stream name events should be indexed in.
-	//
-	// https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html
-	// https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html
-	//
-	// Deprecated: `index` is deprecated and replaced with `logs_index`.
-	Index string `mapstructure:"index"`
 
 	// This setting is required when logging pipelines used.
 	LogsIndex string `mapstructure:"logs_index"`
@@ -170,10 +161,6 @@ type RetrySettings struct {
 	// Enabled allows users to disable retry without having to comment out all settings.
 	Enabled bool `mapstructure:"enabled"`
 
-	// MaxRequests configures how often an HTTP request is attempted before it is assumed to be failed.
-	// Deprecated: use MaxRetries instead.
-	MaxRequests int `mapstructure:"max_requests"`
-
 	// MaxRetries configures how many times an HTTP request is retried.
 	MaxRetries int `mapstructure:"max_retries"`
 
@@ -190,18 +177,6 @@ type RetrySettings struct {
 type MappingsSettings struct {
 	// Mode configures the field mappings.
 	Mode string `mapstructure:"mode"`
-
-	// Dedup is non-operational, and will be removed in the future.
-	//
-	// Deprecated: [v0.104.0] deduplication is always enabled, and cannot be
-	// disabled. Disabling deduplication is not meaningful, as Elasticsearch
-	// will always reject documents with duplicate JSON object keys.
-	Dedup *bool `mapstructure:"dedup,omitempty"`
-
-	// Deprecated: [v0.104.0] dedotting will always be applied for ECS mode
-	// in future, and never for other modes. Elasticsearch's "dot_expander"
-	// Ingest processor may be used as an alternative for non-ECS modes.
-	Dedot bool `mapstructure:"dedot"`
 }
 
 type MappingMode int
@@ -278,12 +253,6 @@ func (cfg *Config) Validate() error {
 		return errors.New("compression must be one of [none, gzip]")
 	}
 
-	if cfg.Retry.MaxRequests != 0 && cfg.Retry.MaxRetries != 0 {
-		return errors.New("must not specify both retry::max_requests and retry::max_retries")
-	}
-	if cfg.Retry.MaxRequests < 0 {
-		return errors.New("retry::max_requests should be non-negative")
-	}
 	if cfg.Retry.MaxRetries < 0 {
 		return errors.New("retry::max_retries should be non-negative")
 	}
@@ -368,18 +337,4 @@ func parseCloudID(input string) (*url.URL, error) {
 // called without returning an error.
 func (cfg *Config) MappingMode() MappingMode {
 	return mappingModes[cfg.Mapping.Mode]
-}
-
-func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
-	if cfg.Mapping.Dedup != nil {
-		logger.Warn("dedup is deprecated, and is always enabled")
-	}
-	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS || !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
-		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")
-	}
-	if cfg.Retry.MaxRequests != 0 {
-		cfg.Retry.MaxRetries = cfg.Retry.MaxRequests - 1
-		// Do not set cfg.Retry.Enabled = false if cfg.Retry.MaxRequest = 1 to avoid breaking change on behavior
-		logger.Warn("retry::max_requests has been deprecated, and will be removed in a future version. Use retry::max_retries instead.")
-	}
 }

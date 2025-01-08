@@ -50,7 +50,6 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		QueueSettings: qs,
 		ClientConfig:  httpClientConfig,
-		Index:         "",
 		LogsIndex:     defaultLogsIndex,
 		LogsDynamicIndex: DynamicIndexSetting{
 			Enabled: false,
@@ -73,8 +72,7 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Mapping: MappingsSettings{
-			Mode:  "none",
-			Dedot: true,
+			Mode: "none",
 		},
 		LogstashFormat: LogstashFormatSettings{
 			Enabled:         false,
@@ -111,14 +109,7 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	cf := cfg.(*Config)
 
-	index := cf.LogsIndex
-	if cf.Index != "" {
-		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
-		index = cf.Index
-	}
-	handleDeprecatedConfig(cf, set.Logger)
-
-	exporter := newExporter(cf, set, index, cf.LogsDynamicIndex.Enabled)
+	exporter := newExporter(cf, set, cf.LogsIndex, cf.LogsDynamicIndex.Enabled)
 
 	return exporterhelper.NewLogs(
 		ctx,
@@ -135,7 +126,6 @@ func createMetricsExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	cf := cfg.(*Config)
-	handleDeprecatedConfig(cf, set.Logger)
 
 	exporter := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
 
@@ -153,7 +143,6 @@ func createTracesExporter(ctx context.Context,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	cf := cfg.(*Config)
-	handleDeprecatedConfig(cf, set.Logger)
 
 	exporter := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
 

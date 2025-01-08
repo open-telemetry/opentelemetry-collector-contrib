@@ -219,7 +219,6 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "ecs"
-			cfg.Mapping.Dedot = true
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{"attr.key": "value"},

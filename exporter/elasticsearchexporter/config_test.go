@@ -61,7 +61,6 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"https://elastic.example.com:9200"},
-				Index:     "",
 				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -104,8 +103,7 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "none",
-					Dedot: true,
+					Mode: "none",
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -133,7 +131,6 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
-				Index:     "",
 				LogsIndex: "my_log_index",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -176,8 +173,7 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "none",
-					Dedot: true,
+					Mode: "none",
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -205,7 +201,6 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
-				Index:     "",
 				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -248,8 +243,7 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "none",
-					Dedot: true,
+					Mode: "none",
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -282,14 +276,6 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.CloudID = "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY="
-			}),
-		},
-		{
-			id:         component.NewIDWithName(metadata.Type, "deprecated_index"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoints = []string{"https://elastic.example.com:9200"}
-				cfg.Index = "my_log_index"
 			}),
 		},
 		{
@@ -421,7 +407,6 @@ func TestConfig_Validate(t *testing.T) {
 			config: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoints = []string{"http://test:9200"}
 				cfg.Retry.MaxRetries = 1
-				cfg.Retry.MaxRequests = 1
 			}),
 			err: `must not specify both retry::max_requests and retry::max_retries`,
 		},
