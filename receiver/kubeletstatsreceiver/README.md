@@ -157,7 +157,7 @@ include the following:
 
 - `container.id` - to augment metrics with Container ID label obtained from container statuses exposed via `/pods`.
 - `k8s.volume.type` - to collect volume type from the Pod spec exposed via `/pods` and have it as a label on volume metrics.
-If there's more information available from the endpoint than just volume type, those are sycned as well depending on
+If there's more information available from the endpoint than just volume type, those are synced as well depending on
 the available fields and the type of volume. For example, `aws.volume.id` would be synced from `awsElasticBlockStore`
 and `gcp.pd.name` is synced for `gcePersistentDisk`.
 
