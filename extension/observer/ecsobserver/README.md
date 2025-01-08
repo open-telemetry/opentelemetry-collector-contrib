@@ -201,7 +201,7 @@ NOTE: name of the service is **added** as label value with key `ServiceName`.
 name_pattern: ^retail-.*$
 ---
 # Example 2: Matches all container with name java-api in cash-app service 
-name_pattnern: ^cash-app$
+name_pattern: ^cash-app$
 container_name_pattern: ^java-api$
 ---
 # Example 3: Override default metrics_path (i.e. /metrics)
