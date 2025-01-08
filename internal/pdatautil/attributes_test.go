@@ -17,9 +17,9 @@ func TestGetDimensionValue(t *testing.T) {
 	spanattris := pcommon.NewMap()
 	spanattris.PutStr("span.name", "mock-span-name")
 
-	otherattris := pcommon.NewMap()
-	otherattris.PutStr("a", "b")
-	otherattris.PutStr("foo", "bar")
+	otherattribs := pcommon.NewMap()
+	otherattribs.PutStr("a", "b")
+	otherattribs.PutStr("foo", "bar")
 
 	defaultFoo := pcommon.NewValueStr("bar")
 
@@ -32,7 +32,7 @@ func TestGetDimensionValue(t *testing.T) {
 		{
 			name:             "success get dimension value",
 			dimension:        Dimension{Name: "foo"},
-			attributes:       []pcommon.Map{resourceattris, spanattris, otherattris},
+			attributes:       []pcommon.Map{resourceattris, spanattris, otherattribs},
 			wantDimensionVal: "bar",
 		},
 		{
