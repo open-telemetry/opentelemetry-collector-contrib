@@ -15,7 +15,7 @@ issues: [32732]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Implement the UDP listener and the producer, as well as adding tests.
+subtext: The receiver now supports receiving NetFlow v5, NetFow v9, IPFIX, and sFlow v5 logs.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
