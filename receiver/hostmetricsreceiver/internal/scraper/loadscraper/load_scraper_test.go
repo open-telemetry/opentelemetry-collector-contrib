@@ -72,7 +72,7 @@ func TestScrape(t *testing.T) {
 	resultsMapLock := sync.Mutex{}
 
 	testFn := func(t *testing.T, test testCase) {
-		// wait for messurement to start
+		// wait for measurement to start
 		<-startChan
 
 		scraper := newLoadScraper(context.Background(), receivertest.NewNopSettings(), test.config)
