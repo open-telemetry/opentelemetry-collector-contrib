@@ -148,7 +148,7 @@ than the receiver's `max_connection_age_grace` setting, which causes
 the exporter to cleanly shut down streams, allowing requests to
 complete before the http/2 connection is forcibly closed.  While the
 exporter will retry data that was in-flight during an unexpected
-stream shutdown, instrumentation about the telemety pipeline will show
+stream shutdown, instrumentation about the telemetry pipeline will show
 RPC errors when the exporter's `max_stream_lifetime` is not configured
 correctly.
 
