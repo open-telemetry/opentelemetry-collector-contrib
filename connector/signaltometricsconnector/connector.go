@@ -5,7 +5,6 @@ package signaltometricsconnector // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -44,7 +43,6 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 		return nil
 	}
 
-	var multiError error
 	processedMetrics := pmetric.NewMetrics()
 	processedMetrics.ResourceMetrics().EnsureCapacity(td.ResourceSpans().Len())
 	aggregator := aggregator.NewAggregator[ottlspan.TransformContext](processedMetrics)
@@ -69,8 +67,7 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 					if md.Conditions != nil {
 						match, err := md.Conditions.Eval(ctx, tCtx)
 						if err != nil {
-							multiError = errors.Join(multiError, fmt.Errorf("failed to evaluate conditions, skipping: %w", err))
-							continue
+							return fmt.Errorf("failed to evaluate conditions: %w", err)
 						}
 						if !match {
 							sm.logger.Debug("condition not matched, skipping", zap.String("name", md.Key.Name))
@@ -79,13 +76,15 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 					}
 
 					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs)
-					multiError = errors.Join(multiError, aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredSpanAttrs, 1))
+					if err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredSpanAttrs, 1); err != nil {
+						return err
+					}
 				}
 			}
 		}
 	}
 	aggregator.Finalize(sm.spanMetricDefs)
-	return sm.processNext(ctx, processedMetrics, multiError)
+	return sm.next.ConsumeMetrics(ctx, processedMetrics)
 }
 
 func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics) error {
@@ -93,7 +92,6 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 		return nil
 	}
 
-	var multiError error
 	processedMetrics := pmetric.NewMetrics()
 	processedMetrics.ResourceMetrics().EnsureCapacity(m.ResourceMetrics().Len())
 	aggregator := aggregator.NewAggregator[ottldatapoint.TransformContext](processedMetrics)
@@ -114,8 +112,7 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 						if md.Conditions != nil {
 							match, err := md.Conditions.Eval(ctx, tCtx)
 							if err != nil {
-								multiError = errors.Join(multiError, fmt.Errorf("failed to evaluate conditions, skipping: %w", err))
-								return nil
+								return fmt.Errorf("failed to evaluate conditions: %w", err)
 							}
 							if !match {
 								sm.logger.Debug("condition not matched, skipping", zap.String("name", md.Key.Name))
@@ -135,7 +132,9 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 							if !ok {
 								continue
 							}
-							multiError = errors.Join(multiError, aggregate(dp, filteredDPAttrs))
+							if err := aggregate(dp, filteredDPAttrs); err != nil {
+								return err
+							}
 						}
 					case pmetric.MetricTypeSum:
 						dps := metric.Sum().DataPoints()
@@ -145,7 +144,9 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 							if !ok {
 								continue
 							}
-							multiError = errors.Join(multiError, aggregate(dp, filteredDPAttrs))
+							if err := aggregate(dp, filteredDPAttrs); err != nil {
+								return err
+							}
 						}
 					case pmetric.MetricTypeSummary:
 						dps := metric.Summary().DataPoints()
@@ -155,7 +156,9 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 							if !ok {
 								continue
 							}
-							multiError = errors.Join(multiError, aggregate(dp, filteredDPAttrs))
+							if err := aggregate(dp, filteredDPAttrs); err != nil {
+								return err
+							}
 						}
 					case pmetric.MetricTypeHistogram:
 						dps := metric.Histogram().DataPoints()
@@ -165,7 +168,9 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 							if !ok {
 								continue
 							}
-							multiError = errors.Join(multiError, aggregate(dp, filteredDPAttrs))
+							if err := aggregate(dp, filteredDPAttrs); err != nil {
+								return err
+							}
 						}
 					case pmetric.MetricTypeExponentialHistogram:
 						dps := metric.ExponentialHistogram().DataPoints()
@@ -175,17 +180,19 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 							if !ok {
 								continue
 							}
-							multiError = errors.Join(multiError, aggregate(dp, filteredDPAttrs))
+							if err := aggregate(dp, filteredDPAttrs); err != nil {
+								return err
+							}
 						}
 					case pmetric.MetricTypeEmpty:
-						multiError = errors.Join(multiError, fmt.Errorf("metric %q: invalid metric type: %v", metric.Name(), metric.Type()))
+						continue
 					}
 				}
 			}
 		}
 	}
 	aggregator.Finalize(sm.dpMetricDefs)
-	return sm.processNext(ctx, processedMetrics, multiError)
+	return sm.next.ConsumeMetrics(ctx, processedMetrics)
 }
 
 func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
@@ -193,7 +200,6 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 		return nil
 	}
 
-	var multiError error
 	processedMetrics := pmetric.NewMetrics()
 	processedMetrics.ResourceMetrics().EnsureCapacity(logs.ResourceLogs().Len())
 	aggregator := aggregator.NewAggregator[ottllog.TransformContext](processedMetrics)
@@ -217,41 +223,21 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 					if md.Conditions != nil {
 						match, err := md.Conditions.Eval(ctx, tCtx)
 						if err != nil {
-							multiError = errors.Join(multiError, fmt.Errorf("failed to evaluate conditions, skipping: %w", err))
-							continue
+							return fmt.Errorf("failed to evaluate conditions: %w", err)
 						}
 						if !match {
 							sm.logger.Debug("condition not matched, skipping", zap.String("name", md.Key.Name))
 							continue
 						}
 					}
-
 					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs)
-					multiError = errors.Join(multiError, aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredLogAttrs, 1))
+					if err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredLogAttrs, 1); err != nil {
+						return err
+					}
 				}
 			}
 		}
 	}
 	aggregator.Finalize(sm.logMetricDefs)
-	return sm.processNext(ctx, processedMetrics, multiError)
-}
-
-// processNext is a helper method for all the Consume* methods to do error handling,
-// logging, and sending the processed metrics to the next consumer in the pipeline.
-func (sm *signalToMetrics) processNext(ctx context.Context, m pmetric.Metrics, err error) error {
-	if err != nil {
-		dpCount := m.DataPointCount()
-		if dpCount == 0 {
-			// No signals were consumed so return an error
-			return fmt.Errorf("failed to consume signal: %w", err)
-		}
-		// At least some signals were partially consumed, so log the error
-		// and pass the processed metrics to the next consumer.
-		sm.logger.Warn(
-			"failed to consume all signals, some signals were partially processed",
-			zap.Error(err),
-			zap.Int("successful_data_points", dpCount),
-		)
-	}
-	return sm.next.ConsumeMetrics(ctx, m)
+	return sm.next.ConsumeMetrics(ctx, processedMetrics)
 }
