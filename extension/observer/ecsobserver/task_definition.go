@@ -18,7 +18,7 @@ type TaskDefinitionConfig struct {
 	// ArnPattern is mandatory, empty string means arn based match is skipped.
 	ArnPattern string `mapstructure:"arn_pattern" yaml:"arn_pattern"`
 	// ContainerNamePattern is optional, empty string means all containers in that task definition would be exported.
-	// Otherwise both service and container name petterns need to metch.
+	// Otherwise both service and container name petterns need to match.
 	ContainerNamePattern string `mapstructure:"container_name_pattern" yaml:"container_name_pattern"`
 }
 
