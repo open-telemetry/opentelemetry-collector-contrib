@@ -5286,7 +5286,7 @@ This version has been skipped.
     - `vcenter.host.disk.latency.avg.read`
     - `vcenter.host.disk.latency.avg.write`
   - `vcenter.host.network.throughput` will become:
-    - `vcenter.host.network.throughputt.receive`
+    - `vcenter.host.network.throughput.receive`
     - `vcenter.host.network.throughput.transmit`
   - `vcenter.host.network.packet.errors` will become:
     - `vcenter.host.network.packet.errors.receive`
