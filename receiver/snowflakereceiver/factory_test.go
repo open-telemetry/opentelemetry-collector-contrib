@@ -15,7 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver/internal/metadata"
 )
 
-func TestFacoryCreate(t *testing.T) {
+func TestFactoryCreate(t *testing.T) {
 	factory := NewFactory()
 	require.EqualValues(t, metadata.Type, factory.Type())
 }
