@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeConnectionOp specifies the a value connection_op attribute.
+// AttributeConnectionOp specifies the value connection_op attribute.
 type AttributeConnectionOp int
 
 const (
@@ -40,7 +40,7 @@ var MapAttributeConnectionOp = map[string]AttributeConnectionOp{
 	"open":  AttributeConnectionOpOpen,
 }
 
-// AttributeConnectionType specifies the a value connection_type attribute.
+// AttributeConnectionType specifies the value connection_type attribute.
 type AttributeConnectionType int
 
 const (
@@ -70,7 +70,7 @@ var MapAttributeConnectionType = map[string]AttributeConnectionType{
 	"heartbeat": AttributeConnectionTypeHeartbeat,
 }
 
-// AttributeIndexType specifies the a value index_type attribute.
+// AttributeIndexType specifies the value index_type attribute.
 type AttributeIndexType int
 
 const (
@@ -96,7 +96,7 @@ var MapAttributeIndexType = map[string]AttributeIndexType{
 	"secondary": AttributeIndexTypeSecondary,
 }
 
-// AttributeNamespaceComponent specifies the a value namespace_component attribute.
+// AttributeNamespaceComponent specifies the value namespace_component attribute.
 type AttributeNamespaceComponent int
 
 const (
@@ -130,7 +130,7 @@ var MapAttributeNamespaceComponent = map[string]AttributeNamespaceComponent{
 	"secondary_index": AttributeNamespaceComponentSecondaryIndex,
 }
 
-// AttributeQueryResult specifies the a value query_result attribute.
+// AttributeQueryResult specifies the value query_result attribute.
 type AttributeQueryResult int
 
 const (
@@ -164,7 +164,7 @@ var MapAttributeQueryResult = map[string]AttributeQueryResult{
 	"timeout":  AttributeQueryResultTimeout,
 }
 
-// AttributeQueryType specifies the a value query_type attribute.
+// AttributeQueryType specifies the value query_type attribute.
 type AttributeQueryType int
 
 const (
@@ -210,7 +210,7 @@ var MapAttributeQueryType = map[string]AttributeQueryType{
 	"udf_background": AttributeQueryTypeUdfBackground,
 }
 
-// AttributeScanResult specifies the a value scan_result attribute.
+// AttributeScanResult specifies the value scan_result attribute.
 type AttributeScanResult int
 
 const (
@@ -240,7 +240,7 @@ var MapAttributeScanResult = map[string]AttributeScanResult{
 	"error":    AttributeScanResultError,
 }
 
-// AttributeScanType specifies the a value scan_type attribute.
+// AttributeScanType specifies the value scan_type attribute.
 type AttributeScanType int
 
 const (
@@ -274,7 +274,7 @@ var MapAttributeScanType = map[string]AttributeScanType{
 	"udf_background": AttributeScanTypeUdfBackground,
 }
 
-// AttributeTransactionResult specifies the a value transaction_result attribute.
+// AttributeTransactionResult specifies the value transaction_result attribute.
 type AttributeTransactionResult int
 
 const (
@@ -312,7 +312,7 @@ var MapAttributeTransactionResult = map[string]AttributeTransactionResult{
 	"timeout":      AttributeTransactionResultTimeout,
 }
 
-// AttributeTransactionType specifies the a value transaction_type attribute.
+// AttributeTransactionType specifies the value transaction_type attribute.
 type AttributeTransactionType int
 
 const (
