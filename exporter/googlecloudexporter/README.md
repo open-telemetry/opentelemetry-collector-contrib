@@ -216,7 +216,7 @@ The following configuration options are supported:
   - `resource_filters` (default = []): If provided, resource attributes matching any filter will be included in log labels. Can be defined by `prefix`, `regex`, or `prefix` AND `regex`.
     - `prefix`: Match resource keys by prefix.
     - `regex`: Match resource keys by regex.
-  - `compression` (optional): Enable gzip compression for gRPC requests (valid vlaues: `gzip`).
+  - `compression` (optional): Enable gzip compression for gRPC requests (valid values: `gzip`).
 - `sending_queue` (optional): Configuration for how to buffer traces before sending.
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
