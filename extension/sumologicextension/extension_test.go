@@ -988,8 +988,6 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			tc := tc
-
 			srv, reqCount := tc.srvFn()
 			t.Cleanup(func() { srv.Close() })
 

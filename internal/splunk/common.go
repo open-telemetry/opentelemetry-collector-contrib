@@ -139,6 +139,16 @@ type HecToOtelAttrs struct {
 	Host string `mapstructure:"host"`
 }
 
+func (h HecToOtelAttrs) Equal(o HecToOtelAttrs) bool {
+	if h.Host != o.Host ||
+		h.Source != o.Source ||
+		h.SourceType != o.SourceType ||
+		h.Index != o.Index {
+		return false
+	}
+	return true
+}
+
 type AckRequest struct {
 	Acks []uint64 `json:"acks"`
 }
