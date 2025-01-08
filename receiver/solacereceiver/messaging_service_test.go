@@ -654,7 +654,7 @@ func (c *connMock) Read(b []byte) (n int, err error) {
 		d := <-c.nextData
 		// the way this test fixture is designed, there is a race condition
 		// between write and read where data may be written to nextData on
-		// a call to Write and may be propogated prior to the return of Write.
+		// a call to Write and may be propagated prior to the return of Write.
 		time.Sleep(10 * time.Millisecond)
 		c.remaining = bytes.NewReader(d)
 	}
