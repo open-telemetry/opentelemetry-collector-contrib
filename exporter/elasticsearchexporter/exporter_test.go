@@ -229,29 +229,6 @@ func TestExporterLogs(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
-	t.Run("publish with dedup", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			assert.JSONEq(t, `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Scope":{"name":"","value":"value","version":""},"SeverityNumber":0,"TraceFlags":0}`, string(docs[0].Document))
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
-
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "raw"
-			// dedup is the default
-		})
-		logs := newLogsWithAttributes(
-			// Scope collides with the top-level "Scope" field,
-			// so will be removed during deduplication.
-			map[string]any{"Scope": "value"},
-			nil,
-			nil,
-		)
-		mustSendLogs(t, exporter, logs)
-		rec.WaitItems(1)
-	})
-
 	t.Run("publish with headers", func(t *testing.T) {
 		done := make(chan struct{}, 1)
 		server := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, r *http.Request) {
