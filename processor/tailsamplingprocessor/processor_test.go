@@ -609,6 +609,46 @@ func TestDuplicatePolicyName(t *testing.T) {
 	assert.Equal(t, err, errors.New(`duplicate policy name "always_sample"`))
 }
 
+func TestDecisionPolicyMetrics(t *testing.T) {
+	traceIDs, batches := generateIDsAndBatches(10)
+	policy := []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name:             "test-policy",
+				Type:             Probabilistic,
+				ProbabilisticCfg: ProbabilisticCfg{SamplingPercentage: 50},
+			},
+		},
+	}
+	cfg := Config{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(2 * len(traceIDs)),
+		ExpectedNewTracesPerSec: 64,
+		PolicyCfgs:              policy,
+	}
+	sp, _ := newTracesProcessor(context.Background(), processortest.NewNopSettings(), consumertest.NewNop(), cfg)
+	tsp := sp.(*tailSamplingSpanProcessor)
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
+	metrics := &policyMetrics{}
+
+	for i, id := range traceIDs {
+		sb := &sampling.TraceData{
+			ArrivalTime:     time.Now(),
+			ReceivedBatches: batches[i],
+		}
+
+		_ = tsp.makeDecision(id, sb, metrics)
+	}
+
+	assert.EqualValues(t, 5, metrics.decisionSampled)
+	assert.EqualValues(t, 5, metrics.decisionNotSampled)
+	assert.EqualValues(t, 0, metrics.idNotFoundOnMapCount)
+	assert.EqualValues(t, 0, metrics.evaluateErrorCount)
+}
+
 func collectSpanIDs(trace ptrace.Traces) []pcommon.SpanID {
 	var spanIDs []pcommon.SpanID
 
