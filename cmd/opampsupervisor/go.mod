@@ -38,6 +38,3 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 )
 
-replace go.opentelemetry.io/collector/scraper/scraperhelper v0.116.0 => go.opentelemetry.io/collector/scraper/scraperhelper v0.117.0
-
-replace go.opentelemetry.io/collector/extension/xextension v0.116.0 => go.opentelemetry.io/collector/extension/xextension v0.117.0
