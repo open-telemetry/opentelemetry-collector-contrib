@@ -968,7 +968,7 @@ func TestTranslation(t *testing.T) {
 				err = json.Unmarshal(content, &actualSeg)
 				// the correctness of the actual segment
 				// has been verified in the tracesegment_test.go
-				assert.NoError(t, err, "failed to unmarhal raw segment")
+				assert.NoError(t, err, "failed to unmarshal raw segment")
 				expectedRs = initResourceSpans(t,
 					&actualSeg,
 					tc.expectedResourceAttrs(&actualSeg),
