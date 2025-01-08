@@ -78,7 +78,7 @@ func (i *Input) configureListener() error {
 	return nil
 }
 
-// goListenn will listen for tcp connections.
+// goListen will listen for tcp connections.
 func (i *Input) goListen(ctx context.Context) {
 	i.wg.Add(1)
 
