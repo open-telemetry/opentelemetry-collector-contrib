@@ -26,7 +26,7 @@ func NewConfig(operatorID string) *Config {
 	}
 }
 
-// Config is the configuration of a file output operatorn.
+// Config is the configuration of a file output operation.
 type Config struct {
 	helper.OutputConfig `mapstructure:",squash"`
 
