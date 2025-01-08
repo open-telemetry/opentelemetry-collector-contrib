@@ -27,12 +27,12 @@ func TestScraper(t *testing.T) {
 	cfg.Warehouse = "warehouse"
 	err := component.ValidateConfig(cfg)
 	if err != nil {
-		t.Fatal("an error ocured when validating config", err)
+		t.Fatal("an error occurred when validating config", err)
 	}
 
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	if err != nil {
-		t.Fatal("an error ocured when opening mock db", err)
+		t.Fatal("an error occurred when opening mock db", err)
 	}
 	defer db.Close()
 
