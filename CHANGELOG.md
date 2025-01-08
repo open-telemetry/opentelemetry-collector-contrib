@@ -154,7 +154,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `signaltometrics`: Add config validation and custom OTTL functions (#35930)
   Adds config validation for the signal to metrics connector. Also introduces `AdjustedCount` OTTL function.
 - `testbed`: Add batcher performance tests (#36206)
-- `tesbed`: add options for retry/storage for filelog sender (#36781)
+- `testbed`: add options for retry/storage for filelog sender (#36781)
 
 ### 🧰 Bug fixes 🧰
 
