@@ -223,7 +223,7 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 	operator.set.Logger = logger
 
 	originalFile := filetest.OpenTemp(t, tempDir)
-	orginalName := originalFile.Name()
+	originalName := originalFile.Name()
 	filetest.WriteString(t, originalFile, "testlog1\n")
 
 	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
@@ -239,9 +239,9 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 	require.NoError(t, os.Mkdir(newDir, 0o777))
 	movedFileName := fmt.Sprintf("%s%s", newDir, "newfile.log")
 
-	require.NoError(t, os.Rename(orginalName, movedFileName))
+	require.NoError(t, os.Rename(originalName, movedFileName))
 
-	newFile, err := os.OpenFile(orginalName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	newFile, err := os.OpenFile(originalName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	require.NoError(t, err)
 	filetest.WriteString(t, newFile, "testlog3\n")
 
