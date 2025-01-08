@@ -2276,7 +2276,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 ### 💡 Enhancements 💡
 
 - `pkg/stanza`: Add a json array parser operator and an assign keys transformer. (#30321)
-  Json array parser opreator can be used to parse a json array string input into a list of objects. |
+  Json array parser operator can be used to parse a json array string input into a list of objects. |
   Assign keys transformer can be used to assigns keys from the configuration to an input list
   
 - `splunkhecexporter`: Batch data according to access token and index, if present. (#30404)
