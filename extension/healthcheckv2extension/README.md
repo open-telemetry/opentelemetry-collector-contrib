@@ -328,7 +328,7 @@ a response body such as:
 
 **Non-detailed Response Example**
 
-If the same request is made without the verbose flag, only the overall pipline status will be
+If the same request is made without the verbose flag, only the overall pipeline status will be
 returned. The component level statuses will be omitted.
 
 ```json
