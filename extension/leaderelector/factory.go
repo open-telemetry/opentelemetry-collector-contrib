@@ -1,20 +1,35 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package leaderelector
 
 import (
 	"context"
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"os"
+	"time"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+)
+
+const (
+	defaultLeaseDuration = 15 * time.Second
+	defaultRenewDeadline = 10 * time.Second
+	defaultRetryPeriod   = 2 * time.Second
 )
 
 // CreateDefaultConfig returns the default configuration for the extension.
 func CreateDefaultConfig() component.Config {
 	return &Config{
-		LeaseDuration: 15 * time.Second,
-		RenewDuration: 10 * time.Second,
-		RetryPeriod:   2 * time.Second,
+		APIConfig: k8sconfig.APIConfig{
+			AuthType: k8sconfig.AuthTypeServiceAccount,
+		},
+		LeaseDuration: defaultLeaseDuration,
+		RenewDuration: defaultRenewDeadline,
+		RetryPeriod:   defaultRetryPeriod,
 	}
 }
 
@@ -31,15 +46,21 @@ func CreateExtension(
 
 	// Initialize k8s client in factory as doing it in extension.Start()
 	// should cause race condition as http Proxy gets shared.
-	client, err := k8sconfig.MakeClient(baseCfg.APIConfig)
+	client, err := baseCfg.getK8sClient()
 	if err != nil {
-		return nil, errors.New("Failed to create k8s client")
+		return nil, errors.New("failed to create k8s client")
+	}
+
+	leaseHolderID, err := os.Hostname()
+	if err != nil {
+		return nil, err
 	}
 
 	return &leaderElectionExtension{
-		config: baseCfg,
-		logger: set.Logger,
-		client: client,
+		config:        baseCfg,
+		logger:        set.Logger,
+		client:        client,
+		leaseHolderId: leaseHolderID,
 	}, nil
 }
 

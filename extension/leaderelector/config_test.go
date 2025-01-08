@@ -1,18 +1,22 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package leaderelector
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 func TestLoadConfig(t *testing.T) {
-
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
@@ -21,7 +25,7 @@ func TestLoadConfig(t *testing.T) {
 		expectedConfig component.Config
 	}{
 		{
-			id: component.NewIDWithName(metadata.Type, "foo"),
+			id: component.NewIDWithName(metadata.Type, "defaults"),
 			expectedConfig: &Config{
 				APIConfig: k8sconfig.APIConfig{
 					AuthType: "kubeConfig",
@@ -34,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "bar"),
+			id: component.NewIDWithName(metadata.Type, "with_lease_duration"),
 			expectedConfig: &Config{
 				APIConfig: k8sconfig.APIConfig{
 					AuthType: "kubeConfig",
@@ -60,5 +64,4 @@ func TestLoadConfig(t *testing.T) {
 			require.Equal(t, tt.expectedConfig, cfg)
 		})
 	}
-
 }

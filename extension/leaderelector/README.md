@@ -1,11 +1,9 @@
 # Leader Elector Extension
 
-This extension enables executing multiple receivers in a HA mode. The receiver which wins the lease becomes leader and thus becomes active.
-
+This extension enables OpenTelemetry components to run in HA mode across a Kubernetes cluster. The component that owns the lease becomes the leader and becomes the active instance.
 ## How It Works
 
-It utilizes leader election to determine which instance should be the leader. The receiver that wins the lease becomes the leader and starts executing function defined in `onStartedLeading`. When the leader loses the lease, it executes function defined in `onStoppedLeading`, stops the receiver and waits until it acquires the lease again.
-
+The extension uses k8s.io/client-go/tools/leaderelection to perform leader election. The component that owns the lease becomes the leader and runs the function defined in onStartedLeading. If the leader loses the lease, it runs the function defined in onStoppedLeading, stops its operation, and waits to acquire the lease again.
 ## Configuration
 
 ```yaml
@@ -28,11 +26,11 @@ service:
 ```
 
 ### Leader Election Configuration
-| configuration       | description                                                                     | default value   |
-|---------------------|---------------------------------------------------------------------------------|-----------------|
-| **auth_type**       | Authorization type to be used.                                                  | none (required) |
-| **lease_name**      | The name of the lease object.                                                   | none (required) |
-| **lease_namespace** | The namespace of the lease object.                                              | none (required) |
-| **lease_duration**  | The duration of the lease.                                                      | 15s             |
-| **renew_deadline**  | The deadline for renewing the lease. It should be less than the lease duration. | 10s             |
-| **retry_period**    | The period for retrying the leader election.                                    | 2s              |
+| configuration       | description                                                                   | default value   |
+|---------------------|-------------------------------------------------------------------------------|-----------------|
+| **auth_type**       | Authorization type to be used (serviceAccount, kubeConfig).                   | none (required) |
+| **lease_name**      | The name of the lease object.                                                 | none (required) |
+| **lease_namespace** | The namespace of the lease object.                                            | none (required) |
+| **lease_duration**  | The duration of the lease.                                                    | 15s             |
+| **renew_deadline**  | The deadline for renewing the lease. It must be less than the lease duration. | 10s             |
+| **retry_period**    | The period for retrying the leader election.                                  | 2s              |

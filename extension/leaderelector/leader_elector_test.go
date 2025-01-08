@@ -1,11 +1,15 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package leaderelector
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
-	"k8s.io/client-go/kubernetes/fake"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestLeaderElector(t *testing.T) {

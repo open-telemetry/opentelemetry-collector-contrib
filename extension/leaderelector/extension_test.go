@@ -1,9 +1,14 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package leaderelector
 
 import (
 	"context"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
@@ -12,8 +17,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/utils/ptr"
-	"testing"
-	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 func TestMultipleExtension(t *testing.T) {
@@ -53,7 +58,7 @@ func TestMultipleExtension(t *testing.T) {
 
 	require.NoError(t, leaderElection.Start(ctx, componenttest.NewNopHost()))
 
-	var expectedLeaseDurationSeconds = ptr.To(int32(15))
+	expectedLeaseDurationSeconds := ptr.To(int32(15))
 
 	require.Eventually(t, func() bool {
 		lease, err := fakeClient.CoordinationV1().Leases("default").Get(ctx, "foo", metav1.GetOptions{})

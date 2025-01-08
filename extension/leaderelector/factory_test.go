@@ -1,12 +1,20 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package leaderelector
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector/internal/metadata"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/extension/extensiontest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/extension/extensiontest"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -22,7 +30,17 @@ func TestNewFactory(t *testing.T) {
 				ft := factory.Type()
 				require.EqualValues(t, metadata.Type, ft)
 			},
-		}, {
+		},
+		{
+			desc: "creates a new factory with correct type",
+			testFunc: func(t *testing.T) {
+				t.Helper()
+				factory := NewFactory()
+				ft := factory.Type()
+				require.EqualValues(t, metadata.Type, ft)
+			},
+		},
+		{
 			desc: "creates a new factory and extension with default config",
 			testFunc: func(t *testing.T) {
 				t.Helper()
@@ -35,11 +53,18 @@ func TestNewFactory(t *testing.T) {
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
 			},
-		}, {
+		},
+		{
 			desc: "creates a new factory and CreateExtension returns no error",
 			testFunc: func(t *testing.T) {
 				t.Helper()
+				fakeClient := fake.NewClientset()
+
 				cfg := CreateDefaultConfig().(*Config)
+				cfg.makeClient = func(apiConfig k8sconfig.APIConfig) (kubernetes.Interface, error) {
+					return fakeClient, nil
+				}
+
 				_, err := NewFactory().CreateExtension(
 					context.Background(),
 					extensiontest.NewNopSettings(),

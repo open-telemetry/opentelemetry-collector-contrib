@@ -1,7 +1,11 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package leaderelector
 
 import (
 	"context"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
@@ -23,9 +27,8 @@ func NewLeaderElector(
 		resourcelock.ResourceLockConfig{
 			Identity: identity,
 		})
-
 	if err != nil {
-		return &leaderelection.LeaderElector{}, err
+		return nil, err
 	}
 
 	leConfig := leaderelection.LeaderElectionConfig{

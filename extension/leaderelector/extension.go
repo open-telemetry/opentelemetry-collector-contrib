@@ -1,56 +1,61 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package leaderelector
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 )
 
+type (
+	StartCallback = func(context.Context)
+	StopCallback  = func()
+)
+
+// LeaderElection Interface allows the invoker to set the callback functions
+// that would be invoked when the leader wins or loss the election.
 type LeaderElection interface {
 	extension.Extension
-	SetCallBackFuncs(func(ctx context.Context), func())
+	SetCallBackFuncs(StartCallback, StopCallback)
 }
 
-// Sets the callBack functions that can be invoked when the leader wins or loss the election
-func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading func(context.Context), onStopLeading func()) {
-	lee.onStartedLeading = onStartLeading
-	lee.onStoppedLeading = onStopLeading
+// SetCallBackFuncs set the functions that can be invoked when the leader wins or loss the election
+func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading StartCallback, onStopLeading StopCallback) {
+	lee.onStartedLeading = append(lee.onStartedLeading, onStartLeading)
+	lee.onStoppedLeading = append(lee.onStoppedLeading, onStopLeading)
 }
 
 // leaderElectionExtension is the main struct implementing the extension's behavior.
 type leaderElectionExtension struct {
-	config *Config
-	logger *zap.Logger
+	config        *Config
+	cancel        context.CancelFunc
+	client        kubernetes.Interface
+	logger        *zap.Logger
+	leaseHolderId string
 
-	onStartedLeading func(context.Context)
-	onStoppedLeading func()
-	iamLeader        bool
-	cancel           context.CancelFunc
-	client           kubernetes.Interface
+	onStartedLeading []StartCallback
+	onStoppedLeading []StopCallback
 }
 
 // If the receiver sets a callback function then it would be invoked when the leader wins the election
 // additionally set iamLeader to true
 func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
-	lee.iamLeader = true
-	if lee.onStartedLeading != nil {
-		lee.onStartedLeading(ctx)
+	for _, callback := range lee.onStartedLeading {
+		callback(ctx)
 	}
 }
 
 // If the receiver sets a callback function then it would be invoked when the leader loss the election
 // additionally set iamLeader to false
 func (lee *leaderElectionExtension) stoppedLeading() {
-	lee.iamLeader = false
-	if lee.onStoppedLeading != nil {
-		lee.onStoppedLeading()
+	for _, callback := range lee.onStoppedLeading {
+		callback()
 	}
-}
-
-func (lee *leaderElectionExtension) AmILeader() bool {
-	return lee.iamLeader
 }
 
 // Start begins the extension's processing.
@@ -61,7 +66,7 @@ func (lee *leaderElectionExtension) Start(_ context.Context, host component.Host
 	ctx, lee.cancel = context.WithCancel(ctx)
 
 	// Create the leader elector
-	leaderElector, err := NewLeaderElector(lee.config, lee.client, lee.startedLeading, lee.stoppedLeading, "testID")
+	leaderElector, err := NewLeaderElector(lee.config, lee.client, lee.startedLeading, lee.stoppedLeading, lee.leaseHolderId)
 	if err != nil {
 		lee.logger.Error("Failed to create leader elector", zap.Error(err))
 		return err
