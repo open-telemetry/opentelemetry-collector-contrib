@@ -84,8 +84,8 @@ func getBuiltinMapping(name string) severityMap {
 	}
 }
 
-func (m severityMap) add(severity entry.Severity, parseableValues ...string) {
-	for _, str := range parseableValues {
+func (m severityMap) add(severity entry.Severity, parsableValues ...string) {
+	for _, str := range parsableValues {
 		m[str] = severity
 	}
 }
@@ -130,14 +130,14 @@ func (c *SeverityConfig) Build(_ component.TelemetrySettings) (SeverityParser, e
 		switch u := unknown.(type) {
 		case []any: // check before any
 			for _, value := range u {
-				v, err := parseableValues(value)
+				v, err := parsableValues(value)
 				if err != nil {
 					return SeverityParser{}, err
 				}
 				operatorMapping.add(sev, v...)
 			}
 		case any:
-			v, err := parseableValues(u)
+			v, err := parsableValues(u)
 			if err != nil {
 				return SeverityParser{}, err
 			}
@@ -196,7 +196,7 @@ func expandRange(minR, maxR int) []string {
 	return rangeOfStrings
 }
 
-func parseableValues(value any) ([]string, error) {
+func parsableValues(value any) ([]string, error) {
 	switch v := value.(type) {
 	case int:
 		return []string{strconv.Itoa(v)}, nil // store as string because we will compare as string
