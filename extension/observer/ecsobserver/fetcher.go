@@ -396,7 +396,7 @@ func (f *taskFetcher) attachService(tasks []*taskAnnotated, services []*ecs.Serv
 
 	// Attach service to task
 	for _, t := range tasks {
-		// taskAnnotated is created using RunTask i.e. not manged by a service.
+		// taskAnnotated is created using RunTask i.e. not managed by a service.
 		if t.Task.StartedBy == nil {
 			continue
 		}
