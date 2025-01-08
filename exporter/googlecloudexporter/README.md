@@ -177,7 +177,7 @@ The following configuration options are supported:
 - `impersonate` (optional): Configuration for service account impersonation
   - `target_principal`: TargetPrincipal is the email address of the service account to impersonate.
   - `subject`: (optional) Subject is the sub field of a JWT. This field should only be set if you wish to impersonate as a user. This feature is useful when using domain wide delegation.
-  - `delegates`: (default = []) Delegates are the service account email addresses in a delegation chain. Each service account must be granted roles/iam.serviceAccountTokenCreatoron the next service account in the chain.
+  - `delegates`: (default = []) Delegates are the service account email addresses in a delegation chain. Each service account must be granted roles/iam.serviceAccountTokenCreator on the next service account in the chain.
 - `metric` (optional): Configuration for sending metrics to Cloud Monitoring.
   - `prefix` (default = `workload.googleapis.com`): The prefix to add to metrics.
   - `endpoint` (default = monitoring.googleapis.com): Endpoint where metric data is going to be sent to.
