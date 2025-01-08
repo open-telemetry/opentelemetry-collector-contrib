@@ -1095,6 +1095,26 @@ func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
 		c.ReplicaSets[string(replicaset.UID)] = newReplicaSet
 	}
 	c.m.Unlock()
+
+	for _, pod := range c.Pods {
+		if pod.Attributes[conventions.AttributeK8SReplicaSetUID] != string(replicaset.UID) {
+			continue
+		}
+		if c.Rules.DeploymentName {
+			if deploymentName, ok := pod.Attributes[conventions.AttributeK8SDeploymentName]; !ok || deploymentName == "" {
+				c.m.Lock()
+				pod.Attributes[conventions.AttributeK8SDeploymentName] = newReplicaSet.Deployment.Name
+				c.m.Unlock()
+			}
+		}
+		if c.Rules.DeploymentUID {
+			if deploymentUID, ok := pod.Attributes[conventions.AttributeK8SDeploymentUID]; !ok || deploymentUID == "" {
+				c.m.Lock()
+				pod.Attributes[conventions.AttributeK8SDeploymentUID] = newReplicaSet.Deployment.UID
+				c.m.Unlock()
+			}
+		}
+	}
 }
 
 // This function removes all data from the ReplicaSet except what is required by extraction rules
