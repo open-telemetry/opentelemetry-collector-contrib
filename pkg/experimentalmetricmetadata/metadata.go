@@ -20,7 +20,7 @@ type ResourceID string
 // been changes to resource metadata such as Kubernetes labels.
 // An example of how this is used. Let's say we are dealing with a
 // Pod that has the following labels -
-// {"env": "test", "team": "otell", "usser": "bob"}. Now, let's say
+// {"env": "test", "team": "otell", "user_": "bob"}. Now, let's say
 // there's an update to one or more labels on the same Pod and the
 // labels now look like the following -
 // {"env": "test", "team": "otel", "user": "bob"}. The k8sclusterreceiver
@@ -28,7 +28,7 @@ type ResourceID string
 // generate a MetadataDelta with the following values -
 //
 //	MetadataToAdd: {"user": "bob"}
-//	MetadataToRemove: {"usser": "bob"}
+//	MetadataToRemove: {"user_": "bob"}
 //	MetadataToUpdate: {"team": "otel"}
 //
 // Apart from Kubernetes labels, the other metadata collected by this
