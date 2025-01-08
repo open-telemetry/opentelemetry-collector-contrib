@@ -5,6 +5,8 @@ package ottlfuncs
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,11 +17,12 @@ import (
 
 func Test_Murmur3(t *testing.T) {
 	tests := []struct {
-		name      string
-		oArgs     *Murmur3Arguments[any]
-		variant   murmur3Variant
-		expected  any
-		funcError string
+		name        string
+		oArgs       ottl.Arguments
+		variant     murmur3Variant
+		expected    any
+		funcError   string
+		createError string
 	}{
 		{
 			name: "string in Murmur3Hash",
@@ -117,11 +120,22 @@ func Test_Murmur3(t *testing.T) {
 			variant:   Murmur3Hash,
 			funcError: "expected string but got nil",
 		},
+		{
+			name:        "Invalid args",
+			oArgs:       nil,
+			variant:     Murmur3Hash,
+			createError: "Murmur3HashFactory args must be of type *Murmur3Arguments[K]",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc, err := createMurmur3Function[any](tt.oArgs, tt.variant)
+			if tt.createError != "" {
+				require.ErrorContains(t, err, tt.createError)
+				return
+			}
 			assert.NoError(t, err)
+
 			result, err := exprFunc(context.Background(), nil)
 			if tt.funcError != "" {
 				require.ErrorContains(t, err, tt.funcError)
@@ -129,5 +143,36 @@ func Test_Murmur3(t *testing.T) {
 			}
 			assert.Equal(t, tt.expected, result)
 		})
+	}
+}
+
+func TestCreateMurmur3Func(t *testing.T) {
+	factory := NewMurmur3Hash128Factory[any]()
+	fCtx := ottl.FunctionContext{}
+
+	// invalid args
+	exprFunc, err := factory.CreateFunction(fCtx, nil)
+	assert.Error(t, err)
+	assert.Nil(t, exprFunc)
+
+	// valid args
+	exprFunc, err = factory.CreateFunction(
+		fCtx, &Murmur3Arguments[any]{
+			Target: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "Hello World", nil
+				},
+			},
+		})
+	assert.NoError(t, err)
+	assert.NotNil(t, exprFunc)
+}
+
+func TestMurmur3VariantUnknownCase(t *testing.T) {
+	var invalidVariant murmur3Variant = 9999
+	result := invalidVariant.String()
+	expectedString := fmt.Sprintf("Unknown(%d)", invalidVariant)
+	if !strings.Contains(result, expectedString) {
+		t.Errorf("%q does not contain %q", result, expectedString)
 	}
 }
