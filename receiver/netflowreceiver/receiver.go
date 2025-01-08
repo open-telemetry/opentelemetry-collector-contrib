@@ -148,21 +148,20 @@ func (nr *netflowReceiver) handleErrors() {
 			return
 
 		case !errors.Is(err, netflow.ErrorTemplateNotFound) && !errors.Is(err, debug.PanicError):
-			nr.logger.Error("receiver error", zap.Error(err))
+			nr.logger.Error("received a generic error while processing a flow message via GoFlow2 for the netflow receiver", zap.Error(err))
 			continue
 
 		case errors.Is(err, netflow.ErrorTemplateNotFound):
-			nr.logger.Warn("template was not found for this message")
+			nr.logger.Warn("we could not find a template for a flow message, this error is expected from time to time until the device sends a template", zap.Error(err))
 			continue
 
 		case errors.Is(err, debug.PanicError):
 			var pErrMsg *debug.PanicErrorMessage
 			if errors.As(err, &pErrMsg) {
-				nr.logger.Error("panic error", zap.String("panic", pErrMsg.Inner))
-				nr.logger.Error("receiver stacktrace", zap.String("stack", string(pErrMsg.Stacktrace)))
-				nr.logger.Error("receiver msg", zap.Any("error", pErrMsg.Msg))
+				nr.logger.Error("unexpected error found decoding a flow message via GoFlow2 for the netflow receiver", zap.Any("error", pErrMsg.Msg))
+			} else {
+				nr.logger.Error("could not process a flow message, received an error from GoFlow2, this is a netflow receiver error", zap.Error(err))
 			}
-			nr.logger.Error("receiver panic", zap.Error(err))
 			continue
 		}
 	}
