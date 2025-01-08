@@ -13,7 +13,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
-// AttributeVcsChangeState specifies the a value vcs.change.state attribute.
+// AttributeVcsChangeState specifies the value vcs.change.state attribute.
 type AttributeVcsChangeState int
 
 const (
@@ -39,7 +39,7 @@ var MapAttributeVcsChangeState = map[string]AttributeVcsChangeState{
 	"merged": AttributeVcsChangeStateMerged,
 }
 
-// AttributeVcsLineChangeType specifies the a value vcs.line_change.type attribute.
+// AttributeVcsLineChangeType specifies the value vcs.line_change.type attribute.
 type AttributeVcsLineChangeType int
 
 const (
@@ -65,7 +65,7 @@ var MapAttributeVcsLineChangeType = map[string]AttributeVcsLineChangeType{
 	"removed": AttributeVcsLineChangeTypeRemoved,
 }
 
-// AttributeVcsRefHeadType specifies the a value vcs.ref.head.type attribute.
+// AttributeVcsRefHeadType specifies the value vcs.ref.head.type attribute.
 type AttributeVcsRefHeadType int
 
 const (
@@ -91,7 +91,7 @@ var MapAttributeVcsRefHeadType = map[string]AttributeVcsRefHeadType{
 	"tag":    AttributeVcsRefHeadTypeTag,
 }
 
-// AttributeVcsRevisionDeltaDirection specifies the a value vcs.revision_delta.direction attribute.
+// AttributeVcsRevisionDeltaDirection specifies the value vcs.revision_delta.direction attribute.
 type AttributeVcsRevisionDeltaDirection int
 
 const (
