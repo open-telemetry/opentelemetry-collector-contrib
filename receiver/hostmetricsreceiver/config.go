@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -85,8 +85,6 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		}
 
 		scraperCfg.SetRootPath(cfg.RootPath)
-		envMap := setGoPsutilEnvVars(cfg.RootPath, &osEnv{})
-		scraperCfg.SetEnvMap(envMap)
 
 		cfg.Scrapers[key] = scraperCfg
 	}

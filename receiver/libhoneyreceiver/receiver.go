@@ -221,7 +221,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
 			r.settings.Logger.Debug("event zero", zap.String("event.data", libhoneyevents[0].DebugString()))
 		}
-	case encoder.JsonContentType:
+	case encoder.JSONContentType:
 		err = json.Unmarshal(body, &libhoneyevents)
 		if err != nil {
 			errorutil.HTTPError(resp, err)
@@ -231,13 +231,20 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		}
 	}
 
-	otlpLogs := parser.ToPdata(dataset, libhoneyevents, r.cfg.FieldMapConfig, *r.settings.Logger)
+	otlpLogs, otlpTraces := parser.ToPdata(dataset, libhoneyevents, r.cfg.FieldMapConfig, *r.settings.Logger)
 
 	numLogs := otlpLogs.LogRecordCount()
 	if numLogs > 0 {
 		ctx := r.obsreport.StartLogsOp(context.Background())
 		err = r.nextLogs.ConsumeLogs(ctx, otlpLogs)
 		r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, err)
+	}
+
+	numTraces := otlpTraces.SpanCount()
+	if numTraces > 0 {
+		ctx := r.obsreport.StartTracesOp(context.Background())
+		err = r.nextTraces.ConsumeTraces(ctx, otlpTraces)
+		r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, err)
 	}
 
 	if err != nil {
@@ -256,7 +263,7 @@ func readContentType(resp http.ResponseWriter, req *http.Request) (encoder.Encod
 	}
 
 	switch getMimeTypeFromContentType(req.Header.Get("Content-Type")) {
-	case encoder.JsonContentType:
+	case encoder.JSONContentType:
 		return encoder.JsEncoder, true
 	case "application/x-msgpack", "application/msgpack":
 		return encoder.MpEncoder, true
@@ -287,5 +294,5 @@ func handleUnmatchedMethod(resp http.ResponseWriter) {
 
 func handleUnmatchedContentType(resp http.ResponseWriter) {
 	status := http.StatusUnsupportedMediaType
-	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v unsupported media type, supported: [%s, %s]", status, encoder.JsonContentType, encoder.PbContentType)))
+	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v unsupported media type, supported: [%s, %s]", status, encoder.JSONContentType, encoder.PbContentType)))
 }

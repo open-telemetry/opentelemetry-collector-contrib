@@ -52,7 +52,7 @@ exporter/azuremonitorexporter/                    @open-telemetry/collector-cont
 exporter/carbonexporter/                          @open-telemetry/collector-contrib-approvers @aboguszewski-sumo
 exporter/cassandraexporter/                       @open-telemetry/collector-contrib-approvers @atoulme @emreyalvac
 exporter/clickhouseexporter/                      @open-telemetry/collector-contrib-approvers @hanjm @dmitryax @Frapschen @SpencerTorres
-exporter/coralogixexporter/                       @open-telemetry/collector-contrib-approvers @povilasv @matej-g
+exporter/coralogixexporter/                       @open-telemetry/collector-contrib-approvers @povilasv
 exporter/datadogexporter/                         @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96 @jade-guiton-dd
 exporter/datasetexporter/                         @open-telemetry/collector-contrib-approvers @atoulme @martin-majlis-s1 @zdaratom-s1 @tomaz-s1
 exporter/dorisexporter/                           @open-telemetry/collector-contrib-approvers @atoulme @joker-star-l
@@ -170,7 +170,7 @@ pkg/translator/zipkin/                            @open-telemetry/collector-cont
 pkg/winperfcounters/                              @open-telemetry/collector-contrib-approvers @dashpole @Mrod1598 @alxbl @pjanotti
 
 processor/attributesprocessor/                    @open-telemetry/collector-contrib-approvers @boostchicken
-processor/coralogixprocessor/                     @open-telemetry/collector-contrib-approvers @crobert-1 @galrose
+processor/coralogixprocessor/                     @open-telemetry/collector-contrib-approvers @crobert-1 @povilasv
 processor/cumulativetodeltaprocessor/             @open-telemetry/collector-contrib-approvers @TylerHelmuth
 processor/deltatocumulativeprocessor/             @open-telemetry/collector-contrib-approvers @sh0rez @RichieSams
 processor/deltatorateprocessor/                   @open-telemetry/collector-contrib-approvers @Aneurysm9
@@ -244,7 +244,7 @@ receiver/k8sobjectsreceiver/                      @open-telemetry/collector-cont
 receiver/kafkametricsreceiver/                    @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/kafkareceiver/                           @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 receiver/kubeletstatsreceiver/                    @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @ChrsMark
-receiver/libhoneyreceiver/                        @open-telemetry/collector-contrib-approvers @TylerHelmuth
+receiver/libhoneyreceiver/                        @open-telemetry/collector-contrib-approvers @TylerHelmuth @mterhar
 receiver/lokireceiver/                            @open-telemetry/collector-contrib-approvers @mar4uk
 receiver/memcachedreceiver/                       @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/mongodbatlasreceiver/                    @open-telemetry/collector-contrib-approvers @schmikei
