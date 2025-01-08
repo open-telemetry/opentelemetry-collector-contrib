@@ -35,9 +35,9 @@ type collector struct {
 func (c *collector) earliest(timestamp pcommon.Timestamp) bool {
 	t := timestamp.AsTime()
 	if t.Before(c.calculatedTime) {
-		min := c.processingTime.Add(-c.allowedDrift)
-		if t.Before(min) {
-			c.calculatedTime = min
+		minTime := c.processingTime.Add(-c.allowedDrift)
+		if t.Before(minTime) {
+			c.calculatedTime = minTime
 			return true
 		}
 		c.calculatedTime = t

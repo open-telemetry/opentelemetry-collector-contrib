@@ -20,10 +20,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
 )
 
-const (
-	defaultEndpoint = "https://dc.services.visualstudio.com/v2/track"
-)
-
 var errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Monitor Config")
 
 // NewFactory returns a factory for Azure Monitor exporter.
@@ -44,7 +40,6 @@ type factory struct {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Endpoint:          defaultEndpoint,
 		MaxBatchSize:      1024,
 		MaxBatchInterval:  10 * time.Second,
 		SpanEventsEnabled: false,

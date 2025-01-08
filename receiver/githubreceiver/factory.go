@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
@@ -33,7 +33,7 @@ const (
 
 var (
 	scraperFactories = map[string]internal.ScraperFactory{
-		metadata.Type.String(): &githubscraper.Factory{},
+		githubscraper.TypeStr: &githubscraper.Factory{},
 	}
 
 	errConfigNotValid = errors.New("configuration is not valid for the github receiver")
