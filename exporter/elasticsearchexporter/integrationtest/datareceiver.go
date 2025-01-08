@@ -152,7 +152,7 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
       enabled: true
       initial_interval: 100ms
       max_interval: 1s
-      max_requests: 10000`,
+      max_retries: 10000`,
 		es.endpoint, TestLogsIndex, TestMetricsIndex, TestTracesIndex,
 	)
 

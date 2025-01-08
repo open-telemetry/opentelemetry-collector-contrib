@@ -115,9 +115,6 @@ Telemetry data will be written to signal specific data streams by default:
 logs to `logs-generic-default`, metrics to `metrics-generic-default`, and traces to `traces-generic-default`.
 This can be customised through the following settings:
 
-- `index` (DEPRECATED, please use `logs_index` for logs, `metrics_index` for metrics, `traces_index` for traces): The [index] or [data stream] name to publish events to.
-   The default value is `logs-generic-default`.
-
 - `logs_index`: The [index] or [data stream] name to publish events to.  The default value is `logs-generic-default`
 
 - `logs_dynamic_index` (optional): uses resource, scope, or log record attributes to dynamically construct index name.
@@ -161,7 +158,7 @@ behaviours, which may be configured through the following settings:
       - `data_stream.dataset` will always be appended with `.otel`. It is recommended to use with `*_dynamic_index.enabled: true` to route documents to data stream `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`.
       - Span events are stored in separate documents. They will be routed with `data_stream.type` set to `logs` if `traces_dynamic_index::enabled` is `true`.
 
-    - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
+    - `raw`: Omit the `Attributes.` string prefixed to field names for log and
              span attributes as well as omit the `Events.` string prefixed to
              field names for span events.
     - `bodymap`: Provides fine-grained control over the final documents to be ingested.
@@ -169,12 +166,6 @@ behaviours, which may be configured through the following settings:
             It works only for logs where the log record body is a map. Each LogRecord
             body is serialized to JSON as-is and becomes a separate document for ingestion.
             If the log record body is not a map, the exporter will log a warning and drop the log record.
-  - `dedup` (DEPRECATED). This configuration is deprecated and non-operational,
-    and will be removed in the future. Object keys are always deduplicated to
-    avoid Elasticsearch rejecting documents.
-  - `dedot` (default=true; DEPRECATED, in future dedotting will always be enabled
-    for ECS mode, and never for other modes): When enabled attributes with `.`
-    will be split into proper json objects.
 
 #### ECS mapping mode
 
@@ -203,7 +194,6 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `interval` (default=30s): Write buffer flush time limit.
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
-  - `max_requests` (DEPRECATED, use retry::max_retries instead): Number of HTTP request retries including the initial attempt. If used, `retry::max_retries` will be set to `max_requests - 1`.
   - `max_retries` (default=2): Number of HTTP request retries. To disable retries, set `retry::enabled` to `false` instead of setting `max_retries` to `0`.
   - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
