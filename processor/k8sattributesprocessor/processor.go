@@ -241,6 +241,9 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 	if containerSpec.Name != "" {
 		setResourceAttribute(attrs, conventions.AttributeK8SContainerName, containerSpec.Name)
 	}
+	if containerSpec.ServiceInstanceID != "" {
+		setResourceAttribute(attrs, conventions.AttributeServiceInstanceID, containerSpec.ServiceInstanceID)
+	}
 	if containerSpec.ImageName != "" {
 		setResourceAttribute(attrs, conventions.AttributeContainerImageName, containerSpec.ImageName)
 	}
