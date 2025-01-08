@@ -20,7 +20,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, _ any, val any) error {
+		Setter: func(_ context.Context, _ any, _ any) error {
 			return nil
 		},
 	}
