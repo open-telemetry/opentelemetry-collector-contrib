@@ -515,7 +515,7 @@ func TestServiceNoPerOperationStrategies(t *testing.T) {
 		t.Run(service, func(t *testing.T) {
 			strategy, err := provider.GetSamplingStrategy(context.Background(), service)
 			require.NoError(t, err)
-			strategyJson, err := json.MarshalIndent(strategy, "", "  ")
+			strategyJSON, err := json.MarshalIndent(strategy, "", "  ")
 			require.NoError(t, err)
 
 			testName := strings.ReplaceAll(t.Name(), "/", "_")
@@ -523,11 +523,11 @@ func TestServiceNoPerOperationStrategies(t *testing.T) {
 			expectedServiceResponse, err := os.ReadFile(snapshotFile)
 			require.NoError(t, err)
 
-			assert.JSONEq(t, string(expectedServiceResponse), string(strategyJson),
+			assert.JSONEq(t, string(expectedServiceResponse), string(strategyJSON),
 				"comparing against stored snapshot. Use REGENERATE_SNAPSHOTS=true to rebuild snapshots.")
 
 			if regenerateSnapshots {
-				err = os.WriteFile(snapshotFile, strategyJson, 0o600)
+				err = os.WriteFile(snapshotFile, strategyJSON, 0o600)
 				require.NoError(t, err)
 			}
 		})
@@ -548,7 +548,7 @@ func TestServiceNoPerOperationStrategiesDeprecatedBehavior(t *testing.T) {
 		t.Run(service, func(t *testing.T) {
 			strategy, err := provider.GetSamplingStrategy(context.Background(), service)
 			require.NoError(t, err)
-			strategyJson, err := json.MarshalIndent(strategy, "", "  ")
+			strategyJSON, err := json.MarshalIndent(strategy, "", "  ")
 			require.NoError(t, err)
 
 			testName := strings.ReplaceAll(t.Name(), "/", "_")
@@ -556,11 +556,11 @@ func TestServiceNoPerOperationStrategiesDeprecatedBehavior(t *testing.T) {
 			expectedServiceResponse, err := os.ReadFile(snapshotFile)
 			require.NoError(t, err)
 
-			assert.JSONEq(t, string(expectedServiceResponse), string(strategyJson),
+			assert.JSONEq(t, string(expectedServiceResponse), string(strategyJSON),
 				"comparing against stored snapshot. Use REGENERATE_SNAPSHOTS=true to rebuild snapshots.")
 
 			if regenerateSnapshots {
-				err = os.WriteFile(snapshotFile, strategyJson, 0o600)
+				err = os.WriteFile(snapshotFile, strategyJSON, 0o600)
 				require.NoError(t, err)
 			}
 		})

@@ -71,7 +71,7 @@ func NewFileSource(options Options, logger *zap.Logger) (source.Source, error) {
 		h.logger.Warn("Default operations level strategies will not be included for Ratelimiting service strategies." +
 			"This behavior will be changed in future releases. " +
 			"Cf. https://github.com/jaegertracing/jaeger/issues/5270")
-		h.parseStrategies_deprecated(strategies)
+		h.parseStrategiesDeprecated(strategies)
 	} else {
 		h.parseStrategies(strategies)
 	}
@@ -209,7 +209,7 @@ func loadStrategies(loadFn strategyLoader) (*strategies, error) {
 	return strategies, nil
 }
 
-func (h *samplingProvider) parseStrategies_deprecated(strategies *strategies) {
+func (h *samplingProvider) parseStrategiesDeprecated(strategies *strategies) {
 	newStore := defaultStrategies()
 	if strategies.DefaultStrategy != nil {
 		newStore.defaultStrategy = h.parseServiceStrategies(strategies.DefaultStrategy)
