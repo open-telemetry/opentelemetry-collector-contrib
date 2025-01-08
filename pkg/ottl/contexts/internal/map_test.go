@@ -37,7 +37,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("unable to resolve a string index: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
+			err: fmt.Errorf("unable to resolve a string index in map: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
 		},
 		{
 			name: "index map with int",
@@ -169,7 +169,7 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("unable to resolve a string index: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
+			err: fmt.Errorf("unable to resolve a string index in map: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
 		},
 		{
 			name: "index map with int",

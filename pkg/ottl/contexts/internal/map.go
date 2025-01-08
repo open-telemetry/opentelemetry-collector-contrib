@@ -24,7 +24,7 @@ func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 	if s == nil {
 		resString, err := FetchValueFromExpression[K, string](ctx, tCtx, keys[0])
 		if err != nil {
-			return nil, fmt.Errorf("unable to resolve a string index: %w", err)
+			return nil, fmt.Errorf("unable to resolve a string index in map: %w", err)
 		}
 		s = resString
 	}
@@ -49,7 +49,7 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 	if s == nil {
 		resString, err := FetchValueFromExpression[K, string](ctx, tCtx, keys[0])
 		if err != nil {
-			return fmt.Errorf("unable to resolve a string index: %w", err)
+			return fmt.Errorf("unable to resolve a string index in map: %w", err)
 		}
 		s = resString
 	}
@@ -65,6 +65,9 @@ func FetchValueFromExpression[K any, T int64 | string](ctx context.Context, tCtx
 	p, err := key.ExpressionGetter(ctx, tCtx)
 	if err != nil {
 		return nil, err
+	}
+	if p == nil {
+		return nil, fmt.Errorf("invalid key type")
 	}
 	res, err := p.Get(ctx, tCtx)
 	if err != nil {

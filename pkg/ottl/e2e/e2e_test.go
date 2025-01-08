@@ -323,7 +323,19 @@ func Test_e2e_converters(t *testing.T) {
 	tests := []struct {
 		statement string
 		want      func(tCtx ottllog.TransformContext)
+		wantErr   bool
+		errMsg    string
 	}{
+		{
+			statement: `set(attributes["newOne"], attributes[1])`,
+			want:      func(tCtx ottllog.TransformContext) {},
+			errMsg:    "unable to resolve a string index in map: invalid key type",
+		},
+		{
+			statement: `set(attributes["array"][0.0], "bar")`,
+			want:      func(tCtx ottllog.TransformContext) {},
+			errMsg:    "unable to resolve an integer index in slice: invalid key type",
+		},
 		{
 			statement: `set(attributes[ConvertCase(attributes["A|B|C"], "upper")], "myvalue")`,
 			want: func(tCtx ottllog.TransformContext) {
@@ -1029,7 +1041,12 @@ func Test_e2e_converters(t *testing.T) {
 			assert.NoError(t, err)
 
 			tCtx := constructLogTransformContext()
-			_, _, _ = logStatements.Execute(context.Background(), tCtx)
+			_, _, err = logStatements.Execute(context.Background(), tCtx)
+			if tt.errMsg == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.Contains(t, err.Error(), tt.errMsg)
+			}
 
 			exTCtx := constructLogTransformContext()
 			tt.want(exTCtx)

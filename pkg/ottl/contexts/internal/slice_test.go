@@ -37,7 +37,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf(`unable to resolve an integer index: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
+			err: fmt.Errorf(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
 		},
 		{
 			name: "index too large",
@@ -113,7 +113,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf(`unable to resolve an integer index: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
+			err: fmt.Errorf(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
 		},
 		{
 			name: "index too large",
