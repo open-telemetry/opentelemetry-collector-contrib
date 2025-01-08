@@ -32,6 +32,11 @@ receivers:
       port: 2055
       sockets: 16
       workers: 32
+  netflow/sflow:
+    - scheme: sflow
+      port: 6343
+      sockets: 16
+      workers: 32
 
 processors:
   batch:
@@ -45,7 +50,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [netflow]
+      receivers: [netflow, netflow/sflow]
       processors: [batch]
       exporters: [debug]
   telemetry:
