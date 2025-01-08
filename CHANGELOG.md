@@ -4808,7 +4808,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `pkg/stanza`: `readerFactory` and  `Reader` use  `helper.Encoding` directly, no longer depends on `helper.Splitter` (#14593)
 - `pkg/stanza`: `readerFactory` and  `Reader` use  `bufio.SplitFunc` directly, no longer depends on `helper.Splitter` (#14766)
 - `pkg/stanza`: add splitter factory which return a split func (#14766)
-- `exporter/awsxrayexporter`: Change the value of xraysegment.url from `dbConnectionString` to the span name. This makes the XRay segment timeline more informationally useful. (#14342)
+- `exporter/awsxrayexporter`: Change the value of xraysegment.url from `dbConnectionString` to the span name. This makes the XRay segment timeline more useful. (#14342)
   This change contravenes the AWS documentation for what values should go into this segment field.
 - `pkg/translator/zipkin`: Change zipkin V1 conversion to use pdata. (#14592)
 - `filterexpr`: Prevent the matcher from panicking (#13573)
