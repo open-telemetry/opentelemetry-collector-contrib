@@ -208,7 +208,7 @@ INT or DOUBLE, attempting to write the other type will fail with the error
 above. This commonly occurs when a metric's value type has changed, or when a
 mix of INT and DOUBLE for the same metric are being written to the same
 project. The recommended way to fix this is to convert all metrics to DOUBLE to
-prevent collisions using the `exporter.googlemanagedpromethues.intToDouble`
+prevent collisions using the `exporter.googlemanagedprometheus.intToDouble`
 feature gate, documented above.
 
 Once you enable the feature gate, you will likely see new errors indicating
