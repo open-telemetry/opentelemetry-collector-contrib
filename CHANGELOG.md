@@ -1540,7 +1540,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   * do not support source headers
   
 - `sumologicexporter`: change metrics behavior (#31479)
-  * remove suppport for carbon2 and graphite
+  * remove support for carbon2 and graphite
   * add support for otlp format
   * do not support metadata attributes
   * do not support source headers
@@ -4239,7 +4239,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `coralogixexporter`: improve coralogix exporter performance (#17268)
   improves coralogix exporter to send batched telemetry data to the backend
 - `internal/comparetest`: Do not ignore order of any slices by default, use an options for that. (#17551)
-- `mysqlreceiver`: add mysql.commands metric with supprot for delete, insert, select, update (#14138)
+- `mysqlreceiver`: add mysql.commands metric with support for delete, insert, select, update (#14138)
 - `exporter/dynatrace`: Provide more logs on the results of metrics submissions (#15248)
 - `prometheusremotewriteexporter`: Add support for converting OTLP Exponential Histograms to Prometheus Native Histograms (#16207)
 - `pkg/pdatautil`: Export comparetest and pdatautil modules under github.com/open-telemetry/opentelemetry-collector-contrib/pkg (#17873)
