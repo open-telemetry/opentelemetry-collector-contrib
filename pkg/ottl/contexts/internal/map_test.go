@@ -17,10 +17,10 @@ import (
 
 func Test_GetMapValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, _ any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, tCtx any, val any) error {
+		Setter: func(_ context.Context, _ any, val any) error {
 			return nil
 		},
 	}
@@ -149,10 +149,10 @@ func Test_GetMapValue_NilKey(t *testing.T) {
 
 func Test_SetMapValue_Invalid(t *testing.T) {
 	getSetter := &ottl.StandardGetSetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, _ any) (any, error) {
 			return nil, nil
 		},
-		Setter: func(_ context.Context, tCtx any, val any) error {
+		Setter: func(_ context.Context, _ any, _ any) error {
 			return nil
 		},
 	}
