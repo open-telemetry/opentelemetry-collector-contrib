@@ -46,8 +46,7 @@ func (o *OtelLogsProducerWrapper) Produce(msg any, args *producer.ProduceArgs) (
 
 	}
 
-	// Send the logs to the collector, it is difficult to pass the context here
-	err = o.logConsumer.ConsumeLogs(context.TODO(), log)
+	err = o.logConsumer.ConsumeLogs(context.Background(), log)
 	if err != nil {
 		return flowMessageSet, err
 	}
