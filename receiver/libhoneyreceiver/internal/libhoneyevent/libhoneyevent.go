@@ -174,7 +174,7 @@ func traceIDFrom(s string) trc.TraceID {
 	return tid
 }
 
-func generateAnId(length int) []byte {
+func generateAnID(length int) []byte {
 	token := make([]byte, length)
 	_, err := rand.Read(token)
 	if err != nil {
@@ -276,23 +276,23 @@ func (l *LibhoneyEvent) GetParentID(fieldName string) (trc.SpanID, error) {
 
 // ToPTraceSpan converts a LibhoneyEvent to a Pdata Span
 func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]string, cfg FieldMapConfig, logger zap.Logger) error {
-	time_ns := l.MsgPackTimestamp.UnixNano()
-	logger.Debug("processing trace with", zap.Int64("timestamp", time_ns))
+	timeNs := l.MsgPackTimestamp.UnixNano()
+	logger.Debug("processing trace with", zap.Int64("timestamp", timeNs))
 
-	var parent_id trc.SpanID
+	var parentID trc.SpanID
 	if pid, ok := l.Data[cfg.Attributes.ParentID]; ok {
-		parent_id = spanIDFrom(pid.(string))
-		newSpan.SetParentSpanID(pcommon.SpanID(parent_id))
+		parentID = spanIDFrom(pid.(string))
+		newSpan.SetParentSpanID(pcommon.SpanID(parentID))
 	}
 
-	duration_ms := 0.0
+	durationMs := 0.0
 	for _, df := range cfg.Attributes.DurationFields {
 		if duration, okay := l.Data[df]; okay {
-			duration_ms = duration.(float64)
+			durationMs = duration.(float64)
 			break
 		}
 	}
-	end_timestamp := time_ns + (int64(duration_ms) * 1000000)
+	endTimestamp := timeNs + (int64(durationMs) * 1000000)
 
 	if tid, ok := l.Data[cfg.Attributes.TraceID]; ok {
 		tid := strings.ReplaceAll(tid.(string), "-", "")
@@ -306,7 +306,7 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 			newSpan.SetTraceID(pcommon.TraceID(traceIDFrom(tid)))
 		}
 	} else {
-		newSpan.SetTraceID(pcommon.TraceID(generateAnId(32)))
+		newSpan.SetTraceID(pcommon.TraceID(generateAnID(32)))
 	}
 
 	if sid, ok := l.Data[cfg.Attributes.SpanID]; ok {
@@ -323,11 +323,11 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 			newSpan.SetSpanID(pcommon.SpanID(spanIDFrom(sid)))
 		}
 	} else {
-		newSpan.SetSpanID(pcommon.SpanID(generateAnId(16)))
+		newSpan.SetSpanID(pcommon.SpanID(generateAnID(16)))
 	}
 
-	newSpan.SetStartTimestamp(pcommon.Timestamp(time_ns))
-	newSpan.SetEndTimestamp(pcommon.Timestamp(end_timestamp))
+	newSpan.SetStartTimestamp(pcommon.Timestamp(timeNs))
+	newSpan.SetEndTimestamp(pcommon.Timestamp(endTimestamp))
 
 	if spanName, ok := l.Data[cfg.Attributes.Name]; ok {
 		newSpan.SetName(spanName.(string))
