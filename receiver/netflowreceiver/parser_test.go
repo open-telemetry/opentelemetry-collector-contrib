@@ -6,11 +6,13 @@ package netflowreceiver
 import (
 	"net/netip"
 	"testing"
-	"time"
 
 	flowpb "github.com/netsampler/goflow2/v2/pb"
 	protoproducer "github.com/netsampler/goflow2/v2/producer/proto"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 func TestGetProtoName(t *testing.T) {
@@ -18,17 +20,18 @@ func TestGetProtoName(t *testing.T) {
 		proto uint32
 		want  string
 	}{
-		{proto: 1, want: "ICMP"},
-		{proto: 6, want: "TCP"},
-		{proto: 17, want: "UDP"},
-		{proto: 58, want: "ICMPv6"},
-		{proto: 132, want: "SCTP"},
-		{proto: 0, want: "unknown"},
+		{proto: 1, want: "icmp"},
+		{proto: 6, want: "tcp"},
+		{proto: 17, want: "udp"},
+		{proto: 58, want: "ipv6-icmp"},
+		{proto: 132, want: "sctp"},
+		{proto: 0, want: "hopopt"},
+		{proto: 400, want: "unknown"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.want, func(t *testing.T) {
-			got := getProtoName(tt.proto)
+			got := getTransportName(tt.proto)
 			if got != tt.want {
 				t.Errorf("getProtoName(%d) = %s; want %s", tt.proto, got, tt.want)
 			}
@@ -57,49 +60,60 @@ func TestConvertToOtel(t *testing.T) {
 		},
 	}
 
-	otel, err := convertToOtel(pm)
+	record := plog.NewLogRecord()
+	err := addMessageAttributes(pm, &record)
 	if err != nil {
-		t.Errorf("convertToOtel() error = %v", err)
+		t.Errorf("TestConvertToOtel() error = %v", err)
 		return
 	}
-	assert.Equal(t, "192.168.1.1", otel.Source.Address)
-	assert.Equal(t, uint32(0), otel.Source.Port)
-	assert.Equal(t, "192.168.1.2", otel.Destination.Address)
-	assert.Equal(t, uint32(2055), otel.Destination.Port)
-	assert.Equal(t, uint64(100), otel.IO.Bytes)
-	assert.Equal(t, uint64(1), otel.IO.Packets)
-	assert.Equal(t, "TCP", otel.Transport)
-	assert.Equal(t, "IPv4", otel.Type)
-	assert.Equal(t, "NETFLOW_V9", otel.Flow.Type)
-	assert.Equal(t, "192.168.1.100", otel.Flow.SamplerAddress)
-	assert.Equal(t, uint32(1), otel.Flow.SequenceNum)
-	assert.Equal(t, uint64(1), otel.Flow.SamplingRate)
-	assert.Equal(t, time.Unix(0, 1000000000), otel.Flow.Start)
-	assert.Equal(t, time.Unix(0, 1000000100), otel.Flow.End)
-	assert.Equal(t, time.Unix(0, 1000000000), otel.Flow.TimeReceived)
+
+	expectedAttributes := pcommon.NewMap()
+	expectedAttributes.PutStr(semconv.AttributeSourceAddress, "192.168.1.1")
+	expectedAttributes.PutInt(semconv.AttributeSourcePort, 0)
+	expectedAttributes.PutStr(semconv.AttributeDestinationAddress, "192.168.1.2")
+	expectedAttributes.PutInt(semconv.AttributeDestinationPort, 2055)
+	expectedAttributes.PutStr(semconv.AttributeNetworkTransport, getTransportName(6))
+	expectedAttributes.PutStr(semconv.AttributeNetworkType, getEtypeName(0x800))
+	expectedAttributes.PutInt("network.io.bytes", 100)
+	expectedAttributes.PutInt("network.io.packets", 1)
+	expectedAttributes.PutStr("network.flow.type", getFlowTypeName(3))
+	expectedAttributes.PutInt("network.flow.sequence_num", 1)
+	expectedAttributes.PutInt("network.flow.time_received", 1000000000)
+	expectedAttributes.PutInt("network.flow.start", 1000000000)
+	expectedAttributes.PutInt("network.flow.end", 1000000100)
+	expectedAttributes.PutInt("network.flow.sampling_rate", 1)
+	expectedAttributes.PutStr("network.flow.sampler_address", "192.168.1.100")
+
+	assert.Equal(t, expectedAttributes, record.Attributes())
+
 }
 
 func TestEmptyConvertToOtel(t *testing.T) {
 	pm := &protoproducer.ProtoProducerMessage{}
 
-	otel, err := convertToOtel(pm)
+	record := plog.NewLogRecord()
+	err := addMessageAttributes(pm, &record)
 	if err != nil {
-		t.Errorf("convertToOtel() error = %v", err)
+		t.Errorf("TestConvertToOtel() error = %v", err)
 		return
 	}
-	assert.Equal(t, "invalid IP", otel.Source.Address)
-	assert.Equal(t, uint32(0), otel.Source.Port)
-	assert.Equal(t, "invalid IP", otel.Destination.Address)
-	assert.Equal(t, uint32(0), otel.Destination.Port)
-	assert.Equal(t, uint64(0), otel.IO.Bytes)
-	assert.Equal(t, uint64(0), otel.IO.Packets)
-	assert.Equal(t, "unknown", otel.Transport)
-	assert.Equal(t, "unknown", otel.Type)
-	assert.Equal(t, "UNKNOWN", otel.Flow.Type)
-	assert.Equal(t, "invalid IP", otel.Flow.SamplerAddress)
-	assert.Equal(t, uint32(0), otel.Flow.SequenceNum)
-	assert.Equal(t, uint64(0), otel.Flow.SamplingRate)
-	assert.Equal(t, time.Unix(0, 0), otel.Flow.Start)
-	assert.Equal(t, time.Unix(0, 0), otel.Flow.End)
-	assert.Equal(t, time.Unix(0, 0), otel.Flow.TimeReceived)
+
+	expectedAttributes := pcommon.NewMap()
+	expectedAttributes.PutStr(semconv.AttributeSourceAddress, "invalid IP")
+	expectedAttributes.PutInt(semconv.AttributeSourcePort, 0)
+	expectedAttributes.PutStr(semconv.AttributeDestinationAddress, "invalid IP")
+	expectedAttributes.PutInt(semconv.AttributeDestinationPort, 0)
+	expectedAttributes.PutStr(semconv.AttributeNetworkTransport, "hopopt")
+	expectedAttributes.PutStr(semconv.AttributeNetworkType, "unknown")
+	expectedAttributes.PutInt("network.io.bytes", 0)
+	expectedAttributes.PutInt("network.io.packets", 0)
+	expectedAttributes.PutStr("network.flow.type", "unknown")
+	expectedAttributes.PutInt("network.flow.sequence_num", 0)
+	expectedAttributes.PutInt("network.flow.time_received", 0)
+	expectedAttributes.PutInt("network.flow.start", 0)
+	expectedAttributes.PutInt("network.flow.end", 0)
+	expectedAttributes.PutInt("network.flow.sampling_rate", 0)
+	expectedAttributes.PutStr("network.flow.sampler_address", "invalid IP")
+
+	assert.Equal(t, expectedAttributes, record.Attributes())
 }

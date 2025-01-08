@@ -70,33 +70,30 @@ You would then configure your network devices to send netflow, sflow, or ipfix d
 
 ## Data format
 
-The netflow data is standardized for the different schemas and is converted to OpenTelemetry logs following the [semantic conventions](https://opentelemetry.io/docs/specs/semconv/general/attributes/#server-client-and-shared-network-attributes)
+The netflow data is standardized for the different schemas and is converted to OpenTelemetry log records following the [semantic conventions](https://opentelemetry.io/docs/specs/semconv/general/attributes/#server-client-and-shared-network-attributes)
 
-The output will adhere the format:
+The log record will have the following attributes:
 
-```json
-{
-    "destination": {
-        "address": "192.168.0.1",
-        "port": 22
-    },
-    "flow": {
-        "end": 1731073104662487000,
-        "sampler_address": "192.168.0.2",
-        "sequence_num": 49,
-        "start": 1731073077662487000,
-        "time_received": 1731073138662487000,
-        "type": "NETFLOW_V5"
-    },
-    "io": {
-        "bytes": 529,
-        "packets": 378
-    },
-    "source": {
-        "address": "192.168.0.3",
-        "port": 40
-    },
-    "transport": "TCP",
-    "type": "IPv4"
-}
+```
+ObservedTimestamp: 2025-01-08 04:14:49.8308464 +0000 UTC
+Timestamp: 2025-01-08 04:14:49.918929427 +0000 UTC
+SeverityText: 
+SeverityNumber: Unspecified(0)
+Body: Empty()
+Attributes:
+     -> source.address: Str(132.189.238.100)
+     -> source.port: Int(1255)
+     -> destination.address: Str(241.171.33.110)
+     -> destination.port: Int(64744)
+     -> network.transport: Str(tcp)
+     -> network.type: Str(ipv4)
+     -> network.io.bytes: Int(853)
+     -> network.io.packets: Int(83)
+     -> network.flow.type: Str(netflow_v5)
+     -> network.flow.sequence_num: Int(191)
+     -> network.flow.time_received: Int(1736309689918929427)
+     -> network.flow.start: Int(1736309689830846400)
+     -> network.flow.end: Int(1736309689871846400)
+     -> network.flow.sampling_rate: Int(0)
+     -> network.flow.sampler_address: Str(172.28.176.1)
 ```

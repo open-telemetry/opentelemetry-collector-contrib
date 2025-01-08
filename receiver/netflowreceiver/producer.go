@@ -5,11 +5,9 @@ package netflowreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/netsampler/goflow2/v2/producer"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflowreceiver/internal/metadata"
@@ -39,34 +37,13 @@ func (o *OtelLogsProducerWrapper) Produce(msg any, args *producer.ProduceArgs) (
 
 	// A single netflow packet can contain multiple flow messages
 	for _, msg := range flowMessageSet {
-		// Convert each one to the Otel semantic dictionary format
-		otelMessage, innerErr := convertToOtel(msg)
-		if innerErr != nil {
-			continue
-		}
 
 		logRecord := logRecords.AppendEmpty()
-		logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(otelMessage.Flow.Start))
-		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(otelMessage.Flow.TimeReceived))
-
-		// The bytes of the message in JSON format
-		m, innerErr := json.Marshal(otelMessage)
-		if innerErr != nil {
+		parseErr := addMessageAttributes(msg, &logRecord)
+		if parseErr != nil {
 			continue
 		}
 
-		// Convert to a map[string]
-		// https://opentelemetry.io/docs/specs/otel/logs/data-model/#type-mapstring-any
-		sec := map[string]any{}
-		if innerErr = json.Unmarshal(m, &sec); innerErr != nil {
-			continue
-		}
-
-		// Set the map to the log record body
-		innerErr = logRecord.Body().SetEmptyMap().FromRaw(sec)
-		if innerErr != nil {
-			continue
-		}
 	}
 
 	// Send the logs to the collector, it is difficult to pass the context here
