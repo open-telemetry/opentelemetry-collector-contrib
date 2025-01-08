@@ -1068,12 +1068,10 @@ func TestOutOfOrderExtractionRules(t *testing.T) {
 			rules: ExtractionRules{
 				DeploymentName: true,
 				DeploymentUID:  true,
-				ReplicaSetID:   true,
 			},
 			attributes: map[string]string{
 				"k8s.deployment.name": "auth-service",
 				"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
-				"k8s.replicaset.uid":  "207ea729-c779-401d-8347-008ecbc137e3",
 			},
 		},
 		{
