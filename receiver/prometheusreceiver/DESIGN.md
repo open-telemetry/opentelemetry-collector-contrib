@@ -555,7 +555,7 @@ bucket that, bucket counts from Prometheus are cumulative, to transform this
 into OpenTelemetry format, one needs to apply the following formula:
 
 ```
-CurrentOCBucketVlaue = CurrentPrometheusBucketValue - PrevPrometheusBucketValue
+CurrentOCBucketValue = CurrentPrometheusBucketValue - PrevPrometheusBucketValue
 ```
 
 OpenTelemetry does not use `+inf` as an explicit bound, one needs to remove it to generate
