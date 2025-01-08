@@ -34,6 +34,8 @@ github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zx
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
 github.com/open-telemetry/opamp-go v0.17.0 h1:3R4+B/6Sy8mknLBbzO3gqloqwTT02rCSRcr4ac2B124=
 github.com/open-telemetry/opamp-go v0.17.0/go.mod h1:SGDhUoAx7uGutO4ENNMQla/tiSujxgZmMPJXIOPGBdk=
+github.com/open-telemetry/opamp-go v0.18.0 h1:sNHsrBvGU2CMxCB1TRJXncDARrmxDEebx8dsEIawqA4=
+github.com/open-telemetry/opamp-go v0.18.0/go.mod h1:9/1G6T5dnJz4cJtoYSr6AX18kHdOxnxxETJPZSHyEUg=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
