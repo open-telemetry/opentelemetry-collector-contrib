@@ -69,7 +69,7 @@ type transform struct {
 	// REQUIRED only if Action is INSERT.
 	NewName string `mapstructure:"new_name"`
 
-	// GroupResourceLabels specifes resource labels that will be appended to this group's new ResourceMetrics message
+	// GroupResourceLabels specifies resource labels that will be appended to this group's new ResourceMetrics message
 	// REQUIRED only if Action is GROUP
 	GroupResourceLabels map[string]string `mapstructure:"group_resource_labels"`
 
