@@ -29,7 +29,6 @@ extensions:
   zpages:
     endpoint: :55679
   skywalking_encoding:
-    protocol: skywalking_proto
 
 service:
   extensions: [pprof, zpages, skywalking_encoding, health_check]

@@ -18,7 +18,6 @@ The `Skywalking` encoding extension is used to unmarshal Apache Skywalking segme
 ```yaml
 extensions:
   skywalking_encoding:
-    protocol: skywalking_proto
 
 receivers:
   kafka:

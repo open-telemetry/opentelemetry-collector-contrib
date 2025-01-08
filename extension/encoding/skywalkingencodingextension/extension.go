@@ -10,12 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-const (
-	skywalkingProto = "skywalking_proto"
-)
-
 type skywalkingExtension struct {
-	config      *Config
 	unmarshaler ptrace.Unmarshaler
 }
 
