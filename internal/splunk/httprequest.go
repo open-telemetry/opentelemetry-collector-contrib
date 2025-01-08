@@ -36,8 +36,8 @@ func HandleHTTPCode(resp *http.Response) error {
 	if resp.ContentLength > 0 {
 		var jsonResponse map[string]any
 		body, _ := io.ReadAll(resp.Body)
-		resp.Body = io.NopCloser(bytes.NewBuffer(bodyString))
-		unmarshalError := json.Unmarshal(bodyString, &jsonResponse)
+		resp.Body = io.NopCloser(bytes.NewBuffer(body))
+		unmarshalError := json.Unmarshal(body, &jsonResponse)
 
 		if unmarshalError == nil {
 			responseErrorValue, ok := jsonResponse["text"]
