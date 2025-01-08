@@ -99,5 +99,5 @@ with detailed sample configurations [here](./testdata/config.yaml).
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml). Further details of the monitoring queries used to collect them may be found in [queries.go](./queries.go).
 
-> If all of the metrics collected by a given monitoring query are marked as `enabled: false` in the receiver configration, the monitoring query will not be executed.
+> If all of the metrics collected by a given monitoring query are marked as `enabled: false` in the receiver configuration, the monitoring query will not be executed.
 
