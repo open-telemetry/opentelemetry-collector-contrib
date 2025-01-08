@@ -71,7 +71,7 @@ func (nr *netflowReceiver) Start(ctx context.Context, host component.Host) error
 		return err
 	}
 
-	nr.logger.Info("Start listening for NetFlow over UDP with port", zap.Int("port", nr.config.Port))
+	nr.logger.Info("Start listening over UDP", zap.String("scheme", nr.config.Scheme), zap.Int("port", nr.config.Port))
 	if err := nr.udpReceiver.Start(nr.config.Hostname, nr.config.Port, decodeFunc); err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (nr *netflowReceiver) buildDecodeFunc() (utils.DecoderFunc, error) {
 
 	// the otel log producer converts those messages into OpenTelemetry logs
 	// it is a wrapper around the protobuf producer
-	otelLogsProducer := newOtelLogsProducer(protoProducer, nr.logConsumer)
+	otelLogsProducer := newOtelLogsProducer(protoProducer, nr.logConsumer, nr.logger)
 
 	cfgPipe := &utils.PipeConfig{
 		Producer: otelLogsProducer,

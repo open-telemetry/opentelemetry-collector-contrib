@@ -72,28 +72,41 @@ You would then configure your network devices to send netflow, sflow, or ipfix d
 
 The netflow data is standardized for the different schemas and is converted to OpenTelemetry log records following the [semantic conventions](https://opentelemetry.io/docs/specs/semconv/general/attributes/#server-client-and-shared-network-attributes)
 
-The log record will have the following attributes:
+The log record will have the following attributes (with examples):
 
-```
-ObservedTimestamp: 2025-01-08 04:14:49.8308464 +0000 UTC
-Timestamp: 2025-01-08 04:14:49.918929427 +0000 UTC
-SeverityText: 
-SeverityNumber: Unspecified(0)
-Body: Empty()
-Attributes:
-     -> source.address: Str(132.189.238.100)
-     -> source.port: Int(1255)
-     -> destination.address: Str(241.171.33.110)
-     -> destination.port: Int(64744)
-     -> network.transport: Str(tcp)
-     -> network.type: Str(ipv4)
-     -> network.io.bytes: Int(853)
-     -> network.io.packets: Int(83)
-     -> network.flow.type: Str(netflow_v5)
-     -> network.flow.sequence_num: Int(191)
-     -> network.flow.time_received: Int(1736309689918929427)
-     -> network.flow.start: Int(1736309689830846400)
-     -> network.flow.end: Int(1736309689871846400)
-     -> network.flow.sampling_rate: Int(0)
-     -> network.flow.sampler_address: Str(172.28.176.1)
-```
+* **source.address**: Str(132.189.238.100)
+* **source.port**: Int(1255)
+* **destination.address**: Str(241.171.33.110)
+* **destination.port**: Int(64744)
+* **network.transport**: Str(tcp)
+* **network.type**: Str(ipv4)
+* **network.io.bytes**: Int(853)
+* **network.io.packets**: Int(83)
+* **network.flow.type**: Str(netflow_v5)
+* **network.flow.sequence_num**: Int(191)
+* **network.flow.time_received**: Int(1736309689918929427)
+* **network.flow.start**: Int(1736309689830846400)
+* **network.flow.end**: Int(1736309689871846400)
+* **network.flow.sampling_rate**: Int(0)
+* **network.flow.sampler_address**: Str(172.28.176.1)
+
+The log record timestamps will be:
+
+* **Observed timestamp**: The time the flow was received.
+* **Timestamp**: The flow `start` field.  
+
+### Schema support
+
+#### netflow
+
+* Process [Template Records](https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html) if present
+* Process Netflow V5, V9, and IPFIX messages
+* Extract the attributes documented above
+* Mapping of custom fields is not yet supported
+
+#### sflow
+
+* Process [sFlow version 5](https://sflow.org/sflow_version_5.txt) datagrams
+* `flow_sample` and `flow_sample_expanded` are supported.
+* `counter_sample` and `counter_sample_expanded` are NOT yet supported.
+* Mapping of custom fields is not yet supported

@@ -9,6 +9,7 @@ import (
 	"github.com/netsampler/goflow2/v2/producer"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflowreceiver/internal/metadata"
 )
@@ -17,6 +18,7 @@ import (
 type OtelLogsProducerWrapper struct {
 	wrapped     producer.ProducerInterface
 	logConsumer consumer.Logs
+	logger      *zap.Logger
 }
 
 // Produce converts the message into a list log records and sends them to log consumer
@@ -46,6 +48,10 @@ func (o *OtelLogsProducerWrapper) Produce(msg any, args *producer.ProduceArgs) (
 
 	}
 
+	if len(flowMessageSet) == 0 {
+		o.logger.Info("received a packet with no flow messages from", zap.String("agent", args.SamplerAddress.String()))
+	}
+
 	err = o.logConsumer.ConsumeLogs(context.Background(), log)
 	if err != nil {
 		return flowMessageSet, err
@@ -62,9 +68,10 @@ func (o *OtelLogsProducerWrapper) Commit(flowMessageSet []producer.ProducerMessa
 	o.wrapped.Commit(flowMessageSet)
 }
 
-func newOtelLogsProducer(wrapped producer.ProducerInterface, logConsumer consumer.Logs) producer.ProducerInterface {
+func newOtelLogsProducer(wrapped producer.ProducerInterface, logConsumer consumer.Logs, logger *zap.Logger) producer.ProducerInterface {
 	return &OtelLogsProducerWrapper{
 		wrapped:     wrapped,
 		logConsumer: logConsumer,
+		logger:      logger,
 	}
 }

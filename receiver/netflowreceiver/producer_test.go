@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.uber.org/zap"
 )
 
 func TestProduce(t *testing.T) {
@@ -53,7 +54,7 @@ func TestProduce(t *testing.T) {
 	protoProducer, err := protoproducer.CreateProtoProducer(cfgm, protoproducer.CreateSamplingSystem)
 	require.NoError(t, err)
 
-	otelLogsProducer := newOtelLogsProducer(protoProducer, consumertest.NewNop())
+	otelLogsProducer := newOtelLogsProducer(protoProducer, consumertest.NewNop(), zap.NewNop())
 	messages, err := otelLogsProducer.Produce(message, &producer.ProduceArgs{})
 	require.NoError(t, err)
 	require.NotNil(t, messages)
