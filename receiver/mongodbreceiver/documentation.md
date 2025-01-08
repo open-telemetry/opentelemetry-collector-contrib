@@ -28,6 +28,14 @@ The number of write operations currently being processed.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {writes} | Sum | Int | Cumulative | false |
 
+### mongodb.cache.dirty.percent
+
+The percentage of WiredTiger cache that is dirty.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
 ### mongodb.cache.operations
 
 The number of cache operations of the instance.
@@ -41,6 +49,14 @@ The number of cache operations of the instance.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | type | The result of a cache request. | Str: ``hit``, ``miss`` |
+
+### mongodb.cache.used.percent
+
+The percentage of WiredTiger cache in use.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 ### mongodb.collection.count
 
@@ -284,6 +300,14 @@ The total time spent performing operations.
 | ---- | ----------- | ------ |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
 
+### mongodb.page_faults
+
+The number of page faults.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {faults} | Sum | Int | Cumulative | true |
+
 ### mongodb.queries_per_sec
 
 The number of queries executed per second.
@@ -365,6 +389,14 @@ The number of updates executed per second.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {update}/s | Gauge | Double |
+
+### mongodb.wtcache.bytes.read
+
+The number of bytes read into the WiredTiger cache.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
 
 ## Optional Metrics
 

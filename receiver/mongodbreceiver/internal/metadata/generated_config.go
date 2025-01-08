@@ -30,7 +30,9 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 type MetricsConfig struct {
 	MongodbActiveReads            MetricConfig `mapstructure:"mongodb.active.reads"`
 	MongodbActiveWrites           MetricConfig `mapstructure:"mongodb.active.writes"`
+	MongodbCacheDirtyPercent      MetricConfig `mapstructure:"mongodb.cache.dirty.percent"`
 	MongodbCacheOperations        MetricConfig `mapstructure:"mongodb.cache.operations"`
+	MongodbCacheUsedPercent       MetricConfig `mapstructure:"mongodb.cache.used.percent"`
 	MongodbCollectionCount        MetricConfig `mapstructure:"mongodb.collection.count"`
 	MongodbCommandsPerSec         MetricConfig `mapstructure:"mongodb.commands_per_sec"`
 	MongodbConnectionCount        MetricConfig `mapstructure:"mongodb.connection.count"`
@@ -62,6 +64,7 @@ type MetricsConfig struct {
 	MongodbOperationLatencyTime   MetricConfig `mapstructure:"mongodb.operation.latency.time"`
 	MongodbOperationReplCount     MetricConfig `mapstructure:"mongodb.operation.repl.count"`
 	MongodbOperationTime          MetricConfig `mapstructure:"mongodb.operation.time"`
+	MongodbPageFaults             MetricConfig `mapstructure:"mongodb.page_faults"`
 	MongodbQueriesPerSec          MetricConfig `mapstructure:"mongodb.queries_per_sec"`
 	MongodbReplCommandsPerSec     MetricConfig `mapstructure:"mongodb.repl_commands_per_sec"`
 	MongodbReplDeletesPerSec      MetricConfig `mapstructure:"mongodb.repl_deletes_per_sec"`
@@ -73,6 +76,7 @@ type MetricsConfig struct {
 	MongodbStorageSize            MetricConfig `mapstructure:"mongodb.storage.size"`
 	MongodbUpdatesPerSec          MetricConfig `mapstructure:"mongodb.updates_per_sec"`
 	MongodbUptime                 MetricConfig `mapstructure:"mongodb.uptime"`
+	MongodbWtcacheBytesRead       MetricConfig `mapstructure:"mongodb.wtcache.bytes.read"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -83,7 +87,13 @@ func DefaultMetricsConfig() MetricsConfig {
 		MongodbActiveWrites: MetricConfig{
 			Enabled: true,
 		},
+		MongodbCacheDirtyPercent: MetricConfig{
+			Enabled: true,
+		},
 		MongodbCacheOperations: MetricConfig{
+			Enabled: true,
+		},
+		MongodbCacheUsedPercent: MetricConfig{
 			Enabled: true,
 		},
 		MongodbCollectionCount: MetricConfig{
@@ -179,6 +189,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		MongodbOperationTime: MetricConfig{
 			Enabled: true,
 		},
+		MongodbPageFaults: MetricConfig{
+			Enabled: true,
+		},
 		MongodbQueriesPerSec: MetricConfig{
 			Enabled: true,
 		},
@@ -211,6 +224,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MongodbUptime: MetricConfig{
 			Enabled: false,
+		},
+		MongodbWtcacheBytesRead: MetricConfig{
+			Enabled: true,
 		},
 	}
 }

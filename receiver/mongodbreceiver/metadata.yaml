@@ -480,6 +480,38 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: false
     attributes: []      
+  mongodb.wtcache.bytes.read:
+    description: The number of bytes read into the WiredTiger cache.
+    unit: "By"
+    enabled: true
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: []
+  mongodb.cache.dirty.percent:
+    description: The percentage of WiredTiger cache that is dirty.
+    unit: "1"
+    enabled: true
+    gauge:
+      value_type: double
+    attributes: []
+  mongodb.cache.used.percent:
+    description: The percentage of WiredTiger cache in use.
+    unit: "1"
+    enabled: true
+    gauge:
+      value_type: double
+    attributes: []
+  mongodb.page_faults:
+    description: The number of page faults.
+    unit: "{faults}"
+    enabled: true
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: []     
 
 tests:
   config:

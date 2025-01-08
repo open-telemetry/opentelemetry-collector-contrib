@@ -78,7 +78,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordMongodbCacheDirtyPercentDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordMongodbCacheOperationsDataPoint(ts, 1, AttributeTypeHit)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbCacheUsedPercentDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -200,6 +208,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordMongodbPageFaultsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordMongodbQueriesPerSecDataPoint(ts, 1)
 
 			defaultMetricsCount++
@@ -240,6 +252,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordMongodbUptimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbWtcacheBytesReadDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
 			rb.SetDatabase("database-val")
@@ -295,6 +311,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "mongodb.cache.dirty.percent":
+					assert.False(t, validatedMetrics["mongodb.cache.dirty.percent"], "Found a duplicate in the metrics slice: mongodb.cache.dirty.percent")
+					validatedMetrics["mongodb.cache.dirty.percent"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The percentage of WiredTiger cache that is dirty.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodb.cache.operations":
 					assert.False(t, validatedMetrics["mongodb.cache.operations"], "Found a duplicate in the metrics slice: mongodb.cache.operations")
 					validatedMetrics["mongodb.cache.operations"] = true
@@ -312,6 +340,18 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
 					assert.EqualValues(t, "hit", attrVal.Str())
+				case "mongodb.cache.used.percent":
+					assert.False(t, validatedMetrics["mongodb.cache.used.percent"], "Found a duplicate in the metrics slice: mongodb.cache.used.percent")
+					validatedMetrics["mongodb.cache.used.percent"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The percentage of WiredTiger cache in use.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodb.collection.count":
 					assert.False(t, validatedMetrics["mongodb.collection.count"], "Found a duplicate in the metrics slice: mongodb.collection.count")
 					validatedMetrics["mongodb.collection.count"] = true
@@ -780,6 +820,20 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
 					assert.EqualValues(t, "insert", attrVal.Str())
+				case "mongodb.page_faults":
+					assert.False(t, validatedMetrics["mongodb.page_faults"], "Found a duplicate in the metrics slice: mongodb.page_faults")
+					validatedMetrics["mongodb.page_faults"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of page faults.", ms.At(i).Description())
+					assert.Equal(t, "{faults}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mongodb.queries_per_sec":
 					assert.False(t, validatedMetrics["mongodb.queries_per_sec"], "Found a duplicate in the metrics slice: mongodb.queries_per_sec")
 					validatedMetrics["mongodb.queries_per_sec"] = true
@@ -912,12 +966,14 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "The amount of time that the server has been running.", ms.At(i).Description())
 					assert.Equal(t, "ms", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+				case "mongodb.wtcache.bytes.read":
+					assert.False(t, validatedMetrics["mongodb.wtcache.bytes.read"], "Found a duplicate in the metrics slice: mongodb.wtcache.bytes.read")
+					validatedMetrics["mongodb.wtcache.bytes.read"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of bytes read into the WiredTiger cache.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())          
 				}
 			}
 		})

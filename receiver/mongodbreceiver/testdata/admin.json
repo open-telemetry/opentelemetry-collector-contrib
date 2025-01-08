@@ -392,7 +392,8 @@
 	"wiredTiger": {
 		"cache": {
 			"pages read into cache": 14,
-			"pages requested from the cache": 215
+			"pages requested from the cache": 215,
+			"bytes read into cache": 10
 		},
 		"session": {
 			"open session count": {

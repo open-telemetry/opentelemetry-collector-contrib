@@ -261,6 +261,9 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 	s.recordActiveWrites(now, document, errs)
 	s.recordActiveReads(now, document, errs)
 	s.recordFlushesPerSecond(now, document, errs)
+	s.recordWTCacheBytes(now, document, errs)
+	s.recordCachePercentages(now, document, errs)
+	s.recordPageFaults(now, document, errs)
 }
 
 func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {

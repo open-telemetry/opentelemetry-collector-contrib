@@ -392,6 +392,57 @@ func (s *mongodbScraper) recordActiveReads(now pcommon.Timestamp, doc bson.M, er
 	s.mb.RecordMongodbActiveReadsDataPoint(now, val)
 }
 
+func (s *mongodbScraper) recordWTCacheBytes(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"wiredTiger", "cache", "bytes read into cache"}
+	metricName := "mongodb.wtcache.bytes.read"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbWtcacheBytesReadDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordCachePercentages(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	wt, ok := doc["wiredTiger"].(bson.M)
+	if !ok {
+		errs.AddPartial(2, errors.New("failed to find wiredTiger metrics"))
+		return
+	}
+
+	cache, ok := wt["cache"].(bson.M)
+	if !ok {
+		errs.AddPartial(2, errors.New("failed to find cache metrics"))
+		return
+	}
+
+	// Calculate dirty percentage
+	trackedDirtyBytes, err1 := collectMetric(cache, []string{"tracked dirty bytes in the cache"})
+	maxBytes, err2 := collectMetric(cache, []string{"maximum bytes configured"})
+	if err1 == nil && err2 == nil && maxBytes > 0 {
+		dirtyPercent := float64(trackedDirtyBytes) / float64(maxBytes) * 100
+		s.mb.RecordMongodbCacheDirtyPercentDataPoint(now, dirtyPercent)
+	}
+
+	// Calculate used percentage
+	bytesInUse, err3 := collectMetric(cache, []string{"bytes currently in the cache"})
+	if err3 == nil && maxBytes > 0 {
+		usedPercent := float64(bytesInUse) / float64(maxBytes) * 100
+		s.mb.RecordMongodbCacheUsedPercentDataPoint(now, usedPercent)
+	}
+}
+
+func (s *mongodbScraper) recordPageFaults(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"extra_info", "page_faults"}
+	metricName := "mongodb.page_faults"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbPageFaultsDataPoint(now, val)
+}
+
 func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {
@@ -710,6 +761,9 @@ func collectMetric(document bson.M, path []string) (int64, error) {
 }
 
 func dig(document bson.M, path []string) (any, error) {
+	if len(path) == 0 {
+		return nil, errKeyNotFound
+	}
 	curItem, remainingPath := path[0], path[1:]
 	value := document[curItem]
 	if value == nil {

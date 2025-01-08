@@ -27,7 +27,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					MongodbActiveReads:            MetricConfig{Enabled: true},
 					MongodbActiveWrites:           MetricConfig{Enabled: true},
+					MongodbCacheDirtyPercent:      MetricConfig{Enabled: true},
 					MongodbCacheOperations:        MetricConfig{Enabled: true},
+					MongodbCacheUsedPercent:       MetricConfig{Enabled: true},
 					MongodbCollectionCount:        MetricConfig{Enabled: true},
 					MongodbCommandsPerSec:         MetricConfig{Enabled: true},
 					MongodbConnectionCount:        MetricConfig{Enabled: true},
@@ -59,6 +61,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbOperationLatencyTime:   MetricConfig{Enabled: true},
 					MongodbOperationReplCount:     MetricConfig{Enabled: true},
 					MongodbOperationTime:          MetricConfig{Enabled: true},
+					MongodbPageFaults:             MetricConfig{Enabled: true},
 					MongodbQueriesPerSec:          MetricConfig{Enabled: true},
 					MongodbReplCommandsPerSec:     MetricConfig{Enabled: true},
 					MongodbReplDeletesPerSec:      MetricConfig{Enabled: true},
@@ -70,6 +73,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbStorageSize:            MetricConfig{Enabled: true},
 					MongodbUpdatesPerSec:          MetricConfig{Enabled: true},
 					MongodbUptime:                 MetricConfig{Enabled: true},
+					MongodbWtcacheBytesRead:       MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					Database:      ResourceAttributeConfig{Enabled: true},
@@ -84,7 +88,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				Metrics: MetricsConfig{
 					MongodbActiveReads:            MetricConfig{Enabled: false},
 					MongodbActiveWrites:           MetricConfig{Enabled: false},
+					MongodbCacheDirtyPercent:      MetricConfig{Enabled: false},
 					MongodbCacheOperations:        MetricConfig{Enabled: false},
+					MongodbCacheUsedPercent:       MetricConfig{Enabled: false},
 					MongodbCollectionCount:        MetricConfig{Enabled: false},
 					MongodbCommandsPerSec:         MetricConfig{Enabled: false},
 					MongodbConnectionCount:        MetricConfig{Enabled: false},
@@ -116,6 +122,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbOperationLatencyTime:   MetricConfig{Enabled: false},
 					MongodbOperationReplCount:     MetricConfig{Enabled: false},
 					MongodbOperationTime:          MetricConfig{Enabled: false},
+					MongodbPageFaults:             MetricConfig{Enabled: false},
 					MongodbQueriesPerSec:          MetricConfig{Enabled: false},
 					MongodbReplCommandsPerSec:     MetricConfig{Enabled: false},
 					MongodbReplDeletesPerSec:      MetricConfig{Enabled: false},
@@ -127,6 +134,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbStorageSize:            MetricConfig{Enabled: false},
 					MongodbUpdatesPerSec:          MetricConfig{Enabled: false},
 					MongodbUptime:                 MetricConfig{Enabled: false},
+					MongodbWtcacheBytesRead:       MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					Database:      ResourceAttributeConfig{Enabled: false},

@@ -5,7 +5,11 @@ all_set:
       enabled: true
     mongodb.active.writes:
       enabled: true
+    mongodb.cache.dirty.percent:
+      enabled: true
     mongodb.cache.operations:
+      enabled: true
+    mongodb.cache.used.percent:
       enabled: true
     mongodb.collection.count:
       enabled: true
@@ -69,6 +73,8 @@ all_set:
       enabled: true
     mongodb.operation.time:
       enabled: true
+    mongodb.page_faults:
+      enabled: true
     mongodb.queries_per_sec:
       enabled: true
     mongodb.repl_commands_per_sec:
@@ -90,6 +96,8 @@ all_set:
     mongodb.updates_per_sec:
       enabled: true
     mongodb.uptime:
+      enabled: true
+    mongodb.wtcache.bytes.read:
       enabled: true
   resource_attributes:
     database:
@@ -104,7 +112,11 @@ none_set:
       enabled: false
     mongodb.active.writes:
       enabled: false
+    mongodb.cache.dirty.percent:
+      enabled: false
     mongodb.cache.operations:
+      enabled: false
+    mongodb.cache.used.percent:
       enabled: false
     mongodb.collection.count:
       enabled: false
@@ -168,6 +180,8 @@ none_set:
       enabled: false
     mongodb.operation.time:
       enabled: false
+    mongodb.page_faults:
+      enabled: false
     mongodb.queries_per_sec:
       enabled: false
     mongodb.repl_commands_per_sec:
@@ -189,6 +203,8 @@ none_set:
     mongodb.updates_per_sec:
       enabled: false
     mongodb.uptime:
+      enabled: false
+    mongodb.wtcache.bytes.read:
       enabled: false
   resource_attributes:
     database:
