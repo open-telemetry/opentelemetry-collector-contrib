@@ -8,7 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog/compression"
 	"io"
 	"net"
 	"net/http"
@@ -27,6 +27,7 @@ const (
 	headerFirehoseCommonAttributes = "X-Amz-Firehose-Common-Attributes"
 	headerContentType              = "Content-Type"
 	headerContentLength            = "Content-Length"
+	headerContentEncoding          = " Content-Encoding"
 )
 
 var (
@@ -40,7 +41,7 @@ var (
 // The firehoseConsumer is responsible for using the unmarshaler and the consumer.
 type firehoseConsumer interface {
 	// Consume unmarshalls and consumes the records.
-	Consume(ctx context.Context, contentType string, records [][]byte, commonAttributes map[string]string) (int, error)
+	Consume(ctx context.Context, records [][]byte, commonAttributes map[string]string) (int, error)
 }
 
 // firehoseReceiver
@@ -217,7 +218,8 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// decode records
-	records, err := fmr.decodeRecords(fr.Records)
+	encoding := r.Header.Get(headerContentEncoding)
+	records, err := fmr.transformRecords(fr.Records, encoding == "gzip")
 	if err != nil {
 		fmr.settings.Logger.Error(
 			"Failed decoding the records",
@@ -237,8 +239,7 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// consume telemetry
-	contentType := r.Header.Get(headerContentType)
-	statusCode, err := fmr.consumer.Consume(ctx, contentType, records, commonAttributes)
+	statusCode, err := fmr.consumer.Consume(ctx, records, commonAttributes)
 	if err != nil {
 		fmr.settings.Logger.Error(
 			"Unable to consume records",
@@ -251,19 +252,41 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmr.sendResponse(w, requestID, http.StatusOK, nil)
 }
 
-func (fmr *firehoseReceiver) decodeRecords(records []firehoseRecord) ([][]byte, error) {
-	decodedRecords := make([][]byte, 0, len(records))
+// transformRecords transforms the received records data by decoding them and decompressing them,
+// if gzip is the content encoding
+func (fmr *firehoseReceiver) transformRecords(records []firehoseRecord, decompress bool) ([][]byte, error) {
+	transformed := make([][]byte, 0, len(records))
 	for index, record := range records {
 		if record.Data == "" {
 			continue
 		}
-		decoded, err := base64.StdEncoding.DecodeString(record.Data)
+
+		data, err := base64.StdEncoding.DecodeString(record.Data)
 		if err != nil {
-			return nil, fmt.Errorf("unable to base64 decode the record at index %d: %w", index, err)
+			fmr.settings.Logger.Error(
+				"Unable to base64 decode the record data",
+				zap.Int("index", index),
+				zap.Error(err),
+			)
+			continue
 		}
-		decodedRecords = append(decodedRecords, decoded)
+
+		if decompress {
+			data, err = compression.Unzip(data)
+			if err != nil {
+				fmr.settings.Logger.Error(
+					"Failed to unzip record data",
+					zap.Int("index", index),
+					zap.Error(err),
+				)
+				continue
+			}
+		}
+
+		transformed = append(transformed, data)
 	}
-	return decodedRecords, nil
+
+	return transformed, nil
 }
 
 // validate checks the Firehose access key in the header against

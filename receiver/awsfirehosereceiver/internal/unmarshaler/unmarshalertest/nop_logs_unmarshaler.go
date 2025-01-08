@@ -18,26 +18,14 @@ type NopLogsUnmarshaler struct {
 
 var _ unmarshaler.LogsUnmarshaler = (*NopLogsUnmarshaler)(nil)
 
-// NewNopLogs provides a nop logs unmarshaler with the default
-// plog.Logs and no error.
-func NewNopLogs() *NopLogsUnmarshaler {
-	return &NopLogsUnmarshaler{}
-}
-
-// NewWithLogs provides a nop logs unmarshaler with the passed
-// in logs as the result of the UnmarshalLogs and no error.
-func NewWithLogs(logs plog.Logs) *NopLogsUnmarshaler {
-	return &NopLogsUnmarshaler{logs: logs}
-}
-
-// NewErrLogs provides a nop logs unmarshaler with the passed
-// in error as the UnmarshalLogs error.
-func NewErrLogs(err error) *NopLogsUnmarshaler {
-	return &NopLogsUnmarshaler{err: err}
+// NewNopLogs provides a nop logs unmarshaler with the passed
+// error and logs as the result of the unmarshal.
+func NewNopLogs(logs plog.Logs, err error) *NopLogsUnmarshaler {
+	return &NopLogsUnmarshaler{logs: logs, err: err}
 }
 
 // UnmarshalLogs deserializes the records into logs.
-func (u *NopLogsUnmarshaler) UnmarshalLogs(string, [][]byte) (plog.Logs, error) {
+func (u *NopLogsUnmarshaler) UnmarshalLogs([][]byte) (plog.Logs, error) {
 	return u.logs, u.err
 }
 

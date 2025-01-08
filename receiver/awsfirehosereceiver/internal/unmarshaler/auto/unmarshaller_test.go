@@ -1,6 +1,7 @@
 package auto
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,8 +12,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog/compression"
 )
 
 func TestType(t *testing.T) {
@@ -62,14 +61,15 @@ func TestUnmarshalMetrics_JSON(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			record, err := os.ReadFile(filepath.Join("..", testCase.dir, "testdata", testCase.filename))
+			data, err := os.ReadFile(filepath.Join("..", testCase.dir, "testdata", testCase.filename))
 			require.NoError(t, err)
 
-			compressedRecord, err := compression.Zip(record)
-			require.NoError(t, err)
-			records := [][]byte{compressedRecord}
+			var records [][]byte
+			for _, record := range bytes.Split(data, []byte("\n")) {
+				records = append(records, record)
+			}
 
-			metrics, err := unmarshaler.UnmarshalMetrics("application/json", records)
+			metrics, err := unmarshaler.UnmarshalMetrics(records)
 			require.Equal(t, testCase.err, err)
 
 			require.Equal(t, testCase.metricResourceCount, metrics.ResourceMetrics().Len())
@@ -124,14 +124,15 @@ func TestUnmarshalLogs_JSON(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			record, err := os.ReadFile(filepath.Join("..", testCase.dir, "testdata", testCase.filename))
+			data, err := os.ReadFile(filepath.Join("..", testCase.dir, "testdata", testCase.filename))
 			require.NoError(t, err)
 
-			compressedRecord, err := compression.Zip(record)
-			require.NoError(t, err)
-			records := [][]byte{compressedRecord}
+			var records [][]byte
+			for _, record := range bytes.Split(data, []byte("\n")) {
+				records = append(records, record)
+			}
 
-			logs, err := unmarshaler.UnmarshalLogs("application/json", records)
+			logs, err := unmarshaler.UnmarshalLogs(records)
 			require.Equal(t, testCase.err, err)
 
 			require.Equal(t, testCase.logResourceCount, logs.ResourceLogs().Len())
@@ -195,17 +196,12 @@ func TestUnmarshal(t *testing.T) {
 			wantMetricCount:    6,
 			wantDatapointCount: 6,
 		},
-		"WithEmptyRecord": {
-			records:            make([][]byte, 0),
-			wantResourceCount:  0,
-			wantMetricCount:    0,
-			wantDatapointCount: 0,
-		},
 		"WithInvalidRecords": {
 			records:            [][]byte{{1, 2}},
 			wantResourceCount:  0,
 			wantMetricCount:    0,
 			wantDatapointCount: 0,
+			wantErr:            errInvalidRecords,
 		},
 		"WithSomeInvalidRecords": {
 			records: [][]byte{
@@ -220,8 +216,8 @@ func TestUnmarshal(t *testing.T) {
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			got, err := unmarshaler.UnmarshalMetrics("application/x-protobuf", testCase.records)
-			require.NoError(t, err)
+			got, err := unmarshaler.UnmarshalMetrics(testCase.records)
+			require.Equal(t, testCase.wantErr, err)
 			require.Equal(t, testCase.wantResourceCount, got.ResourceMetrics().Len())
 			require.Equal(t, testCase.wantMetricCount, got.MetricCount())
 			require.Equal(t, testCase.wantDatapointCount, got.DataPointCount())

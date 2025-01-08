@@ -20,26 +20,14 @@ type NopMetricsUnmarshaler struct {
 
 var _ unmarshaler.MetricsUnmarshaler = (*NopMetricsUnmarshaler)(nil)
 
-// NewNopMetrics provides a nop metrics unmarshaler with the default
-// pmetric.Metrics and no error.
-func NewNopMetrics() *NopMetricsUnmarshaler {
-	return &NopMetricsUnmarshaler{}
-}
-
-// NewWithMetrics provides a nop metrics unmarshaler with the passed
-// in metrics as the result of the UnmarshalMetrics and no error.
-func NewWithMetrics(metrics pmetric.Metrics) *NopMetricsUnmarshaler {
-	return &NopMetricsUnmarshaler{metrics: metrics}
-}
-
-// NewErrMetrics provides a nop metrics unmarshaler with the passed
-// in error as the UnmarshalMetrics error.
-func NewErrMetrics(err error) *NopMetricsUnmarshaler {
-	return &NopMetricsUnmarshaler{err: err}
+// NewNopMetrics provides a nop metrics unmarshaler with the passed
+// error and metrics as the result of the unmarshal.
+func NewNopMetrics(metrics pmetric.Metrics, err error) *NopMetricsUnmarshaler {
+	return &NopMetricsUnmarshaler{metrics: metrics, err: err}
 }
 
 // UnmarshalMetrics deserializes the records into metrics.
-func (u *NopMetricsUnmarshaler) UnmarshalMetrics(string, [][]byte) (pmetric.Metrics, error) {
+func (u *NopMetricsUnmarshaler) UnmarshalMetrics([][]byte) (pmetric.Metrics, error) {
 	return u.metrics, u.err
 }
 

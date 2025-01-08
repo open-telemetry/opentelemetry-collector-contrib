@@ -4,6 +4,7 @@
 package cwmetricstream
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -51,12 +52,15 @@ func TestUnmarshal(t *testing.T) {
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			record, err := os.ReadFile(filepath.Join(".", "testdata", testCase.filename))
+			data, err := os.ReadFile(filepath.Join(".", "testdata", testCase.filename))
 			require.NoError(t, err)
 
-			records := [][]byte{record}
+			var records [][]byte
+			for _, record := range bytes.Split(data, []byte("\n")) {
+				records = append(records, record)
+			}
 
-			got, err := unmarshaler.UnmarshalMetrics("", records)
+			got, err := unmarshaler.UnmarshalMetrics(records)
 			require.Equal(t, testCase.wantErr, err)
 			require.NotNil(t, got)
 			require.Equal(t, testCase.wantResourceCount, got.ResourceMetrics().Len())

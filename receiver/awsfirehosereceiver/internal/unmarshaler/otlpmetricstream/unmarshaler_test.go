@@ -97,7 +97,7 @@ func TestUnmarshal(t *testing.T) {
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			got, err := unmarshaler.UnmarshalMetrics("", testCase.records)
+			got, err := unmarshaler.UnmarshalMetrics(testCase.records)
 			require.NoError(t, err)
 			require.Equal(t, testCase.wantResourceCount, got.ResourceMetrics().Len())
 			require.Equal(t, testCase.wantMetricCount, got.MetricCount())

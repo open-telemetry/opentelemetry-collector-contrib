@@ -4,10 +4,8 @@
 package cwmetricstream // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
-
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -15,8 +13,7 @@ import (
 )
 
 const (
-	TypeStr         = "cwmetrics"
-	recordDelimiter = "\n"
+	TypeStr = "cwmetrics"
 )
 
 var errInvalidRecords = errors.New("record format invalid")
@@ -39,46 +36,39 @@ func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
 // UnmarshalMetrics deserializes the records into CWMetric and uses the
 // ResourceMetricsBuilder to group them into a single pmetric.Metrics.
 // Skips invalid CWMetric received in the record.
-func (u Unmarshaler) UnmarshalMetrics(_ string, records [][]byte) (pmetric.Metrics, error) {
+func (u Unmarshaler) UnmarshalMetrics(records [][]byte) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 	builders := make(map[ResourceAttributes]*ResourceMetricsBuilder)
 	for recordIndex, record := range records {
-		// Multiple metrics in each record separated by newline character
-		for datumIndex, datum := range bytes.Split(record, []byte(recordDelimiter)) {
-			if len(datum) > 0 {
-				var metric CWMetric
-				err := json.Unmarshal(datum, &metric)
-				if err != nil {
-					u.logger.Error(
-						"Unable to unmarshal input",
-						zap.Error(err),
-						zap.Int("datum_index", datumIndex),
-						zap.Int("record_index", recordIndex),
-					)
-					continue
-				}
-				if !u.isValid(metric) {
-					u.logger.Error(
-						"Invalid metric",
-						zap.Int("datum_index", datumIndex),
-						zap.Int("record_index", recordIndex),
-					)
-					continue
-				}
-				attrs := ResourceAttributes{
-					MetricStreamName: metric.MetricStreamName,
-					Namespace:        metric.Namespace,
-					AccountID:        metric.AccountID,
-					Region:           metric.Region,
-				}
-				mb, ok := builders[attrs]
-				if !ok {
-					mb = NewResourceMetricsBuilder(md, attrs)
-					builders[attrs] = mb
-				}
-				mb.AddMetric(metric)
-			}
+		var metric CWMetric
+		err := json.Unmarshal(record, &metric)
+		if err != nil {
+			u.logger.Error(
+				"Unable to unmarshal input",
+				zap.Error(err),
+				zap.Int("record_index", recordIndex),
+			)
+			continue
 		}
+		if !u.isValid(metric) {
+			u.logger.Error(
+				"Invalid metric",
+				zap.Int("record_index", recordIndex),
+			)
+			continue
+		}
+		attrs := ResourceAttributes{
+			MetricStreamName: metric.MetricStreamName,
+			Namespace:        metric.Namespace,
+			AccountID:        metric.AccountID,
+			Region:           metric.Region,
+		}
+		mb, ok := builders[attrs]
+		if !ok {
+			mb = NewResourceMetricsBuilder(md, attrs)
+			builders[attrs] = mb
+		}
+		mb.AddMetric(metric)
 	}
 
 	if len(builders) == 0 {

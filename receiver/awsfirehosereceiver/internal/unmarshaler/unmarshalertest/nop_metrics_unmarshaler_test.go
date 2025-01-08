@@ -12,30 +12,31 @@ import (
 )
 
 func TestNewNopMetrics(t *testing.T) {
-	unmarshaler := NewNopMetrics()
-	got, err := unmarshaler.UnmarshalMetrics("", nil)
-	require.NoError(t, err)
-	require.NotNil(t, got)
-	require.Equal(t, typeStr, unmarshaler.Type())
-}
+	t.Parallel()
+	tests := []struct {
+		name    string
+		metrics pmetric.Metrics
+		err     error
+	}{
+		{
+			name:    "no error",
+			metrics: pmetric.NewMetrics(),
+			err:     nil,
+		},
+		{
+			name:    "with error",
+			metrics: pmetric.NewMetrics(),
+			err:     errors.New("test error"),
+		},
+	}
 
-func TestNewWithMetrics(t *testing.T) {
-	metrics := pmetric.NewMetrics()
-	metrics.ResourceMetrics().AppendEmpty()
-	unmarshaler := NewWithMetrics(metrics)
-	got, err := unmarshaler.UnmarshalMetrics("", nil)
-	require.NoError(t, err)
-	require.NotNil(t, got)
-	require.Equal(t, metrics, got)
-	require.Equal(t, typeStr, unmarshaler.Type())
-}
-
-func TestNewErrMetrics(t *testing.T) {
-	wantErr := errors.New("test error")
-	unmarshaler := NewErrMetrics(wantErr)
-	got, err := unmarshaler.UnmarshalMetrics("", nil)
-	require.Error(t, err)
-	require.Equal(t, wantErr, err)
-	require.NotNil(t, got)
-	require.Equal(t, typeStr, unmarshaler.Type())
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			unmarshaler := NewNopMetrics(test.metrics, test.err)
+			got, err := unmarshaler.UnmarshalMetrics(nil)
+			require.Equal(t, test.err, err)
+			require.Equal(t, test.metrics, got)
+			require.Equal(t, typeStr, unmarshaler.Type())
+		})
+	}
 }

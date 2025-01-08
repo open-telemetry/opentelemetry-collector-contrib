@@ -98,10 +98,10 @@ func TestMetricsConsumer(t *testing.T) {
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			mc := &metricsConsumer{
-				unmarshaler: unmarshalertest.NewErrMetrics(testCase.unmarshalerErr),
+				unmarshaler: unmarshalertest.NewNopMetrics(pmetric.NewMetrics(), testCase.unmarshalerErr),
 				consumer:    consumertest.NewErr(testCase.consumerErr),
 			}
-			gotStatus, gotErr := mc.Consume(context.TODO(), "", nil, nil)
+			gotStatus, gotErr := mc.Consume(context.TODO(), nil, nil)
 			require.Equal(t, testCase.wantStatus, gotStatus)
 			require.Equal(t, testCase.wantErr, gotErr)
 		})
@@ -112,10 +112,10 @@ func TestMetricsConsumer(t *testing.T) {
 		base.ResourceMetrics().AppendEmpty()
 		rc := recordConsumer{}
 		mc := &metricsConsumer{
-			unmarshaler: unmarshalertest.NewWithMetrics(base),
+			unmarshaler: unmarshalertest.NewNopMetrics(base, nil),
 			consumer:    &rc,
 		}
-		gotStatus, gotErr := mc.Consume(context.TODO(), "", nil, map[string]string{
+		gotStatus, gotErr := mc.Consume(context.TODO(), nil, map[string]string{
 			"CommonAttributes": "Test",
 		})
 		require.Equal(t, http.StatusOK, gotStatus)

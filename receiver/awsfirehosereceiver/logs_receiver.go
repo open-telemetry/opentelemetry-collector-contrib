@@ -64,11 +64,10 @@ func newLogsReceiver(
 // to the next consumer.
 func (mc *logsConsumer) Consume(
 	ctx context.Context,
-	contentType string,
 	records [][]byte,
 	commonAttributes map[string]string,
 ) (int, error) {
-	md, err := mc.unmarshaler.UnmarshalLogs(contentType, records)
+	md, err := mc.unmarshaler.UnmarshalLogs(records)
 
 	if err != nil {
 		return http.StatusBadRequest, err

@@ -66,11 +66,10 @@ func newMetricsReceiver(
 // to the next consumer.
 func (mc *metricsConsumer) Consume(
 	ctx context.Context,
-	contentType string,
 	records [][]byte,
 	commonAttributes map[string]string,
 ) (int, error) {
-	md, err := mc.unmarshaler.UnmarshalMetrics(contentType, records)
+	md, err := mc.unmarshaler.UnmarshalMetrics(records)
 	if err != nil {
 		return http.StatusBadRequest, err
 	}

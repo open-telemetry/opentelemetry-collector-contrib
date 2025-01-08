@@ -5,37 +5,38 @@ package unmarshalertest
 
 import (
 	"errors"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 func TestNewNopLogs(t *testing.T) {
-	unmarshaler := NewNopLogs()
-	got, err := unmarshaler.UnmarshalLogs("", nil)
-	require.NoError(t, err)
-	require.NotNil(t, got)
-	require.Equal(t, typeStr, unmarshaler.Type())
-}
+	t.Parallel()
+	tests := []struct {
+		name string
+		logs plog.Logs
+		err  error
+	}{
+		{
+			name: "no error",
+			logs: plog.NewLogs(),
+			err:  nil,
+		},
+		{
+			name: "with error",
+			logs: plog.NewLogs(),
+			err:  errors.New("test error"),
+		},
+	}
 
-func TestNewWithLogs(t *testing.T) {
-	logs := plog.NewLogs()
-	logs.ResourceLogs().AppendEmpty()
-	unmarshaler := NewWithLogs(logs)
-	got, err := unmarshaler.UnmarshalLogs("", nil)
-	require.NoError(t, err)
-	require.NotNil(t, got)
-	require.Equal(t, logs, got)
-	require.Equal(t, typeStr, unmarshaler.Type())
-}
-
-func TestNewErrLogs(t *testing.T) {
-	wantErr := errors.New("test error")
-	unmarshaler := NewErrLogs(wantErr)
-	got, err := unmarshaler.UnmarshalLogs("", nil)
-	require.Error(t, err)
-	require.Equal(t, wantErr, err)
-	require.NotNil(t, got)
-	require.Equal(t, typeStr, unmarshaler.Type())
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			unmarshaler := NewNopLogs(test.logs, test.err)
+			got, err := unmarshaler.UnmarshalLogs(nil)
+			require.Equal(t, test.err, err)
+			require.Equal(t, test.logs, got)
+			require.Equal(t, typeStr, unmarshaler.Type())
+		})
+	}
 }

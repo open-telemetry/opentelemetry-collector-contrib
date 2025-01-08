@@ -4,14 +4,13 @@
 package cwlog
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog/compression"
 )
 
 func TestType(t *testing.T) {
@@ -54,14 +53,15 @@ func TestUnmarshal(t *testing.T) {
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			record, err := os.ReadFile(filepath.Join(".", "testdata", testCase.filename))
+			data, err := os.ReadFile(filepath.Join(".", "testdata", testCase.filename))
 			require.NoError(t, err)
 
-			compressedRecord, err := compression.Zip(record)
-			require.NoError(t, err)
-			records := [][]byte{compressedRecord}
+			var records [][]byte
+			for _, record := range bytes.Split(data, []byte("\n")) {
+				records = append(records, record)
+			}
 
-			got, err := unmarshaler.UnmarshalLogs("", records)
+			got, err := unmarshaler.UnmarshalLogs(records)
 			require.Equal(t, testCase.wantErr, err)
 			require.NotNil(t, got)
 			require.Equal(t, testCase.wantResourceCount, got.ResourceLogs().Len())
@@ -75,11 +75,9 @@ func TestLogTimestamp(t *testing.T) {
 	record, err := os.ReadFile(filepath.Join(".", "testdata", "single_record"))
 	require.NoError(t, err)
 
-	compressedRecord, err := compression.Zip(record)
-	require.NoError(t, err)
-	records := [][]byte{compressedRecord}
+	records := [][]byte{record}
 
-	got, err := unmarshaler.UnmarshalLogs("", records)
+	got, err := unmarshaler.UnmarshalLogs(records)
 	require.NoError(t, err)
 	require.NotNil(t, got)
 	require.Equal(t, 1, got.ResourceLogs().Len())
