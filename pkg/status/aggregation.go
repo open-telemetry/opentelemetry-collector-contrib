@@ -57,7 +57,7 @@ type aggregationFunc func(*AggregateStatus) Event
 // that a later RecoverableError does not shadow an earlier event in the
 // aggregate status. Additionally, this makes sense in the case where a
 // RecoverableError in one component cascades to other components; the earliest
-// error event is likely to be correlated with the cause. For non-error stauses
+// error event is likely to be correlated with the cause. For non-error statuses
 // we use the latest event as it represents the last time a successful status was
 // reported.
 func newAggregationFunc(priority ErrorPriority) aggregationFunc {
