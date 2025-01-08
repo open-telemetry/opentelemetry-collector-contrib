@@ -9,7 +9,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -40,7 +39,7 @@ func newNopFirehoseConsumer(statusCode int, err error) *nopFirehoseConsumer {
 	return &nopFirehoseConsumer{statusCode, err}
 }
 
-func (nfc *nopFirehoseConsumer) Consume(context.Context, string, [][]byte, map[string]string) (int, error) {
+func (nfc *nopFirehoseConsumer) Consume(context.Context, [][]byte, map[string]string) (int, error) {
 	return nfc.statusCode, nfc.err
 }
 
@@ -158,13 +157,6 @@ func TestFirehoseRequest(t *testing.T) {
 			consumer:       newNopFirehoseConsumer(http.StatusInternalServerError, firehoseConsumerErr),
 			wantStatusCode: http.StatusInternalServerError,
 			wantErr:        firehoseConsumerErr,
-		},
-		"WithCorruptBase64Records": {
-			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
-				{Data: "XXXXXaGVsbG8="},
-			}),
-			wantStatusCode: http.StatusBadRequest,
-			wantErr:        fmt.Errorf("unable to base64 decode the record at index 0: %w", base64.CorruptInputError(12)),
 		},
 		"WithValidRecords": {
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
