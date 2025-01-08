@@ -143,7 +143,7 @@ The receiver maps the envelope attribute tags to the following OpenTelemetry att
 The `cloudfoundry.resourceAttributes.allow` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) allows the envelope tags being copied to the metrics as resource attributes instead of datapoint attributes (default `false`).
 Therefore all `org.cloudfoundry.*` datapoint attributes won't be present anymore on metrics datapoint level, but on resource level instead, since the attributes describe the resource and not the datapoints itself.
 
-The `cloudfoundry.resourceAttributes.allow` feature gate is available since version `v0.117.0` and will be held at least for 2 versions (`v0.119.0`) until promoting to `beta` and another 2 vesions (`v0.121.0`) until promoting to `stable`.
+The `cloudfoundry.resourceAttributes.allow` feature gate is available since version `v0.117.0` and will be held at least for 2 versions (`v0.119.0`) until promoting to `beta` and another 2 versions (`v0.121.0`) until promoting to `stable`.
 
 Below you can see the list of attributes that are present the resource level instead of datapoint level (when `cloudfoundry.resourceAttributes.allow` feature gate is enabled):
 
