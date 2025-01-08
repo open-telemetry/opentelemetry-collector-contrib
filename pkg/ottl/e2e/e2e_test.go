@@ -337,6 +337,11 @@ func Test_e2e_converters(t *testing.T) {
 			errMsg:    "unable to resolve an integer index in slice: invalid key type",
 		},
 		{
+			statement: `set(attributes["array"][ConvertCase(attributes["A|B|C"], "upper")], "bar")`,
+			want:      func(_ ottllog.TransformContext) {},
+			errMsg:    "unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64'",
+		},
+		{
 			statement: `set(attributes[ConvertCase(attributes["A|B|C"], "upper")], "myvalue")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("SOMETHING", "myvalue")
