@@ -287,7 +287,7 @@ Connection options:
 - `database` (default = default): The database name. Overrides the database defined in `endpoint` when this setting is not equal to `default`.
 - `connection_params` (default = {}). Params is the extra connection parameters with map format. Query parameters provided in `endpoint` will be individually overwritten if present in this map.
 - `create_schema` (default = true): When set to true, will run DDL to create the database and tables. (See [schema management](#schema-management))
-- `compress` (default = lz4): Controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4). Ignored if `compress` is set in the `endpoint` or `connection_params`.
+- `compress` (default = zstd): Controls the compression algorithm. Valid options: `none` (disabled), `zstd` (default), `lz4`, `gzip`, `deflate`, `br`, `true` (zstd). Ignored if `compress` is set in the `endpoint` or `connection_params`.
 - `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/en/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
 
 ClickHouse tables:
