@@ -7205,7 +7205,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
   - Add EC2 hostname attribute (#1324)
   - Add ECS Resource detector (#1360)
 - `sapm` exporter: Add queue settings (#1390)
-- `metrictransform` processor: Add metric filter option (#1447)
+- `metricstransform` processor: Add metric filter option (#1447)
 - `awsxray` exporter: Improve ECS attribute and origin translation (#1428)
 - `resourcedetection` processor: Initial system detector (#1405)
 
@@ -7419,7 +7419,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
   - Add working-set and page-fault metrics (#666)
   - Add basic support for volume metrics (#667)
 - `stackdriver` trace exporter: Move to new interface and pdata (#486)
-- `metricstranform` processor: Keep timeseries and points in order after aggregation (#663)
+- `metricstransform` processor: Keep timeseries and points in order after aggregation (#663)
 - `k8scluster` receiver: Change `container.spec.name` label to `k8s.container.name` (#681)
 - Migrate receiver creator to internal data model (#701)
 - Add ec2 support to `resourcedetection` processor (#587)
