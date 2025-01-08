@@ -24,4 +24,4 @@ receivers:
     encoding: skywalking_encoding
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata).
+The detailed sample configurations [here](./testdata).
