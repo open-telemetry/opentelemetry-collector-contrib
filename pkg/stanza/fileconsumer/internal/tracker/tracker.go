@@ -218,7 +218,7 @@ func (t *fileTracker) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metada
 				continue
 			}
 			if md := data.Match(fp, fileset.StartsWith); md != nil {
-				// update the matched metada for the index
+				// update the matched metadata for the index
 				matchedMetadata[j] = md
 				archiveModified = true
 				numMatched++

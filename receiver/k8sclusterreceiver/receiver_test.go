@@ -241,7 +241,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 	deletePods(t, client, 1)
 
 	// Ensure ConsumeKubernetesMetadata is called twice, once for the add and
-	// then for the update. Note the second update does not result in metatada call
+	// then for the update. Note the second update does not result in metadata call
 	// since the pod is not changed.
 	require.Eventually(t, func() bool {
 		return int(numCalls.Load()) == 2

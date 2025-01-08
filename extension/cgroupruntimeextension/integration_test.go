@@ -373,7 +373,7 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// running in ECS environment, set the ECS metedata URI environment variable
+			// running in ECS environment, set the ECS metadata URI environment variable
 			// to get the Cgroup CPU quota from the httptest server
 			server := testServerECSMetadata(t, test.containerCPU, test.taskCPU)
 			t.Setenv(ecsMetadataURI, server.URL)
