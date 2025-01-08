@@ -82,7 +82,7 @@ func TestPartitionKeyInputsBucketPrefix(t *testing.T) {
 			expect: "/year=2024/month=01/day=24/hour=06",
 		},
 		{
-			name: "parition by minutes",
+			name: "partition by minutes",
 			inputs: &PartitionKeyBuilder{
 				PartitionTruncation: "minute",
 			},
@@ -180,7 +180,7 @@ func TestPartitionKeyInputsUniqueKey(t *testing.T) {
 	for i := 0; i < 500; i++ {
 		uv := (&PartitionKeyBuilder{}).uniqueKey()
 		_, ok := seen[uv]
-		assert.False(t, ok, "Must not have repeated parition key %q", uv)
+		assert.False(t, ok, "Must not have repeated partition key %q", uv)
 		seen[uv] = struct{}{}
 	}
 }

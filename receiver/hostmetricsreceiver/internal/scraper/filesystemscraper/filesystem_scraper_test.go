@@ -81,12 +81,12 @@ func TestScrape(t *testing.T) {
 				IncludeVirtualFS:     true,
 				IncludeFSTypes:       FSTypeMatchConfig{Config: filterset.Config{MatchType: filterset.Strict}, FSTypes: []string{"tmpfs"}},
 			},
-			partitionsFunc: func(_ context.Context, includeVirtual bool) (paritions []disk.PartitionStat, err error) {
-				paritions = append(paritions, disk.PartitionStat{Device: "root-device", Fstype: "ext4"})
+			partitionsFunc: func(_ context.Context, includeVirtual bool) (partitions []disk.PartitionStat, err error) {
+				partitions = append(partitions, disk.PartitionStat{Device: "root-device", Fstype: "ext4"})
 				if includeVirtual {
-					paritions = append(paritions, disk.PartitionStat{Device: "shm", Fstype: "tmpfs"})
+					partitions = append(partitions, disk.PartitionStat{Device: "shm", Fstype: "tmpfs"})
 				}
-				return paritions, err
+				return partitions, err
 			},
 			usageFunc: func(context.Context, string) (*disk.UsageStat, error) {
 				return &disk.UsageStat{}, nil
