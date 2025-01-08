@@ -1294,7 +1294,7 @@ The `ParseCSV` Converter returns a `pcommon.Map` struct that contains the result
 
 `headerDelimiter` is an optional string parameter that specified the delimiter used to split `headers` into fields. By default, it is set to the value of `delimiter`.
 
-`mode` is an optional string paramater that specifies the parsing mode. Valid values are `strict`, `lazyQuotes`, and `ignoreQuotes`. By default, it is set to `strict`.
+`mode` is an optional string parameter that specifies the parsing mode. Valid values are `strict`, `lazyQuotes`, and `ignoreQuotes`. By default, it is set to `strict`.
 - The `strict` mode provides typical CSV parsing.
 - The `lazyQotes` mode provides a relaxed version of CSV parsing where a quote may appear in the middle of a unquoted field.
 - The `ignoreQuotes` mode completely ignores any quoting rules for CSV and just splits the row on the delimiter.
