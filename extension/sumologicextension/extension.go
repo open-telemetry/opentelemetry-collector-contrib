@@ -1025,11 +1025,11 @@ func (se *SumologicExtension) addStickySessionCookie(req *http.Request) {
 	if !se.conf.StickySessionEnabled {
 		return
 	}
-	currectCookieValue := se.StickySessionCookie()
-	if currectCookieValue != "" {
+	currentCookieValue := se.StickySessionCookie()
+	if currentCookieValue != "" {
 		cookie := &http.Cookie{
 			Name:  stickySessionKey,
-			Value: currectCookieValue,
+			Value: currentCookieValue,
 		}
 		req.AddCookie(cookie)
 	}
