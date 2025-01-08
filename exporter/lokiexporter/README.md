@@ -209,7 +209,7 @@ Configuration screenshot:
 
 To enable the "logs to trace" navigation from Loki to Tempo, navigate to the Grafana Loki data source configuration screen, in the "Derived fields" section, update or create a derived field with:
 * Name: `Trace ID`
-* Type: `Label` (note that this `Label` name may be missleading because it also supports Loki message metadata)
+* Type: `Label` (note that this `Label` name may be misleading because it also supports Loki message metadata)
 * Label: `trace_id`
 * Internal link: activated
 * Select the Tempo data source on which "trace to logs" is configured as described above
