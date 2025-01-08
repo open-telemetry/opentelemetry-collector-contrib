@@ -19,7 +19,7 @@ var _ component.ConfigValidator = (*Config)(nil)
 type Config struct {
 	confignet.AddrConfig `mapstructure:",squash"`
 
-	// TCPIdleTimeout is the timout for idle TCP connections, it is ignored
+	// TCPIdleTimeout is the timeout for idle TCP connections, it is ignored
 	// if transport being used is UDP.
 	TCPIdleTimeout time.Duration `mapstructure:"tcp_idle_timeout"`
 
