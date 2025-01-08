@@ -85,7 +85,6 @@ func TestConvertToOtel(t *testing.T) {
 	expectedAttributes.PutStr("network.flow.sampler_address", "192.168.1.100")
 
 	assert.Equal(t, expectedAttributes, record.Attributes())
-
 }
 
 func TestEmptyConvertToOtel(t *testing.T) {

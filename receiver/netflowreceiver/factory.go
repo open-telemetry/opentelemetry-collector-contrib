@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	defaultSockets   = 1
-	defaultWorkers   = 2
+	defaultSockets = 1
+	defaultWorkers = 2
 	// The default UDP packet buffer size in GoFlow2 is 9000 bytes, which means
 	// that for a full queue of 1000 messages, the size in memory will be 9MB.
 	// Source: https://github.com/netsampler/goflow2/blob/v2.2.1/README.md#security-notes-and-assumptions
