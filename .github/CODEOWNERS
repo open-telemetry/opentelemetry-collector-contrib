@@ -53,7 +53,7 @@ exporter/bmchelixexporter/                        @open-telemetry/collector-cont
 exporter/carbonexporter/                          @open-telemetry/collector-contrib-approvers @aboguszewski-sumo
 exporter/cassandraexporter/                       @open-telemetry/collector-contrib-approvers @atoulme @emreyalvac
 exporter/clickhouseexporter/                      @open-telemetry/collector-contrib-approvers @hanjm @dmitryax @Frapschen @SpencerTorres
-exporter/coralogixexporter/                       @open-telemetry/collector-contrib-approvers @povilasv @matej-g
+exporter/coralogixexporter/                       @open-telemetry/collector-contrib-approvers @povilasv
 exporter/datadogexporter/                         @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96 @jade-guiton-dd
 exporter/datasetexporter/                         @open-telemetry/collector-contrib-approvers @atoulme @martin-majlis-s1 @zdaratom-s1 @tomaz-s1
 exporter/dorisexporter/                           @open-telemetry/collector-contrib-approvers @atoulme @joker-star-l

@@ -24,7 +24,7 @@ jobs:
   setup-environment:
     timeout-minutes: 30
     runs-on: ubuntu-24.04
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && github.repository == 'open-telemetry/opentelemetry-collector-contrib' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -47,7 +47,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Gen githubgen tool
-        if: github.repository == 'open-telemetry/opentelemetry-collector-contrib'
         run: |
           make githubgen-install
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
