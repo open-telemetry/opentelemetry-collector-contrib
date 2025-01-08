@@ -1969,7 +1969,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `prometheusreceiver`: Use confighttp for target allocator client (#31449)
 - `spanmetricsconnector`: Add `metrics_expiration` option to enable expiration of metrics if spans are not received within a certain time frame. (#30559)
   The feature can be configured by specifiying the desired duration in the `metrics_expiration` option. By default, the expiration is disabled (set to 0).
-- `splunkentreceiver`: Updated the config.go and propogated these changes to other receiver components. Change was necessary to differentiate different configurable endpoints. (#30254)
+- `splunkentreceiver`: Updated the config.go and propagated these changes to other receiver components. Change was necessary to differentiate different configurable endpoints. (#30254)
 - `exporter/datadogexporter`: Do not drop traces when payload channel is full. (#31893)
 - `connector/datadogconnector`: Do not resolve container tags if payload already has tags associated with it. (#31893)
 
