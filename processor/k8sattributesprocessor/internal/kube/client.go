@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel/attribute"
 	"regexp"
 	"strings"
 	"sync"
@@ -577,6 +578,11 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	return tags
 }
 
+func createServiceInstanceID(pod *api_v1.Pod, containerName string) string {
+	resNames := []string{pod.Namespace, pod.Name, containerName}
+	return strings.Join(resNames, ".")
+}
+
 // This function removes all data from the Pod except what is required by extraction rules and pod association
 func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Pod {
 	// name, namespace, uid, start time and ip are needed for identifying Pods
@@ -703,6 +709,9 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 		}
 		if c.Rules.ContainerName {
 			container.Name = apiStatus.Name
+		}
+		if c.Rules.AutoAnnotations {
+			container.ServiceInstanceID = createServiceInstanceID(pod, apiStatus.Name)
 		}
 		containerID := apiStatus.ContainerID
 		// Remove container runtime prefix
@@ -1035,7 +1044,9 @@ func needContainerAttributes(rules ExtractionRules) bool {
 		rules.ContainerName ||
 		rules.ContainerImageTag ||
 		rules.ContainerImageRepoDigests ||
-		rules.ContainerID
+		rules.ContainerID ||
+		rules.AutoAnnotations ||
+		rules.AutoAll
 }
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
