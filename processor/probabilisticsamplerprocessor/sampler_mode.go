@@ -63,7 +63,7 @@ const (
 
 	// Proportional uses OpenTelemetry consistent probability
 	// sampling information (OTEP 235), multiplies incoming
-	// sampling probaiblities.
+	// sampling probabilies.
 	Proportional SamplerMode = "proportional"
 
 	// defaultHashSeed is applied when the mode is unset.
