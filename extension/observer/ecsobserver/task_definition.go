@@ -15,7 +15,7 @@ import (
 type TaskDefinitionConfig struct {
 	CommonExporterConfig `mapstructure:",squash" yaml:",inline"`
 
-	// ArnPattern is mandetory, empty string means arn based match is skipped.
+	// ArnPattern is mandatory, empty string means arn based match is skipped.
 	ArnPattern string `mapstructure:"arn_pattern" yaml:"arn_pattern"`
 	// ContainerNamePattern is optional, empty string means all containers in that task definition would be exported.
 	// Otherwise both service and container name petterns need to metch.
