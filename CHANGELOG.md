@@ -7,6 +7,74 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.117.0
+
+### 🛑 Breaking changes 🛑
+
+- `cloudfoundryreceiver`: Introduce a feature gate enable copying envelope tags to the metrics as resource attributes instead of datapoint attributes. (#34824)
+- `pkg/ottl`: removed the ability to reference entire parent objects. (#36872)
+  Statements like `set(cache["resource"], resource)` in non-resource contexts will no longer work. 
+  
+- `routingconnector`: Change default value of `match_once` parameter to `true`. (#29882)
+  This field was deprecated in v0.116.0 and will be removed in v0.120.0.
+
+### 🚩 Deprecations 🚩
+
+- `sapmexporter`: Deprecate SAPM exporter (#36028)
+  The SAPM exporter is being marked as deprecated. Please use the `otlphttp` exporter with the configuration shown
+  below. Also update your pipeline configuration for Traces accordingly.
+  ```yaml
+    exporters:
+        otlphttp:
+            traces_endpoint: "${SPLUNK_INGEST_URL}/v2/trace/otlp"
+            headers:
+                "X-SF-Token": "${SPLUNK_ACCESS_TOKEN}"
+    ```
+  
+
+### 🚀 New components 🚀
+
+- `libhoneyreceiver`: Mark the libhoney receiver exporter as Alpha. (#36693)
+
+### 💡 Enhancements 💡
+
+- `k8sclusterreceiver`: Add additional attributes to node and pod entities (#35879)
+  Adds the following attributes to node and pod metadata/entities:
+    - `k8s.pod.phase`: The phase of a Pod indicates where the Pod is in its lifecycle. E.g. 'Pending', 'Running'
+    - `k8s.pod.status_reason`: A brief message indicating details about why the pod is in this state. E.g. 'Evicted'
+    - `k8s.node.condition_*`: The condition of a node. e.g. `k8s.node.condition_ready`. The value can be `true`, `false`, `unknown`.
+  
+- `awsxrayexporter`: merge in latest semantic conventions for awsxrayexporter. (#36894)
+- `receivercreator`: Add support for starting logs' collection based on provided k8s annotations' hints (#34427)
+- `opensearchexporter`: Add Sending Queue to enable persistent queue in case of upstream failure (#33919)
+- `libhoneyreceiver`: Implement log signal for libhoney receiver (#36693)
+- `ottl`: Add a new ottl trim function that trims leading and trailing characters from a string (default- whitespace). (#34100)
+- `exporter/prometheusremotewrite`: In preparation to re-introducing multiple workers, we're removing a data-race when batching timeseries. (#36601)
+- `redisstorageextension`: Move redis storage extension to alpha (#36778)
+- `logzioexporter`: Remove jaeger dbmodel dependency. (#36972)
+- `sigv4authextension`: Add support for endpoint based names for logs and traces (#36828)
+- `awsemfexporter`: Split EMF log to multiple log splits when buckets larger than 100. (#36771)
+- `sqlqueryreceiver`: Add instrumentation scope to SQL query receiver metrics and logs (#31028)
+- `statsdreceiver`: Add UDS support to statsdreceiver (#21385)
+- `tailsamplingprocessor`: Support hot sampling policy loading (#37014)
+- `cmd/telemetrygen`: Introduce support for generating histograms in telemetrygen (#36322)
+- `libhoneyreceiver`: Implement trace signal for libhoney receiver (#36693)
+
+### 🧰 Bug fixes 🧰
+
+- `receiver/azureeventhub`: Ensure that observed timestamp is set when unmarshaling logs. (#36861)
+- `internal/docker`: Fix image matching regular expression to properly match SHA256 strings. (#36239)
+  This affects the `docker_observer` extension.
+- `opampsupervisor`: Report an 'Applied' remote config status when an empty config is received. (#36682)
+- `k8sobjectsreceiver`: ensure the `k8s.namespace.name` attribute is set for objects retrieved using the `watch` mode (#36352)
+- `mongodbatlasreceiver`: Update the mongoDB Atlas receiver to use the Default HTTP Transport that supports default proxy configuration (#36412)
+- `mysqlreceiver`: Avoid recording a value for the MysqlBufferPoolPages metric when out-of-bounds. (#35495)
+  When using compressed tables, Innodb_buffer_pool_pages_misc may report an out-of-bounds value.
+  See https://bugs.mysql.com/bug.php?id=59550 for context.
+  
+- `pkg/ottl`: fix handling of nested maps within slices in the `flatten` function (#36162)
+- `mysqlreceiver`: Divide large values directly in SQL queries to avoid int overflows (#35495)
+
 ## v0.116.0
 
 ### 🛑 Breaking changes 🛑
@@ -4295,7 +4363,6 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 ### 🚩 Deprecations 🚩
 
 - `humioexporter`: Humio now known as LogScale beginning with version 1.68 supports OTLP using HTTP and no longer requires a product specific exporter. (#17013)
-  See https://library.humio.com/humio-server/endpoints.html
 
 ### 🚀 New components 🚀
 
@@ -6560,7 +6627,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 ### 🚀 New components 🚀
 
-- `humio` exporter to export data to Humio using JSON over the HTTP [Ingest API](https://library.humio.com/humio-server/api-ingest.html)
+- `humio` exporter to export data to Humio using JSON over the HTTP Ingest API
 - `udplog` receiver to receives logs from udp using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library
 - `tanzuobservability` exporter to send traces to [Tanzu Observability](https://tanzu.vmware.com/observability)
 
