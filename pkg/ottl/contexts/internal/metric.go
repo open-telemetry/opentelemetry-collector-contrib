@@ -11,6 +11,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+const (
+	MetricContextName = "metric"
+)
+
 type MetricContext interface {
 	GetMetric() pmetric.Metric
 }
@@ -29,7 +33,7 @@ var MetricSymbolTable = map[ottl.EnumSymbol]ottl.Enum{
 
 func MetricPathGetSetter[K MetricContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
-		return nil, FormatDefaultErrorMessage("metric", "metric", "Metric", MetricRef)
+		return nil, FormatDefaultErrorMessage(MetricContextName, MetricContextName, "Metric", MetricRef)
 	}
 	switch path.Name() {
 	case "name":

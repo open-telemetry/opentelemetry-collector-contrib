@@ -23,8 +23,9 @@ import (
 )
 
 const (
-	// Keys for node metadata.
-	nodeCreationTime = "node.creation_timestamp"
+	// Keys for node metadata and entity attributes. These are NOT used by resource attributes.
+	nodeCreationTime       = "node.creation_timestamp"
+	k8sNodeConditionPrefix = "k8s.node.condition"
 )
 
 // Transform transforms the node to remove the fields that we don't use to reduce RAM utilization.
@@ -150,6 +151,24 @@ func GetMetadata(node *corev1.Node) map[experimentalmetricmetadata.ResourceID]*m
 
 	meta[conventions.AttributeK8SNodeName] = node.Name
 	meta[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)
+
+	// Node can have many additional conditions (gke has 18 on v1.29). Bad thresholds/implementations
+	// of custom conditions can cause value to oscillate between true/false frequently. So, only sending the node
+	// pressure conditions that are set by kubelet to avoid noise.
+	// https://pkg.go.dev/k8s.io/api/core/v1#NodeConditionType
+	kubeletConditions := map[corev1.NodeConditionType]struct{}{
+		corev1.NodeReady:              {},
+		corev1.NodeMemoryPressure:     {},
+		corev1.NodeDiskPressure:       {},
+		corev1.NodePIDPressure:        {},
+		corev1.NodeNetworkUnavailable: {},
+	}
+
+	for _, c := range node.Status.Conditions {
+		if _, ok := kubeletConditions[c.Type]; ok {
+			meta[fmt.Sprintf("%s_%s", k8sNodeConditionPrefix, strcase.ToSnake(string(c.Type)))] = strings.ToLower(string(c.Status))
+		}
+	}
 
 	nodeID := experimentalmetricmetadata.ResourceID(node.UID)
 	return map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
