@@ -518,10 +518,16 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 					serviceNames[conventions.AttributeK8SReplicaSetName] = ref.Name
 				}
 				if c.Rules.DeploymentName {
-					tags[conventions.AttributeK8SDeploymentName] = c.deploymentName(ref)
+					name := c.deploymentName(ref)
+					if name != "" {
+						tags[conventions.AttributeK8SDeploymentName] = name
+					}
 				}
 				if c.Rules.OperatorRules.Enabled {
-					serviceNames[conventions.AttributeK8SDeploymentName] = c.deploymentName(ref)
+					name := c.deploymentName(ref)
+					if name != "" {
+						serviceNames[conventions.AttributeK8SDeploymentName] = name
+					}
 				}
 				if c.Rules.DeploymentUID {
 					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
