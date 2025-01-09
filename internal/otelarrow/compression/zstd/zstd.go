@@ -302,7 +302,7 @@ func (c *combined) Decompress(r io.Reader) (io.Reader, error) {
 		// the freelist. Note that the finalizer is attached to the
 		// reader object, not to the decoder, because zstd maintains
 		// background references to the decoder that prevent it from
-		// being GC'ed.
+		// being GC'd.
 		runtime.SetFinalizer(z, (*reader).Close)
 	} else if err := z.Decoder.Reset(r); err != nil {
 		return nil, err
