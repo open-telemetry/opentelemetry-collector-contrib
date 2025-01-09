@@ -9,6 +9,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/influxdata/influxdb-observability/common"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -17,8 +18,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/influxdata/influxdb-observability/common"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter/internal/metadata"
 )
