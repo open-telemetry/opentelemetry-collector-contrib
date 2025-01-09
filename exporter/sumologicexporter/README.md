@@ -17,7 +17,7 @@
 
 **This exporter is undergoing major changes right now.**
 
-For some time we have been developing the [new Sumo Logic exporter](https://github.com/SumoLogic/sumologic-otel-collector/tree/main/pkg/exporter/sumologicexporter#sumo-logic-exporter) and now we are in the process of moving it into this repository.
+We are in the process of [moving the Sumo Logic exporter into this repository](https://github.com/SumoLogic/sumologic-otel-collector/pull/1601).
 
 The following options are no longer supported:
 
