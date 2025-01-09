@@ -217,7 +217,7 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// decode records
+	// transform records
 	encoding := r.Header.Get(headerContentEncoding)
 	records, err := fmr.transformRecords(fr.Records, encoding == "gzip")
 	if err != nil {

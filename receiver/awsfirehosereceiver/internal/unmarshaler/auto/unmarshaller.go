@@ -51,7 +51,8 @@ func isJSON(record []byte) bool {
 	return lastIndex > 0 && record[0] == '{' && record[lastIndex] == '}'
 }
 
-// isCloudWatchLog checks if the data has the entries needed to be considered a cloudwatch log
+// isCloudWatchLog checks if the data has the entries needed to be considered a cloudwatch
+// log (struct cwlog.CWLog)
 func isCloudWatchLog(data []byte) bool {
 	if !bytes.Contains(data, []byte(`"owner":`)) {
 		return false
@@ -65,7 +66,8 @@ func isCloudWatchLog(data []byte) bool {
 	return true
 }
 
-// isCloudwatchMetrics checks if the data has the entries needed to be considered a cloudwatch metric
+// isCloudwatchMetrics checks if the data has the entries needed to be considered a cloudwatch
+// metric (struct cwmetricstream.CWMetric)
 func isCloudwatchMetrics(data []byte) bool {
 	if !bytes.Contains(data, []byte(`"metric_name":`)) {
 		return false
