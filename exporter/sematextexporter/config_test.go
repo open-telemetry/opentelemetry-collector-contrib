@@ -43,20 +43,20 @@ func TestLoadConfig(t *testing.T) {
 					Headers: map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Sematext"},
 				},
 				MetricsConfig: MetricsConfig{
-					MetricsEndpoint: "https://spm-receiver.sematext.com",
+					MetricsEndpoint: usMetricsEndpoint,
 					QueueSettings: exporterhelper.QueueConfig{
 						Enabled:      true,
 						NumConsumers: 3,
 						QueueSize:    10,
 					},
-					AppToken:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					AppToken:        metricsAppToken,
 					MetricsSchema:   "telegraf-prometheus-v2",
 					PayloadMaxLines: 72,
 					PayloadMaxBytes: 27,
 				},
 				LogsConfig: LogsConfig{
-					AppToken:     "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-					LogsEndpoint: "https://logsene-receiver.sematext.com",
+					AppToken:     logsAppToken,
+					LogsEndpoint: usLogsEndpoint,
 				},
 
 				BackOffConfig: configretry.BackOffConfig{
@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				Region: "us",
+				Region: usRegion,
 			},
 		},
 	}
@@ -95,12 +95,12 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Valid configuration 1",
 			config: &Config{
-				Region: "US",
+				Region: usRegion,
 				MetricsConfig: MetricsConfig{
-					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					AppToken: metricsAppToken,
 				},
 				LogsConfig: LogsConfig{
-					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					AppToken: logsAppToken,
 				},
 			},
 			expectError: false,
@@ -108,12 +108,12 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Valid configuration 2",
 			config: &Config{
-				Region: "EU",
+				Region: euRegion,
 				MetricsConfig: MetricsConfig{
-					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					AppToken: metricsAppToken,
 				},
 				LogsConfig: LogsConfig{
-					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					AppToken: logsAppToken,
 				},
 			},
 			expectError: false,
@@ -123,10 +123,10 @@ func TestConfigValidation(t *testing.T) {
 			config: &Config{
 				Region: "ASIA",
 				MetricsConfig: MetricsConfig{
-					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					AppToken: metricsAppToken,
 				},
 				LogsConfig: LogsConfig{
-					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					AppToken: logsAppToken,
 				},
 			},
 			expectError: true,
@@ -134,12 +134,12 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Invalid metrics AppToken length",
 			config: &Config{
-				Region: "US",
+				Region: usRegion,
 				MetricsConfig: MetricsConfig{
 					AppToken: "short-token",
 				},
 				LogsConfig: LogsConfig{
-					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					AppToken: logsAppToken,
 				},
 			},
 			expectError: true,
@@ -147,9 +147,9 @@ func TestConfigValidation(t *testing.T) {
 		{
 			name: "Invalid logs AppToken length",
 			config: &Config{
-				Region: "EU",
+				Region: euRegion,
 				MetricsConfig: MetricsConfig{
-					AppToken: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+					AppToken: metricsAppToken,
 				},
 				LogsConfig: LogsConfig{
 					AppToken: "short-token",

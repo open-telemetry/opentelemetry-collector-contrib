@@ -51,7 +51,7 @@ type MetricsConfig struct {
 	PayloadMaxBytes int `mapstructure:"payload_max_bytes"`
 }
 type LogsConfig struct {
-	// App token is the token of Sematext Monitoring App to which you want to send the logs.
+	// App token is the token of Sematext Logs App to which you want to send the logs.
 	AppToken string `mapstructure:"app_token"`
 	// LogsEndpoint specifies the endpoint for receiving logs in Sematext
 	LogsEndpoint string `mapstructure:"logs_endpoint"`

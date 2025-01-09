@@ -3,5 +3,5 @@
 
 //go:generate mdatagen metadata.yaml
 
-// Package sematextexporter sends metrics to sematext cloud.
+// Package sematextexporter sends metrics and logs to sematext cloud.
 package sematextexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter"

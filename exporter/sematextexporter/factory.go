@@ -22,7 +22,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter/internal/metadata"
 )
 
-const appToken string = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+const(
+	metricsAppToken = "2064e37c-4fac-45f6-831d-922d43fde759"
+	 logsAppToken = "9064e37c-4gac-49f6-831d-922l43fse759"
+)
 
 // NewFactory creates a factory for the Sematext metrics exporter.
 func NewFactory() exporter.Factory {
@@ -43,19 +46,19 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		MetricsConfig: MetricsConfig{
-			MetricsEndpoint: "https://spm-receiver.sematext.com",
+			MetricsEndpoint: usMetricsEndpoint,
 			MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
-			AppToken:        appToken,
+			AppToken:        metricsAppToken,
 			QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 			PayloadMaxLines: 1_000,
 			PayloadMaxBytes: 300_000,
 		},
 		LogsConfig: LogsConfig{
-			LogsEndpoint: "https://logsene-receiver.sematext.com",
-			AppToken:     appToken,
+			LogsEndpoint: usLogsEndpoint,
+			AppToken:     logsAppToken,
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		Region:        "us",
+		Region:        usRegion,
 	}
 	return cfg
 }
