@@ -1607,23 +1607,23 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			want:  PodContainers{ByID: map[string]*Container{}, ByName: map[string]*Container{}},
 		},
 		{
-			name: "service-instance-id-only",
+			name: "operator-container-level-attributes",
 			rules: ExtractionRules{
 				OperatorRules: OperatorRules{Enabled: true},
 			},
 			pod: &pod,
 			want: PodContainers{
 				ByID: map[string]*Container{
-					"container1-id-123":     {ServiceInstanceID: "test-namespace.test-pod.container1"},
+					"container1-id-123":     {ServiceInstanceID: "test-namespace.test-pod.container1", ServiceVersion: "0.1.0"},
 					"container2-id-456":     {ServiceInstanceID: "test-namespace.test-pod.container2"},
-					"container3-id-abc":     {ServiceInstanceID: "test-namespace.test-pod.container3"},
-					"init-container-id-789": {ServiceInstanceID: "test-namespace.test-pod.init_container"},
+					"container3-id-abc":     {ServiceInstanceID: "test-namespace.test-pod.container3", ServiceVersion: "1.0"},
+					"init-container-id-789": {ServiceInstanceID: "test-namespace.test-pod.init_container", ServiceVersion: "latest"},
 				},
 				ByName: map[string]*Container{
-					"container1":     {ServiceInstanceID: "test-namespace.test-pod.container1"},
+					"container1":     {ServiceInstanceID: "test-namespace.test-pod.container1", ServiceVersion: "0.1.0"},
 					"container2":     {ServiceInstanceID: "test-namespace.test-pod.container2"},
-					"container3":     {ServiceInstanceID: "test-namespace.test-pod.container3"},
-					"init_container": {ServiceInstanceID: "test-namespace.test-pod.init_container"},
+					"container3":     {ServiceInstanceID: "test-namespace.test-pod.container3", ServiceVersion: "1.0"},
+					"init_container": {ServiceInstanceID: "test-namespace.test-pod.init_container", ServiceVersion: "latest"},
 				},
 			},
 		},
