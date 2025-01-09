@@ -12,7 +12,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
-// AttributeStatus specifies the a value status attribute.
+// AttributeStatus specifies the value status attribute.
 type AttributeStatus int
 
 const (

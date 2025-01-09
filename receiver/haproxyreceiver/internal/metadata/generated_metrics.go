@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeStatusCode specifies the a value status_code attribute.
+// AttributeStatusCode specifies the value status_code attribute.
 type AttributeStatusCode int
 
 const (

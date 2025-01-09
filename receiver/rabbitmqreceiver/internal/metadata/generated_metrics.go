@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeMessageState specifies the a value message.state attribute.
+// AttributeMessageState specifies the value message.state attribute.
 type AttributeMessageState int
 
 const (

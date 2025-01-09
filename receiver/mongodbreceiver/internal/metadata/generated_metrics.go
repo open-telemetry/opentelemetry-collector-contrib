@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeConnectionType specifies the a value connection_type attribute.
+// AttributeConnectionType specifies the value connection_type attribute.
 type AttributeConnectionType int
 
 const (
@@ -42,7 +42,7 @@ var MapAttributeConnectionType = map[string]AttributeConnectionType{
 	"current":   AttributeConnectionTypeCurrent,
 }
 
-// AttributeLockMode specifies the a value lock_mode attribute.
+// AttributeLockMode specifies the value lock_mode attribute.
 type AttributeLockMode int
 
 const (
@@ -76,7 +76,7 @@ var MapAttributeLockMode = map[string]AttributeLockMode{
 	"intent_exclusive": AttributeLockModeIntentExclusive,
 }
 
-// AttributeLockType specifies the a value lock_type attribute.
+// AttributeLockType specifies the value lock_type attribute.
 type AttributeLockType int
 
 const (
@@ -126,7 +126,7 @@ var MapAttributeLockType = map[string]AttributeLockType{
 	"oplog":                        AttributeLockTypeOplog,
 }
 
-// AttributeMemoryType specifies the a value memory_type attribute.
+// AttributeMemoryType specifies the value memory_type attribute.
 type AttributeMemoryType int
 
 const (
@@ -152,7 +152,7 @@ var MapAttributeMemoryType = map[string]AttributeMemoryType{
 	"virtual":  AttributeMemoryTypeVirtual,
 }
 
-// AttributeOperation specifies the a value operation attribute.
+// AttributeOperation specifies the value operation attribute.
 type AttributeOperation int
 
 const (
@@ -194,7 +194,7 @@ var MapAttributeOperation = map[string]AttributeOperation{
 	"command": AttributeOperationCommand,
 }
 
-// AttributeOperationLatency specifies the a value operation_latency attribute.
+// AttributeOperationLatency specifies the value operation_latency attribute.
 type AttributeOperationLatency int
 
 const (
@@ -224,7 +224,7 @@ var MapAttributeOperationLatency = map[string]AttributeOperationLatency{
 	"command": AttributeOperationLatencyCommand,
 }
 
-// AttributeType specifies the a value type attribute.
+// AttributeType specifies the value type attribute.
 type AttributeType int
 
 const (

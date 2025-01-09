@@ -13,7 +13,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
-// AttributeContextSwitchType specifies the a value context_switch_type attribute.
+// AttributeContextSwitchType specifies the value context_switch_type attribute.
 type AttributeContextSwitchType int
 
 const (
@@ -39,7 +39,7 @@ var MapAttributeContextSwitchType = map[string]AttributeContextSwitchType{
 	"voluntary":   AttributeContextSwitchTypeVoluntary,
 }
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -65,7 +65,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"write": AttributeDirectionWrite,
 }
 
-// AttributePagingFaultType specifies the a value paging_fault_type attribute.
+// AttributePagingFaultType specifies the value paging_fault_type attribute.
 type AttributePagingFaultType int
 
 const (
@@ -91,7 +91,7 @@ var MapAttributePagingFaultType = map[string]AttributePagingFaultType{
 	"minor": AttributePagingFaultTypeMinor,
 }
 
-// AttributeState specifies the a value state attribute.
+// AttributeState specifies the value state attribute.
 type AttributeState int
 
 const (

@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeBgBufferSource specifies the a value bg_buffer_source attribute.
+// AttributeBgBufferSource specifies the value bg_buffer_source attribute.
 type AttributeBgBufferSource int
 
 const (
@@ -46,7 +46,7 @@ var MapAttributeBgBufferSource = map[string]AttributeBgBufferSource{
 	"bgwriter":      AttributeBgBufferSourceBgwriter,
 }
 
-// AttributeBgCheckpointType specifies the a value bg_checkpoint_type attribute.
+// AttributeBgCheckpointType specifies the value bg_checkpoint_type attribute.
 type AttributeBgCheckpointType int
 
 const (
@@ -72,7 +72,7 @@ var MapAttributeBgCheckpointType = map[string]AttributeBgCheckpointType{
 	"scheduled": AttributeBgCheckpointTypeScheduled,
 }
 
-// AttributeBgDurationType specifies the a value bg_duration_type attribute.
+// AttributeBgDurationType specifies the value bg_duration_type attribute.
 type AttributeBgDurationType int
 
 const (
@@ -98,7 +98,7 @@ var MapAttributeBgDurationType = map[string]AttributeBgDurationType{
 	"write": AttributeBgDurationTypeWrite,
 }
 
-// AttributeOperation specifies the a value operation attribute.
+// AttributeOperation specifies the value operation attribute.
 type AttributeOperation int
 
 const (
@@ -132,7 +132,7 @@ var MapAttributeOperation = map[string]AttributeOperation{
 	"hot_upd": AttributeOperationHotUpd,
 }
 
-// AttributeSource specifies the a value source attribute.
+// AttributeSource specifies the value source attribute.
 type AttributeSource int
 
 const (
@@ -182,7 +182,7 @@ var MapAttributeSource = map[string]AttributeSource{
 	"tidx_hit":   AttributeSourceTidxHit,
 }
 
-// AttributeState specifies the a value state attribute.
+// AttributeState specifies the value state attribute.
 type AttributeState int
 
 const (
@@ -208,7 +208,7 @@ var MapAttributeState = map[string]AttributeState{
 	"live": AttributeStateLive,
 }
 
-// AttributeWalOperationLag specifies the a value wal_operation_lag attribute.
+// AttributeWalOperationLag specifies the value wal_operation_lag attribute.
 type AttributeWalOperationLag int
 
 const (

@@ -45,7 +45,8 @@ jobs:
           - cmd-0
           - cmd-1
           - other
-    runs-on: windows-latest
+        os: [windows-2022, windows-2025]
+    runs-on: ${{ matrix.os }}
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     env:
       # Limit memory usage via GC environment variables to avoid OOM on GH runners, especially for `cmd/otelcontribcol`,

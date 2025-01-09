@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeBindType specifies the a value bind_type attribute.
+// AttributeBindType specifies the value bind_type attribute.
 type AttributeBindType int
 
 const (
@@ -37,7 +37,7 @@ var MapAttributeBindType = map[string]AttributeBindType{
 	"client": AttributeBindTypeClient,
 }
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -63,7 +63,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"received": AttributeDirectionReceived,
 }
 
-// AttributeNetworkDataType specifies the a value network_data_type attribute.
+// AttributeNetworkDataType specifies the value network_data_type attribute.
 type AttributeNetworkDataType int
 
 const (
@@ -89,7 +89,7 @@ var MapAttributeNetworkDataType = map[string]AttributeNetworkDataType{
 	"uncompressed": AttributeNetworkDataTypeUncompressed,
 }
 
-// AttributeOperationType specifies the a value operation_type attribute.
+// AttributeOperationType specifies the value operation_type attribute.
 type AttributeOperationType int
 
 const (
@@ -119,7 +119,7 @@ var MapAttributeOperationType = map[string]AttributeOperationType{
 	"search": AttributeOperationTypeSearch,
 }
 
-// AttributeSuboperationType specifies the a value suboperation_type attribute.
+// AttributeSuboperationType specifies the value suboperation_type attribute.
 type AttributeSuboperationType int
 
 const (
@@ -145,7 +145,7 @@ var MapAttributeSuboperationType = map[string]AttributeSuboperationType{
 	"search":                                 AttributeSuboperationTypeSearch,
 }
 
-// AttributeSyncResult specifies the a value sync_result attribute.
+// AttributeSyncResult specifies the value sync_result attribute.
 type AttributeSyncResult int
 
 const (
@@ -175,7 +175,7 @@ var MapAttributeSyncResult = map[string]AttributeSyncResult{
 	"other":           AttributeSyncResultOther,
 }
 
-// AttributeValueType specifies the a value value_type attribute.
+// AttributeValueType specifies the value value_type attribute.
 type AttributeValueType int
 
 const (

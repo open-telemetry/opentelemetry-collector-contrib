@@ -43,8 +43,8 @@ type Config struct {
 	Table []RoutingTableItem `mapstructure:"table"`
 
 	// MatchOnce determines whether the connector matches multiple statements.
-	// Optional.
-	MatchOnce bool `mapstructure:"match_once"`
+	// Unused. Deprecated in v0.116.0. Will be removed in v0.120.0.
+	MatchOnce *bool `mapstructure:"match_once"`
 }
 
 // Validate checks if the processor configuration is valid.
@@ -77,10 +77,6 @@ func (c *Config) Validate() error {
 				return err
 			}
 			fallthrough
-		case "span", "metric", "datapoint", "log": // ok
-			if !c.MatchOnce {
-				return fmt.Errorf(`%q context is not supported with "match_once: false"`, item.Context)
-			}
 		default:
 			return errors.New("invalid context: " + item.Context)
 		}

@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver/internal/metadata"
 )
 
@@ -24,8 +23,8 @@ import (
 
 const (
 
-	// Default port to bind to.
-	defaultPort = 9943
+	// Default endpoint to bind to.
+	defaultEndpoint = "localhost:9943"
 )
 
 // NewFactory creates a factory for SignalFx receiver.
@@ -40,7 +39,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: testutil.EndpointForPort(defaultPort),
+			Endpoint: defaultEndpoint,
 		},
 	}
 }

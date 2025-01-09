@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeClass specifies the a value class attribute.
+// AttributeClass specifies the value class attribute.
 type AttributeClass int
 
 const (
@@ -38,7 +38,7 @@ var MapAttributeClass = map[string]AttributeClass{
 	"services": AttributeClassServices,
 }
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -64,7 +64,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"transmitted": AttributeDirectionTransmitted,
 }
 
-// AttributeDiskState specifies the a value disk_state attribute.
+// AttributeDiskState specifies the value disk_state attribute.
 type AttributeDiskState int
 
 const (
@@ -90,7 +90,7 @@ var MapAttributeDiskState = map[string]AttributeDiskState{
 	"available": AttributeDiskStateAvailable,
 }
 
-// AttributePacketType specifies the a value packet.type attribute.
+// AttributePacketType specifies the value packet.type attribute.
 type AttributePacketType int
 
 const (

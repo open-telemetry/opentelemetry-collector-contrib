@@ -40,6 +40,8 @@ GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
 GOTESTARCH?=$(GOARCH)
 
+DOCKERCMD ?= docker
+
 # In order to help reduce toil related to managing tooling for the open telemetry collector
 # this section of the makefile looks at only requiring command definitions to be defined
 # as part of $(TOOLS_MOD_DIR)/tools.go, following the existing practice.
@@ -206,9 +208,15 @@ checklicense: $(ADDLICENSE)
 
 .PHONY: checklinks
 checklinks:
-	command -v $(MDLINKCHECK) >/dev/null 2>&1 || { echo >&2 "$(MDLINKCHECK) not installed. Run 'npm install -g markdown-link-check'"; exit 1; }
-	find . -name \*.md -print0 | xargs -0 -n1 \
-		$(MDLINKCHECK) -q -c $(SRC_ROOT)/.github/workflows/check_links_config.json || true
+	command -v $(DOCKERCMD) >/dev/null 2>&1 || { echo >&2 "$(DOCKERCMD) not installed. Install before continuing"; exit 1; }
+	$(DOCKERCMD) run -w /home/repo --rm \
+		--mount 'type=bind,source='$(PWD)',target=/home/repo' \
+		--mount 'type=bind,source='$(SRC_ROOT)/.github/lychee.toml',target=/lychee.toml' \
+		lycheeverse/lychee \
+		--config /lychee.toml \
+		--root-dir /home/repo \
+		-v \
+		--no-progress './**/*.md'
 
 .PHONY: fmt
 fmt: $(GOFUMPT) $(GOIMPORTS)

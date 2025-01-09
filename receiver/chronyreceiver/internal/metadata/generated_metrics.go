@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeLeapStatus specifies the a value leap.status attribute.
+// AttributeLeapStatus specifies the value leap.status attribute.
 type AttributeLeapStatus int
 
 const (
