@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/receiver"
@@ -40,9 +41,14 @@ var (
 
 // The firehoseConsumer is responsible for using the unmarshaler and the consumer.
 type firehoseConsumer interface {
-	// Consume unmarshalls and consumes the records.
-	Consume(ctx context.Context, records [][]byte, commonAttributes map[string]string) (int, error)
+	// Consume unmarshals and consumes the records returned by f.
+	Consume(ctx context.Context, f nextRecordFunc, commonAttributes map[string]string) (int, error)
 }
+
+// nextRecordFunc is a function provided to consumers for obtaining the
+// next record to consume. The function returns (nil, io.EOF) when there
+// are no more records.
+type nextRecordFunc func() ([]byte, error)
 
 // firehoseReceiver
 type firehoseReceiver struct {
@@ -174,14 +180,8 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := fmr.getBody(r)
-	if err != nil {
-		fmr.sendResponse(w, requestID, http.StatusBadRequest, err)
-		return
-	}
-
 	var fr firehoseRequest
-	if err = json.Unmarshal(body, &fr); err != nil {
+	if err := jsoniter.ConfigFastest.NewDecoder(r.Body).Decode(&fr); err != nil {
 		fmr.sendResponse(w, requestID, http.StatusBadRequest, err)
 		return
 	}
@@ -194,24 +194,6 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	records := make([][]byte, 0, len(fr.Records))
-	for index, record := range fr.Records {
-		if record.Data != "" {
-			var decoded []byte
-			decoded, err = base64.StdEncoding.DecodeString(record.Data)
-			if err != nil {
-				fmr.sendResponse(
-					w,
-					requestID,
-					http.StatusBadRequest,
-					fmt.Errorf("unable to base64 decode the record at index %d: %w", index, err),
-				)
-				return
-			}
-			records = append(records, decoded)
-		}
-	}
-
 	commonAttributes, err := fmr.getCommonAttributes(r)
 	if err != nil {
 		fmr.settings.Logger.Error(
@@ -220,7 +202,24 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	statusCode, err := fmr.consumer.Consume(ctx, records, commonAttributes)
+	var recordIndex int
+	var recordBuf []byte
+	nextRecord := func() ([]byte, error) {
+		if recordIndex == len(fr.Records) {
+			return nil, io.EOF
+		}
+		record := fr.Records[recordIndex]
+		recordIndex++
+
+		var decodeErr error
+		recordBuf, decodeErr = base64.StdEncoding.AppendDecode(recordBuf[:0], []byte(record.Data))
+		if decodeErr != nil {
+			return nil, fmt.Errorf("unable to base64 decode the record at index %d: %w", recordIndex-1, decodeErr)
+		}
+		return recordBuf, nil
+	}
+
+	statusCode, err := fmr.consumer.Consume(ctx, nextRecord, commonAttributes)
 	if err != nil {
 		fmr.settings.Logger.Error(
 			"Unable to consume records",
@@ -229,7 +228,6 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fmr.sendResponse(w, requestID, statusCode, err)
 		return
 	}
-
 	fmr.sendResponse(w, requestID, http.StatusOK, nil)
 }
 
@@ -244,19 +242,6 @@ func (fmr *firehoseReceiver) validate(r *http.Request) (int, error) {
 		return http.StatusAccepted, nil
 	}
 	return http.StatusUnauthorized, errInvalidAccessKey
-}
-
-// getBody reads the body from the request as a slice of bytes.
-func (fmr *firehoseReceiver) getBody(r *http.Request) ([]byte, error) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	err = r.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
 }
 
 // getCommonAttributes unmarshalls the common attributes from the request header

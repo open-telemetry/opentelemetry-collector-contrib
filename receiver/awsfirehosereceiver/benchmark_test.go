@@ -15,12 +15,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func BenchmarkLogsConsumer_cwlogs(b *testing.B) {
@@ -35,7 +34,6 @@ func BenchmarkLogsConsumer_cwlogs(b *testing.B) {
 		// numLogs is the number of CoudWatch log records within a Firehose record.
 		for _, numLogs := range []int{1, 10} {
 			b.Run(fmt.Sprintf("%dresources_%drecords_%dlogs", numLogGroups, numRecords, numLogs), func(b *testing.B) {
-
 				config := createDefaultConfig().(*Config)
 				config.Endpoint = "localhost:0"
 				r, err := createLogsReceiver(
@@ -91,7 +89,6 @@ func BenchmarkMetricsConsumer_cwmetrics(b *testing.B) {
 		// numMetrics is the number of CoudWatch metrics within a Firehose record.
 		for _, numMetrics := range []int{1, 10} {
 			b.Run(fmt.Sprintf("%dresources_%drecords_%dmetrics", numStreams, numRecords, numMetrics), func(b *testing.B) {
-
 				config := createDefaultConfig().(*Config)
 				config.Endpoint = "localhost:0"
 				r, err := createMetricsReceiver(

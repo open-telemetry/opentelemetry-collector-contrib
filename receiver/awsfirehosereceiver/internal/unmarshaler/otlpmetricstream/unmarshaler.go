@@ -5,13 +5,12 @@ package otlpmetricstream // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/gogo/protobuf/proto"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 )
 
 const (
@@ -29,7 +28,7 @@ type Unmarshaler struct {
 	logger *zap.Logger
 }
 
-var _ unmarshaler.MetricsUnmarshaler = (*Unmarshaler)(nil)
+var _ pmetric.Unmarshaler = (*Unmarshaler)(nil)
 
 // NewUnmarshaler creates a new instance of the Unmarshaler.
 func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
@@ -37,29 +36,22 @@ func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
 }
 
 // Unmarshal deserializes the records into pmetric.Metrics
-func (u Unmarshaler) Unmarshal(records [][]byte) (pmetric.Metrics, error) {
+func (u Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
-	for recordIndex, record := range records {
-		dataLen, pos := len(record), 0
-		for pos < dataLen {
-			n, nLen := proto.DecodeVarint(record)
-			if nLen == 0 && n == 0 {
-				return md, errInvalidOTLPFormatStart
-			}
-			req := pmetricotlp.NewExportRequest()
-			pos += nLen
-			err := req.UnmarshalProto(record[pos : pos+int(n)])
-			pos += int(n)
-			if err != nil {
-				u.logger.Error(
-					"Unable to unmarshal input",
-					zap.Error(err),
-					zap.Int("record_index", recordIndex),
-				)
-				continue
-			}
-			req.Metrics().ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+	dataLen, pos := len(record), 0
+	for pos < dataLen {
+		n, nLen := proto.DecodeVarint(record)
+		if nLen == 0 && n == 0 {
+			return md, errInvalidOTLPFormatStart
 		}
+		req := pmetricotlp.NewExportRequest()
+		pos += nLen
+		err := req.UnmarshalProto(record[pos : pos+int(n)])
+		pos += int(n)
+		if err != nil {
+			return pmetric.Metrics{}, fmt.Errorf("unable to unmarshal input: %w", err)
+		}
+		req.Metrics().ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
 	}
 
 	return md, nil

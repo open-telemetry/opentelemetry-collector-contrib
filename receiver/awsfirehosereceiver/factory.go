@@ -10,11 +10,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/otlpmetricstream"
@@ -54,19 +55,19 @@ func validateRecordType(recordType string) error {
 
 // defaultMetricsUnmarshalers creates a map of the available metrics
 // unmarshalers.
-func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.MetricsUnmarshaler {
+func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]pmetric.Unmarshaler {
 	cwmsu := cwmetricstream.NewUnmarshaler(logger)
 	otlpv1msu := otlpmetricstream.NewUnmarshaler(logger)
-	return map[string]unmarshaler.MetricsUnmarshaler{
+	return map[string]pmetric.Unmarshaler{
 		cwmsu.Type():     cwmsu,
 		otlpv1msu.Type(): otlpv1msu,
 	}
 }
 
 // defaultLogsUnmarshalers creates a map of the available logs unmarshalers.
-func defaultLogsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.LogsUnmarshaler {
+func defaultLogsUnmarshalers(logger *zap.Logger) map[string]plog.Unmarshaler {
 	u := cwlog.NewUnmarshaler(logger)
-	return map[string]unmarshaler.LogsUnmarshaler{
+	return map[string]plog.Unmarshaler{
 		u.Type(): u,
 	}
 }

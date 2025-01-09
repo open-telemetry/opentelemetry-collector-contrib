@@ -4,14 +4,14 @@
 package cwlog
 
 import (
+	"bytes"
+	"compress/gzip"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog/compression"
 )
 
 func TestType(t *testing.T) {
@@ -57,11 +57,10 @@ func TestUnmarshal(t *testing.T) {
 			record, err := os.ReadFile(filepath.Join(".", "testdata", testCase.filename))
 			require.NoError(t, err)
 
-			compressedRecord, err := compression.Zip(record)
+			compressedRecord, err := gzipData(record)
 			require.NoError(t, err)
-			records := [][]byte{compressedRecord}
 
-			got, err := unmarshaler.Unmarshal(records)
+			got, err := unmarshaler.UnmarshalLogs(compressedRecord)
 			if testCase.wantErr != nil {
 				require.Error(t, err)
 				require.Equal(t, testCase.wantErr, err)
@@ -87,11 +86,10 @@ func TestLogTimestamp(t *testing.T) {
 	record, err := os.ReadFile(filepath.Join(".", "testdata", "single_record"))
 	require.NoError(t, err)
 
-	compressedRecord, err := compression.Zip(record)
+	compressedRecord, err := gzipData(record)
 	require.NoError(t, err)
-	records := [][]byte{compressedRecord}
 
-	got, err := unmarshaler.Unmarshal(records)
+	got, err := unmarshaler.UnmarshalLogs(compressedRecord)
 	require.NoError(t, err)
 	require.NotNil(t, got)
 	require.Equal(t, 1, got.ResourceLogs().Len())
@@ -102,4 +100,17 @@ func TestLogTimestamp(t *testing.T) {
 	ilm.LogRecords().At(0).Timestamp()
 	expectedTimestamp := "2024-09-05 13:47:15.523 +0000 UTC"
 	require.Equal(t, expectedTimestamp, ilm.LogRecords().At(0).Timestamp().String())
+}
+
+func gzipData(data []byte) ([]byte, error) {
+	var b bytes.Buffer
+	w := gzip.NewWriter(&b)
+
+	if _, err := w.Write(data); err != nil {
+		return nil, err
+	}
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
 }
