@@ -91,6 +91,7 @@ components:
         - geoip
         - groupbyattrs
         - groupbytrace
+        - interval
         - k8sattributes
         - logdedup
         - metricsgeneration
