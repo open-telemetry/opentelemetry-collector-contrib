@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/otel/attribute"
 	"regexp"
 	"strings"
 	"sync"
@@ -697,7 +696,7 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 		if c.Rules.ContainerName {
 			container.Name = apiStatus.Name
 		}
-		if c.Rules.AutoAnnotations {
+		if c.Rules.OperatorRules.Enabled {
 			container.ServiceInstanceID = createServiceInstanceID(pod, apiStatus.Name)
 		}
 		containerID := apiStatus.ContainerID
@@ -1032,8 +1031,7 @@ func needContainerAttributes(rules ExtractionRules) bool {
 		rules.ContainerImageTag ||
 		rules.ContainerImageRepoDigests ||
 		rules.ContainerID ||
-		rules.AutoAnnotations ||
-		rules.AutoAll
+		rules.OperatorRules.Enabled
 }
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
