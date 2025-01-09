@@ -158,6 +158,12 @@ func TestFirehoseRequest(t *testing.T) {
 			wantStatusCode: http.StatusInternalServerError,
 			wantErr:        firehoseConsumerErr,
 		},
+		"WithCorruptBase64Records": {
+			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
+				{Data: "XXXXXaGVsbG8="},
+			}),
+			wantStatusCode: http.StatusOK, // having an invalid record does not stop the request
+		},
 		"WithValidRecords": {
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				testFirehoseRecord("test"),
