@@ -211,6 +211,11 @@ type LabelFilter struct {
 	Op selection.Operator
 }
 
+type OperatorRules struct {
+	Enabled bool `mapstructure:"enabled"`
+	Labels  bool `mapstructure:"labels"`
+}
+
 // ExtractionRules is used to specify the information that needs to be extracted
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
@@ -239,11 +244,11 @@ type ExtractionRules struct {
 	ContainerImageRepoDigests bool
 	ContainerImageTag         bool
 	ClusterUID                bool
-	AutoAnnotations           bool
-	AutoAll                   bool
 
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule
+
+	OperatorRules OperatorRules
 }
 
 // IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners
