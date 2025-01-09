@@ -705,7 +705,8 @@ func TestExtractionRules(t *testing.T) {
 	operatorRules := ExtractionRules{
 		OperatorRules: OperatorRules{
 			Enabled: true,
-			Labels:  true},
+			Labels:  true,
+		},
 		Annotations: []FieldExtractionRule{OperatorAnnotationRule},
 		Labels:      OperatorLabelRules,
 	}
