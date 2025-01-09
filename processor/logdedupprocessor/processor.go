@@ -32,6 +32,7 @@ type logDedupProcessor struct {
 	cancel       context.CancelFunc
 	wg           sync.WaitGroup
 	mux          sync.Mutex
+	key          string
 }
 
 func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Settings) (*logDedupProcessor, error) {
@@ -52,6 +53,7 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 		remover:      newFieldRemover(cfg.ExcludeFields),
 		nextConsumer: nextConsumer,
 		logger:       settings.Logger,
+		key:          cfg.Key,
 	}, nil
 }
 
@@ -128,7 +130,7 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 
 func (p *logDedupProcessor) aggregateLog(logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource) {
 	p.remover.RemoveFields(logRecord)
-	p.aggregator.Add(resource, scope, logRecord)
+	p.aggregator.Add(resource, scope, logRecord, p.key)
 }
 
 // handleExportInterval sends metrics at the configured interval.

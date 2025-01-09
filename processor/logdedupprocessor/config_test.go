@@ -85,6 +85,46 @@ func TestValidateConfig(t *testing.T) {
 			expectedErr: errors.New("duplicate exclude_field"),
 		},
 		{
+			desc: "invalid key using entire body",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				Key:               bodyField,
+			},
+			expectedErr: errors.New("cannot use the entire body as key"),
+		},
+		{
+			desc: "invalid key using entire attributes",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				Key:               attributeField,
+			},
+			expectedErr: errors.New("cannot use the entire attributes as key"),
+		},
+		{
+			desc: "invalid key not starting with body or attributes",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				Key:               "not.valid",
+			},
+			expectedErr: errors.New("a key must start with body or attributes"),
+		},
+		{
+			desc: "empty key is the default behavior",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				Key:               "",
+			},
+			expectedErr: nil,
+		},
+		{
 			desc: "valid config",
 			cfg: &Config{
 				LogCountAttribute: defaultLogCountAttribute,
@@ -92,6 +132,7 @@ func TestValidateConfig(t *testing.T) {
 				Timezone:          defaultTimezone,
 				Conditions:        []string{},
 				ExcludeFields:     []string{"body.thing", "attributes.otherthing"},
+				Key:               "body.thing",
 			},
 			expectedErr: nil,
 		},

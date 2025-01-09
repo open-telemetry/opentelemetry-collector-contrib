@@ -308,3 +308,49 @@ func TestProcessorConsumeMultipleConditions(t *testing.T) {
 	err = p.Shutdown(context.Background())
 	require.NoError(t, err)
 }
+
+func TestProcessorDedupKey(t *testing.T) {
+	logsSink := &consumertest.LogsSink{}
+	settings := processortest.NewNopSettings()
+	cfg := &Config{
+		LogCountAttribute: defaultLogCountAttribute,
+		Interval:          1 * time.Second,
+		Timezone:          defaultTimezone,
+		Conditions:        []string{},
+		ExcludeFields: []string{
+			fmt.Sprintf("%s.remove_me", attributeField),
+		},
+		Key: "attributes.dedup_key",
+	}
+
+	// Create a processor
+	p, err := createLogsProcessor(context.Background(), settings, cfg, logsSink)
+	require.NoError(t, err)
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	logs, err := golden.ReadLogs(filepath.Join("testdata", "input", "dedupKeyLogs.yaml"))
+	require.NoError(t, err)
+
+	// Consume the payload
+	err = p.ConsumeLogs(context.Background(), logs)
+	require.NoError(t, err)
+
+	// Wait for the logs to be emitted
+	require.Eventually(t, func() bool {
+		return logsSink.LogRecordCount() > 0
+	}, 3*time.Second, 200*time.Millisecond)
+
+	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "dedupKeyLogs.yaml"))
+	require.NoError(t, err)
+
+	allSinkLogs := logsSink.AllLogs()
+	require.Len(t, allSinkLogs, 1)
+
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0], plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp")))
+
+	// Cleanup
+	err = p.Shutdown(context.Background())
+	require.NoError(t, err)
+}

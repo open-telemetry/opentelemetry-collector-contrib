@@ -1,0 +1,44 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: one
+          value:
+            intValue: "1"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: bool
+                value:
+                  boolValue: true
+              - key: str
+                value:
+                  stringValue: attr str
+              - key: dedup_key
+                value:
+                  stringValue: abc123
+            body:
+              stringValue: Deduplicated log record
+            severityText: info
+            spanId: ""
+            timeUnixNano: "1728069266547395000"
+            traceId: ""
+          - attributes:
+              - key: bool
+                value:
+                  boolValue: true
+              - key: str
+                value:
+                  stringValue: attr str
+              - key: remove_me
+                value:
+                  boolValue: false
+              - key: dedup_key
+                value:
+                  stringValue: abc123
+            body:
+              stringValue: Different log record but same dedup key
+            severityText: info
+            spanId: ""
+            timeUnixNano: "1728069206547395000"
+            traceId: ""
+        scope: {}

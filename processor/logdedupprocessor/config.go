@@ -45,6 +45,7 @@ type Config struct {
 	Timezone          string        `mapstructure:"timezone"`
 	ExcludeFields     []string      `mapstructure:"exclude_fields"`
 	Conditions        []string      `mapstructure:"conditions"`
+	Key               string        `mapstructure:"key"`
 }
 
 // createDefaultConfig returns the default config for the processor.
@@ -55,6 +56,7 @@ func createDefaultConfig() component.Config {
 		Timezone:          defaultTimezone,
 		ExcludeFields:     []string{},
 		Conditions:        []string{},
+		Key:               "",
 	}
 }
 
@@ -73,7 +75,15 @@ func (c Config) Validate() error {
 		return fmt.Errorf("timezone is invalid: %w", err)
 	}
 
-	return c.validateExcludeFields()
+	if err = c.validateExcludeFields(); err != nil {
+		return err
+	}
+
+	if err = c.validateKey(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // validateExcludeFields validates that all the exclude fields
@@ -98,6 +108,28 @@ func (c Config) validateExcludeFields() error {
 		}
 
 		knownExcludeFields[field] = struct{}{}
+	}
+
+	return nil
+}
+
+// validateKey validates that key is a valid field.
+// Valid fields have the format of `body.field` or `attributes.field`.
+func (c Config) validateKey() error {
+	if c.Key == "" {
+		return nil
+	}
+
+	// Special check to make sure the entire body or attributes is not used as key
+	switch c.Key {
+	case bodyField, attributeField:
+		return fmt.Errorf("cannot use the entire %s as key", c.Key)
+	}
+
+	// Split and ensure the field starts with `body` or `attributes`
+	parts := strings.Split(c.Key, fieldDelimiter)
+	if parts[0] != bodyField && parts[0] != attributeField {
+		return fmt.Errorf("a key must start with %s or %s", bodyField, attributeField)
 	}
 
 	return nil

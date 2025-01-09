@@ -54,10 +54,10 @@ func Test_logAggregatorAdd(t *testing.T) {
 
 	expectedResourceKey := getResourceKey(resource)
 	expectedScopeKey := getScopeKey(scope)
-	expectedLogKey := getLogKey(logRecord)
+	expectedLogKey := getLogKey(logRecord, "")
 
 	// Add logRecord
-	aggregator.Add(resource, scope, logRecord)
+	aggregator.Add(resource, scope, logRecord, "")
 
 	// Check resourceCounter was set
 	resourceCounter, ok := aggregator.resources[expectedResourceKey]
@@ -85,7 +85,7 @@ func Test_logAggregatorAdd(t *testing.T) {
 		return secondExpectedTimestamp
 	}
 
-	aggregator.Add(resource, scope, logRecord)
+	aggregator.Add(resource, scope, logRecord, "")
 	require.Equal(t, int64(2), lc.count)
 	require.Equal(t, secondExpectedTimestamp, lc.lastObservedTimestamp)
 }
@@ -139,7 +139,7 @@ func Test_logAggregatorExport(t *testing.T) {
 	logRecord := generateTestLogRecord(t, "body string")
 
 	// Add logRecord
-	aggregator.Add(resource, scope, logRecord)
+	aggregator.Add(resource, scope, logRecord, "")
 
 	exportedLogs := aggregator.Export(context.Background())
 	require.Equal(t, 1, exportedLogs.LogRecordCount())
@@ -254,8 +254,8 @@ func Test_getLogKey(t *testing.T) {
 
 				logRecord2 := generateTestLogRecord(t, "Body of the log")
 
-				key1 := getLogKey(logRecord1)
-				key2 := getLogKey(logRecord2)
+				key1 := getLogKey(logRecord1, "")
+				key2 := getLogKey(logRecord2, "")
 
 				require.Equal(t, key1, key2)
 			},
@@ -267,10 +267,26 @@ func Test_getLogKey(t *testing.T) {
 
 				logRecord2 := generateTestLogRecord(t, "A different Body of the log")
 
-				key1 := getLogKey(logRecord1)
-				key2 := getLogKey(logRecord2)
+				key1 := getLogKey(logRecord1, "")
+				key2 := getLogKey(logRecord2, "")
 
 				require.NotEqual(t, key1, key2)
+			},
+		},
+		{
+			desc: "getLogKey returns the dedup key",
+			testFunc: func(t *testing.T) {
+				dedupValue := "abc123"
+				logRecord := generateTestLogRecordWithMap(t)
+				logRecord.Body().Map().PutStr("dedup_key", dedupValue)
+				logRecord.Attributes().PutStr("dedup_key", dedupValue)
+
+				expected := pdatautil.Hash64(
+					pdatautil.WithString(dedupValue),
+				)
+
+				require.Equal(t, expected, getLogKey(logRecord, "body.dedup_key"))
+				require.Equal(t, expected, getLogKey(logRecord, "attributes.dedup_key"))
 			},
 		},
 	}
@@ -289,5 +305,12 @@ func generateTestLogRecord(t *testing.T, body string) plog.LogRecord {
 	logRecord.Attributes().PutBool("bool", true)
 	logRecord.Attributes().PutStr("str", "attr str")
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return logRecord
+}
+
+func generateTestLogRecordWithMap(t *testing.T) plog.LogRecord {
+	t.Helper()
+	logRecord := generateTestLogRecord(t, "")
+	logRecord.Body().SetEmptyMap()
 	return logRecord
 }

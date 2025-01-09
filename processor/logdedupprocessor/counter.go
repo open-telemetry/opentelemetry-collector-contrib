@@ -79,14 +79,14 @@ func (l *logAggregator) Export(ctx context.Context) plog.Logs {
 }
 
 // Add adds the logRecord to the resource aggregator that is identified by the resource attributes
-func (l *logAggregator) Add(resource pcommon.Resource, scope pcommon.InstrumentationScope, logRecord plog.LogRecord) {
+func (l *logAggregator) Add(resource pcommon.Resource, scope pcommon.InstrumentationScope, logRecord plog.LogRecord, dedupField string) {
 	key := getResourceKey(resource)
 	resourceAggregator, ok := l.resources[key]
 	if !ok {
 		resourceAggregator = newResourceAggregator(resource)
 		l.resources[key] = resourceAggregator
 	}
-	resourceAggregator.Add(scope, logRecord)
+	resourceAggregator.Add(scope, logRecord, dedupField)
 }
 
 // Reset resets the counter.
@@ -109,14 +109,14 @@ func newResourceAggregator(resource pcommon.Resource) *resourceAggregator {
 }
 
 // Add increments the counter that the logRecord matches.
-func (r *resourceAggregator) Add(scope pcommon.InstrumentationScope, logRecord plog.LogRecord) {
+func (r *resourceAggregator) Add(scope pcommon.InstrumentationScope, logRecord plog.LogRecord, dedupField string) {
 	key := getScopeKey(scope)
 	scopeAggregator, ok := r.scopeCounters[key]
 	if !ok {
 		scopeAggregator = newScopeAggregator(scope)
 		r.scopeCounters[key] = scopeAggregator
 	}
-	scopeAggregator.Add(logRecord)
+	scopeAggregator.Add(logRecord, dedupField)
 }
 
 // scopeAggregator dimensions the counter by scope.
@@ -134,8 +134,8 @@ func newScopeAggregator(scope pcommon.InstrumentationScope) *scopeAggregator {
 }
 
 // Add increments the counter that the logRecord matches.
-func (s *scopeAggregator) Add(logRecord plog.LogRecord) {
-	key := getLogKey(logRecord)
+func (s *scopeAggregator) Add(logRecord plog.LogRecord, dedupField string) {
+	key := getLogKey(logRecord, dedupField)
 	lc, ok := s.logCounters[key]
 	if !ok {
 		lc = newLogCounter(logRecord)
@@ -184,12 +184,57 @@ func getScopeKey(scope pcommon.InstrumentationScope) uint64 {
 	)
 }
 
-// getLogKey creates a unique hash for the log record to use as a map key
-func getLogKey(logRecord plog.LogRecord) uint64 {
+// getLogKey creates a unique hash for the log record to use as a map key.
+// If dedupField is non-empty, it is used to determine the field whose value is hashed.
+func getLogKey(logRecord plog.LogRecord, dedupField string) uint64 {
+	if dedupField != "" {
+		parts := splitField(dedupField)
+
+		var m pcommon.Map
+		switch parts[0] {
+		case bodyField:
+			if logRecord.Body().Type() == pcommon.ValueTypeMap {
+				m = logRecord.Body().Map()
+			}
+		case attributeField:
+			m = logRecord.Attributes()
+		}
+
+		value, ok := getKeyValue(m, parts[1:])
+		if ok {
+			return pdatautil.Hash64(
+				pdatautil.WithString(value.AsString()),
+			)
+		}
+	}
+
 	return pdatautil.Hash64(
 		pdatautil.WithMap(logRecord.Attributes()),
 		pdatautil.WithValue(logRecord.Body()),
 		pdatautil.WithString(logRecord.SeverityNumber().String()),
 		pdatautil.WithString(logRecord.SeverityText()),
 	)
+}
+
+func getKeyValue(valueMap pcommon.Map, keyParts []string) (pcommon.Value, bool) {
+	nextKeyPart, remainingParts := keyParts[0], keyParts[1:]
+
+	// Look for the value associated with the next key part.
+	// If we don't find it then return
+	value, ok := valueMap.Get(nextKeyPart)
+	if !ok {
+		return pcommon.NewValueEmpty(), false
+	}
+
+	// No more key parts that means we have found the value
+	if len(remainingParts) == 0 {
+		return valueMap.Get(nextKeyPart)
+	}
+
+	// If the value is a map then recurse through with the remaining parts
+	if value.Type() == pcommon.ValueTypeMap {
+		return getKeyValue(value.Map(), remainingParts)
+	}
+
+	return pcommon.NewValueEmpty(), false
 }
