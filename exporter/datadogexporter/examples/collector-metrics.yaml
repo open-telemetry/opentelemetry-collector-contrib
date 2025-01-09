@@ -17,7 +17,7 @@ exporters:
   datadog:
     api:
       site: ${env:DD_SITE}
-      key: ${env:DD_API_KEY}
+      key: ${DD_API_KEY}
 
 service:
   pipelines:
