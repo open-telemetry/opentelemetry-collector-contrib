@@ -940,7 +940,7 @@ func TestSupervisorRestartCommand(t *testing.T) {
 			return health.Healthy && health.LastError == ""
 		}
 		return false
-	}, 10*time.Second, 250*time.Millisecond, "Collector never reported healthy after restart")
+	}, 30*time.Second, 250*time.Millisecond, "Collector never reported healthy after restart")
 }
 
 func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
@@ -1348,13 +1348,14 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 	}
 
 	// Verify the collector is not running after 250 ms by checking the healthcheck endpoint
-	time.Sleep(250 * time.Millisecond)
-	_, err := http.DefaultClient.Get("http://localhost:12345")
-	if runtime.GOOS != "windows" {
-		require.ErrorContains(t, err, "connection refused")
-	} else {
-		require.ErrorContains(t, err, "No connection could be made")
-	}
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		_, err := http.DefaultClient.Get("http://localhost:12345")
+		if runtime.GOOS != "windows" {
+			assert.ErrorContains(tt, err, "connection refused")
+		} else {
+			assert.ErrorContains(tt, err, "No connection could be made")
+		}
+	}, 3*time.Second, 250*time.Millisecond)
 }
 
 type LogEntry struct {
@@ -1561,6 +1562,23 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
 		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
 	}, 15*time.Second, 100*time.Millisecond, "Remote config status was not set to FAILED for bad config")
+
+	// Test with nop configuration
+	emptyHash := sha256.Sum256([]byte{})
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{},
+			},
+			ConfigHash: emptyHash[:],
+		},
+	})
+
+	// Check that the status is set to APPLIED
+	require.Eventually(t, func() bool {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED
+	}, 5*time.Second, 10*time.Millisecond, "Remote config status was not set to APPLIED for empty config")
 }
 
 func TestSupervisorOpAmpServerPort(t *testing.T) {

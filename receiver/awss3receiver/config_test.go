@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "1"),
-			errorMessage: "s3_partition must be either 'hour' or 'minute'; unable to parse starttime (a date), accepted formats: 2006-01-02 15:04, 2006-01-02; unable to parse endtime (2024-02-03a), accepted formats: 2006-01-02 15:04, 2006-01-02",
+			errorMessage: "s3_partition must be either 'hour' or 'minute'; unable to parse starttime (a date), accepted formats: 2006-01-02T15:04:05Z07:00, 2006-01-02 15:04, 2006-01-02; unable to parse endtime (2024-02-03a), accepted formats: 2006-01-02T15:04:05Z07:00, 2006-01-02 15:04, 2006-01-02",
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
@@ -92,6 +92,19 @@ func TestLoadConfig(t *testing.T) {
 				Notifications: Notifications{
 					OpAMP: &opampExtension,
 				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "4"),
+			expected: &Config{
+				S3Downloader: S3DownloaderConfig{
+					Region:              "us-east-1",
+					S3Bucket:            "abucket",
+					S3Partition:         "minute",
+					EndpointPartitionID: "aws",
+				},
+				StartTime: "2024-01-31T15:00:00Z",
+				EndTime:   "2024-02-03T00:00:00Z",
 			},
 		},
 	}

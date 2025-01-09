@@ -80,7 +80,6 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 			}),
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -160,7 +159,6 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 			}),
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 

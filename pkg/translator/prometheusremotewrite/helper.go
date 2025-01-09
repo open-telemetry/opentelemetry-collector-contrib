@@ -37,7 +37,7 @@ const (
 	createdSuffix = "_created"
 	// maxExemplarRunes is the maximum number of UTF-8 exemplar characters
 	// according to the prometheus specification
-	// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#exemplars
+	// https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#exemplars
 	maxExemplarRunes = 128
 	infoType         = "info"
 )
@@ -301,9 +301,18 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 		exemplar := pt.Exemplars().At(i)
 		exemplarRunes := 0
 
-		promExemplar := prompb.Exemplar{
-			Value:     exemplar.DoubleValue(),
-			Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
+		var promExemplar prompb.Exemplar
+		switch exemplar.ValueType() {
+		case pmetric.ExemplarValueTypeInt:
+			promExemplar = prompb.Exemplar{
+				Value:     float64(exemplar.IntValue()),
+				Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
+			}
+		case pmetric.ExemplarValueTypeDouble:
+			promExemplar = prompb.Exemplar{
+				Value:     exemplar.DoubleValue(),
+				Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
+			}
 		}
 		if traceID := exemplar.TraceID(); !traceID.IsEmpty() {
 			val := hex.EncodeToString(traceID[:])
@@ -359,37 +368,30 @@ func mostRecentTimestampInMetric(metric pmetric.Metric) pcommon.Timestamp {
 	case pmetric.MetricTypeGauge:
 		dataPoints := metric.Gauge().DataPoints()
 		for x := 0; x < dataPoints.Len(); x++ {
-			ts = maxTimestamp(ts, dataPoints.At(x).Timestamp())
+			ts = max(ts, dataPoints.At(x).Timestamp())
 		}
 	case pmetric.MetricTypeSum:
 		dataPoints := metric.Sum().DataPoints()
 		for x := 0; x < dataPoints.Len(); x++ {
-			ts = maxTimestamp(ts, dataPoints.At(x).Timestamp())
+			ts = max(ts, dataPoints.At(x).Timestamp())
 		}
 	case pmetric.MetricTypeHistogram:
 		dataPoints := metric.Histogram().DataPoints()
 		for x := 0; x < dataPoints.Len(); x++ {
-			ts = maxTimestamp(ts, dataPoints.At(x).Timestamp())
+			ts = max(ts, dataPoints.At(x).Timestamp())
 		}
 	case pmetric.MetricTypeExponentialHistogram:
 		dataPoints := metric.ExponentialHistogram().DataPoints()
 		for x := 0; x < dataPoints.Len(); x++ {
-			ts = maxTimestamp(ts, dataPoints.At(x).Timestamp())
+			ts = max(ts, dataPoints.At(x).Timestamp())
 		}
 	case pmetric.MetricTypeSummary:
 		dataPoints := metric.Summary().DataPoints()
 		for x := 0; x < dataPoints.Len(); x++ {
-			ts = maxTimestamp(ts, dataPoints.At(x).Timestamp())
+			ts = max(ts, dataPoints.At(x).Timestamp())
 		}
 	}
 	return ts
-}
-
-func maxTimestamp(a, b pcommon.Timestamp) pcommon.Timestamp {
-	if a > b {
-		return a
-	}
-	return b
 }
 
 func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
