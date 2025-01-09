@@ -4,7 +4,6 @@ go 1.22.7
 
 require (
 	github.com/jaegertracing/jaeger v1.64.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.117.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.117.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.117.0
 	github.com/openzipkin/zipkin-go v0.4.3
@@ -36,7 +35,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
@@ -58,7 +56,6 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.117.0 // indirect
 	go.opentelemetry.io/collector/extension v0.117.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.117.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.23.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.117.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.117.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.117.0 // indirect
@@ -79,8 +76,6 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../../pkg/translator/zipkin
 
