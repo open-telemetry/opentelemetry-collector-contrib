@@ -644,7 +644,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		removeUnnecessaryContainerData := func(c api_v1.Container) api_v1.Container {
 			transformedContainer := api_v1.Container{}
 			transformedContainer.Name = c.Name // we always need the name, it's used for identification
-			if rules.ContainerImageName || rules.ContainerImageTag {
+			if rules.ContainerImageName || rules.ContainerImageTag || rules.OperatorRules.Enabled {
 				transformedContainer.Image = c.Image
 			}
 			return transformedContainer
@@ -685,7 +685,7 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	if !needContainerAttributes(c.Rules) {
 		return containers
 	}
-	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag {
+	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag || c.Rules.OperatorRules.Enabled {
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 			container := &Container{}
 			imageRef, err := dcommon.ParseImageName(spec.Image)
@@ -695,6 +695,9 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 				}
 				if c.Rules.ContainerImageTag {
 					container.ImageTag = imageRef.Tag
+				}
+				if c.Rules.OperatorRules.Enabled {
+					container.ServiceVersion = tag
 				}
 			}
 			containers.ByName[spec.Name] = container
