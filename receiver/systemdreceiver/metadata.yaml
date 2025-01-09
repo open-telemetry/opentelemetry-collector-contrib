@@ -40,7 +40,7 @@ attributes:
       - maintenance
       - refreshing
   sub_state:
-    description: The sub state of the unit
+    description: The sub state of the serice unit
     type: string
     enum:
       - dead

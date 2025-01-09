@@ -21,15 +21,19 @@ import (
 func (s *systemdReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.logger.Debug("starting scrape")
 
-	conn, err := dbus.NewSystemdConnectionContext(ctx)
-	if err != nil {
-		return pmetric.NewMetrics(), err
+	if !s.client.Connected() {
+		s.logger.Debug("Reconnecting to systemd after connection loss")
+		s.client.Close()
+		client, err := dbus.NewSystemConnectionContext(s.ctx)
+		if err != nil {
+			return pmetric.NewMetrics(), err
+		}
+		s.client = client
 	}
-	defer conn.Close()
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 	s.logger.Debug("Fetching units")
-	units, err := conn.ListUnitsByNamesContext(ctx, s.config.Units)
+	units, err := s.client.ListUnitsByNamesContext(ctx, s.config.Units)
 	if err != nil {
 		return pmetric.NewMetrics(), err
 	}
@@ -44,7 +48,7 @@ func (s *systemdReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.mb.RecordSystemdUnitSubStateDataPoint(now, int64(metadata.MapAttributeSubState[unit.SubState]), metadata.MapAttributeSubState[unit.SubState])
 		s.mb.RecordSystemdUnitStateDataPoint(now, int64(metadata.MapAttributeSubState[unit.SubState]), metadata.MapAttributeLoadState[unit.LoadState], metadata.MapAttributeActiveState[unit.ActiveState], metadata.MapAttributeSubState[unit.SubState])
 
-		props, err := conn.GetAllPropertiesContext(ctx, unit.Name)
+		props, err := s.client.GetAllPropertiesContext(ctx, unit.Name)
 		if err != nil {
 			errors = append(errors, err)
 		}

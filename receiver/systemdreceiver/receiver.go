@@ -16,6 +16,8 @@ type systemdReceiver struct {
 	logger *zap.Logger
 	config *Config
 
+	client dbusClient
+
 	ctx    context.Context
 	cancel context.CancelFunc
 
@@ -43,6 +45,7 @@ func (s *systemdReceiver) Start(ctx context.Context, _ component.Host) error {
 }
 
 func (s *systemdReceiver) Shutdown(_ context.Context) error {
+	s.client.Close()
 	s.cancel()
 	return nil
 }
