@@ -210,6 +210,8 @@ func New(
 func (c *WatchClient) Start() error {
 	synced := make([]cache.InformerSynced, 0)
 
+	// start the replicaSet informer first, as the replica sets need to be
+	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
 	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
 		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
