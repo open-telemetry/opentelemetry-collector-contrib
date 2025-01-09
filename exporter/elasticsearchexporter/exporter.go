@@ -178,12 +178,12 @@ func (e *elasticsearchExporter) pushLogRecord(
 		fIndex = formattedIndex
 	}
 
+	docID := e.extractDocumentIDAttribute(record.Attributes())
 	document, err := e.model.encodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
 
-	docID := e.getDocumentIDAttribute(record.Attributes())
 	return bulkIndexerSession.Add(ctx, fIndex, docID, bytes.NewReader(document), nil)
 }
 
@@ -460,9 +460,10 @@ func (e *elasticsearchExporter) pushSpanEvent(
 	return bulkIndexerSession.Add(ctx, fIndex, "", bytes.NewReader(docBytes), nil)
 }
 
-func (e *elasticsearchExporter) getDocumentIDAttribute(m pcommon.Map) string {
+func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string {
 	if e.config.LogsDynamicID.Enabled {
 		docID, ok := getFromAttributes(documentIDAttributeName, "", m)
+		m.Remove(documentIDAttributeName)
 		if docID != "" && ok {
 			return docID
 		}

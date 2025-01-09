@@ -787,10 +787,14 @@ func TestExporterLogs(t *testing.T) {
 						} else {
 							assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
 						}
+
+						// Ensure the document id attribute is removed from the final document.
+						assert.NotContains(t, docs[0].Document, documentIDAttributeName, "expected document id attribute to be removed")
 						return itemsAllOK(docs)
 					})
 
 					exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+						cfg.Mapping.Mode = "otel"
 						cfg.LogsDynamicID.Enabled = true
 						cfgFn(cfg)
 					})
