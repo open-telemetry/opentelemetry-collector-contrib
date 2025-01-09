@@ -643,11 +643,8 @@ func TestExtractionRules(t *testing.T) {
 			Namespace:         "ns1",
 			CreationTimestamp: meta_v1.Now(),
 			Labels: map[string]string{
-				"label1":                    "lv1",
-				"label2":                    "k1=v1 k5=v5 extra!",
-				"app.kubernetes.io/name":    "auth-service",
-				"app.kubernetes.io/version": "1.0.0",
-				"app.kubernetes.io/part-of": "auth",
+				"label1": "lv1",
+				"label2": "k1=v1 k5=v5 extra!",
 			},
 			Annotations: map[string]string{
 				"annotation1": "av1",
@@ -705,16 +702,26 @@ func TestExtractionRules(t *testing.T) {
 		},
 	}
 
+	operatorRules := ExtractionRules{
+		OperatorRules: OperatorRules{
+			Enabled: true,
+			Labels:  true},
+		Annotations: []FieldExtractionRule{OperatorAnnotationRule},
+		Labels:      OperatorLabelRules,
+	}
+
 	testCases := []struct {
 		name                  string
 		rules                 ExtractionRules
 		additionalAnnotations map[string]string
+		additionalLabels      map[string]string
 		attributes            map[string]string
+		serviceName           string
 	}{
 		{
 			name:       "no-rules",
 			rules:      ExtractionRules{},
-			attributes: nil,
+			attributes: map[string]string{},
 		},
 		{
 			name: "deployment",
@@ -967,38 +974,41 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
-			name: "operator-rules",
-			rules: ExtractionRules{
-				Annotations: []FieldExtractionRule{OperatorAnnotationRule},
-				Labels:      OperatorLabelRules,
+			name:       "operator-rules-builtin",
+			rules:      operatorRules,
+			attributes: map[string]string{
+				// tested in operator-container-level-attributes below
 			},
-			additionalAnnotations: map[string]string{
-				"resource.opentelemetry.io/service.instance.id": "instance-id",
+			serviceName: "auth-service",
+		},
+		{
+			name:  "operator-rules-label-values",
+			rules: operatorRules,
+			additionalLabels: map[string]string{
+				"app.kubernetes.io/name":    "label-service",
+				"app.kubernetes.io/version": "label-version",
+				"app.kubernetes.io/part-of": "label-namespace",
 			},
 			attributes: map[string]string{
-				"service.instance.id": "instance-id",
-				"service.name":        "auth-service",
-				"service.version":     "1.0.0",
-				"service.namespace":   "auth",
+				"service.name":      "label-service",
+				"service.version":   "label-version",
+				"service.namespace": "label-namespace",
 			},
 		},
 		{
-			name: "operator-rules-annotation-override",
-			rules: ExtractionRules{
-				Annotations: []FieldExtractionRule{OperatorAnnotationRule},
-				Labels:      OperatorLabelRules,
-			},
+			name:  "operator-rules-annotation-override",
+			rules: operatorRules,
 			additionalAnnotations: map[string]string{
-				"resource.opentelemetry.io/service.instance.id": "instance-id",
-				"resource.opentelemetry.io/service.version":     "1.1.0",
-				"resource.opentelemetry.io/service.name":        "auth-service2",
-				"resource.opentelemetry.io/service.namespace":   "auth2",
+				"resource.opentelemetry.io/service.instance.id": "annotation-id",
+				"resource.opentelemetry.io/service.version":     "annotation-version",
+				"resource.opentelemetry.io/service.name":        "annotation-service",
+				"resource.opentelemetry.io/service.namespace":   "annotation-namespace",
 			},
 			attributes: map[string]string{
-				"service.instance.id": "instance-id",
-				"service.name":        "auth-service2",
-				"service.version":     "1.0.0",
-				"service.namespace":   "auth2",
+				"service.instance.id": "annotation-id",
+				"service.name":        "annotation-service",
+				"service.version":     "annotation-version",
+				"service.namespace":   "annotation-namespace",
 			},
 		},
 	}
@@ -1012,6 +1022,9 @@ func TestExtractionRules(t *testing.T) {
 			for k, v := range tc.additionalAnnotations {
 				pod.Annotations[k] = v
 			}
+			for k, v := range tc.additionalLabels {
+				pod.Labels[k] = v
+			}
 			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
 			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
 			c.handleReplicaSetAdd(transformedReplicaset)
@@ -1020,6 +1033,9 @@ func TestExtractionRules(t *testing.T) {
 			require.True(t, ok)
 
 			assert.Equal(t, tc.attributes, p.Attributes)
+			if tc.serviceName != "" {
+				assert.Equal(t, tc.serviceName, OperatorServiceName("containerName", p.ServiceNames))
+			}
 		})
 	}
 }
@@ -1078,7 +1094,7 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 		{
 			name:       "no-rules",
 			rules:      ExtractionRules{},
-			attributes: nil,
+			attributes: map[string]string{},
 		}, {
 			name: "one_deployment_is_controller",
 			ownerReferences: []meta_v1.OwnerReference{
@@ -1170,12 +1186,7 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
 
-			assert.Len(t, p.Attributes, len(tc.attributes))
-			for k, v := range tc.attributes {
-				got, ok := p.Attributes[k]
-				assert.True(t, ok)
-				assert.Equal(t, v, got)
-			}
+			assert.Equal(t, tc.attributes, p.Attributes)
 		})
 	}
 }
@@ -1614,16 +1625,16 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			pod: &pod,
 			want: PodContainers{
 				ByID: map[string]*Container{
-					"container1-id-123":     {ServiceInstanceID: "test-namespace.test-pod.container1", ServiceVersion: "0.1.0"},
-					"container2-id-456":     {ServiceInstanceID: "test-namespace.test-pod.container2"},
-					"container3-id-abc":     {ServiceInstanceID: "test-namespace.test-pod.container3", ServiceVersion: "1.0"},
-					"init-container-id-789": {ServiceInstanceID: "test-namespace.test-pod.init_container", ServiceVersion: "latest"},
+					"container1-id-123":     {ServiceName: "container1", ServiceInstanceID: "test-namespace.test-pod.container1", ServiceVersion: "0.1.0"},
+					"container2-id-456":     {ServiceName: "container2", ServiceInstanceID: "test-namespace.test-pod.container2"},
+					"container3-id-abc":     {ServiceName: "container3", ServiceInstanceID: "test-namespace.test-pod.container3", ServiceVersion: "1.0"},
+					"init-container-id-789": {ServiceName: "init_container", ServiceInstanceID: "test-namespace.test-pod.init_container", ServiceVersion: "latest"},
 				},
 				ByName: map[string]*Container{
-					"container1":     {ServiceInstanceID: "test-namespace.test-pod.container1", ServiceVersion: "0.1.0"},
-					"container2":     {ServiceInstanceID: "test-namespace.test-pod.container2"},
-					"container3":     {ServiceInstanceID: "test-namespace.test-pod.container3", ServiceVersion: "1.0"},
-					"init_container": {ServiceInstanceID: "test-namespace.test-pod.init_container", ServiceVersion: "latest"},
+					"container1":     {ServiceName: "container1", ServiceInstanceID: "test-namespace.test-pod.container1", ServiceVersion: "0.1.0"},
+					"container2":     {ServiceName: "container2", ServiceInstanceID: "test-namespace.test-pod.container2"},
+					"container3":     {ServiceName: "container3", ServiceInstanceID: "test-namespace.test-pod.container3", ServiceVersion: "1.0"},
+					"init_container": {ServiceName: "init_container", ServiceInstanceID: "test-namespace.test-pod.init_container", ServiceVersion: "latest"},
 				},
 			},
 		},
