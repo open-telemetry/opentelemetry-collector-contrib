@@ -6,14 +6,8 @@
 #
 
 
-# Start SQL Server in the background
-/opt/mssql/bin/sqlservr &
+# Start the script to create the DB and user
+/usr/src/app/configure-db.sh &
 
-# Wait for SQL Server to start
-sleep 30s
-
-# Run the setup script to create the DB and the schema in the DB
-/usr/src/app/configure-db.sh
-
-# Call the original entrypoint script
-wait
+# Start SQL Server
+/opt/mssql/bin/sqlservr

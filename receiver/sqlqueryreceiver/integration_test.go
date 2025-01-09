@@ -41,9 +41,9 @@ const (
 	sqlServerPort  = "1433"
 )
 
-type DbEngine struct {
+type DbEngineUnderTest struct {
 	Port                     string
-	SqlParameter             string
+	SQLParameter             string
 	CheckCompatibility       func(t *testing.T)
 	ConnectionString         func(host string, externalPort nat.Port) string
 	Driver                   string
@@ -53,10 +53,10 @@ type DbEngine struct {
 }
 
 var (
-	Postgres = DbEngine{
+	Postgres = DbEngineUnderTest{
 		Port:         postgresqlPort,
-		SqlParameter: "$1",
-		CheckCompatibility: func(t *testing.T) {
+		SQLParameter: "$1",
+		CheckCompatibility: func(_ *testing.T) {
 			// No compatibility checks needed for Postgres
 		},
 		ConnectionString: func(host string, externalPort nat.Port) string {
@@ -82,11 +82,11 @@ var (
 				WithStartupTimeout(2 * time.Minute),
 		},
 	}
-	MySql = DbEngine{
+	MySQL = DbEngineUnderTest{
 		Port:         mysqlPort,
-		SqlParameter: "?",
-		CheckCompatibility: func(t *testing.T) {
-			// No compatibility checks needed for MySql
+		SQLParameter: "?",
+		CheckCompatibility: func(_ *testing.T) {
+			// No compatibility checks needed for MySQL
 		},
 		ConnectionString: func(host string, externalPort nat.Port) string {
 			return fmt.Sprintf("otel:otel@tcp(%s:%s)/otel", host, externalPort.Port())
@@ -111,9 +111,9 @@ var (
 			WaitingFor:   wait.ForListeningPort(mysqlPort).WithStartupTimeout(2 * time.Minute),
 		},
 	}
-	Oracle = DbEngine{
+	Oracle = DbEngineUnderTest{
 		Port:         oraclePort,
-		SqlParameter: ":1",
+		SQLParameter: ":1",
 		CheckCompatibility: func(t *testing.T) {
 			if runtime.GOARCH == "arm64" {
 				t.Skip("Incompatible with arm64")
@@ -135,9 +135,9 @@ var (
 			WaitingFor:   wait.NewHealthStrategy().WithStartupTimeout(30 * time.Minute),
 		},
 	}
-	SqlServer = DbEngine{
+	SQLServer = DbEngineUnderTest{
 		Port:         sqlServerPort,
-		SqlParameter: "@p1",
+		SQLParameter: "@p1",
 		CheckCompatibility: func(t *testing.T) {
 			if runtime.GOARCH == "arm64" {
 				t.Skip("Incompatible with arm64")
@@ -155,10 +155,6 @@ var (
 				Context:    filepath.Join("testdata", "integration", "sqlserver"),
 				Dockerfile: "Dockerfile",
 			},
-			Env: map[string]string{
-				"ACCEPT_EULA": "Y",
-				"SA_PASSWORD": "YourStrong!Passw0rd",
-			},
 			ExposedPorts: []string{sqlServerPort},
 			WaitingFor: wait.ForAll(
 				wait.ForListeningPort(sqlServerPort),
@@ -171,11 +167,11 @@ var (
 func TestIntegrationLogsTrackingWithStorage(t *testing.T) {
 	tests := []struct {
 		name   string
-		engine DbEngine
+		engine DbEngineUnderTest
 	}{
 		{name: "Postgres", engine: Postgres},
-		{name: "MySQL", engine: MySql},
-		{name: "SqlServer", engine: SqlServer},
+		{name: "MySQL", engine: MySQL},
+		{name: "SQLServer", engine: SQLServer},
 		{name: "Oracle", engine: Oracle},
 	}
 
@@ -199,7 +195,7 @@ func TestIntegrationLogsTrackingWithStorage(t *testing.T) {
 			config.StorageID = &storageExtension.ID
 			config.Queries = []sqlquery.Query{
 				{
-					SQL: fmt.Sprintf("select * from simple_logs where %s > %s", trackingColumn, tt.engine.SqlParameter),
+					SQL: fmt.Sprintf("select * from simple_logs where %s > %s", trackingColumn, tt.engine.SQLParameter),
 					Logs: []sqlquery.LogsCfg{
 						{
 							BodyColumn:       tt.engine.ConvertColumnName("body"),
@@ -238,7 +234,7 @@ func TestIntegrationLogsTrackingWithStorage(t *testing.T) {
 			config.StorageID = &storageExtension.ID
 			config.Queries = []sqlquery.Query{
 				{
-					SQL: fmt.Sprintf("select * from simple_logs where %s > %s", trackingColumn, tt.engine.SqlParameter),
+					SQL: fmt.Sprintf("select * from simple_logs where %s > %s", trackingColumn, tt.engine.SQLParameter),
 					Logs: []sqlquery.LogsCfg{
 						{
 							BodyColumn:       tt.engine.ConvertColumnName("body"),
@@ -268,7 +264,7 @@ func TestIntegrationLogsTrackingWithStorage(t *testing.T) {
 			config.StorageID = &storageExtension.ID
 			config.Queries = []sqlquery.Query{
 				{
-					SQL: fmt.Sprintf("select * from simple_logs where %s > %s", trackingColumn, tt.engine.SqlParameter),
+					SQL: fmt.Sprintf("select * from simple_logs where %s > %s", trackingColumn, tt.engine.SQLParameter),
 					Logs: []sqlquery.LogsCfg{
 						{
 							BodyColumn:       tt.engine.ConvertColumnName("body"),
@@ -303,18 +299,18 @@ func TestIntegrationLogsTrackingWithStorage(t *testing.T) {
 func TestIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 	tests := []struct {
 		name                     string
-		engine                   DbEngine
+		engine                   DbEngineUnderTest
 		trackingColumn           string
 		trackingStartValue       string
 		trackingStartValueFormat string
 	}{
 		{name: "PostgresById", engine: Postgres, trackingColumn: "id", trackingStartValue: "0", trackingStartValueFormat: ""},
-		{name: "MySQLById", engine: MySql, trackingColumn: "id", trackingStartValue: "0", trackingStartValueFormat: ""},
-		{name: "SqlServerById", engine: SqlServer, trackingColumn: "id", trackingStartValue: "0", trackingStartValueFormat: ""},
+		{name: "MySQLById", engine: MySQL, trackingColumn: "id", trackingStartValue: "0", trackingStartValueFormat: ""},
+		{name: "SQLServerById", engine: SQLServer, trackingColumn: "id", trackingStartValue: "0", trackingStartValueFormat: ""},
 		{name: "OracleById", engine: Oracle, trackingColumn: "ID", trackingStartValue: "0", trackingStartValueFormat: ""},
 		{name: "PostgresByTimestamp", engine: Postgres, trackingColumn: "insert_time", trackingStartValue: "2022-06-03 21:00:00+00", trackingStartValueFormat: ""},
-		{name: "MySQLByTimestamp", engine: MySql, trackingColumn: "insert_time", trackingStartValue: "2022-06-03 21:00:00", trackingStartValueFormat: ""},
-		{name: "SqlServerByTimestamp", engine: SqlServer, trackingColumn: "insert_time", trackingStartValue: "2022-06-03 21:00:00", trackingStartValueFormat: ""},
+		{name: "MySQLByTimestamp", engine: MySQL, trackingColumn: "insert_time", trackingStartValue: "2022-06-03 21:00:00", trackingStartValueFormat: ""},
+		{name: "SQLServerByTimestamp", engine: SQLServer, trackingColumn: "insert_time", trackingStartValue: "2022-06-03 21:00:00", trackingStartValueFormat: ""},
 		{name: "OracleByTimestamp", engine: Oracle, trackingColumn: "INSERT_TIME", trackingStartValue: "2022-06-03T21:00:00.000Z", trackingStartValueFormat: "TO_TIMESTAMP_TZ(:1, 'YYYY-MM-DD\"T\"HH24:MI:SS.FF6TZH:TZM')"},
 	}
 
@@ -332,7 +328,7 @@ func TestIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 			config.Telemetry.Logs.Query = true
 
 			trackingColumn := tt.engine.ConvertColumnName(tt.trackingColumn)
-			trackingColumnParameter := tt.engine.SqlParameter
+			trackingColumnParameter := tt.engine.SQLParameter
 			if tt.trackingStartValueFormat != "" {
 				trackingColumnParameter = tt.trackingStartValueFormat
 			}
@@ -372,7 +368,7 @@ func TestIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 	}
 }
 
-func startDbContainerWithConfig(t *testing.T, engine DbEngine) (testcontainers.Container, string, nat.Port) {
+func startDbContainerWithConfig(t *testing.T, engine DbEngineUnderTest) (testcontainers.Container, string, nat.Port) {
 	ctx := context.Background()
 	container, err := testcontainers.GenericContainer(
 		ctx,
@@ -389,7 +385,7 @@ func startDbContainerWithConfig(t *testing.T, engine DbEngine) (testcontainers.C
 	return container, host, dbPort
 }
 
-func insertSimpleLogs(t *testing.T, engine DbEngine, container testcontainers.Container, existingLogID, newLogCount int) {
+func insertSimpleLogs(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container, existingLogID, newLogCount int) {
 	externalPort, err := container.MappedPort(context.Background(), nat.Port(engine.Port))
 	require.NoError(t, err)
 
@@ -401,7 +397,7 @@ func insertSimpleLogs(t *testing.T, engine DbEngine, container testcontainers.Co
 	defer db.Close()
 
 	for newLogID := existingLogID + 1; newLogID <= existingLogID+newLogCount; newLogID++ {
-		query := fmt.Sprintf("insert into simple_logs (id, insert_time, body, attribute) values (%d, %s, 'another log %d', 'TLSv1.2')", newLogID, engine.CurrentTimestampFunction, newLogID) // nolint:gosec // Ignore, not possible to use prepared statements here for currentTimestampFunction
+		query := fmt.Sprintf("insert into simple_logs (id, insert_time, body, attribute) values (%d, %s, 'another log %d', 'TLSv1.2')", newLogID, engine.CurrentTimestampFunction, newLogID) //nolint:gosec // Ignore, not possible to use prepared statements here for currentTimestampFunction
 		_, err := db.Exec(query)
 		require.NoError(t, err)
 	}
@@ -594,15 +590,15 @@ func TestOracleDBIntegrationMetrics(t *testing.T) {
 }
 
 func TestMysqlIntegrationMetrics(t *testing.T) {
-	MySql.CheckCompatibility(t)
+	MySQL.CheckCompatibility(t)
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
-		scraperinttest.WithContainerRequest(MySql.ContainerRequest),
+		scraperinttest.WithContainerRequest(MySQL.ContainerRequest),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.Driver = MySql.Driver
-				rCfg.DataSource = MySql.ConnectionString(ci.Host(t), nat.Port(ci.MappedPort(t, MySql.Port)))
+				rCfg.Driver = MySQL.Driver
+				rCfg.DataSource = MySQL.ConnectionString(ci.Host(t), nat.Port(ci.MappedPort(t, MySQL.Port)))
 				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre order by genre desc",
@@ -680,16 +676,16 @@ func TestMysqlIntegrationMetrics(t *testing.T) {
 	).Run(t)
 }
 
-func TestSqlServerIntegrationMetrics(t *testing.T) {
-	SqlServer.CheckCompatibility(t)
+func TestSQLServerIntegrationMetrics(t *testing.T) {
+	SQLServer.CheckCompatibility(t)
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
-		scraperinttest.WithContainerRequest(SqlServer.ContainerRequest),
+		scraperinttest.WithContainerRequest(SQLServer.ContainerRequest),
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.Driver = SqlServer.Driver
-				rCfg.DataSource = SqlServer.ConnectionString(ci.Host(t), nat.Port(ci.MappedPort(t, SqlServer.Port)))
+				rCfg.Driver = SQLServer.Driver
+				rCfg.DataSource = SQLServer.ConnectionString(ci.Host(t), nat.Port(ci.MappedPort(t, SQLServer.Port)))
 				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*) as count, avg(imdb_rating) as avg from movie group by genre order by genre",
