@@ -11,8 +11,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/otlpmetricstream"
 )
 
 func TestValidConfig(t *testing.T) {
@@ -40,11 +38,4 @@ func TestCreateLogsReceiver(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
-}
-
-func TestValidateRecordType(t *testing.T) {
-	require.NoError(t, validateRecordType(defaultMetricsRecordType))
-	require.NoError(t, validateRecordType(defaultLogsRecordType))
-	require.NoError(t, validateRecordType(otlpmetricstream.TypeStr))
-	require.Error(t, validateRecordType("nop"))
 }
