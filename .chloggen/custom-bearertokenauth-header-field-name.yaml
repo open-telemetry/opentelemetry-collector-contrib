@@ -7,7 +7,7 @@ change_type: enhancement
 component: bearertokenauthextension
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Enable custom header fields (instead of the default 'Authorization' header) to read the Bearer auth token from.
+note: Add config entry `header` to overwrite default  `Authorization` header to read or set the Bearer auth token from incoming and outgoing requests.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36985]
