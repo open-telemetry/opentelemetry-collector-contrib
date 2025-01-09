@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog/compression"
 	"io"
 	"net"
@@ -263,23 +264,13 @@ func (fmr *firehoseReceiver) transformRecords(records []firehoseRecord, decompre
 
 		data, err := base64.StdEncoding.DecodeString(record.Data)
 		if err != nil {
-			fmr.settings.Logger.Error(
-				"Unable to base64 decode the record data",
-				zap.Int("index", index),
-				zap.Error(err),
-			)
-			continue
+			return transformed, fmt.Errorf("unable to base64 decode the record at index %d: %w", index, err)
 		}
 
 		if decompress {
 			data, err = compression.Unzip(data)
 			if err != nil {
-				fmr.settings.Logger.Error(
-					"Failed to unzip record data",
-					zap.Int("index", index),
-					zap.Error(err),
-				)
-				continue
+				return transformed, fmt.Errorf("unable to unzip decoded record at index %d: %w", index, err)
 			}
 		}
 

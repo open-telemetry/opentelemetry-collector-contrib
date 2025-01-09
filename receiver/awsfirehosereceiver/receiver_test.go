@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -162,7 +163,8 @@ func TestFirehoseRequest(t *testing.T) {
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				{Data: "XXXXXaGVsbG8="},
 			}),
-			wantStatusCode: http.StatusOK, // having an invalid record does not stop the request
+			wantStatusCode: http.StatusBadRequest,
+			wantErr:        fmt.Errorf("unable to base64 decode the record at index 0: %w", base64.CorruptInputError(12)),
 		},
 		"WithValidRecords": {
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
