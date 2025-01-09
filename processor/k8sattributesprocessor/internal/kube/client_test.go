@@ -1489,6 +1489,10 @@ func TestPodIgnorePatterns(t *testing.T) {
 
 func Test_extractPodContainersAttributes(t *testing.T) {
 	pod := api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "test-namespace",
+		},
 		Spec: api_v1.PodSpec{
 			Containers: []api_v1.Container{
 				{
@@ -1563,6 +1567,27 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			rules: ExtractionRules{},
 			pod:   &pod,
 			want:  PodContainers{ByID: map[string]*Container{}, ByName: map[string]*Container{}},
+		},
+		{
+			name: "service-instance-id-only",
+			rules: ExtractionRules{
+				OperatorRules: OperatorRules{Enabled: true},
+			},
+			pod: &pod,
+			want: PodContainers{
+				ByID: map[string]*Container{
+					"container1-id-123":     {ServiceInstanceID: "test-namespace.test-pod.container1"},
+					"container2-id-456":     {ServiceInstanceID: "test-namespace.test-pod.container2"},
+					"container3-id-abc":     {ServiceInstanceID: "test-namespace.test-pod.container3"},
+					"init-container-id-789": {ServiceInstanceID: "test-namespace.test-pod.init_container"},
+				},
+				ByName: map[string]*Container{
+					"container1":     {ServiceInstanceID: "test-namespace.test-pod.container1"},
+					"container2":     {ServiceInstanceID: "test-namespace.test-pod.container2"},
+					"container3":     {ServiceInstanceID: "test-namespace.test-pod.container3"},
+					"init_container": {ServiceInstanceID: "test-namespace.test-pod.init_container"},
+				},
+			},
 		},
 		{
 			name: "image-name-only",
