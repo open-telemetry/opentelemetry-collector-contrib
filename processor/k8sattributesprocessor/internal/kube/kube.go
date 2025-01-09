@@ -295,6 +295,31 @@ type FieldExtractionRule struct {
 	From string
 }
 
+var OperatorAnnotationRule = FieldExtractionRule{
+	Name:                 "$1",
+	KeyRegex:             regexp.MustCompile(`^resource.opentelemetry.io/(.+)$`),
+	HasKeyRegexReference: true,
+	From:                 MetadataFromPod,
+}
+
+var OperatorLabelRules = []FieldExtractionRule{
+	{
+		Name: "service.name",
+		Key:  "app.kubernetes.io/name",
+		From: MetadataFromPod,
+	},
+	{
+		Name: "service.version",
+		Key:  "app.kubernetes.io/version",
+		From: MetadataFromPod,
+	},
+	{
+		Name: "service.namespace",
+		Key:  "app.kubernetes.io/part-of",
+		From: MetadataFromPod,
+	},
+}
+
 func (r *FieldExtractionRule) extractFromPodMetadata(metadata map[string]string, tags map[string]string, formatter string) {
 	// By default if the From field is not set for labels and annotations we want to extract them from pod
 	if r.From == MetadataFromPod || r.From == "" {
