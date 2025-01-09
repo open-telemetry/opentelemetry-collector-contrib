@@ -39,8 +39,10 @@ func TestFromDomainEmbedProcess(t *testing.T) {
 func loadModel(t *testing.T) ([]byte, []byte) {
 	inStr, err := os.ReadFile("./testdata/span.json")
 	require.NoError(t, err)
+	inStr = bytes.ReplaceAll(inStr, []byte("\r\n"), []byte("\n"))
 	outStr, err := os.ReadFile("./testdata/logziospan.json")
 	require.NoError(t, err)
+	outStr = bytes.ReplaceAll(outStr, []byte("\r\n"), []byte("\n"))
 	return inStr, outStr
 }
 

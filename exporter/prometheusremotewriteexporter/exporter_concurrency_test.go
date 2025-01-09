@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"sync"
 	"testing"
@@ -31,6 +32,9 @@ import (
 // Test everything works when there is more than one goroutine calling PushMetrics.
 // Today we only use 1 worker per exporter, but the intention of this test is to future-proof in case it changes.
 func Test_PushMetricsConcurrent(t *testing.T) {
+	if os.Getenv("ImageOs") == "win25" && os.Getenv("GITHUB_ACTIONS") == "true" {
+		t.Skip("Skipping test on Windows 2025 GH runners, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37104")
+	}
 	n := 1000
 	ms := make([]pmetric.Metrics, n)
 	testIDKey := "test_id"
@@ -52,6 +56,10 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 			t.Fatal(err)
 		}
 		assert.NotNil(t, body)
+		if len(body) == 0 {
+			// No content, nothing to do. The request is just checking that the server is up.
+			return
+		}
 		// Receives the http requests and unzip, unmarshalls, and extracts TimeSeries
 		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version"))
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
@@ -123,6 +131,13 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 	defer func() {
 		require.NoError(t, prwe.Shutdown(ctx))
 	}()
+
+	// Ensure that the test server is up before making the requests
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		resp, checkRequestErr := http.Get(server.URL)
+		require.NoError(c, checkRequestErr)
+		assert.NoError(c, resp.Body.Close())
+	}, 5*time.Second, 100*time.Millisecond)
 
 	var wg sync.WaitGroup
 	wg.Add(n)
