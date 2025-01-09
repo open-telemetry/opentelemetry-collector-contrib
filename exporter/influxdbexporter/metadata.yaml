@@ -6,7 +6,7 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [jacobmarble]
+    active: [srebhan, jacobmarble]
 
 tests:
   expect_consumer_error: true

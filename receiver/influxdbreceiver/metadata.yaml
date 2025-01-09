@@ -6,4 +6,4 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [jacobmarble]
+    active: [srebhan, jacobmarble]

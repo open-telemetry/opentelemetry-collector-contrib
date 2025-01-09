@@ -62,7 +62,7 @@ exporter/googlecloudexporter/                     @open-telemetry/collector-cont
 exporter/googlecloudpubsubexporter/               @open-telemetry/collector-contrib-approvers @alexvanboxel
 exporter/googlemanagedprometheusexporter/         @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @psx95
 exporter/honeycombmarkerexporter/                 @open-telemetry/collector-contrib-approvers @TylerHelmuth @fchikwekwe
-exporter/influxdbexporter/                        @open-telemetry/collector-contrib-approvers @jacobmarble
+exporter/influxdbexporter/                        @open-telemetry/collector-contrib-approvers @srebhan @jacobmarble
 exporter/kafkaexporter/                           @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 exporter/loadbalancingexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logicmonitorexporter/                    @open-telemetry/collector-contrib-approvers @bogdandrutu @khyatigandhi6 @avadhut123pisal
@@ -234,7 +234,7 @@ receiver/hostmetricsreceiver/                     @open-telemetry/collector-cont
 receiver/httpcheckreceiver/                       @open-telemetry/collector-contrib-approvers @codeboten
 receiver/huaweicloudcesreceiver/                  @open-telemetry/collector-contrib-approvers @heitorganzeli @narcis96 @mwear
 receiver/iisreceiver/                             @open-telemetry/collector-contrib-approvers @Mrod1598 @pjanotti
-receiver/influxdbreceiver/                        @open-telemetry/collector-contrib-approvers @jacobmarble
+receiver/influxdbreceiver/                        @open-telemetry/collector-contrib-approvers @srebhan @jacobmarble
 receiver/jaegerreceiver/                          @open-telemetry/collector-contrib-approvers @yurishkuro
 receiver/journaldreceiver/                        @open-telemetry/collector-contrib-approvers @sumo-drosiek @djaglowski
 receiver/k8sclusterreceiver/                      @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @povilasv @ChrsMark
