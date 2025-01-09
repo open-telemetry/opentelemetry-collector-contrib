@@ -1,10 +1,11 @@
 package kube
 
 import (
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"k8s.io/api/core/v1"
 	"regexp"
 	"strings"
+
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	v1 "k8s.io/api/core/v1"
 )
 
 type OperatorRules struct {
