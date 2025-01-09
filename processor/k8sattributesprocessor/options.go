@@ -198,6 +198,15 @@ func withExtractMetadata(fields ...string) option {
 	}
 }
 
+func withOperatorExtractRules(rules kube.OperatorRules) option {
+	return func(p *kubernetesprocessor) error {
+		if rules.Enabled {
+			p.rules.OperatorRules = rules
+		}
+		return nil
+	}
+}
+
 // withExtractLabels allows specifying options to control extraction of pod labels.
 func withExtractLabels(labels ...FieldExtractConfig) option {
 	return func(p *kubernetesprocessor) error {
