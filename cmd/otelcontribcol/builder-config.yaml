@@ -89,7 +89,6 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.114.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.114.0
