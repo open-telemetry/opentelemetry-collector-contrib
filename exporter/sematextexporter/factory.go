@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/influxdata/influxdb-observability/common"
@@ -30,11 +31,12 @@ func NewFactory() exporter.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
+	cfg := &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Timeout: 5 * time.Second,
 			Headers: map[string]configopaque.String{
@@ -42,15 +44,21 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		MetricsConfig: MetricsConfig{
+			MetricsEndpoint: "https://spm-receiver.sematext.com",
 			MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
 			AppToken:        appToken,
 			QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 			PayloadMaxLines: 1_000,
 			PayloadMaxBytes: 300_000,
 		},
+		LogsConfig: LogsConfig{
+			LogsEndpoint: "https://logsene-receiver.sematext.com",
+			AppToken:     appToken,
+		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		Region:        "custom",
+		Region:        "us",
 	}
+	return cfg
 }
 
 func createMetricsExporter(
@@ -65,6 +73,23 @@ func createMetricsExporter(
 		set,
 		cfg,
 		func(_ context.Context, _ pmetric.Metrics) error {
+			return nil
+		},
+	)
+}
+
+func createLogsExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	config component.Config,
+) (exporter.Logs, error) {
+	cfg := config.(*Config)
+
+	return exporterhelper.NewLogs(
+		ctx,
+		set,
+		cfg,
+		func(_ context.Context, _ plog.Logs) error {
 			return nil
 		},
 	)

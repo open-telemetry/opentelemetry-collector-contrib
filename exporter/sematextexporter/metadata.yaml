@@ -3,10 +3,10 @@ type: sematext
 status:
   class: exporter
   stability:
-    development: [metrics]
+    development: [metrics,logs]
   distributions: [contrib]
   codeowners:
-    active: [Eromosele-SM]
+    active: [AkhigbeEromo]
 
 tests:
   expect_consumer_error: true

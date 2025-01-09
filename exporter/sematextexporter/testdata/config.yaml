@@ -1,7 +1,7 @@
 sematext/default-config:
 sematext/override-config:
   timeout: 500ms
-  region: US  
+  region: us  
   retry_on_failure:
     enabled: true
     initial_interval: 1s
@@ -15,3 +15,5 @@ sematext/override-config:
       queue_size: 10
     payload_max_lines: 72
     payload_max_bytes: 27
+  logs:
+    app_token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
