@@ -1035,9 +1035,10 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 					Containers: kube.PodContainers{
 						ByName: map[string]*kube.Container{
 							"app": {
-								Name:      "app",
-								ImageName: "test/app",
-								ImageTag:  "1.0.1",
+								Name:              "app",
+								ImageName:         "test/app",
+								ImageTag:          "1.0.1",
+								ServiceInstanceID: "instance-1",
 							},
 						},
 					},
@@ -1052,6 +1053,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				conventions.AttributeK8SContainerName:   "app",
 				conventions.AttributeContainerImageName: "test/app",
 				conventions.AttributeContainerImageTag:  "1.0.1",
+				conventions.AttributeServiceInstanceID:  "instance-1",
 			},
 		},
 		{
@@ -1072,9 +1074,10 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 					Containers: kube.PodContainers{
 						ByID: map[string]*kube.Container{
 							"767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd": {
-								Name:      "app",
-								ImageName: "test/app",
-								ImageTag:  "1.0.1",
+								Name:              "app",
+								ImageName:         "test/app",
+								ImageTag:          "1.0.1",
+								ServiceInstanceID: "instance-1",
 							},
 						},
 					},
@@ -1090,6 +1093,50 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				conventions.AttributeK8SContainerName:   "app",
 				conventions.AttributeContainerImageName: "test/app",
 				conventions.AttributeContainerImageTag:  "1.0.1",
+				conventions.AttributeServiceInstanceID:  "instance-1",
+			},
+		},
+		{
+			name: "explicit-service-instance-id",
+			op: func(kp *kubernetesprocessor) {
+				kp.podAssociations = []kube.Association{
+					{
+						Name: "k8s.pod.uid",
+						Sources: []kube.AssociationSource{
+							{
+								From: "resource_attribute",
+								Name: "k8s.pod.uid",
+							},
+						},
+					},
+				}
+				kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
+					Attributes: map[string]string{
+						"service.instance.id": "explicit-1",
+					},
+					Containers: kube.PodContainers{
+						ByID: map[string]*kube.Container{
+							"767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd": {
+								Name:              "app",
+								ImageName:         "test/app",
+								ImageTag:          "1.0.1",
+								ServiceInstanceID: "instance-1",
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
+				withContainerID("767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd"),
+			},
+			wantAttrs: map[string]any{
+				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				conventions.AttributeContainerID:        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
+				conventions.AttributeK8SContainerName:   "app",
+				conventions.AttributeContainerImageName: "test/app",
+				conventions.AttributeContainerImageTag:  "1.0.1",
+				conventions.AttributeServiceInstanceID:  "explicit-1",
 			},
 		},
 		{
@@ -1342,31 +1389,37 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		m := newMultiTest(
-			t,
-			NewFactory().CreateDefaultConfig(),
-			nil,
-		)
-		m.kubernetesProcessorOperation(tt.op)
-		m.testConsume(context.Background(),
-			generateTraces(tt.resourceGens...),
-			generateMetrics(tt.resourceGens...),
-			generateLogs(tt.resourceGens...),
-			generateProfiles(tt.resourceGens...),
-			nil,
-		)
+		t.Run(tt.name, func(t *testing.T) {
+			m := newMultiTest(
+				t,
+				NewFactory().CreateDefaultConfig(),
+				nil,
+				withOperatorExtractRules(kube.OperatorRules{
+					Enabled: true,
+					Labels:  true,
+				}),
+			)
+			m.kubernetesProcessorOperation(tt.op)
+			m.testConsume(context.Background(),
+				generateTraces(tt.resourceGens...),
+				generateMetrics(tt.resourceGens...),
+				generateLogs(tt.resourceGens...),
+				generateProfiles(tt.resourceGens...),
+				nil,
+			)
 
-		m.assertBatchesLen(1)
-		m.assertResource(0, func(r pcommon.Resource) {
-			require.Equal(t, len(tt.wantAttrs), r.Attributes().Len())
-			for k, v := range tt.wantAttrs {
-				switch val := v.(type) {
-				case string:
-					assertResourceHasStringAttribute(t, r, k, val)
-				case []string:
-					assertResourceHasStringSlice(t, r, k, val)
+			m.assertBatchesLen(1)
+			m.assertResource(0, func(r pcommon.Resource) {
+				require.Len(t, r.Attributes().AsRaw(), len(tt.wantAttrs))
+				for k, v := range tt.wantAttrs {
+					switch val := v.(type) {
+					case string:
+						assertResourceHasStringAttribute(t, r, k, val)
+					case []string:
+						assertResourceHasStringSlice(t, r, k, val)
+					}
 				}
-			}
+			})
 		})
 	}
 }

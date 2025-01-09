@@ -202,6 +202,12 @@ func withOperatorExtractRules(rules kube.OperatorRules) option {
 	return func(p *kubernetesprocessor) error {
 		if rules.Enabled {
 			p.rules.OperatorRules = rules
+			p.rules.Annotations = append(p.rules.Annotations, kube.FieldExtractionRule{
+				Name:                 "$1",
+				KeyRegex:             regexp.MustCompile(`^resource.opentelemetry.io/(.+)$`),
+				HasKeyRegexReference: true,
+				From:                 kube.MetadataFromPod,
+			})
 		}
 		return nil
 	}
