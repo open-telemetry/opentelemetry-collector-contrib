@@ -643,8 +643,11 @@ func TestExtractionRules(t *testing.T) {
 			Namespace:         "ns1",
 			CreationTimestamp: meta_v1.Now(),
 			Labels: map[string]string{
-				"label1": "lv1",
-				"label2": "k1=v1 k5=v5 extra!",
+				"label1":                    "lv1",
+				"label2":                    "k1=v1 k5=v5 extra!",
+				"app.kubernetes.io/name":    "auth-service",
+				"app.kubernetes.io/version": "1.0.0",
+				"app.kubernetes.io/part-of": "auth",
 			},
 			Annotations: map[string]string{
 				"annotation1": "av1",
@@ -703,9 +706,10 @@ func TestExtractionRules(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name       string
-		rules      ExtractionRules
-		attributes map[string]string
+		name                  string
+		rules                 ExtractionRules
+		additionalAnnotations map[string]string
+		attributes            map[string]string
 	}{
 		{
 			name:       "no-rules",
@@ -962,6 +966,41 @@ func TestExtractionRules(t *testing.T) {
 				"prefix-annotation1": "av1",
 			},
 		},
+		{
+			name: "operator-rules",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{OperatorAnnotationRule},
+				Labels:      OperatorLabelRules,
+			},
+			additionalAnnotations: map[string]string{
+				"resource.opentelemetry.io/service.instance.id": "instance-id",
+			},
+			attributes: map[string]string{
+				"service.instance.id": "instance-id",
+				"service.name":        "auth-service",
+				"service.version":     "1.0.0",
+				"service.namespace":   "auth",
+			},
+		},
+		{
+			name: "operator-rules-annotation-override",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{OperatorAnnotationRule},
+				Labels:      OperatorLabelRules,
+			},
+			additionalAnnotations: map[string]string{
+				"resource.opentelemetry.io/service.instance.id": "instance-id",
+				"resource.opentelemetry.io/service.version":     "1.1.0",
+				"resource.opentelemetry.io/service.name":        "auth-service2",
+				"resource.opentelemetry.io/service.namespace":   "auth2",
+			},
+			attributes: map[string]string{
+				"service.instance.id": "instance-id",
+				"service.name":        "auth-service2",
+				"service.version":     "1.0.0",
+				"service.namespace":   "auth2",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -969,6 +1008,10 @@ func TestExtractionRules(t *testing.T) {
 
 			// manually call the data removal functions here
 			// normally the informer does this, but fully emulating the informer in this test is annoying
+			pod := pod.DeepCopy()
+			for k, v := range tc.additionalAnnotations {
+				pod.Annotations[k] = v
+			}
 			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
 			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
 			c.handleReplicaSetAdd(transformedReplicaset)
@@ -976,12 +1019,7 @@ func TestExtractionRules(t *testing.T) {
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(p.Attributes))
-			for k, v := range tc.attributes {
-				got, ok := p.Attributes[k]
-				assert.True(t, ok)
-				assert.Equal(t, v, got)
-			}
+			assert.Equal(t, tc.attributes, p.Attributes)
 		})
 	}
 }
