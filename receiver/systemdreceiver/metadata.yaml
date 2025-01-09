@@ -69,8 +69,60 @@ attributes:
       - auto-restart-queued
       - cleaning
       - mounting
+  systemd_version:
+    description: The version of the running systemd daemon
+    type: string
+  system_state:
+    description: The current state of the service manager. This is the 'SystemState' property (https://www.freedesktop.org/software/systemd/man/latest/org.freedesktop.systemd1.html#Properties)
+    type: string
+    enum:
+      - initializing
+      - starting
+      - running
+      - degraded
+      - maintenance
+      - stopping
+  architecture:
+    description: The detected CPU architecture
+    type: string
+  virtualization:
+    description: Short ID string describing the virtualization technology the system runs in.
+    type: string
 
 metrics:
+  systemd.system_state:
+    description: The current state of the service manager
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{system_state}"
+    attributes:
+      - systemd_version
+      - system_state
+      - architecture
+      - virtualization
+  systemd.jobs:
+    description: How many jobs are currently queued
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{jobs}"
+  systemd.installed_jobs:
+    description: How many jobs have ever been queued in total
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{jobs}"
+  systemd.failed_jobs:
+    description: How many jobs have ever failed in total
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{jobs}"
   systemd.unit.load_state:
     description: The load state of the unit
     enabled: false
@@ -108,7 +160,7 @@ metrics:
   systemd.unit.restarts:
     description: Amount of time the unit was restarted this boot
     enabled: true
-    gauge:
+    sum:
       aggregation_temporality: cumulative
       monotonic: true
       value_type: int

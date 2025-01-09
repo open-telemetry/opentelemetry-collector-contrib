@@ -68,6 +68,22 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemdFailedJobsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemdInstalledJobsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemdJobsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemdSystemStateDataPoint(ts, 1, "systemd_version-val", AttributeSystemStateInitializing, "architecture-val", "virtualization-val")
+
 			allMetricsCount++
 			mb.RecordSystemdUnitActiveStateDataPoint(ts, 1, AttributeActiveStateActive)
 
@@ -113,6 +129,70 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "systemd.failed_jobs":
+					assert.False(t, validatedMetrics["systemd.failed_jobs"], "Found a duplicate in the metrics slice: systemd.failed_jobs")
+					validatedMetrics["systemd.failed_jobs"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "How many jobs have ever failed in total", ms.At(i).Description())
+					assert.Equal(t, "{jobs}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "systemd.installed_jobs":
+					assert.False(t, validatedMetrics["systemd.installed_jobs"], "Found a duplicate in the metrics slice: systemd.installed_jobs")
+					validatedMetrics["systemd.installed_jobs"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "How many jobs have ever been queued in total", ms.At(i).Description())
+					assert.Equal(t, "{jobs}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "systemd.jobs":
+					assert.False(t, validatedMetrics["systemd.jobs"], "Found a duplicate in the metrics slice: systemd.jobs")
+					validatedMetrics["systemd.jobs"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "How many jobs are currently queued", ms.At(i).Description())
+					assert.Equal(t, "{jobs}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "systemd.system_state":
+					assert.False(t, validatedMetrics["systemd.system_state"], "Found a duplicate in the metrics slice: systemd.system_state")
+					validatedMetrics["systemd.system_state"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The current state of the service manager", ms.At(i).Description())
+					assert.Equal(t, "{system_state}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("systemd_version")
+					assert.True(t, ok)
+					assert.EqualValues(t, "systemd_version-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("system_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "initializing", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("architecture")
+					assert.True(t, ok)
+					assert.EqualValues(t, "architecture-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("virtualization")
+					assert.True(t, ok)
+					assert.EqualValues(t, "virtualization-val", attrVal.Str())
 				case "systemd.unit.active_state":
 					assert.False(t, validatedMetrics["systemd.unit.active_state"], "Found a duplicate in the metrics slice: systemd.unit.active_state")
 					validatedMetrics["systemd.unit.active_state"] = true
@@ -158,11 +238,13 @@ func TestMetricsBuilder(t *testing.T) {
 				case "systemd.unit.restarts":
 					assert.False(t, validatedMetrics["systemd.unit.restarts"], "Found a duplicate in the metrics slice: systemd.unit.restarts")
 					validatedMetrics["systemd.unit.restarts"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Amount of time the unit was restarted this boot", ms.At(i).Description())
 					assert.Equal(t, "{restarts}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

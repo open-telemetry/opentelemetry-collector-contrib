@@ -230,6 +230,253 @@ var MapAttributeSubState = map[string]AttributeSubState{
 	"mounting":                   AttributeSubStateMounting,
 }
 
+// AttributeSystemState specifies the a value system_state attribute.
+type AttributeSystemState int
+
+const (
+	_ AttributeSystemState = iota
+	AttributeSystemStateInitializing
+	AttributeSystemStateStarting
+	AttributeSystemStateRunning
+	AttributeSystemStateDegraded
+	AttributeSystemStateMaintenance
+	AttributeSystemStateStopping
+)
+
+// String returns the string representation of the AttributeSystemState.
+func (av AttributeSystemState) String() string {
+	switch av {
+	case AttributeSystemStateInitializing:
+		return "initializing"
+	case AttributeSystemStateStarting:
+		return "starting"
+	case AttributeSystemStateRunning:
+		return "running"
+	case AttributeSystemStateDegraded:
+		return "degraded"
+	case AttributeSystemStateMaintenance:
+		return "maintenance"
+	case AttributeSystemStateStopping:
+		return "stopping"
+	}
+	return ""
+}
+
+// MapAttributeSystemState is a helper map of string to AttributeSystemState attribute value.
+var MapAttributeSystemState = map[string]AttributeSystemState{
+	"initializing": AttributeSystemStateInitializing,
+	"starting":     AttributeSystemStateStarting,
+	"running":      AttributeSystemStateRunning,
+	"degraded":     AttributeSystemStateDegraded,
+	"maintenance":  AttributeSystemStateMaintenance,
+	"stopping":     AttributeSystemStateStopping,
+}
+
+type metricSystemdFailedJobs struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills systemd.failed_jobs metric with initial data.
+func (m *metricSystemdFailedJobs) init() {
+	m.data.SetName("systemd.failed_jobs")
+	m.data.SetDescription("How many jobs have ever failed in total")
+	m.data.SetUnit("{jobs}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemdFailedJobs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemdFailedJobs) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemdFailedJobs) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemdFailedJobs(cfg MetricConfig) metricSystemdFailedJobs {
+	m := metricSystemdFailedJobs{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemdInstalledJobs struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills systemd.installed_jobs metric with initial data.
+func (m *metricSystemdInstalledJobs) init() {
+	m.data.SetName("systemd.installed_jobs")
+	m.data.SetDescription("How many jobs have ever been queued in total")
+	m.data.SetUnit("{jobs}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemdInstalledJobs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemdInstalledJobs) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemdInstalledJobs) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemdInstalledJobs(cfg MetricConfig) metricSystemdInstalledJobs {
+	m := metricSystemdInstalledJobs{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemdJobs struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills systemd.jobs metric with initial data.
+func (m *metricSystemdJobs) init() {
+	m.data.SetName("systemd.jobs")
+	m.data.SetDescription("How many jobs are currently queued")
+	m.data.SetUnit("{jobs}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSystemdJobs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemdJobs) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemdJobs) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemdJobs(cfg MetricConfig) metricSystemdJobs {
+	m := metricSystemdJobs{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemdSystemState struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills systemd.system_state metric with initial data.
+func (m *metricSystemdSystemState) init() {
+	m.data.SetName("systemd.system_state")
+	m.data.SetDescription("The current state of the service manager")
+	m.data.SetUnit("{system_state}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemdSystemState) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, systemdVersionAttributeValue string, systemStateAttributeValue string, architectureAttributeValue string, virtualizationAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("systemd_version", systemdVersionAttributeValue)
+	dp.Attributes().PutStr("system_state", systemStateAttributeValue)
+	dp.Attributes().PutStr("architecture", architectureAttributeValue)
+	dp.Attributes().PutStr("virtualization", virtualizationAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemdSystemState) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemdSystemState) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemdSystemState(cfg MetricConfig) metricSystemdSystemState {
+	m := metricSystemdSystemState{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSystemdUnitActiveState struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -392,14 +639,16 @@ func (m *metricSystemdUnitRestarts) init() {
 	m.data.SetName("systemd.unit.restarts")
 	m.data.SetDescription("Amount of time the unit was restarted this boot")
 	m.data.SetUnit("{restarts}")
-	m.data.SetEmptyGauge()
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricSystemdUnitRestarts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -407,14 +656,14 @@ func (m *metricSystemdUnitRestarts) recordDataPoint(start pcommon.Timestamp, ts 
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricSystemdUnitRestarts) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemdUnitRestarts) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -544,6 +793,10 @@ type MetricsBuilder struct {
 	buildInfo                      component.BuildInfo  // contains version information.
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
+	metricSystemdFailedJobs        metricSystemdFailedJobs
+	metricSystemdInstalledJobs     metricSystemdInstalledJobs
+	metricSystemdJobs              metricSystemdJobs
+	metricSystemdSystemState       metricSystemdSystemState
 	metricSystemdUnitActiveState   metricSystemdUnitActiveState
 	metricSystemdUnitErrno         metricSystemdUnitErrno
 	metricSystemdUnitLoadState     metricSystemdUnitLoadState
@@ -576,6 +829,10 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                  pmetric.NewMetrics(),
 		buildInfo:                      settings.BuildInfo,
+		metricSystemdFailedJobs:        newMetricSystemdFailedJobs(mbc.Metrics.SystemdFailedJobs),
+		metricSystemdInstalledJobs:     newMetricSystemdInstalledJobs(mbc.Metrics.SystemdInstalledJobs),
+		metricSystemdJobs:              newMetricSystemdJobs(mbc.Metrics.SystemdJobs),
+		metricSystemdSystemState:       newMetricSystemdSystemState(mbc.Metrics.SystemdSystemState),
 		metricSystemdUnitActiveState:   newMetricSystemdUnitActiveState(mbc.Metrics.SystemdUnitActiveState),
 		metricSystemdUnitErrno:         newMetricSystemdUnitErrno(mbc.Metrics.SystemdUnitErrno),
 		metricSystemdUnitLoadState:     newMetricSystemdUnitLoadState(mbc.Metrics.SystemdUnitLoadState),
@@ -660,6 +917,10 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricSystemdFailedJobs.emit(ils.Metrics())
+	mb.metricSystemdInstalledJobs.emit(ils.Metrics())
+	mb.metricSystemdJobs.emit(ils.Metrics())
+	mb.metricSystemdSystemState.emit(ils.Metrics())
 	mb.metricSystemdUnitActiveState.emit(ils.Metrics())
 	mb.metricSystemdUnitErrno.emit(ils.Metrics())
 	mb.metricSystemdUnitLoadState.emit(ils.Metrics())
@@ -695,6 +956,26 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordSystemdFailedJobsDataPoint adds a data point to systemd.failed_jobs metric.
+func (mb *MetricsBuilder) RecordSystemdFailedJobsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemdFailedJobs.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemdInstalledJobsDataPoint adds a data point to systemd.installed_jobs metric.
+func (mb *MetricsBuilder) RecordSystemdInstalledJobsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemdInstalledJobs.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemdJobsDataPoint adds a data point to systemd.jobs metric.
+func (mb *MetricsBuilder) RecordSystemdJobsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemdJobs.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemdSystemStateDataPoint adds a data point to systemd.system_state metric.
+func (mb *MetricsBuilder) RecordSystemdSystemStateDataPoint(ts pcommon.Timestamp, val int64, systemdVersionAttributeValue string, systemStateAttributeValue AttributeSystemState, architectureAttributeValue string, virtualizationAttributeValue string) {
+	mb.metricSystemdSystemState.recordDataPoint(mb.startTime, ts, val, systemdVersionAttributeValue, systemStateAttributeValue.String(), architectureAttributeValue, virtualizationAttributeValue)
 }
 
 // RecordSystemdUnitActiveStateDataPoint adds a data point to systemd.unit.active_state metric.

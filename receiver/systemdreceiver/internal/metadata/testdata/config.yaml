@@ -1,6 +1,14 @@
 default:
 all_set:
   metrics:
+    systemd.failed_jobs:
+      enabled: true
+    systemd.installed_jobs:
+      enabled: true
+    systemd.jobs:
+      enabled: true
+    systemd.system_state:
+      enabled: true
     systemd.unit.active_state:
       enabled: true
     systemd.unit.errno:
@@ -18,6 +26,14 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    systemd.failed_jobs:
+      enabled: false
+    systemd.installed_jobs:
+      enabled: false
+    systemd.jobs:
+      enabled: false
+    systemd.system_state:
+      enabled: false
     systemd.unit.active_state:
       enabled: false
     systemd.unit.errno:

@@ -15,4 +15,5 @@ type dbusClient interface {
 
 	ListUnitsByNamesContext(context.Context, []string) ([]dbus.UnitStatus, error)
 	GetAllPropertiesContext(context.Context, string) (map[string]interface{}, error)
+	GetManagerProperty(string) (string, error)
 }

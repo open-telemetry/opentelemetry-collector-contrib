@@ -12,6 +12,47 @@ metrics:
     enabled: false
 ```
 
+### systemd.failed_jobs
+
+How many jobs have ever failed in total
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {jobs} | Sum | Int | Cumulative | true |
+
+### systemd.installed_jobs
+
+How many jobs have ever been queued in total
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {jobs} | Sum | Int | Cumulative | true |
+
+### systemd.jobs
+
+How many jobs are currently queued
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {jobs} | Gauge | Int |
+
+### systemd.system_state
+
+The current state of the service manager
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {system_state} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| systemd_version | The version of the running systemd daemon | Any Str |
+| system_state | The current state of the service manager. This is the 'SystemState' property (https://www.freedesktop.org/software/systemd/man/latest/org.freedesktop.systemd1.html#Properties) | Str: ``initializing``, ``starting``, ``running``, ``degraded``, ``maintenance``, ``stopping`` |
+| architecture | The detected CPU architecture | Any Str |
+| virtualization | Short ID string describing the virtualization technology the system runs in. | Any Str |
+
 ### systemd.unit.errno
 
 The errno (exit code) of the last error/exit
@@ -24,9 +65,9 @@ The errno (exit code) of the last error/exit
 
 Amount of time the unit was restarted this boot
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {restarts} | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {restarts} | Sum | Int | Cumulative | true |
 
 ### systemd.unit.state
 
@@ -42,7 +83,7 @@ The full state of the unit. The gauge value is the sub state, but all states (lo
 | ---- | ----------- | ------ |
 | load_state | The load state of the unit | Str: ``stub``, ``loaded``, ``not-found``, ``bad-setting``, ``error``, ``merged``, ``masked`` |
 | active_state | The active state of the unit (https://www.freedesktop.org/software/systemd/man/latest/systemd.html#Units) | Str: ``active``, ``reloading``, ``inactive``, ``failed``, ``activating``, ``deactivating``, ``maintenance``, ``refreshing`` |
-| sub_state | The sub state of the unit | Str: ``dead``, ``condition``, ``start-pre``, ``start``, ``start-post``, ``running``, ``exited``, ``reload``, ``reload-signal``, ``reload-notify``, ``stop``, ``stop-watchdog``, ``stop-sigterm``, ``stop-sigkill``, ``stop-post``, ``final-watchdog``, ``final-sigterm``, ``final-sigkill``, ``failed``, ``dead-before-auto-restart``, ``failed-before-auto-restart``, ``dead-resources-pinned``, ``auto-restart``, ``auto-restart-queued``, ``cleaning``, ``mounting`` |
+| sub_state | The sub state of the serice unit | Str: ``dead``, ``condition``, ``start-pre``, ``start``, ``start-post``, ``running``, ``exited``, ``reload``, ``reload-signal``, ``reload-notify``, ``stop``, ``stop-watchdog``, ``stop-sigterm``, ``stop-sigkill``, ``stop-post``, ``final-watchdog``, ``final-sigterm``, ``final-sigkill``, ``failed``, ``dead-before-auto-restart``, ``failed-before-auto-restart``, ``dead-resources-pinned``, ``auto-restart``, ``auto-restart-queued``, ``cleaning``, ``mounting`` |
 
 ## Optional Metrics
 
@@ -94,7 +135,7 @@ The sub state of the unit ()
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| sub_state | The sub state of the unit | Str: ``dead``, ``condition``, ``start-pre``, ``start``, ``start-post``, ``running``, ``exited``, ``reload``, ``reload-signal``, ``reload-notify``, ``stop``, ``stop-watchdog``, ``stop-sigterm``, ``stop-sigkill``, ``stop-post``, ``final-watchdog``, ``final-sigterm``, ``final-sigkill``, ``failed``, ``dead-before-auto-restart``, ``failed-before-auto-restart``, ``dead-resources-pinned``, ``auto-restart``, ``auto-restart-queued``, ``cleaning``, ``mounting`` |
+| sub_state | The sub state of the serice unit | Str: ``dead``, ``condition``, ``start-pre``, ``start``, ``start-post``, ``running``, ``exited``, ``reload``, ``reload-signal``, ``reload-notify``, ``stop``, ``stop-watchdog``, ``stop-sigterm``, ``stop-sigkill``, ``stop-post``, ``final-watchdog``, ``final-sigterm``, ``final-sigkill``, ``failed``, ``dead-before-auto-restart``, ``failed-before-auto-restart``, ``dead-resources-pinned``, ``auto-restart``, ``auto-restart-queued``, ``cleaning``, ``mounting`` |
 
 ## Resource Attributes
 
