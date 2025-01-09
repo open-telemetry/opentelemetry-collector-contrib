@@ -209,6 +209,20 @@ func New(
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
 	synced := make([]cache.InformerSynced, 0)
+
+	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
+		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleReplicaSetAdd,
+			UpdateFunc: c.handleReplicaSetUpdate,
+			DeleteFunc: c.handleReplicaSetDelete,
+		})
+		if err != nil {
+			return err
+		}
+		synced = append(synced, reg.HasSynced)
+		go c.replicasetInformer.Run(c.stopCh)
+	}
+
 	reg, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
@@ -230,19 +244,6 @@ func (c *WatchClient) Start() error {
 	}
 	synced = append(synced, reg.HasSynced)
 	go c.namespaceInformer.Run(c.stopCh)
-
-	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
-		reg, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.handleReplicaSetAdd,
-			UpdateFunc: c.handleReplicaSetUpdate,
-			DeleteFunc: c.handleReplicaSetDelete,
-		})
-		if err != nil {
-			return err
-		}
-		synced = append(synced, reg.HasSynced)
-		go c.replicasetInformer.Run(c.stopCh)
-	}
 
 	if c.nodeInformer != nil {
 		reg, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -784,14 +785,13 @@ func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string
 
 func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
-		Name:          pod.Name,
-		Namespace:     pod.GetNamespace(),
-		NodeName:      pod.Spec.NodeName,
-		Address:       pod.Status.PodIP,
-		HostNetwork:   pod.Spec.HostNetwork,
-		PodUID:        string(pod.UID),
-		ReplicaSetUID: getReplicaSetUID(pod),
-		StartTime:     pod.Status.StartTime,
+		Name:        pod.Name,
+		Namespace:   pod.GetNamespace(),
+		NodeName:    pod.Spec.NodeName,
+		Address:     pod.Status.PodIP,
+		HostNetwork: pod.Spec.HostNetwork,
+		PodUID:      string(pod.UID),
+		StartTime:   pod.Status.StartTime,
 	}
 
 	if c.shouldIgnorePod(pod) {
@@ -1096,26 +1096,6 @@ func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
 		c.ReplicaSets[string(replicaset.UID)] = newReplicaSet
 	}
 	c.m.Unlock()
-
-	for _, pod := range c.Pods {
-		if pod.ReplicaSetUID != string(replicaset.UID) {
-			continue
-		}
-		if c.Rules.DeploymentName {
-			c.m.Lock()
-			if deploymentName, ok := pod.Attributes[conventions.AttributeK8SDeploymentName]; !ok || deploymentName == "" {
-				pod.Attributes[conventions.AttributeK8SDeploymentName] = newReplicaSet.Deployment.Name
-			}
-			c.m.Unlock()
-		}
-		if c.Rules.DeploymentUID {
-			c.m.Lock()
-			if deploymentUID, ok := pod.Attributes[conventions.AttributeK8SDeploymentUID]; !ok || deploymentUID == "" {
-				pod.Attributes[conventions.AttributeK8SDeploymentUID] = newReplicaSet.Deployment.UID
-			}
-			c.m.Unlock()
-		}
-	}
 }
 
 // This function removes all data from the ReplicaSet except what is required by extraction rules
@@ -1129,15 +1109,6 @@ func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.Re
 	}
 	transformedReplicaset.SetOwnerReferences(replicaset.GetOwnerReferences())
 	return &transformedReplicaset
-}
-
-func getReplicaSetUID(pod *api_v1.Pod) string {
-	for _, ownerRef := range pod.OwnerReferences {
-		if ownerRef.Kind == "ReplicaSet" {
-			return string(ownerRef.UID)
-		}
-	}
-	return ""
 }
 
 func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {

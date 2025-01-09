@@ -104,16 +104,15 @@ type APIClientsetProvider func(config k8sconfig.APIConfig) (kubernetes.Interface
 
 // Pod represents a kubernetes pod.
 type Pod struct {
-	Name          string
-	Address       string
-	PodUID        string
-	ReplicaSetUID string
-	Attributes    map[string]string
-	StartTime     *metav1.Time
-	Ignore        bool
-	Namespace     string
-	NodeName      string
-	HostNetwork   bool
+	Name        string
+	Address     string
+	PodUID      string
+	Attributes  map[string]string
+	StartTime   *metav1.Time
+	Ignore      bool
+	Namespace   string
+	NodeName    string
+	HostNetwork bool
 
 	// Containers specifies all containers in this pod.
 	Containers PodContainers
