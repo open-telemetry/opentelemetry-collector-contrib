@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeValkeyClientConnectionState specifies the a value valkey.client.connection.state attribute.
+// AttributeValkeyClientConnectionState specifies the value valkey.client.connection.state attribute.
 type AttributeValkeyClientConnectionState int
 
 const (
