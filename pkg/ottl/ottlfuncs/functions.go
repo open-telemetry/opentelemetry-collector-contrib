@@ -76,6 +76,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewParseSimplifiedXMLFactory[K](),
 		NewParseXMLFactory[K](),
 		NewRemoveXMLFactory[K](),
+		NewSecondFactory[K](),
 		NewSecondsFactory[K](),
 		NewSHA1Factory[K](),
 		NewSHA256Factory[K](),
