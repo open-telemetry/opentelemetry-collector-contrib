@@ -44,9 +44,7 @@ func TestBufferedWrites(t *testing.T) {
 	assert.Equal(t, msg, b.String(), "Must match the expected string")
 }
 
-var (
-	errBenchmark error
-)
+var errBenchmark error
 
 func BenchmarkWriter(b *testing.B) {
 	tempfile := func(tb testing.TB) io.WriteCloser {
@@ -74,7 +72,6 @@ func BenchmarkWriter(b *testing.B) {
 			"raw-file":         tempfile(b),
 			"buffered-file":    newBufferedWriteCloser(tempfile(b)),
 		} {
-			w := w
 			b.Run(fmt.Sprintf("%s_%d_bytes", name, payloadSize), func(b *testing.B) {
 				b.ReportAllocs()
 				b.ResetTimer()

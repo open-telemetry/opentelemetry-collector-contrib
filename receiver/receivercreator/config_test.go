@@ -90,6 +90,7 @@ func TestLoadConfig(t *testing.T) {
 						Rule:               `type == "port"`,
 						ResourceAttributes: map[string]any{"one": "two"},
 						rule:               portRule,
+						signals:            receiverSignals{true, true, true},
 					},
 					"nop/1": {
 						receiverConfig: receiverConfig{
@@ -102,6 +103,7 @@ func TestLoadConfig(t *testing.T) {
 						Rule:               `type == "port"`,
 						ResourceAttributes: map[string]any{"two": "three"},
 						rule:               portRule,
+						signals:            receiverSignals{true, true, true},
 					},
 				},
 				WatchObservers: []component.ID{
@@ -293,6 +295,43 @@ func (*nopWithoutEndpointFactory) CreateTraces(
 ) (rcvr.Traces, error) {
 	return &nopWithoutEndpointReceiver{
 		Traces:   nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
+	}, nil
+}
+
+type nopWithFilelogConfig struct {
+	Include         []string `mapstructure:"include"`
+	IncludeFileName bool     `mapstructure:"include_file_name"`
+	IncludeFilePath bool     `mapstructure:"include_file_path"`
+	Operators       []any    `mapstructure:"operators"`
+}
+
+type nopWithFilelogFactory struct {
+	rcvr.Factory
+}
+
+type nopWithFilelogReceiver struct {
+	mockComponent
+	consumer.Logs
+	consumer.Metrics
+	consumer.Traces
+	rcvr.Settings
+	cfg component.Config
+}
+
+func (*nopWithFilelogFactory) CreateDefaultConfig() component.Config {
+	return &nopWithFilelogConfig{}
+}
+
+func (*nopWithFilelogFactory) CreateLogs(
+	_ context.Context,
+	rcs rcvr.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (rcvr.Logs, error) {
+	return &nopWithEndpointReceiver{
+		Logs:     nextConsumer,
 		Settings: rcs,
 		cfg:      cfg,
 	}, nil

@@ -51,8 +51,7 @@ type jaegerBatchMarshaler interface {
 	encoding() string
 }
 
-type jaegerProtoBatchMarshaler struct {
-}
+type jaegerProtoBatchMarshaler struct{}
 
 var _ jaegerBatchMarshaler = (*jaegerProtoBatchMarshaler)(nil)
 

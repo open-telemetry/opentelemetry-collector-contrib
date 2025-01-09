@@ -35,6 +35,7 @@ body:
       - connector/roundrobin
       - connector/routing
       - connector/servicegraph
+      - connector/signaltometrics
       - connector/spanmetrics
       - connector/sum
       - examples/demo
@@ -88,6 +89,7 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
+      - extension/cgroupruntime
       - extension/encoding
       - extension/encoding/avrologencoding
       - extension/encoding/jaegerencoding
@@ -227,6 +229,7 @@ body:
       - receiver/haproxy
       - receiver/hostmetrics
       - receiver/httpcheck
+      - receiver/huaweicloudces
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
@@ -238,12 +241,14 @@ body:
       - receiver/kafka
       - receiver/kafkametrics
       - receiver/kubeletstats
+      - receiver/libhoney
       - receiver/loki
       - receiver/memcached
       - receiver/mongodb
       - receiver/mongodbatlas
       - receiver/mysql
       - receiver/namedpipe
+      - receiver/netflow
       - receiver/nginx
       - receiver/nsxt
       - receiver/ntp

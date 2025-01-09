@@ -172,7 +172,6 @@ func concurrentCompressFunc(t *testing.T) {
 	// any single format would do it here, since each exporter can be set to use only one at a time
 	// and the concurrent issue that was present in the past was independent of the format
 	compressFunc, err := compress.NewCompressor("gzip")
-
 	if err != nil {
 		errCh <- err
 		return

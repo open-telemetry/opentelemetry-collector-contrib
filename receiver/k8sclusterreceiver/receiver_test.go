@@ -279,7 +279,8 @@ func setupReceiver(
 	logsConsumer consumer.Logs,
 	initialSyncTimeout time.Duration,
 	tt componenttest.TestTelemetry,
-	namespace string) *kubernetesReceiver {
+	namespace string,
+) *kubernetesReceiver {
 	distribution := distributionKubernetes
 	if osQuotaClient != nil {
 		distribution = distributionOpenShift

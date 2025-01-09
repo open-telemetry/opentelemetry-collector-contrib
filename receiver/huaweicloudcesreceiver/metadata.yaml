@@ -1,0 +1,9 @@
+type: huaweicloudcesreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: [heitorganzeli, narcis96, mwear]

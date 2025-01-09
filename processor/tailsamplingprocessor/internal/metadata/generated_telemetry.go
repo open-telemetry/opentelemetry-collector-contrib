@@ -6,19 +6,15 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
-// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor")
-}
-
-func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
-	return settings.LeveledMeterProvider(level).Meter("github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
@@ -41,7 +37,6 @@ type TelemetryBuilder struct {
 	ProcessorTailSamplingSamplingTraceDroppedTooEarly   metric.Int64Counter
 	ProcessorTailSamplingSamplingTraceRemovalAge        metric.Int64Histogram
 	ProcessorTailSamplingSamplingTracesOnMemory         metric.Int64Gauge
-	meters                                              map[configtelemetry.Level]metric.Meter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -58,85 +53,92 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{meters: map[configtelemetry.Level]metric.Meter{}}
+	builder := TelemetryBuilder{}
 	for _, op := range options {
 		op.apply(&builder)
 	}
-	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
+	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ProcessorTailSamplingCountSpansSampled, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	builder.ProcessorTailSamplingCountSpansSampled, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_processor_tail_sampling_count_spans_sampled",
 		metric.WithDescription("Count of spans that were sampled or not per sampling policy"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingCountTracesSampled, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	builder.ProcessorTailSamplingCountTracesSampled, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_processor_tail_sampling_count_traces_sampled",
 		metric.WithDescription("Count of traces that were sampled or not per sampling policy"),
 		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingEarlyReleasesFromCacheDecision, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	builder.ProcessorTailSamplingEarlyReleasesFromCacheDecision, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_processor_tail_sampling_early_releases_from_cache_decision",
 		metric.WithDescription("Number of spans that were able to be immediately released due to a decision cache hit."),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingGlobalCountTracesSampled, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	builder.ProcessorTailSamplingGlobalCountTracesSampled, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_processor_tail_sampling_global_count_traces_sampled",
 		metric.WithDescription("Global count of traces that were sampled or not by at least one policy"),
 		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingNewTraceIDReceived, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	builder.ProcessorTailSamplingNewTraceIDReceived, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_processor_tail_sampling_new_trace_id_received",
 		metric.WithDescription("Counts the arrival of new traces"),
 		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingDecisionLatency, err = builder.meters[configtelemetry.LevelBasic].Int64Histogram(
+	builder.ProcessorTailSamplingSamplingDecisionLatency, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Histogram(
 		"otelcol_processor_tail_sampling_sampling_decision_latency",
 		metric.WithDescription("Latency (in microseconds) of a given sampling policy"),
 		metric.WithUnit("µs"),
 		metric.WithExplicitBucketBoundaries([]float64{1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000}...),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingDecisionTimerLatency, err = builder.meters[configtelemetry.LevelBasic].Int64Histogram(
+	builder.ProcessorTailSamplingSamplingDecisionTimerLatency, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Histogram(
 		"otelcol_processor_tail_sampling_sampling_decision_timer_latency",
 		metric.WithDescription("Latency (in microseconds) of each run of the sampling decision timer"),
 		metric.WithUnit("µs"),
 		metric.WithExplicitBucketBoundaries([]float64{1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000}...),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingLateSpanAge, err = builder.meters[configtelemetry.LevelBasic].Int64Histogram(
+	builder.ProcessorTailSamplingSamplingLateSpanAge, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Histogram(
 		"otelcol_processor_tail_sampling_sampling_late_span_age",
 		metric.WithDescription("Time (in seconds) from the sampling decision was taken and the arrival of a late span"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingPolicyEvaluationError, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	builder.ProcessorTailSamplingSamplingPolicyEvaluationError, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_processor_tail_sampling_sampling_policy_evaluation_error",
 		metric.WithDescription("Count of sampling policy evaluation errors"),
 		metric.WithUnit("{errors}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingTraceDroppedTooEarly, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	builder.ProcessorTailSamplingSamplingTraceDroppedTooEarly, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
 		metric.WithDescription("Count of traces that needed to be dropped before the configured wait time"),
 		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingTraceRemovalAge, err = builder.meters[configtelemetry.LevelBasic].Int64Histogram(
+	builder.ProcessorTailSamplingSamplingTraceRemovalAge, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Histogram(
 		"otelcol_processor_tail_sampling_sampling_trace_removal_age",
 		metric.WithDescription("Time (in seconds) from arrival of a new trace until its removal from memory"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingTracesOnMemory, err = builder.meters[configtelemetry.LevelBasic].Int64Gauge(
+	builder.ProcessorTailSamplingSamplingTracesOnMemory, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Gauge(
 		"otelcol_processor_tail_sampling_sampling_traces_on_memory",
 		metric.WithDescription("Tracks the number of traces current on memory"),
 		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
+}
+
+func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
+	if cfgLevel <= srvLevel {
+		return meter
+	}
+	return noopmetric.Meter{}
 }

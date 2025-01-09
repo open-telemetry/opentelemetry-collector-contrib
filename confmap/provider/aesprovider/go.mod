@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provide
 go 1.22.0
 
 require (
-	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/confmap v1.19.1-0.20241115165626-8b99b8023ca3
+	github.com/stretchr/testify v1.10.0
+	go.opentelemetry.io/collector/confmap v1.23.0
 	go.uber.org/zap v1.27.0
 
 )

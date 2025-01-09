@@ -75,6 +75,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
+- [Braydon Kains](https://github.com/braydonk), Google
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:
@@ -89,7 +90,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Christos Markou](https://github.com/ChrsMark), Elastic
-- [Curtis Robert](https://github.com/crobert-1), Splunk (on leave)
+- [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
 - [Matt Wear](https://github.com/mwear), Lightstep
 - [Yang Song](https://github.com/songy23), DataDog

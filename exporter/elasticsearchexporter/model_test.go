@@ -48,8 +48,10 @@ var expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cp
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
 
-var expectedLogBodyWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
-var expectedLogBodyDeDottedWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes":{"log-attr1":"value1"},"Body":"log-body","Resource":{"foo":{"bar":"baz"},"key1":"value1"},"Scope":{"name":"","version":""},"SeverityNumber":0,"TraceFlags":0}`
+var (
+	expectedLogBodyWithEmptyTimestamp         = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
+	expectedLogBodyDeDottedWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes":{"log-attr1":"value1"},"Body":"log-body","Resource":{"foo":{"bar":"baz"},"key1":"value1"},"Scope":{"name":"","version":""},"SeverityNumber":0,"TraceFlags":0}`
+)
 
 func TestEncodeSpan(t *testing.T) {
 	model := &encodeModel{dedot: false}
@@ -906,6 +908,7 @@ type OTelRecord struct {
 	ObservedTimestamp      time.Time            `json:"observed_timestamp"`
 	SeverityNumber         int32                `json:"severity_number"`
 	SeverityText           string               `json:"severity_text"`
+	EventName              string               `json:"event_name"`
 	Attributes             map[string]any       `json:"attributes"`
 	DroppedAttributesCount uint32               `json:"dropped_attributes_count"`
 	Scope                  OTelScope            `json:"scope"`
@@ -1074,6 +1077,30 @@ func TestEncodeLogOtelMode(t *testing.T) {
 				return assignDatastreamData(or, "", ds, ns)
 			},
 		},
+		{
+			name: "event_name from attributes.event.name",
+			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+				or.Attributes["event.name"] = "foo"
+				or.EventName = ""
+				return or
+			}),
+			wantFn: func(or OTelRecord) OTelRecord {
+				or.EventName = "foo"
+				return assignDatastreamData(or)
+			},
+		},
+		{
+			name: "event_name takes precedent over attributes.event.name",
+			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+				or.Attributes["event.name"] = "foo"
+				or.EventName = "bar"
+				return or
+			}),
+			wantFn: func(or OTelRecord) OTelRecord {
+				or.EventName = "bar"
+				return assignDatastreamData(or)
+			},
+		},
 	}
 
 	m := encodeModel{
@@ -1107,14 +1134,15 @@ func TestEncodeLogOtelMode(t *testing.T) {
 // helper function that creates the OTel LogRecord from the test structure
 func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
 	record := plog.NewLogRecord()
-	record.SetTimestamp(pcommon.Timestamp(uint64(rec.Timestamp.UnixNano())))
-	record.SetObservedTimestamp(pcommon.Timestamp(uint64(rec.ObservedTimestamp.UnixNano())))
+	record.SetTimestamp(pcommon.Timestamp(uint64(rec.Timestamp.UnixNano())))                 //nolint:gosec // this input is controlled by tests
+	record.SetObservedTimestamp(pcommon.Timestamp(uint64(rec.ObservedTimestamp.UnixNano()))) //nolint:gosec // this input is controlled by tests
 
 	record.SetTraceID(pcommon.TraceID(rec.TraceID))
 	record.SetSpanID(pcommon.SpanID(rec.SpanID))
 	record.SetSeverityNumber(plog.SeverityNumber(rec.SeverityNumber))
 	record.SetSeverityText(rec.SeverityText)
 	record.SetDroppedAttributesCount(rec.DroppedAttributesCount)
+	record.SetEventName(rec.EventName)
 
 	err := record.Attributes().FromRaw(rec.Attributes)
 	require.NoError(t, err)
@@ -1141,6 +1169,7 @@ func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelR
         "event.name": "user-password-change",
         "foo.some": "bar"
     },
+    "event_name": "user-password-change",
     "dropped_attributes_count": 1,
     "observed_timestamp": "2024-03-12T20:00:41.123456789Z",
     "resource": {
@@ -1243,7 +1272,7 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	logRecords := scopeLogs.LogRecords()
-	observedTimestamp := pcommon.Timestamp(time.Now().UnixNano())
+	observedTimestamp := pcommon.Timestamp(time.Now().UnixNano()) // nolint:gosec // UnixNano is positive and thus safe to convert to signed integer.
 
 	logRecord := logRecords.AppendEmpty()
 	logRecord.SetObservedTimestamp(observedTimestamp)
@@ -1275,4 +1304,37 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 	_, err = m.encodeLogBodyMapMode(logRecord)
 	require.Error(t, err)
 	require.ErrorIs(t, err, ErrInvalidTypeForBodyMapMode)
+}
+
+func TestMergeGeolocation(t *testing.T) {
+	attributes := map[string]any{
+		"geo.location.lon":          1.1,
+		"geo.location.lat":          2.2,
+		"foo.bar.geo.location.lon":  3.3,
+		"foo.bar.geo.location.lat":  4.4,
+		"a.geo.location.lon":        5.5,
+		"b.geo.location.lat":        6.6,
+		"unrelatedgeo.location.lon": 7.7,
+		"unrelatedgeo.location.lat": 8.8,
+		"d":                         9.9,
+		"e.geo.location.lon":        "foo",
+		"e.geo.location.lat":        "bar",
+	}
+	wantAttributes := map[string]any{
+		"geo.location":              []any{1.1, 2.2},
+		"foo.bar.geo.location":      []any{3.3, 4.4},
+		"a.geo.location.lon":        5.5,
+		"b.geo.location.lat":        6.6,
+		"unrelatedgeo.location.lon": 7.7,
+		"unrelatedgeo.location.lat": 8.8,
+		"d":                         9.9,
+		"e.geo.location.lon":        "foo",
+		"e.geo.location.lat":        "bar",
+	}
+	input := pcommon.NewMap()
+	err := input.FromRaw(attributes)
+	require.NoError(t, err)
+	mergeGeolocation(input)
+	after := input.AsRaw()
+	assert.Equal(t, wantAttributes, after)
 }

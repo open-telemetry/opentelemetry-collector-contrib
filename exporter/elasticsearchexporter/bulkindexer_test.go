@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -84,7 +85,6 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
@@ -122,6 +122,7 @@ func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
 			config: Config{
 				NumWorkers: 1,
 				Mapping:    MappingsSettings{Mode: MappingECS.String()},
+				Flush:      FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 			wantRequireDataStream: false,
 		},
@@ -130,13 +131,13 @@ func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
 			config: Config{
 				NumWorkers: 1,
 				Mapping:    MappingsSettings{Mode: MappingOTel.String()},
+				Flush:      FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 			wantRequireDataStream: true,
 		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			requireDataStreamCh := make(chan bool, 1)
@@ -212,7 +213,6 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			cfg := Config{NumWorkers: 1, Flush: FlushSettings{Interval: time.Hour, Bytes: 1}}
@@ -252,6 +252,7 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 			config: Config{
 				NumWorkers:   1,
 				ClientConfig: confighttp.ClientConfig{Compression: "none"},
+				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 		},
 		{
@@ -259,12 +260,12 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 			config: Config{
 				NumWorkers:   1,
 				ClientConfig: confighttp.ClientConfig{Compression: "gzip"},
+				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -315,4 +316,29 @@ func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Clie
 	assert.NoError(t, bulkIndexer.Close(context.Background()))
 
 	return bulkIndexer
+}
+
+func TestSyncBulkIndexer_flushBytes(t *testing.T) {
+	var reqCnt atomic.Int64
+	cfg := Config{NumWorkers: 1, Flush: FlushSettings{Interval: time.Hour, Bytes: 1}}
+	client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
+		RoundTripFunc: func(r *http.Request) (*http.Response, error) {
+			if r.URL.Path == "/_bulk" {
+				reqCnt.Add(1)
+			}
+			return &http.Response{
+				Header: http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+				Body:   io.NopCloser(strings.NewReader(successResp)),
+			}, nil
+		},
+	}})
+	require.NoError(t, err)
+
+	bi := newSyncBulkIndexer(zap.NewNop(), client, &cfg)
+	session, err := bi.StartSession(context.Background())
+	require.NoError(t, err)
+
+	assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`), nil))
+	assert.Equal(t, int64(1), reqCnt.Load()) // flush due to flush::bytes
+	assert.NoError(t, bi.Close(context.Background()))
 }

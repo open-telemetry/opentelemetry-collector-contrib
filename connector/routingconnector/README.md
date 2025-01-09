@@ -26,6 +26,21 @@
 
 Routes logs, metrics or traces based on resource attributes to specific pipelines using [OpenTelemetry Transformation Language (OTTL)](../../pkg/ottl/README.md) statements as routing conditions.
 
+## Notice
+
+The `match_once` field is deprecated as of `v0.116.0`. The deprecation schedule is planned as follows:
+
+- `v0.116.0`: The field is deprecated. If `false` is used, a warning will be logged.
+- `v0.117.0`: The default value will change from `false` to `true`. If `false` is used, an error will be logged.
+- `v0.118.0`: The field will be disconnected from behavior of the connector.
+- `v0.120.0`: The field will be removed.
+
+### Migration
+
+It is recommended to set `match_once: true` until `v0.117.0` and then remove all usage of the field before `v0.120.0`.
+
+For detailed guidance on how to migrate configuration from `match_once: false` to `match_once: true`, see [Config Migration](#config-migration).
+
 ## Configuration
 
 If you are not already familiar with connectors, you may find it helpful to first visit the [Connectors README].
@@ -33,7 +48,7 @@ If you are not already familiar with connectors, you may find it helpful to firs
 The following settings are available:
 
 - `table (required)`: the routing table for this connector.
-- `table.context (optional, default: resource)`: the [OTTL Context] in which the statement will be evaluated. Currently, only `resource`, `span`, `metric`, `log`, and `request` are supported.
+- `table.context (optional, default: resource)`: the [OTTL Context] in which the statement will be evaluated. Currently, only `resource`, `span`, `metric`, `datapoint`, `log`, and `request` are supported.
 - `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided. May not be used for `request` context.
 - `table.condition`: the routing condition provided as the [OTTL] condition. Required if `table.statement` is not provided. Required for `request` context.
 - `table.pipelines (required)`: the list of pipelines to use when the routing condition is met.
@@ -43,7 +58,7 @@ The following settings are available:
 
 ### Limitations
 
-- The `match_once` setting is only supported when using the `resource` context. If any routes use `span`, `metric`, `log` or `request` context, `match_once` must be set to `true`.
+- The `match_once` setting is only supported when using the `resource` context. If any routes use `span`, `metric`, `datapoint`, `log` or `request` context, `match_once` must be set to `true`.
 - The `request` context requires use of the `condition` setting, and relies on a very limited grammar. Conditions must be in the form of `request["key"] == "value"` or `request["key"] != "value"`. (In the future, this grammar may be expanded to support more complex conditions.)
 
 ### Supported [OTTL] functions
@@ -133,10 +148,10 @@ connectors:
     default_pipelines: [logs/other]
     table:
       - context: request
-        condition: reqeust["X-Tenant"] == "acme"
+        condition: request["X-Tenant"] == "acme"
         pipelines: [logs/acme]
       - context: request
-        condition: reqeust["X-Tenant"] == "ecorp"
+        condition: request["X-Tenant"] == "ecorp"
         pipelines: [logs/ecorp]
 
 service:
@@ -263,10 +278,10 @@ connectors:
         condition: severity_number < SEVERITY_NUMBER_ERROR
         pipelines: [logs/cheap]
       - context: request
-        condition: reqeust["X-Tenant"] == "acme"
+        condition: request["X-Tenant"] == "acme"
         pipelines: [logs/acme]
       - context: request
-        condition: reqeust["X-Tenant"] == "ecorp"
+        condition: request["X-Tenant"] == "ecorp"
         pipelines: [logs/ecorp]
 
 service:
@@ -285,9 +300,162 @@ service:
       exporters: [file/ecorp]
 ```
 
-## Differences between the Routing Connector and Routing Processor
+## Config Migration
 
-- The connector routes to pipelines, not exporters as the processor does.
+The following examples demonstrate some strategies for migrating a configuration to `match_once: true`.
+
+### Example without `default_pipelines`
+
+If not using `default_pipelines`, you may be able to split the router into multiple parallel routers.
+In the following example, the `"env"` and `"region"` are not directly related.
+
+```yaml
+routing:
+  match_once: false
+  table:
+    - condition: attributes["env"] == "prod"
+       pipelines: [ logs/prod ]
+    - condition: attributes["env"] == "dev"
+       pipelines: [ logs/dev ]
+    - condition: attributes["region"] == "east"
+       pipelines: [ logs/east ]
+    - condition: attributes["region"] == "west"
+       pipelines: [ logs/west ]
+
+service:
+  pipelines:
+    logs/in::exporters: [routing]
+    logs/prod::receivers: [routing]
+    logs/dev::receivers: [routing]
+    logs/east::receivers: [routing]
+    logs/west::receivers: [routing]
+```
+
+Therefore, the same behavior can be achieved using separate routers. Listing both routers in the pipeline configuration will
+result in each receiving an independent handle to the data. The same data can then match routes in both routers.
+
+```yaml
+routing/env:
+  match_once: true
+  table:
+    - condition: attributes["env"] == "prod"
+       pipelines: [ logs/prod ]
+    - condition: attributes["env"] == "dev"
+       pipelines: [ logs/dev ]
+routing/region:
+  match_once: true
+  table:
+    - condition: attributes["region"] == "east"
+       pipelines: [ logs/east ]
+    - condition: attributes["region"] == "west"
+       pipelines: [ logs/west ]
+
+service:
+  pipelines:
+    logs/in::exporters: [routing/env, routing/region]
+    logs/prod::receivers: [routing/env]
+    logs/dev::receivers: [routing/env]
+    logs/east::receivers: [routing/region]
+    logs/west::receivers: [routing/region]
+```
+
+### Example with `default_pipelines`
+
+The following example demonstrates strategies for migrating to `match_once: true` while using `default_pipelines`.
+
+```yaml
+routing:
+  match_once: false
+  default_pipelines: [ logs/default ]
+  table:
+    - condition: attributes["env"] == "prod"
+       pipelines: [ logs/prod ]
+    - condition: attributes["env"] == "dev"
+       pipelines: [ logs/dev ]
+    - condition: attributes["region"] == "east"
+       pipelines: [ logs/east ]
+    - condition: attributes["region"] == "west"
+       pipelines: [ logs/west ]
+
+service:
+  pipelines:
+    logs/in::exporters: [routing]
+    logs/default::receivers: [routing]
+    logs/prod::receivers: [routing]
+    logs/dev::receivers: [routing]
+    logs/east::receivers: [routing]
+    logs/west::receivers: [routing]
+```
+
+If the number of routes are limited, you may be able to articulate a route for each combination of conditions. This avoids the need to change any pipelines.
+
+```yaml
+routing:
+  match_once: true
+  default_pipelines: [ logs/default ]
+  table:
+    - condition: attributes["env"] == "prod" and attributes["region"] == "east"
+       pipelines: [ logs/prod, logs/east ]
+    - condition: attributes["env"] == "prod" and attributes["region"] == "west"
+       pipelines: [ logs/prod, logs/west ]
+    - condition: attributes["env"] == "dev" and attributes["region"] == "east"
+       pipelines: [ logs/dev, logs/east ]
+    - condition: attributes["env"] == "dev" and attributes["region"] == "west"
+       pipelines: [ logs/dev, logs/west ]
+
+service:
+  pipelines:
+    logs/in::exporters: [routing]
+    logs/default::receivers: [routing]
+    logs/prod::receivers: [routing]
+    logs/dev::receivers: [routing]
+    logs/east::receivers: [routing]
+    logs/west::receivers: [routing]
+```
+
+A more general solution is to use a layered approach. In this design, the first layer is a single router that sorts data according to whether it matches
+_any route_ or _no route_. This allows the second layer to work without `default_pipelines`. The downside to this approach is that the set of conditions
+in the first and second layers must be kept in sync.
+
+```yaml
+# First layer separates logs that match no routes
+routing:
+  match_once: true
+  default_pipelines: [ logs/default ]
+  table: # all routes forward to second layer
+    - condition: attributes["env"] == "prod"
+       pipelines: [ logs/env, logs/region ] 
+    - condition: attributes["env"] == "dev"
+       pipelines: [ logs/env, logs/region ]
+    - condition: attributes["region"] == "east"
+       pipelines: [ logs/env, logs/region ]
+    - condition: attributes["region"] == "west"
+       pipelines: [ logs/env, logs/region ]
+
+# Second layer routes logs based on environment and region
+routing/env:
+  match_once: true
+  table:
+    - condition: attributes["env"] == "prod"
+       pipelines: [ logs/prod ]
+    - condition: attributes["env"] == "dev"
+       pipelines: [ logs/dev ]
+routing/region:
+  match_once: true
+  table:
+    - condition: attributes["region"] == "east"
+       pipelines: [ logs/east ]
+    - condition: attributes["region"] == "west"
+       pipelines: [ logs/west ]
+
+service:
+  pipelines:
+    logs/in::exporters: [routing]
+    logs/prod::receivers: [routing/env]
+    logs/dev::receivers: [routing/env]
+    logs/east::receivers: [routing/region]
+    logs/west::receivers: [routing/region]
+```
 
 [Connectors README]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
 

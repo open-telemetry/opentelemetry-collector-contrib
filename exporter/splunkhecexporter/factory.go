@@ -86,6 +86,12 @@ func createDefaultConfig() component.Config {
 		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
 		MaxContentLengthTraces:  defaultContentLengthTracesLimit,
 		MaxEventSize:            defaultMaxEventSize,
+		OtelAttrsToHec: splunk.HecToOtelAttrs{
+			Source:     splunk.DefaultSourceLabel,
+			SourceType: splunk.DefaultSourceTypeLabel,
+			Index:      splunk.DefaultIndexLabel,
+			Host:       conventions.AttributeHostName,
+		},
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,
@@ -129,7 +135,6 @@ func createTracesExporter(
 		exporterhelper.WithShutdown(c.stop),
 		exporterhelper.WithBatcher(cfg.BatcherConfig),
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +203,6 @@ func createLogsExporter(
 		exporterhelper.WithShutdown(c.stop),
 		exporterhelper.WithBatcher(cfg.BatcherConfig),
 	)
-
 	if err != nil {
 		return nil, err
 	}

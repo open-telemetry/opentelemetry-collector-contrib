@@ -31,6 +31,7 @@ type Tracker interface {
 	EndPoll()
 	EndConsume() int
 	TotalReaders() int
+	FindFiles([]*fingerprint.Fingerprint) []*reader.Metadata
 }
 
 // fileTracker tracks known offsets for files that are being consumed by the manager.
@@ -164,11 +165,78 @@ func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
 	if t.pollsToArchive <= 0 || t.persister == nil {
 		return
 	}
-	key := fmt.Sprintf("knownFiles%d", t.archiveIndex)
-	if err := checkpoint.SaveKey(context.Background(), t.persister, metadata.Get(), key); err != nil {
+	if err := t.writeArchive(t.archiveIndex, metadata); err != nil {
 		t.set.Logger.Error("error faced while saving to the archive", zap.Error(err))
 	}
 	t.archiveIndex = (t.archiveIndex + 1) % t.pollsToArchive // increment the index
+}
+
+// readArchive loads data from the archive for a given index and returns a fileset.Filset.
+func (t *fileTracker) readArchive(index int) (*fileset.Fileset[*reader.Metadata], error) {
+	key := fmt.Sprintf("knownFiles%d", index)
+	metadata, err := checkpoint.LoadKey(context.Background(), t.persister, key)
+	if err != nil {
+		return nil, err
+	}
+	f := fileset.New[*reader.Metadata](len(metadata))
+	f.Add(metadata...)
+	return f, nil
+}
+
+// writeArchive saves data to the archive for a given index and returns an error, if encountered.
+func (t *fileTracker) writeArchive(index int, rmds *fileset.Fileset[*reader.Metadata]) error {
+	key := fmt.Sprintf("knownFiles%d", index)
+	return checkpoint.SaveKey(context.Background(), t.persister, rmds.Get(), key)
+}
+
+// FindFiles goes through archive, one fileset at a time and tries to match all fingerprints against that loaded set.
+func (t *fileTracker) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metadata {
+	// To minimize disk access, we first access the index, then review unmatched files and update the metadata, if found.
+	// We exit if all fingerprints are matched.
+
+	// Track number of matched fingerprints so we can exit if all matched.
+	var numMatched int
+
+	// Determine the index for reading archive, starting from the most recent and moving towards the oldest
+	nextIndex := t.archiveIndex
+	matchedMetadata := make([]*reader.Metadata, len(fps))
+
+	// continue executing the loop until either all records are matched or all archive sets have been processed.
+	for i := 0; i < t.pollsToArchive; i++ {
+		// Update the mostRecentIndex
+		nextIndex = (nextIndex - 1 + t.pollsToArchive) % t.pollsToArchive
+
+		data, err := t.readArchive(nextIndex) // we load one fileset atmost once per poll
+		if err != nil {
+			t.set.Logger.Error("error while opening archive", zap.Error(err))
+			continue
+		}
+		archiveModified := false
+		for j, fp := range fps {
+			if matchedMetadata[j] != nil {
+				// we've already found a match for this index, continue
+				continue
+			}
+			if md := data.Match(fp, fileset.StartsWith); md != nil {
+				// update the matched metada for the index
+				matchedMetadata[j] = md
+				archiveModified = true
+				numMatched++
+			}
+		}
+		if !archiveModified {
+			continue
+		}
+		// we save one fileset atmost once per poll
+		if err := t.writeArchive(nextIndex, data); err != nil {
+			t.set.Logger.Error("error while opening archive", zap.Error(err))
+		}
+		// Check if all metadata have been found
+		if numMatched == len(fps) {
+			return matchedMetadata
+		}
+	}
+	return matchedMetadata
 }
 
 // noStateTracker only tracks the current polled files. Once the poll is
@@ -225,3 +293,5 @@ func (t *noStateTracker) ClosePreviousFiles() int { return 0 }
 func (t *noStateTracker) EndPoll() {}
 
 func (t *noStateTracker) TotalReaders() int { return 0 }
+
+func (t *noStateTracker) FindFiles([]*fingerprint.Fingerprint) []*reader.Metadata { return nil }
