@@ -108,7 +108,7 @@ func (s *filesystemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error
 		if !s.fsFilter.includePartition(partition) {
 			continue
 		}
-		translatedMountpoint := translateMountpoint(ctx, s.config.RootPath, partition.Mountpoint)
+		translatedMountpoint := translateMountpoint(ctx, s.config.rootPath, partition.Mountpoint)
 		usage, usageErr := s.usage(ctx, translatedMountpoint)
 		if usageErr != nil {
 			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", translatedMountpoint, usageErr))
