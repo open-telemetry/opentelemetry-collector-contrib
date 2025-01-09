@@ -1040,6 +1040,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 								ImageTag:          "1.0.1",
 								ServiceInstanceID: "instance-1",
 								ServiceVersion:    "1.0.1",
+								ServiceName:       "app",
 							},
 						},
 					},
@@ -1056,6 +1057,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				conventions.AttributeContainerImageTag:  "1.0.1",
 				conventions.AttributeServiceInstanceID:  "instance-1",
 				conventions.AttributeServiceVersion:     "1.0.1",
+				conventions.AttributeServiceName:        "app",
 			},
 		},
 		{
@@ -1076,10 +1078,9 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 					Containers: kube.PodContainers{
 						ByID: map[string]*kube.Container{
 							"767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd": {
-								Name:              "app",
-								ImageName:         "test/app",
-								ImageTag:          "1.0.1",
-								ServiceInstanceID: "instance-1",
+								Name:      "app",
+								ImageName: "test/app",
+								ImageTag:  "1.0.1",
 							},
 						},
 					},
@@ -1095,13 +1096,10 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				conventions.AttributeK8SContainerName:   "app",
 				conventions.AttributeContainerImageName: "test/app",
 				conventions.AttributeContainerImageTag:  "1.0.1",
-				conventions.AttributeServiceInstanceID:  "instance-1",
-				conventions.AttributeServiceVersion:     "1.0.1",
-				conventions.AttributeServiceName:        "app",
 			},
 		},
 		{
-			name: "explicit-service-instance-id",
+			name: "operator-explicit-values-win",
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
 					{
@@ -1116,9 +1114,10 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				}
 				kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
 					Attributes: map[string]string{
-						"service.instance.id": "explicit-1",
-						"service.version":     "1.0.2",
-						"service.name":        "test-app",
+						conventions.AttributeServiceInstanceID: "explicit-instance",
+						conventions.AttributeServiceVersion:    "explicit-version",
+						conventions.AttributeServiceName:       "explicit-name",
+						conventions.AttributeServiceNamespace:  "explicit-ns",
 					},
 					Containers: kube.PodContainers{
 						ByID: map[string]*kube.Container{
@@ -1127,6 +1126,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 								ImageName:         "test/app",
 								ImageTag:          "1.0.1",
 								ServiceInstanceID: "instance-1",
+								ServiceVersion:    "version-1",
 							},
 						},
 					},
@@ -1142,9 +1142,10 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				conventions.AttributeK8SContainerName:   "app",
 				conventions.AttributeContainerImageName: "test/app",
 				conventions.AttributeContainerImageTag:  "1.0.1",
-				conventions.AttributeServiceInstanceID:  "explicit-1",
-				conventions.AttributeServiceVersion:     "1.0.2",
-				conventions.AttributeServiceName:        "test-app",
+				conventions.AttributeServiceInstanceID:  "explicit-instance",
+				conventions.AttributeServiceVersion:     "explicit-version",
+				conventions.AttributeServiceName:        "explicit-name",
+				conventions.AttributeServiceNamespace:   "explicit-ns",
 			},
 		},
 		{
