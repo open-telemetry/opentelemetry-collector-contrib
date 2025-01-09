@@ -1245,7 +1245,7 @@ Examples:
 
 `Murmur3Hash(target)`
 
-The `Murmur3Hash` Converter converts the `target` to a Murmur3 32-bit hash represented as a signed integer.
+The `Murmur3Hash` Converter converts the `target` to a signed integer of the 32-bit Murmur3 hash.
 
 `target` is a Getter that returns a string.
 
@@ -1259,7 +1259,7 @@ Examples:
 
 `Murmur3Hash128(target)`
 
-The `Murmur3Hash128` Converter converts the `target` to a Murmur3 128-bit hash represented as two signed integers.
+The `Murmur3Hash128` Converter converts the `target` to two signed integers of the 128-bit Murmur3 hash.
 
 `target` is a Getter that returns a string.
 
