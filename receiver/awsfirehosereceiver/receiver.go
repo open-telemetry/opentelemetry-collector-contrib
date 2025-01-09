@@ -27,7 +27,7 @@ const (
 	headerFirehoseCommonAttributes = "X-Amz-Firehose-Common-Attributes"
 	headerContentType              = "Content-Type"
 	headerContentLength            = "Content-Length"
-	headerContentEncoding          = " Content-Encoding"
+	headerContentEncoding          = "Content-Encoding"
 )
 
 var (
