@@ -143,12 +143,6 @@ func (obs *observerHandler) OnChange(changed []observer.Endpoint) {
 }
 
 func (obs *observerHandler) startReceiver(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) {
-	obs.params.TelemetrySettings.Logger.Info("starting receiver",
-		zap.String("name", template.id.String()),
-		zap.String("endpoint", e.Target),
-		zap.String("endpoint_id", string(e.ID)),
-		zap.Any("config", template.config))
-
 	resolvedConfig, err := expandConfig(template.config, env)
 	if err != nil {
 		obs.params.TelemetrySettings.Logger.Error("unable to resolve template config", zap.String("receiver", template.id.String()), zap.Error(err))
@@ -198,6 +192,17 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 	}
 
 	filterConsumerSignals(consumer, template.signals)
+
+	// short-circuit if no consumers are set
+	if consumer.metrics == nil && consumer.logs == nil && consumer.traces == nil {
+		return
+	}
+
+	obs.params.TelemetrySettings.Logger.Info("starting receiver",
+		zap.String("name", template.id.String()),
+		zap.String("endpoint", e.Target),
+		zap.String("endpoint_id", string(e.ID)),
+		zap.Any("config", template.config))
 
 	var receiver component.Component
 	if receiver, err = obs.runner.start(

@@ -71,13 +71,10 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("foo.nested.test", "pass")
 
 				tCtx.GetLogRecord().Attributes().Remove("things")
-				m1 := tCtx.GetLogRecord().Attributes().PutEmptyMap("things.0")
-				m1.PutStr("name", "foo")
-				m1.PutInt("value", 2)
-
-				m2 := tCtx.GetLogRecord().Attributes().PutEmptyMap("things.1")
-				m2.PutStr("name", "bar")
-				m2.PutInt("value", 5)
+				tCtx.GetLogRecord().Attributes().PutStr("things.0.name", "foo")
+				tCtx.GetLogRecord().Attributes().PutInt("things.0.value", 2)
+				tCtx.GetLogRecord().Attributes().PutStr("things.1.name", "bar")
+				tCtx.GetLogRecord().Attributes().PutInt("things.1.value", 5)
 			},
 		},
 		{
@@ -89,6 +86,7 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutStr("test.http.url", "http://localhost/health")
 				m.PutStr("test.flags", "A|B|C")
 				m.PutStr("test.total.string", "123456789")
+
 				m.PutStr("test.foo.bar", "pass")
 				m.PutStr("test.foo.flags", "pass")
 				m.PutStr("test.foo.bar", "pass")
@@ -96,13 +94,10 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutStr("test.foo.slice.0", "val")
 				m.PutStr("test.foo.nested.test", "pass")
 
-				m1 := m.PutEmptyMap("test.things.0")
-				m1.PutStr("name", "foo")
-				m1.PutInt("value", 2)
-
-				m2 := m.PutEmptyMap("test.things.1")
-				m2.PutStr("name", "bar")
-				m2.PutInt("value", 5)
+				m.PutStr("test.things.0.name", "foo")
+				m.PutInt("test.things.0.value", 2)
+				m.PutStr("test.things.1.name", "bar")
+				m.PutInt("test.things.1.value", 5)
 				m.CopyTo(tCtx.GetLogRecord().Attributes())
 			},
 		},
