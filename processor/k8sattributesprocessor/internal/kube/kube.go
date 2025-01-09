@@ -134,6 +134,7 @@ type Container struct {
 	ImageName         string
 	ImageTag          string
 	ServiceInstanceID string
+	ServiceVersion    string
 
 	// Statuses is a map of container k8s.container.restart_count attribute to ContainerStatus struct.
 	Statuses map[int]ContainerStatus
