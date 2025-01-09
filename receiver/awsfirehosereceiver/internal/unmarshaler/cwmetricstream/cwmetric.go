@@ -24,9 +24,9 @@ type CWMetric struct {
 	// Timestamp is the milliseconds since epoch for
 	// the metric.
 	Timestamp int64 `json:"timestamp"`
-	// Value is the cWMetricValue, which has the min, max,
+	// Value is the CWMetricValue, which has the min, max,
 	// sum, and count.
-	Value *cWMetricValue `json:"value"`
+	Value *CWMetricValue `json:"value"`
 	// Unit is the unit for the metric.
 	//
 	// More details can be found at:
@@ -34,8 +34,8 @@ type CWMetric struct {
 	Unit string `json:"unit"`
 }
 
-// The cWMetricValue is the actual values of the CloudWatch metric.
-type cWMetricValue struct {
+// The CWMetricValue is the actual values of the CloudWatch metric.
+type CWMetricValue struct {
 	// Max is the highest value observed.
 	Max float64 `json:"max"`
 	// Min is the lowest value observed.

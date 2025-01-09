@@ -4,6 +4,7 @@
 package cwlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 
@@ -14,7 +15,8 @@ import (
 )
 
 const (
-	TypeStr = "cwlogs"
+	TypeStr         = "cwlogs"
+	recordDelimiter = "\n"
 )
 
 var errInvalidRecords = errors.New("record format invalid")
@@ -38,35 +40,38 @@ func (u Unmarshaler) UnmarshalLogs(records [][]byte) (plog.Logs, error) {
 	md := plog.NewLogs()
 	builders := make(map[ResourceAttributes]*ResourceLogsBuilder)
 	for recordIndex, record := range records {
-
-		var log CWLog
-		err := json.Unmarshal(record, &log)
-		if err != nil {
-			u.logger.Error(
-				"Unable to unmarshal input",
-				zap.Error(err),
-				zap.Int("record_index", recordIndex),
-			)
-			continue
+		for datumIndex, datum := range bytes.Split(record, []byte(recordDelimiter)) {
+			var log CWLog
+			err := json.Unmarshal(datum, &log)
+			if err != nil {
+				u.logger.Error(
+					"Unable to unmarshal input",
+					zap.Error(err),
+					zap.Int("datum_index", datumIndex),
+					zap.Int("record_index", recordIndex),
+				)
+				continue
+			}
+			if !u.isValid(log) {
+				u.logger.Error(
+					"Invalid log",
+					zap.Int("datum_index", datumIndex),
+					zap.Int("record_index", recordIndex),
+				)
+				continue
+			}
+			attrs := ResourceAttributes{
+				Owner:     log.Owner,
+				LogGroup:  log.LogGroup,
+				LogStream: log.LogStream,
+			}
+			lb, ok := builders[attrs]
+			if !ok {
+				lb = NewResourceLogsBuilder(md, attrs)
+				builders[attrs] = lb
+			}
+			lb.AddLog(log)
 		}
-		if !u.isValid(log) {
-			u.logger.Error(
-				"Invalid log",
-				zap.Int("record_index", recordIndex),
-			)
-			continue
-		}
-		attrs := ResourceAttributes{
-			Owner:     log.Owner,
-			LogGroup:  log.LogGroup,
-			LogStream: log.LogStream,
-		}
-		lb, ok := builders[attrs]
-		if !ok {
-			lb = NewResourceLogsBuilder(md, attrs)
-			builders[attrs] = lb
-		}
-		lb.AddLog(log)
 	}
 
 	if len(builders) == 0 {

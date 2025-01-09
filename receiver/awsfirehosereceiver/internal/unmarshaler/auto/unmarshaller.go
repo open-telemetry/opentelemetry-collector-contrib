@@ -20,9 +20,8 @@ const (
 )
 
 var (
-	errInvalidRecords         = errors.New("record format invalid")
-	errUnsupportedContentType = errors.New("content type not supported")
-	errInvalidFormatStart     = errors.New("unable to decode data length from message")
+	errInvalidRecords = errors.New("record format invalid")
+	errUnknownLength  = errors.New("unable to decode data length from message")
 )
 
 // Unmarshaler for the CloudWatch Log JSON record format.
@@ -37,12 +36,19 @@ func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
 	return &Unmarshaler{logger}
 }
 
-// isJSON returns true if record starts with { and ends with }
+// isJSON returns true if record starts with { and ends with }. Ignores new lines at the end.
 func isJSON(record []byte) bool {
 	if len(record) < 2 {
 		return false
 	}
-	return record[0] == '{' && record[len(record)-1] == '}'
+
+	// Remove all newlines at the end, if there are any
+	lastIndex := len(record) - 1
+	for lastIndex >= 0 && record[lastIndex] == '\n' {
+		lastIndex--
+	}
+
+	return lastIndex > 0 && record[0] == '{' && record[lastIndex] == '}'
 }
 
 // isCloudWatchLog checks if the data has the entries needed to be considered a cloudwatch log
@@ -132,23 +138,27 @@ func (u *Unmarshaler) UnmarshalLogs(records [][]byte) (plog.Logs, error) {
 	cloudwatchLogs := make(map[cwlog.ResourceAttributes]*cwlog.ResourceLogsBuilder)
 	for i, record := range records {
 		if isJSON(record) {
-			if isCloudWatchLog(record) {
-				if err := u.addCloudwatchLog(record, cloudwatchLogs, ld); err != nil {
+			for j, datum := range bytes.Split(record, []byte(recordDelimiter)) {
+				if isCloudWatchLog(datum) {
+					if err := u.addCloudwatchLog(datum, cloudwatchLogs, ld); err != nil {
+						u.logger.Error(
+							"Unable to unmarshal record to cloudwatch log",
+							zap.Error(err),
+							zap.Int("datum_index", j),
+							zap.Int("record_index", i),
+						)
+					}
+				} else {
 					u.logger.Error(
-						"Unable to unmarshal record to cloudwatch log",
-						zap.Error(err),
+						"Unsupported log type for JSON record",
+						zap.Int("datum_index", j),
 						zap.Int("record_index", i),
 					)
 				}
-			} else {
-				u.logger.Error(
-					"Unsupported log type",
-					zap.Int("record_index", i),
-				)
 			}
 		} else {
 			u.logger.Error(
-				"Unsupported log type",
+				"Unsupported log type for protobuf record",
 				zap.Int("record_index", i),
 			)
 		}
@@ -165,7 +175,7 @@ func (u *Unmarshaler) addOTLPMetric(record []byte, md pmetric.Metrics) error {
 	for pos < dataLen {
 		n, nLen := proto.DecodeVarint(record)
 		if nLen == 0 && n == 0 {
-			return errors.New("unable to decode data length from message")
+			return errUnknownLength
 		}
 		req := pmetricotlp.NewExportRequest()
 		pos += nLen
@@ -183,19 +193,23 @@ func (u *Unmarshaler) UnmarshalMetrics(records [][]byte) (pmetric.Metrics, error
 	cloudwatchMetrics := make(map[cwmetricstream.ResourceAttributes]*cwmetricstream.ResourceMetricsBuilder)
 	for i, record := range records {
 		if isJSON(record) {
-			if isCloudwatchMetrics(record) {
-				if err := u.addCloudwatchMetric(record, cloudwatchMetrics, md); err != nil {
+			for j, datum := range bytes.Split(record, []byte(recordDelimiter)) {
+				if isCloudwatchMetrics(datum) {
+					if err := u.addCloudwatchMetric(datum, cloudwatchMetrics, md); err != nil {
+						u.logger.Error(
+							"Unable to unmarshal input",
+							zap.Error(err),
+							zap.Int("datum_index", j),
+							zap.Int("record_index", i),
+						)
+					}
+				} else {
 					u.logger.Error(
-						"Unable to unmarshal input",
-						zap.Error(err),
+						"Unsupported metric type for JSON record",
+						zap.Int("datum_index", j),
 						zap.Int("record_index", i),
 					)
 				}
-			} else {
-				u.logger.Error(
-					"Unsupported metric type",
-					zap.Int("record_index", i),
-				)
 			}
 		} else { // is protobuf
 			// OTLP metric is the only option currently supported
@@ -207,7 +221,7 @@ func (u *Unmarshaler) UnmarshalMetrics(records [][]byte) (pmetric.Metrics, error
 				)
 			} else {
 				u.logger.Error(
-					"Unsupported metric type",
+					"Unsupported metric type for protobuf record",
 					zap.Int("record_index", i),
 				)
 			}

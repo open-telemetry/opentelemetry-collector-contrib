@@ -4,7 +4,6 @@
 package cwlog
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -53,13 +52,10 @@ func TestUnmarshal(t *testing.T) {
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join(".", "testdata", testCase.filename))
+			record, err := os.ReadFile(filepath.Join(".", "testdata", testCase.filename))
 			require.NoError(t, err)
 
-			var records [][]byte
-			for _, record := range bytes.Split(data, []byte("\n")) {
-				records = append(records, record)
-			}
+			records := [][]byte{record}
 
 			got, err := unmarshaler.UnmarshalLogs(records)
 			require.Equal(t, testCase.wantErr, err)

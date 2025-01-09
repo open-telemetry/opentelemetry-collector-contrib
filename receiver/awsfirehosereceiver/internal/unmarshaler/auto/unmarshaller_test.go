@@ -1,7 +1,6 @@
 package auto
 
 import (
-	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -61,13 +60,10 @@ func TestUnmarshalMetrics_JSON(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join("..", testCase.dir, "testdata", testCase.filename))
+			record, err := os.ReadFile(filepath.Join("..", testCase.dir, "testdata", testCase.filename))
 			require.NoError(t, err)
 
-			var records [][]byte
-			for _, record := range bytes.Split(data, []byte("\n")) {
-				records = append(records, record)
-			}
+			records := [][]byte{record}
 
 			metrics, err := unmarshaler.UnmarshalMetrics(records)
 			require.Equal(t, testCase.err, err)
@@ -83,7 +79,7 @@ func TestUnmarshalMetrics_JSON(t *testing.T) {
 func TestUnmarshalLogs_JSON(t *testing.T) {
 	t.Parallel()
 
-	unmarshaler := NewUnmarshaler(zap.NewNop())
+	unmarshaler := NewUnmarshaler(zap.NewExample())
 	testCases := map[string]struct {
 		dir              string
 		filename         string
@@ -124,13 +120,10 @@ func TestUnmarshalLogs_JSON(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			data, err := os.ReadFile(filepath.Join("..", testCase.dir, "testdata", testCase.filename))
+			record, err := os.ReadFile(filepath.Join("..", testCase.dir, "testdata", testCase.filename))
 			require.NoError(t, err)
 
-			var records [][]byte
-			for _, record := range bytes.Split(data, []byte("\n")) {
-				records = append(records, record)
-			}
+			records := [][]byte{record}
 
 			logs, err := unmarshaler.UnmarshalLogs(records)
 			require.Equal(t, testCase.err, err)

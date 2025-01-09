@@ -4,6 +4,7 @@
 package cwmetricstream // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -13,7 +14,8 @@ import (
 )
 
 const (
-	TypeStr = "cwmetrics"
+	TypeStr         = "cwmetrics"
+	recordDelimiter = "\n"
 )
 
 var errInvalidRecords = errors.New("record format invalid")
@@ -40,35 +42,43 @@ func (u Unmarshaler) UnmarshalMetrics(records [][]byte) (pmetric.Metrics, error)
 	md := pmetric.NewMetrics()
 	builders := make(map[ResourceAttributes]*ResourceMetricsBuilder)
 	for recordIndex, record := range records {
-		var metric CWMetric
-		err := json.Unmarshal(record, &metric)
-		if err != nil {
-			u.logger.Error(
-				"Unable to unmarshal input",
-				zap.Error(err),
-				zap.Int("record_index", recordIndex),
-			)
-			continue
+		// In a CloudWatch metric stream that uses the JSON format,
+		// each Firehose record contains multiple JSON objects separated
+		// by a newline character (\n). Each object includes a single data
+		// point of a single metric.
+		for datumIndex, datum := range bytes.Split(record, []byte(recordDelimiter)) {
+			var metric CWMetric
+			err := json.Unmarshal(datum, &metric)
+			if err != nil {
+				u.logger.Error(
+					"Unable to unmarshal input",
+					zap.Error(err),
+					zap.Int("datum_index", datumIndex),
+					zap.Int("record_index", recordIndex),
+				)
+				continue
+			}
+			if !u.isValid(metric) {
+				u.logger.Error(
+					"Invalid metric",
+					zap.Int("datum_index", datumIndex),
+					zap.Int("record_index", recordIndex),
+				)
+				continue
+			}
+			attrs := ResourceAttributes{
+				MetricStreamName: metric.MetricStreamName,
+				Namespace:        metric.Namespace,
+				AccountID:        metric.AccountID,
+				Region:           metric.Region,
+			}
+			mb, ok := builders[attrs]
+			if !ok {
+				mb = NewResourceMetricsBuilder(md, attrs)
+				builders[attrs] = mb
+			}
+			mb.AddMetric(metric)
 		}
-		if !u.isValid(metric) {
-			u.logger.Error(
-				"Invalid metric",
-				zap.Int("record_index", recordIndex),
-			)
-			continue
-		}
-		attrs := ResourceAttributes{
-			MetricStreamName: metric.MetricStreamName,
-			Namespace:        metric.Namespace,
-			AccountID:        metric.AccountID,
-			Region:           metric.Region,
-		}
-		mb, ok := builders[attrs]
-		if !ok {
-			mb = NewResourceMetricsBuilder(md, attrs)
-			builders[attrs] = mb
-		}
-		mb.AddMetric(metric)
 	}
 
 	if len(builders) == 0 {

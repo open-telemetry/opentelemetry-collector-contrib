@@ -206,7 +206,7 @@ func TestResourceMetricsBuilder(t *testing.T) {
 	})
 }
 
-// testCWMetricValue is a convenience function for creating a test cWMetricValue
-func testCWMetricValue() *cWMetricValue {
-	return &cWMetricValue{100, 0, float64(rand.Int63n(100)), float64(rand.Int63n(4))}
+// testCWMetricValue is a convenience function for creating a test CWMetricValue
+func testCWMetricValue() *CWMetricValue {
+	return &CWMetricValue{100, 0, float64(rand.Int63n(100)), float64(rand.Int63n(4))}
 }
