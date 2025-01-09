@@ -1,4 +1,4 @@
-type: leaderelector
+type: leader_elector
 
 status:
   class: extension

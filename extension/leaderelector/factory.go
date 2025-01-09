@@ -6,6 +6,7 @@ package leaderelector
 import (
 	"context"
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector/internal/metadata"
 	"os"
 	"time"
 
@@ -67,7 +68,7 @@ func CreateExtension(
 // NewFactory creates a new factory for your extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		component.MustNewType("leaderelector"),
+		component.MustNewType(metadata.Type.String()),
 		CreateDefaultConfig,
 		CreateExtension,
 		component.StabilityLevelDevelopment,

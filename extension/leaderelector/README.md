@@ -11,15 +11,15 @@ receivers:
   my_awesome_receiver/foo:
     auth_type: kubeConfig
     lease:
-      name: leaderelector/foo
+      name: leader_elector/foo
 extensions:
-  leaderelector/foo:
+  leader_elector/foo:
     auth_type: kubeConfig
     lease_name: foo
     lease_namespace: default
 
 service:
-  extensions: [leaderelector/foo]
+  extensions: [leader_elector/foo]
   pipelines:
     metrics:
       receivers: [my_awesome_receiver/foo]
