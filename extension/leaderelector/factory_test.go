@@ -46,6 +46,9 @@ func TestNewFactory(t *testing.T) {
 				t.Helper()
 				factory := NewFactory()
 				expectedCfg := &Config{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "serviceAccount",
+					},
 					LeaseDuration: 15 * time.Second,
 					RenewDuration: 10 * time.Second,
 					RetryPeriod:   2 * time.Second,
@@ -65,7 +68,7 @@ func TestNewFactory(t *testing.T) {
 					return fakeClient, nil
 				}
 
-				_, err := NewFactory().CreateExtension(
+				_, err := NewFactory().Create(
 					context.Background(),
 					extensiontest.NewNopSettings(),
 					cfg,

@@ -4,7 +4,6 @@
 package leaderelector
 
 import (
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -21,7 +20,6 @@ type Config struct {
 	LeaseDuration       time.Duration `mapstructure:"lease_duration"`
 	RenewDuration       time.Duration `mapstructure:"renew_deadline"`
 	RetryPeriod         time.Duration `mapstructure:"retry_period"`
-	mu                  sync.Mutex
 	makeClient          func(apiConf k8sconfig.APIConfig) (kubernetes.Interface, error)
 }
 

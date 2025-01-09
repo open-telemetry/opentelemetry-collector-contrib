@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-func TestMultipleExtension(t *testing.T) {
+func TestExtension(t *testing.T) {
 	config := &Config{
 		LeaseName:      "foo",
 		LeaseNamespace: "default",
@@ -41,9 +41,10 @@ func TestMultipleExtension(t *testing.T) {
 	observedZapCore, _ := observer.New(zap.WarnLevel)
 
 	leaderElection := leaderElectionExtension{
-		config: config,
-		client: fakeClient,
-		logger: zap.New(observedZapCore),
+		config:        config,
+		client:        fakeClient,
+		logger:        zap.New(observedZapCore),
+		leaseHolderId: "foo",
 	}
 
 	leaderElection.SetCallBackFuncs(
