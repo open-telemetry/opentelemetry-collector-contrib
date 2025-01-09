@@ -938,6 +938,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["time"],Timestamp(time, "%Y-%m-%d"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("time", "2020-02-11")
+			},
+		},
+		{
 			statement: `set(attributes["test"], "pass") where UnixMicro(time) > 0`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
