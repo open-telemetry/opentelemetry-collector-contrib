@@ -17,12 +17,12 @@ import (
 )
 
 //go:embed testdata/all-metrics/raw_info.txt
-var raw_info string
+var rawInfo string
 
 type mockClient struct{}
 
 func (mockClient) retrieveInfo(context.Context) (map[string]string, error) {
-	return parseRawDataMap(raw_info)
+	return parseRawDataMap(rawInfo)
 }
 
 func (mockClient) close() error {
