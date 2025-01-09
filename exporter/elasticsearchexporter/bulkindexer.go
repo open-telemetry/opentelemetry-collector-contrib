@@ -31,7 +31,7 @@ type bulkIndexer interface {
 
 type bulkIndexerSession interface {
 	// Add adds a document to the bulk indexing session.
-	Add(ctx context.Context, index string, document io.WriterTo, dynamicTemplates map[string]string, docID *string) error
+	Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string) error
 
 	// End must be called on the session object once it is no longer
 	// needed, in order to release any associated resources.
@@ -126,10 +126,10 @@ type syncBulkIndexerSession struct {
 }
 
 // Add adds an item to the sync bulk indexer session.
-func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, document io.WriterTo, dynamicTemplates map[string]string, docID *string) error {
+func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string) error {
 	doc := docappender.BulkIndexerItem{Index: index, Body: document, DynamicTemplates: dynamicTemplates}
-	if docID != nil {
-		doc.DocumentID = *docID
+	if docID != "" {
+		doc.DocumentID = docID
 	}
 	err := s.bi.Add(doc)
 	if err != nil {
@@ -252,14 +252,14 @@ func (a *asyncBulkIndexer) Close(ctx context.Context) error {
 // Add adds an item to the async bulk indexer session.
 //
 // Adding an item after a call to Close() will panic.
-func (s asyncBulkIndexerSession) Add(ctx context.Context, index string, document io.WriterTo, dynamicTemplates map[string]string, docID *string) error {
+func (s asyncBulkIndexerSession) Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string) error {
 	item := docappender.BulkIndexerItem{
 		Index:            index,
 		Body:             document,
 		DynamicTemplates: dynamicTemplates,
 	}
-	if docID != nil {
-		item.DocumentID = *docID
+	if docID != "" {
+		item.DocumentID = docID
 	}
 	select {
 	case <-ctx.Done():

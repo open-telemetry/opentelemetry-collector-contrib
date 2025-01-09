@@ -184,7 +184,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 	}
 
 	docID := e.getDocumentIDAttribute(record.Attributes())
-	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document), nil, docID)
+	return bulkIndexerSession.Add(ctx, fIndex, docID, bytes.NewReader(document), nil)
 }
 
 func (e *elasticsearchExporter) pushMetricsData(
@@ -308,7 +308,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					continue
 				}
 
-				if err := session.Add(ctx, fIndex, bytes.NewReader(docBytes), doc.DynamicTemplates(), nil); err != nil {
+				if err := session.Add(ctx, fIndex, "", bytes.NewReader(docBytes), doc.DynamicTemplates()); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -423,7 +423,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 	if err != nil {
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
-	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document), nil, nil)
+	return bulkIndexerSession.Add(ctx, fIndex, "", bytes.NewReader(document), nil)
 }
 
 func (e *elasticsearchExporter) pushSpanEvent(
@@ -457,15 +457,15 @@ func (e *elasticsearchExporter) pushSpanEvent(
 	if err != nil {
 		return err
 	}
-	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(docBytes), nil, nil)
+	return bulkIndexerSession.Add(ctx, fIndex, "", bytes.NewReader(docBytes), nil)
 }
 
-func (e *elasticsearchExporter) getDocumentIDAttribute(m pcommon.Map) *string {
+func (e *elasticsearchExporter) getDocumentIDAttribute(m pcommon.Map) string {
 	if e.config.LogsDynamicID.Enabled {
 		docID, ok := getFromAttributes(documentIDAttributeName, "", m)
 		if docID != "" && ok {
-			return &docID
+			return docID
 		}
 	}
-	return nil
+	return ""
 }

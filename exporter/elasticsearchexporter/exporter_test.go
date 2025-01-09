@@ -740,16 +740,23 @@ func TestExporterLogs(t *testing.T) {
 		exampleDocID := "abc123"
 		tableTests := []struct {
 			name          string
-			expectedDocID *string // nil means the _id will not be set
+			expectedDocID string // "" means the _id will not be set
 			recordAttrs   map[string]any
 		}{
 			{
 				name:          "missing document id attribute should not set _id",
-				expectedDocID: nil,
+				expectedDocID: "",
+			},
+			{
+				name:          "empty document id attribute should not set _id",
+				expectedDocID: "",
+				recordAttrs: map[string]any{
+					documentIDAttributeName: "",
+				},
 			},
 			{
 				name:          "record attributes",
-				expectedDocID: &exampleDocID,
+				expectedDocID: exampleDocID,
 				recordAttrs: map[string]any{
 					documentIDAttributeName: exampleDocID,
 				},
@@ -757,11 +764,11 @@ func TestExporterLogs(t *testing.T) {
 		}
 
 		cfgs := map[string]func(*Config){
-			"sync": func(cfg *Config) {
+			"async": func(cfg *Config) {
 				batcherEnabled := false
 				cfg.Batcher.Enabled = &batcherEnabled
 			},
-			"async": func(cfg *Config) {
+			"sync": func(cfg *Config) {
 				batcherEnabled := true
 				cfg.Batcher.Enabled = &batcherEnabled
 				cfg.Batcher.FlushTimeout = 10 * time.Millisecond
@@ -775,10 +782,10 @@ func TestExporterLogs(t *testing.T) {
 					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 						rec.Record(docs)
 
-						if tt.expectedDocID == nil {
+						if tt.expectedDocID == "" {
 							assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
 						} else {
-							assert.Equal(t, *tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+							assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
 						}
 						return itemsAllOK(docs)
 					})
