@@ -908,6 +908,7 @@ type OTelRecord struct {
 	ObservedTimestamp      time.Time            `json:"observed_timestamp"`
 	SeverityNumber         int32                `json:"severity_number"`
 	SeverityText           string               `json:"severity_text"`
+	EventName              string               `json:"event_name"`
 	Attributes             map[string]any       `json:"attributes"`
 	DroppedAttributesCount uint32               `json:"dropped_attributes_count"`
 	Scope                  OTelScope            `json:"scope"`
@@ -1076,6 +1077,30 @@ func TestEncodeLogOtelMode(t *testing.T) {
 				return assignDatastreamData(or, "", ds, ns)
 			},
 		},
+		{
+			name: "event_name from attributes.event.name",
+			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+				or.Attributes["event.name"] = "foo"
+				or.EventName = ""
+				return or
+			}),
+			wantFn: func(or OTelRecord) OTelRecord {
+				or.EventName = "foo"
+				return assignDatastreamData(or)
+			},
+		},
+		{
+			name: "event_name takes precedent over attributes.event.name",
+			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+				or.Attributes["event.name"] = "foo"
+				or.EventName = "bar"
+				return or
+			}),
+			wantFn: func(or OTelRecord) OTelRecord {
+				or.EventName = "bar"
+				return assignDatastreamData(or)
+			},
+		},
 	}
 
 	m := encodeModel{
@@ -1117,6 +1142,7 @@ func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcom
 	record.SetSeverityNumber(plog.SeverityNumber(rec.SeverityNumber))
 	record.SetSeverityText(rec.SeverityText)
 	record.SetDroppedAttributesCount(rec.DroppedAttributesCount)
+	record.SetEventName(rec.EventName)
 
 	err := record.Attributes().FromRaw(rec.Attributes)
 	require.NoError(t, err)
@@ -1143,6 +1169,7 @@ func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelR
         "event.name": "user-password-change",
         "foo.some": "bar"
     },
+    "event_name": "user-password-change",
     "dropped_attributes_count": 1,
     "observed_timestamp": "2024-03-12T20:00:41.123456789Z",
     "resource": {
