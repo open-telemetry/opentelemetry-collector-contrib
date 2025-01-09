@@ -95,6 +95,7 @@ extension/encoding/avrologencodingextension/      @open-telemetry/collector-cont
 extension/encoding/jaegerencodingextension/       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/jsonlogencodingextension/      @open-telemetry/collector-contrib-approvers @VihasMakwana @atoulme
 extension/encoding/otlpencodingextension/         @open-telemetry/collector-contrib-approvers @dao-jun @VihasMakwana
+extension/encoding/skywalkingencodingextension/   @open-telemetry/collector-contrib-approvers @JaredTan95
 extension/encoding/textencodingextension/         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/zipkinencodingextension/       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
 extension/googleclientauthextension/              @open-telemetry/collector-contrib-approvers @dashpole @aabmass @jsuereth @punya @psx95
