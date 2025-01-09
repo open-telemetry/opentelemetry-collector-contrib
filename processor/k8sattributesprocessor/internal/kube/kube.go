@@ -214,11 +214,6 @@ type LabelFilter struct {
 	Op selection.Operator
 }
 
-type OperatorRules struct {
-	Enabled bool `mapstructure:"enabled"`
-	Labels  bool `mapstructure:"labels"`
-}
-
 // ExtractionRules is used to specify the information that needs to be extracted
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
@@ -296,31 +291,6 @@ type FieldExtractionRule struct {
 	//  - namespace
 	//  - node
 	From string
-}
-
-var OperatorAnnotationRule = FieldExtractionRule{
-	Name:                 "$1",
-	KeyRegex:             regexp.MustCompile(`^resource.opentelemetry.io/(.+)$`),
-	HasKeyRegexReference: true,
-	From:                 MetadataFromPod,
-}
-
-var OperatorLabelRules = []FieldExtractionRule{
-	{
-		Name: "service.name",
-		Key:  "app.kubernetes.io/name",
-		From: MetadataFromPod,
-	},
-	{
-		Name: "service.version",
-		Key:  "app.kubernetes.io/version",
-		From: MetadataFromPod,
-	},
-	{
-		Name: "service.namespace",
-		Key:  "app.kubernetes.io/part-of",
-		From: MetadataFromPod,
-	},
 }
 
 func (r *FieldExtractionRule) extractFromPodMetadata(metadata map[string]string, tags map[string]string, formatter string) {
