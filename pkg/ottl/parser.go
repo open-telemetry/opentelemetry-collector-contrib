@@ -457,7 +457,7 @@ func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 // ValueExpression represents an expression that resolves to a value. The returned value can be of any type,
 // and the expression can be either a literal value, a path value within the context, or the result of a converter and/or
 // a mathematical expression.
-// This Allows other components using this library to extract data from the context of the incoming signal using OTTL.
+// This allows other components using this library to extract data from the context of the incoming signal using OTTL.
 type ValueExpression[K any] struct {
 	getter Getter[K]
 }
