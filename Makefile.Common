@@ -40,6 +40,8 @@ GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
 GOTESTARCH?=$(GOARCH)
 
+DOCKERCMD ?= docker
+
 # In order to help reduce toil related to managing tooling for the open telemetry collector
 # this section of the makefile looks at only requiring command definitions to be defined
 # as part of $(TOOLS_MOD_DIR)/tools.go, following the existing practice.
@@ -206,9 +208,15 @@ checklicense: $(ADDLICENSE)
 
 .PHONY: checklinks
 checklinks:
-	command -v $(MDLINKCHECK) >/dev/null 2>&1 || { echo >&2 "$(MDLINKCHECK) not installed. Run 'npm install -g markdown-link-check'"; exit 1; }
-	find . -name \*.md -print0 | xargs -0 -n1 \
-		$(MDLINKCHECK) -q -c $(SRC_ROOT)/.github/workflows/check_links_config.json || true
+	command -v $(DOCKERCMD) >/dev/null 2>&1 || { echo >&2 "$(DOCKERCMD) not installed. Install before continuing"; exit 1; }
+	$(DOCKERCMD) run -w /home/repo --rm \
+		--mount 'type=bind,source='$(PWD)',target=/home/repo' \
+		--mount 'type=bind,source='$(SRC_ROOT)/.github/lychee.toml',target=/lychee.toml' \
+		lycheeverse/lychee \
+		--config /lychee.toml \
+		--root-dir /home/repo \
+		-v \
+		--no-progress './**/*.md'
 
 .PHONY: fmt
 fmt: $(GOFUMPT) $(GOIMPORTS)
@@ -258,3 +266,43 @@ testifylint-fix:
 gci: $(TOOLS_BIN_DIR)/gci
 	@echo "running $(GCI)"
 	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" $(ALL_SRC_AND_DOC)
+
+CHANGED_GOLANG_SOURCES?=$(shell git diff main --name-only | grep -E '.*\.go$$' | grep -v -E '.*_test\.go$$')
+.PHONY: for-affected-components
+for-affected-components:
+	@echo "Checking for affected components..."
+	@if [ -z '$(CHANGED_GOLANG_SOURCES)' ]; then \
+		echo "No go source changes detected in shippable code."; \
+	else \
+		cd $(SRC_ROOT); \
+		DEPENDENT_PKGS=$$(echo $(CHANGED_GOLANG_SOURCES) | xargs sed -n 's|^package .* // import "\(.*\)"$$|\1|p' | uniq); \
+		if [ -z '$${DEPENDENT_PKGS}' ]; then \
+			echo "No other package depends on the one being changed."; \
+		else \
+			DEPENDENT_PKG_DIRS=$$(echo $${DEPENDENT_PKGS} | tr ' ' '\n' | xargs -I {} grep --include=go.mod -rl {} | xargs dirname | uniq); \
+			set -e; for dir in $$(echo $${DEPENDENT_PKG_DIRS}); do \
+			(cd "$${dir}" && \
+				echo "running $${CMD} in $${dir}" && \
+				$${CMD} ); \
+			done \
+		fi \
+	fi
+
+CHANGED_GOLANG_TESTS?=$(shell git diff main --name-only | grep -E '.*_test\.go$$')
+.PHONY: run-changed-tests
+run-changed-tests:
+	@echo "Checking for affected tests..."
+	@if [ -z '$(CHANGED_GOLANG_TESTS)' ]; then \
+		echo "No go test changes detected."; \
+	else \
+		cd $(SRC_ROOT); \
+		AFFECTED_TEST_DIRS=$$(echo $(CHANGED_GOLANG_TESTS) | tr ' ' '\n' | xargs dirname | uniq); \
+		if [ -z '$${AFFECTED_TEST_DIRS}' ]; then \
+			echo "Failed to find the affected test directories."; \
+		else \
+			set -e; for dir in $$(echo $${AFFECTED_TEST_DIRS}); do \
+			(cd "$${dir}" && \
+				$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT) ); \
+			done \
+		fi \
+	fi
