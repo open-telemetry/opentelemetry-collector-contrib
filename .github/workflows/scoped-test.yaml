@@ -59,6 +59,9 @@ jobs:
             ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
 
+      - name: Build test tools
+        run: make "$(${PWD} -replace '\\', '/')/.tools/gotestsum"
+
       - name: Run changed tests
         if: needs.changedfiles.outputs.go_tests
         env:
