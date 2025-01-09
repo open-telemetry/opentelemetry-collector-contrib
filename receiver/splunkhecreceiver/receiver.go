@@ -147,12 +147,12 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 	mx := mux.NewRouter()
 	// set up the ack API handler if the ack extension is present
 	if r.config.Ack.Extension != nil {
-		if ext, found := host.GetExtensions()[*r.config.Ack.Extension]; found {
-			r.ackExt = ext.(ackextension.AckExtension)
-			mx.NewRoute().Path(r.config.Ack.Path).HandlerFunc(r.handleAck)
-		} else {
+		ext, found := host.GetExtensions()[*r.config.Ack.Extension]
+		if !found {
 			return fmt.Errorf("specified ack extension with id %q could not be found", *r.config.Ack.Extension)
 		}
+		r.ackExt = ext.(ackextension.AckExtension)
+		mx.NewRoute().Path(r.config.Ack.Path).HandlerFunc(r.handleAck)
 	}
 
 	mx.NewRoute().Path(r.config.HealthPath).HandlerFunc(r.handleHealthReq)
@@ -227,13 +227,13 @@ func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) 
 
 	var channelID string
 	var extracted bool
-	if channelID, extracted = r.extractChannel(req); extracted {
-		if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
-			r.failRequest(resp, http.StatusBadRequest, []byte(channelErr.Error()), channelErr)
-			return
-		}
-	} else {
+	channelID, extracted = r.extractChannel(req)
+	if !extracted {
 		r.failRequest(resp, http.StatusBadRequest, requiredDataChannelHeader, nil)
+		return
+	}
+	if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
+		r.failRequest(resp, http.StatusBadRequest, []byte(channelErr.Error()), channelErr)
 		return
 	}
 
