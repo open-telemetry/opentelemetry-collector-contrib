@@ -305,11 +305,11 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	// using the Collector's OpAMP extension.
 	err = srv.Start(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
-		onConnectingFunc: func(_ *http.Request) (bool, int) {
+		onConnecting: func(_ *http.Request) (bool, int) {
 			connected.Store(true)
 			return true, http.StatusOK
 		},
-		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
+		onMessage: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
 			if message.AgentDescription != nil {
 				instanceIDSeen := false
 				s.setAgentDescription(message.AgentDescription)
@@ -415,33 +415,33 @@ func (s *Supervisor) startOpAMPClient() error {
 		Header:         s.config.Server.Headers,
 		TLSConfig:      tlsConfig,
 		InstanceUid:    types.InstanceUid(s.persistentState.InstanceID),
-		Callbacks: types.CallbacksStruct{
-			OnConnectFunc: func(_ context.Context) {
+		Callbacks: types.Callbacks{
+			OnConnect: func(_ context.Context) {
 				s.logger.Debug("Connected to the server.")
 			},
-			OnConnectFailedFunc: func(_ context.Context, err error) {
+			OnConnectFailed: func(_ context.Context, err error) {
 				s.logger.Error("Failed to connect to the server", zap.Error(err))
 			},
-			OnErrorFunc: func(_ context.Context, err *protobufs.ServerErrorResponse) {
+			OnError: func(_ context.Context, err *protobufs.ServerErrorResponse) {
 				s.logger.Error("Server returned an error response", zap.String("message", err.ErrorMessage))
 			},
-			OnMessageFunc: s.onMessage,
-			OnOpampConnectionSettingsFunc: func(ctx context.Context, settings *protobufs.OpAMPConnectionSettings) error {
+			OnMessage: s.onMessage,
+			OnOpampConnectionSettings: func(ctx context.Context, settings *protobufs.OpAMPConnectionSettings) error {
 				//nolint:errcheck
 				go s.onOpampConnectionSettings(ctx, settings)
 				return nil
 			},
-			OnCommandFunc: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
+			OnCommand: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 				cmdType := command.GetType()
 				if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
 					return s.handleRestartCommand()
 				}
 				return nil
 			},
-			SaveRemoteConfigStatusFunc: func(_ context.Context, _ *protobufs.RemoteConfigStatus) {
+			SaveRemoteConfigStatus: func(_ context.Context, _ *protobufs.RemoteConfigStatus) {
 				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
 			},
-			GetEffectiveConfigFunc: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
+			GetEffectiveConfig: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
 				return s.createEffectiveConfigMsg(), nil
 			},
 		},
@@ -486,13 +486,13 @@ func (s *Supervisor) startOpAMPServer() error {
 
 	err = s.opampServer.Start(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
-		onConnectingFunc: func(_ *http.Request) (bool, int) {
+		onConnecting: func(_ *http.Request) (bool, int) {
 			// Only allow one agent to be connected the this server at a time.
 			alreadyConnected := connected.Swap(true)
 			return !alreadyConnected, http.StatusConflict
 		},
-		onMessageFunc: s.handleAgentOpAMPMessage,
-		onConnectionCloseFunc: func(_ serverTypes.Connection) {
+		onMessage: s.handleAgentOpAMPMessage,
+		onConnectionClose: func(_ serverTypes.Connection) {
 			connected.Store(false)
 		},
 	}.toServerSettings())
