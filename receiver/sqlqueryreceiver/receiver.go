@@ -10,8 +10,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/metadata"
@@ -46,7 +47,9 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 			dbProviderFunc := func() (*sql.DB, error) {
 				return sqlOpenerFunc(sqlCfg.Driver, sqlCfg.DataSource)
 			}
-			mp := sqlquery.NewScraper(id, query, sqlCfg.ControllerConfig, settings.TelemetrySettings.Logger, sqlCfg.Config.Telemetry, dbProviderFunc, clientProviderFunc)
+			scope := pcommon.NewInstrumentationScope()
+			scope.SetName(metadata.ScopeName)
+			mp := sqlquery.NewScraper(id, query, sqlCfg.ControllerConfig, settings.TelemetrySettings.Logger, sqlCfg.Config.Telemetry, dbProviderFunc, clientProviderFunc, scope)
 
 			opt := scraperhelper.AddScraper(metadata.Type, mp)
 			opts = append(opts, opt)

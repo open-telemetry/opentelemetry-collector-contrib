@@ -178,21 +178,29 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	document.AddInt("severity_number", int64(record.SeverityNumber()))
 	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
 
+	if record.EventName() != "" {
+		document.AddString("event_name", record.EventName())
+	} else if eventNameAttr, ok := record.Attributes().Get("event.name"); ok && eventNameAttr.Str() != "" {
+		document.AddString("event_name", eventNameAttr.Str())
+	}
+
 	m.encodeAttributesOTelMode(&document, record.Attributes())
 	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
 	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 
 	// Body
-	setOTelLogBody(&document, record.Body(), record.Attributes())
+	setOTelLogBody(&document, record)
 
 	return document
 }
 
-func setOTelLogBody(doc *objmodel.Document, body pcommon.Value, attributes pcommon.Map) {
+func setOTelLogBody(doc *objmodel.Document, record plog.LogRecord) {
 	// Determine if this log record is an event, as they are mapped differently
 	// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/general/events.md
-	_, isEvent := attributes.Get("event.name")
+	_, isEvent := record.Attributes().Get("event.name")
+	isEvent = isEvent || record.EventName() != ""
 
+	body := record.Body()
 	switch body.Type() {
 	case pcommon.ValueTypeMap:
 		if isEvent {
@@ -349,7 +357,7 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 
 	if dp.HasMappingHint(hintDocCount) {
 		docCount := dp.DocCount()
-		document.AddInt("_doc_count", int64(docCount))
+		document.AddUInt("_doc_count", docCount)
 	}
 
 	switch value.Type() {
@@ -387,7 +395,7 @@ func (dp summaryDataPoint) Value() (pcommon.Value, error) {
 	vm := pcommon.NewValueMap()
 	m := vm.Map()
 	m.PutDouble("sum", dp.Sum())
-	m.PutInt("value_count", int64(dp.Count()))
+	m.PutInt("value_count", safeUint64ToInt64(dp.Count()))
 	return vm, nil
 }
 
@@ -413,7 +421,7 @@ func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
 		vm := pcommon.NewValueMap()
 		m := vm.Map()
 		m.PutDouble("sum", dp.Sum())
-		m.PutInt("value_count", int64(dp.Count()))
+		m.PutInt("value_count", safeUint64ToInt64(dp.Count()))
 		return vm, nil
 	}
 
@@ -460,7 +468,7 @@ func (dp histogramDataPoint) Value() (pcommon.Value, error) {
 		vm := pcommon.NewValueMap()
 		m := vm.Map()
 		m.PutDouble("sum", dp.Sum())
-		m.PutInt("value_count", int64(dp.Count()))
+		m.PutInt("value_count", safeUint64ToInt64(dp.Count()))
 		return vm, nil
 	}
 	return histogramToValue(dp.HistogramDataPoint)
@@ -518,7 +526,7 @@ func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
 			value = explicitBounds.At(i-1) + (explicitBounds.At(i)-explicitBounds.At(i-1))/2.0
 		}
 
-		counts.AppendEmpty().SetInt(int64(count))
+		counts.AppendEmpty().SetInt(safeUint64ToInt64(count))
 		values.AppendEmpty().SetDouble(value)
 	}
 
@@ -674,7 +682,7 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	document.AddSpanID("parent_span_id", span.ParentSpanID())
 	document.AddString("name", span.Name())
 	document.AddString("kind", span.Kind().String())
-	document.AddInt("duration", int64(span.EndTimestamp()-span.StartTimestamp()))
+	document.AddUInt("duration", uint64(span.EndTimestamp()-span.StartTimestamp()))
 
 	m.encodeAttributesOTelMode(&document, span.Attributes())
 
@@ -734,6 +742,8 @@ func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaU
 	}
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", spanEvent.Timestamp())
+	document.AddString("event_name", spanEvent.Name())
+	// todo remove before GA, make sure Kibana uses event_name
 	document.AddString("attributes.event.name", spanEvent.Name())
 	document.AddSpanID("span_id", span.SpanID())
 	document.AddTraceID("trace_id", span.TraceID())
@@ -985,7 +995,7 @@ func valueHash(h hash.Hash, v pcommon.Value) {
 		h.Write(buf)
 	case pcommon.ValueTypeInt:
 		buf := make([]byte, 8)
-		binary.LittleEndian.PutUint64(buf, uint64(v.Int()))
+		binary.LittleEndian.PutUint64(buf, uint64(v.Int())) // nolint:gosec // Overflow assumed. We prefer having high integers over zero.
 		h.Write(buf)
 	case pcommon.ValueTypeBytes:
 		h.Write(v.Bytes().AsRaw())
@@ -1073,4 +1083,11 @@ func mergeGeolocation(attributes pcommon.Map) {
 			attributes.PutDouble(key, geo.lat)
 		}
 	}
+}
+
+func safeUint64ToInt64(v uint64) int64 {
+	if v > math.MaxInt64 {
+		return math.MaxInt64
+	}
+	return int64(v) // nolint:goset // overflow checked
 }
