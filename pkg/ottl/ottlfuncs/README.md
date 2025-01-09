@@ -444,6 +444,7 @@ Available Converters:
 - [Minute](#minute)
 - [Minutes](#minutes)
 - [Month](#month)
+- [Nanosecond](#nanosecond)
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
 - [ParseCSV](#parsecsv)
@@ -1237,6 +1238,20 @@ The returned type is `int64`.
 Examples:
 
 - `Month(Now())`
+
+### Nanosecond
+
+`Nanosecond(value)`
+
+The `Nanosecond` Converter returns the nanosecond component from the specified time using the Go stdlib [`time.Nanosecond` function](https://pkg.go.dev/time#Time.Nanosecond).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Nanosecond(Now())`
 
 ### Nanoseconds
 
