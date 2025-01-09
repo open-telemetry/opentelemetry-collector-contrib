@@ -3,8 +3,39 @@ package kube
 import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"k8s.io/api/core/v1"
+	"regexp"
 	"strings"
 )
+
+type OperatorRules struct {
+	Enabled bool `mapstructure:"enabled"`
+	Labels  bool `mapstructure:"labels"`
+}
+
+var OperatorAnnotationRule = FieldExtractionRule{
+	Name:                 "$1",
+	KeyRegex:             regexp.MustCompile(`^resource.opentelemetry.io/(.+)$`),
+	HasKeyRegexReference: true,
+	From:                 MetadataFromPod,
+}
+
+var OperatorLabelRules = []FieldExtractionRule{
+	{
+		Name: "service.name",
+		Key:  "app.kubernetes.io/name",
+		From: MetadataFromPod,
+	},
+	{
+		Name: "service.version",
+		Key:  "app.kubernetes.io/version",
+		From: MetadataFromPod,
+	},
+	{
+		Name: "service.namespace",
+		Key:  "app.kubernetes.io/part-of",
+		From: MetadataFromPod,
+	},
+}
 
 var serviceNamePrecedence = []string{
 	conventions.AttributeK8SDeploymentName,
@@ -25,7 +56,7 @@ func OperatorServiceName(containerName string, names map[string]string) string {
 	return containerName
 }
 
-func createServiceInstanceID(pod *v1.Pod, containerName string) string {
+func operatorServiceInstanceID(pod *v1.Pod, containerName string) string {
 	resNames := []string{pod.Namespace, pod.Name, containerName}
 	return strings.Join(resNames, ".")
 }
