@@ -7,6 +7,13 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.117.0
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Change OTTL contexts to properly handle `ottl.Path` with context (#29017)
+  The OTTL contexts have a new option `EnablePathContextNames` to enable support for expressing a statement's context via path names in the statement
+
 ## v0.116.0
 
 ### 🚩 Deprecations 🚩
