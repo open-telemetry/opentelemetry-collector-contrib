@@ -101,10 +101,13 @@ func newDockerEventPoller(
 }
 
 func (d *dockerEventPoller) Start(ctx context.Context) {
-	filterArgs := filters.NewArgs()
-	for k, v := range d.config.Logs.Filters {
-		for _, elem := range v {
-			filterArgs.Add(k, elem)
+	filterArgs := filters.Args{}
+	if len(d.config.Logs.Filters) > 0 {
+		filterArgs = filters.NewArgs()
+		for k, v := range d.config.Logs.Filters {
+			for _, elem := range v {
+				filterArgs.Add(k, elem)
+			}
 		}
 	}
 	for {
