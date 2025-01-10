@@ -29,17 +29,13 @@ func TestLoadConfig(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	// Step 3: Replace placeholders with dynamically generated UUIDs
 	contentStr := strings.ReplaceAll(string(content), "<METRICS_APP_TOKEN>", metricsAppToken)
 	contentStr = strings.ReplaceAll(contentStr, "<LOGS_APP_TOKEN>", logsAppToken)
 
-	// Step 4: Write the updated content to a temporary file for testing
 	tmpConfigPath := filepath.Join("testdata", "config_tmp.yaml")
-	err = os.WriteFile(tmpConfigPath, []byte(contentStr), 0644) // Replace ioutil.WriteFile with os.WriteFile
+	err = os.WriteFile(tmpConfigPath, []byte(contentStr), 0644)
 	require.NoError(t, err)
-	defer os.Remove(tmpConfigPath) // Clean up after the test
-
-	// Step 5: Load the modified configuration file
+	defer os.Remove(tmpConfigPath)
 	cm, err := confmaptest.LoadConf(tmpConfigPath)
 	require.NoError(t, err)
 	tests := []struct {
