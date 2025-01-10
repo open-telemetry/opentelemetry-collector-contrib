@@ -4,7 +4,6 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -34,6 +33,8 @@ type elasticsearchExporter struct {
 
 	wg          sync.WaitGroup // active sessions
 	bulkIndexer bulkIndexer
+
+	bufferPool *BufferPool
 }
 
 func newExporter(
@@ -67,6 +68,7 @@ func newExporter(
 		model:          model,
 		logstashFormat: cfg.LogstashFormat,
 		otel:           otel,
+		bufferPool:     NewBufferPool(),
 	}
 }
 
@@ -171,11 +173,12 @@ func (e *elasticsearchExporter) pushLogRecord(
 		fIndex = formattedIndex
 	}
 
-	document, err := e.model.encodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
+	buffer := e.bufferPool.NewPooledBuffer()
+	err := e.model.encodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL, buffer.Buffer)
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
-	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document), nil)
+	return bulkIndexerSession.Add(ctx, fIndex, buffer, nil)
 }
 
 func (e *elasticsearchExporter) pushMetricsData(
@@ -285,12 +288,13 @@ func (e *elasticsearchExporter) pushMetricsData(
 
 			for fIndex, groupedDataPoints := range groupedDataPointsByIndex {
 				for _, dataPoints := range groupedDataPoints {
-					docBytes, dynamicTemplates, err := e.model.encodeMetrics(resource, resourceMetric.SchemaUrl(), scope, scopeMetrics.SchemaUrl(), dataPoints, &validationErrs)
+					buf := e.bufferPool.NewPooledBuffer()
+					dynamicTemplates, err := e.model.encodeMetrics(resource, resourceMetric.SchemaUrl(), scope, scopeMetrics.SchemaUrl(), dataPoints, &validationErrs, buf.Buffer)
 					if err != nil {
 						errs = append(errs, err)
 						continue
 					}
-					if err := session.Add(ctx, fIndex, bytes.NewReader(docBytes), dynamicTemplates); err != nil {
+					if err := session.Add(ctx, fIndex, buf, dynamicTemplates); err != nil {
 						if cerr := ctx.Err(); cerr != nil {
 							return cerr
 						}
@@ -405,11 +409,12 @@ func (e *elasticsearchExporter) pushTraceRecord(
 		fIndex = formattedIndex
 	}
 
-	document, err := e.model.encodeSpan(resource, resourceSchemaURL, span, scope, scopeSchemaURL)
+	buf := e.bufferPool.NewPooledBuffer()
+	err := e.model.encodeSpan(resource, resourceSchemaURL, span, scope, scopeSchemaURL, buf.Buffer)
 	if err != nil {
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
-	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document), nil)
+	return bulkIndexerSession.Add(ctx, fIndex, buf, nil)
 }
 
 func (e *elasticsearchExporter) pushSpanEvent(
@@ -434,13 +439,11 @@ func (e *elasticsearchExporter) pushSpanEvent(
 		}
 		fIndex = formattedIndex
 	}
-	docBytes, err := e.model.encodeSpanEvent(resource, resourceSchemaURL, span, spanEvent, scope, scopeSchemaURL)
-	if err != nil {
-		return err
-	}
-	if docBytes == nil {
+	buf := e.bufferPool.NewPooledBuffer()
+	e.model.encodeSpanEvent(resource, resourceSchemaURL, span, spanEvent, scope, scopeSchemaURL, buf.Buffer)
+	if buf.Buffer.Len() == 0 {
 		return nil
 	}
 
-	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(docBytes), nil)
+	return bulkIndexerSession.Add(ctx, fIndex, buf, nil)
 }

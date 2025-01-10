@@ -17,14 +17,13 @@ import (
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
 
-func serializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []dataPoint, validationErrors *[]error) ([]byte, map[string]string, error) {
+func serializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []dataPoint, validationErrors *[]error, buf *bytes.Buffer) (map[string]string, error) {
 	if len(dataPoints) == 0 {
-		return nil, nil, nil
+		return nil, nil
 	}
 	dp0 := dataPoints[0]
-	var buf bytes.Buffer
 
-	v := json.NewVisitor(&buf)
+	v := json.NewVisitor(buf)
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
 	v.SetExplicitRadixPoint(true)
@@ -40,7 +39,7 @@ func serializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope
 	writeScope(v, scope, scopeSchemaURL, true)
 	dynamicTemplates := serializeDataPoints(v, dataPoints, validationErrors)
 	_ = v.OnObjectFinished()
-	return buf.Bytes(), dynamicTemplates, nil
+	return dynamicTemplates, nil
 }
 
 func serializeDataPoints(v *json.Visitor, dataPoints []dataPoint, validationErrors *[]error) map[string]string {
@@ -76,10 +75,8 @@ func serializeDataPoints(v *json.Visitor, dataPoints []dataPoint, validationErro
 	return dynamicTemplates
 }
 
-func serializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent) ([]byte, error) {
-	var buf bytes.Buffer
-
-	v := json.NewVisitor(&buf)
+func serializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, buf *bytes.Buffer) {
+	v := json.NewVisitor(buf)
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
 	v.SetExplicitRadixPoint(true)
@@ -103,13 +100,10 @@ func serializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, sco
 	writeResource(v, resource, resourceSchemaURL, false)
 	writeScope(v, scope, scopeSchemaURL, false)
 	_ = v.OnObjectFinished()
-	return buf.Bytes(), nil
 }
 
-func serializeSpan(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span) ([]byte, error) {
-	var buf bytes.Buffer
-
-	v := json.NewVisitor(&buf)
+func serializeSpan(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, buf *bytes.Buffer) error {
+	v := json.NewVisitor(buf)
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
 	v.SetExplicitRadixPoint(true)
@@ -132,7 +126,7 @@ func serializeSpan(resource pcommon.Resource, resourceSchemaURL string, scope pc
 	writeResource(v, resource, resourceSchemaURL, false)
 	writeScope(v, scope, scopeSchemaURL, false)
 	_ = v.OnObjectFinished()
-	return buf.Bytes(), nil
+	return nil
 }
 
 func writeStatus(v *json.Visitor, status ptrace.Status) {
@@ -160,10 +154,16 @@ func writeSpanLinks(v *json.Visitor, span ptrace.Span) {
 	_ = v.OnArrayFinished()
 }
 
-func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, record plog.LogRecord) ([]byte, error) {
-	var buf bytes.Buffer
+func serializeMap(m pcommon.Map, buf *bytes.Buffer) {
+	v := json.NewVisitor(buf)
+	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
+	// This is required to generate the correct dynamic mapping in ES.
+	v.SetExplicitRadixPoint(true)
+	writeMap(v, m, false)
+}
 
-	v := json.NewVisitor(&buf)
+func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, record plog.LogRecord, buf *bytes.Buffer) error {
+	v := json.NewVisitor(buf)
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
 	v.SetExplicitRadixPoint(true)
@@ -193,7 +193,7 @@ func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pco
 	writeScope(v, scope, scopeSchemaURL, false)
 	writeLogBody(v, record, isEvent)
 	_ = v.OnObjectFinished()
-	return buf.Bytes(), nil
+	return nil
 }
 
 func writeDataStream(v *json.Visitor, attributes pcommon.Map) {

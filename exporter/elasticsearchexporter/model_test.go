@@ -56,9 +56,10 @@ var (
 func TestEncodeSpan(t *testing.T) {
 	model := &encodeModel{dedot: false}
 	td := mockResourceSpans()
-	spanByte, err := model.encodeSpan(td.ResourceSpans().At(0).Resource(), "", td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0), td.ResourceSpans().At(0).ScopeSpans().At(0).Scope(), "")
+	var buf bytes.Buffer
+	err := model.encodeSpan(td.ResourceSpans().At(0).Resource(), "", td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0), td.ResourceSpans().At(0).ScopeSpans().At(0).Scope(), "", &buf)
 	assert.NoError(t, err)
-	assert.Equal(t, expectedSpanBody, string(spanByte))
+	assert.Equal(t, expectedSpanBody, buf.String())
 }
 
 func TestEncodeLog(t *testing.T) {
@@ -66,26 +67,29 @@ func TestEncodeLog(t *testing.T) {
 		model := &encodeModel{dedot: false}
 		td := mockResourceLogs()
 		td.ScopeLogs().At(0).LogRecords().At(0).SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)))
-		logByte, err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl())
+		var buf bytes.Buffer
+		err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl(), &buf)
 		assert.NoError(t, err)
-		assert.Equal(t, expectedLogBody, string(logByte))
+		assert.Equal(t, expectedLogBody, buf.String())
 	})
 
 	t.Run("both timestamp and observedTimestamp empty", func(t *testing.T) {
 		model := &encodeModel{dedot: false}
 		td := mockResourceLogs()
-		logByte, err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl())
+		var buf bytes.Buffer
+		err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl(), &buf)
 		assert.NoError(t, err)
-		assert.Equal(t, expectedLogBodyWithEmptyTimestamp, string(logByte))
+		assert.Equal(t, expectedLogBodyWithEmptyTimestamp, buf.String())
 	})
 
 	t.Run("dedot true", func(t *testing.T) {
 		model := &encodeModel{dedot: true}
 		td := mockResourceLogs()
 		td.Resource().Attributes().PutStr("foo.bar", "baz")
-		logByte, err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl())
+		var buf bytes.Buffer
+		err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl(), &buf)
 		require.NoError(t, err)
-		require.Equal(t, expectedLogBodyDeDottedWithEmptyTimestamp, string(logByte))
+		require.Equal(t, expectedLogBodyDeDottedWithEmptyTimestamp, buf.String())
 	})
 }
 
@@ -118,9 +122,12 @@ func TestEncodeMetric(t *testing.T) {
 	}
 
 	for _, dataPoints := range groupedDataPoints {
-		bytes, _, err := model.encodeMetrics(rm.Resource(), rm.SchemaUrl(), sm.Scope(), sm.SchemaUrl(), dataPoints, nil)
+		var buf bytes.Buffer
+		errors := make([]error, 0)
+		_, err := model.encodeMetrics(rm.Resource(), rm.SchemaUrl(), sm.Scope(), sm.SchemaUrl(), dataPoints, &errors, &buf)
+		require.Empty(t, errors, err)
 		require.NoError(t, err)
-		docsBytes = append(docsBytes, bytes)
+		docsBytes = append(docsBytes, buf.Bytes())
 	}
 
 	allDocsSorted := docBytesToSortedString(docsBytes)
@@ -338,10 +345,11 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 		mode:  MappingECS,
 		dedot: true,
 	}
-	doc, err := m.encodeLog(resource, "", record, scope, "")
+	var buf bytes.Buffer
+	err = m.encodeLog(resource, "", record, scope, "", &buf)
 	require.NoError(t, err)
 
-	assert.Equal(t, want, string(doc))
+	assert.Equal(t, want, buf.String())
 }
 
 func TestEncodeLogECSMode(t *testing.T) {
@@ -1116,7 +1124,8 @@ func TestEncodeLogOtelMode(t *testing.T) {
 		// This sets the data_stream values default or derived from the record/scope/resources
 		routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), "", true, scope.Name())
 
-		b, err := m.encodeLog(resource, tc.rec.Resource.SchemaURL, record, scope, tc.rec.Scope.SchemaURL)
+		var buf bytes.Buffer
+		err := m.encodeLog(resource, tc.rec.Resource.SchemaURL, record, scope, tc.rec.Scope.SchemaURL, &buf)
 		require.NoError(t, err)
 
 		want := tc.rec
@@ -1125,7 +1134,7 @@ func TestEncodeLogOtelMode(t *testing.T) {
 		}
 
 		var got OTelRecord
-		err = json.Unmarshal(b, &got)
+		err = json.Unmarshal(buf.Bytes(), &got)
 
 		require.NoError(t, err)
 
@@ -1248,9 +1257,11 @@ func TestEncodeLogScalarObjectConflict(t *testing.T) {
 	td := mockResourceLogs()
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo", "scalar")
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo.bar", "baz")
-	encoded, err := model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "")
+	var buf bytes.Buffer
+	err := model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "", &buf)
 	assert.NoError(t, err)
 
+	encoded := buf.Bytes()
 	assert.True(t, gjson.ValidBytes(encoded))
 	assert.False(t, gjson.GetBytes(encoded, "Attributes\\.foo").Exists())
 	fooValue := gjson.GetBytes(encoded, "Attributes\\.foo\\.value")
@@ -1260,9 +1271,11 @@ func TestEncodeLogScalarObjectConflict(t *testing.T) {
 
 	// If there is an attribute named "foo.value", then "foo" would be omitted rather than renamed.
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo.value", "foovalue")
-	encoded, err = model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "")
+	buf = bytes.Buffer{}
+	err = model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "", &buf)
 	assert.NoError(t, err)
 
+	encoded = buf.Bytes()
 	assert.False(t, gjson.GetBytes(encoded, "Attributes\\.foo").Exists())
 	fooValue = gjson.GetBytes(encoded, "Attributes\\.foo\\.value")
 	assert.Equal(t, "foovalue", fooValue.Str)
@@ -1289,7 +1302,8 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 	bodyMap.CopyTo(logRecord.Body().SetEmptyMap())
 
 	m := encodeModel{}
-	got, err := m.encodeLogBodyMapMode(logRecord)
+	var buf bytes.Buffer
+	err := m.encodeLogBodyMapMode(logRecord, &buf)
 	require.NoError(t, err)
 
 	require.JSONEq(t, `{
@@ -1299,11 +1313,11 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 		"key.a":                      "a",
 		"key.a.b":                    "b",
 		"pi":                         3.14
-	}`, string(got))
+	}`, buf.String())
 
 	// invalid body map
 	logRecord.Body().SetEmptySlice()
-	_, err = m.encodeLogBodyMapMode(logRecord)
+	err = m.encodeLogBodyMapMode(logRecord, &bytes.Buffer{})
 	require.Error(t, err)
 	require.ErrorIs(t, err, ErrInvalidTypeForBodyMapMode)
 }

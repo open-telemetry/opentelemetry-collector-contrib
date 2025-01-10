@@ -119,10 +119,12 @@ func TestSerializeLog(t *testing.T) {
 			record := scopeLogs.LogRecords().AppendEmpty()
 			tt.logCustomizer(resourceLogs.Resource(), scopeLogs.Scope(), record)
 
-			logBytes, err := serializeLog(resourceLogs.Resource(), "", scopeLogs.Scope(), "", record)
+			var buf bytes.Buffer
+			err := serializeLog(resourceLogs.Resource(), "", scopeLogs.Scope(), "", record, &buf)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("serializeLog() error = %v, wantErr %v", err, tt.wantErr)
 			}
+			logBytes := buf.Bytes()
 			eventAsJSON := string(logBytes)
 			var result any
 			decoder := json.NewDecoder(bytes.NewBuffer(logBytes))
