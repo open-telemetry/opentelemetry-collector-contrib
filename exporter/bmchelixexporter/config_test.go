@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "helix1"),
 			expected: &Config{
 				Endpoint:    "https://helix1:8080",
-				ApiKey:      "api_key",
+				APIKey:      "api_key",
 				Timeout:     10 * time.Second,
 				RetryConfig: configretry.NewDefaultBackOffConfig(),
 			},
@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "helix2"),
 			expected: &Config{
 				Endpoint: "https://helix2:8080",
-				ApiKey:   "api_key",
+				APIKey:   "api_key",
 				Timeout:  20 * time.Second,
 				RetryConfig: configretry.BackOffConfig{
 					Enabled:             true,
@@ -80,14 +80,14 @@ func TestValidateConfig(t *testing.T) {
 			name: "valid_config",
 			config: &Config{
 				Endpoint: "https://helix:8080",
-				ApiKey:   "api_key",
+				APIKey:   "api_key",
 				Timeout:  10 * time.Second,
 			},
 		},
 		{
 			name: "invalid_config1",
 			config: &Config{
-				ApiKey: "api_key",
+				APIKey: "api_key",
 			},
 			err: "endpoint is required",
 		},
@@ -102,7 +102,7 @@ func TestValidateConfig(t *testing.T) {
 			name: "invalid_config3",
 			config: &Config{
 				Endpoint: "https://helix:8080",
-				ApiKey:   "api_key",
+				APIKey:   "api_key",
 				Timeout:  -1,
 			},
 			err: "timeout must be a positive integer",
@@ -111,7 +111,7 @@ func TestValidateConfig(t *testing.T) {
 			name: "invalid_config4",
 			config: &Config{
 				Endpoint: "https://helix:8080",
-				ApiKey:   "api_key",
+				APIKey:   "api_key",
 				Timeout:  0,
 			},
 			err: "timeout must be a positive integer",

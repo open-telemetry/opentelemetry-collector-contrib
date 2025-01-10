@@ -13,7 +13,7 @@ import (
 // Config struct is used to store the configuration of the exporter
 type Config struct {
 	Endpoint    string                    `mapstructure:"endpoint"`
-	ApiKey      string                    `mapstructure:"api_key"`
+	APIKey      string                    `mapstructure:"api_key"`
 	Timeout     time.Duration             `mapstructure:"timeout"`
 	RetryConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 }
@@ -23,7 +23,7 @@ func (c *Config) Validate() error {
 	if c.Endpoint == "" {
 		return errors.New("endpoint is required")
 	}
-	if c.ApiKey == "" {
+	if c.APIKey == "" {
 		return errors.New("api key is required")
 	}
 	if c.Timeout <= 0 {
