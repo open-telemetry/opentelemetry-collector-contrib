@@ -9,9 +9,7 @@ The extension uses k8s.io/client-go/tools/leaderelection to perform leader elect
 ```yaml
 receivers:
   my_awesome_receiver:
-    auth_type: kubeConfig
-    lease:
-      name: leader_elector
+    leader_elector: leader_elector
 extensions:
   leader_elector:
     auth_type: kubeConfig
