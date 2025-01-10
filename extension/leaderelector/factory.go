@@ -6,9 +6,10 @@ package leaderelector
 import (
 	"context"
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector/internal/metadata"
 	"os"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector/internal/metadata"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
