@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Introduce new FormatTime() converter function."
+note: "Add the `FormatTime` function to convert `time.Time` values to human-readable strings"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36870]
@@ -24,4 +24,4 @@ subtext:
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: []
+change_logs: [user]

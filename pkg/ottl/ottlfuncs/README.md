@@ -1966,13 +1966,13 @@ Examples:
 
 `FormatTime(time, format)`
 
-The `FormatTime` Converter takes a `time.Time` and converts it to a human readable string representations of the time according to the specidied format.
+The `FormatTime` Converter takes a `time.Time` and converts it to a human-readable string representation of the time according to the specified format.
 
 `time` is `time.Time`. If `time` is another type an error is returned. `format` is a string.
 
-If `format` is nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If `format` does not follow the parsing rules used by this parser, an error is returned.
+If either `time` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If `format` does not follow the parsing rules used by this parser, an error is returned.
 
-`format` denotes a textual and human readable representation of the resulting time value formatted according to ctime-like format string. It follows [standard Go Layout formatting](https://pkg.go.dev/time#pkg-constants) with few additional substitutes:
+`format` denotes a human-readable textual representation of the resulting time value formatted according to ctime-like format string. It follows [standard Go Layout formatting](https://pkg.go.dev/time#pkg-constants) with few additional substitutes:
 | substitution | description | examples |
 |-----|-----|-----|
 |`%Y` | Year as a zero-padded number | 0001, 0002, ..., 2019, 2020, ..., 9999 |
