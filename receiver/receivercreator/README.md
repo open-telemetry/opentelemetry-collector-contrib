@@ -458,7 +458,7 @@ receiver_creator/metrics:
      # ignore_receivers: []
 ```
 
-Find below the supported annotations that user can define to automatically enable receivers to start
+See below for the supported annotations that user can define to automatically enable receivers to start
 collecting metrics and logs signals from the target Pods/containers.
 
 ### Supported metrics annotations
