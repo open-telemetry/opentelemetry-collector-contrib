@@ -20,7 +20,6 @@ const (
 	euLogsEndpoint    = "https://logsene-receiver.eu.sematext.com"
 	usMetricsEndpoint = "https://spm-receiver.sematext.com"
 	usLogsEndpoint    = "https://logsene-receiver.sematext.com"
-	appTokenLength    = 36
 )
 
 type Config struct {
