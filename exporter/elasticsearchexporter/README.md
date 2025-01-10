@@ -362,9 +362,9 @@ Symptom: elasticsearchexporter logs an error "failed to index document" with `er
 This happens when the target data stream is a TSDB metrics data stream (e.g. using OTel mapping mode sending to a 8.16+ Elasticsearch). See the following scenarios.
 
 1. When sending different metrics with the same dimension (mostly made up of resource attributes, scope attributes, attributes),
-a `version_conflict_engine_exception` is returned by Elasticsearch when these metrics are not grouped into the same document.
+`version_conflict_engine_exception` is returned by Elasticsearch when these metrics are not grouped into the same document.
 It also means that they have to be in the same batch in the exporter, as metric grouping is done per-batch in elasticsearchexporter.
-To work around the issue, use a transform processor to ensure different metrics to never share the same set of dimensions. This is done at the expense of storage efficiency.
+To work around the issue, use a [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md) to ensure different metrics to never share the same set of dimensions. This is done at the expense of storage efficiency.
 
 ```yaml
 processors:
@@ -375,9 +375,9 @@ processors:
           - set(attributes["metric_name"], metric.name)
 ```
 
-2. If the problem persists, the error may be caused by metrics with data points in the same millisecond but not the same nanosecond, as metric grouping is done in nanoseconds but Elasticsearch checks for duplicates in milliseconds.
-
-This will be fixed in a future version of Elasticsearch. To work around the issue, use a transform processor to truncate the timestamp, but this will cause duplicate data in the same millisecond to be dropped silently.
+2. If the problem persists, the error may be caused by metrics with data points with only nanosecond differences, as metric grouping is done in nanoseconds as opposed to milliseconds in while Elasticsearch checks for duplicates in milliseconds.
+This will be fixed in a future version of Elasticsearch. To work around the issue, use a [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md) to truncate the timestamp,
+but this will cause duplicate data in the same millisecond to be dropped silently.
 
 ```yaml
 processors:
