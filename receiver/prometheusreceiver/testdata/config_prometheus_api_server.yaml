@@ -19,3 +19,10 @@ prometheus/withoutAPI:
     scrape_configs:
       - job_name: 'demo'
         scrape_interval: 5s
+prometheus/withInvalidAPIConfig:
+  api_server:
+    enabled: true
+  config:
+    scrape_configs:
+      - job_name: 'demo'
+        scrape_interval: 5s

@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"regexp"
 	"runtime"
 	"runtime/debug"
 	"strings"
@@ -20,7 +21,7 @@ import (
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	"github.com/grafana/regexp"
+	grafanaRegexp "github.com/grafana/regexp"
 	"github.com/mwitkow/go-conntrack"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -229,15 +230,15 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	r.settings.Logger.Info("Starting Prometheus API server")
 
 	// If allowed CORS origins are provided in the receiver config, combine them into a single regex since the Prometheus API server requires this format.
-	var corsOriginRegexp *regexp.Regexp
-	if len(r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins) > 0 {
+	var corsOriginRegexp *grafanaRegexp.Regexp
+	if r.cfg.APIServer.ServerConfig.CORS != nil && len(r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins) > 0 {
 		var combinedOriginsBuilder strings.Builder
 		combinedOriginsBuilder.WriteString(r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins[0])
 		for _, origin := range r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins[1:] {
 			combinedOriginsBuilder.WriteString("|")
 			combinedOriginsBuilder.WriteString(origin)
 		}
-		combinedRegexp, err := regexp.Compile(combinedOriginsBuilder.String())
+		combinedRegexp, err := grafanaRegexp.Compile(combinedOriginsBuilder.String())
 		if err != nil {
 			return fmt.Errorf("failed to compile combined CORS allowed origins into regex: %s", err.Error())
 		}

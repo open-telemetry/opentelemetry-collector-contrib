@@ -391,4 +391,10 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	r2 := cfg.(*Config)
 	assert.NotNil(t, r2.PrometheusConfig)
 	assert.Nil(t, r2.APIServer)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withInvalidAPIConfig").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.Error(t, component.ValidateConfig(cfg))
 }

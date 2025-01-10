@@ -49,6 +49,13 @@ func (cfg *Config) Validate() error {
 	if !containsScrapeConfig(cfg) && cfg.TargetAllocator == nil {
 		return errors.New("no Prometheus scrape_configs or target_allocator set")
 	}
+
+	if cfg.APIServer != nil {
+		if err := cfg.APIServer.Validate(); err != nil {
+			return fmt.Errorf("invalid API server configuration settings: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -174,4 +181,16 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 type APIServer struct {
 	Enabled      bool                    `mapstructure:"enabled"`
 	ServerConfig confighttp.ServerConfig `mapstructure:"server_config"`
+}
+
+func (cfg *APIServer) Validate() error {
+	if !cfg.Enabled {
+		return nil
+	}
+
+	if cfg.ServerConfig.Endpoint == "" {
+		return fmt.Errorf("if api_server is enabled, it requires a non-empty server_config endpoint")
+	}
+
+	return nil
 }
