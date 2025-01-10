@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 )
 
@@ -37,13 +37,7 @@ func TestErrorsInStart(t *testing.T) {
 	assert.NotNil(t, recv)
 	err := recv.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
-	assert.Equal(t, "config.Endpoint must be specified", err.Error())
-
-	recv = newMetricsReceiver(receivertest.NewNopSettings(), &Config{Endpoint: "someEndpoint"}, nil)
-	assert.NotNil(t, recv)
-	err = recv.start(context.Background(), componenttest.NewNopHost())
-	require.Error(t, err)
-	assert.Equal(t, "config.CollectionInterval must be specified", err.Error())
+	assert.Equal(t, `unable to create connection. "" is not a supported schema`, err.Error())
 }
 
 func TestScraperLoop(t *testing.T) {

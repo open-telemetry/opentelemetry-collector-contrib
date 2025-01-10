@@ -49,7 +49,7 @@ func TestDoubleHistogramFunctions(t *testing.T) {
 	pt := pmetric.NewHistogramDataPoint()
 	setDoubleHistogramBounds(pt, 1, 2, 3, 4, 5)
 	require.Equal(t, 5, pt.ExplicitBounds().Len())
-	require.Equal(t, 5, pt.BucketCounts().Len())
+	require.Equal(t, 6, pt.BucketCounts().Len())
 
 	addDoubleHistogramVal(pt, 1)
 	require.EqualValues(t, 1, pt.Count())
@@ -75,7 +75,7 @@ func TestGenDoubleHistogram(t *testing.T) {
 	pts := getMetric(md).Histogram().DataPoints()
 	pt := pts.At(0)
 	buckets := pt.BucketCounts()
-	require.Equal(t, 5, buckets.Len())
+	require.Equal(t, 6, buckets.Len())
 	require.EqualValues(t, 2, buckets.At(2))
 }
 

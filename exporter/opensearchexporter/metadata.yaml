@@ -1,14 +1,13 @@
 type: opensearch
-scope_name: otelcol/opensearch
 
 status:
   class: exporter
   stability:
-    alpha: [traces]
-    development: [logs]
+    unmaintained: [traces, logs]
   distributions: [contrib]
   codeowners:
-    active: [Aneurysm9, MitchellGale, MaxKsyunz, YANG-DB]
+    active: [Aneurysm9]
+    emeritus: [MitchellGale, MaxKsyunz, YANG-DB]
 
 tests:
   expect_consumer_error: true

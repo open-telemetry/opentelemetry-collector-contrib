@@ -21,7 +21,7 @@ func TestDefaultConfigFailure(t *testing.T) {
 	require.NotNil(t, cfg, "failed to create default config")
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 
-	receiver, err := factory.CreateLogsReceiver(
+	receiver, err := factory.CreateLogs(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		cfg,

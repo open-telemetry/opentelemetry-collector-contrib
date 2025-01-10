@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("memcached")
+	Type      = component.MustNewType("memcached")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver"
 )
 
 const (

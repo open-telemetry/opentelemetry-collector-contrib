@@ -28,8 +28,10 @@ import (
 )
 
 const (
-	// Keys for pod metadata.
+	// Keys for pod metadata and entity attributes. These are NOT used by resource attributes.
 	podCreationTime = "pod.creation_timestamp"
+	podPhase        = "k8s.pod.phase"
+	podStatusReason = "k8s.pod.status_reason"
 )
 
 // Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
@@ -43,6 +45,7 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 		Status: corev1.PodStatus{
 			Phase:    pod.Status.Phase,
 			QOSClass: pod.Status.QOSClass,
+			Reason:   pod.Status.Reason,
 		},
 	}
 	for _, cs := range pod.Status.ContainerStatuses {
@@ -126,6 +129,15 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 	meta := maps.MergeStringMaps(map[string]string{}, pod.Labels)
 
 	meta[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
+	phase := pod.Status.Phase
+	if phase == "" {
+		phase = corev1.PodUnknown
+	}
+	meta[podPhase] = string(phase)
+	reason := pod.Status.Reason
+	if reason != "" {
+		meta[podStatusReason] = reason
+	}
 
 	for _, or := range pod.OwnerReferences {
 		kind := strings.ToLower(or.Kind)
@@ -173,7 +185,7 @@ func collectPodJobProperties(pod *corev1.Pod, jobStore cache.Store, logger *zap.
 			logError(err, jobRef, pod.UID, logger)
 			return nil
 		} else if !exists {
-			logWarning(jobRef, pod.UID, logger)
+			logDebug(jobRef, pod.UID, logger)
 			return nil
 		}
 
@@ -196,7 +208,7 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store
 			logError(err, rsRef, pod.UID, logger)
 			return nil
 		} else if !exists {
-			logWarning(rsRef, pod.UID, logger)
+			logDebug(rsRef, pod.UID, logger)
 			return nil
 		}
 
@@ -209,8 +221,8 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store
 	return nil
 }
 
-func logWarning(ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
-	logger.Warn(
+func logDebug(ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
+	logger.Debug(
 		"Resource does not exist in store, properties from it will not be synced.",
 		zap.String(conventions.AttributeK8SPodUID, string(podUID)),
 		zap.String(conventions.AttributeK8SJobUID, string(ref.UID)),

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/process"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
@@ -49,7 +50,7 @@ func TestScrape(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 	type testCase struct {
 		name                string
-		mutateScraper       func(*scraper)
+		mutateScraper       func(*processScraper)
 		mutateMetricsConfig func(*testing.T, *metadata.MetricsConfig)
 	}
 	testCases := []testCase{
@@ -88,17 +89,27 @@ func TestScrape(t *testing.T) {
 			if test.mutateMetricsConfig != nil {
 				test.mutateMetricsConfig(t, &metricsBuilderConfig.Metrics)
 			}
-			scraper, err := newProcessScraper(receivertest.NewNopSettings(), &Config{MetricsBuilderConfig: metricsBuilderConfig})
+			cfg := &Config{MetricsBuilderConfig: metricsBuilderConfig}
+			envMap := common.EnvMap{
+				common.HostProcEnvKey:    "/proc",
+				common.HostSysEnvKey:     "/sys",
+				common.HostEtcEnvKey:     "/etc",
+				common.HostVarEnvKey:     "/var",
+				common.HostRunEnvKey:     "/run",
+				common.HostDevEnvKey:     "/dev",
+				common.HostProcMountinfo: "",
+			}
+			ctx := context.WithValue(context.Background(), common.EnvKey, envMap)
+			scraper, err := newProcessScraper(receivertest.NewNopSettings(), cfg)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
 			scraper.getProcessCreateTime = func(processHandle, context.Context) (int64, error) { return createTime, nil }
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
-			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			err = scraper.start(ctx, componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
-			md, err := scraper.scrape(context.Background())
-
+			md, err := scraper.scrape(ctx)
 			// may receive some partial errors as a result of attempting to:
 			// a) read native system processes on Windows (e.g. Registry process)
 			// b) read info on processes that have just terminated
@@ -110,12 +121,12 @@ func TestScrape(t *testing.T) {
 				var scraperErr scrapererror.PartialScrapeError
 				require.ErrorAs(t, err, &scraperErr)
 				noProcessesErrored := scraperErr.Failed
-				require.Lessf(t, 0, noProcessesErrored, "Failed to scrape metrics - : error, but 0 failed process %v", err)
-				require.Lessf(t, 0, noProcessesScraped, "Failed to scrape metrics - : 0 successful scrapes %v", err)
+				require.Positivef(t, noProcessesErrored, "Failed to scrape metrics - : error, but 0 failed process %v", err)
+				require.Positivef(t, noProcessesScraped, "Failed to scrape metrics - : 0 successful scrapes %v", err)
 			}
 
 			require.Greater(t, md.ResourceMetrics().Len(), 1)
-			assertProcessResourceAttributesExist(t, md.ResourceMetrics())
+			assertValidProcessResourceAttributes(t, md.ResourceMetrics())
 			assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			if metricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled {
 				assertCPUUtilizationMetricValid(t, md.ResourceMetrics(), expectedStartTime)
@@ -160,16 +171,31 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
+// assertValidProcessResourceAttributes will assert that each process resource contains at least
+// the most important identifying attribute (the PID attribute) and only contains permissible
+// resource attributes defined by the process scraper metadata.yaml/Process Semantic Conventions.
+func assertValidProcessResourceAttributes(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
+	requiredResourceAttributes := []string{
+		conventions.AttributeProcessPID,
+	}
+	permissibleResourceAttributes := []string{
+		conventions.AttributeProcessPID,
+		conventions.AttributeProcessExecutableName,
+		conventions.AttributeProcessExecutablePath,
+		conventions.AttributeProcessCommand,
+		conventions.AttributeProcessCommandLine,
+		conventions.AttributeProcessOwner,
+		"process.parent_pid", // TODO: use this from conventions when it is available
+	}
 	for i := 0; i < resourceMetrics.Len(); i++ {
-		attr := resourceMetrics.At(0).Resource().Attributes()
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessPID)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessExecutableName)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessExecutablePath)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommand)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommandLine)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessOwner)
-		internal.AssertContainsAttribute(t, attr, "process.parent_pid")
+		attrs := resourceMetrics.At(i).Resource().Attributes().AsRaw()
+		for _, attr := range requiredResourceAttributes {
+			_, ok := attrs[attr]
+			require.True(t, ok, "resource %s missing required attribute %s", attrs, attr)
+		}
+		for attr := range attrs {
+			require.Contains(t, permissibleResourceAttributes, attr, "resource %s contained unknown attribute %s", attrs, attr)
+		}
 	}
 }
 
@@ -261,7 +287,8 @@ func assertMetricMissing(t *testing.T, resourceMetrics pmetric.ResourceMetricsSl
 }
 
 func assertDiskIoMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice,
-	startTime pcommon.Timestamp) {
+	startTime pcommon.Timestamp,
+) {
 	diskIoMetric := getMetric(t, "process.disk.io", resourceMetrics)
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, diskIoMetric, startTime)
@@ -1003,6 +1030,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 		muteProcessExeError  bool
 		muteProcessIOError   bool
 		muteProcessUserError bool
+		muteProcessAllErrors bool
 		skipProcessNameError bool
 		omitConfigField      bool
 		expectedError        string
@@ -1093,6 +1121,30 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 				return 4
 			}(),
 		},
+		{
+			name:                 "All Process Errors Muted",
+			muteProcessNameError: false,
+			muteProcessExeError:  false,
+			muteProcessIOError:   false,
+			muteProcessUserError: false,
+			muteProcessAllErrors: true,
+			expectedCount:        0,
+		},
+		{
+			name:                 "Process User Error Enabled and All Process Errors Muted",
+			muteProcessUserError: false,
+			skipProcessNameError: true,
+			muteProcessExeError:  true,
+			muteProcessNameError: true,
+			muteProcessAllErrors: true,
+			expectedCount: func() int {
+				if runtime.GOOS == "darwin" {
+					// disk.io is not collected on darwin
+					return 3
+				}
+				return 4
+			}(),
+		},
 	}
 
 	for _, test := range testCases {
@@ -1106,6 +1158,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 				config.MuteProcessExeError = test.muteProcessExeError
 				config.MuteProcessIOError = test.muteProcessIOError
 				config.MuteProcessUserError = test.muteProcessUserError
+				config.MuteProcessAllErrors = test.muteProcessAllErrors
 			}
 			scraper, err := newProcessScraper(receivertest.NewNopSettings(), config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
@@ -1135,7 +1188,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 
 			assert.Equal(t, test.expectedCount, md.MetricCount())
 
-			if config.MuteProcessNameError && config.MuteProcessExeError && config.MuteProcessUserError {
+			if (config.MuteProcessNameError && config.MuteProcessExeError && config.MuteProcessUserError) || config.MuteProcessAllErrors {
 				assert.NoError(t, err)
 			} else {
 				assert.EqualError(t, err, test.expectedError)
@@ -1281,5 +1334,4 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 			}
 		})
 	}
-
 }

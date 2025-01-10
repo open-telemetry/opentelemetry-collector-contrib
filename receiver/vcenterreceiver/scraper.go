@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
@@ -28,16 +28,20 @@ type vmGroupInfo struct {
 }
 
 type vcenterScrapeData struct {
-	datacenters          []*mo.Datacenter
-	datastores           []*mo.Datastore
-	rPoolIPathsByRef     map[string]*string
-	vAppIPathsByRef      map[string]*string
-	rPoolsByRef          map[string]*mo.ResourcePool
-	computesByRef        map[string]*mo.ComputeResource
-	hostsByRef           map[string]*mo.HostSystem
-	hostPerfMetricsByRef map[string]*performance.EntityMetric
-	vmsByRef             map[string]*mo.VirtualMachine
-	vmPerfMetricsByRef   map[string]*performance.EntityMetric
+	datacenters              []*mo.Datacenter
+	datastores               []*mo.Datastore
+	clusterRefs              []*types.ManagedObjectReference
+	rPoolIPathsByRef         map[string]*string
+	vAppIPathsByRef          map[string]*string
+	rPoolsByRef              map[string]*mo.ResourcePool
+	computesByRef            map[string]*mo.ComputeResource
+	hostsByRef               map[string]*mo.HostSystem
+	hostPerfMetricsByRef     map[string]*performance.EntityMetric
+	vmsByRef                 map[string]*mo.VirtualMachine
+	vmPerfMetricsByRef       map[string]*performance.EntityMetric
+	vmVSANMetricsByUUID      map[string]*VSANMetricResults
+	hostVSANMetricsByUUID    map[string]*VSANMetricResults
+	clusterVSANMetricsByUUID map[string]*VSANMetricResults
 }
 
 type vcenterMetricScraper struct {
@@ -53,7 +57,7 @@ func newVmwareVcenterScraper(
 	config *Config,
 	settings receiver.Settings,
 ) *vcenterMetricScraper {
-	client := newVcenterClient(config)
+	client := newVcenterClient(logger, config)
 	scrapeData := newVcenterScrapeData()
 
 	return &vcenterMetricScraper{
@@ -67,16 +71,20 @@ func newVmwareVcenterScraper(
 
 func newVcenterScrapeData() *vcenterScrapeData {
 	return &vcenterScrapeData{
-		datacenters:          make([]*mo.Datacenter, 0),
-		datastores:           make([]*mo.Datastore, 0),
-		rPoolIPathsByRef:     make(map[string]*string),
-		vAppIPathsByRef:      make(map[string]*string),
-		computesByRef:        make(map[string]*mo.ComputeResource),
-		hostsByRef:           make(map[string]*mo.HostSystem),
-		hostPerfMetricsByRef: make(map[string]*performance.EntityMetric),
-		rPoolsByRef:          make(map[string]*mo.ResourcePool),
-		vmsByRef:             make(map[string]*mo.VirtualMachine),
-		vmPerfMetricsByRef:   make(map[string]*performance.EntityMetric),
+		datacenters:              make([]*mo.Datacenter, 0),
+		datastores:               make([]*mo.Datastore, 0),
+		clusterRefs:              make([]*types.ManagedObjectReference, 0),
+		rPoolIPathsByRef:         make(map[string]*string),
+		vAppIPathsByRef:          make(map[string]*string),
+		computesByRef:            make(map[string]*mo.ComputeResource),
+		hostsByRef:               make(map[string]*mo.HostSystem),
+		hostPerfMetricsByRef:     make(map[string]*performance.EntityMetric),
+		rPoolsByRef:              make(map[string]*mo.ResourcePool),
+		vmsByRef:                 make(map[string]*mo.VirtualMachine),
+		vmPerfMetricsByRef:       make(map[string]*performance.EntityMetric),
+		vmVSANMetricsByUUID:      make(map[string]*VSANMetricResults),
+		hostVSANMetricsByUUID:    make(map[string]*VSANMetricResults),
+		clusterVSANMetricsByUUID: make(map[string]*VSANMetricResults),
 	}
 }
 
@@ -84,16 +92,18 @@ func (v *vcenterMetricScraper) Start(ctx context.Context, _ component.Host) erro
 	connectErr := v.client.EnsureConnection(ctx)
 	// don't fail to start if we cannot establish connection, just log an error
 	if connectErr != nil {
-		v.logger.Error(fmt.Sprintf("unable to establish a connection to the vSphere SDK %s", connectErr.Error()))
+		v.logger.Error("unable to establish a connection to the vSphere SDK " + connectErr.Error())
 	}
 	return nil
 }
+
 func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
 	return v.client.Disconnect(ctx)
 }
+
 func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if v.client == nil {
-		v.client = newVcenterClient(v.config)
+		v.client = newVcenterClient(v.logger, v.config)
 	}
 	// ensure connection before scraping
 	if err := v.client.EnsureConnection(ctx); err != nil {
@@ -219,6 +229,7 @@ func (v *vcenterMetricScraper) scrapeDatastores(ctx context.Context, dc *mo.Data
 func (v *vcenterMetricScraper) scrapeComputes(ctx context.Context, dc *mo.Datacenter, errs *scrapererror.ScrapeErrors) {
 	// Init for current collection
 	v.scrapeData.computesByRef = make(map[string]*mo.ComputeResource)
+	v.scrapeData.clusterRefs = []*types.ManagedObjectReference{}
 
 	// Get ComputeResources/ClusterComputeResources w/properties and store for later retrieval
 	computes, err := v.client.ComputeResources(ctx, dc.Reference())
@@ -228,15 +239,26 @@ func (v *vcenterMetricScraper) scrapeComputes(ctx context.Context, dc *mo.Datace
 	}
 
 	for i := range computes {
-		v.scrapeData.computesByRef[computes[i].Reference().Value] = &computes[i]
+		computeRef := computes[i].Reference()
+		v.scrapeData.computesByRef[computeRef.Value] = &computes[i]
+		if computeRef.Type == "ClusterComputeResource" {
+			v.scrapeData.clusterRefs = append(v.scrapeData.clusterRefs, &computeRef)
+		}
 	}
+
+	// Get all Cluster vSAN metrics and store for later retrieval
+	vSANMetrics, err := v.client.VSANClusters(ctx, v.scrapeData.clusterRefs)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf("failed to retrieve vSAN metrics for Clusters: %w", err))
+		return
+	}
+	v.scrapeData.clusterVSANMetricsByUUID = vSANMetrics.MetricResultsByUUID
 }
 
 // scrapeHosts scrapes and stores all relevant metric/property data for a Datacenter's HostSystems
 func (v *vcenterMetricScraper) scrapeHosts(ctx context.Context, dc *mo.Datacenter, errs *scrapererror.ScrapeErrors) {
 	// Init for current collection
 	v.scrapeData.hostsByRef = make(map[string]*mo.HostSystem)
-
 	// Get HostSystems w/properties and store for later retrieval
 	hosts, err := v.client.HostSystems(ctx, dc.Reference())
 	if err != nil {
@@ -250,7 +272,7 @@ func (v *vcenterMetricScraper) scrapeHosts(ctx context.Context, dc *mo.Datacente
 	}
 
 	spec := types.PerfQuerySpec{
-		MaxSample: 5,
+		MaxSample: 1,
 		Format:    string(types.PerfFormatNormal),
 		// Just grabbing real time performance metrics of the current
 		// supported metrics by this receiver. If more are added we may need
@@ -261,9 +283,16 @@ func (v *vcenterMetricScraper) scrapeHosts(ctx context.Context, dc *mo.Datacente
 	results, err := v.client.PerfMetricsQuery(ctx, spec, hostPerfMetricList, hsRefs)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to retrieve perf metrics for HostSystems: %w", err))
+	} else {
+		v.scrapeData.hostPerfMetricsByRef = results.resultsByRef
+	}
+
+	vSANMetrics, err := v.client.VSANHosts(ctx, v.scrapeData.clusterRefs)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf("failed to retrieve vSAN metrics for Hosts: %w", err))
 		return
 	}
-	v.scrapeData.hostPerfMetricsByRef = results.resultsByRef
+	v.scrapeData.hostVSANMetricsByUUID = vSANMetrics.MetricResultsByUUID
 }
 
 // scrapeResourcePools scrapes and stores all relevant property data for a Datacenter's ResourcePools/vApps
@@ -310,7 +339,16 @@ func (v *vcenterMetricScraper) scrapeVirtualMachines(ctx context.Context, dc *mo
 	results, err := v.client.PerfMetricsQuery(ctx, spec, vmPerfMetricList, vmRefs)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to retrieve perf metrics for VirtualMachines: %w", err))
+	} else {
+		v.scrapeData.vmPerfMetricsByRef = results.resultsByRef
+	}
+
+	// Get all VirtualMachine vSAN metrics and store for later retrieval
+	vSANMetrics, err := v.client.VSANVirtualMachines(ctx, v.scrapeData.clusterRefs)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf("failed to retrieve vSAN metrics for VirtualMachines: %w", err))
 		return
 	}
-	v.scrapeData.vmPerfMetricsByRef = results.resultsByRef
+
+	v.scrapeData.vmVSANMetricsByUUID = vSANMetrics.MetricResultsByUUID
 }

@@ -12,10 +12,9 @@ import (
 )
 
 // An inappropriate config
-type badConfig struct {
-}
+type badConfig struct{}
 
-func TestCreateTracesExporterUsingSpecificTransportChannel(t *testing.T) {
+func TestCreateTracesUsingSpecificTransportChannel(t *testing.T) {
 	// mock transport channel creation
 	f := factory{tChannel: &mockTransportChannel{}}
 	ctx := context.Background()
@@ -27,7 +26,7 @@ func TestCreateTracesExporterUsingSpecificTransportChannel(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateTracesExporterUsingDefaultTransportChannel(t *testing.T) {
+func TestCreateTracesUsingDefaultTransportChannel(t *testing.T) {
 	// We get the default transport channel creation, if we don't specify one during f creation
 	f := factory{}
 	assert.Nil(t, f.tChannel)
@@ -40,7 +39,7 @@ func TestCreateTracesExporterUsingDefaultTransportChannel(t *testing.T) {
 	assert.NotNil(t, f.tChannel)
 }
 
-func TestCreateTracesExporterUsingBadConfig(t *testing.T) {
+func TestCreateTracesUsingBadConfig(t *testing.T) {
 	// We get the default transport channel creation, if we don't specify one during factory creation
 	f := factory{}
 	assert.Nil(t, f.tChannel)

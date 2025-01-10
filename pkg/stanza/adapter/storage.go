@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
 
 func GetStorageClient(ctx context.Context, host component.Host, storageID *component.ID, componentID component.ID) (storage.Client, error) {
@@ -27,7 +27,6 @@ func GetStorageClient(ctx context.Context, host component.Host, storageID *compo
 	}
 
 	return storageExtension.GetClient(ctx, component.KindReceiver, componentID, "")
-
 }
 
 func (r *receiver) setStorageClient(ctx context.Context, host component.Host) error {

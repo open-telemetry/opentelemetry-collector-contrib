@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### processor_tail_sampling_count_spans_sampled
+### otelcol_processor_tail_sampling_count_spans_sampled
 
 Count of spans that were sampled or not per sampling policy
 
@@ -14,7 +14,7 @@ Count of spans that were sampled or not per sampling policy
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
 
-### processor_tail_sampling_count_traces_sampled
+### otelcol_processor_tail_sampling_count_traces_sampled
 
 Count of traces that were sampled or not per sampling policy
 
@@ -22,7 +22,7 @@ Count of traces that were sampled or not per sampling policy
 | ---- | ----------- | ---------- | --------- |
 | {traces} | Sum | Int | true |
 
-### processor_tail_sampling_early_releases_from_cache_decision
+### otelcol_processor_tail_sampling_early_releases_from_cache_decision
 
 Number of spans that were able to be immediately released due to a decision cache hit.
 
@@ -30,7 +30,7 @@ Number of spans that were able to be immediately released due to a decision cach
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
 
-### processor_tail_sampling_global_count_traces_sampled
+### otelcol_processor_tail_sampling_global_count_traces_sampled
 
 Global count of traces that were sampled or not by at least one policy
 
@@ -38,7 +38,7 @@ Global count of traces that were sampled or not by at least one policy
 | ---- | ----------- | ---------- | --------- |
 | {traces} | Sum | Int | true |
 
-### processor_tail_sampling_new_trace_id_received
+### otelcol_processor_tail_sampling_new_trace_id_received
 
 Counts the arrival of new traces
 
@@ -46,7 +46,7 @@ Counts the arrival of new traces
 | ---- | ----------- | ---------- | --------- |
 | {traces} | Sum | Int | true |
 
-### processor_tail_sampling_sampling_decision_latency
+### otelcol_processor_tail_sampling_sampling_decision_latency
 
 Latency (in microseconds) of a given sampling policy
 
@@ -54,7 +54,7 @@ Latency (in microseconds) of a given sampling policy
 | ---- | ----------- | ---------- |
 | µs | Histogram | Int |
 
-### processor_tail_sampling_sampling_decision_timer_latency
+### otelcol_processor_tail_sampling_sampling_decision_timer_latency
 
 Latency (in microseconds) of each run of the sampling decision timer
 
@@ -62,7 +62,7 @@ Latency (in microseconds) of each run of the sampling decision timer
 | ---- | ----------- | ---------- |
 | µs | Histogram | Int |
 
-### processor_tail_sampling_sampling_late_span_age
+### otelcol_processor_tail_sampling_sampling_late_span_age
 
 Time (in seconds) from the sampling decision was taken and the arrival of a late span
 
@@ -70,7 +70,7 @@ Time (in seconds) from the sampling decision was taken and the arrival of a late
 | ---- | ----------- | ---------- |
 | s | Histogram | Int |
 
-### processor_tail_sampling_sampling_policy_evaluation_error
+### otelcol_processor_tail_sampling_sampling_policy_evaluation_error
 
 Count of sampling policy evaluation errors
 
@@ -78,7 +78,7 @@ Count of sampling policy evaluation errors
 | ---- | ----------- | ---------- | --------- |
 | {errors} | Sum | Int | true |
 
-### processor_tail_sampling_sampling_trace_dropped_too_early
+### otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
 
 Count of traces that needed to be dropped before the configured wait time
 
@@ -86,7 +86,7 @@ Count of traces that needed to be dropped before the configured wait time
 | ---- | ----------- | ---------- | --------- |
 | {traces} | Sum | Int | true |
 
-### processor_tail_sampling_sampling_trace_removal_age
+### otelcol_processor_tail_sampling_sampling_trace_removal_age
 
 Time (in seconds) from arrival of a new trace until its removal from memory
 
@@ -94,7 +94,7 @@ Time (in seconds) from arrival of a new trace until its removal from memory
 | ---- | ----------- | ---------- |
 | s | Histogram | Int |
 
-### processor_tail_sampling_sampling_traces_on_memory
+### otelcol_processor_tail_sampling_sampling_traces_on_memory
 
 Tracks the number of traces current on memory
 

@@ -7,11 +7,12 @@ import (
 )
 
 var (
-	Type = component.MustNewType("routing")
+	Type      = component.MustNewType("routing")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 )
 
 const (
-	TracesStability  = component.StabilityLevelBeta
-	MetricsStability = component.StabilityLevelBeta
-	LogsStability    = component.StabilityLevelBeta
+	TracesStability  = component.StabilityLevelDeprecated
+	MetricsStability = component.StabilityLevelDeprecated
+	LogsStability    = component.StabilityLevelDeprecated
 )

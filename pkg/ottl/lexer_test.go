@@ -78,7 +78,7 @@ func Test_lexer(t *testing.T) {
 			{"OpNot", "not"},
 			{"Boolean", "false"},
 		}},
-		{"nothing_recognizable", "{}", true, []result{
+		{"nothing_recognizable", "|", true, []result{
 			{"", ""},
 		}},
 		{"basic_ident_expr", `set(attributes["bytes"], 0x0102030405060708)`, false, []result{
@@ -122,6 +122,22 @@ func Test_lexer(t *testing.T) {
 			{"Float", "1.1"},
 			{"OpMultDiv", "*"},
 			{"Float", "2.9"},
+		}},
+		{"Map", `{"foo":"bar"}`, false, []result{
+			{"LBrace", "{"},
+			{"String", `"foo"`},
+			{"Colon", ":"},
+			{"String", `"bar"`},
+			{"RBrace", "}"},
+		}},
+		{"Dynamic path", `attributes[attributes["foo"]]`, false, []result{
+			{"Lowercase", "attributes"},
+			{"Punct", "["},
+			{"Lowercase", "attributes"},
+			{"Punct", "["},
+			{"String", `"foo"`},
+			{"Punct", "]"},
+			{"Punct", "]"},
 		}},
 	}
 

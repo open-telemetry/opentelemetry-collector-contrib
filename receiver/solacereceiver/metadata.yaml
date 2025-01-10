@@ -1,5 +1,4 @@
 type: solace
-scope_name: otelcol/solacereceiver
 
 status:
   class: receiver
@@ -7,7 +6,7 @@ status:
     beta: [traces]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, mcardy]
+    active: [mcardy]
 
 # TODO: Update the receiver to pass the tests
 tests:

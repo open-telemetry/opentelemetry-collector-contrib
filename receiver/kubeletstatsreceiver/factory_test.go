@@ -14,13 +14,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -41,21 +41,21 @@ func TestValidConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCreateTracesReceiver(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
-	traceReceiver, err := factory.CreateTracesReceiver(
+	traceReceiver, err := factory.CreateTraces(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		factory.CreateDefaultConfig(),
 		nil,
 	)
-	require.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	require.Nil(t, traceReceiver)
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
-	metricsReceiver, err := factory.CreateMetricsReceiver(
+	metricsReceiver, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		tlsConfig(),
@@ -70,7 +70,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 	cfg := Config{
 		ExtraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabel("invalid-label")},
 	}
-	metricsReceiver, err := factory.CreateMetricsReceiver(
+	metricsReceiver, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		&cfg,
@@ -90,7 +90,7 @@ func TestFactoryBadAuthType(t *testing.T) {
 			},
 		},
 	}
-	_, err := factory.CreateMetricsReceiver(
+	_, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		cfg,

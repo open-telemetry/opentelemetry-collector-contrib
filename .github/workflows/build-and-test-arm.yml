@@ -1,9 +1,9 @@
 name: build-and-test-arm
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
+      - "v[0-9]+.[0-9]+.[0-9]+*"
   merge_group:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
@@ -14,7 +14,6 @@ env:
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
-  GOPROXY: https://goproxy1.cncf.selfactuated.dev,direct
 
 # Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
@@ -46,12 +45,12 @@ jobs:
           - cmd-1
           - other
     timeout-minutes: 30
-    runs-on: actuated-arm64-4cpu-4gb
+    runs-on: otel-linux-arm64
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "~1.22.4"
+          go-version: "~1.22.5"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -61,7 +60,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-build-cache-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: go-build-cache-otel-linux-arm64-go-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -72,7 +71,7 @@ jobs:
         run: make -j2 gotest GROUP=${{ matrix.group }}
   arm-unittest:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run ARM') || github.event_name == 'push' || github.event_name == 'merge_group') }}
-    runs-on: actuated-arm64-4cpu-4gb
+    runs-on: ubuntu-24.04
     needs: [arm-unittest-matrix]
     steps:
       - name: Print result

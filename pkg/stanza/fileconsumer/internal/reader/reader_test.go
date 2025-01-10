@@ -6,7 +6,6 @@ package reader
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	internaltime "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/time"
 )
 
 func TestFileReader_FingerprintUpdated(t *testing.T) {
@@ -57,7 +57,6 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 	lineLens := []int{3, 5, 7, 11, 13, 17, 19, 23, 27}
 
 	for _, lineLen := range lineLens {
-		lineLen := lineLen
 		t.Run(fmt.Sprintf("%d", lineLen), func(t *testing.T) {
 			t.Parallel()
 
@@ -118,7 +117,6 @@ func TestFingerprintChangeSize(t *testing.T) {
 	lineLens := []int{3, 4, 5, 6, 7, 8, 11, 12, 13, 17, 19, 23, 27, 36}
 
 	for _, lineLen := range lineLens {
-		lineLen := lineLen
 		t.Run(fmt.Sprintf("%d", lineLen), func(t *testing.T) {
 			t.Parallel()
 
@@ -189,9 +187,6 @@ func TestFingerprintChangeSize(t *testing.T) {
 }
 
 func TestFlushPeriodEOF(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Skipping test on Windows; See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32715")
-	}
 	tempDir := t.TempDir()
 	temp := filetest.OpenTemp(t, tempDir)
 	// Create a long enough initial token, so the scanner can't read the whole file at once
@@ -208,6 +203,9 @@ func TestFlushPeriodEOF(t *testing.T) {
 	r, err := f.NewReader(temp, fp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), r.Offset)
+
+	internaltime.Now = internaltime.NewAlwaysIncreasingClock().Now
+	defer func() { internaltime.Now = time.Now }()
 
 	r.ReadToEnd(context.Background())
 	sink.ExpectTokens(t, content[0:aContentLength], []byte{'b'})

@@ -4,10 +4,9 @@
 package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 
 import (
-	"errors"
-
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
@@ -16,9 +15,9 @@ import (
 var _ component.Config = (*Config)(nil)
 
 type Config struct {
+	docker.Config `mapstructure:",squash"`
+
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	// The URL of the docker server.  Default is "unix:///var/run/docker.sock"
-	Endpoint string `mapstructure:"endpoint"`
 
 	// A mapping of container label names to MetricDescriptor label keys.
 	// The corresponding container label value will become the DataPoint label value
@@ -35,22 +34,26 @@ type Config struct {
 	// present.
 	EnvVarsToMetricLabels map[string]string `mapstructure:"env_vars_to_metric_labels"`
 
-	// A list of filters whose matching images are to be excluded.  Supports literals, globs, and regex.
-	ExcludedImages []string `mapstructure:"excluded_images"`
-
-	// Docker client API version. Default is 1.22
-	DockerAPIVersion string `mapstructure:"api_version"`
-
 	// MetricsBuilderConfig config. Enable or disable stats by name.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 func (config Config) Validate() error {
-	if config.Endpoint == "" {
-		return errors.New("endpoint must be specified")
-	}
 	if err := docker.VersionIsValidAndGTE(config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (config *Config) Unmarshal(conf *confmap.Conf) error {
+	err := conf.Unmarshal(config)
+	if err != nil {
+		return err
+	}
+
+	if len(config.ExcludedImages) == 0 {
+		config.ExcludedImages = nil
+	}
+
+	return err
 }

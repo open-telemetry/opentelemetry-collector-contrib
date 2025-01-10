@@ -19,22 +19,31 @@ import (
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"github.com/shirou/gopsutil/v4/host"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
-	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
-const redactedVal = "[REDACTED]"
+type statusAggregator interface {
+	Subscribe(scope status.Scope, verbosity status.Verbosity) (<-chan *status.AggregateStatus, status.UnsubscribeFunc)
+	RecordStatus(source *componentstatus.InstanceID, event *componentstatus.Event)
+}
 
-// Paths that will not have values redacted when reporting the effective config.
-var unredactedPaths = []string{
-	"service::pipelines",
+type eventSourcePair struct {
+	source *componentstatus.InstanceID
+	event  *componentstatus.Event
 }
 
 type opampAgent struct {
@@ -53,7 +62,7 @@ type opampAgent struct {
 	lifetimeCtx       context.Context
 	lifetimeCtxCancel context.CancelFunc
 
-	reportFunc func(*component.StatusEvent)
+	reportFunc func(*componentstatus.Event)
 
 	capabilities Capabilities
 
@@ -62,11 +71,28 @@ type opampAgent struct {
 	opampClient client.OpAMPClient
 
 	customCapabilityRegistry *customCapabilityRegistry
+
+	statusAggregator     statusAggregator
+	statusSubscriptionWg *sync.WaitGroup
+	componentHealthWg    *sync.WaitGroup
+	startTimeUnixNano    uint64
+	componentStatusCh    chan *eventSourcePair
+	readyCh              chan struct{}
 }
 
-var _ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
+var (
+	_ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
+	_ extensioncapabilities.Dependent              = (*opampAgent)(nil)
+	_ extensioncapabilities.ConfigWatcher          = (*opampAgent)(nil)
+	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
+	_ componentstatus.Watcher                      = (*opampAgent)(nil)
+)
 
-func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
+func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
+	o.reportFunc = func(event *componentstatus.Event) {
+		componentstatus.ReportStatus(host, event)
+	}
+
 	header := http.Header{}
 	for k, v := range o.cfg.Server.GetHeaders() {
 		header.Set(k, string(v))
@@ -77,31 +103,35 @@ func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	o.lifetimeCtx, o.lifetimeCtxCancel = context.WithCancel(context.Background())
-
 	if o.cfg.PPID != 0 {
 		go monitorPPID(o.lifetimeCtx, o.cfg.PPIDPollInterval, o.cfg.PPID, o.reportFunc)
 	}
 
+	headerFunc, err := makeHeadersFunc(o.logger, o.cfg.Server, host)
+	if err != nil {
+		return err
+	}
+
 	settings := types.StartSettings{
 		Header:         header,
+		HeaderFunc:     headerFunc,
 		TLSConfig:      tls,
 		OpAMPServerURL: o.cfg.Server.GetEndpoint(),
 		InstanceUid:    types.InstanceUid(o.instanceID),
-		Callbacks: types.CallbacksStruct{
-			OnConnectFunc: func(_ context.Context) {
+		Callbacks: types.Callbacks{
+			OnConnect: func(_ context.Context) {
 				o.logger.Debug("Connected to the OpAMP server")
 			},
-			OnConnectFailedFunc: func(_ context.Context, err error) {
+			OnConnectFailed: func(_ context.Context, err error) {
 				o.logger.Error("Failed to connect to the OpAMP server", zap.Error(err))
 			},
-			OnErrorFunc: func(_ context.Context, err *protobufs.ServerErrorResponse) {
+			OnError: func(_ context.Context, err *protobufs.ServerErrorResponse) {
 				o.logger.Error("OpAMP server returned an error response", zap.String("message", err.ErrorMessage))
 			},
-			GetEffectiveConfigFunc: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
+			GetEffectiveConfig: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
 				return o.composeEffectiveConfig(), nil
 			},
-			OnMessageFunc: o.onMessage,
+			OnMessage: o.onMessage,
 		},
 		Capabilities: o.capabilities.toAgentCapabilities(),
 	}
@@ -130,10 +160,17 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 		o.lifetimeCtxCancel()
 	}
 
+	o.statusSubscriptionWg.Wait()
+	o.componentHealthWg.Wait()
+	if o.componentStatusCh != nil {
+		close(o.componentStatusCh)
+	}
+
 	o.logger.Debug("OpAMP agent shutting down...")
 	if o.opampClient == nil {
 		return nil
 	}
+
 	o.logger.Debug("Stopping OpAMP client...")
 	err := o.opampClient.Stop(ctx)
 	// Opamp-go considers this an error, but the collector does not.
@@ -142,6 +179,21 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 		return nil
 	}
 	return err
+}
+
+// Dependencies implements extensioncapabilities.Dependent
+func (o *opampAgent) Dependencies() []component.ID {
+	if o.cfg.Server == nil {
+		return nil
+	}
+
+	var emptyComponentID component.ID
+	authID := o.cfg.Server.GetAuthExtensionID()
+	if authID == emptyComponentID {
+		return nil
+	}
+
+	return []component.ID{authID}
 }
 
 func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
@@ -154,6 +206,38 @@ func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 
 func (o *opampAgent) Register(capability string, opts ...opampcustommessages.CustomCapabilityRegisterOption) (opampcustommessages.CustomCapabilityHandler, error) {
 	return o.customCapabilityRegistry.Register(capability, opts...)
+}
+
+func (o *opampAgent) Ready() error {
+	o.setHealth(&protobufs.ComponentHealth{Healthy: true})
+	close(o.readyCh)
+	return nil
+}
+
+func (o *opampAgent) NotReady() error {
+	o.setHealth(&protobufs.ComponentHealth{Healthy: false})
+	return nil
+}
+
+// ComponentStatusChanged implements the componentstatus.Watcher interface.
+func (o *opampAgent) ComponentStatusChanged(
+	source *componentstatus.InstanceID,
+	event *componentstatus.Event,
+) {
+	// There can be late arriving events after shutdown. We need to close
+	// the event channel so that this function doesn't block and we release all
+	// goroutines, but attempting to write to a closed channel will panic; log
+	// and recover.
+	defer func() {
+		if r := recover(); r != nil {
+			o.logger.Info(
+				"discarding event received after shutdown",
+				zap.Any("source", source),
+				zap.Any("event", event),
+			)
+		}
+	}()
+	o.componentStatusCh <- &eventSourcePair{source: source, event: event}
 }
 
 func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
@@ -207,8 +291,16 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		instanceID:               uid,
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
+		statusSubscriptionWg:     &sync.WaitGroup{},
+		componentHealthWg:        &sync.WaitGroup{},
+		readyCh:                  make(chan struct{}),
 		customCapabilityRegistry: newCustomCapabilityRegistry(set.Logger, opampClient),
-		reportFunc:               set.ReportStatus,
+	}
+
+	agent.lifetimeCtx, agent.lifetimeCtxCancel = context.WithCancel(context.Background())
+
+	if agent.capabilities.ReportsHealth {
+		agent.initHealthReporting()
 	}
 
 	return agent, nil
@@ -242,6 +334,7 @@ func (o *opampAgent) createAgentDescription() error {
 	if err != nil {
 		return err
 	}
+	description := getOSDescription(o.logger)
 
 	ident := []*protobufs.KeyValue{
 		stringKeyValue(semconv.AttributeServiceInstanceID, o.instanceID.String()),
@@ -255,6 +348,7 @@ func (o *opampAgent) createAgentDescription() error {
 	nonIdentifyingAttributeMap[semconv.AttributeOSType] = runtime.GOOS
 	nonIdentifyingAttributeMap[semconv.AttributeHostArch] = runtime.GOARCH
 	nonIdentifyingAttributeMap[semconv.AttributeHostName] = hostname
+	nonIdentifyingAttributeMap[semconv.AttributeOSDescription] = description
 
 	for k, v := range o.cfg.AgentDescription.NonIdentifyingAttributes {
 		nonIdentifyingAttributeMap[k] = v
@@ -285,46 +379,6 @@ func (o *opampAgent) updateAgentIdentity(instanceID uuid.UUID) {
 	o.instanceID = instanceID
 }
 
-func redactConfig(cfg any, parentPath string) {
-	switch val := cfg.(type) {
-	case map[string]any:
-		for k, v := range val {
-			path := parentPath
-			if path == "" {
-				path = k
-			} else {
-				path += "::" + k
-			}
-			// We don't want to redact certain parts of the config
-			// that are known not to contain secrets, e.g. pipelines.
-			for _, p := range unredactedPaths {
-				if p == path {
-					return
-				}
-			}
-			switch x := v.(type) {
-			case map[string]any:
-				redactConfig(x, path)
-			case []any:
-				redactConfig(x, path)
-			default:
-				val[k] = redactedVal
-			}
-		}
-	case []any:
-		for i, v := range val {
-			switch x := v.(type) {
-			case map[string]any:
-				redactConfig(x, parentPath)
-			case []any:
-				redactConfig(x, parentPath)
-			default:
-				val[i] = redactedVal
-			}
-		}
-	}
-}
-
 func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 	o.eclk.RLock()
 	defer o.eclk.RUnlock()
@@ -334,7 +388,6 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 	}
 
 	m := o.effectiveConfig.ToStringMap()
-	redactConfig(m, "")
 	conf, err := yaml.Marshal(m)
 	if err != nil {
 		o.logger.Error("cannot unmarshal effectiveConfig", zap.Any("conf", o.effectiveConfig), zap.Error(err))
@@ -344,7 +397,10 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 	return &protobufs.EffectiveConfig{
 		ConfigMap: &protobufs.AgentConfigMap{
 			ConfigMap: map[string]*protobufs.AgentConfigFile{
-				"": {Body: conf},
+				"": {
+					Body:        conf,
+					ContentType: "text/yaml",
+				},
 			},
 		},
 	}
@@ -363,4 +419,152 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 	if msg.CustomMessage != nil {
 		o.customCapabilityRegistry.ProcessMessage(msg.CustomMessage)
 	}
+}
+
+func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
+	if o.capabilities.ReportsHealth && o.opampClient != nil {
+		if ch.Healthy && o.startTimeUnixNano == 0 {
+			ch.StartTimeUnixNano = ch.StatusTimeUnixNano
+		} else {
+			ch.StartTimeUnixNano = o.startTimeUnixNano
+		}
+		if err := o.opampClient.SetHealth(ch); err != nil {
+			o.logger.Error("Could not report health to OpAMP server", zap.Error(err))
+		}
+	}
+}
+
+func getOSDescription(logger *zap.Logger) string {
+	info, err := host.Info()
+	if err != nil {
+		logger.Error("failed getting host info", zap.Error(err))
+		return runtime.GOOS
+	}
+	switch runtime.GOOS {
+	case "darwin":
+		return "macOS " + info.PlatformVersion
+	case "linux":
+		return cases.Title(language.English).String(info.Platform) + " " + info.PlatformVersion
+	case "windows":
+		return info.Platform + " " + info.PlatformVersion
+	default:
+		return runtime.GOOS
+	}
+}
+
+func (o *opampAgent) initHealthReporting() {
+	if !o.capabilities.ReportsHealth {
+		return
+	}
+	o.setHealth(&protobufs.ComponentHealth{Healthy: false})
+
+	if o.statusAggregator == nil {
+		o.statusAggregator = status.NewAggregator(status.PriorityPermanent)
+	}
+	statusChan, unsubscribeFunc := o.statusAggregator.Subscribe(status.ScopeAll, status.Verbose)
+	o.statusSubscriptionWg.Add(1)
+	go o.statusAggregatorEventLoop(unsubscribeFunc, statusChan)
+
+	// Start processing events in the background so that our status watcher doesn't
+	// block others before the extension starts.
+	o.componentStatusCh = make(chan *eventSourcePair)
+	o.componentHealthWg.Add(1)
+	go o.componentHealthEventLoop()
+}
+
+func (o *opampAgent) componentHealthEventLoop() {
+	// Record events with component.StatusStarting, but queue other events until
+	// PipelineWatcher.Ready is called. This prevents aggregate statuses from
+	// flapping between StatusStarting and StatusOK as components are started
+	// individually by the service.
+	var eventQueue []*eventSourcePair
+
+	defer o.componentHealthWg.Done()
+	for loop := true; loop; {
+		select {
+		case esp, ok := <-o.componentStatusCh:
+			if !ok {
+				return
+			}
+			if esp.event.Status() != componentstatus.StatusStarting {
+				eventQueue = append(eventQueue, esp)
+				continue
+			}
+			o.statusAggregator.RecordStatus(esp.source, esp.event)
+		case <-o.readyCh:
+			for _, esp := range eventQueue {
+				o.statusAggregator.RecordStatus(esp.source, esp.event)
+			}
+			eventQueue = nil
+			loop = false
+		case <-o.lifetimeCtx.Done():
+			return
+		}
+	}
+
+	// After PipelineWatcher.Ready, record statuses as they are received.
+	for {
+		select {
+		case esp, ok := <-o.componentStatusCh:
+			if !ok {
+				return
+			}
+			o.statusAggregator.RecordStatus(esp.source, esp.event)
+		case <-o.lifetimeCtx.Done():
+			return
+		}
+	}
+}
+
+func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.UnsubscribeFunc, statusChan <-chan *status.AggregateStatus) {
+	defer func() {
+		unsubscribeFunc()
+		o.statusSubscriptionWg.Done()
+	}()
+	for {
+		select {
+		case <-o.lifetimeCtx.Done():
+			return
+		case statusUpdate, ok := <-statusChan:
+			if !ok {
+				return
+			}
+
+			if statusUpdate == nil || statusUpdate.Status() == componentstatus.StatusNone {
+				continue
+			}
+
+			componentHealth := convertComponentHealth(statusUpdate)
+
+			o.setHealth(componentHealth)
+		}
+	}
+}
+
+func convertComponentHealth(statusUpdate *status.AggregateStatus) *protobufs.ComponentHealth {
+	var isHealthy bool
+	if statusUpdate.Status() == componentstatus.StatusOK {
+		isHealthy = true
+	} else {
+		isHealthy = false
+	}
+
+	componentHealth := &protobufs.ComponentHealth{
+		Healthy:            isHealthy,
+		Status:             statusUpdate.Status().String(),
+		StatusTimeUnixNano: uint64(statusUpdate.Timestamp().UnixNano()),
+	}
+
+	if statusUpdate.Err() != nil {
+		componentHealth.LastError = statusUpdate.Err().Error()
+	}
+
+	if len(statusUpdate.ComponentStatusMap) > 0 {
+		componentHealth.ComponentHealthMap = map[string]*protobufs.ComponentHealth{}
+		for comp, compState := range statusUpdate.ComponentStatusMap {
+			componentHealth.ComponentHealthMap[comp] = convertComponentHealth(compState)
+		}
+	}
+
+	return componentHealth
 }

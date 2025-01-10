@@ -32,7 +32,7 @@ func createDefaultConfig() component.Config {
 		CollectionInterval: 10 * time.Second,
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: otlpEndpoint,
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutSettings: exporterhelper.TimeoutConfig{
 				Timeout: 5 * time.Second,
 			},
 		},

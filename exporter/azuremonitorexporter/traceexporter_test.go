@@ -10,14 +10,12 @@ import (
 	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )
 
-var (
-	defaultConfig = createDefaultConfig().(*Config)
-)
+var defaultConfig = createDefaultConfig().(*Config)
 
 // Tests the export onTraceData callback with no Spans
 func TestExporterTraceDataCallbackNoSpans(t *testing.T) {
@@ -118,6 +116,7 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 func getMockTransportChannel() *mockTransportChannel {
 	transportChannelMock := mockTransportChannel{}
 	transportChannelMock.On("Send", mock.Anything)
+	transportChannelMock.On("Flush", mock.Anything)
 	return &transportChannelMock
 }
 

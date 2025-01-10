@@ -1,5 +1,4 @@
 type: awsproxy
-scope_name: otelcol/awsproxy
 
 status:
   class: extension

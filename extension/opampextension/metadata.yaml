@@ -1,11 +1,10 @@
 type: opamp
-scope_name: otelcol/opamp
 
 status:
   class: extension
   stability:
     alpha: [extension]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   codeowners:
     active: [portertech, evan-bradley, tigrannajaryan]
 

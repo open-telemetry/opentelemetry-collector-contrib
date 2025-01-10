@@ -8,14 +8,18 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver/internal/metadata"
 )
 
@@ -25,12 +29,13 @@ const (
 
 // NewFactory creates a factory for file receiver
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
-		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
+		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+		xreceiver.WithProfiles(createProfilesReceiver, metadata.ProfilesStability))
 }
 
 type Config struct {
@@ -78,10 +83,10 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token emit.Token) error {
 		ctx = obsrecv.StartLogsOp(ctx)
 		var l plog.Logs
-		l, err = logsUnmarshaler.UnmarshalLogs(token)
+		l, err = logsUnmarshaler.UnmarshalLogs(token.Body)
 		if err != nil {
 			obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, err)
 		} else {
@@ -115,10 +120,10 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token emit.Token) error {
 		ctx = obsrecv.StartMetricsOp(ctx)
 		var m pmetric.Metrics
-		m, err = metricsUnmarshaler.UnmarshalMetrics(token)
+		m, err = metricsUnmarshaler.UnmarshalMetrics(token.Body)
 		if err != nil {
 			obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
 		} else {
@@ -151,10 +156,10 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token emit.Token) error {
 		ctx = obsrecv.StartTracesOp(ctx)
 		var t ptrace.Traces
-		t, err = tracesUnmarshaler.UnmarshalTraces(token)
+		t, err = tracesUnmarshaler.UnmarshalTraces(token.Body)
 		if err != nil {
 			obsrecv.EndTracesOp(ctx, metadata.Type.String(), 0, err)
 		} else {
@@ -162,6 +167,27 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 				err = traces.ConsumeTraces(ctx, t)
 			}
 			obsrecv.EndTracesOp(ctx, metadata.Type.String(), t.SpanCount(), err)
+		}
+		return nil
+	}, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
+}
+
+func createProfilesReceiver(_ context.Context, settings receiver.Settings, configuration component.Config, profiles xconsumer.Profiles) (xreceiver.Profiles, error) {
+	profilesUnmarshaler := &pprofile.JSONUnmarshaler{}
+	cfg := configuration.(*Config)
+	opts := make([]fileconsumer.Option, 0)
+	if cfg.ReplayFile {
+		opts = append(opts, fileconsumer.WithNoTracking())
+	}
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token emit.Token) error {
+		p, _ := profilesUnmarshaler.UnmarshalProfiles(token.Body)
+		if p.ResourceProfiles().Len() != 0 {
+			_ = profiles.ConsumeProfiles(ctx, p)
 		}
 		return nil
 	}, opts...)

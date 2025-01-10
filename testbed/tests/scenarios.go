@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"path"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
@@ -23,8 +24,15 @@ import (
 )
 
 var (
+	batchRegex                                           = regexp.MustCompile(` batch_index=(\S+) `)
+	itemRegex                                            = regexp.MustCompile(` item_index=(\S+) `)
 	performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
 )
+
+type ProcessorNameAndConfigBody struct {
+	Name string
+	Body string
+}
 
 // createConfigYaml creates a collector config file that corresponds to the
 // sender and receiver used in the test and returns the config file name.
@@ -36,10 +44,9 @@ func createConfigYaml(
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
 	resultDir string,
-	processors map[string]string,
+	processors []ProcessorNameAndConfigBody,
 	extensions map[string]string,
 ) string {
-
 	// Create a config. Note that our DataSender is used to generate a config for Collector's
 	// receiver and our DataReceiver is used to generate a config for Collector's exporter.
 	// This is because our DataSender sends to Collector's receiver and our DataReceiver
@@ -51,12 +58,12 @@ func createConfigYaml(
 	processorsList := ""
 	if len(processors) > 0 {
 		first := true
-		for name, cfg := range processors {
-			processorsSections += cfg + "\n"
+		for i := range processors {
+			processorsSections += processors[i].Body + "\n"
 			if !first {
 				processorsList += ","
 			}
-			processorsList += name
+			processorsList += processors[i].Name
 			first = false
 		}
 	}
@@ -133,17 +140,21 @@ func Scenario10kItemsPerSecond(
 	receiver testbed.DataReceiver,
 	resourceSpec testbed.ResourceSpec,
 	resultsSummary testbed.TestResultsSummary,
-	processors map[string]string,
+	processors []ProcessorNameAndConfigBody,
 	extensions map[string]string,
+	loadOptions *testbed.LoadOptions,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
 
-	options := testbed.LoadOptions{
-		DataItemsPerSecond: 10_000,
-		ItemsPerBatch:      100,
-		Parallel:           1,
+	if loadOptions == nil {
+		loadOptions = &testbed.LoadOptions{
+			ItemsPerBatch: 100,
+			Parallel:      1,
+		}
 	}
+	loadOptions.DataItemsPerSecond = 10_000
+
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
@@ -151,7 +162,7 @@ func Scenario10kItemsPerSecond(
 	require.NoError(t, err)
 	defer configCleanup()
 
-	dataProvider := testbed.NewPerfTestDataProvider(options)
+	dataProvider := testbed.NewPerfTestDataProvider(*loadOptions)
 	tc := testbed.NewTestCase(
 		t,
 		dataProvider,
@@ -167,7 +178,7 @@ func Scenario10kItemsPerSecond(
 	tc.StartBackend()
 	tc.StartAgent()
 
-	tc.StartLoad(options)
+	tc.StartLoad(*loadOptions)
 
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 
@@ -191,7 +202,7 @@ func Scenario10kItemsPerSecondAlternateBackend(
 	backend testbed.DataReceiver,
 	resourceSpec testbed.ResourceSpec,
 	resultsSummary testbed.TestResultsSummary,
-	processors map[string]string,
+	processors []ProcessorNameAndConfigBody,
 	extensions map[string]string,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
@@ -261,12 +272,9 @@ func genRandByteString(length int) string {
 
 // Scenario1kSPSWithAttrs runs a performance test at 1k sps with specified span attributes
 // and test options.
-func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, processors map[string]string, extensions map[string]string) {
-	for i := range tests {
-		test := tests[i]
-
+func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, processors []ProcessorNameAndConfigBody, extensions map[string]string) {
+	for _, test := range tests {
 		t.Run(fmt.Sprintf("%d*%dbytes", test.attrCount, test.attrSizeByte), func(t *testing.T) {
-
 			options := constructLoadOptions(test)
 
 			agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
@@ -317,8 +325,8 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 // Defines RAM usage range for defined processor type.
 type processorConfig struct {
 	Name string
-	// map of processor types to their config YAML to use.
-	Processor           map[string]string
+	// slice of processor structs with their names and config YAML to use.
+	Processor           []ProcessorNameAndConfigBody
 	ExpectedMaxRAM      uint32
 	ExpectedMinFinalRAM uint32
 }
@@ -355,6 +363,7 @@ func ScenarioTestTraceNoBackend10kSPS(
 
 	t.Cleanup(tc.Stop)
 
+	tc.StartBackend()
 	tc.StartAgent()
 	tc.StartLoad(options)
 
@@ -373,7 +382,7 @@ func ScenarioSendingQueuesFull(
 	resourceSpec testbed.ResourceSpec,
 	sleepTime int,
 	resultsSummary testbed.TestResultsSummary,
-	processors map[string]string,
+	processors []ProcessorNameAndConfigBody,
 	extensions map[string]string,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
@@ -394,7 +403,7 @@ func ScenarioSendingQueuesFull(
 		receiver,
 		agentProc,
 		&testbed.LogPresentValidator{
-			LogBody: "sending_queue is full",
+			LogBody: "sending queue is full",
 			Present: true,
 		},
 		resultsSummary,
@@ -402,20 +411,20 @@ func ScenarioSendingQueuesFull(
 		testbed.WithDecisionFunc(func() error { return testbed.GenerateNonPernamentErrorUntil(dataChannel) }),
 	)
 
+	t.Cleanup(tc.Stop)
+
 	tc.MockBackend.EnableRecording()
-	defer tc.Stop()
 
 	tc.StartBackend()
 	tc.StartAgent()
-
 	tc.StartLoad(loadOptions)
 
 	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, time.Second*time.Duration(sleepTime), "load generator started")
 
-	// searchFunc checks for "sending_queue is full" communicate and sends the signal to GenerateNonPernamentErrorUntil
+	// searchFunc checks for "sending queue is full" communicate and sends the signal to GenerateNonPernamentErrorUntil
 	// to generate only successes from that time on
 	tc.WaitForN(func() bool {
-		logFound := tc.AgentLogsContains("sending_queue is full")
+		logFound := tc.AgentLogsContains("sending queue is full")
 		if !logFound {
 			dataChannel <- true
 			return false
@@ -423,7 +432,7 @@ func ScenarioSendingQueuesFull(
 		tc.WaitFor(func() bool { return tc.MockBackend.DataItemsReceived() == 0 }, "no data successfully received before an error")
 		close(dataChannel)
 		return logFound
-	}, time.Second*time.Duration(sleepTime), "sending_queue errors present")
+	}, time.Second*time.Duration(sleepTime), "sending queue errors present")
 
 	// check if data started to be received successfully
 	tc.WaitForN(func() bool {
@@ -455,7 +464,7 @@ func ScenarioSendingQueuesNotFull(
 	resourceSpec testbed.ResourceSpec,
 	sleepTime int,
 	resultsSummary testbed.TestResultsSummary,
-	processors map[string]string,
+	processors []ProcessorNameAndConfigBody,
 	extensions map[string]string,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
@@ -475,7 +484,7 @@ func ScenarioSendingQueuesNotFull(
 		receiver,
 		agentProc,
 		&testbed.LogPresentValidator{
-			LogBody: "sending_queue is full",
+			LogBody: "sending queue is full",
 			Present: false,
 		},
 		resultsSummary,
@@ -500,6 +509,140 @@ func ScenarioSendingQueuesNotFull(
 	tc.ValidateData()
 }
 
+func ScenarioLong(
+	t *testing.T,
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	loadOptions testbed.LoadOptions,
+	resultsSummary testbed.TestResultsSummary,
+	sleepTime int,
+	processors []ProcessorNameAndConfigBody,
+) {
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
+
+	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
+	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		agentProc,
+		&testbed.CorrectnessLogTestValidator{},
+		resultsSummary,
+	)
+	t.Cleanup(tc.Stop)
+
+	tc.StartBackend()
+	tc.StartAgent()
+
+	tc.StartLoad(loadOptions)
+
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
+
+	tc.Sleep(time.Second * time.Duration(sleepTime))
+
+	tc.StopLoad()
+
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, 60*time.Second, "all logs received")
+
+	tc.ValidateData()
+}
+
+func ScenarioMemoryLimiterHit(
+	t *testing.T,
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	loadOptions testbed.LoadOptions,
+	resultsSummary testbed.TestResultsSummary,
+	sleepTime int,
+	processors []ProcessorNameAndConfigBody,
+) {
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
+
+	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
+	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
+	dataChannel := make(chan bool)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		agentProc,
+		&testbed.CorrectnessLogTestValidator{},
+		resultsSummary,
+		testbed.WithDecisionFunc(func() error { return testbed.GenerateNonPernamentErrorUntil(dataChannel) }),
+	)
+	t.Cleanup(tc.Stop)
+	tc.MockBackend.EnableRecording()
+
+	tc.StartBackend()
+	tc.StartAgent()
+
+	tc.StartLoad(loadOptions)
+
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
+
+	var timer *time.Timer
+
+	// check for "Memory usage is above soft limit"
+	tc.WaitForN(func() bool {
+		logFound := tc.AgentLogsContains("Memory usage is above soft limit. Refusing data.")
+		if !logFound {
+			dataChannel <- true
+			return false
+		}
+		// Log found. But keep the collector under stress for 10 more seconds so it starts refusing data
+		if timer == nil {
+			timer = time.NewTimer(10 * time.Second)
+		}
+		select {
+		case <-timer.C:
+		default:
+			return false
+		}
+		close(dataChannel)
+		return logFound
+	}, time.Second*time.Duration(sleepTime), "memory limit not hit")
+
+	// check if data started to be received successfully
+	tc.WaitForN(func() bool {
+		return tc.MockBackend.DataItemsReceived() > 0
+	}, time.Second*time.Duration(sleepTime), "data started to be successfully received")
+
+	// stop sending any more data
+	tc.StopLoad()
+
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, time.Second*time.Duration(sleepTime), "all logs received")
+
+	tc.WaitForN(func() bool {
+		// get IDs from logs to retry
+		logsToRetry := getLogsID(tc.MockBackend.LogsToRetry)
+
+		// get IDs from logs received successfully
+		successfulLogs := getLogsID(tc.MockBackend.ReceivedLogs)
+
+		// check if all the logs to retry were actually retried
+		logsWereRetried := allElementsExistInSlice(logsToRetry, successfulLogs)
+		return logsWereRetried
+	}, time.Second*time.Duration(sleepTime), "all logs were retried successfully")
+
+	tc.StopAgent()
+	tc.ValidateData()
+}
+
 func constructLoadOptions(test TestCase) testbed.LoadOptions {
 	options := testbed.LoadOptions{DataItemsPerSecond: 1000, ItemsPerBatch: 10}
 	options.Attributes = make(map[string]string)
@@ -518,9 +661,8 @@ func getLogsID(logToRetry []plog.Logs) []string {
 		logRecord := logElement.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 		for index := 0; index < logRecord.Len(); index++ {
 			logObj := logRecord.At(index)
-			itemIndex, _ := logObj.Attributes().Get("item_index")
-			batchIndex, _ := logObj.Attributes().Get("batch_index")
-			result = append(result, fmt.Sprintf("%s%s", batchIndex.AsString(), itemIndex.AsString()))
+			itemIndex, batchIndex := extractIDFromLog(logObj)
+			result = append(result, fmt.Sprintf("%s%s", batchIndex, itemIndex))
 		}
 	}
 	return result
@@ -543,4 +685,26 @@ func allElementsExistInSlice(slice1, slice2 []string) bool {
 	}
 
 	return true
+}
+
+// in case of filelog receiver, the batch_index and item_index are a part of log body.
+// we use regex to extract them
+func extractIDFromLog(log plog.LogRecord) (string, string) {
+	var batch, item string
+	match := batchRegex.FindStringSubmatch(log.Body().AsString())
+	if len(match) == 2 {
+		batch = match[0]
+	}
+	match = itemRegex.FindStringSubmatch(log.Body().AsString())
+	if len(match) == 2 {
+		batch = match[0]
+	}
+	// in case of otlp receiver, batch_index and item_index are part of attributes.
+	if batchIndex, ok := log.Attributes().Get("batch_index"); ok {
+		batch = batchIndex.AsString()
+	}
+	if itemIndex, ok := log.Attributes().Get("item_index"); ok {
+		item = itemIndex.AsString()
+	}
+	return batch, item
 }

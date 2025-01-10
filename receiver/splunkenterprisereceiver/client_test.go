@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension/auth"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 // mockHost allows us to create a test host with a no op extension that can be used to satisfy the SDK without having to parse from an
@@ -99,7 +99,7 @@ func TestClientCreateRequest(t *testing.T) {
 			},
 			client: client,
 			expected: func() *http.Request {
-				method := "POST"
+				method := http.MethodPost
 				path := "/services/search/jobs/"
 				testEndpoint, _ := url.Parse("https://localhost:8089")
 				url, _ := url.JoinPath(testEndpoint.String(), path)
@@ -116,7 +116,7 @@ func TestClientCreateRequest(t *testing.T) {
 			},
 			client: client,
 			expected: func() *http.Request {
-				method := "GET"
+				method := http.MethodGet
 				path := fmt.Sprintf("/services/search/jobs/%s/results", testJobID)
 				testEndpoint, _ := url.Parse("https://localhost:8089")
 				url, _ := url.JoinPath(testEndpoint.String(), path)

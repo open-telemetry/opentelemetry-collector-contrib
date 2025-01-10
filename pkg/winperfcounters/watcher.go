@@ -93,7 +93,12 @@ func initQuery(counterPath string, collectOnStartup bool) (*win_perf_counters.Pe
 	if collectOnStartup {
 		err = query.CollectData()
 		if err != nil {
-			return nil, nil, err
+			// Ignore PDH_NO_DATA error, it is expected when there are no
+			// matching instances.
+			var pdhErr *win_perf_counters.PdhError
+			if !errors.As(err, &pdhErr) || pdhErr.ErrorCode != win_perf_counters.PDH_NO_DATA {
+				return nil, nil, err
+			}
 		}
 	}
 
@@ -124,16 +129,23 @@ func (pc *perfCounter) Path() string {
 func (pc *perfCounter) ScrapeData() ([]CounterValue, error) {
 	if err := pc.query.CollectData(); err != nil {
 		var pdhErr *win_perf_counters.PdhError
-		if !errors.As(err, &pdhErr) || pdhErr.ErrorCode != win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR {
+		if !errors.As(err, &pdhErr) || (pdhErr.ErrorCode != win_perf_counters.PDH_NO_DATA && pdhErr.ErrorCode != win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR) {
 			return nil, fmt.Errorf("failed to collect data for performance counter '%s': %w", pc.path, err)
 		}
 
-		// A counter rolled over, so the value is invalid
-		// See https://support.microfocus.com/kb/doc.php?id=7010545
-		// Wait one second and retry once
-		time.Sleep(time.Second)
-		if retryErr := pc.query.CollectData(); retryErr != nil {
-			return nil, fmt.Errorf("failed retry for performance counter '%s': %w", pc.path, err)
+		if pdhErr.ErrorCode == win_perf_counters.PDH_NO_DATA {
+			// No data is available for the counter, so return an empty slice.
+			return nil, nil
+		}
+
+		if pdhErr.ErrorCode == win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR {
+			// A counter rolled over, so the value is invalid
+			// See https://support.microfocus.com/kb/doc.php?id=7010545
+			// Wait one second and retry once
+			time.Sleep(time.Second)
+			if retryErr := pc.query.CollectData(); retryErr != nil {
+				return nil, fmt.Errorf("failed retry for performance counter '%s': %w", pc.path, err)
+			}
 		}
 	}
 

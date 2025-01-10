@@ -180,7 +180,7 @@ func TestDataCollectorSyncMetadataForPodWorkloads(t *testing.T) {
 			require.NotNil(t, testCase.metadataStore)
 			require.NotNil(t, testCase.resource)
 
-			observedLogger, logs := observer.New(zapcore.WarnLevel)
+			observedLogger, logs := observer.New(zapcore.DebugLevel)
 			logger := zap.New(observedLogger)
 
 			name := fmt.Sprintf("(%s) - %s", kind, tt.name)
@@ -247,8 +247,9 @@ func expectedKubernetesMetadata(to testCaseOptions) map[experimentalmetricmetada
 			ResourceIDKey: "k8s.pod.uid",
 			ResourceID:    experimentalmetricmetadata.ResourceID(podUIDLabel),
 			Metadata: map[string]string{
-				kindNameLabel: kindObjName,
-				kindUIDLabel:  kindObjUID,
+				kindNameLabel:   kindObjName,
+				kindUIDLabel:    kindObjUID,
+				"k8s.pod.phase": "Unknown", // Default value when phase is not set.
 			},
 		},
 	}
@@ -415,6 +416,7 @@ func TestTransform(t *testing.T) {
 		},
 		Status: corev1.PodStatus{
 			Phase:     corev1.PodRunning,
+			Reason:    "Evicted",
 			HostIP:    "192.168.1.100",
 			PodIP:     "10.244.0.5",
 			StartTime: &v1.Time{Time: v1.Now().Add(-5 * time.Minute)},
@@ -463,7 +465,8 @@ func TestTransform(t *testing.T) {
 			},
 		},
 		Status: corev1.PodStatus{
-			Phase: corev1.PodRunning,
+			Phase:  corev1.PodRunning,
+			Reason: "Evicted",
 			ContainerStatuses: []corev1.ContainerStatus{
 				{
 					Name:         "my-container",
@@ -477,4 +480,71 @@ func TestTransform(t *testing.T) {
 		},
 	}
 	assert.Equal(t, wantPod, Transform(originalPod))
+}
+
+func TestPodMetadata(t *testing.T) {
+	tests := []struct {
+		name             string
+		statusPhase      corev1.PodPhase
+		statusReason     string
+		expectedMetadata map[string]string
+	}{
+		{
+			name:         "Pod with status reason",
+			statusPhase:  corev1.PodFailed,
+			statusReason: "Evicted",
+			expectedMetadata: map[string]string{
+				"k8s.pod.phase":         "Failed",
+				"k8s.pod.status_reason": "Evicted",
+				"k8s.workload.kind":     "Deployment",
+				"k8s.workload.name":     "test-deployment-0",
+				"k8s.replicaset.name":   "test-replicaset-0",
+				"k8s.replicaset.uid":    "test-replicaset-0-uid",
+				"k8s.deployment.name":   "test-deployment-0",
+				"k8s.deployment.uid":    "test-deployment-0-uid",
+			},
+		},
+		{
+			name:         "Pod without status reason",
+			statusPhase:  corev1.PodRunning,
+			statusReason: "",
+			expectedMetadata: map[string]string{
+				"k8s.pod.phase":       "Running",
+				"k8s.workload.kind":   "Deployment",
+				"k8s.workload.name":   "test-deployment-0",
+				"k8s.replicaset.name": "test-replicaset-0",
+				"k8s.replicaset.uid":  "test-replicaset-0-uid",
+				"k8s.deployment.name": "test-deployment-0",
+				"k8s.deployment.uid":  "test-deployment-0-uid",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pod := podWithOwnerReference("ReplicaSet")
+			pod.Status.Phase = tt.statusPhase
+			pod.Status.Reason = tt.statusReason
+
+			metadataStore := mockMetadataStore(testCaseOptions{
+				kind:         "ReplicaSet",
+				withParentOR: true,
+			})
+			logger := zap.NewNop()
+			meta := GetMetadata(pod, metadataStore, logger)
+
+			require.NotNil(t, meta)
+			require.Contains(t, meta, experimentalmetricmetadata.ResourceID("test-pod-0-uid"))
+			podMeta := meta["test-pod-0-uid"].Metadata
+
+			allExpectedMetadata := make(map[string]string)
+			for key, value := range commonPodMetadata {
+				allExpectedMetadata[key] = value
+			}
+			for key, value := range tt.expectedMetadata {
+				allExpectedMetadata[key] = value
+			}
+			assert.Equal(t, allExpectedMetadata, podMeta)
+		})
+	}
 }

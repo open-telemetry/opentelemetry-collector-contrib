@@ -1,13 +1,11 @@
 type: loadbalancing
-scope_name: otelcol/loadbalancing
 
 status:
   class: exporter
   stability:
     beta: [traces, logs]
     development: [metrics]
-  distributions:
-  - contrib
+  distributions: [contrib, k8s]
   codeowners:
     active: [jpkrohling]
 

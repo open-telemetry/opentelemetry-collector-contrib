@@ -1,5 +1,4 @@
 type: sqlserver
-scope_name: otelcol/sqlserverreceiver
 
 status:
   class: receiver
@@ -7,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, StefanKurek]
+    active: [StefanKurek]
     seeking_new: true
 
 resource_attributes:

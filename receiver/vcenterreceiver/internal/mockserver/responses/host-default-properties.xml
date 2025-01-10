@@ -18,6 +18,10 @@
                         <val xsi:type="xsd:int">2593</val>
                     </propSet>
                     <propSet>
+                        <name>config.vsanHostConfig.clusterInfo.nodeUuid</name>
+                        <val xsi:type="xsd:string">920136ec-4156-48cc-b5e8-2980dfda2b35</val>
+                    </propSet>
+                    <propSet>
                         <name>summary.hardware.memorySize</name>
                         <val xsi:type="xsd:long">822763126784</val>
                     </propSet>
@@ -33,6 +37,14 @@
                         <name>summary.quickStats.overallMemoryUsage</name>
                         <val xsi:type="xsd:int">140833</val>
                     </propSet>
+                <propSet>
+                    <name>runtime.powerState</name>
+                    <val xsi:type="HostSystemPowerState">poweredOn</val>
+                </propSet>
+                <propSet>
+                    <name>summary.overallStatus</name>
+                    <val xsi:type="ManagedEntityStatus">green</val>
+                </propSet>
                     <propSet>
                         <name>vm</name>
                         <val xsi:type="ArrayOfManagedObjectReference">
@@ -55,6 +67,10 @@
                         <val type="ComputeResource" xsi:type="ManagedObjectReference">domain-c9</val>
                     </propSet>
                     <propSet>
+                        <name>config.vsanHostConfig.clusterInfo.nodeUuid</name>
+                        <val xsi:type="xsd:string">02a0afaf-94b3-4db9-b2de-b0194a8e1f69</val>
+                    </propSet>
+                    <propSet>
                         <name>summary.hardware.cpuMhz</name>
                         <val xsi:type="xsd:int">2593</val>
                     </propSet>
@@ -74,6 +90,14 @@
                         <name>summary.quickStats.overallMemoryUsage</name>
                         <val xsi:type="xsd:int">140833</val>
                     </propSet>
+                <propSet>
+                    <name>runtime.powerState</name>
+                    <val xsi:type="HostSystemPowerState">poweredOn</val>
+                </propSet>
+                <propSet>
+                    <name>summary.overallStatus</name>
+                    <val xsi:type="ManagedEntityStatus">green</val>
+                </propSet>
                     <propSet>
                         <name>vm</name>
                         <val xsi:type="ArrayOfManagedObjectReference">

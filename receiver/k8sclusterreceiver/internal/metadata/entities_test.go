@@ -176,36 +176,35 @@ func Test_GetEntityEvents(t *testing.T) {
 			}(),
 		},
 	}
-	for _, test := range tests {
-		tt := test
-		t.Run(
-			tt.name, func(t *testing.T) {
-				// Make sure test data is correct.
-				for k, v := range tt.old {
-					assert.EqualValues(t, k, v.ResourceID)
-				}
-				for k, v := range tt.new {
-					assert.EqualValues(t, k, v.ResourceID)
-				}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Make sure test data is correct.
+			for k, v := range tt.old {
+				assert.EqualValues(t, k, v.ResourceID)
+			}
+			for k, v := range tt.new {
+				assert.EqualValues(t, k, v.ResourceID)
+			}
 
-				// Convert and test expected events.
-				timestamp := pcommon.NewTimestampFromTime(time.Now())
-				events := GetEntityEvents(tt.old, tt.new, timestamp)
-				require.Equal(t, tt.events.Len(), events.Len())
-				for i := 0; i < events.Len(); i++ {
-					actual := events.At(i)
-					expected := tt.events.At(i)
-					assert.EqualValues(t, timestamp, actual.Timestamp())
-					assert.EqualValues(t, expected.EventType(), actual.EventType())
-					assert.EqualValues(t, expected.ID().AsRaw(), actual.ID().AsRaw())
-					if expected.EventType() == metadataPkg.EventTypeState {
-						estate := expected.EntityStateDetails()
-						astate := actual.EntityStateDetails()
-						assert.EqualValues(t, estate.EntityType(), astate.EntityType())
-						assert.EqualValues(t, estate.Attributes().AsRaw(), astate.Attributes().AsRaw())
-					}
+			// Convert and test expected events.
+			timestamp := pcommon.NewTimestampFromTime(time.Now())
+			events := GetEntityEvents(tt.old, tt.new, timestamp, 1*time.Hour)
+			require.Equal(t, tt.events.Len(), events.Len())
+			for i := 0; i < events.Len(); i++ {
+				actual := events.At(i)
+				expected := tt.events.At(i)
+				assert.EqualValues(t, timestamp, actual.Timestamp())
+				assert.EqualValues(t, expected.EventType(), actual.EventType())
+				assert.EqualValues(t, expected.ID().AsRaw(), actual.ID().AsRaw())
+				if expected.EventType() == metadataPkg.EventTypeState {
+					estate := expected.EntityStateDetails()
+					astate := actual.EntityStateDetails()
+					assert.EqualValues(t, estate.EntityType(), astate.EntityType())
+					assert.EqualValues(t, 1*time.Hour, astate.Interval())
+					assert.EqualValues(t, estate.Attributes().AsRaw(), astate.Attributes().AsRaw())
 				}
-			},
+			}
+		},
 		)
 	}
 }

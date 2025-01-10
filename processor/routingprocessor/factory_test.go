@@ -18,18 +18,12 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
-	nooptrace "go.opentelemetry.io/otel/trace/noop"
-	"go.uber.org/zap"
 )
 
-var noopTelemetrySettings = component.TelemetrySettings{
-	TracerProvider: nooptrace.NewTracerProvider(),
-	MeterProvider:  noopmetric.NewMeterProvider(),
-	Logger:         zap.NewNop(),
-}
+var noopTelemetrySettings = componenttest.NewNopTelemetrySettings()
 
 func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
@@ -47,21 +41,21 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	}
 
 	t.Run("traces", func(t *testing.T) {
-		exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		exp, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
 		// verify
 		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 	})
 
 	t.Run("metrics", func(t *testing.T) {
-		exp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		exp, err := factory.CreateMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
 		// verify
 		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 	})
 
 	t.Run("logs", func(t *testing.T) {
-		exp, err := factory.CreateLogsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		exp, err := factory.CreateLogs(context.Background(), creationParams, cfg, consumertest.NewNop())
 		// verify
 		assert.NoError(t, err)
 		assert.NotNil(t, exp)
@@ -125,11 +119,11 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	}
 	mp := &mockProcessor{}
 
-	next, err := processorhelper.NewTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop(), mp.processTraces)
+	next, err := processorhelper.NewTraces(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop(), mp.processTraces)
 	require.NoError(t, err)
 
 	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, next)
+	exp, err := factory.CreateTraces(context.Background(), creationParams, cfg, next)
 
 	// verify
 	assert.NoError(t, err)
@@ -144,17 +138,17 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 		},
 	}
 
-	otlpTracesExporter, err := otlpExporterFactory.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), otlpConfig)
+	otlpTracesExporter, err := otlpExporterFactory.CreateTraces(context.Background(), exportertest.NewNopSettings(), otlpConfig)
 	require.NoError(t, err)
 
-	otlpMetricsExporter, err := otlpExporterFactory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), otlpConfig)
+	otlpMetricsExporter, err := otlpExporterFactory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), otlpConfig)
 	require.NoError(t, err)
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
 			component.MustNewIDWithName("otlp", "traces"): otlpTracesExporter,
 		},
-		component.DataTypeMetrics: {
+		pipeline.SignalMetrics: {
 			component.MustNewIDWithName("otlp", "metrics"): otlpMetricsExporter,
 		},
 	})
@@ -197,7 +191,7 @@ func TestShutdown(t *testing.T) {
 		},
 	}
 
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+	exp, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -216,17 +210,17 @@ func (mp *mockProcessor) processTraces(context.Context, ptrace.Traces) (ptrace.T
 
 type mockHost struct {
 	component.Host
-	exps map[component.DataType]map[component.ID]component.Component
+	exps map[pipeline.Signal]map[component.ID]component.Component
 }
 
-func newMockHost(exps map[component.DataType]map[component.ID]component.Component) component.Host {
+func newMockHost(exps map[pipeline.Signal]map[component.ID]component.Component) component.Host {
 	return &mockHost{
 		Host: componenttest.NewNopHost(),
 		exps: exps,
 	}
 }
 
-func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (m *mockHost) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
 	return m.exps
 }
 

@@ -7,9 +7,11 @@ import (
 )
 
 var (
-	Type = component.MustNewType("hostmetrics")
+	Type      = component.MustNewType("hostmetrics")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 )
 
 const (
+	LogsStability    = component.StabilityLevelDevelopment
 	MetricsStability = component.StabilityLevelBeta
 )

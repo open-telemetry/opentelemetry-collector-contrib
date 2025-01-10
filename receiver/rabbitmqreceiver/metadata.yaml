@@ -1,5 +1,4 @@
 type: rabbitmq
-scope_name: otelcol/rabbitmqreceiver
 
 status:
   class: receiver
@@ -7,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, cpheps]
+    active: [cpheps]
     seeking_new: true
 
 resource_attributes:

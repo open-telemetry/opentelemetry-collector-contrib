@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 				// intentionally left blank so we use default config
 			},
 			expected: &Config{
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
 				BackOffConfig: configretry.BackOffConfig{
@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
@@ -59,6 +59,7 @@ func TestLoadConfig(t *testing.T) {
 				Encoding:                             "otlp_proto",
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
+				PartitionLogsByResourceAttributes:    true,
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
 				Authentication: kafka.Authentication{
@@ -94,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 				}
 			},
 			expected: &Config{
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
 				BackOffConfig: configretry.BackOffConfig{
@@ -105,7 +106,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
@@ -114,6 +115,7 @@ func TestLoadConfig(t *testing.T) {
 				Encoding:                             "otlp_proto",
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
+				PartitionLogsByResourceAttributes:    true,
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
 				Authentication: kafka.Authentication{
@@ -148,7 +150,7 @@ func TestLoadConfig(t *testing.T) {
 				conf.ResolveCanonicalBootstrapServersOnly = true
 			},
 			expected: &Config{
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
 				BackOffConfig: configretry.BackOffConfig{
@@ -159,7 +161,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
@@ -168,6 +170,7 @@ func TestLoadConfig(t *testing.T) {
 				Encoding:                             "otlp_proto",
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
+				PartitionLogsByResourceAttributes:    true,
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
 				ResolveCanonicalBootstrapServersOnly: true,
@@ -269,7 +272,7 @@ func TestValidate_sasl_mechanism(t *testing.T) {
 	}
 
 	err := config.Validate()
-	assert.EqualError(t, err, "auth.sasl.mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FAKE")
+	assert.EqualError(t, err, "auth.sasl.mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FAKE")
 }
 
 func TestValidate_sasl_version(t *testing.T) {
@@ -332,8 +335,8 @@ func Test_saramaProducerCompressionCodec(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			c, err := saramaProducerCompressionCodec(test.compression)
-			assert.Equal(t, c, test.expectedCompression)
-			assert.Equal(t, err, test.expectedError)
+			assert.Equal(t, test.expectedCompression, c)
+			assert.Equal(t, test.expectedError, err)
 		})
 	}
 }

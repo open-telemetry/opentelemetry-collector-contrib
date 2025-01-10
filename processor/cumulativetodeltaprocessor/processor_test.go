@@ -447,7 +447,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				Exclude: test.exclude,
 			}
 			factory := NewFactory()
-			mgp, err := factory.CreateMetricsProcessor(
+			mgp, err := factory.CreateMetrics(
 				context.Background(),
 				processortest.NewNopSettings(),
 				cfg,
@@ -462,10 +462,10 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			require.NoError(t, mgp.Start(ctx, nil))
 
 			cErr := mgp.ConsumeMetrics(context.Background(), test.inMetrics)
-			assert.Nil(t, cErr)
+			assert.NoError(t, cErr)
 			got := next.AllMetrics()
 
-			require.Equal(t, 1, len(got))
+			require.Len(t, got, 1)
 			require.Equal(t, test.outMetrics.ResourceMetrics().Len(), got[0].ResourceMetrics().Len())
 
 			expectedMetrics := test.outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
@@ -594,7 +594,7 @@ func generateTestHistogramMetrics(tm testHistogramMetric) pmetric.Metrics {
 			if tm.metricMins != nil {
 				mins := tm.metricMins[i]
 				if len(mins) > 0 {
-					dp.SetMin(sums[index])
+					dp.SetMin(mins[index])
 				}
 			}
 			if tm.metricMaxes != nil {
@@ -623,9 +623,7 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 	}
 	cfg := createDefaultConfig().(*Config)
 	p, err := createMetricsProcessor(context.Background(), params, cfg, c)
-	if err != nil {
-		b.Fatal(err)
-	}
+	require.NoError(b, err)
 
 	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()

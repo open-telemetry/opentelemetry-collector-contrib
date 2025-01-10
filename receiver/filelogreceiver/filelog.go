@@ -32,6 +32,7 @@ func (f ReceiverType) Type() component.Type {
 func (f ReceiverType) CreateDefaultConfig() component.Config {
 	return createDefaultConfig()
 }
+
 func createDefaultConfig() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{

@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### loadbalancer_backend_latency
+### otelcol_loadbalancer_backend_latency
 
 Response latency in ms for the backends.
 
@@ -14,7 +14,7 @@ Response latency in ms for the backends.
 | ---- | ----------- | ---------- |
 | ms | Histogram | Int |
 
-### loadbalancer_backend_outcome
+### otelcol_loadbalancer_backend_outcome
 
 Number of successes and failures for each endpoint.
 
@@ -22,7 +22,7 @@ Number of successes and failures for each endpoint.
 | ---- | ----------- | ---------- | --------- |
 | {outcomes} | Sum | Int | true |
 
-### loadbalancer_num_backend_updates
+### otelcol_loadbalancer_num_backend_updates
 
 Number of times the list of backends was updated.
 
@@ -30,7 +30,7 @@ Number of times the list of backends was updated.
 | ---- | ----------- | ---------- | --------- |
 | {updates} | Sum | Int | true |
 
-### loadbalancer_num_backends
+### otelcol_loadbalancer_num_backends
 
 Current number of backends in use.
 
@@ -38,7 +38,7 @@ Current number of backends in use.
 | ---- | ----------- | ---------- |
 | {backends} | Gauge | Int |
 
-### loadbalancer_num_resolutions
+### otelcol_loadbalancer_num_resolutions
 
 Number of times the resolver has triggered new resolutions.
 

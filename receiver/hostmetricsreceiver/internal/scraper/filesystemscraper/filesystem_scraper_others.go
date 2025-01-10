@@ -13,7 +13,7 @@ import (
 
 const fileSystemStatesLen = 2
 
-func (s *scraper) recordFileSystemUsageMetric(now pcommon.Timestamp, deviceUsages []*deviceUsage) {
+func (s *filesystemsScraper) recordFileSystemUsageMetric(now pcommon.Timestamp, deviceUsages []*deviceUsage) {
 	for _, deviceUsage := range deviceUsages {
 		s.mb.RecordSystemFilesystemUsageDataPoint(
 			now, int64(deviceUsage.usage.Used),
@@ -34,5 +34,5 @@ func (s *scraper) recordFileSystemUsageMetric(now pcommon.Timestamp, deviceUsage
 
 const systemSpecificMetricsLen = 0
 
-func (s *scraper) recordSystemSpecificMetrics(_ pcommon.Timestamp, _ []*deviceUsage) {
+func (s *filesystemsScraper) recordSystemSpecificMetrics(_ pcommon.Timestamp, _ []*deviceUsage) {
 }

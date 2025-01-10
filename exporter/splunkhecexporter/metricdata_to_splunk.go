@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -284,12 +284,11 @@ func mergeEventsToMultiMetricFormat(events []*splunk.Event) ([]*splunk.Event, er
 	hashes := map[uint32]*splunk.Event{}
 	hasher := fnv.New32a()
 	var merged []*splunk.Event
-	marshaler := jsoniter.ConfigCompatibleWithStandardLibrary
 
 	for _, e := range events {
 		cloned := copyEventWithoutValues(e)
 
-		data, err := marshaler.Marshal(cloned)
+		data, err := json.Marshal(cloned)
 		if err != nil {
 			return nil, err
 		}

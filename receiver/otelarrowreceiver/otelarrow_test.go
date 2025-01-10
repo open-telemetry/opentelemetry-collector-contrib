@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"strconv"
 	"sync"
@@ -15,8 +16,6 @@ import (
 	"time"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	"github.com/open-telemetry/otel-arrow/collector/testdata"
-	"github.com/open-telemetry/otel-arrow/collector/testutil"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -47,6 +46,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow/mock"
 	componentMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
@@ -130,7 +131,7 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 		assert.Equal(t, ingestionState.expectedCode, errStatus.Code())
 	}
 
-	require.Equal(t, expectedReceivedBatches, len(sink.AllTraces()))
+	require.Len(t, sink.AllTraces(), expectedReceivedBatches)
 
 	expectedIngestionBlockedRPCs := 1
 	require.NoError(t, tt.CheckReceiverTraces("grpc", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs)))
@@ -153,7 +154,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		},
 	}
 
-	r, err := NewFactory().CreateTracesReceiver(
+	r, err := NewFactory().CreateTraces(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		cfg,
@@ -223,11 +224,11 @@ func newReceiver(t *testing.T, factory receiver.Factory, settings component.Tele
 	var r component.Component
 	var err error
 	if tc != nil {
-		r, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
+		r, err = factory.CreateTraces(context.Background(), set, cfg, tc)
 		require.NoError(t, err)
 	}
 	if mc != nil {
-		r, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc)
+		r, err = factory.CreateMetrics(context.Background(), set, cfg, mc)
 		require.NoError(t, err)
 	}
 	return r
@@ -246,7 +247,7 @@ func TestStandardShutdown(t *testing.T) {
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 	set := receivertest.NewNopSettings()
 	set.ID = testReceiverID
-	r, err := NewFactory().CreateTracesReceiver(
+	r, err := NewFactory().CreateTraces(
 		context.Background(),
 		set,
 		cfg,
@@ -316,7 +317,6 @@ func TestOTelArrowShutdown(t *testing.T) {
 			cfg.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
 				ServerParameters: &configgrpc.KeepaliveServerParameters{},
 			}
-			// Note that keepalive parameters are set very high
 			if !cooperative {
 				cfg.GRPC.Keepalive.ServerParameters.MaxConnectionAge = time.Second
 				cfg.GRPC.Keepalive.ServerParameters.MaxConnectionAgeGrace = 5 * time.Second
@@ -327,7 +327,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 			set.TelemetrySettings.Logger = zap.New(core)
 
 			set.ID = testReceiverID
-			r, err := NewFactory().CreateTracesReceiver(
+			r, err := NewFactory().CreateTraces(
 				ctx,
 				set,
 				cfg,
@@ -338,36 +338,48 @@ func TestOTelArrowShutdown(t *testing.T) {
 
 			conn, err := grpc.NewClient(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			require.NoError(t, err)
-			defer conn.Close()
-
-			doneSignalGrpc := make(chan bool)
+			defer func() {
+				require.NoError(t, conn.Close())
+			}()
 
 			client := arrowpb.NewArrowTracesServiceClient(conn)
 			stream, err := client.ArrowTraces(ctx, grpc.WaitForReady(true))
 			require.NoError(t, err)
 			producer := arrowRecord.NewProducer()
-			defer func() {
-				require.NoError(t, conn.Close())
-			}()
 
 			start := time.Now()
-			var once sync.Once
 
-			// Send traces to the receiver until we signal via done channel, and then
-			// send one more trace after that.
-			go generateTraces(func(td ptrace.Traces) {
-				if time.Since(start) > 5*time.Second {
-					once.Do(func() {
-						if cooperative {
-							require.NoError(t, stream.CloseSend())
-						}
-					})
-					return
+			// Send traces to the receiver until we signal.
+			go func() {
+				for time.Since(start) < 5*time.Second {
+					td := testdata.GenerateTraces(1)
+					batch, batchErr := producer.BatchArrowRecordsFromTraces(td)
+					assert.NoError(t, batchErr)
+					assert.NoError(t, stream.Send(batch))
 				}
-				batch, batchErr := producer.BatchArrowRecordsFromTraces(td)
-				require.NoError(t, batchErr)
-				require.NoError(t, stream.Send(batch))
-			}, doneSignalGrpc)
+
+				if cooperative {
+					assert.NoError(t, stream.CloseSend())
+				}
+			}()
+
+			var recvWG sync.WaitGroup
+			recvWG.Add(1)
+
+			// Receive batch responses. See the comment on
+			// https://pkg.go.dev/google.golang.org/grpc#ClientConn.NewStream
+			// to explain why this must be done.  We do not use the
+			// return value, this just avoids leaking the stream context,
+			// which can otherwise hang this test.
+			go func() {
+				defer recvWG.Done()
+				for {
+					if _, recvErr := stream.Recv(); recvErr == nil {
+						continue
+					}
+					break
+				}
+			}()
 
 			// Wait until the receiver outputs anything to the sink.
 			assert.Eventually(t, func() bool {
@@ -380,17 +392,13 @@ func TestOTelArrowShutdown(t *testing.T) {
 			err = r.Shutdown(context.Background())
 			assert.NoError(t, err)
 
+			// recvWG ensures the stream has been read before the test exits.
+			recvWG.Wait()
+
 			// Remember how many spans the sink received. This number should not change after this
 			// point because after Shutdown() returns the component is not allowed to produce
 			// any more data.
 			sinkSpanCountAfterShutdown := nextSink.SpanCount()
-
-			// Now signal to generateTraces to exit the main generation loop, then send
-			// one more trace and stop.
-			doneSignalGrpc <- true
-
-			// Wait until all follow up traces are sent.
-			<-doneSignalGrpc
 
 			// The last, additional trace should not be received by sink, so the number of spans in
 			// the sink should not change.
@@ -408,15 +416,12 @@ func TestOTelArrowShutdown(t *testing.T) {
 					}
 				}
 			}
-			if cooperative {
-				assert.Equal(t, "EOF", shutdownCause)
-			} else {
-				assert.Equal(t, "context canceled", shutdownCause)
-			}
+			assert.Equal(t, "EOF", shutdownCause)
 		})
 	}
 }
 
+// generateTraces originates from the OTLP receiver "standard" shutdown test.
 func generateTraces(senderFn senderFunc, doneSignal chan bool) {
 	// Continuously generate spans until signaled to stop.
 loop:
@@ -570,7 +575,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 		headerBuf.Reset()
 		err := hpd.WriteField(hpack.HeaderField{
 			Name:  "seq",
-			Value: fmt.Sprint(i),
+			Value: strconv.Itoa(i),
 		})
 		require.NoError(t, err)
 		err = hpd.WriteField(hpack.HeaderField{
@@ -579,7 +584,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 		})
 		require.NoError(t, err)
 		expectMDs = append(expectMDs, metadata.MD{
-			"seq":  []string{fmt.Sprint(i)},
+			"seq":  []string{strconv.Itoa(i)},
 			"test": []string{"value"},
 		})
 
@@ -663,7 +668,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 		map[component.ID]component.Component{
 			authID: newTestAuthExtension(t, func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 				if ctx.Value(inStreamCtx{}) != nil {
-					return ctx, fmt.Errorf(errorString)
+					return ctx, errors.New(errorString)
 				}
 				return context.WithValue(ctx, inStreamCtx{}, t), nil
 			}),
@@ -705,7 +710,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 	assert.NoError(t, cc.Close())
 	require.NoError(t, ocr.Shutdown(context.Background()))
 
-	assert.Equal(t, 0, len(sink.AllTraces()))
+	assert.Empty(t, sink.AllTraces())
 }
 
 func TestConcurrentArrowReceiver(t *testing.T) {
@@ -741,7 +746,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 
 			client := arrowpb.NewArrowTracesServiceClient(cc)
 			stream, err := client.ArrowTraces(ctx, grpc.WaitForReady(true))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			producer := arrowRecord.NewProducer()
 
 			var headerBuf bytes.Buffer
@@ -755,23 +760,23 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 				headerBuf.Reset()
 				err := hpd.WriteField(hpack.HeaderField{
 					Name:  "seq",
-					Value: fmt.Sprint(i),
+					Value: strconv.Itoa(i),
 				})
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				batch, err := producer.BatchArrowRecordsFromTraces(td)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				batch.Headers = headerBuf.Bytes()
 
 				err = stream.Send(batch)
 
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				resp, err := stream.Recv()
-				require.NoError(t, err)
-				require.Equal(t, batch.BatchId, resp.BatchId)
-				require.Equal(t, arrowpb.StatusCode_OK, resp.StatusCode)
+				assert.NoError(t, err)
+				assert.Equal(t, batch.BatchId, resp.BatchId)
+				assert.Equal(t, arrowpb.StatusCode_OK, resp.StatusCode)
 			}
 		}()
 	}
@@ -784,7 +789,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 
 	// Two spans per stream/item.
 	require.Equal(t, itemsPerStream*numStreams*2, sink.SpanCount())
-	require.Equal(t, itemsPerStream*numStreams, len(sink.Metadatas()))
+	require.Len(t, sink.Metadatas(), itemsPerStream*numStreams)
 
 	for _, md := range sink.Metadatas() {
 		val, err := strconv.Atoi(md.Get("seq")[0])
@@ -794,5 +799,108 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 
 	for i := 0; i < itemsPerStream; i++ {
 		require.Equal(t, numStreams, counts[i])
+	}
+}
+
+// TestOTelArrowHalfOpenShutdown exercises a known condition in which Shutdown
+// can't succeed until the stream is canceled by an external signal.
+func TestOTelArrowHalfOpenShutdown(t *testing.T) {
+	ctx, testCancel := context.WithCancel(context.Background())
+	defer testCancel()
+
+	endpointGrpc := testutil.GetAvailableLocalAddress(t)
+
+	nextSink := new(consumertest.TracesSink)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
+		ServerParameters: &configgrpc.KeepaliveServerParameters{},
+	}
+	// No keepalive parameters are set
+	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
+	set := receivertest.NewNopSettings()
+
+	set.ID = testReceiverID
+	r, err := NewFactory().CreateTraces(
+		ctx,
+		set,
+		cfg,
+		nextSink)
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+
+	conn, err := grpc.NewClient(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, conn.Close())
+	}()
+
+	client := arrowpb.NewArrowTracesServiceClient(conn)
+	stream, err := client.ArrowTraces(ctx, grpc.WaitForReady(true))
+	require.NoError(t, err)
+	producer := arrowRecord.NewProducer()
+
+	start := time.Now()
+
+	// Send traces to the receiver until we signal.
+	go func() {
+		for time.Since(start) < 5*time.Second {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+			td := testdata.GenerateTraces(1)
+			batch, batchErr := producer.BatchArrowRecordsFromTraces(td)
+			assert.NoError(t, batchErr)
+
+			sendErr := stream.Send(batch)
+			select {
+			case <-ctx.Done():
+				if sendErr != nil {
+					assert.ErrorIs(t, sendErr, io.EOF)
+				}
+				return
+			default:
+				assert.NoError(t, sendErr)
+			}
+		}
+	}()
+
+	// Do not receive batch responses.
+
+	// Wait until the receiver outputs anything to the sink.
+	assert.Eventually(t, func() bool {
+		return nextSink.SpanCount() > 0
+	}, time.Second, 10*time.Millisecond)
+
+	// Let more load pile up.
+	time.Sleep(time.Second)
+
+	// The receiver has wedged itself in a call to Send() that is blocked
+	// and there is not a graceful way to recover.  Schedule an operation
+	// that will unblock it un-gracefully.
+	go func() {
+		// Without this cancel, the test hangs.
+		time.Sleep(3 * time.Second)
+		testCancel()
+	}()
+
+	// Now shutdown the receiver, while continuing sending traces to it.
+	err = r.Shutdown(context.Background())
+	assert.NoError(t, err)
+
+	// Ensure that calls to Recv() get canceled
+	for {
+		_, err := stream.Recv()
+		if err == nil {
+			continue
+		}
+		status, ok := status.FromError(err)
+		require.True(t, ok, "is a status error")
+		require.Equal(t, codes.Canceled, status.Code())
+		break
 	}
 }

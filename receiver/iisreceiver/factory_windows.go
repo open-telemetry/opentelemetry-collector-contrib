@@ -11,7 +11,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata"
 )
@@ -25,15 +26,15 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 	rcvr := newIisReceiver(params, cfg, nextConsumer)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), rcvr.scrape,
-		scraperhelper.WithStart(rcvr.start),
-		scraperhelper.WithShutdown(rcvr.shutdown))
+	s, err := scraper.NewMetrics(rcvr.scrape,
+		scraper.WithStart(rcvr.start),
+		scraper.WithShutdown(rcvr.shutdown))
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&cfg.ControllerConfig, params, nextConsumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraper(metadata.Type, s),
 	)
 }

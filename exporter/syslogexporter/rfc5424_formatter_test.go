@@ -6,7 +6,6 @@ package syslogexporter
 import (
 	"fmt"
 	"regexp"
-	"strings"
 	"testing"
 	"time"
 
@@ -80,11 +79,11 @@ func TestRFC5424Formatter(t *testing.T) {
 	assert.NoError(t, err)
 	matched, err := regexp.MatchString(expectedRegex, actual)
 	assert.NoError(t, err)
-	assert.True(t, matched, fmt.Sprintf("unexpected form of formatted message, formatted message: %s, regexp: %s", actual, expectedRegex))
-	assert.True(t, strings.Contains(actual, "Realm=\"SecureAuth0\""))
-	assert.True(t, strings.Contains(actual, "UserHostAddress=\"192.168.2.132\""))
-	assert.True(t, strings.Contains(actual, "UserID=\"Tester2\""))
-	assert.True(t, strings.Contains(actual, "PEN=\"27389\""))
+	assert.Truef(t, matched, "unexpected form of formatted message, formatted message: %s, regexp: %s", actual, expectedRegex)
+	assert.Contains(t, actual, "Realm=\"SecureAuth0\"")
+	assert.Contains(t, actual, "UserHostAddress=\"192.168.2.132\"")
+	assert.Contains(t, actual, "UserID=\"Tester2\"")
+	assert.Contains(t, actual, "PEN=\"27389\"")
 
 	// Test defaults
 	expected = "<165>1 2003-08-24T12:14:15.000003Z - - - - -\n"

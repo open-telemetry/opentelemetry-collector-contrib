@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
@@ -111,10 +111,35 @@ func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 				}
 				result = ottlcommon.GetValue(r.At(int(*k.Int)))
 			case []any:
-				if int(*k.Int) >= len(r) || int(*k.Int) < 0 {
-					return nil, fmt.Errorf("index %v out of bounds", *k.Int)
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
 				}
-				result = r[*k.Int]
+			case []string:
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
+				}
+			case []bool:
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
+				}
+			case []float64:
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
+				}
+			case []int64:
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
+				}
+			case []byte:
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
+				}
 			default:
 				return nil, fmt.Errorf("type, %T, does not support int indexing", result)
 			}
@@ -123,6 +148,13 @@ func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		}
 	}
 	return result, nil
+}
+
+func getElementByIndex[T any](r []T, idx *int64) (any, error) {
+	if int(*idx) >= len(r) || int(*idx) < 0 {
+		return nil, fmt.Errorf("index %v out of bounds", *idx)
+	}
+	return r[*idx], nil
 }
 
 type listGetter[K any] struct {
@@ -141,6 +173,31 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	}
 
 	return evaluated, nil
+}
+
+type mapGetter[K any] struct {
+	mapValues map[string]Getter[K]
+}
+
+func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
+	evaluated := map[string]any{}
+	for k, v := range m.mapValues {
+		val, err := v.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		switch t := val.(type) {
+		case pcommon.Map:
+			evaluated[k] = t.AsRaw()
+		default:
+			evaluated[k] = t
+		}
+	}
+	result := pcommon.NewMap()
+	if err := result.FromRaw(evaluated); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 // TypeError represents that a value was not an expected type.
@@ -403,22 +460,25 @@ func (g StandardStringLikeGetter[K]) Get(ctx context.Context, tCtx K) (*string, 
 	case []byte:
 		result = hex.EncodeToString(v)
 	case pcommon.Map:
-		result, err = jsoniter.MarshalToString(v.AsRaw())
+		resultBytes, err := json.Marshal(v.AsRaw())
 		if err != nil {
 			return nil, err
 		}
+		result = string(resultBytes)
 	case pcommon.Slice:
-		result, err = jsoniter.MarshalToString(v.AsRaw())
+		resultBytes, err := json.Marshal(v.AsRaw())
 		if err != nil {
 			return nil, err
 		}
+		result = string(resultBytes)
 	case pcommon.Value:
 		result = v.AsString()
 	default:
-		result, err = jsoniter.MarshalToString(v)
+		resultBytes, err := json.Marshal(v)
 		if err != nil {
 			return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
 		}
+		result = string(resultBytes)
 	}
 	return &result, nil
 }
@@ -715,7 +775,7 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 			return &literal[K]{value: *i}, nil
 		}
 		if eL.Path != nil {
-			np, err := newPath[K](eL.Path.Fields)
+			np, err := p.newPath(eL.Path)
 			if err != nil {
 				return nil, err
 			}
@@ -736,6 +796,18 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 			lg.slice[i] = getter
 		}
 		return &lg, nil
+	}
+
+	if val.Map != nil {
+		mg := mapGetter[K]{mapValues: map[string]Getter[K]{}}
+		for _, kvp := range val.Map.Values {
+			getter, err := p.newGetter(*kvp.Value)
+			if err != nil {
+				return nil, err
+			}
+			mg.mapValues[*kvp.Key] = getter
+		}
+		return &mg, nil
 	}
 
 	if val.MathExpression == nil {

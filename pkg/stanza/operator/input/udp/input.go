@@ -220,7 +220,10 @@ func (i *Input) handleMessage(ctx context.Context, remoteAddr net.Addr, dec *dec
 		}
 	}
 
-	i.Write(ctx, entry)
+	err = i.Write(ctx, entry)
+	if err != nil {
+		i.Logger().Error("Failed to write entry", zap.Error(err))
+	}
 }
 
 // readMessage will read log messages from the connection.

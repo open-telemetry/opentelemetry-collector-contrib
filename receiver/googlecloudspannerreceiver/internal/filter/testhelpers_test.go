@@ -35,7 +35,7 @@ const (
 )
 
 func assertGroupedByKey(t *testing.T, items []*Item, groupedItems map[time.Time][]*Item, key time.Time, offsetInItems int) {
-	assert.Equal(t, 3, len(groupedItems[key]))
+	assert.Len(t, groupedItems[key], 3)
 
 	for i := 0; i < 3; i++ {
 		assert.Equal(t, items[i+offsetInItems].SeriesKey, groupedItems[key][i].SeriesKey)

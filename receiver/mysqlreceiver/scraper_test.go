@@ -7,17 +7,17 @@ import (
 	"bufio"
 	"context"
 	"database/sql"
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -118,12 +118,41 @@ func TestScrape(t *testing.T) {
 			pmetrictest.IgnoreTimestamp()))
 
 		var partialError scrapererror.PartialScrapeError
-		require.True(t, errors.As(scrapeErr, &partialError), "returned error was not PartialScrapeError")
+		require.ErrorAs(t, scrapeErr, &partialError, "returned error was not PartialScrapeError")
 		// 5 comes from 4 failed "must-have" metrics that aren't present,
 		// and the other failure comes from a row that fails to parse as a number
-		require.Equal(t, partialError.Failed, 5, "Expected partial error count to be 5")
+		require.Equal(t, 5, partialError.Failed, "Expected partial error count to be 5")
 	})
+}
 
+func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
+	expectedFile := filepath.Join("testdata", "scraper", "expected_oob.yaml")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+
+	scraper := newMySQLScraper(receivertest.NewNopSettings(), cfg)
+	scraper.sqlclient = &mockClient{
+		globalStatsFile:             "global_stats_oob",
+		innodbStatsFile:             "innodb_stats_empty",
+		tableIoWaitsFile:            "table_io_waits_stats_empty",
+		indexIoWaitsFile:            "index_io_waits_stats_empty",
+		tableStatsFile:              "table_stats_empty",
+		statementEventsFile:         "statement_events_empty",
+		tableLockWaitEventStatsFile: "table_lock_wait_event_stats_empty",
+		replicaStatusFile:           "replica_stats_empty",
+	}
+
+	scraper.renameCommands = true
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 var _ client = (*mockClient)(nil)
@@ -140,7 +169,7 @@ type mockClient struct {
 }
 
 func readFile(fname string) (map[string]string, error) {
-	var stats = map[string]string{}
+	stats := map[string]string{}
 	file, err := os.Open(filepath.Join("testdata", "scraper", fname+".txt"))
 	if err != nil {
 		return nil, err
@@ -159,8 +188,9 @@ func (c *mockClient) Connect() error {
 	return nil
 }
 
-func (c *mockClient) getVersion() (string, error) {
-	return "8.0.27", nil
+func (c *mockClient) getVersion() (*version.Version, error) {
+	version, _ := version.NewVersion("8.0.27")
+	return version, nil
 }
 
 func (c *mockClient) getGlobalStats() (map[string]string, error) {
@@ -193,7 +223,6 @@ func (c *mockClient) getTableStats() ([]TableStats, error) {
 		stats = append(stats, s)
 	}
 	return stats, nil
-
 }
 
 func (c *mockClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {

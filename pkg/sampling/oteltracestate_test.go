@@ -4,7 +4,6 @@
 package sampling
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -88,7 +87,7 @@ func TestOpenTelemetryTraceStateRValuePValue(t *testing.T) {
 	require.Equal(t, "", otts.RValue())
 
 	// The error is oblivious to the old r-value, but that's ok.
-	require.Contains(t, err.Error(), "14 hex digits")
+	require.ErrorContains(t, err, "14 hex digits")
 
 	require.Equal(t, []KV{{"p", "2"}}, otts.ExtraValues())
 
@@ -233,7 +232,7 @@ func TestParseOpenTelemetryTraceState(t *testing.T) {
 			otts, err := NewOpenTelemetryTraceState(test.in)
 
 			if test.expectErr != nil {
-				require.True(t, errors.Is(err, test.expectErr), "%q: not expecting %v wanted %v", test.in, err, test.expectErr)
+				require.ErrorIs(t, err, test.expectErr, "%q: not expecting %v wanted %v", test.in, err, test.expectErr)
 			} else {
 				require.NoError(t, err)
 			}

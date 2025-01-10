@@ -89,7 +89,7 @@ k8sattributes/4:
   auth_type: "kubeConfig"
   extract:
     metadata:
-      # the following metadata field has been depracated
+      # the following metadata field has been deprecated
       - k8s.cluster.name
 
 k8sattributes/too_many_sources:
@@ -105,6 +105,17 @@ k8sattributes/too_many_sources:
           name: host.name
         - from: connection
           name: ip
+
+k8sattributes/deprecated-regex:
+  passthrough: false
+  auth_type: "kubeConfig"
+  extract:
+    labels:
+      - regex: field=(?P<value>.+)
+        from: pod
+    annotations:
+      - regex: field=(?P<value>.+)
+        from: pod
 
 k8sattributes/bad_keys_labels:
   extract:

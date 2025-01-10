@@ -1,27 +1,24 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: process.command
-          value:
-            stringValue: sleep 31536000
-        - key: process.command_line
-          value:
-            stringValue: sleep 31536000
-        - key: process.executable.name
-          value:
-            stringValue: sleep
-        - key: process.executable.path
-          value:
-            stringValue: sleep
-        - key: process.owner
-          value:
-            stringValue: atoulme
-        - key: process.parent_pid
-          value:
-            intValue: "4654"
         - key: process.pid
           value:
-            intValue: "4668"
+            intValue: "1"
+        - key: process.parent_pid
+          value:
+            intValue: "0"
+        - key: process.executable.name
+          value:
+            stringValue: ""
+        - key: process.executable.path
+          value:
+            stringValue: testdata/e2e/bin/bash
+        - key: process.command
+          value:
+            stringValue: /bin/bash
+        - key: process.command_line
+          value:
+            stringValue: /bin/bash
     schemaUrl: https://opentelemetry.io/schemas/1.9.0
     scopeMetrics:
       - metrics:
@@ -30,27 +27,27 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asDouble: 0.0030173333333333332
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: system
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asDouble: 0.0006898333333333332
+                - asDouble: 0
                   attributes:
                     - key: state
                       value:
                         stringValue: user
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "1693963661860000000"
+                  timeUnixNano: "1734347455586234971"
+                - asDouble: 0
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: system
+                  startTimeUnixNano: "1693963661860000000"
+                  timeUnixNano: "1734347455586234971"
                 - asDouble: 0
                   attributes:
                     - key: state
                       value:
                         stringValue: wait
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "1693963661860000000"
+                  timeUnixNano: "1734347455586234971"
               isMonotonic: true
             unit: s
           - description: The amount of physical memory in use.
@@ -58,19 +55,19 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "311296"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                - asInt: "2322432"
+                  startTimeUnixNano: "1693963661860000000"
+                  timeUnixNano: "1734347455586234971"
             unit: By
           - description: Virtual memory size.
             name: process.memory.virtual
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "418299674624"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                - asInt: "5054464"
+                  startTimeUnixNano: "1693963661860000000"
+                  timeUnixNano: "1734347455586234971"
             unit: By
         scope:
-          name: otelcol/hostmetricsreceiver/process
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper
           version: latest

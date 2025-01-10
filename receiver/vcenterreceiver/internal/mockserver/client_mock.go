@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	xj "github.com/basgys/goxml2json"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,21 +39,21 @@ func MockServer(t *testing.T, useTLS bool) *httptest.Server {
 	handlerFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// converting to JSON in order to iterate over map keys
 		jsonified, err := xj.Convert(r.Body)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		sr := &soapRequest{}
 		err = json.Unmarshal(jsonified.Bytes(), sr)
-		require.NoError(t, err)
-		require.Len(t, sr.Envelope.Body, 1)
+		assert.NoError(t, err)
+		assert.Len(t, sr.Envelope.Body, 1)
 
 		var requestType string
 		for k := range sr.Envelope.Body {
 			requestType = k
 		}
-		require.NotEmpty(t, requestType)
+		assert.NotEmpty(t, requestType)
 
 		body, err := routeBody(t, requestType, sr.Envelope.Body)
 		if errors.Is(err, errNotFound) {
-			w.WriteHeader(404)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -81,6 +82,10 @@ func routeBody(t *testing.T, requestType string, body map[string]any) ([]byte, e
 		return routePerformanceQuery(t, body)
 	case "CreateContainerView":
 		return loadResponse("create-container-view.xml")
+	case "DestroyView":
+		return loadResponse("destroy-view.xml")
+	case "VsanPerfQueryPerf":
+		return routeVsanPerfQueryPerf(t, body)
 	}
 
 	return []byte{}, errNotFound
@@ -91,7 +96,7 @@ func routeRetreivePropertiesEx(t *testing.T, body map[string]any) ([]byte, error
 	require.True(t, ok)
 	specSet := rp["specSet"].(map[string]any)
 
-	var objectSetArray = false
+	objectSetArray := false
 	objectSet, ok := specSet["objectSet"].(map[string]any)
 	if !ok {
 		objectSetArray = true
@@ -205,6 +210,26 @@ func routePerformanceQuery(t *testing.T, body map[string]any) ([]byte, error) {
 		return loadResponse("vm-performance-counters.xml")
 	}
 	return []byte{}, errNotFound
+}
+
+func routeVsanPerfQueryPerf(t *testing.T, body map[string]any) ([]byte, error) {
+	queryPerf := body["VsanPerfQueryPerf"].(map[string]any)
+	require.NotNil(t, queryPerf)
+	querySpecs, ok := queryPerf["querySpecs"].(map[string]any)
+	if !ok {
+		return []byte{}, errNotFound
+	}
+	entityRefID := querySpecs["entityRefId"].(string)
+	switch entityRefID {
+	case "cluster-domclient:*":
+		return loadResponse("cluster-vsan.xml")
+	case "host-domclient:*":
+		return loadResponse("host-vsan.xml")
+	case "virtual-machine:*":
+		return loadResponse("vm-vsan.xml")
+	default:
+		return []byte{}, errNotFound
+	}
 }
 
 func loadResponse(filename string) ([]byte, error) {

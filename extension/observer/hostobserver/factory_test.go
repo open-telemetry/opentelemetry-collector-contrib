@@ -17,7 +17,7 @@ func TestValidConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	hostObserver, err := createExtension(
 		context.Background(),
 		extensiontest.NewNopSettings(),

@@ -28,7 +28,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	queueSettings := exporterhelper.NewDefaultQueueSettings()
+	queueSettings := exporterhelper.NewDefaultQueueConfig()
 	// For backwards compatibilitiy, we default to 1 consumer
 	queueSettings.NumConsumers = 1
 
@@ -45,5 +45,4 @@ func createLogsExporter(_ context.Context, params exporter.Settings, config comp
 		return nil, errors.New("invalid configuration type; can't cast to awscloudwatchlogsexporter.Config")
 	}
 	return newCwLogsExporter(expConfig, params)
-
 }

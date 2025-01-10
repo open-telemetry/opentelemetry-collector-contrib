@@ -13,7 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -21,8 +21,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver/internal/metadata"
 )
 
-var goldenScrapePath = filepath.Join("testdata", "golden_scrape.yaml")
-var partialScrapePath = filepath.Join("testdata", "partial_scrape.yaml")
+var (
+	goldenScrapePath  = filepath.Join("testdata", "golden_scrape.yaml")
+	partialScrapePath = filepath.Join("testdata", "partial_scrape.yaml")
+)
 
 func TestScrape(t *testing.T) {
 	t.Run("Fully successful scrape", func(t *testing.T) {
@@ -45,7 +47,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, scrapeData, pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricDataPointsOrder()))
 
 		err = scraper.shutdown(context.Background())
 		require.NoError(t, err)
@@ -73,14 +75,14 @@ func TestScrape(t *testing.T) {
 		scrapeData, err := scraper.scrape(context.Background())
 		require.Error(t, err)
 		require.True(t, scrapererror.IsPartialScrapeError(err))
-		require.Contains(t, err.Error(), fullSyncObjectsRemainingErr.Error())
-		require.Contains(t, err.Error(), draInboundValuesDNErr.Error())
+		require.ErrorContains(t, err, fullSyncObjectsRemainingErr.Error())
+		require.ErrorContains(t, err, draInboundValuesDNErr.Error())
 
 		expectedMetrics, err := golden.ReadMetrics(partialScrapePath)
 		require.NoError(t, err)
 
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, scrapeData, pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricDataPointsOrder()))
 
 		err = scraper.shutdown(context.Background())
 		require.NoError(t, err)
@@ -106,9 +108,8 @@ func TestScrape(t *testing.T) {
 		}
 
 		err = scraper.shutdown(context.Background())
-		require.Error(t, err)
-		require.Contains(t, err.Error(), fullSyncObjectsRemainingErr.Error())
-		require.Contains(t, err.Error(), draInboundValuesDNErr.Error())
+		require.ErrorContains(t, err, fullSyncObjectsRemainingErr.Error())
+		require.ErrorContains(t, err, draInboundValuesDNErr.Error())
 	})
 
 	t.Run("Double shutdown does not error", func(t *testing.T) {

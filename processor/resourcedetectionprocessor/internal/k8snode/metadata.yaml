@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/k8snode
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active:
-
 resource_attributes:
   k8s.node.uid:
     description: The Kubernetes node UID

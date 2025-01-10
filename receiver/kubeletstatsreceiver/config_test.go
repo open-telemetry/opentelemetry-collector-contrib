@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
@@ -229,6 +229,62 @@ func TestLoadConfig(t *testing.T) {
 			},
 			expectedValidationErr: "for k8s.pod.cpu.node.utilization node setting is required. Check the readme on how to set the required setting",
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "container_memory_node_utilization"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: duration,
+					InitialDelay:       time.Second,
+				},
+				ClientConfig: kube.ClientConfig{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "tls",
+					},
+				},
+				MetricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.ContainerMetricGroup,
+					kubelet.PodMetricGroup,
+					kubelet.NodeMetricGroup,
+				},
+				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
+					Metrics: metadata.MetricsConfig{
+						K8sContainerMemoryNodeUtilization: metadata.MetricConfig{
+							Enabled: true,
+						},
+					},
+					ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+				},
+			},
+			expectedValidationErr: "for k8s.container.memory.node.utilization node setting is required. Check the readme on how to set the required setting",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "pod_memory_node_utilization"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: duration,
+					InitialDelay:       time.Second,
+				},
+				ClientConfig: kube.ClientConfig{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "tls",
+					},
+				},
+				MetricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.ContainerMetricGroup,
+					kubelet.PodMetricGroup,
+					kubelet.NodeMetricGroup,
+				},
+				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
+					Metrics: metadata.MetricsConfig{
+						K8sPodMemoryNodeUtilization: metadata.MetricConfig{
+							Enabled: true,
+						},
+					},
+					ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+				},
+			},
+			expectedValidationErr: "for k8s.pod.memory.node.utilization node setting is required. Check the readme on how to set the required setting",
+		},
 	}
 
 	for _, tt := range tests {
@@ -247,7 +303,6 @@ func TestLoadConfig(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expected, cfg)
 			}
-
 		})
 	}
 }

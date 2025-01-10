@@ -4,7 +4,7 @@
 package kafkametricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 
 import (
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -13,6 +13,9 @@ import (
 // Config represents user settings for kafkametrics receiver
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
+
+	// Alias name of the kafka cluster
+	ClusterAlias string `mapstructure:"cluster_alias"`
 
 	// The list of kafka brokers (default localhost:9092)
 	Brokers []string `mapstructure:"brokers"`

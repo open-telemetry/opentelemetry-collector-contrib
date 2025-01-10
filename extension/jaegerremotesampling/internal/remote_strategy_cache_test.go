@@ -12,8 +12,8 @@ import (
 
 	"github.com/fortytw2/leaktest"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
-	"github.com/tilinna/clock"
 )
 
 const cacheTestItemTTL = 50 * time.Millisecond
@@ -48,9 +48,11 @@ var testStrategyResponseB = &api_v2.SamplingStrategyResponse{
 
 func Test_serviceStrategyCache_ReadWriteSequence(t *testing.T) {
 	testTime := time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)
-	mock := clock.NewMock(testTime)
-	ctx, cfn := mock.DeadlineContext(context.Background(), testTime.Add(3*time.Minute))
-	defer cfn()
+	mock := clockwork.NewFakeClockAt(testTime)
+	_ = mock.After(3 * time.Minute)
+
+	ctx, cancel := context.WithCancel(clockwork.AddToContext(context.Background(), mock))
+	defer cancel()
 
 	cache := newServiceStrategyCache(cacheTestItemTTL).(*serviceStrategyTTLCache)
 	defer func() {
@@ -91,7 +93,7 @@ func Test_serviceStrategyCache_ReadWriteSequence(t *testing.T) {
 	}, cache.items["fooSvc"])
 
 	// advance time (still within TTL time range)
-	mock.Add(20 * time.Millisecond)
+	mock.Advance(20 * time.Millisecond)
 
 	// the written item is still available
 	result, ok = cache.get(ctx, "fooSvc")
@@ -102,7 +104,7 @@ func Test_serviceStrategyCache_ReadWriteSequence(t *testing.T) {
 	assert.Nil(t, result)
 
 	// advance time (just before end of TTL time range)
-	mock.Add(30 * time.Millisecond)
+	mock.Advance(30 * time.Millisecond)
 
 	// the written item is still available
 	result, ok = cache.get(ctx, "fooSvc")
@@ -113,7 +115,7 @@ func Test_serviceStrategyCache_ReadWriteSequence(t *testing.T) {
 	assert.Nil(t, result)
 
 	// advance time (across TTL range)
-	mock.Add(1 * time.Millisecond)
+	mock.Advance(1 * time.Millisecond)
 
 	// the (now stale) cached item is no longer available
 	result, ok = cache.get(ctx, "fooSvc")
@@ -131,9 +133,11 @@ func Test_serviceStrategyCache_ReadWriteSequence(t *testing.T) {
 
 func Test_serviceStrategyCache_WritesUpdateTimestamp(t *testing.T) {
 	startTime := time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)
-	mock := clock.NewMock(startTime)
-	ctx, cfn := mock.DeadlineContext(context.Background(), startTime.Add(3*time.Minute))
-	defer cfn()
+	mock := clockwork.NewFakeClockAt(startTime)
+	_ = mock.After(3 * time.Minute)
+
+	ctx, cancel := context.WithCancel(clockwork.AddToContext(context.Background(), mock))
+	defer cancel()
 
 	cache := newServiceStrategyCache(cacheTestItemTTL).(*serviceStrategyTTLCache)
 	defer func() {
@@ -149,12 +153,12 @@ func Test_serviceStrategyCache_WritesUpdateTimestamp(t *testing.T) {
 	assert.Nil(t, result)
 
 	// perform a write for barSvc at startTime + 10ms
-	firstWriteTime := mock.Add(10 * time.Millisecond)
+	mock.Advance(10 * time.Millisecond)
 	cache.put(ctx, "barSvc", testStrategyResponseA)
 
 	// whitebox assert for internal timestamp tracking
 	assert.Equal(t, serviceStrategyCacheEntry{
-		retrievedAt:      firstWriteTime,
+		retrievedAt:      mock.Now(),
 		strategyResponse: testStrategyResponseA,
 	}, cache.items["barSvc"])
 
@@ -167,7 +171,7 @@ func Test_serviceStrategyCache_WritesUpdateTimestamp(t *testing.T) {
 	assert.Equal(t, testStrategyResponseA, result)
 
 	// advance time (still within TTL time range)
-	mock.Add(10 * time.Millisecond)
+	mock.Advance(10 * time.Millisecond)
 
 	// the written item is still available
 	result, ok = cache.get(ctx, "fooSvc")
@@ -178,8 +182,9 @@ func Test_serviceStrategyCache_WritesUpdateTimestamp(t *testing.T) {
 	assert.Equal(t, testStrategyResponseA, result)
 
 	// perform a write for barSvc at startTime + 30ms (still within TTL, but we retain this more recent data)
-	secondWriteTime := mock.Add(10 * time.Millisecond)
+	mock.Advance(10 * time.Millisecond)
 	cache.put(ctx, "barSvc", testStrategyResponseB)
+	secondWriteTime := mock.Now()
 
 	// whitebox assert for internal timestamp tracking (post-write, still-fresh cache entry replaced with newer data)
 	assert.Equal(t, serviceStrategyCacheEntry{
@@ -196,7 +201,7 @@ func Test_serviceStrategyCache_WritesUpdateTimestamp(t *testing.T) {
 	assert.Equal(t, testStrategyResponseB, result)
 
 	// advance time (to end of what is now a new/full TTL for the new fresh item)
-	mock.Add(cacheTestItemTTL)
+	mock.Advance(cacheTestItemTTL)
 
 	result, ok = cache.get(ctx, "fooSvc")
 	assert.False(t, ok)
@@ -206,7 +211,7 @@ func Test_serviceStrategyCache_WritesUpdateTimestamp(t *testing.T) {
 	assert.Equal(t, testStrategyResponseB, result)
 
 	// advance time beyond the newer item's TTL
-	mock.Add(1)
+	mock.Advance(1)
 
 	// the (now stale) cached item is no longer available
 	result, ok = cache.get(ctx, "fooSvc")
@@ -242,11 +247,10 @@ func Test_serviceStrategyCache_Concurrency(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(numThreads)
 	for i := 0; i < numThreads; i++ {
-		ii := i
 		go func() {
 			for j := 0; j < numIterationsPerThread; j++ {
 				for _, svcName := range []string{
-					fmt.Sprintf("thread-specific-service-%d", ii),
+					fmt.Sprintf("thread-specific-service-%d", i),
 					"contended-for-service",
 				} {
 					if _, ok := cache.get(context.Background(), svcName); !ok {

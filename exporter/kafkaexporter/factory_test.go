@@ -5,44 +5,14 @@ package kafkaexporter
 
 import (
 	"context"
-	"errors"
 	"net"
 	"testing"
 
-	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
-
-// data is a simple means of allowing
-// interchangeability between the
-// different marshaller types
-type data interface {
-	ptrace.Traces | plog.Logs | pmetric.Metrics
-}
-
-type mockMarshaler[Data data] struct {
-	consume  func(d Data, topic string) ([]*sarama.ProducerMessage, error)
-	encoding string
-}
-
-func (mm *mockMarshaler[Data]) Encoding() string { return mm.encoding }
-
-func (mm *mockMarshaler[Data]) Marshal(d Data, topic string) ([]*sarama.ProducerMessage, error) {
-	if mm.consume != nil {
-		return mm.consume(d, topic)
-	}
-	return nil, errors.New("not implemented")
-}
-
-func newMockMarshaler[Data data](encoding string) *mockMarshaler[Data] {
-	return &mockMarshaler[Data]{encoding: encoding}
-}
 
 // applyConfigOption is used to modify values of the
 // the default exporter config to make it easier to
@@ -69,7 +39,7 @@ func TestCreateMetricExporter(t *testing.T) {
 		name       string
 		conf       *Config
 		marshalers []MetricsMarshaler
-		err        error
+		err        *net.DNSError
 	}{
 		{
 			name: "valid config (no validating broker)",
@@ -100,27 +70,14 @@ func TestCreateMetricExporter(t *testing.T) {
 			marshalers: nil,
 			err:        nil,
 		},
-		{
-			name: "custom_encoding",
-			conf: applyConfigOption(func(conf *Config) {
-				// Disabling broker check to ensure encoding work
-				conf.Metadata.Full = false
-				conf.Encoding = "custom"
-			}),
-			marshalers: []MetricsMarshaler{
-				newMockMarshaler[pmetric.Metrics]("custom"),
-			},
-			err: nil,
-		},
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			f := NewFactory(withMetricsMarshalers(tc.marshalers...))
-			exporter, err := f.CreateMetricsExporter(
+			f := NewFactory()
+			exporter, err := f.CreateMetrics(
 				context.Background(),
 				exportertest.NewNopSettings(),
 				tc.conf,
@@ -146,7 +103,7 @@ func TestCreateLogExporter(t *testing.T) {
 		name       string
 		conf       *Config
 		marshalers []LogsMarshaler
-		err        error
+		err        *net.DNSError
 	}{
 		{
 			name: "valid config (no validating broker)",
@@ -177,27 +134,14 @@ func TestCreateLogExporter(t *testing.T) {
 			marshalers: nil,
 			err:        nil,
 		},
-		{
-			name: "custom_encoding",
-			conf: applyConfigOption(func(conf *Config) {
-				// Disabling broker check to ensure encoding work
-				conf.Metadata.Full = false
-				conf.Encoding = "custom"
-			}),
-			marshalers: []LogsMarshaler{
-				newMockMarshaler[plog.Logs]("custom"),
-			},
-			err: nil,
-		},
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			f := NewFactory(withLogsMarshalers(tc.marshalers...))
-			exporter, err := f.CreateLogsExporter(
+			f := NewFactory()
+			exporter, err := f.CreateLogs(
 				context.Background(),
 				exportertest.NewNopSettings(),
 				tc.conf,
@@ -223,7 +167,7 @@ func TestCreateTraceExporter(t *testing.T) {
 		name       string
 		conf       *Config
 		marshalers []TracesMarshaler
-		err        error
+		err        *net.DNSError
 	}{
 		{
 			name: "valid config (no validating brokers)",
@@ -254,27 +198,14 @@ func TestCreateTraceExporter(t *testing.T) {
 			marshalers: nil,
 			err:        nil,
 		},
-		{
-			name: "custom_encoding",
-			conf: applyConfigOption(func(conf *Config) {
-				// Disabling broker check to ensure encoding work
-				conf.Metadata.Full = false
-				conf.Encoding = "custom"
-			}),
-			marshalers: []TracesMarshaler{
-				newMockMarshaler[ptrace.Traces]("custom"),
-			},
-			err: nil,
-		},
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			f := NewFactory(withTracesMarshalers(tc.marshalers...))
-			exporter, err := f.CreateTracesExporter(
+			f := NewFactory()
+			exporter, err := f.CreateTraces(
 				context.Background(),
 				exportertest.NewNopSettings(),
 				tc.conf,

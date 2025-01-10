@@ -26,6 +26,10 @@ type S3DownloaderConfig struct {
 	S3ForcePathStyle    bool   `mapstructure:"s3_force_path_style"`
 }
 
+type Notifications struct {
+	OpAMP *component.ID `mapstructure:"opampextension"`
+}
+
 type Encoding struct {
 	Extension component.ID `mapstructure:"extension"`
 	Suffix    string       `mapstructure:"suffix"`
@@ -33,10 +37,11 @@ type Encoding struct {
 
 // Config defines the configuration for the file receiver.
 type Config struct {
-	S3Downloader S3DownloaderConfig `mapstructure:"s3downloader"`
-	StartTime    string             `mapstructure:"starttime"`
-	EndTime      string             `mapstructure:"endtime"`
-	Encodings    []Encoding         `mapstructure:"encodings"`
+	S3Downloader  S3DownloaderConfig `mapstructure:"s3downloader"`
+	StartTime     string             `mapstructure:"starttime"`
+	EndTime       string             `mapstructure:"endtime"`
+	Encodings     []Encoding         `mapstructure:"encodings"`
+	Notifications Notifications      `mapstructure:"notifications"`
 }
 
 const (
@@ -80,7 +85,7 @@ func (c Config) Validate() error {
 }
 
 func parseTime(timeStr, configName string) (time.Time, error) {
-	layouts := []string{"2006-01-02 15:04", time.DateOnly}
+	layouts := []string{time.RFC3339, "2006-01-02 15:04", time.DateOnly}
 
 	for _, layout := range layouts {
 		if t, err := time.Parse(layout, timeStr); err == nil {

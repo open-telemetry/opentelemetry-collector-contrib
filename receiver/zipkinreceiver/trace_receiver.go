@@ -15,6 +15,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -32,8 +33,10 @@ const (
 	receiverTransportV2PROTO  = "http_v2_proto"
 )
 
-var errNextConsumerRespBody = []byte(`"Internal Server Error"`)
-var errBadRequestRespBody = []byte(`"Bad Request"`)
+var (
+	errNextConsumerRespBody = []byte(`"Internal Server Error"`)
+	errBadRequestRespBody   = []byte(`"Bad Request"`)
+)
 
 // zipkinReceiver type is used to handle spans received in the Zipkin format.
 type zipkinReceiver struct {
@@ -107,7 +110,7 @@ func (zr *zipkinReceiver) Start(ctx context.Context, host component.Host) error 
 		defer zr.shutdownWG.Done()
 
 		if errHTTP := zr.server.Serve(listener); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			zr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
@@ -253,7 +256,6 @@ func (zr *zipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write(errNextConsumerRespBody)
 	}
-
 }
 
 func transportType(r *http.Request, asZipkinv1 bool) string {

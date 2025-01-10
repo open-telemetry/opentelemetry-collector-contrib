@@ -4,12 +4,13 @@
 package expvarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver"
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
 )
@@ -31,7 +32,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("scheme must be 'http' or 'https', but was '%s'", u.Scheme)
 	}
 	if u.Host == "" {
-		return fmt.Errorf("host not found in HTTP endpoint")
+		return errors.New("host not found in HTTP endpoint")
 	}
 	return nil
 }

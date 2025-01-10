@@ -1,7 +1,5 @@
 server:
   endpoint: ws://{{.url}}/v1/opamp
-  tls:
-    insecure: true
 
 capabilities:
   reports_effective_config: true
@@ -11,7 +9,7 @@ capabilities:
   reports_remote_config: true
 
 storage:
-  directory: {{.storage_dir}}
+  directory: '{{.storage_dir}}'
 
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}

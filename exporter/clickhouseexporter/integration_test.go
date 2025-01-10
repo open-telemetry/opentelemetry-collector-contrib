@@ -95,7 +95,6 @@ func verifyExportLog(t *testing.T, logExporter *logsExporter) {
 
 	type log struct {
 		Timestamp          string            `db:"Timestamp"`
-		TimestampDate      string            `db:"TimestampDate"`
 		TimestampTime      string            `db:"TimestampTime"`
 		TraceID            string            `db:"TraceId"`
 		SpanID             string            `db:"SpanId"`
@@ -117,7 +116,6 @@ func verifyExportLog(t *testing.T, logExporter *logsExporter) {
 
 	expectLog := log{
 		Timestamp:         "2023-12-25T09:53:49Z",
-		TimestampDate:     "2023-12-25T00:00:00Z",
 		TimestampTime:     "2023-12-25T09:53:49Z",
 		TraceID:           "01020300000000000000000000000000",
 		SpanID:            "0102030000000000",
@@ -183,7 +181,7 @@ func verifyExporterTrace(t *testing.T, traceExporter *tracesExporter) {
 		ParentSpanID: "0102040000000000",
 		TraceState:   "trace state",
 		SpanName:     "call db",
-		SpanKind:     "SPAN_KIND_INTERNAL",
+		SpanKind:     "Internal",
 		ServiceName:  "test-service",
 		ResourceAttributes: map[string]string{
 			"service.name": "test-service",
@@ -194,7 +192,7 @@ func verifyExporterTrace(t *testing.T, traceExporter *tracesExporter) {
 			"service.name": "v",
 		},
 		Duration:      60000000000,
-		StatusCode:    "STATUS_CODE_ERROR",
+		StatusCode:    "Error",
 		StatusMessage: "error",
 		EventsTimestamp: []time.Time{
 			time.Unix(1703498029, 0).UTC(),

@@ -15,14 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
-
-const scopeName = "otelcol/countconnector"
 
 // count can count spans, span event, metrics, data points, or log records
 // and emit the counts onto a metrics pipeline.
@@ -76,7 +75,7 @@ func (c *count) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 
 		countResource.ScopeMetrics().EnsureCapacity(resourceSpan.ScopeSpans().Len())
 		countScope := countResource.ScopeMetrics().AppendEmpty()
-		countScope.Scope().SetName(scopeName)
+		countScope.Scope().SetName(metadata.ScopeName)
 
 		spansCounter.appendMetricsTo(countScope.Metrics())
 		spanEventsCounter.appendMetricsTo(countScope.Metrics())
@@ -151,7 +150,7 @@ func (c *count) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 
 		countResource.ScopeMetrics().EnsureCapacity(resourceMetric.ScopeMetrics().Len())
 		countScope := countResource.ScopeMetrics().AppendEmpty()
-		countScope.Scope().SetName(scopeName)
+		countScope.Scope().SetName(metadata.ScopeName)
 
 		metricsCounter.appendMetricsTo(countScope.Metrics())
 		dataPointsCounter.appendMetricsTo(countScope.Metrics())
@@ -190,7 +189,7 @@ func (c *count) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 		countResource.ScopeMetrics().EnsureCapacity(resourceLog.ScopeLogs().Len())
 		countScope := countResource.ScopeMetrics().AppendEmpty()
-		countScope.Scope().SetName(scopeName)
+		countScope.Scope().SetName(metadata.ScopeName)
 
 		counter.appendMetricsTo(countScope.Metrics())
 	}

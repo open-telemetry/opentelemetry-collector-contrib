@@ -12,7 +12,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/metadata"
 )
@@ -31,13 +32,13 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = 10 * time.Second
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+	clientConfig.Timeout = 10 * time.Second
 
 	return &Config{
-		ControllerConfig: cfg,
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: defaultEndpoint,
-			Timeout:  10 * time.Second,
-		},
+		ControllerConfig:     cfg,
+		ClientConfig:         clientConfig,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
@@ -53,13 +54,13 @@ func createMetricsReceiver(
 		return nil, errConfigNotflinkmetrics
 	}
 	ns := newflinkScraper(cfg, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ns.scrape, scraperhelper.WithStart(ns.start))
+	s, err := scraper.NewMetrics(ns.scrape, scraper.WithStart(ns.start))
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&cfg.ControllerConfig, params, consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraper(metadata.Type, s),
 	)
 }

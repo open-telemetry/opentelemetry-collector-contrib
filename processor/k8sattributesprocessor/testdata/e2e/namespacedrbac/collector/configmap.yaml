@@ -47,6 +47,7 @@ data:
           - k8s.node.name
           - container.id
           - container.image.name
+          - container.image.repo_digests
           - container.image.tag
         pod_association:
         - sources:

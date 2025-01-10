@@ -23,7 +23,7 @@ resourceMetrics:
             name: k8s.pod.phase
             unit: ""
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest
   - resource:
       attributes:
@@ -79,5 +79,5 @@ resourceMetrics:
             name: k8s.container.cpu_limit
             unit: "{cpu}"
         scope:
-          name: otelcol/k8sclusterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
           version: latest

@@ -1,13 +1,12 @@
 type: k8s_events
-scope_name: otelcol/k8seventsreceiver
 
 status:
   class: receiver
   stability:
     alpha: [logs]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   codeowners:
-    active: [dmitryax, TylerHelmuth]
+    active: [dmitryax, TylerHelmuth, ChrsMark]
 
 # TODO: Update the receiver to pass the tests
 tests:

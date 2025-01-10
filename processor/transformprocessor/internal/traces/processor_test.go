@@ -345,6 +345,12 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["entrypoint-root"], name) where IsRootSpan()`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("entrypoint-root", "operationB")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ConvertCase(name, "lower")) where name == "operationA"`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "operationa")
@@ -437,13 +443,13 @@ func Test_ProcessTraces_SpanEventContext(t *testing.T) {
 
 func Test_ProcessTraces_MixContext(t *testing.T) {
 	tests := []struct {
-		name             string
-		contextStatments []common.ContextStatements
-		want             func(td ptrace.Traces)
+		name              string
+		contextStatements []common.ContextStatements
+		want              func(td ptrace.Traces)
 	}{
 		{
 			name: "set resource and then use",
-			contextStatments: []common.ContextStatements{
+			contextStatements: []common.ContextStatements{
 				{
 					Context: "resource",
 					Statements: []string{
@@ -465,7 +471,7 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 		},
 		{
 			name: "set scope and then use",
-			contextStatments: []common.ContextStatements{
+			contextStatements: []common.ContextStatements{
 				{
 					Context: "scope",
 					Statements: []string{
@@ -487,7 +493,7 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 		},
 		{
 			name: "order matters",
-			contextStatments: []common.ContextStatements{
+			contextStatements: []common.ContextStatements{
 				{
 					Context: "span",
 					Statements: []string{
@@ -507,7 +513,7 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 		},
 		{
 			name: "reuse context",
-			contextStatments: []common.ContextStatements{
+			contextStatements: []common.ContextStatements{
 				{
 					Context: "scope",
 					Statements: []string{
@@ -538,7 +544,7 @@ func Test_ProcessTraces_MixContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor(tt.contextStatments, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessTraces(context.Background(), td)

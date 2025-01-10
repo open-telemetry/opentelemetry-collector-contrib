@@ -12,7 +12,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 )
@@ -35,12 +36,13 @@ func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = defaultCollectionInterval
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+	clientConfig.Timeout = defaultHTTPClientTimeout
+
 	return &Config{
-		ControllerConfig: cfg,
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: defaultEndpoint,
-			Timeout:  defaultHTTPClientTimeout,
-		},
+		ControllerConfig:     cfg,
+		ClientConfig:         clientConfig,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		Nodes:                []string{"_all"},
 		Indices:              []string{"_all"},
@@ -62,7 +64,7 @@ func createMetricsReceiver(
 	}
 	es := newElasticSearchScraper(params, c)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), es.scrape, scraperhelper.WithStart(es.start))
+	s, err := scraper.NewMetrics(es.scrape, scraper.WithStart(es.start))
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +73,6 @@ func createMetricsReceiver(
 		&c.ControllerConfig,
 		params,
 		consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraper(metadata.Type, s),
 	)
 }

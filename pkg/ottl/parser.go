@@ -7,27 +7,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
-)
-
-const (
-	logAttributeTraceID = "trace_id"
-	logAttributeSpanID  = "span_id"
 )
 
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
 // invocation and the boolean expression to match telemetry for invoking the function.
 type Statement[K any] struct {
-	function  Expr[K]
-	condition BoolExpr[K]
-	origText  string
+	function          Expr[K]
+	condition         BoolExpr[K]
+	origText          string
+	telemetrySettings component.TelemetrySettings
 }
 
 // Execute is a function that will execute the statement's function if the statement's condition is met.
@@ -36,6 +30,11 @@ type Statement[K any] struct {
 // In addition, the functions return value is always returned.
 func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	condition, err := s.condition.Eval(ctx, tCtx)
+	defer func() {
+		if s.telemetrySettings.Logger != nil {
+			s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", s.origText), zap.Bool("condition matched", condition), zap.Any("TransformContext", tCtx))
+		}
+	}()
 	if err != nil {
 		return nil, false, err
 	}
@@ -67,6 +66,7 @@ type Parser[K any] struct {
 	pathParser        PathExpressionParser[K]
 	enumParser        EnumParser
 	telemetrySettings component.TelemetrySettings
+	pathContextNames  map[string]struct{}
 }
 
 func NewParser[K any](
@@ -97,6 +97,22 @@ type Option[K any] func(*Parser[K])
 func WithEnumParser[K any](parser EnumParser) Option[K] {
 	return func(p *Parser[K]) {
 		p.enumParser = parser
+	}
+}
+
+// WithPathContextNames sets the context names to be considered when parsing a Path value.
+// When this option is empty or nil, all Path segments are considered fields, and the
+// Path.Context value is always empty.
+// When this option is configured, and the path's context is empty or is not present in
+// this context names list, it results into an error.
+func WithPathContextNames[K any](contexts []string) Option[K] {
+	return func(p *Parser[K]) {
+		pathContextNames := make(map[string]struct{}, len(contexts))
+		for _, ctx := range contexts {
+			pathContextNames[ctx] = struct{}{}
+		}
+
+		p.pathContextNames = pathContextNames
 	}
 }
 
@@ -140,9 +156,10 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 		return nil, err
 	}
 	return &Statement[K]{
-		function:  function,
-		condition: expression,
-		origText:  statement,
+		function:          function,
+		condition:         expression,
+		origText:          statement,
+		telemetrySettings: p.telemetrySettings,
 	}, nil
 }
 
@@ -187,12 +204,40 @@ func (p *Parser[K]) ParseCondition(condition string) (*Condition[K], error) {
 	}, nil
 }
 
-var parser = newParser[parsedStatement]()
-var conditionParser = newParser[booleanExpression]()
+// prependContextToStatementPaths changes the given OTTL statement adding the context name prefix
+// to all context-less paths. No modifications are performed for paths which [Path.Context]
+// value matches any WithPathContextNames value.
+// The context argument must be valid WithPathContextNames value, otherwise an error is returned.
+func (p *Parser[K]) prependContextToStatementPaths(context string, statement string) (string, error) {
+	if _, ok := p.pathContextNames[context]; !ok {
+		return statement, fmt.Errorf(`unknown context "%s" for parser %T, valid options are: %s`, context, p, p.buildPathContextNamesText(""))
+	}
+	parsed, err := parseStatement(statement)
+	if err != nil {
+		return "", err
+	}
+	paths := getParsedStatementPaths(parsed)
+	if len(paths) == 0 {
+		return statement, nil
+	}
+
+	var missingContextOffsets []int
+	for _, it := range paths {
+		if _, ok := p.pathContextNames[it.Context]; !ok {
+			missingContextOffsets = append(missingContextOffsets, it.Pos.Offset)
+		}
+	}
+
+	return insertContextIntoStatementOffsets(context, statement, missingContextOffsets)
+}
+
+var (
+	parser          = newParser[parsedStatement]()
+	conditionParser = newParser[booleanExpression]()
+)
 
 func parseStatement(raw string) (*parsedStatement, error) {
 	parsed, err := parser.ParseString("", raw)
-
 	if err != nil {
 		return nil, fmt.Errorf("statement has invalid syntax: %w", err)
 	}
@@ -206,7 +251,6 @@ func parseStatement(raw string) (*parsedStatement, error) {
 
 func parseCondition(raw string) (*booleanExpression, error) {
 	parsed, err := conditionParser.ParseString("", raw)
-
 	if err != nil {
 		return nil, fmt.Errorf("condition has invalid syntax: %w", err)
 	}
@@ -216,6 +260,30 @@ func parseCondition(raw string) (*booleanExpression, error) {
 	}
 
 	return parsed, nil
+}
+
+func insertContextIntoStatementOffsets(context string, statement string, offsets []int) (string, error) {
+	if len(offsets) == 0 {
+		return statement, nil
+	}
+
+	contextPrefix := context + "."
+	var sb strings.Builder
+	sb.Grow(len(statement) + (len(contextPrefix) * len(offsets)))
+
+	sort.Ints(offsets)
+	left := 0
+	for _, offset := range offsets {
+		if offset < 0 || offset > len(statement) {
+			return statement, fmt.Errorf(`failed to insert context "%s" into statement "%s": offset %d is out of range`, context, statement, offset)
+		}
+		sb.WriteString(statement[left:offset])
+		sb.WriteString(contextPrefix)
+		left = offset
+	}
+	sb.WriteString(statement[left:])
+
+	return sb.String(), nil
 }
 
 // newParser returns a parser that can be used to read a string into a parsedStatement. An error will be returned if the string
@@ -240,7 +308,6 @@ type StatementSequence[K any] struct {
 	statements        []*Statement[K]
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
-	tracer            trace.Tracer
 }
 
 type StatementSequenceOption[K any] func(*StatementSequence[K])
@@ -260,10 +327,6 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 		statements:        statements,
 		errorMode:         PropagateError,
 		telemetrySettings: telemetrySettings,
-		tracer:            &noop.Tracer{},
-	}
-	if telemetrySettings.TracerProvider != nil {
-		s.tracer = telemetrySettings.TracerProvider.Tracer("ottl")
 	}
 	for _, op := range options {
 		op(&s)
@@ -276,62 +339,19 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
 // When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
-	ctx, sequenceSpan := s.tracer.Start(ctx, "ottl/StatementSequenceExecution")
-	defer sequenceSpan.End()
-	s.telemetrySettings.Logger.Debug(
-		"initial TransformContext",
-		zap.Any("TransformContext", tCtx),
-		zap.String(logAttributeTraceID, sequenceSpan.SpanContext().TraceID().String()),
-		zap.String(logAttributeSpanID, sequenceSpan.SpanContext().SpanID().String()),
-	)
+	s.telemetrySettings.Logger.Debug("initial TransformContext before executing StatementSequence", zap.Any("TransformContext", tCtx))
 	for _, statement := range s.statements {
-		statementCtx, statementSpan := s.tracer.Start(ctx, "ottl/StatementExecution")
-		statementSpan.SetAttributes(
-			attribute.KeyValue{
-				Key:   "statement",
-				Value: attribute.StringValue(statement.origText),
-			},
-		)
-		_, condition, err := statement.Execute(statementCtx, tCtx)
-		statementSpan.SetAttributes(
-			attribute.KeyValue{
-				Key:   "condition.matched",
-				Value: attribute.BoolValue(condition),
-			},
-		)
-		s.telemetrySettings.Logger.Debug(
-			"TransformContext after statement execution",
-			zap.String("statement", statement.origText),
-			zap.Bool("condition matched", condition),
-			zap.Any("TransformContext", tCtx),
-			zap.String(logAttributeTraceID, statementSpan.SpanContext().TraceID().String()),
-			zap.String(logAttributeSpanID, statementSpan.SpanContext().SpanID().String()),
-		)
+		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
-			statementSpan.RecordError(err)
-			errMsg := fmt.Sprintf("failed to execute statement '%s': %v", statement.origText, err)
-			statementSpan.SetStatus(codes.Error, errMsg)
 			if s.errorMode == PropagateError {
-				sequenceSpan.SetStatus(codes.Error, errMsg)
-				statementSpan.End()
 				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
 				return err
 			}
 			if s.errorMode == IgnoreError {
-				s.telemetrySettings.Logger.Warn(
-					"failed to execute statement",
-					zap.Error(err),
-					zap.String("statement", statement.origText),
-					zap.String(logAttributeTraceID, statementSpan.SpanContext().TraceID().String()),
-					zap.String(logAttributeSpanID, statementSpan.SpanContext().SpanID().String()),
-				)
+				s.telemetrySettings.Logger.Warn("failed to execute statement", zap.Error(err), zap.String("statement", statement.origText))
 			}
-		} else {
-			statementSpan.SetStatus(codes.Ok, "statement executed successfully")
 		}
-		statementSpan.End()
 	}
-	sequenceSpan.SetStatus(codes.Ok, "statement sequence executed successfully")
 	return nil
 }
 

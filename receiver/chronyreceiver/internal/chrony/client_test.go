@@ -66,7 +66,6 @@ func TestNew(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.scenario, func(t *testing.T) {
 			t.Parallel()
 			cl, err := New(tc.addr, time.Second)
@@ -207,11 +206,10 @@ func TestGettingTrackingData(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.scenario, func(t *testing.T) {
 			t.Parallel()
 
-			client, err := New(fmt.Sprintf("unix://%s", t.TempDir()), tc.timeout, func(c *client) {
+			client, err := New("unix://"+t.TempDir(), tc.timeout, func(c *client) {
 				c.dialer = func(context.Context, string, string) (net.Conn, error) {
 					if tc.dialTime > tc.timeout {
 						return nil, os.ErrDeadlineExceeded

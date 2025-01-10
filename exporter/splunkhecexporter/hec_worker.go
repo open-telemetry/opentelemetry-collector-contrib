@@ -4,6 +4,7 @@
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
@@ -27,7 +28,11 @@ type defaultHecWorker struct {
 }
 
 func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[string]string) error {
-	req, err := http.NewRequestWithContext(ctx, "POST", hec.url.String(), buf)
+	// We copy the bytes to a new buffer to avoid corruption. This is a workaround to avoid hitting https://github.com/golang/go/issues/51907.
+	nb := make([]byte, buf.Len())
+	copy(nb, buf.Bytes())
+	bodyBuf := bytes.NewReader(nb)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, hec.url.String(), bodyBuf)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}

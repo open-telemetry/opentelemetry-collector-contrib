@@ -37,6 +37,23 @@ func TestLoadConfig(t *testing.T) {
 	hundred := 100
 	idleConnTimeout := 10 * time.Second
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = 10 * time.Second
+	clientConfig.Endpoint = "https://splunk:8088/services/collector"
+	clientConfig.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile:   "",
+			CertFile: "",
+			KeyFile:  "",
+		},
+		InsecureSkipVerify: false,
+	}
+	clientConfig.HTTP2PingTimeout = 10 * time.Second
+	clientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
+	clientConfig.MaxIdleConns = &hundred
+	clientConfig.MaxIdleConnsPerHost = &hundred
+	clientConfig.IdleConnTimeout = &idleConnTimeout
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -61,23 +78,7 @@ func TestLoadConfig(t *testing.T) {
 				MaxContentLengthLogs:    2 * 1024 * 1024,
 				MaxContentLengthMetrics: 2 * 1024 * 1024,
 				MaxContentLengthTraces:  2 * 1024 * 1024,
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:  10 * time.Second,
-					Endpoint: "https://splunk:8088/services/collector",
-					TLSSetting: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile:   "",
-							CertFile: "",
-							KeyFile:  "",
-						},
-						InsecureSkipVerify: false,
-					},
-					MaxIdleConns:         &hundred,
-					MaxIdleConnsPerHost:  &hundred,
-					IdleConnTimeout:      &idleConnTimeout,
-					HTTP2ReadIdleTimeout: 10 * time.Second,
-					HTTP2PingTimeout:     10 * time.Second,
-				},
+				ClientConfig:            clientConfig,
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
@@ -86,7 +87,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
@@ -100,6 +101,12 @@ func TestLoadConfig(t *testing.T) {
 					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
 						MaxSizeItems: 10,
 					},
+				},
+				OtelAttrsToHec: splunk.HecToOtelAttrs{
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Host:       "myhost",
 				},
 				HecToOtelAttrs: splunk.HecToOtelAttrs{
 					Source:     "mysource",

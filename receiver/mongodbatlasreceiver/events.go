@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	rcvr "go.opentelemetry.io/collector/receiver"
@@ -239,7 +239,6 @@ func (er *eventsReceiver) transformOrgEvents(now pcommon.Timestamp, events []*mo
 
 func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongodbatlas.Event, resourceLogs *plog.ResourceLogs) {
 	for _, event := range events {
-
 		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		bodyBytes, err := json.Marshal(event)
 		if err != nil {

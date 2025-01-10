@@ -49,7 +49,8 @@ func NewMetricsConverter(
 	includes []dpfilters.MetricFilter,
 	nonAlphanumericDimChars string,
 	dropHistogramBuckets bool,
-	processHistograms bool) (*MetricsConverter, error) {
+	processHistograms bool,
+) (*MetricsConverter, error) {
 	fs, err := dpfilters.NewFilterSet(excludes, includes)
 	if err != nil {
 		return nil, err
@@ -63,6 +64,12 @@ func NewMetricsConverter(
 		dropHistogramBuckets: dropHistogramBuckets,
 		processHistograms:    processHistograms,
 	}, nil
+}
+
+func (c *MetricsConverter) Start() {
+	if c.metricTranslator != nil {
+		c.metricTranslator.Start()
+	}
 }
 
 // MetricsToSignalFxV2 converts the passed in MetricsData to SFx datapoints
@@ -159,6 +166,12 @@ func (c *MetricsConverter) ConvertDimension(dim string) string {
 		res = c.metricTranslator.translateDimension(dim)
 	}
 	return filterKeyChars(res, c.datapointValidator.nonAlphanumericDimChars)
+}
+
+func (c *MetricsConverter) Shutdown() {
+	if c.metricTranslator != nil {
+		c.metricTranslator.Shutdown()
+	}
 }
 
 // Values obtained from https://dev.splunk.com/observability/docs/datamodel/ingest#Criteria-for-metric-and-dimension-names-and-values

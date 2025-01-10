@@ -8,14 +8,16 @@ import (
 	"sync"
 	"time"
 
-	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/metadata"
 )
 
 type memoryStorage struct {
 	sync.RWMutex
 	content                   map[pcommon.TraceID][]ptrace.ResourceSpans
+	telemetry                 *metadata.TelemetryBuilder
 	stopped                   bool
 	stoppedLock               sync.RWMutex
 	metricsCollectionInterval time.Duration
@@ -23,10 +25,11 @@ type memoryStorage struct {
 
 var _ storage = (*memoryStorage)(nil)
 
-func newMemoryStorage() *memoryStorage {
+func newMemoryStorage(telemetry *metadata.TelemetryBuilder) *memoryStorage {
 	return &memoryStorage{
 		content:                   make(map[pcommon.TraceID][]ptrace.ResourceSpans),
 		metricsCollectionInterval: time.Second,
+		telemetry:                 telemetry,
 	}
 }
 
@@ -46,6 +49,7 @@ func (st *memoryStorage) createOrAppend(traceID pcommon.TraceID, td ptrace.Trace
 
 	return nil
 }
+
 func (st *memoryStorage) get(traceID pcommon.TraceID) ([]ptrace.ResourceSpans, error) {
 	st.RLock()
 	rss, ok := st.content[traceID]
@@ -88,7 +92,7 @@ func (st *memoryStorage) shutdown() error {
 
 func (st *memoryStorage) periodicMetrics() {
 	numTraces := st.count()
-	stats.Record(context.Background(), mNumTracesInMemory.M(int64(numTraces)))
+	st.telemetry.ProcessorGroupbytraceNumTracesInMemory.Record(context.Background(), int64(numTraces))
 
 	st.stoppedLock.RLock()
 	stopped := st.stopped

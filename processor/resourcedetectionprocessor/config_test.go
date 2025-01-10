@@ -212,7 +212,7 @@ func TestGetConfigFromType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			output := tt.inputDetectorConfig.GetConfigFromType(tt.detectorType)
-			assert.Equal(t, output, tt.expectedConfig)
+			assert.Equal(t, tt.expectedConfig, output)
 		})
 	}
 }

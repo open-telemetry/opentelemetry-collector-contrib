@@ -27,12 +27,12 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
-			Endpoint:  defaultGRPCBindEndpoint,
+			Endpoint:  defaultGRPCEndpoint,
 			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	set := receivertest.NewNopSettings()
-	receiver, err := factory.CreateLogsReceiver(context.Background(), set, cfg, consumertest.NewNop())
+	receiver, err := factory.CreateLogs(context.Background(), set, cfg, consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, receiver, "receiver creation failed")
 }

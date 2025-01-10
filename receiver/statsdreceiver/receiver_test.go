@@ -6,6 +6,7 @@ package statsdreceiver
 import (
 	"context"
 	"errors"
+	"runtime"
 	"testing"
 	"time"
 
@@ -75,8 +76,8 @@ func TestStatsdReceiver_Flush(t *testing.T) {
 	rcv, err := newReceiver(receivertest.NewNopSettings(), *cfg, nextConsumer)
 	assert.NoError(t, err)
 	r := rcv.(*statsdReceiver)
-	var metrics = pmetric.NewMetrics()
-	assert.Nil(t, r.Flush(ctx, metrics, nextConsumer))
+	metrics := pmetric.NewMetrics()
+	assert.NoError(t, r.Flush(ctx, metrics, nextConsumer))
 	assert.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 	assert.NoError(t, r.Shutdown(ctx))
 }
@@ -106,10 +107,31 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 				return c
 			},
 		},
+		{
+			name: "UDS server with 4s interval",
+			addr: "/tmp/statsd_test.sock",
+			configFn: func() *Config {
+				return &Config{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "/tmp/statsd_test.sock",
+						Transport: confignet.TransportTypeUnixgram,
+					},
+					AggregationInterval: 4 * time.Second,
+				}
+			},
+			clientFn: func(t *testing.T, addr string) *client.StatsD {
+				c, err := client.NewStatsD("unixgram", addr)
+				require.NoError(t, err)
+				return c
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.configFn()
+			if runtime.GOOS == "windows" && (cfg.NetAddr.Transport == confignet.TransportTypeUnix || cfg.NetAddr.Transport == confignet.TransportTypeUnixgram || cfg.NetAddr.Transport == confignet.TransportTypeUnixPacket) {
+				t.Skip("skipping UDS test on windows")
+			}
 			cfg.NetAddr.Endpoint = tt.addr
 			sink := new(consumertest.MetricsSink)
 			rcv, err := newReceiver(receivertest.NewNopSettings(), *cfg, sink)

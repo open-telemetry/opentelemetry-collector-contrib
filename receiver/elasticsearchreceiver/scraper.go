@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
@@ -404,7 +404,6 @@ func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pco
 	}
 
 	indexStats, err := r.client.IndexStats(ctx, r.cfg.Indices)
-
 	if err != nil {
 		errs.AddPartial(63, err)
 		return
@@ -560,6 +559,10 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 	)
 	r.mb.RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(
 		now, stats.Total.MergeOperations.TotalDocs, metadata.AttributeIndexAggregationTypeTotal,
+	)
+
+	r.mb.RecordElasticsearchIndexOperationsMergeCurrentDataPoint(
+		now, stats.Total.MergeOperations.Current, metadata.AttributeIndexAggregationTypeTotal,
 	)
 
 	r.mb.RecordElasticsearchIndexShardsSizeDataPoint(

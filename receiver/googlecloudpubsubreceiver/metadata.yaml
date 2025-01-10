@@ -1,11 +1,10 @@
 type: googlecloudpubsub
-scope_name: otelcol/googlecloudpubsubreceiver
 
 status:
   class: receiver
   stability:
     beta: [traces, logs, metrics]
-  distributions: []
+  distributions: [contrib]
   codeowners:
     active: [alexvanboxel]
 

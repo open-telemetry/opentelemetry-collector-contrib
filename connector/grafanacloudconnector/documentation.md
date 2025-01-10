@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### grafanacloud_datapoint_count
+### otelcol_grafanacloud_datapoint_count
 
 Number of datapoints sent to Grafana Cloud
 
@@ -14,7 +14,7 @@ Number of datapoints sent to Grafana Cloud
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### grafanacloud_flush_count
+### otelcol_grafanacloud_flush_count
 
 Number of metrics flushes
 
@@ -22,7 +22,7 @@ Number of metrics flushes
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### grafanacloud_host_count
+### otelcol_grafanacloud_host_count
 
 Number of unique hosts
 

@@ -11,14 +11,14 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
 const (
 	// language=ClickHouse SQL
 	createExpHistogramTableSQL = `
-CREATE TABLE IF NOT EXISTS %s_exponential_histogram %s (
+CREATE TABLE IF NOT EXISTS %s %s (
     ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ResourceSchemaUrl String CODEC(ZSTD(1)),
     ScopeName String CODEC(ZSTD(1)),
@@ -65,7 +65,7 @@ ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
-	insertExpHistogramTableSQL = `INSERT INTO %s_exponential_histogram (
+	insertExpHistogramTableSQL = `INSERT INTO %s (
 	ResourceAttributes,
     ResourceSchemaUrl,
     ScopeName,
@@ -130,27 +130,24 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 		}()
 
 		for _, model := range e.expHistogramModels {
-			var serviceName string
-			if v, ok := model.metadata.ResAttr[conventions.AttributeServiceName]; ok {
-				serviceName = v
-			}
+			serviceName, _ := model.metadata.ResAttr.Get(conventions.AttributeServiceName)
 
 			for i := 0; i < model.expHistogram.DataPoints().Len(); i++ {
 				dp := model.expHistogram.DataPoints().At(i)
 				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
 				_, err = statement.ExecContext(ctx,
-					model.metadata.ResAttr,
+					AttributesToMap(model.metadata.ResAttr),
 					model.metadata.ResURL,
 					model.metadata.ScopeInstr.Name(),
 					model.metadata.ScopeInstr.Version(),
-					attributesToMap(model.metadata.ScopeInstr.Attributes()),
+					AttributesToMap(model.metadata.ScopeInstr.Attributes()),
 					model.metadata.ScopeInstr.DroppedAttributesCount(),
 					model.metadata.ScopeURL,
-					serviceName,
+					serviceName.AsString(),
 					model.metricName,
 					model.metricDescription,
 					model.metricUnit,
-					attributesToMap(dp.Attributes()),
+					AttributesToMap(dp.Attributes()),
 					dp.StartTimestamp().AsTime(),
 					dp.Timestamp().AsTime(),
 					dp.Count(),
@@ -190,7 +187,7 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func (e *expHistogramMetrics) Add(resAttr map[string]string, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
+func (e *expHistogramMetrics) Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
 	expHistogram, ok := metrics.(pmetric.ExponentialHistogram)
 	if !ok {
 		return fmt.Errorf("metrics param is not type of ExponentialHistogram")

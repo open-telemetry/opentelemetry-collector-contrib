@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
@@ -39,7 +40,6 @@ func TestLoadConfig(t *testing.T) {
 		id       component.ID
 		expected component.Config
 	}{
-
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: defaultCfg,
@@ -47,16 +47,15 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
-				Endpoint:         defaultEndpoint,
-				Database:         "otel",
-				Username:         "foo",
-				Password:         "bar",
-				TTL:              72 * time.Hour,
-				LogsTableName:    "otel_logs",
-				TracesTableName:  "otel_traces",
-				MetricsTableName: "otel_metrics",
-				CreateSchema:     true,
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				Endpoint:        defaultEndpoint,
+				Database:        "otel",
+				Username:        "foo",
+				Password:        "bar",
+				TTL:             72 * time.Hour,
+				LogsTableName:   "otel_logs",
+				TracesTableName: "otel_traces",
+				CreateSchema:    true,
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 5 * time.Second,
 				},
 				BackOffConfig: configretry.BackOffConfig{
@@ -67,10 +66,17 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
+				MetricsTables: MetricTablesConfig{
+					Gauge:                internal.MetricTypeConfig{Name: "otel_metrics_custom_gauge"},
+					Sum:                  internal.MetricTypeConfig{Name: "otel_metrics_custom_sum"},
+					Summary:              internal.MetricTypeConfig{Name: "otel_metrics_custom_summary"},
+					Histogram:            internal.MetricTypeConfig{Name: "otel_metrics_custom_histogram"},
+					ExponentialHistogram: internal.MetricTypeConfig{Name: "otel_metrics_custom_exp_histogram"},
+				},
 				ConnectionParams: map[string]string{},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
-					NumConsumers: 1,
+					NumConsumers: 10,
 					QueueSize:    100,
 					StorageID:    &storageID,
 				},
@@ -102,12 +108,130 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 	return cfg
 }
 
+func TestBuildMetricMetricTableNames(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  Config
+		want Config
+	}{
+		{
+			name: "nothing set",
+			cfg:  Config{},
+			want: Config{
+				MetricsTables: MetricTablesConfig{
+					Gauge:                internal.MetricTypeConfig{Name: "otel_metrics_gauge"},
+					Sum:                  internal.MetricTypeConfig{Name: "otel_metrics_sum"},
+					Summary:              internal.MetricTypeConfig{Name: "otel_metrics_summary"},
+					Histogram:            internal.MetricTypeConfig{Name: "otel_metrics_histogram"},
+					ExponentialHistogram: internal.MetricTypeConfig{Name: "otel_metrics_exponential_histogram"},
+				},
+			},
+		},
+		{
+			name: "only metric_table_name set",
+			cfg: Config{
+				MetricsTableName: "table_name",
+			},
+			want: Config{
+				MetricsTableName: "table_name",
+				MetricsTables: MetricTablesConfig{
+					Gauge:                internal.MetricTypeConfig{Name: "table_name_gauge"},
+					Sum:                  internal.MetricTypeConfig{Name: "table_name_sum"},
+					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
+					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
+					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exponential_histogram"},
+				},
+			},
+		},
+		{
+			name: "only metric_tables set fully",
+			cfg: Config{
+				MetricsTables: MetricTablesConfig{
+					Gauge:                internal.MetricTypeConfig{Name: "table_name_gauge"},
+					Sum:                  internal.MetricTypeConfig{Name: "table_name_sum"},
+					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
+					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
+					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exponential_histogram"},
+				},
+			},
+			want: Config{
+				MetricsTables: MetricTablesConfig{
+					Gauge:                internal.MetricTypeConfig{Name: "table_name_gauge"},
+					Sum:                  internal.MetricTypeConfig{Name: "table_name_sum"},
+					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
+					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
+					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exponential_histogram"},
+				},
+			},
+		},
+		{
+			name: "only metric_tables set partially",
+			cfg: Config{
+				MetricsTables: MetricTablesConfig{
+					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
+					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
+					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exp_histogram"},
+				},
+			},
+			want: Config{
+				MetricsTables: MetricTablesConfig{
+					Gauge:                internal.MetricTypeConfig{Name: "otel_metrics_gauge"},
+					Sum:                  internal.MetricTypeConfig{Name: "otel_metrics_sum"},
+					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
+					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
+					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exp_histogram"},
+				},
+			},
+		},
+		{
+			name: "only metric_tables set partially with metric_table_name",
+			cfg: Config{
+				MetricsTableName: "custom_name",
+				MetricsTables: MetricTablesConfig{
+					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
+					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
+					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exp_histogram"},
+				},
+			},
+			want: Config{
+				MetricsTableName: "custom_name",
+				MetricsTables: MetricTablesConfig{
+					Gauge:                internal.MetricTypeConfig{Name: "otel_metrics_gauge"},
+					Sum:                  internal.MetricTypeConfig{Name: "otel_metrics_sum"},
+					Summary:              internal.MetricTypeConfig{Name: "table_name_summary"},
+					Histogram:            internal.MetricTypeConfig{Name: "table_name_histogram"},
+					ExponentialHistogram: internal.MetricTypeConfig{Name: "table_name_exp_histogram"},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.cfg.buildMetricTableNames()
+			require.Equal(t, tt.want, tt.cfg)
+		})
+	}
+}
+
+func TestAreMetricTableNamesSet(t *testing.T) {
+	cfg := Config{}
+	require.False(t, cfg.areMetricTableNamesSet())
+
+	cfg = Config{
+		MetricsTables: MetricTablesConfig{
+			Gauge: internal.MetricTypeConfig{Name: "gauge"},
+		},
+	}
+	require.True(t, cfg.areMetricTableNamesSet())
+}
+
 func TestConfig_buildDSN(t *testing.T) {
 	type fields struct {
 		Endpoint         string
 		Username         string
 		Password         string
 		Database         string
+		Compress         string
 		ConnectionParams map[string]string
 		AsyncInsert      *bool
 	}
@@ -126,6 +250,9 @@ func TestConfig_buildDSN(t *testing.T) {
 		}
 		if fields.ConnectionParams != nil {
 			cfg.ConnectionParams = fields.ConnectionParams
+		}
+		if fields.Compress != "" {
+			cfg.Compress = fields.Compress
 		}
 		if fields.AsyncInsert != nil {
 			cfg.AsyncInsert = *fields.AsyncInsert
@@ -155,7 +282,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "clickhouse://127.0.0.1:9000/default?async_insert=true",
+			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&compress=lz4",
 		},
 		{
 			name: "Support tcp scheme",
@@ -165,7 +292,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
 		},
 		{
 			name: "prefers database name from config over from DSN",
@@ -178,7 +305,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "clickhouse://foo:bar@127.0.0.1:9000/otel?async_insert=true",
+			want: "clickhouse://foo:bar@127.0.0.1:9000/otel?async_insert=true&compress=lz4",
 		},
 		{
 			name: "use database name from DSN if not set in config",
@@ -190,7 +317,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "clickhouse://foo:bar@127.0.0.1:9000/otel?async_insert=true",
+			want: "clickhouse://foo:bar@127.0.0.1:9000/otel?async_insert=true&compress=lz4",
 		},
 		{
 			name: "invalid config",
@@ -210,29 +337,29 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: true,
 			},
-			want: "https://127.0.0.1:9000/default?async_insert=true&secure=true",
+			want: "https://127.0.0.1:9000/default?async_insert=true&compress=lz4&secure=true",
 		},
 		{
 			name: "Preserve query parameters",
 			fields: fields{
-				Endpoint: "clickhouse://127.0.0.1:9000?secure=true&foo=bar",
+				Endpoint: "clickhouse://127.0.0.1:9000?secure=true&compress=lz4&foo=bar",
 			},
 			wantChOptions: ChOptions{
 				Secure: true,
 			},
-			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&foo=bar&secure=true",
+			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&compress=lz4&foo=bar&secure=true",
 		},
 		{
 			name: "Parse clickhouse settings",
 			fields: fields{
-				Endpoint: "https://127.0.0.1:9000?secure=true&dial_timeout=30s&compress=lz4",
+				Endpoint: "https://127.0.0.1:9000?secure=true&dial_timeout=30s&compress=br",
 			},
 			wantChOptions: ChOptions{
 				Secure:      true,
 				DialTimeout: 30 * time.Second,
-				Compress:    clickhouse.CompressionLZ4,
+				Compress:    clickhouse.CompressionBrotli,
 			},
-			want: "https://127.0.0.1:9000/default?async_insert=true&compress=lz4&dial_timeout=30s&secure=true",
+			want: "https://127.0.0.1:9000/default?async_insert=true&compress=br&dial_timeout=30s&secure=true",
 		},
 		{
 			name: "Should respect connection parameters",
@@ -243,7 +370,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: true,
 			},
-			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&foo=bar&secure=true",
+			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&compress=lz4&foo=bar&secure=true",
 		},
 		{
 			name: "support replace database in DSN with config to override database",
@@ -251,21 +378,21 @@ func TestConfig_buildDSN(t *testing.T) {
 				Endpoint: "tcp://127.0.0.1:9000/otel",
 				Database: "override",
 			},
-			want: "tcp://127.0.0.1:9000/override?async_insert=true",
+			want: "tcp://127.0.0.1:9000/override?async_insert=true&compress=lz4",
 		},
 		{
 			name: "when config option is missing, preserve async_insert false in DSN",
 			fields: fields{
 				Endpoint: "tcp://127.0.0.1:9000?async_insert=false",
 			},
-			want: "tcp://127.0.0.1:9000/default?async_insert=false",
+			want: "tcp://127.0.0.1:9000/default?async_insert=false&compress=lz4",
 		},
 		{
 			name: "when config option is missing, preserve async_insert true in DSN",
 			fields: fields{
 				Endpoint: "tcp://127.0.0.1:9000?async_insert=true",
 			},
-			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
 		},
 		{
 			name: "ignore config option when async_insert is present in connection params as false",
@@ -275,7 +402,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert:      &configTrue,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=false",
+			want: "tcp://127.0.0.1:9000/default?async_insert=false&compress=lz4",
 		},
 		{
 			name: "ignore config option when async_insert is present in connection params as true",
@@ -285,7 +412,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert:      &configFalse,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
 		},
 		{
 			name: "ignore config option when async_insert is present in DSN as false",
@@ -294,7 +421,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert: &configTrue,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=false",
+			want: "tcp://127.0.0.1:9000/default?async_insert=false&compress=lz4",
 		},
 		{
 			name: "use async_insert true config option when it is not present in DSN",
@@ -303,7 +430,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert: &configTrue,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
 		},
 		{
 			name: "use async_insert false config option when it is not present in DSN",
@@ -312,7 +439,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert: &configFalse,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=false",
+			want: "tcp://127.0.0.1:9000/default?async_insert=false&compress=lz4",
 		},
 		{
 			name: "set async_insert to true when not present in config or DSN",
@@ -320,7 +447,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				Endpoint: "tcp://127.0.0.1:9000",
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
 		},
 		{
 			name: "connection_params takes priority over endpoint and async_insert option.",
@@ -330,7 +457,33 @@ func TestConfig_buildDSN(t *testing.T) {
 				AsyncInsert:      &configFalse,
 			},
 
-			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
+		},
+		{
+			name: "use compress br config option when it is not present in DSN",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000",
+				Compress: "br",
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=br",
+		},
+		{
+			name: "set compress to lz4 when not present in config or DSN",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000",
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=lz4",
+		},
+		{
+			name: "connection_params takes priority over endpoint and compress option.",
+			fields: fields{
+				Endpoint:         "tcp://127.0.0.1:9000?compress=none",
+				ConnectionParams: map[string]string{"compress": "br"},
+				Compress:         "lz4",
+			},
+			want: "tcp://127.0.0.1:9000/default?async_insert=true&compress=br",
 		},
 	}
 	for _, tt := range tests {
@@ -352,7 +505,6 @@ func TestConfig_buildDSN(t *testing.T) {
 				}
 				assert.Equalf(t, tt.want, dsn, "buildDSN()")
 			}
-
 		})
 	}
 }

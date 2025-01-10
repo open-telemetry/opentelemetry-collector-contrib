@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
 )
 
 func TestDownscale(t *testing.T) {
@@ -45,6 +45,18 @@ func TestDownscale(t *testing.T) {
 	}, {
 		{scale: 2, bkt: "1 1 1 1 1 1 1 1 1 1 1 1"},
 		{scale: 0, bkt: "   4       4       4   "},
+	}, {
+		{scale: 1, bkt: "ø 1 1 0"},
+		{scale: 0, bkt: " 1   1 "},
+	}, {
+		{scale: 1, bkt: "ø 1 1 "},
+		{scale: 0, bkt: " 1   1"},
+	}, {
+		{scale: 1, bkt: " - 1 1 "},
+		{scale: 0, bkt: "- 1   1"},
+	}, {
+		{scale: 5, bkt: "-  4 0 3 0 3 0 0 8   "},
+		{scale: 4, bkt: "- 4   3   3   0   8  "},
 	}}
 
 	type B = expo.Buckets
@@ -58,6 +70,10 @@ func TestDownscale(t *testing.T) {
 						bkt.SetOffset(bkt.Offset() + 1)
 						continue
 					}
+					if elem == "-" {
+						bkt.SetOffset(bkt.Offset() - 1)
+						continue
+					}
 					n, err := strconv.Atoi(elem)
 					if err != nil {
 						panic(err)
@@ -67,7 +83,7 @@ func TestDownscale(t *testing.T) {
 				buckets[i] = Repr[B]{scale: r.scale, bkt: bkt}
 			}
 
-			is := expotest.Is(t)
+			is := datatest.New(t)
 			for i := 0; i < len(buckets)-1; i++ {
 				expo.Downscale(buckets[i].bkt, buckets[i].scale, buckets[i+1].scale)
 

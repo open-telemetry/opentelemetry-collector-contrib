@@ -16,7 +16,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -36,7 +38,12 @@ func itemRequestsSortFunc(a, b itemRequest) int {
 	return comp
 }
 
-func assertItemsEqual(t *testing.T, expected, actual []itemRequest, assertOrder bool) {
+func assertRecordedItems(t *testing.T, expected []itemRequest, recorder *bulkRecorder, assertOrder bool) { // nolint:unparam
+	recorder.WaitItems(len(expected))
+	assertItemRequests(t, expected, recorder.Items(), assertOrder)
+}
+
+func assertItemRequests(t *testing.T, expected, actual []itemRequest, assertOrder bool) { // nolint:unparam
 	expectedItems := expected
 	actualItems := actual
 	if !assertOrder {
@@ -48,7 +55,13 @@ func assertItemsEqual(t *testing.T, expected, actual []itemRequest, assertOrder 
 		copy(actualItems, actual)
 		slices.SortFunc(actualItems, itemRequestsSortFunc)
 	}
-	assert.Equal(t, expectedItems, actualItems)
+
+	require.Equal(t, len(expectedItems), len(actualItems), "want %d items, got %d", len(expectedItems), len(actualItems))
+	for i, want := range expectedItems {
+		got := actualItems[i]
+		assert.JSONEq(t, string(want.Action), string(got.Action), "item %d action", i)
+		assert.JSONEq(t, string(want.Document), string(got.Document), "item %d document", i)
+	}
 }
 
 type itemResponse struct {
@@ -154,7 +167,11 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 		tsStart := time.Now()
 		var items []itemRequest
 
-		dec := json.NewDecoder(req.Body)
+		body := req.Body
+		if req.Header.Get("Content-Encoding") == "gzip" {
+			body, _ = gzip.NewReader(req.Body)
+		}
+		dec := json.NewDecoder(body)
 		for dec.More() {
 			var action, doc json.RawMessage
 			if err := dec.Decode(&action); err != nil {
@@ -247,48 +264,58 @@ func itemsHasError(resp []itemResponse) bool {
 	return false
 }
 
-func newLogsWithAttributeAndResourceMap(attrMp map[string]string, resMp map[string]string) plog.Logs {
+func newLogsWithAttributes(recordAttrs, scopeAttrs, resourceAttrs map[string]any) plog.Logs {
 	logs := plog.NewLogs()
-	resourceSpans := logs.ResourceLogs()
-	rs := resourceSpans.AppendEmpty()
-
-	scopeAttr := rs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes()
-	fillResourceAttributeMap(scopeAttr, attrMp)
-
-	resAttr := rs.Resource().Attributes()
-	fillResourceAttributeMap(resAttr, resMp)
+	resourceLog := logs.ResourceLogs().AppendEmpty()
+	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
+	fillAttributeMap(resourceLog.Resource().Attributes(), resourceAttrs)
+	fillAttributeMap(scopeLog.Scope().Attributes(), scopeAttrs)
+	fillAttributeMap(scopeLog.LogRecords().AppendEmpty().Attributes(), recordAttrs)
 
 	return logs
 }
 
-func newMetricsWithAttributeAndResourceMap(attrMp map[string]string, resMp map[string]string) pmetric.Metrics {
+func newMetricsWithAttributes(recordAttrs, scopeAttrs, resourceAttrs map[string]any) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
-	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+	resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+	scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
 
-	fillResourceAttributeMap(resourceMetrics.Resource().Attributes(), resMp)
-	fillResourceAttributeMap(resourceMetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty().Attributes(), attrMp)
+	fillAttributeMap(resourceMetric.Resource().Attributes(), resourceAttrs)
+	fillAttributeMap(scopeMetric.Scope().Attributes(), scopeAttrs)
+	dp := scopeMetric.Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+	dp.SetIntValue(0)
+	fillAttributeMap(dp.Attributes(), recordAttrs)
 
 	return metrics
 }
 
-func newTracesWithAttributeAndResourceMap(attrMp map[string]string, resMp map[string]string) ptrace.Traces {
+func newTracesWithAttributes(recordAttrs, scopeAttrs, resourceAttrs map[string]any) ptrace.Traces {
 	traces := ptrace.NewTraces()
-	resourceSpans := traces.ResourceSpans()
-	rs := resourceSpans.AppendEmpty()
+	resourceSpan := traces.ResourceSpans().AppendEmpty()
+	scopeSpan := resourceSpan.ScopeSpans().AppendEmpty()
 
-	scopeAttr := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes()
-	fillResourceAttributeMap(scopeAttr, attrMp)
-
-	resAttr := rs.Resource().Attributes()
-	fillResourceAttributeMap(resAttr, resMp)
+	fillAttributeMap(resourceSpan.Resource().Attributes(), resourceAttrs)
+	fillAttributeMap(scopeSpan.Scope().Attributes(), scopeAttrs)
+	fillAttributeMap(scopeSpan.Spans().AppendEmpty().Attributes(), recordAttrs)
 
 	return traces
 }
 
-func fillResourceAttributeMap(attrs pcommon.Map, mp map[string]string) {
-	attrs.EnsureCapacity(len(mp))
-	for k, v := range mp {
-		attrs.PutStr(k, v)
+func fillAttributeMap(attrs pcommon.Map, m map[string]any) {
+	attrs.EnsureCapacity(len(m))
+	for k, v := range m {
+		switch vv := v.(type) {
+		case bool:
+			attrs.PutBool(k, vv)
+		case string:
+			attrs.PutStr(k, vv)
+		case []string:
+			slice := attrs.PutEmptySlice(k)
+			slice.EnsureCapacity(len(vv))
+			for _, s := range vv {
+				slice.AppendEmpty().SetStr(s)
+			}
+		}
 	}
 }
 
@@ -298,21 +325,21 @@ func TestGetSuffixTime(t *testing.T) {
 	testTime := time.Date(2023, 12, 2, 10, 10, 10, 1, time.UTC)
 	index, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
 	assert.NoError(t, err)
-	assert.Equal(t, index, "logs-generic-default-2023.12.02")
+	assert.Equal(t, "logs-generic-default-2023.12.02", index)
 
 	defaultCfg.LogsIndex = "logstash"
 	defaultCfg.LogstashFormat.PrefixSeparator = "."
 	otelLogsIndex, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
 	assert.NoError(t, err)
-	assert.Equal(t, otelLogsIndex, "logstash.2023.12.02")
+	assert.Equal(t, "logstash.2023.12.02", otelLogsIndex)
 
 	defaultCfg.LogstashFormat.DateFormat = "%Y-%m-%d"
 	newOtelLogsIndex, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
 	assert.NoError(t, err)
-	assert.Equal(t, newOtelLogsIndex, "logstash.2023-12-02")
+	assert.Equal(t, "logstash.2023-12-02", newOtelLogsIndex)
 
 	defaultCfg.LogstashFormat.DateFormat = "%d/%m/%Y"
 	newOtelLogsIndexWithSpecDataFormat, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
 	assert.NoError(t, err)
-	assert.Equal(t, newOtelLogsIndexWithSpecDataFormat, "logstash.02/12/2023")
+	assert.Equal(t, "logstash.02/12/2023", newOtelLogsIndexWithSpecDataFormat)
 }

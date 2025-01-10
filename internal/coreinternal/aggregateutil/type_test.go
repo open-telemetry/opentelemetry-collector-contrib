@@ -58,9 +58,13 @@ func Test_AggregationType_Convert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ConvertToAggregationType(tt.in)
+			got, err := ConvertToAggregationFunction(tt.in)
 			require.Equal(t, tt.want, got)
 			require.Equal(t, tt.wantErr, err)
 		})
 	}
+}
+
+func Test_GetSupportedAggregationFunctionsList(t *testing.T) {
+	require.Equal(t, "sum, mean, min, max, median, count", GetSupportedAggregationFunctionsList())
 }

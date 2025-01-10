@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -21,8 +22,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension"
 )
 
@@ -55,18 +58,24 @@ type sumologicexporter struct {
 	stickySessionCookieLock sync.RWMutex
 	stickySessionCookie     string
 
-	id     component.ID
-	sender *sender
+	id               component.ID
+	sender           *sender
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-func initExporter(cfg *Config, createSettings exporter.Settings) *sumologicexporter {
+func initExporter(cfg *Config, set exporter.Settings) (*sumologicexporter, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 	se := &sumologicexporter{
 		config: cfg,
-		logger: createSettings.Logger,
+		logger: set.Logger,
 		// NOTE: client is now set in start()
 		prometheusFormatter:     newPrometheusFormatter(),
-		id:                      createSettings.ID,
+		id:                      set.ID,
 		foundSumologicExtension: false,
+		telemetryBuilder:        telemetryBuilder,
 	}
 
 	se.logger.Info(
@@ -75,7 +84,7 @@ func initExporter(cfg *Config, createSettings exporter.Settings) *sumologicexpor
 		zap.String("metric_format", string(cfg.MetricFormat)),
 	)
 
-	return se
+	return se, nil
 }
 
 func newLogsExporter(
@@ -83,16 +92,19 @@ func newLogsExporter(
 	params exporter.Settings,
 	cfg *Config,
 ) (exporter.Logs, error) {
-	se := initExporter(cfg, params)
+	se, err := initExporter(cfg, params)
+	if err != nil {
+		return nil, err
+	}
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		params,
 		cfg,
 		se.pushLogsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(se.start),
@@ -105,16 +117,19 @@ func newMetricsExporter(
 	params exporter.Settings,
 	cfg *Config,
 ) (exporter.Metrics, error) {
-	se := initExporter(cfg, params)
+	se, err := initExporter(cfg, params)
+	if err != nil {
+		return nil, err
+	}
 
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		params,
 		cfg,
 		se.pushMetricsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(se.start),
@@ -127,16 +142,19 @@ func newTracesExporter(
 	params exporter.Settings,
 	cfg *Config,
 ) (exporter.Traces, error) {
-	se := initExporter(cfg, params)
+	se, err := initExporter(cfg, params)
+	if err != nil {
+		return nil, err
+	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		params,
 		cfg,
 		se.pushTracesData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(se.start),
@@ -201,15 +219,15 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 		se.setDataURLs(logsURL.String(), metricsURL.String(), tracesURL.String())
 
 	case httpSettings.Endpoint != "":
-		logsURL, err := getSignalURL(se.config, httpSettings.Endpoint, component.DataTypeLogs)
+		logsURL, err := getSignalURL(se.config, httpSettings.Endpoint, pipeline.SignalLogs)
 		if err != nil {
 			return err
 		}
-		metricsURL, err := getSignalURL(se.config, httpSettings.Endpoint, component.DataTypeMetrics)
+		metricsURL, err := getSignalURL(se.config, httpSettings.Endpoint, pipeline.SignalMetrics)
 		if err != nil {
 			return err
 		}
-		tracesURL, err := getSignalURL(se.config, httpSettings.Endpoint, component.DataTypeTraces)
+		tracesURL, err := getSignalURL(se.config, httpSettings.Endpoint, pipeline.SignalTraces)
 		if err != nil {
 			return err
 		}
@@ -224,7 +242,7 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 		return fmt.Errorf("no auth extension and no endpoint specified")
 	}
 
-	client, err := httpSettings.ToClient(ctx, se.host, component.TelemetrySettings{})
+	client, err := httpSettings.ToClient(ctx, se.host, componenttest.NewNopTelemetrySettings())
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -243,6 +261,7 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 		se.StickySessionCookie,
 		se.SetStickySessionCookie,
 		se.id,
+		se.telemetryBuilder,
 	)
 
 	return nil
@@ -410,22 +429,22 @@ func (se *sumologicexporter) SetStickySessionCookie(stickySessionCookie string) 
 
 // get the destination url for a given signal type
 // this mostly adds signal-specific suffixes if the format is otlp
-func getSignalURL(oCfg *Config, endpointURL string, signal component.DataType) (string, error) {
+func getSignalURL(oCfg *Config, endpointURL string, signal pipeline.Signal) (string, error) {
 	url, err := url.Parse(endpointURL)
 	if err != nil {
 		return "", err
 	}
 
 	switch signal {
-	case component.DataTypeLogs:
+	case pipeline.SignalLogs:
 		if oCfg.LogFormat != "otlp" {
 			return url.String(), nil
 		}
-	case component.DataTypeMetrics:
+	case pipeline.SignalMetrics:
 		if oCfg.MetricFormat != "otlp" {
 			return url.String(), nil
 		}
-	case component.DataTypeTraces:
+	case pipeline.SignalTraces:
 	default:
 		return "", fmt.Errorf("unknown signal type: %s", signal)
 	}

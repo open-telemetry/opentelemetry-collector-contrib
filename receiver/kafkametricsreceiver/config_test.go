@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -30,6 +30,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		ClusterAlias:     "kafka-test",
 		Brokers:          []string{"10.10.10.10:9092"},
 		ProtocolVersion:  "2.0.0",
 		TopicMatch:       "test_\\w+",

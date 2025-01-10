@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 
@@ -61,7 +62,7 @@ func TestReceiveUnmarshallerMapResourceSpan(t *testing.T) {
 			var expectedMetrics []metricdata.Metrics
 			if tt.expectedUnmarshallingErrors > 0 {
 				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "solacereceiver_recoverable_unmarshalling_errors",
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 					Description: "Number of recoverable message unmarshalling errors",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -69,7 +70,8 @@ func TestReceiveUnmarshallerMapResourceSpan(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.expectedUnmarshallingErrors,
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -105,7 +107,7 @@ func TestReceiveUnmarshallerMapClientSpanData(t *testing.T) {
 				span.SetEndTimestamp(2234567890)
 				// expect some constants
 				span.SetKind(5)
-				span.SetName("(topic) receive")
+				span.SetName("(unknown) receive")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
 			},
 		},
@@ -132,7 +134,7 @@ func TestReceiveUnmarshallerMapClientSpanData(t *testing.T) {
 				span.Status().SetMessage("some error")
 				// expect some constants
 				span.SetKind(5)
-				span.SetName("(topic) receive")
+				span.SetName("(unknown) receive")
 			},
 		},
 	}
@@ -336,7 +338,7 @@ func TestReceiveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 			var expectedMetrics []metricdata.Metrics
 			if tt.expectedUnmarshallingErrors > 0 {
 				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "solacereceiver_recoverable_unmarshalling_errors",
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 					Description: "Number of recoverable message unmarshalling errors",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -344,7 +346,8 @@ func TestReceiveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.expectedUnmarshallingErrors,
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -383,7 +386,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]any{
-					"messaging.solace.destination_type":     "queue",
+					"messaging.solace.destination.type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 					"messaging.solace.partition_number":     345,
 				})
@@ -403,7 +406,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "sometopic enqueue", 123456789, map[string]any{
-					"messaging.solace.destination_type":      "topic-endpoint",
+					"messaging.solace.destination.type":      "topic-endpoint",
 					"messaging.solace.enqueue_error_message": someErrorString,
 					"messaging.solace.rejects_all_enqueues":  true,
 				})
@@ -425,11 +428,11 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]any{
-					"messaging.solace.destination_type":     "queue",
+					"messaging.solace.destination.type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]any{
-					"messaging.solace.destination_type":     "topic-endpoint",
+					"messaging.solace.destination.type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 			},
@@ -581,11 +584,11 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]any{
-					"messaging.solace.destination_type":     "queue",
+					"messaging.solace.destination.type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]any{
-					"messaging.solace.destination_type":     "topic-endpoint",
+					"messaging.solace.destination.type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": true,
 				})
 				populateEvent(t, span, "rollback_only", 123456789, map[string]any{
@@ -609,7 +612,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 			var expectedMetrics []metricdata.Metrics
 			if tt.unmarshallingErrors > 0 {
 				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "solacereceiver_recoverable_unmarshalling_errors",
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 					Description: "Number of recoverable message unmarshalling errors",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -617,7 +620,8 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.unmarshallingErrors,
+								Value:      tt.unmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -666,7 +670,7 @@ func TestReceiveUnmarshallerRGMID(t *testing.T) {
 			var expectedMetrics []metricdata.Metrics
 			if tt.numErr > 0 {
 				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "solacereceiver_recoverable_unmarshalling_errors",
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 					Description: "Number of recoverable message unmarshalling errors",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -674,7 +678,8 @@ func TestReceiveUnmarshallerRGMID(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.numErr,
+								Value:      tt.numErr,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -757,7 +762,7 @@ func TestReceiveUnmarshallerInsertUserProperty(t *testing.T) {
 			&receive_v1.SpanData_UserPropertyValue_BoolValue{BoolValue: true},
 			pcommon.ValueTypeBool,
 			func(val pcommon.Value) {
-				assert.Equal(t, true, val.Bool())
+				assert.True(t, val.Bool())
 			},
 		},
 		{
@@ -901,7 +906,7 @@ func TestSolaceMessageReceiveUnmarshallerV1InsertUserPropertyUnsupportedType(t *
 	assert.False(t, ok)
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{
-			Name:        "solacereceiver_recoverable_unmarshalling_errors",
+			Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 			Description: "Number of recoverable message unmarshalling errors",
 			Unit:        "1",
 			Data: metricdata.Sum[int64]{
@@ -909,7 +914,8 @@ func TestSolaceMessageReceiveUnmarshallerV1InsertUserPropertyUnsupportedType(t *
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value: 1,
+						Value:      1,
+						Attributes: u.metricAttrs,
 					},
 				},
 			},
@@ -918,8 +924,9 @@ func TestSolaceMessageReceiveUnmarshallerV1InsertUserPropertyUnsupportedType(t *
 }
 
 func newTestReceiveV1Unmarshaller(t *testing.T) (*brokerTraceReceiveUnmarshallerV1, componentTestTelemetry) {
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tt := setupTestTelemetry()
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tt.NewSettings().TelemetrySettings)
 	require.NoError(t, err)
-	return &brokerTraceReceiveUnmarshallerV1{zap.NewNop(), telemetryBuilder}, tel
+	metricAttr := attribute.NewSet(attribute.String("receiver_name", tt.NewSettings().ID.Name()))
+	return &brokerTraceReceiveUnmarshallerV1{zap.NewNop(), telemetryBuilder, metricAttr}, tt
 }

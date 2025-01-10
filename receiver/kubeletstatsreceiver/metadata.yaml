@@ -1,11 +1,10 @@
 type: kubeletstats
-scope_name: otelcol/kubeletstatsreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   codeowners:
     active: [dmitryax, TylerHelmuth, ChrsMark]
 
@@ -93,8 +92,8 @@ metrics:
     enabled: true
     description: "Node CPU utilization"
     warnings:
-      if_enabled: "WARNING: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead."
-    unit: 1
+      if_enabled: "This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead."
+    unit: "1"
     gauge:
       value_type: double
     attributes: []
@@ -138,14 +137,14 @@ metrics:
   k8s.node.memory.page_faults:
     enabled: true
     description: "Node memory page_faults"
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: []
   k8s.node.memory.major_page_faults:
     enabled: true
     description: "Node memory major_page_faults"
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: []
@@ -182,7 +181,7 @@ metrics:
   k8s.node.network.errors:
     enabled: true
     description: "Node network errors"
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -209,7 +208,7 @@ metrics:
     description: "Pod CPU utilization"
     warnings:
       if_enabled: "This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead."
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
@@ -239,35 +238,42 @@ metrics:
   k8s.pod.cpu.node.utilization:
     enabled: false
     description: "Pod cpu utilization as a ratio of the node's capacity"
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
   k8s.pod.cpu_limit_utilization:
     enabled: false
     description: "Pod cpu utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted."
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
   k8s.pod.cpu_request_utilization:
     enabled: false
     description: "Pod cpu utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted."
-    unit: 1
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [ ]
+  k8s.pod.memory.node.utilization:
+    enabled: false
+    description: "Pod memory utilization as a ratio of the node's capacity"
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
   k8s.pod.memory_limit_utilization:
     enabled: false
     description: "Pod memory utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted."
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
   k8s.pod.memory_request_utilization:
     enabled: false
     description: "Pod memory utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted."
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
@@ -288,14 +294,14 @@ metrics:
   k8s.pod.memory.page_faults:
     enabled: true
     description: "Pod memory page_faults"
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: []
   k8s.pod.memory.major_page_faults:
     enabled: true
     description: "Pod memory major_page_faults"
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: []
@@ -332,7 +338,7 @@ metrics:
   k8s.pod.network.errors:
     enabled: true
     description: "Pod network errors"
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -358,8 +364,8 @@ metrics:
     enabled: true
     description: "Container CPU utilization"
     warnings:
-      if_enabled: "WARNING: This metric will be disabled in a future release. Use metric container.cpu.usage instead."
-    unit: 1
+      if_enabled: "This metric will be disabled in a future release. Use metric container.cpu.usage instead."
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
@@ -389,35 +395,42 @@ metrics:
   k8s.container.cpu.node.utilization:
     enabled: false
     description: "Container cpu utilization as a ratio of the node's capacity"
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
   k8s.container.cpu_limit_utilization:
     enabled: false
     description: "Container cpu utilization as a ratio of the container's limits"
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
   k8s.container.cpu_request_utilization:
     enabled: false
     description: "Container cpu utilization as a ratio of the container's requests"
-    unit: 1
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [ ]
+  k8s.container.memory.node.utilization:
+    enabled: false
+    description: "Container memory utilization as a ratio of the node's capacity"
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
   k8s.container.memory_limit_utilization:
     enabled: false
     description: "Container memory utilization as a ratio of the container's limits"
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
   k8s.container.memory_request_utilization:
     enabled: false
     description: "Container memory utilization as a ratio of the container's requests"
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
@@ -438,14 +451,14 @@ metrics:
   container.memory.page_faults:
     enabled: true
     description: "Container memory page_faults"
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: []
   container.memory.major_page_faults:
     enabled: true
     description: "Container memory major_page_faults"
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: []
@@ -496,21 +509,21 @@ metrics:
   k8s.volume.inodes:
     enabled: true
     description: "The total inodes in the filesystem."
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: []
   k8s.volume.inodes.free:
     enabled: true
     description: "The free inodes in the filesystem."
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: []
   k8s.volume.inodes.used:
     enabled: true
     description: "The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems."
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: []

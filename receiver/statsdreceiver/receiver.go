@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -45,9 +46,14 @@ func newReceiver(
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
+	trans := transport.NewTransport(strings.ToLower(string(config.NetAddr.Transport)))
 
 	if config.NetAddr.Endpoint == "" {
-		config.NetAddr.Endpoint = "localhost:8125"
+		if trans == transport.UDS {
+			config.NetAddr.Endpoint = "/var/run/statsd-receiver.sock"
+		} else {
+			config.NetAddr.Endpoint = "localhost:8125"
+		}
 	}
 
 	rep, err := newReporter(set)
@@ -55,7 +61,6 @@ func newReceiver(
 		return nil, err
 	}
 
-	trans := transport.NewTransport(strings.ToLower(string(config.NetAddr.Transport)))
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		LongLivedCtx:           true,
 		ReceiverID:             set.ID,
@@ -80,20 +85,21 @@ func newReceiver(
 }
 
 func buildTransportServer(config Config) (transport.Server, error) {
-	// TODO: Add unix socket transport implementations
 	trans := transport.NewTransport(strings.ToLower(string(config.NetAddr.Transport)))
 	switch trans {
 	case transport.UDP, transport.UDP4, transport.UDP6:
 		return transport.NewUDPServer(trans, config.NetAddr.Endpoint)
 	case transport.TCP, transport.TCP4, transport.TCP6:
 		return transport.NewTCPServer(trans, config.NetAddr.Endpoint)
+	case transport.UDS:
+		return transport.NewUDSServer(trans, config.NetAddr.Endpoint)
 	}
 
 	return nil, fmt.Errorf("unsupported transport %q", string(config.NetAddr.Transport))
 }
 
 // Start starts a UDP server that can process StatsD messages.
-func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
+func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, r.cancel = context.WithCancel(ctx)
 	server, err := buildTransportServer(*r.config)
 	if err != nil {
@@ -106,6 +112,7 @@ func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 		r.config.EnableMetricType,
 		r.config.EnableSimpleTags,
 		r.config.IsMonotonicCounter,
+		r.config.EnableIPOnlyAggregation,
 		r.config.TimerHistogramMapping,
 	)
 	if err != nil {
@@ -114,7 +121,7 @@ func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 	go func() {
 		if err := r.server.ListenAndServe(r.nextConsumer, r.reporter, transferChan); err != nil {
 			if !errors.Is(err, net.ErrClosed) {
-				r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
 		}
 	}()

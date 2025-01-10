@@ -1,0 +1,154 @@
+name: e2e-tests-windows
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+    paths-ignore:
+      - "**/README.md"
+  pull_request:
+    paths-ignore:
+      - "**/README.md"
+  merge_group:
+
+env:
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+
+jobs:
+  windows-file-changed:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Did windows files changed
+        run: echo "changed=$(./.github/workflows/scripts/is_changed_file_windows.sh )" >> "$GITHUB_OUTPUT"
+      - run: echo $(./.github/workflows/scripts/is_changed_file_windows.sh ${{ github.event.pull_request.base.sha }} ${{ github.sha }} )
+
+  collector-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest]
+    runs-on: ${{ matrix.os }}
+    needs: [windows-file-changed]
+    if: ${{ github.actor != 'dependabot[bot]' && ((contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') || needs.windows-file-changed.outputs.changed == 'true') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21.12"
+          cache: false
+      - name: Cache Go
+        id: go-mod-cache
+        timeout-minutes: 25
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\go\pkg\mod
+            ~\AppData\Local\go-build
+          key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-mod-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Generate otelcontribcol files
+        run: make genotelcontribcol
+      - name: Build Collector
+        run: make otelcontribcol
+      - name: Upload Collector Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: collector-binary
+          path: ./bin/*
+
+  supervisor-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    runs-on: ${{ matrix.os }}
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    needs: [collector-build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21.12"
+          cache: false
+      - name: Cache Go
+        id: go-mod-cache
+        timeout-minutes: 25
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\go\pkg\mod
+            ~\AppData\Local\go-build
+          key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-mod-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Download Collector Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: collector-binary
+          path: bin/
+      - name: Run opampsupervisor e2e tests
+        run: |
+          cd cmd/opampsupervisor
+          go test -v --tags=e2e
+
+  windows-supervisor-service-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    runs-on: ${{ matrix.os }}
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    needs: [collector-build]
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ~1.22.8
+          cache: false
+      - name: Cache Go
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-go-modules
+        with:
+          path: |
+            ~\go\pkg\mod
+            ~\AppData\Local\go-build
+          key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Ensure required ports in the dynamic range are available
+        run: |
+          & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
+      - name: Download Collector Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: collector-binary
+          path: bin/
+      - name: Build supervisor
+        run: cd cmd/opampsupervisor; go build
+      - name: Install supervisor as a service
+        run: |
+          New-Service -Name "opampsupervisor" -StartupType "Manual" -BinaryPathName "${PWD}\cmd\opampsupervisor --config ${PWD}\cmd\opampsupervisor\supervisor\testdata\supervisor_windows_service_test_config.yaml\"
+          eventcreate.exe /t information /id 1 /l application /d "Creating event provider for 'opampsupervisor'" /so opampsupervisor
+      - name: Test supervisor service
+        working-directory: ${{ github.workspace }}/cmd/opampsupervisor
+        run: |
+          go test -timeout 90s -run ^TestSupervisorAsService$ -v -tags=win32service
+      - name: Remove opampsupervisor service
+        if: always()
+        run: |
+          Remove-Service opampsupervisor
+          Remove-Item HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Application\opampsupervisor

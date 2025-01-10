@@ -10,22 +10,6 @@
             <returnval xsi:type="PerfEntityMetric">
                 <entity type="HostSystem">host-1002</entity>
                 <sampleInfo>
-                    <timestamp>2022-05-17T17:24:40Z</timestamp>
-                    <interval>20</interval>
-                </sampleInfo>
-                <sampleInfo>
-                    <timestamp>2022-05-17T17:25:00Z</timestamp>
-                    <interval>20</interval>
-                </sampleInfo>
-                <sampleInfo>
-                    <timestamp>2022-05-17T17:25:20Z</timestamp>
-                    <interval>20</interval>
-                </sampleInfo>
-                <sampleInfo>
-                    <timestamp>2022-05-17T17:25:40Z</timestamp>
-                    <interval>20</interval>
-                </sampleInfo>
-                <sampleInfo>
                     <timestamp>2022-05-17T17:26:00Z</timestamp>
                     <interval>20</interval>
                 </sampleInfo>
@@ -34,10 +18,6 @@
                         <counterId>143</counterId>
                         <instance>vmnic3</instance>
                     </id>
-                    <value>769</value>
-                    <value>773</value>
-                    <value>927</value>
-                    <value>980</value>
                     <value>864</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -45,10 +25,6 @@
                         <counterId>532</counterId>
                         <instance>vmnic3</instance>
                     </id>
-                    <value>411</value>
-                    <value>422</value>
-                    <value>551</value>
-                    <value>617</value>
                     <value>488</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -56,10 +32,6 @@
                         <counterId>147</counterId>
                         <instance>vmnic3</instance>
                     </id>
-                    <value>40810</value>
-                    <value>41703</value>
-                    <value>42960</value>
-                    <value>42206</value>
                     <value>41480</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -67,10 +39,6 @@
                         <counterId>146</counterId>
                         <instance>vmnic3</instance>
                     </id>
-                    <value>42110</value>
-                    <value>42686</value>
-                    <value>44277</value>
-                    <value>43122</value>
                     <value>42703</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -79,10 +47,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____362E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -90,20 +54,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____362E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>517</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____362E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -112,10 +68,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____362E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -123,20 +75,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____BD2D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>517</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____BD2D000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -145,10 +89,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____BD2D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -156,20 +96,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____B32D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>517</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____B32D000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -178,10 +110,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E266CE4D25C</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -189,10 +117,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -200,20 +124,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____482E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>517</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____482E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -222,20 +138,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3D2E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>521</counterId>
                         <instance>t10.ATA_____DELLBOSS_VD_____________________________983baa25884a001000000000</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -244,20 +152,12 @@
                         <instance>t10.ATA_____DELLBOSS_VD_____________________________983baa25884a001000000000</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>517</counterId>
                         <instance>t10.ATA_____DELLBOSS_VD_____________________________983baa25884a001000000000</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -266,20 +166,12 @@
                         <instance>t10.ATA_____DELLBOSS_VD_____________________________983baa25884a001000000000</instance>
                     </id>
                     <value>0</value>
-                    <value>4</value>
-                    <value>1</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>521</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -288,20 +180,12 @@
                         <instance>vmnic3</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>531</counterId>
                         <instance>vmnic1</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -310,20 +194,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>130</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3D2E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>2</value>
                     <value>1</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -332,20 +208,12 @@
                         <instance>vmnic1</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>517</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3C2E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -354,20 +222,12 @@
                         <instance>vmnic1</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>130</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3C2E000121382500</instance>
                     </id>
-                    <value>7</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>4</value>
                     <value>2</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -376,20 +236,12 @@
                         <instance></instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>531</counterId>
                         <instance></instance>
                     </id>
-                    <value>928</value>
-                    <value>1120</value>
-                    <value>1646</value>
-                    <value>1291</value>
                     <value>1058</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -398,10 +250,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____B32D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -409,20 +257,12 @@
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>532</counterId>
                         <instance>vmnic0</instance>
                     </id>
-                    <value>3064</value>
-                    <value>2537</value>
-                    <value>4373</value>
-                    <value>3746</value>
                     <value>2569</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -431,20 +271,12 @@
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>147</counterId>
                         <instance>vmnic0</instance>
                     </id>
-                    <value>11182</value>
-                    <value>13009</value>
-                    <value>16489</value>
-                    <value>12398</value>
                     <value>12984</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -453,10 +285,6 @@
                         <instance>vmnic0</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -464,20 +292,26 @@
                         <instance>vmnic0</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance>vmnic0</instance>
+                    </id>
                     <value>0</value>
                 </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>530</counterId>
+                        <instance>vmnic0</instance>
+                    </id>
+                    <value>0</value>
+                </value>  
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>146</counterId>
                         <instance>vmnic0</instance>
                     </id>
-                    <value>13316</value>
-                    <value>14473</value>
-                    <value>19662</value>
-                    <value>15478</value>
                     <value>14458</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -485,10 +319,6 @@
                         <counterId>130</counterId>
                         <instance></instance>
                     </id>
-                    <value>28</value>
-                    <value>45</value>
-                    <value>88</value>
-                    <value>92</value>
                     <value>31</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -497,20 +327,12 @@
                         <instance></instance>
                     </id>
                     <value>1840</value>
-                    <value>1840</value>
-                    <value>1840</value>
-                    <value>1840</value>
-                    <value>1840</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>501</counterId>
                         <instance></instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -519,20 +341,12 @@
                         <instance></instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>9</counterId>
                         <instance></instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -541,20 +355,12 @@
                         <instance></instance>
                     </id>
                     <value>4000</value>
-                    <value>4000</value>
-                    <value>4000</value>
-                    <value>4000</value>
-                    <value>4000</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>146</counterId>
                         <instance>vmnic1</instance>
                     </id>
-                    <value>116</value>
-                    <value>114</value>
-                    <value>113</value>
-                    <value>112</value>
                     <value>120</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -562,10 +368,6 @@
                         <counterId>130</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____362E000121382500</instance>
                     </id>
-                    <value>4</value>
-                    <value>0</value>
-                    <value>1</value>
-                    <value>2</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -574,20 +376,12 @@
                         <instance>vmnic1</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>531</counterId>
                         <instance>vmnic0</instance>
                     </id>
-                    <value>570</value>
-                    <value>768</value>
-                    <value>1269</value>
-                    <value>927</value>
                     <value>681</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -595,10 +389,6 @@
                         <counterId>130</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C</instance>
                     </id>
-                    <value>6</value>
-                    <value>6</value>
-                    <value>4</value>
-                    <value>8</value>
                     <value>19</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -607,20 +397,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____482E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>1</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>531</counterId>
                         <instance>vmnic3</instance>
                     </id>
-                    <value>357</value>
-                    <value>351</value>
-                    <value>376</value>
-                    <value>363</value>
                     <value>376</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -628,10 +410,6 @@
                         <counterId>532</counterId>
                         <instance></instance>
                     </id>
-                    <value>3475</value>
-                    <value>2959</value>
-                    <value>4924</value>
-                    <value>4364</value>
                     <value>3058</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -640,20 +418,12 @@
                         <instance>vmnic1</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>521</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3C2E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -662,20 +432,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____BD2D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>521</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3D2E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -684,20 +446,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____482E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>146</counterId>
                         <instance></instance>
                     </id>
-                    <value>55647</value>
-                    <value>57376</value>
-                    <value>64156</value>
-                    <value>58814</value>
                     <value>57390</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -706,10 +460,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____B32D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -717,20 +467,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E266CE4D25C</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>538</counterId>
                         <instance>vmnic2</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -739,20 +481,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>147</counterId>
                         <instance></instance>
                     </id>
-                    <value>51992</value>
-                    <value>54712</value>
-                    <value>59449</value>
-                    <value>54604</value>
                     <value>54464</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -761,10 +495,6 @@
                         <instance>vmnic1</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -772,20 +502,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3C2E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>146</counterId>
                         <instance>vmnic2</instance>
                     </id>
-                    <value>105</value>
-                    <value>103</value>
-                    <value>104</value>
-                    <value>102</value>
                     <value>109</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -794,20 +516,12 @@
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>537</counterId>
                         <instance>vmnic3</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -816,10 +530,6 @@
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -827,20 +537,12 @@
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>130</counterId>
                         <instance>t10.ATA_____DELLBOSS_VD_____________________________983baa25884a001000000000</instance>
                     </id>
-                    <value>4</value>
-                    <value>25</value>
-                    <value>76</value>
-                    <value>63</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -848,10 +550,6 @@
                         <counterId>143</counterId>
                         <instance>vmnic0</instance>
                     </id>
-                    <value>3634</value>
-                    <value>3305</value>
-                    <value>5642</value>
-                    <value>4674</value>
                     <value>3251</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -859,10 +557,6 @@
                         <counterId>143</counterId>
                         <instance></instance>
                     </id>
-                    <value>4404</value>
-                    <value>4079</value>
-                    <value>6570</value>
-                    <value>5655</value>
                     <value>4117</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -871,10 +565,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____BD2D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -882,20 +572,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3D2E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>537</counterId>
                         <instance>vmnic0</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -904,20 +586,12 @@
                         <instance></instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>130</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E266CE4D25C</instance>
                     </id>
-                    <value>5</value>
-                    <value>10</value>
-                    <value>5</value>
-                    <value>7</value>
                     <value>6</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -926,20 +600,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____B32D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>2</value>
-                    <value>0</value>
-                    <value>2</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>520</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3D2E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -948,20 +614,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3C2E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>516</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E266CE4D25C</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -970,20 +628,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E266CE4D25C</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>516</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____482E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -992,20 +642,12 @@
                         <instance>vmnic0</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>133</counterId>
                         <instance>4000</instance>
                     </id>
-                    <value>899</value>
-                    <value>899</value>
-                    <value>905</value>
-                    <value>1000</value>
                     <value>1002</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1013,10 +655,6 @@
                         <counterId>124</counterId>
                         <instance>4000</instance>
                     </id>
-                    <value>499</value>
-                    <value>568</value>
-                    <value>476</value>
-                    <value>387</value>
                     <value>977</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1024,10 +662,6 @@
                         <counterId>518</counterId>
                         <instance>4000</instance>
                     </id>
-                    <value>781</value>
-                    <value>789</value>
-                    <value>645</value>
-                    <value>781</value>
                     <value>782</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1035,10 +669,6 @@
                         <counterId>522</counterId>
                         <instance>4000</instance>
                     </id>
-                    <value>781</value>
-                    <value>789</value>
-                    <value>645</value>
-                    <value>781</value>
                     <value>782</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1046,32 +676,12 @@
                         <counterId>131</counterId>
                         <instance>4000</instance>
                     </id>
-                    <value>781</value>
-                    <value>789</value>
-                    <value>645</value>
-                    <value>781</value>
                     <value>782</value>
                 </value>
             </returnval>
             <returnval xsi:type="PerfEntityMetric">
                 <entity type="HostSystem">host-1003</entity>
                 <sampleInfo>
-                    <timestamp>2022-05-17T17:24:40Z</timestamp>
-                    <interval>20</interval>
-                </sampleInfo>
-                <sampleInfo>
-                    <timestamp>2022-05-17T17:25:00Z</timestamp>
-                    <interval>20</interval>
-                </sampleInfo>
-                <sampleInfo>
-                    <timestamp>2022-05-17T17:25:20Z</timestamp>
-                    <interval>20</interval>
-                </sampleInfo>
-                <sampleInfo>
-                    <timestamp>2022-05-17T17:25:40Z</timestamp>
-                    <interval>20</interval>
-                </sampleInfo>
-                <sampleInfo>
                     <timestamp>2022-05-17T17:26:00Z</timestamp>
                     <interval>20</interval>
                 </sampleInfo>
@@ -1080,10 +690,6 @@
                         <counterId>143</counterId>
                         <instance>vmnic3</instance>
                     </id>
-                    <value>769</value>
-                    <value>773</value>
-                    <value>927</value>
-                    <value>980</value>
                     <value>864</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1091,10 +697,6 @@
                         <counterId>532</counterId>
                         <instance>vmnic3</instance>
                     </id>
-                    <value>411</value>
-                    <value>422</value>
-                    <value>551</value>
-                    <value>617</value>
                     <value>488</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1102,10 +704,6 @@
                         <counterId>147</counterId>
                         <instance>vmnic3</instance>
                     </id>
-                    <value>40810</value>
-                    <value>41703</value>
-                    <value>42960</value>
-                    <value>42206</value>
                     <value>41480</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1113,10 +711,6 @@
                         <counterId>146</counterId>
                         <instance>vmnic3</instance>
                     </id>
-                    <value>42110</value>
-                    <value>42686</value>
-                    <value>44277</value>
-                    <value>43122</value>
                     <value>42703</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1125,10 +719,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____362E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -1136,20 +726,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____362E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>517</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____362E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1158,10 +740,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____362E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -1169,20 +747,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____BD2D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>517</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____BD2D000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1191,10 +761,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____BD2D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -1202,20 +768,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____B32D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>517</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____B32D000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1224,10 +782,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E266CE4D25C</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -1235,10 +789,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -1246,20 +796,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____482E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>517</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____482E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1268,20 +810,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3D2E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>521</counterId>
                         <instance>t10.ATA_____DELLBOSS_VD_____________________________983baa25884a001000000000</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1290,20 +824,12 @@
                         <instance>t10.ATA_____DELLBOSS_VD_____________________________983baa25884a001000000000</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>517</counterId>
                         <instance>t10.ATA_____DELLBOSS_VD_____________________________983baa25884a001000000000</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1312,20 +838,12 @@
                         <instance>t10.ATA_____DELLBOSS_VD_____________________________983baa25884a001000000000</instance>
                     </id>
                     <value>0</value>
-                    <value>4</value>
-                    <value>1</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>521</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1334,20 +852,12 @@
                         <instance>vmnic3</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>531</counterId>
                         <instance>vmnic1</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1356,20 +866,12 @@
                         <instance>vmnic0</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>502</counterId>
                         <instance>vmnic0</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1378,20 +880,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>130</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3D2E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>2</value>
                     <value>1</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1400,20 +894,12 @@
                         <instance>vmnic1</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>517</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3C2E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1422,20 +908,12 @@
                         <instance>vmnic1</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>130</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3C2E000121382500</instance>
                     </id>
-                    <value>7</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>4</value>
                     <value>2</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1444,31 +922,19 @@
                         <instance></instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>531</counterId>
                         <instance></instance>
                     </id>
-                    <value>928</value>
-                    <value>1120</value>
-                    <value>1646</value>
-                    <value>1291</value>
                     <value>1058</value>
-                </value>
+                </value>  
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>435</counterId>
                         <instance></instance>
                     </id>
-                    <value>1840</value>
-                    <value>1840</value>
-                    <value>1840</value>
-                    <value>1840</value>
                     <value>1840</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1477,20 +943,12 @@
                         <instance></instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>502</counterId>
                         <instance></instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1499,20 +957,12 @@
                         <instance></instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>463</counterId>
                         <instance></instance>
                     </id>
-                    <value>4000</value>
-                    <value>4000</value>
-                    <value>4000</value>
-                    <value>4000</value>
                     <value>4000</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1521,10 +971,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____B32D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -1532,20 +978,12 @@
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>532</counterId>
                         <instance>vmnic0</instance>
                     </id>
-                    <value>3064</value>
-                    <value>2537</value>
-                    <value>4373</value>
-                    <value>3746</value>
                     <value>2569</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1554,20 +992,26 @@
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance>vmnic2</instance>
+                    </id>
                     <value>0</value>
                 </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>530</counterId>
+                        <instance>vmnic2</instance>
+                    </id>
+                    <value>0</value>
+                </value> 
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>147</counterId>
                         <instance>vmnic0</instance>
                     </id>
-                    <value>11182</value>
-                    <value>13009</value>
-                    <value>16489</value>
-                    <value>12398</value>
                     <value>12984</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1575,10 +1019,6 @@
                         <counterId>146</counterId>
                         <instance>vmnic0</instance>
                     </id>
-                    <value>13316</value>
-                    <value>14473</value>
-                    <value>19662</value>
-                    <value>15478</value>
                     <value>14458</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1586,10 +1026,6 @@
                         <counterId>130</counterId>
                         <instance></instance>
                     </id>
-                    <value>28</value>
-                    <value>45</value>
-                    <value>88</value>
-                    <value>92</value>
                     <value>31</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1597,10 +1033,6 @@
                         <counterId>146</counterId>
                         <instance>vmnic1</instance>
                     </id>
-                    <value>116</value>
-                    <value>114</value>
-                    <value>113</value>
-                    <value>112</value>
                     <value>120</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1608,10 +1040,6 @@
                         <counterId>130</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____362E000121382500</instance>
                     </id>
-                    <value>4</value>
-                    <value>0</value>
-                    <value>1</value>
-                    <value>2</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1620,20 +1048,12 @@
                         <instance>vmnic1</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>531</counterId>
                         <instance>vmnic0</instance>
                     </id>
-                    <value>570</value>
-                    <value>768</value>
-                    <value>1269</value>
-                    <value>927</value>
                     <value>681</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1641,10 +1061,6 @@
                         <counterId>130</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C</instance>
                     </id>
-                    <value>6</value>
-                    <value>6</value>
-                    <value>4</value>
-                    <value>8</value>
                     <value>19</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1653,20 +1069,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____482E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>1</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>531</counterId>
                         <instance>vmnic3</instance>
                     </id>
-                    <value>357</value>
-                    <value>351</value>
-                    <value>376</value>
-                    <value>363</value>
                     <value>376</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1674,10 +1082,6 @@
                         <counterId>532</counterId>
                         <instance></instance>
                     </id>
-                    <value>3475</value>
-                    <value>2959</value>
-                    <value>4924</value>
-                    <value>4364</value>
                     <value>3058</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1686,20 +1090,12 @@
                         <instance>vmnic1</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>521</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3C2E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1708,20 +1104,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____BD2D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>521</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3D2E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1730,20 +1118,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____482E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>146</counterId>
                         <instance></instance>
                     </id>
-                    <value>55647</value>
-                    <value>57376</value>
-                    <value>64156</value>
-                    <value>58814</value>
                     <value>57390</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1752,10 +1132,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____B32D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -1763,20 +1139,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E266CE4D25C</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>538</counterId>
                         <instance>vmnic2</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1785,20 +1153,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>147</counterId>
                         <instance></instance>
                     </id>
-                    <value>51992</value>
-                    <value>54712</value>
-                    <value>59449</value>
-                    <value>54604</value>
                     <value>54464</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1807,10 +1167,6 @@
                         <instance>vmnic1</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -1818,20 +1174,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3C2E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>146</counterId>
                         <instance>vmnic2</instance>
                     </id>
-                    <value>105</value>
-                    <value>103</value>
-                    <value>104</value>
-                    <value>102</value>
                     <value>109</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1840,20 +1188,12 @@
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>537</counterId>
                         <instance>vmnic3</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1862,10 +1202,6 @@
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -1873,20 +1209,12 @@
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>130</counterId>
                         <instance>t10.ATA_____DELLBOSS_VD_____________________________983baa25884a001000000000</instance>
                     </id>
-                    <value>4</value>
-                    <value>25</value>
-                    <value>76</value>
-                    <value>63</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1894,10 +1222,6 @@
                         <counterId>143</counterId>
                         <instance>vmnic0</instance>
                     </id>
-                    <value>3634</value>
-                    <value>3305</value>
-                    <value>5642</value>
-                    <value>4674</value>
                     <value>3251</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1905,10 +1229,6 @@
                         <counterId>143</counterId>
                         <instance></instance>
                     </id>
-                    <value>4404</value>
-                    <value>4079</value>
-                    <value>6570</value>
-                    <value>5655</value>
                     <value>4117</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1917,10 +1237,6 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____BD2D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -1928,20 +1244,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3D2E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>537</counterId>
                         <instance>vmnic0</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1950,20 +1258,12 @@
                         <instance></instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>130</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E266CE4D25C</instance>
                     </id>
-                    <value>5</value>
-                    <value>10</value>
-                    <value>5</value>
-                    <value>7</value>
                     <value>6</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1972,20 +1272,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____B32D000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>2</value>
-                    <value>0</value>
-                    <value>2</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>520</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3D2E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -1994,20 +1286,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____3C2E000121382500</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>516</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E266CE4D25C</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -2016,20 +1300,12 @@
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E266CE4D25C</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>516</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_PM1725b_3.2TB_SFF____482E000121382500</instance>
                     </id>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                     <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -2038,20 +1314,12 @@
                         <instance>vmnic0</instance>
                     </id>
                     <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
-                    <value>0</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>133</counterId>
                         <instance>4000</instance>
                     </id>
-                    <value>899</value>
-                    <value>899</value>
-                    <value>905</value>
-                    <value>1000</value>
                     <value>1002</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -2059,10 +1327,6 @@
                         <counterId>124</counterId>
                         <instance>4000</instance>
                     </id>
-                    <value>499</value>
-                    <value>568</value>
-                    <value>476</value>
-                    <value>387</value>
                     <value>977</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -2070,10 +1334,6 @@
                         <counterId>518</counterId>
                         <instance>4000</instance>
                     </id>
-                    <value>781</value>
-                    <value>789</value>
-                    <value>645</value>
-                    <value>781</value>
                     <value>782</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -2081,10 +1341,6 @@
                         <counterId>522</counterId>
                         <instance>4000</instance>
                     </id>
-                    <value>781</value>
-                    <value>789</value>
-                    <value>645</value>
-                    <value>781</value>
                     <value>782</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
@@ -2092,10 +1348,6 @@
                         <counterId>131</counterId>
                         <instance>4000</instance>
                     </id>
-                    <value>781</value>
-                    <value>789</value>
-                    <value>645</value>
-                    <value>781</value>
                     <value>782</value>
                 </value>
             </returnval>

@@ -25,7 +25,6 @@ import (
 
 // Config defines configuration for Resource processor.
 type Config struct {
-
 	// Detectors is an ordered list of named detectors that should be
 	// run to attempt to detect resource information.
 	Detectors []string `mapstructure:"detectors"`
@@ -81,7 +80,7 @@ type DetectorConfig struct {
 	// SystemConfig contains user-specified configurations for the System detector
 	SystemConfig system.Config `mapstructure:"system"`
 
-	// OpenShift contains user-specified configurations for the Openshift detector
+	// OpenShift contains user-specified configurations for the OpenShift detector
 	OpenShiftConfig openshift.Config `mapstructure:"openshift"`
 
 	// K8SNode contains user-specified configurations for the K8SNode detector

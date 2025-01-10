@@ -54,22 +54,28 @@ const (
 
 	DefaultObserverType = DisableObserver
 
-	receiverName = "otelcol/statsdreceiver"
+	receiverName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 )
 
 type TimerHistogramMapping struct {
 	StatsdType   TypeName        `mapstructure:"statsd_type"`
 	ObserverType ObserverType    `mapstructure:"observer_type"`
 	Histogram    HistogramConfig `mapstructure:"histogram"`
+	Summary      SummaryConfig   `mapstructure:"summary"`
 }
 
 type HistogramConfig struct {
 	MaxSize int32 `mapstructure:"max_size"`
 }
 
+type SummaryConfig struct {
+	Percentiles []float64 `mapstructure:"percentiles"`
+}
+
 type ObserverCategory struct {
-	method          ObserverType
-	histogramConfig structure.Config
+	method             ObserverType
+	histogramConfig    structure.Config
+	summaryPercentiles []float64
 }
 
 var defaultObserverCategory = ObserverCategory{
@@ -78,14 +84,15 @@ var defaultObserverCategory = ObserverCategory{
 
 // StatsDParser supports the Parse method for parsing StatsD messages with Tags.
 type StatsDParser struct {
-	instrumentsByAddress map[netAddr]*instruments
-	enableMetricType     bool
-	enableSimpleTags     bool
-	isMonotonicCounter   bool
-	timerEvents          ObserverCategory
-	histogramEvents      ObserverCategory
-	lastIntervalTime     time.Time
-	BuildInfo            component.BuildInfo
+	instrumentsByAddress    map[netAddr]*instruments
+	enableMetricType        bool
+	enableSimpleTags        bool
+	isMonotonicCounter      bool
+	enableIPOnlyAggregation bool
+	timerEvents             ObserverCategory
+	histogramEvents         ObserverCategory
+	lastIntervalTime        time.Time
+	BuildInfo               component.BuildInfo
 }
 
 type instruments struct {
@@ -113,8 +120,9 @@ type sampleValue struct {
 }
 
 type summaryMetric struct {
-	points  []float64
-	weights []float64
+	points      []float64
+	weights     []float64
+	percentiles []float64
 }
 
 type histogramStructure = structure.Histogram[float64]
@@ -159,7 +167,7 @@ func (p *StatsDParser) resetState(when time.Time) {
 	p.instrumentsByAddress = make(map[netAddr]*instruments)
 }
 
-func (p *StatsDParser) Initialize(enableMetricType bool, enableSimpleTags bool, isMonotonicCounter bool, sendTimerHistogram []TimerHistogramMapping) error {
+func (p *StatsDParser) Initialize(enableMetricType bool, enableSimpleTags bool, isMonotonicCounter bool, enableIPOnlyAggregation bool, sendTimerHistogram []TimerHistogramMapping) error {
 	p.resetState(timeNowFunc())
 
 	p.histogramEvents = defaultObserverCategory
@@ -167,15 +175,19 @@ func (p *StatsDParser) Initialize(enableMetricType bool, enableSimpleTags bool, 
 	p.enableMetricType = enableMetricType
 	p.enableSimpleTags = enableSimpleTags
 	p.isMonotonicCounter = isMonotonicCounter
+	p.enableIPOnlyAggregation = enableIPOnlyAggregation
+
 	// Note: validation occurs in ("../".Config).validate()
 	for _, eachMap := range sendTimerHistogram {
 		switch eachMap.StatsdType {
 		case HistogramTypeName, DistributionTypeName:
 			p.histogramEvents.method = eachMap.ObserverType
 			p.histogramEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
+			p.histogramEvents.summaryPercentiles = eachMap.Summary.Percentiles
 		case TimingTypeName, TimingAltTypeName:
 			p.timerEvents.method = eachMap.ObserverType
 			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
+			p.timerEvents.summaryPercentiles = eachMap.Summary.Percentiles
 		case CounterTypeName, GaugeTypeName:
 		}
 	}
@@ -218,13 +230,16 @@ func (p *StatsDParser) GetMetrics() []BatchMetrics {
 		for desc, summaryMetric := range instrument.summaries {
 			ilm := rm.ScopeMetrics().AppendEmpty()
 			p.setVersionAndNameScope(ilm.Scope())
-
+			percentiles := summaryMetric.percentiles
+			if len(summaryMetric.percentiles) == 0 {
+				percentiles = statsDDefaultPercentiles
+			}
 			buildSummaryMetric(
 				desc,
 				summaryMetric,
 				p.lastIntervalTime,
 				now,
-				statsDDefaultPercentiles,
+				percentiles,
 				ilm,
 			)
 		}
@@ -280,6 +295,10 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 	}
 
 	addrKey := newNetAddr(addr)
+	if p.enableIPOnlyAggregation {
+		addrKey = newIPOnlyNetAddr(addr)
+	}
+
 	instrument, ok := p.instrumentsByAddress[addrKey]
 	if !ok {
 		instrument = newInstruments(addr)
@@ -318,13 +337,15 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 			raw := parsedMetric.sampleValue()
 			if existing, ok := instrument.summaries[parsedMetric.description]; !ok {
 				instrument.summaries[parsedMetric.description] = summaryMetric{
-					points:  []float64{raw.value},
-					weights: []float64{raw.count},
+					points:      []float64{raw.value},
+					weights:     []float64{raw.count},
+					percentiles: category.summaryPercentiles,
 				}
 			} else {
 				instrument.summaries[parsedMetric.description] = summaryMetric{
-					points:  append(existing.points, raw.value),
-					weights: append(existing.weights, raw.count),
+					points:      append(existing.points, raw.value),
+					weights:     append(existing.weights, raw.count),
+					percentiles: category.summaryPercentiles,
 				}
 			}
 		case HistogramObserver:
@@ -377,7 +398,7 @@ func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags b
 		result.addition = true
 	}
 
-	var metricType, additionalParts, _ = strings.Cut(rest, "|")
+	metricType, additionalParts, _ := strings.Cut(rest, "|")
 	inType := MetricType(metricType)
 	switch inType {
 	case CounterType, GaugeType, HistogramType, TimingType, DistributionType:
@@ -402,7 +423,7 @@ func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags b
 
 			result.sampleRate = f
 		case strings.HasPrefix(part, "#"):
-			var tagsStr = strings.TrimPrefix(part, "#")
+			tagsStr := strings.TrimPrefix(part, "#")
 
 			// handle an empty tag set
 			// where the tags part was still sent (some clients do this)
@@ -438,7 +459,7 @@ func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags b
 			// As per DogStatD protocol v1.3:
 			// https://docs.datadoghq.com/developers/dogstatsd/datagram_shell/?tab=metrics#dogstatsd-protocol-v13
 			if inType != CounterType && inType != GaugeType {
-				return result, fmt.Errorf("only GAUGE and COUNT metrics support a timestamp")
+				return result, errors.New("only GAUGE and COUNT metrics support a timestamp")
 			}
 
 			timestampStr := strings.TrimPrefix(part, "T")
@@ -479,4 +500,13 @@ type netAddr struct {
 
 func newNetAddr(addr net.Addr) netAddr {
 	return netAddr{addr.Network(), addr.String()}
+}
+
+func newIPOnlyNetAddr(addr net.Addr) netAddr {
+	host, _, err := net.SplitHostPort(addr.String())
+	if err != nil {
+		// if there is an error, use the original address
+		return netAddr{addr.Network(), addr.String()}
+	}
+	return netAddr{addr.Network(), host}
 }

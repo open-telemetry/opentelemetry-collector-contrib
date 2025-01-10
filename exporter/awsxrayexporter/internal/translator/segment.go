@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
+	conventionsv112 "go.opentelemetry.io/collector/semconv/v1.12.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -46,21 +46,17 @@ const (
 	k8sRemoteNamespace = "K8s.RemoteNamespace"
 )
 
-var (
-	// reInvalidSpanCharacters defines the invalid letters in a span name as per
-	// Allowed characters for X-Ray Segment Name:
-	// Unicode letters, numbers, and whitespace, and the following symbols: _, ., :, /, %, &, #, =, +, \, -, @
-	// Doc: https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
-	reInvalidSpanCharacters = regexp.MustCompile(`[^ 0-9\p{L}N_.:/%&#=+\-@]`)
-)
+// reInvalidSpanCharacters defines the invalid letters in a span name as per
+// Allowed characters for X-Ray Segment Name:
+// Unicode letters, numbers, and whitespace, and the following symbols: _, ., :, /, %, &, #, =, +, \, -, @
+// Doc: https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
+var reInvalidSpanCharacters = regexp.MustCompile(`[^ 0-9\p{L}N_.:/%&#=+\-@]`)
 
-var (
-	remoteXrayExporterDotConverter = featuregate.GlobalRegistry().MustRegister(
-		"exporter.xray.allowDot",
-		featuregate.StageBeta,
-		featuregate.WithRegisterDescription("X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled. "),
-		featuregate.WithRegisterFromVersion("v0.97.0"),
-	)
+var remoteXrayExporterDotConverter = featuregate.GlobalRegistry().MustRegister(
+	"exporter.xray.allowDot",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled. "),
+	featuregate.WithRegisterFromVersion("v0.97.0"),
 )
 
 const (
@@ -90,9 +86,7 @@ var removeAnnotationsFromServiceSegment = []string{
 	k8sRemoteNamespace,
 }
 
-var (
-	writers = newWriterPool(2048)
-)
+var writers = newWriterPool(2048)
 
 // MakeSegmentDocuments converts spans to json documents
 func MakeSegmentDocuments(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) ([]string, error) {
@@ -143,13 +137,12 @@ func addNamespaceToSubsegmentWithRemoteService(span ptrace.Span, segment *awsxra
 }
 
 func MakeDependencySubsegmentForLocalRootDependencySpan(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool, serviceSegmentID pcommon.SpanID) (*awsxray.Segment, error) {
-	var dependencySpan = ptrace.NewSpan()
+	dependencySpan := ptrace.NewSpan()
 	span.CopyTo(dependencySpan)
 
 	dependencySpan.SetParentSpanID(serviceSegmentID)
 
 	dependencySubsegment, err := MakeSegment(dependencySpan, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
-
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +180,6 @@ func MakeServiceSegmentForLocalRootDependencySpan(span ptrace.Span, resource pco
 	}
 
 	serviceSegment, err := MakeSegment(serviceSpan, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
-
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +226,6 @@ func MakeServiceSegmentForLocalRootDependencySpan(span ptrace.Span, resource pco
 
 func MakeServiceSegmentForLocalRootSpanWithoutDependency(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) ([]*awsxray.Segment, error) {
 	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
-
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +238,6 @@ func MakeServiceSegmentForLocalRootSpanWithoutDependency(span ptrace.Span, resou
 
 func MakeNonLocalRootSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) ([]*awsxray.Segment, error) {
 	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
-
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +249,7 @@ func MakeNonLocalRootSegment(span ptrace.Span, resource pcommon.Resource, indexe
 
 func MakeServiceSegmentAndDependencySubsegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) ([]*awsxray.Segment, error) {
 	// If it is a local root span and a dependency span, we need to make a segment and subsegment representing the local service and remote service, respectively.
-	var serviceSegmentID = newSegmentID()
+	serviceSegmentID := newSegmentID()
 	var segments []*awsxray.Segment
 
 	// Make Dependency Subsegment
@@ -296,7 +286,6 @@ func MakeSegmentsFromSpan(span ptrace.Span, resource pcommon.Resource, indexedAt
 // MakeSegmentDocumentString will be deprecated in the future
 func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) (string, error) {
 	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
-
 	if err != nil {
 		return "", err
 	}
@@ -317,7 +306,7 @@ func MakeDocumentFromSegment(segment *awsxray.Segment) (string, error) {
 
 func isAwsSdkSpan(span ptrace.Span) bool {
 	attributes := span.Attributes()
-	if rpcSystem, ok := attributes.Get(conventions.AttributeRPCSystem); ok {
+	if rpcSystem, ok := attributes.Get(conventionsv112.AttributeRPCSystem); ok {
 		return rpcSystem.Str() == awsAPIRPCSystem
 	}
 	return false
@@ -390,14 +379,14 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	// peer.service should always be prioritized for segment names when it set by users and
 	// the new x-ray specific service name attributes are not found
 	if name == "" {
-		if peerService, ok := attributes.Get(conventions.AttributePeerService); ok {
+		if peerService, ok := attributes.Get(conventionsv112.AttributePeerService); ok {
 			name = peerService.Str()
 		}
 	}
 
 	if namespace == "" {
 		if isAwsSdkSpan(span) {
-			namespace = conventions.AttributeCloudProviderAWS
+			namespace = conventionsv112.AttributeCloudProviderAWS
 		}
 	}
 
@@ -408,16 +397,16 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 			name = awsService.Str()
 
 			if namespace == "" {
-				namespace = conventions.AttributeCloudProviderAWS
+				namespace = conventionsv112.AttributeCloudProviderAWS
 			}
 		}
 	}
 
 	if name == "" {
-		if dbInstance, ok := attributes.Get(conventions.AttributeDBName); ok {
+		if dbInstance, ok := attributes.Get(conventionsv112.AttributeDBName); ok {
 			// For database queries, the segment name convention is <db name>@<db host>
 			name = dbInstance.Str()
-			if dbURL, ok := attributes.Get(conventions.AttributeDBConnectionString); ok {
+			if dbURL, ok := attributes.Get(conventionsv112.AttributeDBConnectionString); ok {
 				// Trim JDBC connection string if starts with "jdbc:", otherwise no change
 				// jdbc:mysql://db.dev.example.com:3306
 				dbURLStr := strings.TrimPrefix(dbURL.Str(), "jdbc:")
@@ -432,25 +421,25 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 
 	if name == "" && span.Kind() == ptrace.SpanKindServer {
 		// Only for a server span, we can use the resource.
-		if service, ok := resource.Attributes().Get(conventions.AttributeServiceName); ok {
+		if service, ok := resource.Attributes().Get(conventionsv112.AttributeServiceName); ok {
 			name = service.Str()
 		}
 	}
 
 	if name == "" {
-		if rpcservice, ok := attributes.Get(conventions.AttributeRPCService); ok {
+		if rpcservice, ok := attributes.Get(conventionsv112.AttributeRPCService); ok {
 			name = rpcservice.Str()
 		}
 	}
 
 	if name == "" {
-		if host, ok := attributes.Get(conventions.AttributeHTTPHost); ok {
+		if host, ok := attributes.Get(conventionsv112.AttributeHTTPHost); ok {
 			name = host.Str()
 		}
 	}
 
 	if name == "" {
-		if peer, ok := attributes.Get(conventions.AttributeNetPeerName); ok {
+		if peer, ok := attributes.Get(conventionsv112.AttributeNetPeerName); ok {
 			name = peer.Str()
 		}
 	}
@@ -503,34 +492,34 @@ func determineAwsOrigin(resource pcommon.Resource) string {
 		return ""
 	}
 
-	if provider, ok := resource.Attributes().Get(conventions.AttributeCloudProvider); ok {
-		if provider.Str() != conventions.AttributeCloudProviderAWS {
+	if provider, ok := resource.Attributes().Get(conventionsv112.AttributeCloudProvider); ok {
+		if provider.Str() != conventionsv112.AttributeCloudProviderAWS {
 			return ""
 		}
 	}
 
-	if is, present := resource.Attributes().Get(conventions.AttributeCloudPlatform); present {
+	if is, present := resource.Attributes().Get(conventionsv112.AttributeCloudPlatform); present {
 		switch is.Str() {
-		case conventions.AttributeCloudPlatformAWSAppRunner:
+		case conventionsv112.AttributeCloudPlatformAWSAppRunner:
 			return OriginAppRunner
-		case conventions.AttributeCloudPlatformAWSEKS:
+		case conventionsv112.AttributeCloudPlatformAWSEKS:
 			return OriginEKS
-		case conventions.AttributeCloudPlatformAWSElasticBeanstalk:
+		case conventionsv112.AttributeCloudPlatformAWSElasticBeanstalk:
 			return OriginEB
-		case conventions.AttributeCloudPlatformAWSECS:
-			lt, present := resource.Attributes().Get(conventions.AttributeAWSECSLaunchtype)
+		case conventionsv112.AttributeCloudPlatformAWSECS:
+			lt, present := resource.Attributes().Get(conventionsv112.AttributeAWSECSLaunchtype)
 			if !present {
 				return OriginECS
 			}
 			switch lt.Str() {
-			case conventions.AttributeAWSECSLaunchtypeEC2:
+			case conventionsv112.AttributeAWSECSLaunchtypeEC2:
 				return OriginECSEC2
-			case conventions.AttributeAWSECSLaunchtypeFargate:
+			case conventionsv112.AttributeAWSECSLaunchtypeFargate:
 				return OriginECSFargate
 			default:
 				return OriginECS
 			}
-		case conventions.AttributeCloudPlatformAWSEC2:
+		case conventionsv112.AttributeCloudPlatformAWSEC2:
 			return OriginEC2
 
 		// If cloud_platform is defined with a non-AWS value, we should not assign it an AWS origin
@@ -612,16 +601,17 @@ func addSpecialAttributes(attributes map[string]pcommon.Value, indexedAttrs []st
 }
 
 func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Resource, storeResource bool, indexedAttrs []string, indexAllAttrs bool) (
-	string, map[string]any, map[string]map[string]any) {
+	string, map[string]any, map[string]map[string]any,
+) {
 	var (
 		annotations = map[string]any{}
 		metadata    = map[string]map[string]any{}
 		user        string
 	)
-	userid, ok := attributes[conventions.AttributeEnduserID]
+	userid, ok := attributes[conventionsv112.AttributeEnduserID]
 	if ok {
 		user = userid.Str()
-		delete(attributes, conventions.AttributeEnduserID)
+		delete(attributes, conventionsv112.AttributeEnduserID)
 	}
 
 	if len(attributes) == 0 && (!storeResource || resource.Attributes().Len() == 0) {
@@ -770,8 +760,12 @@ func fixAnnotationKey(key string) string {
 }
 
 func trimAwsSdkPrefix(name string, span ptrace.Span) string {
-	if isAwsSdkSpan(span) && strings.HasPrefix(name, "AWS.SDK.") {
-		return strings.TrimPrefix(name, "AWS.SDK.")
+	if isAwsSdkSpan(span) {
+		if strings.HasPrefix(name, "AWS.SDK.") {
+			return strings.TrimPrefix(name, "AWS.SDK.")
+		} else if strings.HasPrefix(name, "AWS::") {
+			return strings.TrimPrefix(name, "AWS::")
+		}
 	}
 	return name
 }

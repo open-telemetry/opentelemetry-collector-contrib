@@ -24,9 +24,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/log"
 )
 
-var getPathRegexp = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)`)                    // /dimName/dimVal
-var putPathRegexp = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)/([^/]+)`)            // /dimName/dimVal/{service,environment}
-var deletePathRegexp = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)/([^/]+)/([^/]+)`) // /dimName/dimValue/{service,environment}/value
+var (
+	getPathRegexp    = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)`)                 // /dimName/dimVal
+	putPathRegexp    = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)/([^/]+)`)         // /dimName/dimVal/{service,environment}
+	deletePathRegexp = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)/([^/]+)/([^/]+)`) // /dimName/dimValue/{service,environment}/value
+)
 
 func waitForCors(corCh <-chan *request, count, waitSeconds int) []*request { // nolint: unparam
 	cors := make([]*request, 0, count)
@@ -63,8 +65,8 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 		switch r.Method {
 		case http.MethodGet:
 			match := getPathRegexp.FindStringSubmatch(r.URL.Path)
-			if match == nil || len(match) < 3 {
-				rw.WriteHeader(404)
+			if len(match) < 3 {
+				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
 			corCh <- &request{
@@ -78,14 +80,14 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 			return
 		case http.MethodPut:
 			match := putPathRegexp.FindStringSubmatch(r.URL.Path)
-			if match == nil || len(match) < 4 {
-				rw.WriteHeader(404)
+			if len(match) < 4 {
+				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
 
 			body, err := io.ReadAll(r.Body)
 			if err != nil {
-				rw.WriteHeader(400)
+				rw.WriteHeader(http.StatusBadRequest)
 				return
 			}
 			cor = &request{
@@ -100,8 +102,8 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 
 		case http.MethodDelete:
 			match := deletePathRegexp.FindStringSubmatch(r.URL.Path)
-			if match == nil || len(match) < 5 {
-				rw.WriteHeader(404)
+			if len(match) < 5 {
+				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
 			cor = &request{
@@ -114,13 +116,13 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 				},
 			}
 		default:
-			rw.WriteHeader(404)
+			rw.WriteHeader(http.StatusNotFound)
 			return
 		}
 
 		corCh <- cor
 
-		rw.WriteHeader(200)
+		rw.WriteHeader(http.StatusOK)
 	})
 }
 
@@ -189,8 +191,6 @@ func TestCorrelationClient(t *testing.T) {
 
 	for _, correlationType := range []Type{Service, Environment} {
 		for _, op := range []string{http.MethodPut, http.MethodDelete} {
-			op := op
-			correlationType := correlationType
 			t.Run(fmt.Sprintf("%v %v", op, correlationType), func(t *testing.T) {
 				testData := &Correlation{Type: correlationType, DimName: "host", DimValue: "test-box", Value: "test-service"}
 				switch op {
@@ -208,7 +208,7 @@ func TestCorrelationClient(t *testing.T) {
 		forcedRespCode.Store(200)
 		respPayload := map[string][]string{"sf_services": {"testService1"}}
 		respJSON, err := json.Marshal(&respPayload)
-		require.Nil(t, err, "json marshaling failed in test")
+		require.NoError(t, err, "json marshaling failed in test")
 		forcedRespPayload.Store(respJSON)
 
 		var wg sync.WaitGroup
@@ -232,11 +232,11 @@ func TestCorrelationClient(t *testing.T) {
 		client.Correlate(testData, CorrelateCB(func(_ *Correlation, _ error) {}))
 
 		cors := waitForCors(serverCh, 1, 3)
-		require.Len(t, cors, 0)
+		require.Empty(t, cors)
 
 		forcedRespCode.Store(200)
 		cors = waitForCors(serverCh, 1, 3)
-		require.Len(t, cors, 0)
+		require.Empty(t, cors)
 	})
 	t.Run("does retry 500 responses", func(t *testing.T) {
 		forcedRespCode.Store(500)
@@ -249,7 +249,7 @@ func TestCorrelationClient(t *testing.T) {
 		client.Correlate(testData, CorrelateCB(func(_ *Correlation, _ error) {}))
 
 		cors := waitForCors(serverCh, 1, 4)
-		require.Len(t, cors, 0)
+		require.Empty(t, cors)
 		require.Equal(t, uint32(5), client.(*Client).maxAttempts)
 		require.Equal(t, int64(5), atomic.LoadInt64(&client.(*Client).TotalRetriedUpdates))
 

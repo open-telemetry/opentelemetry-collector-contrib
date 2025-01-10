@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/metadata"
 )
@@ -30,9 +30,9 @@ func TestDefaultConfig(t *testing.T) {
 	require.ErrorContains(t, err, "no manager endpoint was specified")
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
-	_, err := factory.CreateMetricsReceiver(
+	_, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		&Config{
@@ -46,9 +46,9 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCreateMetricsReceiverNotNSX(t *testing.T) {
+func TestCreateMetricsNotNSX(t *testing.T) {
 	factory := NewFactory()
-	_, err := factory.CreateMetricsReceiver(
+	_, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		receivertest.NewNopFactory().CreateDefaultConfig(),

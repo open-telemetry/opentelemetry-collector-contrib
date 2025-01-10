@@ -20,7 +20,7 @@
       "scopeMetrics": [
         {
           "scope": {
-            "name": "otelcol/hostmetricsreceiver/cpu",
+            "name": "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper",
             "version": "0.102.0-dev"
           },
           "metrics": [

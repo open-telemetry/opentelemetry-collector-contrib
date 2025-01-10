@@ -77,7 +77,7 @@ func TestTranslateDockerMetric_NamesAreTranslatedCorrectly(t *testing.T) {
 	}
 }
 
-func TestTranslateDockerMetric_ResourceAttrbutesAreTranslatedCorrectly(t *testing.T) {
+func TestTranslateDockerMetric_ResourceAttributesAreTranslatedCorrectly(t *testing.T) {
 	testcases := []struct {
 		nameIn  string
 		nameOut string
@@ -95,7 +95,7 @@ func TestTranslateDockerMetric_ResourceAttrbutesAreTranslatedCorrectly(t *testin
 
 			res, ok := actual.Get(tc.nameOut)
 			assert.True(t, ok)
-			assert.Equal(t, res.AsString(), "a")
+			assert.Equal(t, "a", res.AsString())
 		})
 	}
 }

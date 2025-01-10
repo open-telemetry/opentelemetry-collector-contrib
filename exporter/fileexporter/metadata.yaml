@@ -1,11 +1,11 @@
 type: file
-scope_name: otelcol/file
 
 status:
   class: exporter
   stability:
     alpha: [traces, metrics, logs]
-  distributions: [core, contrib]
+    development: [profiles]
+  distributions: [core, contrib, k8s]
   codeowners:
     active: [atingchen]
 

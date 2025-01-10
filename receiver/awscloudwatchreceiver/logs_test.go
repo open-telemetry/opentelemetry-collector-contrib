@@ -95,7 +95,7 @@ func TestPrefixedNamedStreamsConfig(t *testing.T) {
 
 	groupRequests := alertRcvr.groupRequests
 	require.Len(t, groupRequests, 1)
-	require.Equal(t, groupRequests[0].groupName(), "test-log-group-name")
+	require.Equal(t, "test-log-group-name", groupRequests[0].groupName())
 
 	err = alertRcvr.Shutdown(context.Background())
 	require.NoError(t, err)
@@ -129,7 +129,7 @@ func TestNamedConfigNoStreamFilter(t *testing.T) {
 
 	groupRequests := alertRcvr.groupRequests
 	require.Len(t, groupRequests, 1)
-	require.Equal(t, groupRequests[0].groupName(), "test-log-group-name")
+	require.Equal(t, "test-log-group-name", groupRequests[0].groupName())
 
 	err = alertRcvr.Shutdown(context.Background())
 	require.NoError(t, err)
@@ -162,7 +162,7 @@ func TestDiscovery(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return sink.LogRecordCount() > 0
 	}, 2*time.Second, 10*time.Millisecond)
-	require.Equal(t, len(logsRcvr.groupRequests), 2)
+	require.Len(t, logsRcvr.groupRequests, 2)
 	require.NoError(t, logsRcvr.Shutdown(context.Background()))
 }
 

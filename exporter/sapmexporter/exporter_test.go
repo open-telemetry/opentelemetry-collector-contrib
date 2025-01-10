@@ -18,6 +18,7 @@ import (
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -25,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	cfg := &Config{
 		Endpoint:           "test-endpoint",
 		AccessToken:        "abcd1234",
@@ -91,8 +92,7 @@ func TestFilterToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			traces := buildTestTraces(tt.useToken)
-			batches, err := jaeger.ProtoFromTraces(traces)
-			require.NoError(t, err)
+			batches := jaeger.ProtoFromTraces(traces)
 			assert.Equal(t, tt.useToken, hasToken(batches))
 			filterToken(batches)
 			assert.False(t, hasToken(batches))
@@ -215,6 +215,79 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 	}
 }
 
+func TestSAPMClientTokenAccess(t *testing.T) {
+	tests := []struct {
+		name                   string
+		inContext              bool
+		accessTokenPassthrough bool
+	}{
+		{
+			name:                   "Token in context with passthrough",
+			inContext:              true,
+			accessTokenPassthrough: true,
+		},
+		{
+			name:                   "Token in attributes with passthrough",
+			inContext:              false,
+			accessTokenPassthrough: true,
+		},
+		{
+			name:                   "Token in config wihout passthrough",
+			inContext:              false,
+			accessTokenPassthrough: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tracesReceived := false
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				expectedToken := "ClientAccessToken"
+				if tt.accessTokenPassthrough && tt.inContext {
+					expectedToken = "SplunkAccessToken"
+				} else if tt.accessTokenPassthrough && !tt.inContext {
+					expectedToken = "TraceAccessToken0"
+				}
+				assert.Contains(t, r.Header.Get("x-sf-token"), expectedToken)
+				status := 200
+				w.WriteHeader(status)
+				tracesReceived = true
+			}))
+			defer func() {
+				assert.True(t, tracesReceived, "Test server never received traces.")
+			}()
+			defer server.Close()
+
+			cfg := &Config{
+				Endpoint:    server.URL,
+				AccessToken: "ClientAccessToken",
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+					AccessTokenPassthrough: tt.accessTokenPassthrough,
+				},
+			}
+			params := exportertest.NewNopSettings()
+
+			se, err := newSAPMExporter(cfg, params)
+			assert.NoError(t, err)
+			assert.NotNil(t, se, "failed to create trace exporter")
+
+			trace, testTraceErr := buildTestTrace()
+			require.NoError(t, testTraceErr)
+
+			ctx := context.Background()
+			if tt.inContext {
+				ctx = client.NewContext(
+					ctx,
+					client.Info{Metadata: client.NewMetadata(
+						map[string][]string{splunk.SFxAccessTokenHeader: {"SplunkAccessToken"}},
+					)},
+				)
+			}
+			err = se.pushTraceData(ctx, trace)
+			require.NoError(t, err)
+		})
+	}
+}
+
 func decompress(body io.Reader, compression string) ([]byte, error) {
 	switch compression {
 	case "":
@@ -280,7 +353,6 @@ func TestCompression(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(
 			tt.name, func(t *testing.T) {
 				tracesReceived := false
@@ -291,13 +363,13 @@ func TestCompression(t *testing.T) {
 							assert.EqualValues(t, compression, tt.receivedCompression)
 
 							payload, err := decompress(r.Body, compression)
-							require.NoError(t, err)
+							assert.NoError(t, err)
 
 							var sapm splunksapm.PostSpansRequest
 							err = sapm.Unmarshal(payload)
-							require.NoError(t, err)
+							assert.NoError(t, err)
 
-							w.WriteHeader(200)
+							w.WriteHeader(http.StatusOK)
 							tracesReceived = true
 						},
 					),

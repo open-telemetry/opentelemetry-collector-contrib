@@ -90,7 +90,7 @@ func (rw *resourceWatcher) initialize() error {
 	}
 	rw.client = client
 
-	if rw.config.Distribution == distributionOpenShift {
+	if rw.config.Distribution == distributionOpenShift && rw.config.Namespace == "" {
 		rw.osQuotaClient, err = rw.makeOpenShiftQuotaClient(rw.config.APIConfig)
 		if err != nil {
 			return fmt.Errorf("Failed to create OpenShift quota API client: %w", err)
@@ -106,7 +106,7 @@ func (rw *resourceWatcher) initialize() error {
 }
 
 func (rw *resourceWatcher) prepareSharedInformerFactory() error {
-	factory := informers.NewSharedInformerFactoryWithOptions(rw.client, rw.config.MetadataCollectionInterval)
+	factory := rw.getInformerFactory()
 
 	// Map of supported group version kinds by name of a kind.
 	// If none of the group versions are supported by k8s server for a specific kind,
@@ -156,6 +156,24 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 	return nil
 }
 
+func (rw *resourceWatcher) getInformerFactory() informers.SharedInformerFactory {
+	var factory informers.SharedInformerFactory
+	if rw.config.Namespace != "" {
+		rw.logger.Info("Namespace filter has been enabled. Nodes and namespaces will not be observed.", zap.String("namespace", rw.config.Namespace))
+		factory = informers.NewSharedInformerFactoryWithOptions(
+			rw.client,
+			rw.config.MetadataCollectionInterval,
+			informers.WithNamespace(rw.config.Namespace),
+		)
+	} else {
+		factory = informers.NewSharedInformerFactoryWithOptions(
+			rw.client,
+			rw.config.MetadataCollectionInterval,
+		)
+	}
+	return factory
+}
+
 func (rw *resourceWatcher) isKindSupported(gvk schema.GroupVersionKind) (bool, error) {
 	resources, err := rw.client.Discovery().ServerResourcesForGroupVersion(gvk.GroupVersion().String())
 	if err != nil {
@@ -179,9 +197,13 @@ func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, fa
 	case gvk.Pod:
 		rw.setupInformer(kind, factory.Core().V1().Pods().Informer())
 	case gvk.Node:
-		rw.setupInformer(kind, factory.Core().V1().Nodes().Informer())
+		if rw.config.Namespace == "" {
+			rw.setupInformer(kind, factory.Core().V1().Nodes().Informer())
+		}
 	case gvk.Namespace:
-		rw.setupInformer(kind, factory.Core().V1().Namespaces().Informer())
+		if rw.config.Namespace == "" {
+			rw.setupInformer(kind, factory.Core().V1().Namespaces().Informer())
+		}
 	case gvk.ReplicationController:
 		rw.setupInformer(kind, factory.Core().V1().ReplicationControllers().Informer())
 	case gvk.ResourceQuota:
@@ -366,7 +388,7 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[exper
 
 	if rw.entityLogConsumer != nil {
 		// Represent metadata update as entity events.
-		entityEvents := metadata.GetEntityEvents(oldMetadata, newMetadata, timestamp)
+		entityEvents := metadata.GetEntityEvents(oldMetadata, newMetadata, timestamp, rw.config.MetadataCollectionInterval)
 
 		// Convert entity events to log representation.
 		logs := entityEvents.ConvertAndMoveToLogs()

@@ -3,6 +3,8 @@
 
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
+import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
+
 const (
 	// includeFieldName is the mapstructure field name for Include field
 	includeFieldName = "include"
@@ -16,7 +18,7 @@ const (
 	// newNameFieldName is the mapstructure field name for NewName field
 	newNameFieldName = "new_name"
 
-	// groupResourceLabelsFieldName is the mapstructure field name for GroupResouceLabels field
+	// groupResourceLabelsFieldName is the mapstructure field name for GroupResourceLabels field
 	groupResourceLabelsFieldName = "group_resource_labels"
 
 	// aggregationTypeFieldName is the mapstructure field name for aggregationType field
@@ -40,14 +42,12 @@ const (
 
 // Config defines configuration for Resource processor.
 type Config struct {
-
 	// transform specifies a list of transforms on metrics with each transform focusing on one metric.
 	Transforms []transform `mapstructure:"transforms"`
 }
 
 // transform defines the transformation applied to the specific metric
 type transform struct {
-
 	// --- SPECIFY WHICH METRIC(S) TO MATCH ---
 
 	// MetricIncludeFilter is used to select the metric(s) to operate on.
@@ -69,13 +69,13 @@ type transform struct {
 	// REQUIRED only if Action is INSERT.
 	NewName string `mapstructure:"new_name"`
 
-	// GroupResourceLabels specifes resource labels that will be appended to this group's new ResourceMetrics message
+	// GroupResourceLabels specifies resource labels that will be appended to this group's new ResourceMetrics message
 	// REQUIRED only if Action is GROUP
 	GroupResourceLabels map[string]string `mapstructure:"group_resource_labels"`
 
 	// AggregationType specifies how to aggregate.
 	// REQUIRED only if Action is COMBINE.
-	AggregationType aggregationType `mapstructure:"aggregation_type"`
+	AggregationType aggregateutil.AggregationType `mapstructure:"aggregation_type"`
 
 	// SubmatchCase specifies what case to use for label values created from regexp submatches.
 	SubmatchCase submatchCase `mapstructure:"submatch_case"`
@@ -112,7 +112,7 @@ type Operation struct {
 	LabelSet []string `mapstructure:"label_set"`
 
 	// AggregationType specifies how to aggregate.
-	AggregationType aggregationType `mapstructure:"aggregation_type"`
+	AggregationType aggregateutil.AggregationType `mapstructure:"aggregation_type"`
 
 	// AggregatedValues is a list of label values to aggregate away.
 	AggregatedValues []string `mapstructure:"aggregated_values"`
@@ -152,7 +152,7 @@ const (
 	// Combine combines multiple metrics into a single metric.
 	Combine ConfigAction = "combine"
 
-	// Group groups mutiple metrics matching the predicate into multiple ResourceMetrics messages
+	// Group groups multiple metrics matching the predicate into multiple ResourceMetrics messages
 	Group ConfigAction = "group"
 )
 
@@ -168,7 +168,7 @@ func (ca ConfigAction) isValid() bool {
 	return false
 }
 
-// operationAction is the enum to capture the thress types of actions to perform for an operation.
+// operationAction is the enum to capture the types of actions to perform for an operation.
 type operationAction string
 
 const (
@@ -209,38 +209,6 @@ var operationActions = []operationAction{addLabel, updateLabel, deleteLabelValue
 func (oa operationAction) isValid() bool {
 	for _, operationAction := range operationActions {
 		if oa == operationAction {
-			return true
-		}
-	}
-
-	return false
-}
-
-// aggregationType is the enum to capture the three types of aggregation for the aggregation operation.
-type aggregationType string
-
-const (
-	// sum indicates taking the sum of the aggregated data.
-	sum aggregationType = "sum"
-
-	// mean indicates taking the mean of the aggregated data.
-	mean aggregationType = "mean"
-
-	// min indicates taking the minimum of the aggregated data.
-	min aggregationType = "min"
-
-	// max indicates taking the max of the aggregated data.
-	max aggregationType = "max"
-
-	// count indicates taking the count of the aggregated data.
-	count aggregationType = "count"
-)
-
-var aggregationTypes = []aggregationType{sum, mean, min, max, count}
-
-func (at aggregationType) isValid() bool {
-	for _, aggregationType := range aggregationTypes {
-		if at == aggregationType {
 			return true
 		}
 	}

@@ -1,13 +1,13 @@
 type: kinetica
-scope_name: otelcol/kinetica
 
 status:
   class: exporter
   stability:
-    development: [metrics, traces, logs]
+    unmaintained: [metrics, traces, logs]
   distributions: []
   codeowners:
-    active: [am-kinetica, TylerHelmuth]
+    active: [TylerHelmuth]
+    emeritus: [am-kinetica]
 
 
 # TODO: Update the exporter to pass the tests

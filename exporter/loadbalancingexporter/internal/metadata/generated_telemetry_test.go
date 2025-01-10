@@ -14,6 +14,7 @@ import (
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 type mockMeter struct {
@@ -49,28 +50,25 @@ func TestProviders(t *testing.T) {
 
 	meter := Meter(set)
 	if m, ok := meter.(mockMeter); ok {
-		require.Equal(t, "otelcol/loadbalancing", m.name)
+		require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter", m.name)
 	} else {
 		require.Fail(t, "returned Meter not mockMeter")
 	}
 
 	tracer := Tracer(set)
 	if m, ok := tracer.(mockTracer); ok {
-		require.Equal(t, "otelcol/loadbalancing", m.name)
+		require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter", m.name)
 	} else {
 		require.Fail(t, "returned Meter not mockTracer")
 	}
 }
 
 func TestNewTelemetryBuilder(t *testing.T) {
-	set := component.TelemetrySettings{
-		MeterProvider:  mockMeterProvider{},
-		TracerProvider: mockTracerProvider{},
-	}
+	set := componenttest.NewNopTelemetrySettings()
 	applied := false
-	_, err := NewTelemetryBuilder(set, func(b *TelemetryBuilder) {
+	_, err := NewTelemetryBuilder(set, telemetryBuilderOptionFunc(func(b *TelemetryBuilder) {
 		applied = true
-	})
+	}))
 	require.NoError(t, err)
 	require.True(t, applied)
 }

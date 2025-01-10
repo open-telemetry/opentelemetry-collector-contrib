@@ -15,18 +15,18 @@ on:
 jobs:
   # Releasing opentelemetry-collector-contrib
   prepare-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: 'open-telemetry/opentelemetry-collector'
+          repository: "open-telemetry/opentelemetry-collector"
           path: opentelemetry-collector
       - uses: actions/checkout@v4
         with:
           path: opentelemetry-collector-contrib
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21.11"
+          go-version: "1.22.8"
           cache: false
       - name: Prepare release for contrib
         working-directory: opentelemetry-collector-contrib

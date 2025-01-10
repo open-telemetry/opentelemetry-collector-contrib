@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
@@ -36,6 +37,9 @@ type traceToMetricConnectorNative struct {
 	// ctagKeys are container tag keys
 	ctagKeys []string
 
+	// peerTagKeys are peer tag keys to group APM stats
+	peerTagKeys []string
+
 	// translator specifies the translator used to transform APM Stats Payloads
 	// from the agent to OTLP Metrics.
 	translator *metrics.Translator
@@ -57,6 +61,7 @@ var _ component.Component = (*traceToMetricConnectorNative)(nil) // testing that
 func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics, metricsClient statsd.ClientInterface) (*traceToMetricConnectorNative, error) {
 	set.Logger.Info("Building datadog connector for traces to metrics")
 	statsout := make(chan *pb.StatsPayload, 100)
+	statsWriter := statsprocessor.NewOtelStatsWriter(statsout)
 	set.MeterProvider = noop.NewMeterProvider() // disable metrics for the connector
 	attributesTranslator, err := attributes.NewTranslator(set)
 	if err != nil {
@@ -73,7 +78,8 @@ func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg compon
 		translator:      trans,
 		tcfg:            tcfg,
 		ctagKeys:        cfg.(*Config).Traces.ResourceAttributesAsContainerTags,
-		concentrator:    stats.NewConcentrator(tcfg, statsout, time.Now(), metricsClient),
+		peerTagKeys:     tcfg.ConfiguredPeerTags(),
+		concentrator:    stats.NewConcentrator(tcfg, statsWriter, time.Now(), metricsClient),
 		statsout:        statsout,
 		metricsConsumer: metricsConsumer,
 		exit:            make(chan struct{}),
@@ -112,7 +118,7 @@ func (c *traceToMetricConnectorNative) Capabilities() consumer.Capabilities {
 }
 
 func (c *traceToMetricConnectorNative) ConsumeTraces(_ context.Context, traces ptrace.Traces) error {
-	inputs := stats.OTLPTracesToConcentratorInputs(traces, c.tcfg, c.ctagKeys)
+	inputs := stats.OTLPTracesToConcentratorInputs(traces, c.tcfg, c.ctagKeys, c.peerTagKeys)
 	for _, input := range inputs {
 		c.concentrator.Add(input)
 	}

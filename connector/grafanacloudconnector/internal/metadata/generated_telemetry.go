@@ -6,9 +6,8 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
@@ -16,11 +15,11 @@ import (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("otelcol/grafanacloud")
+	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("otelcol/grafanacloud")
+	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry
@@ -30,69 +29,65 @@ type TelemetryBuilder struct {
 	GrafanacloudDatapointCount   metric.Int64Counter
 	GrafanacloudFlushCount       metric.Int64Counter
 	GrafanacloudHostCount        metric.Int64ObservableGauge
-	observeGrafanacloudHostCount func() int64
-	level                        configtelemetry.Level
-	attributeSet                 attribute.Set
+	observeGrafanacloudHostCount func(context.Context, metric.Observer) error
 }
 
-// telemetryBuilderOption applies changes to default builder.
-type telemetryBuilderOption func(*TelemetryBuilder)
-
-// WithLevel sets the current telemetry level for the component.
-func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
-		builder.level = lvl
-	}
+// TelemetryBuilderOption applies changes to default builder.
+type TelemetryBuilderOption interface {
+	apply(*TelemetryBuilder)
 }
 
-// WithAttributeSet applies a set of attributes for asynchronous instruments.
-func WithAttributeSet(set attribute.Set) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
-		builder.attributeSet = set
-	}
+type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
+
+func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
+	tbof(mb)
 }
 
 // WithGrafanacloudHostCountCallback sets callback for observable GrafanacloudHostCount metric.
-func WithGrafanacloudHostCountCallback(cb func() int64) telemetryBuilderOption {
-	return func(builder *TelemetryBuilder) {
-		builder.observeGrafanacloudHostCount = cb
-	}
+func WithGrafanacloudHostCountCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
+	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
+		builder.observeGrafanacloudHostCount = func(_ context.Context, o metric.Observer) error {
+			o.ObserveInt64(builder.GrafanacloudHostCount, cb(), opts...)
+			return nil
+		}
+	})
 }
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
-func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
+func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
+	builder := TelemetryBuilder{}
 	for _, op := range options {
-		op(&builder)
+		op.apply(&builder)
 	}
+	builder.meter = Meter(settings)
 	var err, errs error
-	if builder.level >= configtelemetry.LevelBasic {
-		builder.meter = Meter(settings)
-	} else {
-		builder.meter = noop.Meter{}
-	}
-	builder.GrafanacloudDatapointCount, err = builder.meter.Int64Counter(
-		"grafanacloud_datapoint_count",
+	builder.GrafanacloudDatapointCount, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+		"otelcol_grafanacloud_datapoint_count",
 		metric.WithDescription("Number of datapoints sent to Grafana Cloud"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.GrafanacloudFlushCount, err = builder.meter.Int64Counter(
-		"grafanacloud_flush_count",
+	builder.GrafanacloudFlushCount, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+		"otelcol_grafanacloud_flush_count",
 		metric.WithDescription("Number of metrics flushes"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.GrafanacloudHostCount, err = builder.meter.Int64ObservableGauge(
-		"grafanacloud_host_count",
+	builder.GrafanacloudHostCount, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableGauge(
+		"otelcol_grafanacloud_host_count",
 		metric.WithDescription("Number of unique hosts"),
 		metric.WithUnit("1"),
-		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(builder.observeGrafanacloudHostCount(), metric.WithAttributeSet(builder.attributeSet))
-			return nil
-		}),
 	)
 	errs = errors.Join(errs, err)
+	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeGrafanacloudHostCount, builder.GrafanacloudHostCount)
+	errs = errors.Join(errs, err)
 	return &builder, errs
+}
+
+func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
+	if cfgLevel <= srvLevel {
+		return meter
+	}
+	return noopmetric.Meter{}
 }

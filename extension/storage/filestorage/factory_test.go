@@ -29,7 +29,7 @@ func TestFactory(t *testing.T) {
 		require.Equal(t, expected, cfg.Directory)
 	}
 	require.Equal(t, time.Second, cfg.Timeout)
-	require.Equal(t, false, cfg.FSync)
+	require.False(t, cfg.FSync)
 
 	tests := []struct {
 		name           string
@@ -50,7 +50,7 @@ func TestFactory(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			e, err := f.CreateExtension(
+			e, err := f.Create(
 				context.Background(),
 				extensiontest.NewNopSettings(),
 				test.config,

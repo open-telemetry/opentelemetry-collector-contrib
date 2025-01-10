@@ -65,7 +65,7 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 		val.Range(func(key string, originalValue pcommon.Value) bool {
 			switch mode {
 			case modeValue:
-				if compiledPattern.MatchString(originalValue.Str()) {
+				if originalValue.Type() == pcommon.ValueTypeStr && compiledPattern.MatchString(originalValue.Str()) {
 					if !fn.IsEmpty() {
 						updatedString, err := applyOptReplaceFunction(ctx, tCtx, compiledPattern, fn, originalValue.Str(), replacementVal, replacementFormat)
 						if err != nil {
@@ -97,7 +97,7 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 			}
 			return true
 		})
-		updated.CopyTo(val)
+		updated.MoveTo(val)
 		return nil, nil
 	}, nil
 }

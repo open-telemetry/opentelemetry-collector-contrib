@@ -21,7 +21,7 @@ resourceMetrics:
             name: k8s.pod.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -45,7 +45,7 @@ resourceMetrics:
             name: k8s.pod.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -69,7 +69,7 @@ resourceMetrics:
             name: k8s.pod.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -93,7 +93,7 @@ resourceMetrics:
             name: k8s.pod.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -117,7 +117,7 @@ resourceMetrics:
             name: k8s.pod.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -141,7 +141,7 @@ resourceMetrics:
             name: k8s.pod.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -165,7 +165,7 @@ resourceMetrics:
             name: k8s.pod.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -189,7 +189,7 @@ resourceMetrics:
             name: k8s.pod.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -213,7 +213,7 @@ resourceMetrics:
             name: k8s.pod.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -240,7 +240,7 @@ resourceMetrics:
             name: k8s.container.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -267,7 +267,7 @@ resourceMetrics:
             name: k8s.container.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -294,7 +294,7 @@ resourceMetrics:
             name: k8s.container.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -321,7 +321,7 @@ resourceMetrics:
             name: k8s.container.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -348,7 +348,7 @@ resourceMetrics:
             name: k8s.container.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -375,7 +375,7 @@ resourceMetrics:
             name: k8s.container.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -402,7 +402,7 @@ resourceMetrics:
             name: k8s.container.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -429,7 +429,7 @@ resourceMetrics:
             name: k8s.container.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -456,5 +456,5 @@ resourceMetrics:
             name: k8s.container.cpu.node.utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest

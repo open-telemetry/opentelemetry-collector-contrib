@@ -30,6 +30,52 @@ type worker struct {
 	index          int                          // worker index
 }
 
+var histogramBucketSamples = []struct {
+	bucketCounts []uint64
+	sum          int64
+}{
+	{
+		[]uint64{0, 0, 1, 0, 0, 0, 3, 4, 1, 1, 0, 0, 0, 0, 0},
+		3940,
+	},
+	{
+		[]uint64{0, 0, 0, 0, 0, 0, 2, 4, 4, 0, 0, 0, 0, 0, 0},
+		4455,
+	},
+	{
+		[]uint64{0, 0, 0, 0, 0, 0, 1, 4, 3, 2, 0, 0, 0, 0, 0},
+		5337,
+	},
+	{
+		[]uint64{0, 0, 1, 0, 1, 0, 2, 2, 1, 3, 0, 0, 0, 0, 0},
+		4477,
+	},
+	{
+		[]uint64{0, 0, 0, 0, 0, 1, 3, 2, 2, 2, 0, 0, 0, 0, 0},
+		4670,
+	},
+	{
+		[]uint64{0, 0, 0, 1, 1, 0, 1, 1, 1, 5, 0, 0, 0, 0, 0},
+		5670,
+	},
+	{
+		[]uint64{0, 0, 0, 0, 0, 2, 1, 1, 4, 2, 0, 0, 0, 0, 0},
+		5091,
+	},
+	{
+		[]uint64{0, 0, 2, 0, 0, 0, 2, 4, 1, 1, 0, 0, 0, 0, 0},
+		3420,
+	},
+	{
+		[]uint64{0, 0, 0, 0, 0, 0, 1, 3, 2, 4, 0, 0, 0, 0, 0},
+		5917,
+	},
+	{
+		[]uint64{0, 0, 1, 0, 1, 0, 0, 4, 4, 0, 0, 0, 0, 0, 0},
+		3988,
+	},
+}
+
 func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdkmetric.Exporter, error), signalAttrs []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 
@@ -82,6 +128,29 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 					},
 				},
 			})
+		case metricTypeHistogram:
+			iteration := uint64(i) % 10
+			sum := histogramBucketSamples[iteration].sum
+			bucketCounts := histogramBucketSamples[iteration].bucketCounts
+			metrics = append(metrics, metricdata.Metrics{
+				Name: w.metricName,
+				Data: metricdata.Histogram[int64]{
+					Temporality: metricdata.CumulativeTemporality,
+					DataPoints: []metricdata.HistogramDataPoint[int64]{
+						{
+							StartTime:  time.Now().Add(-1 * time.Second),
+							Time:       time.Now(),
+							Attributes: attribute.NewSet(signalAttrs...),
+							Exemplars:  w.exemplars,
+							Count:      iteration,
+							Sum:        sum,
+							// Bounds from https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/sdk.md#explicit-bucket-histogram-aggregation
+							Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+							BucketCounts: bucketCounts,
+						},
+					},
+				},
+			})
 		default:
 			w.logger.Fatal("unknown metric type")
 		}
@@ -91,11 +160,12 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 			ScopeMetrics: []metricdata.ScopeMetrics{{Metrics: metrics}},
 		}
 
-		if err := exporter.Export(context.Background(), &rm); err != nil {
-			w.logger.Fatal("exporter failed", zap.Error(err))
-		}
 		if err := limiter.Wait(context.Background()); err != nil {
 			w.logger.Fatal("limiter wait failed, retry", zap.Error(err))
+		}
+
+		if err := exporter.Export(context.Background(), &rm); err != nil {
+			w.logger.Fatal("exporter failed", zap.Error(err))
 		}
 
 		i++

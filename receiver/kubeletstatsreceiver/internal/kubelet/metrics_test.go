@@ -16,8 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-type fakeRestClient struct {
-}
+type fakeRestClient struct{}
 
 func (f fakeRestClient) StatsSummary() ([]byte, error) {
 	return os.ReadFile("../../testdata/stats-summary.json")
@@ -33,7 +32,7 @@ func TestMetricAccumulator(t *testing.T) {
 	summary, _ := statsProvider.StatsSummary()
 	metadataProvider := NewMetadataProvider(rc)
 	podsMetadata, _ := metadataProvider.Pods()
-	k8sMetadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, NodeLimits{}, nil)
+	k8sMetadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, NodeCapacity{}, nil)
 	mbs := &metadata.MetricsBuilders{
 		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
 		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
@@ -45,7 +44,7 @@ func TestMetricAccumulator(t *testing.T) {
 	mbs.NodeMetricsBuilder.Reset()
 	mbs.PodMetricsBuilder.Reset()
 	mbs.OtherMetricsBuilder.Reset()
-	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, mbs)))
+	require.Empty(t, MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, mbs))
 }
 
 func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
@@ -55,7 +54,7 @@ func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
 			requireResourceOk(t, rm.Resource())
 			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 				ilm := rm.ScopeMetrics().At(j)
-				require.Equal(t, "otelcol/kubeletstatsreceiver", ilm.Scope().Name())
+				require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver", ilm.Scope().Name())
 				for k := 0; k < ilm.Metrics().Len(); k++ {
 					requireMetricOk(t, ilm.Metrics().At(k))
 				}
