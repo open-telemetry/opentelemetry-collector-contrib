@@ -43,7 +43,6 @@ type leaderElectionExtension struct {
 }
 
 // If the receiver sets a callback function then it would be invoked when the leader wins the election
-// additionally set iamLeader to true
 func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
 	for _, callback := range lee.onStartedLeading {
 		callback(ctx)
@@ -51,7 +50,6 @@ func (lee *leaderElectionExtension) startedLeading(ctx context.Context) {
 }
 
 // If the receiver sets a callback function then it would be invoked when the leader loss the election
-// additionally set iamLeader to false
 func (lee *leaderElectionExtension) stoppedLeading() {
 	for _, callback := range lee.onStoppedLeading {
 		callback()
