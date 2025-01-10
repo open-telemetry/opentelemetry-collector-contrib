@@ -279,7 +279,7 @@ for-affected-components:
 		if [ -z '$${DEPENDENT_PKGS}' ]; then \
 			echo "No other package depends on the one being changed."; \
 		else \
-			DEPENDENT_PKG_DIRS=$$(echo $${DEPENDENT_PKGS} | tr ' ' '\n' | xargs -I {} grep --include=go.mod -rl {} | xargs dirname | uniq); \
+			DEPENDENT_PKG_DIRS=$$(echo $${DEPENDENT_PKGS} | tr ' ' '\n' | xargs -I {} grep --include=go.mod -rl {} | xargs -r dirname | uniq); \
 			set -e; for dir in $$(echo $${DEPENDENT_PKG_DIRS}); do \
 			(cd "$${dir}" && \
 				echo "running $${CMD} in $${dir}" && \
