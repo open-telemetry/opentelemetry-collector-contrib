@@ -8,6 +8,7 @@ package sematextexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"time"
+	"github.com/google/uuid"
 
 	"github.com/influxdata/influxdb-observability/common"
 	"go.opentelemetry.io/collector/component"
@@ -22,10 +23,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter/internal/metadata"
 )
 
-const (
-	metricsAppToken = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-	logsAppToken    = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-)
+
+	var metricsAppToken = uuid.NewString()
+	var logsAppToken    = uuid.NewString()
+
 
 // NewFactory creates a factory for the Sematext metrics exporter.
 func NewFactory() exporter.Factory {

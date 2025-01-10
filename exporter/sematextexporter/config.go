@@ -6,6 +6,7 @@ package sematextexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"fmt"
 	"strings"
+	"regexp"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -62,11 +63,11 @@ func (cfg *Config) Validate() error {
 	if strings.ToLower(cfg.Region) != euRegion && strings.ToLower(cfg.Region) != usRegion {
 		return fmt.Errorf("invalid region: %s. please use either 'EU' or 'US'", cfg.Region)
 	}
-	if len(cfg.MetricsConfig.AppToken) != appTokenLength {
-		return fmt.Errorf("invalid metrics app_token: %s. app_token should be 36 characters", cfg.MetricsConfig.AppToken)
+	if !isValidUUID(cfg.MetricsConfig.AppToken) {
+		return fmt.Errorf("invalid metrics app_token: %s. app_token is not a valid UUID", cfg.MetricsConfig.AppToken)
 	}
-	if len(cfg.LogsConfig.AppToken) != appTokenLength {
-		return fmt.Errorf("invalid logs app_token: %s. app_token should be 36 characters", cfg.LogsConfig.AppToken)
+	if !isValidUUID(cfg.LogsConfig.AppToken) {
+		return fmt.Errorf("invalid metrics app_token: %s. app_token is not a valid UUID", cfg.MetricsConfig.AppToken)
 	}
 	if strings.ToLower(cfg.Region) == euRegion {
 		cfg.MetricsEndpoint = euMetricsEndpoint
@@ -78,4 +79,8 @@ func (cfg *Config) Validate() error {
 	}
 
 	return nil
+}
+func isValidUUID(uuid string) bool {
+	const uuidPattern = `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`
+	return regexp.MustCompile(uuidPattern).MatchString(strings.ToLower(uuid))
 }
