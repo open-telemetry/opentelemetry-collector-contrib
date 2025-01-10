@@ -10,9 +10,12 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
+	api_v1 "github.com/prometheus/prometheus/web/api/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -45,13 +48,17 @@ func TestPrometheusAPIServer(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-	mp, cfg, err := setupMockPrometheus(targets...)
-	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
-	defer mp.Close()
+	endpointsToReceivers := map[string]*pReceiver{
+		"localhost:9090": nil,
+		"localhost:9091": nil,
+	}
+	for endpoint, _ := range endpointsToReceivers {
 
-	endpoints := []string{"localhost:9090", "localhost:9091"}
-	for _, endpoint := range endpoints {
+		ctx := context.Background()
+		mp, cfg, err := setupMockPrometheus(targets...)
+		require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+		defer mp.Close()
+
 		require.NoError(t, err)
 		receiver := newPrometheusReceiver(receivertest.NewNopSettings(), &Config{
 			PrometheusConfig: (*PromConfig)(cfg),
@@ -62,6 +69,7 @@ func TestPrometheusAPIServer(t *testing.T) {
 				},
 			},
 		}, new(consumertest.MetricsSink))
+		endpointsToReceivers[endpoint] = receiver
 
 		require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 		t.Cleanup(func() {
@@ -70,16 +78,19 @@ func TestPrometheusAPIServer(t *testing.T) {
 			require.Error(t, err)
 			require.Nil(t, response)
 		})
+
+		mp.wg.Wait()
 	}
 
-	mp.wg.Wait()
-
-	for _, endpoint := range endpoints {
+	for endpoint, receiver := range endpointsToReceivers {
 		testScrapePools(t, endpoint)
 		testTargets(t, endpoint)
 		testTargetsMetadata(t, endpoint)
-		testPrometheusConfig(t, endpoint)
+		testPrometheusConfig(t, endpoint, receiver)
 		testMetricsEndpoint(t, endpoint)
+		testRuntimeInfo(t, endpoint)
+		testBuildInfo(t, endpoint)
+		testFlags(t, endpoint)
 	}
 }
 
@@ -143,7 +154,7 @@ func testTargetsMetadata(t *testing.T, endpoint string) {
 	}
 }
 
-func testPrometheusConfig(t *testing.T, endpoint string) {
+func testPrometheusConfig(t *testing.T, endpoint string, receiver *pReceiver) {
 	prometheusConfigResponse, err := callAPI(endpoint, "/status/config")
 	assert.NoError(t, err)
 	var prometheusConfigResult v1.ConfigResult
@@ -153,6 +164,56 @@ func testPrometheusConfig(t *testing.T, endpoint string) {
 	prometheusConfig, err := config.Load(prometheusConfigResult.YAML, true, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, prometheusConfig)
+
+	// Modify the Prometheus config
+	newScrapeInterval := model.Duration(30 * time.Second)
+	receiver.cfg.PrometheusConfig.GlobalConfig.ScrapeInterval = newScrapeInterval
+	receiver.cfg.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval = newScrapeInterval
+
+	// Call the API again and check if the change exists in the returned config
+	newPrometheusConfigResponse, err := callAPI(endpoint, "/status/config")
+	assert.NoError(t, err)
+	var newPrometheusConfigResult v1.ConfigResult
+	json.Unmarshal([]byte(newPrometheusConfigResponse.Data), &newPrometheusConfigResult)
+	assert.NotNil(t, newPrometheusConfigResult)
+	assert.NotNil(t, newPrometheusConfigResult.YAML)
+	newPrometheusConfig, err := config.Load(newPrometheusConfigResult.YAML, true, nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, newPrometheusConfig)
+	assert.Equal(t, newScrapeInterval, newPrometheusConfig.GlobalConfig.ScrapeInterval)
+	assert.Equal(t, newScrapeInterval, newPrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
+
+	// Ensure the new config is different from the old one
+	assert.NotEqual(t, prometheusConfig, newPrometheusConfig)
+}
+
+func testRuntimeInfo(t *testing.T, endpoint string) {
+	prometheusConfigResponse, err := callAPI(endpoint, "/status/runtimeinfo")
+	assert.NoError(t, err)
+	var runtimeInfo api_v1.RuntimeInfo
+	json.Unmarshal([]byte(prometheusConfigResponse.Data), &runtimeInfo)
+	assert.NotNil(t, runtimeInfo)
+	assert.NotEmpty(t, runtimeInfo.GoroutineCount)
+	assert.NotEmpty(t, runtimeInfo.GOMAXPROCS)
+	assert.NotEmpty(t, runtimeInfo.GOMEMLIMIT)
+}
+
+func testBuildInfo(t *testing.T, endpoint string) {
+	prometheusConfigResponse, err := callAPI(endpoint, "/status/buildinfo")
+	assert.NoError(t, err)
+
+	var prometheusVersion api_v1.PrometheusVersion
+	json.Unmarshal([]byte(prometheusConfigResponse.Data), &prometheusVersion)
+	assert.NotNil(t, prometheusVersion)
+	assert.NotEmpty(t, prometheusVersion.GoVersion)
+}
+
+func testFlags(t *testing.T, endpoint string) {
+	prometheusConfigResponse, err := callAPI(endpoint, "/status/flags")
+	assert.NoError(t, err)
+	var flagsMap map[string]string
+	json.Unmarshal([]byte(prometheusConfigResponse.Data), &flagsMap)
+	assert.NotNil(t, flagsMap)
 }
 
 func testMetricsEndpoint(t *testing.T, endpoint string) {

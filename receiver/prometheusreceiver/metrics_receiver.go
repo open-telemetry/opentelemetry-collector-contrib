@@ -11,20 +11,22 @@ import (
 	"net/url"
 	"os"
 	"reflect"
-	"regexp"
 	"runtime"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"time"
 	"unsafe"
 
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
+	"github.com/grafana/regexp"
 	"github.com/mwitkow/go-conntrack"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/route"
+	"github.com/prometheus/common/version"
 	toolkit_web "github.com/prometheus/exporter-toolkit/web"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
@@ -111,7 +113,7 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	err = r.targetAllocatorManager.Start(ctx, host, r.scrapeManager, r.discoveryManager, r.webHandler)
+	err = r.targetAllocatorManager.Start(ctx, host, r.scrapeManager, r.discoveryManager)
 	if err != nil {
 		return err
 	}
@@ -226,6 +228,28 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) error {
 	r.settings.Logger.Info("Starting Prometheus API server")
 
+	// If allowed CORS origins are provided in the receiver config, combine them into a single regex since the Prometheus API server requires this format.
+	var corsOriginRegexp *regexp.Regexp
+	if len(r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins) > 0 {
+		var combinedOriginsBuilder strings.Builder
+		combinedOriginsBuilder.WriteString(r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins[0])
+		for _, origin := range r.cfg.APIServer.ServerConfig.CORS.AllowedOrigins[1:] {
+			combinedOriginsBuilder.WriteString("|")
+			combinedOriginsBuilder.WriteString(origin)
+		}
+		combinedRegexp, err := regexp.Compile(combinedOriginsBuilder.String())
+		if err != nil {
+			return fmt.Errorf("failed to compile combined CORS allowed origins into regex: %s", err.Error())
+		}
+		corsOriginRegexp = combinedRegexp
+	}
+
+	// If read timeout is not set in the receiver config, use the default Prometheus value.
+	readTimeout := r.cfg.APIServer.ServerConfig.ReadTimeout
+	if readTimeout == 0 {
+		readTimeout = time.Duration(readTimeoutMinutes) * time.Minute
+	}
+
 	o := &web.Options{
 		ScrapeManager: r.scrapeManager,
 		Context:       ctx,
@@ -236,13 +260,14 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 			Path:   "",
 		},
 		RoutePrefix:    "/",
-		ReadTimeout:    time.Minute * readTimeoutMinutes,
+		ReadTimeout:    readTimeout,
 		PageTitle:      "Prometheus Receiver",
 		Flags:          make(map[string]string),
 		MaxConnections: maxConnections,
 		IsAgent:        true,
-		Registerer:     r.registry,
+		Registerer:     r.registerer,
 		Gatherer:       r.registry,
+		CORSOrigin:     corsOriginRegexp,
 	}
 
 	// Creates the API object in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L314-L354
@@ -250,15 +275,17 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	factorySPr := func(_ context.Context) api_v1.ScrapePoolsRetriever { return o.ScrapeManager }
 	factoryTr := func(_ context.Context) api_v1.TargetRetriever { return o.ScrapeManager }
 	factoryAr := func(_ context.Context) api_v1.AlertmanagerRetriever { return nil }
-	FactoryRr := func(_ context.Context) api_v1.RulesRetriever { return nil }
+	factoryRr := func(_ context.Context) api_v1.RulesRetriever { return nil }
 	var app storage.Appendable
 	logger := log.NewNopLogger()
 
 	apiV1 := api_v1.NewAPI(o.QueryEngine, o.Storage, app, o.ExemplarStorage, factorySPr, factoryTr, factoryAr,
+
+		// This ensures that any changes to the config made, even by the target allocator, are reflected in the API.
 		func() promconfig.Config {
 			return *(*promconfig.Config)(r.cfg.PrometheusConfig)
 		},
-		o.Flags,
+		o.Flags, // nil
 		api_v1.GlobalURLOptions{
 			ListenAddress: o.ListenAddress,
 			Host:          o.ExternalURL.Host,
@@ -269,14 +296,14 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 				f(w, r)
 			}
 		},
-		o.LocalStorage,
-		o.TSDBDir,
-		o.EnableAdminAPI,
+		o.LocalStorage,   // nil
+		o.TSDBDir,        // nil
+		o.EnableAdminAPI, // nil
 		logger,
-		FactoryRr,
-		o.RemoteReadSampleLimit,
-		o.RemoteReadConcurrencyLimit,
-		o.RemoteReadBytesInFrame,
+		factoryRr,
+		o.RemoteReadSampleLimit,      // nil
+		o.RemoteReadConcurrencyLimit, // nil
+		o.RemoteReadBytesInFrame,     // nil
 		o.IsAgent,
 		o.CORSOrigin,
 		func() (api_v1.RuntimeInfo, error) {
@@ -290,12 +317,20 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 
 			return status, nil
 		},
-		nil,
+		&web.PrometheusVersion{
+			Version:   version.Version,
+			Revision:  version.Revision,
+			Branch:    version.Branch,
+			BuildUser: version.BuildUser,
+			BuildDate: version.BuildDate,
+			GoVersion: version.GoVersion,
+		},
 		o.Gatherer,
 		o.Registerer,
 		nil,
-		o.EnableRemoteWriteReceiver,
-		o.EnableOTLPWriteReceiver,
+		o.EnableRemoteWriteReceiver,  // nil
+		o.AcceptRemoteWriteProtoMsgs, // nil
+		o.EnableOTLPWriteReceiver,    // nil
 	)
 
 	// Create listener and monitor with conntrack in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579
@@ -340,6 +375,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	return nil
 }
 
+// Helper function from the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L582-L630
 func setPathWithPrefix(prefix string) func(handlerName string, handler http.HandlerFunc) http.HandlerFunc {
 	return func(handlerName string, handler http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {

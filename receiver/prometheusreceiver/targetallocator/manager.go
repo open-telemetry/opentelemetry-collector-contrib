@@ -21,7 +21,6 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/scrape"
-	"github.com/prometheus/prometheus/web"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -36,7 +35,6 @@ type Manager struct {
 	initialScrapeConfigs   []*promconfig.ScrapeConfig
 	scrapeManager          *scrape.Manager
 	discoveryManager       *discovery.Manager
-	webHandler             *web.Handler
 	enableNativeHistograms bool
 }
 
@@ -51,10 +49,9 @@ func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config, 
 	}
 }
 
-func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Manager, dm *discovery.Manager, wh *web.Handler) error {
+func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Manager, dm *discovery.Manager) error {
 	m.scrapeManager = sm
 	m.discoveryManager = dm
-	m.webHandler = wh
 	err := m.applyCfg()
 	if err != nil {
 		m.settings.Logger.Error("Failed to apply new scrape configuration", zap.Error(err))
@@ -178,10 +175,6 @@ func (m *Manager) applyCfg() error {
 	}
 
 	if err := m.scrapeManager.ApplyConfig(m.promCfg); err != nil {
-		return err
-	}
-
-	if err := m.webHandler.ApplyConfig(m.promCfg); err != nil {
 		return err
 	}
 
