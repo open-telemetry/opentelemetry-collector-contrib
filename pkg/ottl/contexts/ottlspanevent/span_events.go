@@ -357,7 +357,7 @@ func accessSpanEventIndex() ottl.StandardGetSetter[TransformContext] {
 			return tCtx.eventIndex, nil
 		},
 		Setter: func(_ context.Context, _ TransformContext, _ any) error {
-			return nil
+			return errors.New("the 'event_index' path cannot be modified")
 		},
 	}
 }
