@@ -272,26 +272,31 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 	if attributes.Len() == 0 {
 		return
 	}
-	attrCopy := pcommon.NewMap()
-	attributes.CopyTo(attrCopy)
-	attrCopy.RemoveIf(func(key string, _ pcommon.Value) bool {
-		switch key {
+	geoAttributes := mergeGeolocation(attributes)
+	_ = v.OnKey("attributes")
+	_ = v.OnObjectStart(-1, structform.AnyType)
+	attributes.Range(func(k string, val pcommon.Value) bool {
+		switch k {
 		case dataStreamType, dataStreamDataset, dataStreamNamespace, mappingHintsAttrKey:
 			return true
 		}
-		return false
+		if strings.HasSuffix(k, ".geo.location") {
+			return true
+		}
+		_ = v.OnKey(k)
+		writeValue(v, val, stringifyMapValues)
+		return true
 	})
-	mergeGeolocation(attrCopy)
-	if attrCopy.Len() == 0 {
-		return
-	}
-	_ = v.OnKey("attributes")
-	writeMap(v, attrCopy, stringifyMapValues)
+	geoAttributes.Range(func(k string, val pcommon.Value) bool {
+		writeValue(v, val, stringifyMapValues)
+		return true
+	})
+	_ = v.OnObjectFinished()
 }
 
-func writeMap(v *json.Visitor, attributes pcommon.Map, stringifyMapValues bool) {
+func writeMap(v *json.Visitor, m pcommon.Map, stringifyMapValues bool) {
 	_ = v.OnObjectStart(-1, structform.AnyType)
-	attributes.Range(func(k string, val pcommon.Value) bool {
+	m.Range(func(k string, val pcommon.Value) bool {
 		_ = v.OnKey(k)
 		writeValue(v, val, stringifyMapValues)
 		return true

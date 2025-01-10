@@ -791,7 +791,7 @@ func sliceHash(h hash.Hash, s pcommon.Slice) {
 // mergeGeolocation mutates attributes map to merge all `geo.location.{lon,lat}`,
 // and namespaced `*.geo.location.{lon,lat}` to unnamespaced and namespaced `geo.location`.
 // This is to match the geo_point type in Elasticsearch.
-func mergeGeolocation(attributes pcommon.Map) {
+func mergeGeolocation(attributes pcommon.Map) pcommon.Map {
 	const (
 		lonKey    = "geo.location.lon"
 		latKey    = "geo.location.lat"
@@ -815,9 +815,9 @@ func mergeGeolocation(attributes pcommon.Map) {
 		g.latSet = true
 		prefixToGeo[prefix] = g
 	}
-	attributes.RemoveIf(func(key string, val pcommon.Value) bool {
+	attributes.Range(func(key string, val pcommon.Value) bool {
 		if val.Type() != pcommon.ValueTypeDouble {
-			return false
+			return true
 		}
 
 		if key == lonKey {
@@ -835,30 +835,22 @@ func mergeGeolocation(attributes pcommon.Map) {
 			setLat(prefix, val.Double())
 			return true
 		}
-		return false
+		return true
 	})
 
+	geoAttributes := pcommon.NewMap()
 	for prefix, geo := range prefixToGeo {
 		if geo.lonSet && geo.latSet {
 			key := prefix + mergedKey
 			// Geopoint expressed as an array with the format: [lon, lat]
-			s := attributes.PutEmptySlice(key)
+			s := geoAttributes.PutEmptySlice(key)
 			s.EnsureCapacity(2)
 			s.AppendEmpty().SetDouble(geo.lon)
 			s.AppendEmpty().SetDouble(geo.lat)
 			continue
 		}
-
-		// Place the attributes back if lon and lat are not present together
-		if geo.lonSet {
-			key := prefix + lonKey
-			attributes.PutDouble(key, geo.lon)
-		}
-		if geo.latSet {
-			key := prefix + latKey
-			attributes.PutDouble(key, geo.lat)
-		}
 	}
+	return geoAttributes
 }
 
 func safeUint64ToInt64(v uint64) int64 {
