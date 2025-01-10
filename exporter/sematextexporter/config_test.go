@@ -4,11 +4,11 @@
 package sematextexporter
 
 import (
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
-	"os"
-	"strings"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"

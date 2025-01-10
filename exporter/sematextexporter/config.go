@@ -5,8 +5,8 @@ package sematextexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"fmt"
-	"strings"
 	"regexp"
+	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
