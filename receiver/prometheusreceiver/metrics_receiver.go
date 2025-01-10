@@ -69,11 +69,11 @@ type pReceiver struct {
 	scrapeManager          *scrape.Manager
 	discoveryManager       *discovery.Manager
 	targetAllocatorManager *targetallocator.Manager
+	apiServer              *http.Server
+	registry               *prometheus.Registry
 	registerer             prometheus.Registerer
 	unregisterMetrics      func()
 	skipOffsetting         bool // for testing only
-	apiServer              *http.Server
-	registry               *prometheus.Registry
 }
 
 // New creates a new prometheus.Receiver reference.
