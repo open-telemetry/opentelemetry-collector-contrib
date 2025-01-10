@@ -357,8 +357,35 @@ In case the record contains `timestamp`, this value is used. Otherwise, the `obs
 
 ### version_conflict_engine_exception
 
-When sending high traffic of metrics to a TSDB metrics data stream, e.g. using OTel mapping mode to a 8.16 Elasticsearch, it is possible to get error logs "failed to index document" with `error.type` "version_conflict_engine_exception" and `error.reason` containing "version conflict, document already exists". It is due to Elasticsearch grouping metrics with the same dimensions, whether it is the same or different metric name, using `@timestamp` in milliseconds precision as opposed to nanoseconds in elasticsearchexporter.
+Symptom: elasticsearchexporter logs an error "failed to index document" with `error.type` "version_conflict_engine_exception" and `error.reason` containing "version conflict, document already exists".
+
+This happens when the target data stream is a TSDB metrics data stream (e.g. using OTel mapping mode to a 8.16 Elasticsearch). See the following scenarios.
+
+1. When sending different metrics with the same dimension (mostly made up of resource attributes, scope attributes, attributes),
+a `version_conflict_engine_exception` is returned by Elasticsearch when these metrics are not grouped into the same document.
+It also means that they have to be in the same batch in the exporter, as metric grouping is done per-batch in elasticsearchexporter.
+To work around the issue, use a transform processor to ensure different metrics to never share the same set of dimensions.
+
+```yaml
+processors:
+  transform/unique_dimensions:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(attributes["metric_name"], metric.name)
+```
+
+2. If the problem persists, the issue may be caused by metrics with data points in the same millisecond but not the same nanosecond, as metric grouping is done in nanoseconds but Elasticsearch checks for duplicates in milliseconds.
 
 This will be fixed in a future version of Elasticsearch. A possible workaround would be to use a transform processor to truncate the timestamp, but this will cause duplicate data to be dropped silently.
 
-However, if `@timestamp` precision is not the problem, check your metrics pipeline setup for misconfiguration that causes an actual violation of the [single writer principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer).
+```yaml
+processors:
+  transform/truncate_timestamp:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(time, TruncateTime(time, Duration("1ms")))
+```
+
+3. If all of the above do not apply, check your metrics pipeline setup for misconfiguration that causes an actual violation of the [single writer principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer).
