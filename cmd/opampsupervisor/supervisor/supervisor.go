@@ -78,6 +78,13 @@ func (c *configState) equal(other *configState) bool {
 	return other.mergedConfig == c.mergedConfig && other.configMapIsEmpty == c.configMapIsEmpty
 }
 
+type agentStartStatus string
+
+var (
+	agentStarting    agentStartStatus = "starting"
+	agentNotStarting agentStartStatus = "notStarting"
+)
+
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
 type Supervisor struct {
@@ -289,7 +296,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return fmt.Errorf("failed to write agent config: %w", err)
 	}
 
-	srv := server.New(newLoggerFromZap(s.logger))
+	srv := server.New(newLoggerFromZap(s.logger, "opamp-server"))
 
 	done := make(chan error, 1)
 	var connected atomic.Bool
@@ -298,11 +305,11 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	// using the Collector's OpAMP extension.
 	err = srv.Start(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
-		onConnectingFunc: func(_ *http.Request) (bool, int) {
+		onConnecting: func(_ *http.Request) (bool, int) {
 			connected.Store(true)
 			return true, http.StatusOK
 		},
-		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
+		onMessage: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
 			if message.AgentDescription != nil {
 				instanceIDSeen := false
 				s.setAgentDescription(message.AgentDescription)
@@ -387,7 +394,7 @@ func (s *Supervisor) startOpAMP() error {
 }
 
 func (s *Supervisor) startOpAMPClient() error {
-	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
+	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger, "opamp-client"))
 
 	// determine if we need to load a TLS config or not
 	var tlsConfig *tls.Config
@@ -408,33 +415,33 @@ func (s *Supervisor) startOpAMPClient() error {
 		Header:         s.config.Server.Headers,
 		TLSConfig:      tlsConfig,
 		InstanceUid:    types.InstanceUid(s.persistentState.InstanceID),
-		Callbacks: types.CallbacksStruct{
-			OnConnectFunc: func(_ context.Context) {
+		Callbacks: types.Callbacks{
+			OnConnect: func(_ context.Context) {
 				s.logger.Debug("Connected to the server.")
 			},
-			OnConnectFailedFunc: func(_ context.Context, err error) {
+			OnConnectFailed: func(_ context.Context, err error) {
 				s.logger.Error("Failed to connect to the server", zap.Error(err))
 			},
-			OnErrorFunc: func(_ context.Context, err *protobufs.ServerErrorResponse) {
+			OnError: func(_ context.Context, err *protobufs.ServerErrorResponse) {
 				s.logger.Error("Server returned an error response", zap.String("message", err.ErrorMessage))
 			},
-			OnMessageFunc: s.onMessage,
-			OnOpampConnectionSettingsFunc: func(ctx context.Context, settings *protobufs.OpAMPConnectionSettings) error {
+			OnMessage: s.onMessage,
+			OnOpampConnectionSettings: func(ctx context.Context, settings *protobufs.OpAMPConnectionSettings) error {
 				//nolint:errcheck
 				go s.onOpampConnectionSettings(ctx, settings)
 				return nil
 			},
-			OnCommandFunc: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
+			OnCommand: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 				cmdType := command.GetType()
 				if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
 					return s.handleRestartCommand()
 				}
 				return nil
 			},
-			SaveRemoteConfigStatusFunc: func(_ context.Context, _ *protobufs.RemoteConfigStatus) {
+			SaveRemoteConfigStatus: func(_ context.Context, _ *protobufs.RemoteConfigStatus) {
 				// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079
 			},
-			GetEffectiveConfigFunc: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
+			GetEffectiveConfig: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
 				return s.createEffectiveConfigMsg(), nil
 			},
 		},
@@ -465,7 +472,7 @@ func (s *Supervisor) startOpAMPClient() error {
 // depending on information received by the Supervisor from the remote
 // OpAMP server.
 func (s *Supervisor) startOpAMPServer() error {
-	s.opampServer = server.New(newLoggerFromZap(s.logger))
+	s.opampServer = server.New(newLoggerFromZap(s.logger, "opamp-server"))
 
 	var err error
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
@@ -479,13 +486,13 @@ func (s *Supervisor) startOpAMPServer() error {
 
 	err = s.opampServer.Start(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
-		onConnectingFunc: func(_ *http.Request) (bool, int) {
+		onConnecting: func(_ *http.Request) (bool, int) {
 			// Only allow one agent to be connected the this server at a time.
 			alreadyConnected := connected.Swap(true)
 			return !alreadyConnected, http.StatusConflict
 		},
-		onMessageFunc: s.handleAgentOpAMPMessage,
-		onConnectionCloseFunc: func(_ serverTypes.Connection) {
+		onMessage: s.handleAgentOpAMPMessage,
+		onConnectionClose: func(_ serverTypes.Connection) {
 			connected.Store(false)
 		},
 	}.toServerSettings())
@@ -782,7 +789,8 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	if s.config.Capabilities.AcceptsRemoteConfig {
 		// Try to load the last received remote config if it exists.
 		lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
-		if err == nil {
+		switch {
+		case err == nil:
 			config := &protobufs.AgentRemoteConfig{}
 			err = proto.Unmarshal(lastRecvRemoteConfig, config)
 			if err != nil {
@@ -790,7 +798,9 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 			} else {
 				s.remoteConfig = config
 			}
-		} else {
+		case errors.Is(err, os.ErrNotExist):
+			s.logger.Info("No last received remote config found")
+		default:
 			s.logger.Error("error while reading last received config", zap.Error(err))
 		}
 	} else {
@@ -997,22 +1007,27 @@ func (s *Supervisor) handleRestartCommand() error {
 	return err
 }
 
-func (s *Supervisor) startAgent() {
+func (s *Supervisor) startAgent() (agentStartStatus, error) {
 	if s.cfgState.Load().(*configState).configMapIsEmpty {
 		// Don't start the agent if there is no config to run
 		s.logger.Info("No config present, not starting agent.")
-		return
+		// need to manually trigger updating effective config
+		err := s.opampClient.UpdateEffectiveConfig(context.Background())
+		if err != nil {
+			s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
+		}
+		return agentNotStarting, nil
 	}
 
 	err := s.commander.Start(context.Background())
 	if err != nil {
 		s.logger.Error("Cannot start the agent", zap.Error(err))
-		err = s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: fmt.Sprintf("Cannot start the agent: %v", err)})
+		startErr := fmt.Errorf("Cannot start the agent: %w", err)
+		err = s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: startErr.Error()})
 		if err != nil {
 			s.logger.Error("Failed to report OpAMP client health", zap.Error(err))
 		}
-
-		return
+		return "", startErr
 	}
 
 	s.agentHasStarted = false
@@ -1021,6 +1036,7 @@ func (s *Supervisor) startAgent() {
 	s.startHealthCheckTicker()
 
 	s.healthChecker = healthchecker.NewHTTPHealthChecker(fmt.Sprintf("http://%s", s.agentHealthCheckEndpoint))
+	return agentStarting, nil
 }
 
 func (s *Supervisor) startHealthCheckTicker() {
@@ -1087,7 +1103,11 @@ func (s *Supervisor) runAgentProcess() {
 	if _, err := os.Stat(s.agentConfigFilePath()); err == nil {
 		// We have an effective config file saved previously. Use it to start the agent.
 		s.logger.Debug("Effective config found, starting agent initial time")
-		s.startAgent()
+		_, err := s.startAgent()
+		if err != nil {
+			s.logger.Error("starting agent failed", zap.Error(err))
+			s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+		}
 	}
 
 	restartTimer := time.NewTimer(0)
@@ -1111,7 +1131,17 @@ func (s *Supervisor) runAgentProcess() {
 			s.logger.Debug("Restarting agent due to new config")
 			restartTimer.Stop()
 			s.stopAgentApplyConfig()
-			s.startAgent()
+			status, err := s.startAgent()
+			if err != nil {
+				s.logger.Error("starting agent with new config failed", zap.Error(err))
+				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+			}
+
+			if status == agentNotStarting {
+				// not starting agent because of nop config, clear timer
+				configApplyTimeoutTimer.Stop()
+				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+			}
 
 		case <-s.commander.Exited():
 			// the agent process exit is expected for restart command and will not attempt to restart
@@ -1143,7 +1173,11 @@ func (s *Supervisor) runAgentProcess() {
 
 		case <-restartTimer.C:
 			s.logger.Debug("Agent starting after start backoff")
-			s.startAgent()
+			_, err := s.startAgent()
+			if err != nil {
+				s.logger.Error("restarting agent failed", zap.Error(err))
+				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+			}
 
 		case <-configApplyTimeoutTimer.C:
 			if s.lastHealthFromClient == nil || !s.lastHealthFromClient.Healthy {
@@ -1239,8 +1273,11 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Telemet
 }
 
 func (s *Supervisor) reportConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
+	if !s.config.Capabilities.ReportsRemoteConfig {
+		s.logger.Debug("supervisor is not configured to report remote config status")
+	}
 	err := s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
-		LastRemoteConfigHash: s.remoteConfig.ConfigHash,
+		LastRemoteConfigHash: s.remoteConfig.GetConfigHash(),
 		Status:               status,
 		ErrorMessage:         errorMessage,
 	})

@@ -59,7 +59,7 @@ func Test_batchTimeSeries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			state := newBatchTimeSericesState()
-			requests, err := batchTimeSeries(tt.tsMap, tt.maxBatchByteSize, nil, &state)
+			requests, err := batchTimeSeries(tt.tsMap, tt.maxBatchByteSize, nil, state)
 			if tt.returnErr {
 				assert.Error(t, err)
 				return
@@ -97,7 +97,7 @@ func Test_batchTimeSeriesUpdatesStateForLargeBatches(t *testing.T) {
 	tsMap1 := getTimeseriesMap(tsArray)
 
 	state := newBatchTimeSericesState()
-	requests, err := batchTimeSeries(tsMap1, 1000000, nil, &state)
+	requests, err := batchTimeSeries(tsMap1, 1000000, nil, state)
 
 	assert.NoError(t, err)
 	assert.Len(t, requests, 18)
@@ -132,7 +132,7 @@ func Benchmark_batchTimeSeries(b *testing.B) {
 	state := newBatchTimeSericesState()
 	// Run batchTimeSeries 100 times with a 1mb max request size
 	for i := 0; i < b.N; i++ {
-		requests, err := batchTimeSeries(tsMap1, 1000000, nil, &state)
+		requests, err := batchTimeSeries(tsMap1, 1000000, nil, state)
 		assert.NoError(b, err)
 		assert.Len(b, requests, 18)
 	}
@@ -242,10 +242,8 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 			si := ts.Samples[i]
 			for j := 0; j < i; j++ {
 				sj := ts.Samples[j]
-				if sj.Timestamp > si.Timestamp {
-					t.Errorf("Timeseries[%d]: Sample[%d].Timestamp(%d) > Sample[%d].Timestamp(%d)",
-						ti, j, sj.Timestamp, i, si.Timestamp)
-				}
+				assert.LessOrEqual(t, sj.Timestamp, si.Timestamp, "Timeseries[%d]: Sample[%d].Timestamp(%d) > Sample[%d].Timestamp(%d)",
+					ti, j, sj.Timestamp, i, si.Timestamp)
 			}
 		}
 	}

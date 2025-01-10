@@ -12,7 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver/internal/metadata"
 )
@@ -31,10 +32,10 @@ func createMetricsReceiver(
 	}
 
 	adds := newActiveDirectoryDSScraper(c.MetricsBuilderConfig, params)
-	scraper, err := scraperhelper.NewScraperWithoutType(
+	s, err := scraper.NewMetrics(
 		adds.scrape,
-		scraperhelper.WithStart(adds.start),
-		scraperhelper.WithShutdown(adds.shutdown),
+		scraper.WithStart(adds.start),
+		scraper.WithShutdown(adds.shutdown),
 	)
 	if err != nil {
 		return nil, err
@@ -44,6 +45,6 @@ func createMetricsReceiver(
 		&c.ControllerConfig,
 		params,
 		consumer,
-		scraperhelper.AddScraperWithType(metadata.Type, scraper),
+		scraperhelper.AddScraper(metadata.Type, s),
 	)
 }

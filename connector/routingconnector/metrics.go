@@ -15,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pmetricutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
@@ -34,6 +35,10 @@ func newMetricsConnector(
 	metrics consumer.Metrics,
 ) (*metricsConnector, error) {
 	cfg := config.(*Config)
+
+	if cfg.MatchOnce != nil {
+		set.Logger.Error("The 'match_once' field has been deprecated and no longer has any effect. It will be removed in v0.120.0.")
+	}
 
 	mr, ok := metrics.(connector.MetricsRouterAndConsumer)
 	if !ok {
@@ -61,13 +66,6 @@ func (c *metricsConnector) Capabilities() consumer.Capabilities {
 }
 
 func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	if c.config.MatchOnce {
-		return c.switchMetrics(ctx, md)
-	}
-	return c.matchAllMetrics(ctx, md)
-}
-
-func (c *metricsConnector) switchMetrics(ctx context.Context, md pmetric.Metrics) error {
 	groups := make(map[consumer.Metrics]pmetric.Metrics)
 	var errs error
 	for i := 0; i < len(c.router.routeSlice) && md.ResourceMetrics().Len() > 0; i++ {
@@ -97,6 +95,15 @@ func (c *metricsConnector) switchMetrics(ctx context.Context, md pmetric.Metrics
 					return isMatch
 				},
 			)
+		case "datapoint":
+			pmetricutil.MoveDataPointsWithContextIf(md, matchedMetrics,
+				func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, dp any) bool {
+					dptx := ottldatapoint.NewTransformContext(dp, m, sm.Metrics(), sm.Scope(), rm.Resource(), sm, rm)
+					_, isMatch, err := route.dataPointStatement.Execute(ctx, dptx)
+					errs = errors.Join(errs, err)
+					return isMatch
+				},
+			)
 		}
 		if errs != nil {
 			if c.config.ErrorMode == ottl.PropagateError {
@@ -108,43 +115,6 @@ func (c *metricsConnector) switchMetrics(ctx context.Context, md pmetric.Metrics
 	}
 	// anything left wasn't matched by any route. Send to default consumer
 	groupAllMetrics(groups, c.router.defaultConsumer, md)
-	for consumer, group := range groups {
-		errs = errors.Join(errs, consumer.ConsumeMetrics(ctx, group))
-	}
-	return errs
-}
-
-func (c *metricsConnector) matchAllMetrics(ctx context.Context, md pmetric.Metrics) error {
-	// groups is used to group pmetric.ResourceMetrics that are routed to
-	// the same set of exporters. This way we're not ending up with all the
-	// metrics split up which would cause higher CPU usage.
-	groups := make(map[consumer.Metrics]pmetric.Metrics)
-
-	var errs error
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rmetrics := md.ResourceMetrics().At(i)
-		rtx := ottlresource.NewTransformContext(rmetrics.Resource(), rmetrics)
-
-		noRoutesMatch := true
-		for _, route := range c.router.routeSlice {
-			_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
-			if err != nil {
-				if c.config.ErrorMode == ottl.PropagateError {
-					return err
-				}
-				groupMetrics(groups, c.router.defaultConsumer, rmetrics)
-				continue
-			}
-			if isMatch {
-				noRoutesMatch = false
-				groupMetrics(groups, route.consumer, rmetrics)
-			}
-		}
-		if noRoutesMatch {
-			// no route conditions are matched, add resource metrics to default exporters group
-			groupMetrics(groups, c.router.defaultConsumer, rmetrics)
-		}
-	}
 	for consumer, group := range groups {
 		errs = errors.Join(errs, consumer.ConsumeMetrics(ctx, group))
 	}

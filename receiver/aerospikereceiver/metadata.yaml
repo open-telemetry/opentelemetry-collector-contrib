@@ -6,7 +6,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, antonblock]
+    active: [antonblock]
     seeking_new: true
 
 tests:

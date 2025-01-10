@@ -6,7 +6,7 @@
 |               | [beta]: logs, metrics, traces   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fk8sattributes) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fk8sattributes) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark) |
 | Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -341,7 +341,7 @@ k8sattributes:
   filter:
     namespace: <WORKLOAD_NAMESPACE>
 ```
-With the namespace filter set, the processor will only look up pods and replicasets in the selected namespace. Note that with just a role binding, the processor can not query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor can not set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
+With the namespace filter set, the processor will only look up pods and replicasets in the selected namespace. Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
 
 Example `Role` and `RoleBinding` to create in the namespace being watched.
 ```yaml
@@ -389,7 +389,7 @@ When running as an agent, the processor detects IP addresses of pods sending spa
 and uses this information to extract metadata from pods. When running as an agent, it is important to apply
 a discovery filter so that the processor only discovers pods from the same host that it is running on. Not using
 such a filter can result in unnecessary resource usage especially on very large clusters. Once the filter is applied,
-each processor will only query the k8s API for pods running on it's own node.
+each processor will only query the k8s API for pods running on its own node.
 
 Node filter can be applied by setting the `filter.node` config option to the name of a k8s node. While this works
 as expected, it cannot be used to automatically filter pods by the same node that the processor is running on in
@@ -498,7 +498,7 @@ The following config with the feature gate set will lead to validation error:
 
 #### Migration
 
-Deprecation of the `extract.annotations.regex` and `extract.labels.regex` fields means that it is recommended to use the `ExtractPatterns` function from the transform processor instead. To convert your current configuration please check the `ExtractPatterns` function [documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#extractpatterns). You should use the `pattern` parameter of `ExtractPatterns` instead of using the the `extract.annotations.regex` and `extract.labels.regex` fields.
+Deprecation of the `extract.annotations.regex` and `extract.labels.regex` fields means that it is recommended to use the `ExtractPatterns` function from the transform processor instead. To convert your current configuration please check the `ExtractPatterns` function [documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#extractpatterns). You should use the `pattern` parameter of `ExtractPatterns` instead of using the `extract.annotations.regex` and `extract.labels.regex` fields.
 
 ##### Example
 

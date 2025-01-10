@@ -150,7 +150,7 @@ Information about queued retry configuration parameters can be found
 
 ## Traces Configuration (correlation only)
 
-:warning: _Note that traces must still be sent in using [sapmexporter](../sapmexporter) to see them in SignalFx._
+:warning: _Note that traces must still be sent to Splunk Observability via a separate trace exporter._
 
 When traces are sent to the signalfx exporter it correlates traces to metrics. When a new service or environment is
 seen it associates the source (e.g. host or pod) to that service or environment in SignalFx. Metrics can then be
