@@ -9,11 +9,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector/internal/metadata"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
