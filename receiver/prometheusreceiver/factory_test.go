@@ -74,8 +74,9 @@ func TestDefaultFallbackScrapeProtocol(t *testing.T) {
 	require.NoError(t, err)
 	assert.NoError(t, sub.Unmarshal(cfg))
 
-	factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
-	
+	_, err = factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
+
 	// During receiver creation, scrapeconfig without fallback scrape protocol set, should be set to 'PrometheusText1.0.0'.
 	assert.Equal(t, promconfig.PrometheusText1_0_0, cfg.(*Config).PrometheusConfig.ScrapeConfigs[0].ScrapeFallbackProtocol)
 	assert.Equal(t, promconfig.OpenMetricsText1_0_0, cfg.(*Config).PrometheusConfig.ScrapeConfigs[1].ScrapeFallbackProtocol)
