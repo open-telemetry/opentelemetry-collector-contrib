@@ -1019,18 +1019,18 @@ func TestExtractionRules(t *testing.T) {
 
 			// manually call the data removal functions here
 			// normally the informer does this, but fully emulating the informer in this test is annoying
-			pod := pod.DeepCopy()
+			podCopy := pod.DeepCopy()
 			for k, v := range tc.additionalAnnotations {
-				pod.Annotations[k] = v
+				podCopy.Annotations[k] = v
 			}
 			for k, v := range tc.additionalLabels {
-				pod.Labels[k] = v
+				podCopy.Labels[k] = v
 			}
-			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
+			transformedPod := removeUnnecessaryPodData(podCopy, c.Rules)
 			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
 			c.handleReplicaSetAdd(transformedReplicaset)
 			c.handlePodAdd(transformedPod)
-			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
+			p, ok := c.GetPod(newPodIdentifier("connection", "", podCopy.Status.PodIP))
 			require.True(t, ok)
 
 			assert.Equal(t, tc.attributes, p.Attributes)
