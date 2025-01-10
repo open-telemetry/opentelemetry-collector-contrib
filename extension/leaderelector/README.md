@@ -8,21 +8,21 @@ The extension uses k8s.io/client-go/tools/leaderelection to perform leader elect
 
 ```yaml
 receivers:
-  my_awesome_receiver/foo:
+  my_awesome_receiver:
     auth_type: kubeConfig
     lease:
-      name: leader_elector/foo
+      name: leader_elector
 extensions:
-  leader_elector/foo:
+  leader_elector:
     auth_type: kubeConfig
     lease_name: foo
     lease_namespace: default
 
 service:
-  extensions: [leader_elector/foo]
+  extensions: [leader_elector]
   pipelines:
     metrics:
-      receivers: [my_awesome_receiver/foo]
+      receivers: [my_awesome_receiver]
 ```
 
 ### Leader Election Configuration
