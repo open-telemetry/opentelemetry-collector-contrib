@@ -66,7 +66,7 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("invalid metrics app_token: %s. app_token is not a valid UUID", cfg.MetricsConfig.AppToken)
 	}
 	if !isValidUUID(cfg.LogsConfig.AppToken) {
-		return fmt.Errorf("invalid metrics app_token: %s. app_token is not a valid UUID", cfg.MetricsConfig.AppToken)
+		return fmt.Errorf("invalid logs app_token: %s. app_token is not a valid UUID", cfg.LogsConfig.AppToken)
 	}
 	if strings.ToLower(cfg.Region) == euRegion {
 		cfg.MetricsEndpoint = euMetricsEndpoint
