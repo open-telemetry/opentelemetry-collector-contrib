@@ -209,6 +209,22 @@ func New(
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
 	synced := make([]cache.InformerSynced, 0)
+
+	// start the replicaSet informer first, as the replica sets need to be
+	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
+	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
+		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleReplicaSetAdd,
+			UpdateFunc: c.handleReplicaSetUpdate,
+			DeleteFunc: c.handleReplicaSetDelete,
+		})
+		if err != nil {
+			return err
+		}
+		synced = append(synced, reg.HasSynced)
+		go c.replicasetInformer.Run(c.stopCh)
+	}
+
 	reg, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
@@ -230,19 +246,6 @@ func (c *WatchClient) Start() error {
 	}
 	synced = append(synced, reg.HasSynced)
 	go c.namespaceInformer.Run(c.stopCh)
-
-	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
-		reg, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.handleReplicaSetAdd,
-			UpdateFunc: c.handleReplicaSetUpdate,
-			DeleteFunc: c.handleReplicaSetDelete,
-		})
-		if err != nil {
-			return err
-		}
-		synced = append(synced, reg.HasSynced)
-		go c.replicasetInformer.Run(c.stopCh)
-	}
 
 	if c.nodeInformer != nil {
 		reg, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
