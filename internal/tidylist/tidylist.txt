@@ -152,6 +152,7 @@ extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
 extension/storage/filestorage
+extension/storage/redisstorageextension
 processor/attributesprocessor
 processor/cumulativetodeltaprocessor
 processor/deltatocumulativeprocessor
@@ -209,6 +210,7 @@ receiver/googlecloudpubsubreceiver
 receiver/googlecloudspannerreceiver
 receiver/haproxyreceiver
 receiver/httpcheckreceiver
+receiver/huaweicloudcesreceiver
 receiver/iisreceiver
 receiver/influxdbreceiver
 receiver/jaegerreceiver
@@ -220,6 +222,7 @@ receiver/k8sobjectsreceiver
 receiver/kafkametricsreceiver
 receiver/kafkareceiver
 receiver/kubeletstatsreceiver
+receiver/libhoneyreceiver
 receiver/lokireceiver
 receiver/memcachedreceiver
 receiver/mongodbatlasreceiver
@@ -278,7 +281,6 @@ testbed
 exporter/elasticsearchexporter/integrationtest
 exporter/kineticaexporter
 extension/cgroupruntimeextension
-extension/storage/redisstorageextension
 .
 internal/aws/xray/testdata/sampleapp
 internal/aws/xray/testdata/sampleserver
@@ -287,8 +289,6 @@ processor/coralogixprocessor
 processor/logstransformprocessor
 processor/schemaprocessor
 receiver/awscloudwatchmetricsreceiver
-receiver/huaweicloudcesreceiver
-receiver/libhoneyreceiver
 receiver/netflowreceiver
 receiver/osqueryreceiver
 receiver/prometheusremotewritereceiver
