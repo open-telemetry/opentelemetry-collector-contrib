@@ -9,32 +9,32 @@ import (
 	"sync"
 )
 
-type BufferPool struct {
+type bufferPool struct {
 	pool *sync.Pool
 }
 
-func NewBufferPool() *BufferPool {
-	return &BufferPool{pool: &sync.Pool{New: func() any { return &bytes.Buffer{} }}}
+func newBufferPool() *bufferPool {
+	return &bufferPool{pool: &sync.Pool{New: func() any { return &bytes.Buffer{} }}}
 }
 
-func (w *BufferPool) NewPooledBuffer() PooledBuffer {
-	return PooledBuffer{
+func (w *bufferPool) newPooledBuffer() pooledBuffer {
+	return pooledBuffer{
 		Buffer: w.pool.Get().(*bytes.Buffer),
 		pool:   w.pool,
 	}
 }
 
-type PooledBuffer struct {
+type pooledBuffer struct {
 	Buffer *bytes.Buffer
 	pool   *sync.Pool
 }
 
-func (p PooledBuffer) recycle() {
+func (p pooledBuffer) recycle() {
 	p.Buffer.Reset()
 	p.pool.Put(p.Buffer)
 }
 
-func (p PooledBuffer) WriteTo(w io.Writer) (n int64, err error) {
+func (p pooledBuffer) WriteTo(w io.Writer) (n int64, err error) {
 	defer p.recycle()
 	return bytes.NewReader(p.Buffer.Bytes()).WriteTo(w)
 }
