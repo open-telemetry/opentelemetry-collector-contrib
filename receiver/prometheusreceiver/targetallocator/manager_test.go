@@ -937,7 +937,7 @@ func initPrometheusManagers(ctx context.Context, t *testing.T) (*scrape.Manager,
 	discoveryManager := discovery.NewManager(ctx, logger, reg, sdMetrics)
 	require.NotNil(t, discoveryManager)
 
-	scrapeManager, err := scrape.NewManager(&scrape.Options{}, logger, nil, reg)
+	scrapeManager, err := scrape.NewManager(&scrape.Options{}, logger, nil, nil, reg)
 	require.NoError(t, err)
 	return scrapeManager, discoveryManager
 }
