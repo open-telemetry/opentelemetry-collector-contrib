@@ -308,7 +308,7 @@ func (t *transaction) AppendHistogramCTZeroSample(_ storage.SeriesRef, _ labels.
 	return 0, nil
 }
 
-func (t *transaction) SetOptions(opts *storage.AppendOptions) {
+func (t *transaction) SetOptions(_ *storage.AppendOptions) {
 	// TODO: implement this func
 }
 
