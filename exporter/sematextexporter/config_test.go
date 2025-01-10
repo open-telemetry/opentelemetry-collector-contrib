@@ -33,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 	contentStr = strings.ReplaceAll(contentStr, "<LOGS_APP_TOKEN>", logsAppToken)
 
 	tmpConfigPath := filepath.Join("testdata", "config_tmp.yaml")
-	err = os.WriteFile(tmpConfigPath, []byte(contentStr), 0644)
+	err = os.WriteFile(tmpConfigPath, []byte(contentStr), 0600)
 	require.NoError(t, err)
 	defer os.Remove(tmpConfigPath)
 	cm, err := confmaptest.LoadConf(tmpConfigPath)
