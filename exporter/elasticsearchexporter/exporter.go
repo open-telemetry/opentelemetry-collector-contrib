@@ -460,13 +460,16 @@ func (e *elasticsearchExporter) pushSpanEvent(
 	return bulkIndexerSession.Add(ctx, fIndex, "", bytes.NewReader(docBytes), nil)
 }
 
-func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string {
-	if e.config.LogsDynamicID.Enabled {
-		docID, ok := getFromAttributes(documentIDAttributeName, "", m)
-		m.Remove(documentIDAttributeName)
-		if docID != "" && ok {
-			return docID
-		}
+func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) (docID string) {
+	if !e.config.LogsDynamicID.Enabled {
+		return
 	}
-	return ""
+	m.RemoveIf(func(k string, value pcommon.Value) bool {
+		if k == documentIDAttributeName {
+			docID = value.AsString()
+			return true
+		}
+		return false
+	})
+	return
 }
