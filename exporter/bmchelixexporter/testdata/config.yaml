@@ -10,5 +10,3 @@ bmchelix/helix2:
     initial_interval: 5s
     max_interval: 1m
     max_elapsed_time: 8m
-  resource_to_telemetry_conversion:
-    enabled: true

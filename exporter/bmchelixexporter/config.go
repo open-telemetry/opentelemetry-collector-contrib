@@ -8,17 +8,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configretry"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 // Config struct is used to store the configuration of the exporter
 type Config struct {
-	Endpoint                  string                       `mapstructure:"endpoint"`
-	ApiKey                    string                       `mapstructure:"api_key"`
-	Timeout                   time.Duration                `mapstructure:"timeout"`
-	RetryConfig               configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
-	ResourceToTelemetryConfig resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
+	Endpoint    string                    `mapstructure:"endpoint"`
+	ApiKey      string                    `mapstructure:"api_key"`
+	Timeout     time.Duration             `mapstructure:"timeout"`
+	RetryConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 }
 
 // validate the configuration

@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/bmchelixexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 // create BMC Helix Exporter factory
@@ -29,9 +28,8 @@ func NewFactory() exporter.Factory {
 // creates the default configuration for the BMC Helix exporter
 func createDefaultConfig() component.Config {
 	return &Config{
-		Timeout:                   10 * time.Second,
-		RetryConfig:               configretry.NewDefaultBackOffConfig(),
-		ResourceToTelemetryConfig: resourcetotelemetry.Settings{Enabled: true},
+		Timeout:     10 * time.Second,
+		RetryConfig: configretry.NewDefaultBackOffConfig(),
 	}
 }
 

@@ -39,8 +39,6 @@ The following settings can be **optionally configured**:
   - `initial_interval` (default = 5s) Time to wait after the first failure before retrying; ignored if `enabled` is false.
   - `max_interval` (default = 30s) The upper bound on backoff; ignored if `enabled` is false.
   - `max_elapsed_time` (default = 300s) The maximum amount of time spent trying to send a batch; ignored if `enabled` is false. If set to 0, the retries are never stopped.
-- `resource_to_telemetry_conversion`: [details here](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/resourcetotelemetry#configuration)
-  - `enabled` (default = true): If enabled is true, all the resource attributes will be converted to metric labels by default.
 
 Example:
 
@@ -55,13 +53,7 @@ exporters:
       initial_interval: 5s
       max_interval: 1m
       max_elapsed_time: 8m
-    resource_to_telemetry_conversion:
-      enabled: true
 ```
-
-### Resource to Telemetry Conversion
-
-To ensure resource attributes (e.g., `host.name`) are available for all metrics, keep `resource_to_telemetry_conversion` enabled by default. Disabling it will remove resource attributes from metrics unless explicitly configured.
 
 ---
 

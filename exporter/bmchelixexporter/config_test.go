@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/bmchelixexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -36,9 +35,6 @@ func TestLoadConfig(t *testing.T) {
 				ApiKey:      "api_key",
 				Timeout:     10 * time.Second,
 				RetryConfig: configretry.NewDefaultBackOffConfig(),
-				ResourceToTelemetryConfig: resourcetotelemetry.Settings{
-					Enabled: true,
-				},
 			},
 		},
 		{
@@ -54,9 +50,6 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          1.5,
 					MaxInterval:         1 * time.Minute,
 					MaxElapsedTime:      8 * time.Minute,
-				},
-				ResourceToTelemetryConfig: resourcetotelemetry.Settings{
-					Enabled: true,
 				},
 			},
 		},
