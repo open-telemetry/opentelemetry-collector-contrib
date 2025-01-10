@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-
 	"github.com/influxdata/influxdb-observability/common"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
