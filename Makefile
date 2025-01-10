@@ -115,11 +115,16 @@ stability-tests: otelcontribcol
 gogci:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="gci"
 
+# `internal/tidylist/tidylist.txt` lists modules in topological order, to ensure `go mod tidy` converges.
+# `make tidylist` will update this list.
+# We exclude otelcontribcol and oteltestbedcol as those modules are not gitted and may not be present.
 .PHONY: tidylist
 tidylist: $(CROSSLINK)
-	$(CROSSLINK) tidylist --validate --allow-circular internal/tidylist/allow-circular.txt internal/tidylist/tidylist.txt
+	cd internal/tidylist && \
+	$(CROSSLINK) tidylist --validate --allow-circular allow-circular.txt tidylist.txt && \
+	sed -i.bak -E '/cmd\/otel(contrib|testbed)col/d' tidylist.txt && \
+	rm tidylist.txt.bak
 
-# internal/tidylist/tidylist.txt lists modules in topological order, to ensure `go mod tidy` converges.
 .PHONY: gotidy
 gotidy:
 	@for mod in $$(cat internal/tidylist/tidylist.txt); do \

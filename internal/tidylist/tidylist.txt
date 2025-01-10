@@ -267,8 +267,6 @@ receiver/webhookeventreceiver
 receiver/windowseventlogreceiver
 receiver/windowsperfcountersreceiver
 receiver/zookeeperreceiver
-cmd/otelcontribcol
-cmd/oteltestbedcol
 cmd/telemetrygen
 cmd/telemetrygen/internal/e2etest
 confmap/provider/aesprovider
