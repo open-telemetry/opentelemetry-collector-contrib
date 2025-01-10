@@ -111,6 +111,7 @@ receivers:
           scrape_interval: 100ms
           static_configs:
             - targets: [%q]
+			  fallback_scrape_protocol: PrometheusText1.0.0
 
 processors:
   batch:
