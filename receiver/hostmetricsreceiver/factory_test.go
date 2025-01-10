@@ -14,8 +14,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 )
 
 var creationSet = receivertest.NewNopSettings()
@@ -48,7 +46,7 @@ func TestCreateReceiver_ScraperKeyConfigError(t *testing.T) {
 	const errorKey string = "error"
 
 	factory := NewFactory()
-	cfg := &Config{Scrapers: map[component.Type]internal.Config{component.MustNewType(errorKey): &mockConfig{}}}
+	cfg := &Config{Scrapers: map[component.Type]component.Config{component.MustNewType(errorKey): &mockConfig{}}}
 
 	_, err := factory.CreateMetrics(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.EqualError(t, err, fmt.Sprintf("host metrics scraper factory not found for key: %q", errorKey))
