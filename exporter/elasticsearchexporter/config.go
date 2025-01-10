@@ -62,7 +62,7 @@ type Config struct {
 	TracesDynamicIndex DynamicIndexSetting `mapstructure:"traces_dynamic_index"`
 
 	// LogsDynamicID is used to configure the document id for logs.
-	LogsDynamicID DynamicIndexSetting `mapstructure:"logs_dynamic_id"`
+	LogsDynamicID DynamicIDSettings `mapstructure:"logs_dynamic_id"`
 
 	// Pipeline configures the ingest node pipeline name that should be used to process the
 	// events.
@@ -120,6 +120,10 @@ type LogstashFormatSettings struct {
 }
 
 type DynamicIndexSetting struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+type DynamicIDSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
