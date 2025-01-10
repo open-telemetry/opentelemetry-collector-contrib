@@ -1,0 +1,12 @@
+change_type: enhancement
+
+component: k8sattributesprocessor
+
+note: Add option to configure resource attributes using the same logic as the OTel operator
+
+issues: [37114]
+
+subtext: |
+  If you are using the file log receiver, you can now create the same resource attributes as traces (via OTLP) received
+  from an application instrumented with the OpenTelemetry Operator -
+  simply by adding the `extract: { operator_rules: { enabled: true } }` configuration to the `k8sattributesprocessor` processor.
