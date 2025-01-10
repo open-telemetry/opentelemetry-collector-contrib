@@ -210,9 +210,11 @@ func New(
 func (c *WatchClient) Start() error {
 	synced := make([]cache.InformerSynced, 0)
 
+	waitForReplicaSets := false
 	// start the replicaSet informer first, as the replica sets need to be
 	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
 	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
+		waitForReplicaSets = true
 		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
@@ -222,7 +224,7 @@ func (c *WatchClient) Start() error {
 			return err
 		}
 		synced = append(synced, reg.HasSynced)
-		go c.replicasetInformer.Run(c.stopCh)
+		go c.runInformer(c.replicasetInformer)
 	}
 
 	reg, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -234,7 +236,12 @@ func (c *WatchClient) Start() error {
 		return err
 	}
 	synced = append(synced, reg.HasSynced)
-	go c.informer.Run(c.stopCh)
+
+	if waitForReplicaSets {
+		go c.runInformer(c.informer, c.replicasetInformer)
+	} else {
+		go c.runInformer(c.informer)
+	}
 
 	reg, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handleNamespaceAdd,
@@ -245,7 +252,7 @@ func (c *WatchClient) Start() error {
 		return err
 	}
 	synced = append(synced, reg.HasSynced)
-	go c.namespaceInformer.Run(c.stopCh)
+	go c.runInformer(c.namespaceInformer)
 
 	if c.nodeInformer != nil {
 		reg, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -257,7 +264,7 @@ func (c *WatchClient) Start() error {
 			return err
 		}
 		synced = append(synced, reg.HasSynced)
-		go c.nodeInformer.Run(c.stopCh)
+		go c.runInformer(c.nodeInformer)
 	}
 
 	if c.waitForMetadata {
@@ -1121,6 +1128,24 @@ func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {
 		return replicaset, ok
 	}
 	return nil, false
+}
+
+// runInformer starts the given informer. This method optionally takes a list of other informers that should complete
+// before the informer is started. This is necessary e.g. for the pod informer which requires the replica set informer
+// to be finished to correctly establish the connection to the replicaset/deployment it belongs to.
+func (c *WatchClient) runInformer(informer cache.SharedInformer, dependencies ...cache.SharedInformer) {
+	if len(dependencies) > 0 {
+		timeoutCh := make(chan struct{})
+		// TODO hard coding the timeout for now, check if we should make this configurable
+		t := time.AfterFunc(5*time.Second, func() {
+			close(timeoutCh)
+		})
+		defer t.Stop()
+		for _, dependency := range dependencies {
+			cache.WaitForCacheSync(timeoutCh, dependency.HasSynced)
+		}
+	}
+	informer.Run(c.stopCh)
 }
 
 // ignoreDeletedFinalStateUnknown returns the object wrapped in
