@@ -326,6 +326,15 @@ func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pco
 	if err := writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(record.DroppedAttributesCount())); err != nil {
 		return nil, err
 	}
+	if record.EventName() != "" {
+		if err := writeStringFieldSkipDefault(v, "event_name", record.EventName()); err != nil {
+			return nil, err
+		}
+	} else if eventNameAttr, ok := record.Attributes().Get("event.name"); ok && eventNameAttr.Str() != "" {
+		if err := writeStringFieldSkipDefault(v, "event_name", eventNameAttr.Str()); err != nil {
+			return nil, err
+		}
+	}
 	if err := writeResource(v, resource, resourceSchemaURL, false); err != nil {
 		return nil, err
 	}
