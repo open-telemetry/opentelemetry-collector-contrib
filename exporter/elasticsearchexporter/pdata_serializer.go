@@ -291,6 +291,7 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 		return true
 	})
 	geoAttributes.Range(func(k string, val pcommon.Value) bool {
+		_ = v.OnKey(k)
 		writeValue(v, val, stringifyMapValues)
 		return true
 	})
