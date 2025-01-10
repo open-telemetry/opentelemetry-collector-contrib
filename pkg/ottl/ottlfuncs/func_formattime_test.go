@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Test_Timestamp(t *testing.T) {
+func Test_FormatTime(t *testing.T) {
 	tests := []struct {
 		name         string
 		time         ottl.TimeGetter[any]
@@ -79,7 +79,7 @@ func Test_Timestamp(t *testing.T) {
 			expected: "July 31, 1993",
 		},
 		{
-			name: "date with timestamp",
+			name: "date with FormatTime",
 			time: &ottl.StandardTimeGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return time.Date(2023, 3, 14, 17, 0o2, 59, 0, time.Local), nil
@@ -151,7 +151,7 @@ func Test_Timestamp(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Timestamp(tt.time, tt.format)
+			exprFunc, err := FormatTime(tt.time, tt.format)
 			if tt.errorMsg != "" {
 				assert.Contains(t, err.Error(), tt.errorMsg)
 			} else {

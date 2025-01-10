@@ -938,7 +938,7 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["time"],Timestamp(time, "%Y-%m-%d"))`,
+			statement: `set(attributes["time"], FormatTime(time, "%Y-%m-%d"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("time", "2020-02-11")
 			},

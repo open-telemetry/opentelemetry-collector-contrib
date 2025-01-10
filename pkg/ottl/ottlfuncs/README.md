@@ -465,7 +465,7 @@ Available Converters:
 - [String](#string)
 - [Substring](#substring)
 - [Time](#time)
-- [Timestamp](#timestamp)
+- [FormatTime](#formattime)
 - [ToKeyValueString](#tokeyvaluestring)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
@@ -1962,11 +1962,11 @@ Examples:
 - `Time("mercoledì set 4 2024", "%A %h %e %Y", "", "it")`
 - `Time("Febrero 25 lunes, 2002, 02:03:04 p.m.", "%B %d %A, %Y, %r", "America/New_York", "es-ES")`
 
-### Timestamp
+### FormatTime
 
-`Timestamp(time, format)`
+`FormatTime(time, format)`
 
-The `Timestamp` Converter takes a `time.Time` and converts it to a human readable string representations of the time according to the specidied format.
+The `FormatTime` Converter takes a `time.Time` and converts it to a human readable string representations of the time according to the specidied format.
 
 `time` is `time.Time`. If `time` is another type an error is returned. `format` is a string.
 
@@ -2015,7 +2015,7 @@ If `format` is nil, an error is returned. The parser used is the parser at [inte
 
 Examples:
 
-- `Timestamp(Time("02/04/2023", "%m/%d/%Y"), "%A %h %e %Y")`
+- `FormatTime(Time("02/04/2023", "%m/%d/%Y"), "%A %h %e %Y")`
 
 ### ToKeyValueString
 

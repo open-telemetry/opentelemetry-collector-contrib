@@ -11,26 +11,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type TimestampArguments[K any] struct {
+type FormatTimeArguments[K any] struct {
 	Time   ottl.TimeGetter[K]
 	Format string
 }
 
-func NewTimestampFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Timestamp", &TimestampArguments[K]{}, createTimestampFunction[K])
+func NewFormatTimeFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("FormatTime", &FormatTimeArguments[K]{}, createFormatTimeFunction[K])
 }
 
-func createTimestampFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*TimestampArguments[K])
+func createFormatTimeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*FormatTimeArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("TimestampFactory args must be of type *TimestampArguments[K]")
+		return nil, fmt.Errorf("FormatTimeFactory args must be of type *FormatTimeArguments[K]")
 	}
 
-	return Timestamp(args.Time, args.Format)
+	return FormatTime(args.Time, args.Format)
 }
 
-func Timestamp[K any](timeValue ottl.TimeGetter[K], format string) (ottl.ExprFunc[K], error) {
+func FormatTime[K any](timeValue ottl.TimeGetter[K], format string) (ottl.ExprFunc[K], error) {
 	if format == "" {
 		return nil, fmt.Errorf("format cannot be nil")
 	}
