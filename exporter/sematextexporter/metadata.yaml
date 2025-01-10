@@ -6,7 +6,7 @@ status:
     development: [metrics,logs]
   distributions: [contrib]
   codeowners:
-    active: [AkhigbeEromo]
+    active: [AkhigbeEromo,boratanrikulu,akshatagarwl]
 
 tests:
   expect_consumer_error: true

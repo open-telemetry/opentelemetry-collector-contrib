@@ -22,9 +22,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter/internal/metadata"
 )
 
-const(
+const (
 	metricsAppToken = "2064e37c-4fac-45f6-831d-922d43fde759"
-	 logsAppToken = "9064e37c-4gac-49f6-831d-922l43fse759"
+	logsAppToken    = "9064e37c-4gac-49f6-831d-922l43fse759"
 )
 
 // NewFactory creates a factory for the Sematext metrics exporter.
