@@ -1,0 +1,77 @@
+name: scoped-test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  changedfiles:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    outputs:
+      go_sources: ${{ steps.changed-files.outputs.sources_all_changed_files }}
+      go_tests: ${{ steps.changed-files.outputs.tests_all_changed_files }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed go files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files_yaml: |
+            sources:
+              - '**/*.go'
+              - '!**/*_test.go'
+            tests:
+              - '**/*_test.go'
+
+  scoped-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ windows-latest ]
+    runs-on: ${{ matrix.os }}
+    needs: changedfiles
+    steps:
+      - name: Echo changed files
+        shell: bash
+        run: |
+          echo "go_sources: ${{ needs.changedfiles.outputs.go_sources }}"
+          echo "go_tests: ${{ needs.changedfiles.outputs.go_tests }}"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.8"
+          cache: false
+
+      - name: Try to restore go-cache
+        id: go-cache
+        timeout-minutes: 25
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+            ./.tools
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+
+      - name: Build test tools
+        run: make "$(${PWD} -replace '\\', '/')/.tools/gotestsum"
+
+      - name: Run changed tests
+        if: needs.changedfiles.outputs.go_tests
+        env:
+          CHANGED_GOLANG_TESTS: ${{ needs.changedfiles.outputs.go_tests }}
+        run: |
+          make run-changed-tests
+
+      - name: Run tests on dependent components
+        if: needs.changedfiles.outputs.go_sources
+        env:
+          CHANGED_GOLANG_SOURCES: ${{ needs.changedfiles.outputs.go_sources }}
+        run: |
+          make for-affected-components CMD="make test"
