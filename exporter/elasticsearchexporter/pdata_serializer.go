@@ -28,49 +28,24 @@ func serializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
 	v.SetExplicitRadixPoint(true)
-	if err := v.OnObjectStart(-1, structform.AnyType); err != nil {
-		return nil, nil, err
-	}
-	if err := writeTimestampField(v, "@timestamp", dp0.Timestamp()); err != nil {
-		return nil, nil, err
-	}
+	_ = v.OnObjectStart(-1, structform.AnyType)
+	writeTimestampField(v, "@timestamp", dp0.Timestamp())
 	if dp0.StartTimestamp() != 0 {
-		if err := writeTimestampField(v, "start_timestamp", dp0.StartTimestamp()); err != nil {
-			return nil, nil, err
-		}
+		writeTimestampField(v, "start_timestamp", dp0.StartTimestamp())
 	}
-	if err := writeStringFieldSkipDefault(v, "unit", dp0.Metric().Unit()); err != nil {
-		return nil, nil, err
-	}
-	if err := writeDataStream(v, dp0.Attributes()); err != nil {
-		return nil, nil, err
-	}
-	if err := writeAttributes(v, dp0.Attributes(), true); err != nil {
-		return nil, nil, err
-	}
-	if err := writeResource(v, resource, resourceSchemaURL, true); err != nil {
-		return nil, nil, err
-	}
-	if err := writeScope(v, scope, scopeSchemaURL, true); err != nil {
-		return nil, nil, err
-	}
-	dynamicTemplates, serr := serializeDataPoints(v, dataPoints, validationErrors)
-	if serr != nil {
-		return nil, nil, serr
-	}
-	if err := v.OnObjectFinished(); err != nil {
-		return nil, nil, err
-	}
+	writeStringFieldSkipDefault(v, "unit", dp0.Metric().Unit())
+	writeDataStream(v, dp0.Attributes())
+	writeAttributes(v, dp0.Attributes(), true)
+	writeResource(v, resource, resourceSchemaURL, true)
+	writeScope(v, scope, scopeSchemaURL, true)
+	dynamicTemplates := serializeDataPoints(v, dataPoints, validationErrors)
+	_ = v.OnObjectFinished()
 	return buf.Bytes(), dynamicTemplates, nil
 }
 
-func serializeDataPoints(v *json.Visitor, dataPoints []dataPoint, validationErrors *[]error) (map[string]string, error) {
-	if err := v.OnKey("metrics"); err != nil {
-		return nil, err
-	}
-	if err := v.OnObjectStart(-1, structform.AnyType); err != nil {
-		return nil, err
-	}
+func serializeDataPoints(v *json.Visitor, dataPoints []dataPoint, validationErrors *[]error) map[string]string {
+	_ = v.OnKey("metrics")
+	_ = v.OnObjectStart(-1, structform.AnyType)
 
 	dynamicTemplates := make(map[string]string, len(dataPoints))
 	var docCount uint64
@@ -84,29 +59,21 @@ func serializeDataPoints(v *json.Visitor, dataPoints []dataPoint, validationErro
 			*validationErrors = append(*validationErrors, err)
 			continue
 		}
-		if err = v.OnKey(metric.Name()); err != nil {
-			return nil, err
-		}
+		_ = v.OnKey(metric.Name())
 		// TODO: support quantiles
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34561
-		if err := writeValue(v, value, false); err != nil {
-			return nil, err
-		}
+		writeValue(v, value, false)
 		// DynamicTemplate returns the name of dynamic template that applies to the metric and data point,
 		// so that the field is indexed into Elasticsearch with the correct mapping. The name should correspond to a
 		// dynamic template that is defined in ES mapping, e.g.
 		// https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json
 		dynamicTemplates["metrics."+metric.Name()] = dp.DynamicTemplate(metric)
 	}
-	if err := v.OnObjectFinished(); err != nil {
-		return nil, err
-	}
+	_ = v.OnObjectFinished()
 	if docCount != 0 {
-		if err := writeUIntField(v, "_doc_count", docCount); err != nil {
-			return nil, err
-		}
+		writeUIntField(v, "_doc_count", docCount)
 	}
-	return dynamicTemplates, nil
+	return dynamicTemplates
 }
 
 func serializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent) ([]byte, error) {
@@ -116,27 +83,13 @@ func serializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, sco
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
 	v.SetExplicitRadixPoint(true)
-	if err := v.OnObjectStart(-1, structform.AnyType); err != nil {
-		return nil, err
-	}
-	if err := writeTimestampField(v, "@timestamp", spanEvent.Timestamp()); err != nil {
-		return nil, err
-	}
-	if err := writeDataStream(v, spanEvent.Attributes()); err != nil {
-		return nil, err
-	}
-	if err := writeTraceIDField(v, span.TraceID()); err != nil {
-		return nil, err
-	}
-	if err := writeSpanIDField(v, "span_id", span.SpanID()); err != nil {
-		return nil, err
-	}
-	if err := writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(spanEvent.DroppedAttributesCount())); err != nil {
-		return nil, err
-	}
-	if err := writeStringFieldSkipDefault(v, "event_name", spanEvent.Name()); err != nil {
-		return nil, err
-	}
+	_ = v.OnObjectStart(-1, structform.AnyType)
+	writeTimestampField(v, "@timestamp", spanEvent.Timestamp())
+	writeDataStream(v, spanEvent.Attributes())
+	writeTraceIDField(v, span.TraceID())
+	writeSpanIDField(v, "span_id", span.SpanID())
+	writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(spanEvent.DroppedAttributesCount()))
+	writeStringFieldSkipDefault(v, "event_name", spanEvent.Name())
 
 	var attributes pcommon.Map
 	if spanEvent.Name() != "" {
@@ -146,18 +99,10 @@ func serializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, sco
 	} else {
 		attributes = spanEvent.Attributes()
 	}
-	if err := writeAttributes(v, attributes, false); err != nil {
-		return nil, err
-	}
-	if err := writeResource(v, resource, resourceSchemaURL, false); err != nil {
-		return nil, err
-	}
-	if err := writeScope(v, scope, scopeSchemaURL, false); err != nil {
-		return nil, err
-	}
-	if err := v.OnObjectFinished(); err != nil {
-		return nil, err
-	}
+	writeAttributes(v, attributes, false)
+	writeResource(v, resource, resourceSchemaURL, false)
+	writeScope(v, scope, scopeSchemaURL, false)
+	_ = v.OnObjectFinished()
 	return buf.Bytes(), nil
 }
 
@@ -168,121 +113,51 @@ func serializeSpan(resource pcommon.Resource, resourceSchemaURL string, scope pc
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
 	v.SetExplicitRadixPoint(true)
-	if err := v.OnObjectStart(-1, structform.AnyType); err != nil {
-		return nil, err
-	}
-	if err := writeTimestampField(v, "@timestamp", span.StartTimestamp()); err != nil {
-		return nil, err
-	}
-	if err := writeDataStream(v, span.Attributes()); err != nil {
-		return nil, err
-	}
-	if err := writeTraceIDField(v, span.TraceID()); err != nil {
-		return nil, err
-	}
-	if err := writeSpanIDField(v, "span_id", span.SpanID()); err != nil {
-		return nil, err
-	}
-	if err := writeStringFieldSkipDefault(v, "trace_state", span.TraceState().AsRaw()); err != nil {
-		return nil, err
-	}
-	if err := writeSpanIDField(v, "parent_span_id", span.ParentSpanID()); err != nil {
-		return nil, err
-	}
-	if err := writeStringFieldSkipDefault(v, "name", span.Name()); err != nil {
-		return nil, err
-	}
-	if err := writeStringFieldSkipDefault(v, "kind", span.Kind().String()); err != nil {
-		return nil, err
-	}
-	if err := writeUIntField(v, "duration", uint64(span.EndTimestamp()-span.StartTimestamp())); err != nil {
-		return nil, err
-	}
-	if err := writeAttributes(v, span.Attributes(), false); err != nil {
-		return nil, err
-	}
-	if err := writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(span.DroppedAttributesCount())); err != nil {
-		return nil, err
-	}
-	if err := writeIntFieldSkipDefault(v, "dropped_events_count", int64(span.DroppedEventsCount())); err != nil {
-		return nil, err
-	}
-	if err := writeSpanLinks(v, span); err != nil {
-		return nil, err
-	}
-	if err := writeIntFieldSkipDefault(v, "dropped_links_count", int64(span.DroppedLinksCount())); err != nil {
-		return nil, err
-	}
-	if err := writeStatus(v, span.Status()); err != nil {
-		return nil, err
-	}
-	if err := writeResource(v, resource, resourceSchemaURL, false); err != nil {
-		return nil, err
-	}
-	if err := writeScope(v, scope, scopeSchemaURL, false); err != nil {
-		return nil, err
-	}
-	if err := v.OnObjectFinished(); err != nil {
-		return nil, err
-	}
+	_ = v.OnObjectStart(-1, structform.AnyType)
+	writeTimestampField(v, "@timestamp", span.StartTimestamp())
+	writeDataStream(v, span.Attributes())
+	writeTraceIDField(v, span.TraceID())
+	writeSpanIDField(v, "span_id", span.SpanID())
+	writeStringFieldSkipDefault(v, "trace_state", span.TraceState().AsRaw())
+	writeSpanIDField(v, "parent_span_id", span.ParentSpanID())
+	writeStringFieldSkipDefault(v, "name", span.Name())
+	writeStringFieldSkipDefault(v, "kind", span.Kind().String())
+	writeUIntField(v, "duration", uint64(span.EndTimestamp()-span.StartTimestamp()))
+	writeAttributes(v, span.Attributes(), false)
+	writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(span.DroppedAttributesCount()))
+	writeIntFieldSkipDefault(v, "dropped_events_count", int64(span.DroppedEventsCount()))
+	writeSpanLinks(v, span)
+	writeIntFieldSkipDefault(v, "dropped_links_count", int64(span.DroppedLinksCount()))
+	writeStatus(v, span.Status())
+	writeResource(v, resource, resourceSchemaURL, false)
+	writeScope(v, scope, scopeSchemaURL, false)
+	_ = v.OnObjectFinished()
 	return buf.Bytes(), nil
 }
 
-func writeStatus(v *json.Visitor, status ptrace.Status) error {
-	if err := v.OnKey("status"); err != nil {
-		return err
-	}
-	if err := v.OnObjectStart(-1, structform.AnyType); err != nil {
-		return err
-	}
-	if err := writeStringFieldSkipDefault(v, "message", status.Message()); err != nil {
-		return err
-	}
-	if err := writeStringFieldSkipDefault(v, "code", status.Code().String()); err != nil {
-		return err
-	}
-	if err := v.OnObjectFinished(); err != nil {
-		return err
-	}
-	return nil
+func writeStatus(v *json.Visitor, status ptrace.Status) {
+	_ = v.OnKey("status")
+	_ = v.OnObjectStart(-1, structform.AnyType)
+	writeStringFieldSkipDefault(v, "message", status.Message())
+	writeStringFieldSkipDefault(v, "code", status.Code().String())
+	_ = v.OnObjectFinished()
 }
 
-func writeSpanLinks(v *json.Visitor, span ptrace.Span) error {
-	if err := v.OnKey("links"); err != nil {
-		return err
-	}
-	if err := v.OnArrayStart(-1, structform.AnyType); err != nil {
-		return err
-	}
+func writeSpanLinks(v *json.Visitor, span ptrace.Span) {
+	_ = v.OnKey("links")
+	_ = v.OnArrayStart(-1, structform.AnyType)
 	spanLinks := span.Links()
 	for i := 0; i < spanLinks.Len(); i++ {
 		spanLink := spanLinks.At(i)
-		if err := v.OnObjectStart(-1, structform.AnyType); err != nil {
-			return err
-		}
-		if err := writeStringFieldSkipDefault(v, "trace_id", spanLink.TraceID().String()); err != nil {
-			return err
-		}
-		if err := writeStringFieldSkipDefault(v, "span_id", spanLink.SpanID().String()); err != nil {
-			return err
-		}
-		if err := writeStringFieldSkipDefault(v, "trace_state", spanLink.TraceState().AsRaw()); err != nil {
-			return err
-		}
-		if err := writeAttributes(v, spanLink.Attributes(), false); err != nil {
-			return err
-		}
-		if err := writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(spanLink.DroppedAttributesCount())); err != nil {
-			return err
-		}
-		if err := v.OnObjectFinished(); err != nil {
-			return err
-		}
+		_ = v.OnObjectStart(-1, structform.AnyType)
+		writeStringFieldSkipDefault(v, "trace_id", spanLink.TraceID().String())
+		writeStringFieldSkipDefault(v, "span_id", spanLink.SpanID().String())
+		writeStringFieldSkipDefault(v, "trace_state", spanLink.TraceState().AsRaw())
+		writeAttributes(v, spanLink.Attributes(), false)
+		writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(spanLink.DroppedAttributesCount()))
+		_ = v.OnObjectFinished()
 	}
-	if err := v.OnArrayFinished(); err != nil {
-		return err
-	}
-	return nil
+	_ = v.OnArrayFinished()
 }
 
 func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, record plog.LogRecord) ([]byte, error) {
@@ -292,100 +167,51 @@ func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pco
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
 	v.SetExplicitRadixPoint(true)
-	if err := v.OnObjectStart(-1, structform.AnyType); err != nil {
-		return nil, err
-	}
+	_ = v.OnObjectStart(-1, structform.AnyType)
 	docTimeStamp := record.Timestamp()
 	if docTimeStamp.AsTime().UnixNano() == 0 {
 		docTimeStamp = record.ObservedTimestamp()
 	}
-	if err := writeTimestampField(v, "@timestamp", docTimeStamp); err != nil {
-		return nil, err
-	}
-	if err := writeTimestampField(v, "observed_timestamp", record.ObservedTimestamp()); err != nil {
-		return nil, err
-	}
-	if err := writeDataStream(v, record.Attributes()); err != nil {
-		return nil, err
-	}
-	if err := writeStringFieldSkipDefault(v, "severity_text", record.SeverityText()); err != nil {
-		return nil, err
-	}
-	if err := writeIntFieldSkipDefault(v, "severity_number", int64(record.SeverityNumber())); err != nil {
-		return nil, err
-	}
-	if err := writeTraceIDField(v, record.TraceID()); err != nil {
-		return nil, err
-	}
-	if err := writeSpanIDField(v, "span_id", record.SpanID()); err != nil {
-		return nil, err
-	}
-	if err := writeAttributes(v, record.Attributes(), false); err != nil {
-		return nil, err
-	}
-	if err := writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(record.DroppedAttributesCount())); err != nil {
-		return nil, err
-	}
+	writeTimestampField(v, "@timestamp", docTimeStamp)
+	writeTimestampField(v, "observed_timestamp", record.ObservedTimestamp())
+	writeDataStream(v, record.Attributes())
+	writeStringFieldSkipDefault(v, "severity_text", record.SeverityText())
+	writeIntFieldSkipDefault(v, "severity_number", int64(record.SeverityNumber()))
+	writeTraceIDField(v, record.TraceID())
+	writeSpanIDField(v, "span_id", record.SpanID())
+	writeAttributes(v, record.Attributes(), false)
+	writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(record.DroppedAttributesCount()))
 	if record.EventName() != "" {
-		if err := writeStringFieldSkipDefault(v, "event_name", record.EventName()); err != nil {
-			return nil, err
-		}
+		writeStringFieldSkipDefault(v, "event_name", record.EventName())
 	} else if eventNameAttr, ok := record.Attributes().Get("event.name"); ok && eventNameAttr.Str() != "" {
-		if err := writeStringFieldSkipDefault(v, "event_name", eventNameAttr.Str()); err != nil {
-			return nil, err
-		}
+		writeStringFieldSkipDefault(v, "event_name", eventNameAttr.Str())
 	}
-	if err := writeResource(v, resource, resourceSchemaURL, false); err != nil {
-		return nil, err
-	}
-	if err := writeScope(v, scope, scopeSchemaURL, false); err != nil {
-		return nil, err
-	}
-	if err := writeLogBody(v, record); err != nil {
-		return nil, err
-	}
-	if err := v.OnObjectFinished(); err != nil {
-		return nil, err
-	}
+	writeResource(v, resource, resourceSchemaURL, false)
+	writeScope(v, scope, scopeSchemaURL, false)
+	writeLogBody(v, record)
+	_ = v.OnObjectFinished()
 	return buf.Bytes(), nil
 }
 
-func writeDataStream(v *json.Visitor, attributes pcommon.Map) error {
-	if err := v.OnKey("data_stream"); err != nil {
-		return err
-	}
-	if err := v.OnObjectStart(-1, structform.AnyType); err != nil {
-		return err
-	}
-	var err error
+func writeDataStream(v *json.Visitor, attributes pcommon.Map) {
+	_ = v.OnKey("data_stream")
+	_ = v.OnObjectStart(-1, structform.AnyType)
 	attributes.Range(func(k string, val pcommon.Value) bool {
 		if strings.HasPrefix(k, "data_stream.") && val.Type() == pcommon.ValueTypeStr {
-			if err = writeStringFieldSkipDefault(v, k[12:], val.Str()); err != nil {
-				return false
-			}
+			writeStringFieldSkipDefault(v, k[12:], val.Str())
 		}
 		return true
 	})
-	if err != nil {
-		return err
-	}
 
-	if err := v.OnObjectFinished(); err != nil {
-		return err
-	}
-	return nil
+	_ = v.OnObjectFinished()
 }
 
-func writeLogBody(v *json.Visitor, record plog.LogRecord) error {
+func writeLogBody(v *json.Visitor, record plog.LogRecord) {
 	if record.Body().Type() == pcommon.ValueTypeEmpty {
-		return nil
+		return
 	}
-	if err := v.OnKey("body"); err != nil {
-		return err
-	}
-	if err := v.OnObjectStart(-1, structform.AnyType); err != nil {
-		return err
-	}
+	_ = v.OnKey("body")
+	_ = v.OnObjectStart(-1, structform.AnyType)
 
 	// Determine if this log record is an event, as they are mapped differently
 	// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/general/events.md
@@ -417,71 +243,34 @@ func writeLogBody(v *json.Visitor, record plog.LogRecord) error {
 	default:
 		bodyType = "text"
 	}
-	if err := v.OnKey(bodyType); err != nil {
-		return err
-	}
-	if err := writeValue(v, body, false); err != nil {
-		return err
-	}
-	if err := v.OnObjectFinished(); err != nil {
-		return err
-	}
-	return nil
+	_ = v.OnKey(bodyType)
+	writeValue(v, body, false)
+	_ = v.OnObjectFinished()
 }
 
-func writeResource(v *json.Visitor, resource pcommon.Resource, resourceSchemaURL string, stringifyMapAttributes bool) error {
-	if err := v.OnKey("resource"); err != nil {
-		return err
-	}
-	if err := v.OnObjectStart(-1, structform.AnyType); err != nil {
-		return err
-	}
-	if err := writeStringFieldSkipDefault(v, "schema_url", resourceSchemaURL); err != nil {
-		return err
-	}
-	if err := writeAttributes(v, resource.Attributes(), stringifyMapAttributes); err != nil {
-		return err
-	}
-	if err := writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(resource.DroppedAttributesCount())); err != nil {
-		return err
-	}
-	if err := v.OnObjectFinished(); err != nil {
-		return err
-	}
-	return nil
+func writeResource(v *json.Visitor, resource pcommon.Resource, resourceSchemaURL string, stringifyMapAttributes bool) {
+	_ = v.OnKey("resource")
+	_ = v.OnObjectStart(-1, structform.AnyType)
+	writeStringFieldSkipDefault(v, "schema_url", resourceSchemaURL)
+	writeAttributes(v, resource.Attributes(), stringifyMapAttributes)
+	writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(resource.DroppedAttributesCount()))
+	_ = v.OnObjectFinished()
 }
 
-func writeScope(v *json.Visitor, scope pcommon.InstrumentationScope, scopeSchemaURL string, stringifyMapAttributes bool) error {
-	if err := v.OnKey("scope"); err != nil {
-		return err
-	}
-	if err := v.OnObjectStart(-1, structform.AnyType); err != nil {
-		return err
-	}
-	if err := writeStringFieldSkipDefault(v, "schema_url", scopeSchemaURL); err != nil {
-		return err
-	}
-	if err := writeStringFieldSkipDefault(v, "name", scope.Name()); err != nil {
-		return err
-	}
-	if err := writeStringFieldSkipDefault(v, "version", scope.Version()); err != nil {
-		return err
-	}
-	if err := writeAttributes(v, scope.Attributes(), stringifyMapAttributes); err != nil {
-		return err
-	}
-	if err := writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(scope.DroppedAttributesCount())); err != nil {
-		return err
-	}
-	if err := v.OnObjectFinished(); err != nil {
-		return err
-	}
-	return nil
+func writeScope(v *json.Visitor, scope pcommon.InstrumentationScope, scopeSchemaURL string, stringifyMapAttributes bool) {
+	_ = v.OnKey("scope")
+	_ = v.OnObjectStart(-1, structform.AnyType)
+	writeStringFieldSkipDefault(v, "schema_url", scopeSchemaURL)
+	writeStringFieldSkipDefault(v, "name", scope.Name())
+	writeStringFieldSkipDefault(v, "version", scope.Version())
+	writeAttributes(v, scope.Attributes(), stringifyMapAttributes)
+	writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(scope.DroppedAttributesCount()))
+	_ = v.OnObjectFinished()
 }
 
-func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues bool) error {
+func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues bool) {
 	if attributes.Len() == 0 {
-		return nil
+		return
 	}
 	attrCopy := pcommon.NewMap()
 	attributes.CopyTo(attrCopy)
@@ -494,159 +283,90 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 	})
 	mergeGeolocation(attrCopy)
 	if attrCopy.Len() == 0 {
-		return nil
+		return
 	}
-	if err := v.OnKey("attributes"); err != nil {
-		return err
-	}
-	if err := writeMap(v, attrCopy, stringifyMapValues); err != nil {
-		return err
-	}
-	return nil
+	_ = v.OnKey("attributes")
+	writeMap(v, attrCopy, stringifyMapValues)
 }
 
-func writeMap(v *json.Visitor, attributes pcommon.Map, stringifyMapValues bool) error {
-	if err := v.OnObjectStart(-1, structform.AnyType); err != nil {
-		return err
-	}
-	var err error
+func writeMap(v *json.Visitor, attributes pcommon.Map, stringifyMapValues bool) {
+	_ = v.OnObjectStart(-1, structform.AnyType)
 	attributes.Range(func(k string, val pcommon.Value) bool {
-		if err = v.OnKey(k); err != nil {
-			return false
-		}
-		err = writeValue(v, val, stringifyMapValues)
-		return err == nil
+		_ = v.OnKey(k)
+		writeValue(v, val, stringifyMapValues)
+		return true
 	})
-	if err != nil {
-		return err
-	}
-	if err := v.OnObjectFinished(); err != nil {
-		return err
-	}
-	return nil
+	_ = v.OnObjectFinished()
 }
 
-func writeValue(v *json.Visitor, val pcommon.Value, stringifyMaps bool) error {
+func writeValue(v *json.Visitor, val pcommon.Value, stringifyMaps bool) {
 	switch val.Type() {
 	case pcommon.ValueTypeEmpty:
-		if err := v.OnNil(); err != nil {
-			return err
-		}
+		_ = v.OnNil()
 	case pcommon.ValueTypeStr:
-		if err := v.OnString(val.Str()); err != nil {
-			return err
-		}
+		_ = v.OnString(val.Str())
 	case pcommon.ValueTypeBool:
-		if err := v.OnBool(val.Bool()); err != nil {
-			return err
-		}
+		_ = v.OnBool(val.Bool())
 	case pcommon.ValueTypeDouble:
-		if err := v.OnFloat64(val.Double()); err != nil {
-			return err
-		}
+		_ = v.OnFloat64(val.Double())
 	case pcommon.ValueTypeInt:
-		if err := v.OnInt64(val.Int()); err != nil {
-			return err
-		}
+		_ = v.OnInt64(val.Int())
 	case pcommon.ValueTypeBytes:
-		if err := v.OnString(hex.EncodeToString(val.Bytes().AsRaw())); err != nil {
-			return err
-		}
+		_ = v.OnString(hex.EncodeToString(val.Bytes().AsRaw()))
 	case pcommon.ValueTypeMap:
 		if stringifyMaps {
-			if err := v.OnString(val.AsString()); err != nil {
-				return err
-			}
+			_ = v.OnString(val.AsString())
 		} else {
-			if err := writeMap(v, val.Map(), false); err != nil {
-				return err
-			}
+			writeMap(v, val.Map(), false)
 		}
 	case pcommon.ValueTypeSlice:
-		if err := v.OnArrayStart(-1, structform.AnyType); err != nil {
-			return err
-		}
+		_ = v.OnArrayStart(-1, structform.AnyType)
 		slice := val.Slice()
 		for i := 0; i < slice.Len(); i++ {
-			if err := writeValue(v, slice.At(i), stringifyMaps); err != nil {
-				return err
-			}
+			writeValue(v, slice.At(i), stringifyMaps)
 		}
-		if err := v.OnArrayFinished(); err != nil {
-			return err
-		}
+		_ = v.OnArrayFinished()
 	}
-	return nil
 }
 
-func writeTimestampField(v *json.Visitor, key string, timestamp pcommon.Timestamp) error {
-	if err := v.OnKey(key); err != nil {
-		return err
-	}
-	if err := v.OnString(timestamp.AsTime().UTC().Format(tsLayout)); err != nil {
-		return err
-	}
-	return nil
+func writeTimestampField(v *json.Visitor, key string, timestamp pcommon.Timestamp) {
+	_ = v.OnKey(key)
+	_ = v.OnString(timestamp.AsTime().UTC().Format(tsLayout))
 }
 
-func writeUIntField(v *json.Visitor, key string, i uint64) error {
-	if err := v.OnKey(key); err != nil {
-		return err
-	}
-	if err := v.OnUint64(i); err != nil {
-		return err
-	}
-	return nil
+func writeUIntField(v *json.Visitor, key string, i uint64) {
+	_ = v.OnKey(key)
+	_ = v.OnUint64(i)
 }
 
-func writeIntFieldSkipDefault(v *json.Visitor, key string, i int64) error {
+func writeIntFieldSkipDefault(v *json.Visitor, key string, i int64) {
 	if i == 0 {
-		return nil
+		return
 	}
-	if err := v.OnKey(key); err != nil {
-		return err
-	}
-	if err := v.OnInt64(i); err != nil {
-		return err
-	}
-	return nil
+	_ = v.OnKey(key)
+	_ = v.OnInt64(i)
 }
 
-func writeStringFieldSkipDefault(v *json.Visitor, key, value string) error {
+func writeStringFieldSkipDefault(v *json.Visitor, key, value string) {
 	if value == "" {
-		return nil
+		return
 	}
-	if err := v.OnKey(key); err != nil {
-		return err
-	}
-	if err := v.OnString(value); err != nil {
-		return err
-	}
-	return nil
+	_ = v.OnKey(key)
+	_ = v.OnString(value)
 }
 
-func writeTraceIDField(v *json.Visitor, id pcommon.TraceID) error {
+func writeTraceIDField(v *json.Visitor, id pcommon.TraceID) {
 	if id.IsEmpty() {
-		return nil
+		return
 	}
-	if err := v.OnKey("trace_id"); err != nil {
-		return err
-	}
-	if err := v.OnString(hex.EncodeToString(id[:])); err != nil {
-		return err
-	}
-	return nil
+	_ = v.OnKey("trace_id")
+	_ = v.OnString(hex.EncodeToString(id[:]))
 }
 
-func writeSpanIDField(v *json.Visitor, key string, id pcommon.SpanID) error {
+func writeSpanIDField(v *json.Visitor, key string, id pcommon.SpanID) {
 	if id.IsEmpty() {
-		return nil
+		return
 	}
-	if err := v.OnKey(key); err != nil {
-		return err
-	}
-	if err := v.OnString(hex.EncodeToString(id[:])); err != nil {
-		return err
-	}
-	return nil
+	_ = v.OnKey(key)
+	_ = v.OnString(hex.EncodeToString(id[:]))
 }
