@@ -303,8 +303,7 @@ service:
 The full list of settings exposed for this exporter are documented [here](config.go)
 with detailed sample configurations [here](testdata/config.yaml).
 
-This exporter also offers proxy support as documented
-[here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
+This exporter also offers [proxy support](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
 
 ## Advanced Configuration
 
