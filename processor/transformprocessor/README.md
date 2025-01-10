@@ -6,7 +6,7 @@
 | Distributions | [contrib], [k8s] |
 | Warnings      | [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftransform%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ftransform) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftransform%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ftransform) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@kentquirk](https://www.github.com/kentquirk), [@bogdandrutu](https://www.github.com/bogdandrutu), [@evan-bradley](https://www.github.com/evan-bradley) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@kentquirk](https://www.github.com/kentquirk), [@bogdandrutu](https://www.github.com/bogdandrutu), [@evan-bradley](https://www.github.com/evan-bradley), [@edmocosta](https://www.github.com/edmocosta) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -264,7 +264,7 @@ The `extract_count_metric` function creates a new Sum metric from a Histogram, E
 
 `is_monotonic` is a boolean representing the monotonicity of the new metric.
 
-The name for the new metric will be `<original metric name>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
+The name for the new metric will be `<original metric name>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
 
 The new metric that is created will be passed to all subsequent statements in the metrics statements list.
 
@@ -288,7 +288,7 @@ The `extract_sum_metric` function creates a new Sum metric from a Histogram, Exp
 
 `is_monotonic` is a boolean representing the monotonicity of the new metric.
 
-The name for the new metric will be `<original metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
+The name for the new metric will be `<original metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
 
 The new metric that is created will be passed to all subsequent statements in the metrics statements list.
 
@@ -309,7 +309,7 @@ The `convert_summary_count_val_to_sum` function creates a new Sum metric from a 
 
 `aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
 
-The name for the new metric will be `<summary metric name>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
+The name for the new metric will be `<summary metric name>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 
 **NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
 
@@ -328,7 +328,7 @@ The `convert_summary_sum_val_to_sum` function creates a new Sum metric from a Su
 
 `aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
 
-The name for the new metric will be `<summary metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
+The name for the new metric will be `<summary metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 
 **NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
 

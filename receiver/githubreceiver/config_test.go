@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 	defaultConfigGitHubReceiver := factory.CreateDefaultConfig()
 
 	defaultConfigGitHubReceiver.(*Config).Scrapers = map[string]internal.Config{
-		metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
+		githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
 	}
 
 	defaultConfigGitHubReceiver.(*Config).WebHook = WebHook{
@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 			InitialDelay:       1 * time.Second,
 		},
 		Scrapers: map[string]internal.Config{
-			metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
+			githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
 		},
 		WebHook: WebHook{
 			ServerConfig: confighttp.ServerConfig{

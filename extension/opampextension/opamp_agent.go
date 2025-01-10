@@ -118,20 +118,20 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		TLSConfig:      tls,
 		OpAMPServerURL: o.cfg.Server.GetEndpoint(),
 		InstanceUid:    types.InstanceUid(o.instanceID),
-		Callbacks: types.CallbacksStruct{
-			OnConnectFunc: func(_ context.Context) {
+		Callbacks: types.Callbacks{
+			OnConnect: func(_ context.Context) {
 				o.logger.Debug("Connected to the OpAMP server")
 			},
-			OnConnectFailedFunc: func(_ context.Context, err error) {
+			OnConnectFailed: func(_ context.Context, err error) {
 				o.logger.Error("Failed to connect to the OpAMP server", zap.Error(err))
 			},
-			OnErrorFunc: func(_ context.Context, err *protobufs.ServerErrorResponse) {
+			OnError: func(_ context.Context, err *protobufs.ServerErrorResponse) {
 				o.logger.Error("OpAMP server returned an error response", zap.String("message", err.ErrorMessage))
 			},
-			GetEffectiveConfigFunc: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
+			GetEffectiveConfig: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
 				return o.composeEffectiveConfig(), nil
 			},
-			OnMessageFunc: o.onMessage,
+			OnMessage: o.onMessage,
 		},
 		Capabilities: o.capabilities.toAgentCapabilities(),
 	}
@@ -162,6 +162,9 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 
 	o.statusSubscriptionWg.Wait()
 	o.componentHealthWg.Wait()
+	if o.componentStatusCh != nil {
+		close(o.componentStatusCh)
+	}
 
 	o.logger.Debug("OpAMP agent shutting down...")
 	if o.opampClient == nil {

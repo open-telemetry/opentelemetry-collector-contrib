@@ -421,8 +421,10 @@ update-otel:$(MULTIMOD)
 	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/oteltestbedcol/builder-config.yaml)
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
-	$(MAKE) oteltestbedcol
+	$(MAKE) generate
+	$(MAKE) crosslink
 	$(MAKE) remove-toolchain
+	git add . && git commit -s -m "[chore] mod and toolchain tidy" ; \
 
 .PHONY: otel-from-tree
 otel-from-tree:

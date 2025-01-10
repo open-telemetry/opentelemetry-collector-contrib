@@ -39,9 +39,9 @@ Editors are what OTTL uses to transform telemetry.
 
 Editors:
 
-- Are allowed to transform telemetry. When a Function is invoked the expectation is that the underlying telemetry is modified in some way.
-- May have side effects. Some Functions may generate telemetry and add it to the telemetry payload to be processed in this batch.
-- May return values. Although not common and not required, Functions may return values.
+- Are allowed to transform telemetry. When an Editor is invoked the expectation is that the underlying telemetry is modified in some way.
+- May have side effects. Some Editors may generate telemetry and add it to the telemetry payload to be processed in this batch.
+- May return values. Although not common and not required, Editors may return values.
 
 Available Editors:
 
@@ -69,9 +69,9 @@ The `append` function appends single or multiple string values to `target`.
 
 Resulting field is always of type `pcommon.Slice` and will not convert the types of existing or new items in the slice. This means that it is possible to create a slice whose elements have different types.  Be careful when using `append` to set attribute values, as this will produce values that are not possible to create through OpenTelemetry APIs [according to](https://opentelemetry.io/docs/specs/otel/common/#attribute) the OpenTelemetry specification.
 
-  - `append(attributes["tags"], "prod")`
-  - `append(attributes["tags"], values = ["staging", "staging:east"])`
-  - `append(attributes["tags_copy"], attributes["tags"])`
+- `append(attributes["tags"], "prod")`
+- `append(attributes["tags"], values = ["staging", "staging:east"])`
+- `append(attributes["tags_copy"], attributes["tags"])`
 
 ### delete_key
 
@@ -444,6 +444,7 @@ Available Converters:
 - [Minute](#minute)
 - [Minutes](#minutes)
 - [Month](#month)
+- [Nanosecond](#nanosecond)
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
 - [ParseCSV](#parsecsv)
@@ -452,6 +453,7 @@ Available Converters:
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
 - [RemoveXML](#removexml)
+- [Second](#second)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
@@ -834,6 +836,18 @@ Get the first element at the root of the document with tag "a"
 Get all elements in the document with tag "a" that have an attribute "b" with value "c"
 
 - `GetXML(body, "//a[@b='c']")`
+
+Get `foo` from `<a>foo</a>`
+
+- `GetXML(body, "/a/text()")`
+
+Get `hello` from `<a><![CDATA[hello]]></a>`
+
+- `GetXML(body, "/a/text()")`
+
+Get `bar` from `<a foo="bar"/>`
+
+- `GetXML(body, "/a/@foo")`
 
 ### Hex
 
@@ -1225,6 +1239,20 @@ Examples:
 
 - `Month(Now())`
 
+### Nanosecond
+
+`Nanosecond(value)`
+
+The `Nanosecond` Converter returns the nanosecond component from the specified time using the Go stdlib [`time.Nanosecond` function](https://pkg.go.dev/time#Time.Nanosecond).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Nanosecond(Now())`
+
 ### Nanoseconds
 
 `Nanoseconds(value)`
@@ -1343,7 +1371,7 @@ Examples:
 
 The `ParseSimplifiedXML` Converter returns a `pcommon.Map` struct that is the result of parsing the target string without preservation of attributes or extraneous text content.
 
-The goal of this Converter is to produce a more user-friendly representation of XML data than the `ParseXML` Converter.
+The goal of this Converter is to produce a more user-friendly representation of XML data than the [`ParseXML`](#parsexml) Converter.
 This Converter should be preferred over `ParseXML` when minor semantic details (e.g. order of elements) are not critically important, when subsequent processing or querying of the result is expected, or when human-readability is a concern.
 
 This Converter disregards certain aspects of XML, specifically attributes and extraneous text content, in order to produce
@@ -1351,11 +1379,11 @@ a direct representation of XML data. Users are encouraged to simplify their XML 
 
 See other functions which may be useful for preparing XML documents:
 
-- `ConvertAttributesToElementsXML`
-- `ConvertTextToElementsXML`
-- `RemoveXML`
-- `InsertXML`
-- `GetXML`
+- [`ConvertAttributesToElementsXML`](#convertattributestoelementsxml)
+- [`ConvertTextToElementsXML`](#converttexttoelementsxml)
+- [`RemoveXML`](#removexml)
+- [`InsertXML`](#insertxml)
+- [`GetXML`](#getxml)
 
 #### Formal Definitions
 
@@ -1599,6 +1627,20 @@ Delete text from nodes that contain the word "sensitive"
 
 - `RemoveXML(body, "//*[contains(text(), 'sensitive')]")`
 
+### Second
+
+`Second(value)`
+
+The `Second` Converter returns the second component from the specified time using the Go stdlib [`time.Second` function](https://pkg.go.dev/time#Time.Second).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Second(Now())`
+
 ### Seconds
 
 `Seconds(value)`
@@ -1780,9 +1822,21 @@ The `Split` Converter separates a string by the delimiter, and returns an array 
 
 If the `target` is not a string or does not exist, the `Split` Converter will return an error.
 
+### Trim
+
+```Trim(target, Optional[replacement])```
+
+The `Trim` Converter removes the leading and trailing character (default: a space character).
+
+If the `target` is not a string or does not exist, the `Trim` Converter will return an error.
+
+`target` is a string.
+`replacement` is an optional string representing the character to replace with (default: a space character).
+
 Examples:
 
-- `Split("A|B|C", "|")`
+- `Trim(" this is a test ", " ")`
+- `Trim("!!this is a test!!", "!!")`
 
 ### String
 

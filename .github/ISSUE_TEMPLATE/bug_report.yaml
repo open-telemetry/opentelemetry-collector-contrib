@@ -241,6 +241,7 @@ body:
       - receiver/kafka
       - receiver/kafkametrics
       - receiver/kubeletstats
+      - receiver/libhoney
       - receiver/loki
       - receiver/memcached
       - receiver/mongodb

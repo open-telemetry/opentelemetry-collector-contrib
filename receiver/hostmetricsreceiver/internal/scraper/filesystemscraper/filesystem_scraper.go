@@ -58,7 +58,6 @@ func newFileSystemScraper(_ context.Context, settings receiver.Settings, cfg *Co
 }
 
 func (s *filesystemsScraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -69,7 +68,6 @@ func (s *filesystemsScraper) start(ctx context.Context, _ component.Host) error 
 }
 
 func (s *filesystemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	var errors scrapererror.ScrapeErrors
@@ -110,7 +108,7 @@ func (s *filesystemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error
 		if !s.fsFilter.includePartition(partition) {
 			continue
 		}
-		translatedMountpoint := translateMountpoint(ctx, s.config.RootPath, partition.Mountpoint)
+		translatedMountpoint := translateMountpoint(ctx, s.config.rootPath, partition.Mountpoint)
 		usage, usageErr := s.usage(ctx, translatedMountpoint)
 		if usageErr != nil {
 			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", translatedMountpoint, usageErr))
