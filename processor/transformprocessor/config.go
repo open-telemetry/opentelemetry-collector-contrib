@@ -28,7 +28,7 @@ var (
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080#issuecomment-2120764953"),
 	)
 	errFlatLogsGateDisabled       = errors.New("'flatten_data' requires the 'transform.flatten.logs' feature gate to be enabled")
-	configContextStatementsFields = []string{"trace_statements", "metric_statements", "log_statements"}
+	configContextStatementsFields = map[string]string{"trace_statements": "TraceStatements", "metric_statements": "MetricStatements", "log_statements": "LogStatements"}
 )
 
 // Config defines the configuration for the processor.
@@ -48,6 +48,16 @@ type Config struct {
 	logger      *zap.Logger
 }
 
+// The Unmarshal function sets the [common.ContextStatements.SharedCache] field with reflection.
+// These variables ensure that all required fields are still present, otherwise the Config
+// unmarshalling would fail.
+var (
+	_ = common.ContextStatements{}.SharedCache
+	_ = Config{}.TraceStatements
+	_ = Config{}.MetricStatements
+	_ = Config{}.LogStatements
+)
+
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
 // adding support to structured and flat configuration styles (array of statements strings).
 // When the flat configuration style is used, each statement becomes a new common.ContextStatements
@@ -59,33 +69,32 @@ func (c *Config) Unmarshal(component *confmap.Conf) error {
 		return nil
 	}
 
+	flatStatementsFieldsIndexes := map[string][]int{}
 	contextStatementsPatch := map[string]any{}
-	for _, fieldName := range configContextStatementsFields {
-		if !component.IsSet(fieldName) {
+	for configName, structFieldName := range configContextStatementsFields {
+		if !component.IsSet(configName) {
 			continue
 		}
-
-		rawVal := component.Get(fieldName)
+		rawVal := component.Get(configName)
 		values, ok := rawVal.([]any)
 		if !ok {
-			return fmt.Errorf("invalid %s type, expected: array, got: %t", fieldName, rawVal)
+			return fmt.Errorf("invalid %s type, expected: array, got: %t", configName, rawVal)
 		}
-
 		if len(values) == 0 {
 			continue
 		}
 
 		stmts := make([]any, 0, len(values))
-		for _, value := range values {
+		for i, value := range values {
 			// Array of strings means it's a flat configuration style
 			if reflect.TypeOf(value).Kind() == reflect.String {
 				stmts = append(stmts, map[string]any{"statements": []any{value}})
+				flatStatementsFieldsIndexes[structFieldName] = append(flatStatementsFieldsIndexes[structFieldName], i)
 			} else {
 				stmts = append(stmts, value)
 			}
 		}
-
-		contextStatementsPatch[fieldName] = stmts
+		contextStatementsPatch[configName] = stmts
 	}
 
 	if len(contextStatementsPatch) > 0 {
@@ -95,7 +104,21 @@ func (c *Config) Unmarshal(component *confmap.Conf) error {
 		}
 	}
 
-	return component.Unmarshal(c)
+	err := component.Unmarshal(c)
+	if err != nil {
+		return err
+	}
+
+	if len(flatStatementsFieldsIndexes) > 0 {
+		configValue := reflect.ValueOf(*c)
+		for fieldName, indexes := range flatStatementsFieldsIndexes {
+			for _, index := range indexes {
+				configValue.FieldByName(fieldName).Index(index).FieldByName("SharedCache").Set(reflect.ValueOf(true))
+			}
+		}
+	}
+
+	return nil
 }
 
 var _ component.Config = (*Config)(nil)

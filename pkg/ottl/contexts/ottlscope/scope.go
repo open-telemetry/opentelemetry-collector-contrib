@@ -44,17 +44,27 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 
 type Option func(*ottl.Parser[TransformContext])
 
-func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, schemaURLItem internal.SchemaURLItem) TransformContext {
-	return NewTransformContextWithCache(instrumentationScope, resource, schemaURLItem, pcommon.NewMap())
-}
+type TransformContextOption func(*TransformContext)
 
-// Experimental: *NOTE* this function is subject to change or removal in the future.
-func NewTransformContextWithCache(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, schemaURLItem internal.SchemaURLItem, cache pcommon.Map) TransformContext {
-	return TransformContext{
+func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, schemaURLItem internal.SchemaURLItem, options ...TransformContextOption) TransformContext {
+	tc := TransformContext{
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
-		cache:                cache,
+		cache:                pcommon.NewMap(),
 		schemaURLItem:        schemaURLItem,
+	}
+	for _, opt := range options {
+		opt(&tc)
+	}
+	return tc
+}
+
+// Experimental: *NOTE* this option is subject to change or removal in the future.
+func WithCache(cache *pcommon.Map) TransformContextOption {
+	return func(p *TransformContext) {
+		if cache != nil {
+			p.cache = *cache
+		}
 	}
 }
 
@@ -169,14 +179,14 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 		}
 		return accessCacheKey(path.Keys()), nil
 	default:
-		return internal.ScopePathGetSetter[TransformContext](path)
+		return internal.ScopePathGetSetter[TransformContext](ContextName, path)
 	}
 }
 
 func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	switch context {
 	case internal.ResourceContextName:
-		return internal.ResourcePathGetSetter[TransformContext](path)
+		return internal.ResourcePathGetSetter[TransformContext](ContextName, path)
 	default:
 		var fullPath string
 		if path != nil {

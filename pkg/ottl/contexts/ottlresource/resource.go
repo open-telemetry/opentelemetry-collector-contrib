@@ -41,16 +41,26 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 
 type Option func(*ottl.Parser[TransformContext])
 
-func NewTransformContext(resource pcommon.Resource, schemaURLItem internal.SchemaURLItem) TransformContext {
-	return NewTransformContextWithCache(resource, schemaURLItem, pcommon.NewMap())
+type TransformContextOption func(*TransformContext)
+
+func NewTransformContext(resource pcommon.Resource, schemaURLItem internal.SchemaURLItem, options ...TransformContextOption) TransformContext {
+	tc := TransformContext{
+		resource:      resource,
+		cache:         pcommon.NewMap(),
+		schemaURLItem: schemaURLItem,
+	}
+	for _, opt := range options {
+		opt(&tc)
+	}
+	return tc
 }
 
-// Experimental: *NOTE* this function is subject to change or removal in the future.
-func NewTransformContextWithCache(resource pcommon.Resource, schemaURLItem internal.SchemaURLItem, cache pcommon.Map) TransformContext {
-	return TransformContext{
-		resource:      resource,
-		cache:         cache,
-		schemaURLItem: schemaURLItem,
+// Experimental: *NOTE* this option is subject to change or removal in the future.
+func WithCache(cache *pcommon.Map) TransformContextOption {
+	return func(p *TransformContext) {
+		if cache != nil {
+			p.cache = *cache
+		}
 	}
 }
 
@@ -149,7 +159,7 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 		}
 		return accessCacheKey(path.Keys()), nil
 	default:
-		return internal.ResourcePathGetSetter[TransformContext](path)
+		return internal.ResourcePathGetSetter[TransformContext](ContextName, path)
 	}
 }
 

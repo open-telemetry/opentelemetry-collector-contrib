@@ -4,21 +4,19 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
-	"context"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-type cacheContextKey struct{}
-
-func WithCache(ctx context.Context, cache *pcommon.Map) context.Context {
-	return context.WithValue(ctx, cacheContextKey{}, cache)
-}
-
-func newCacheFrom(ctx context.Context) pcommon.Map {
-	cache := ctx.Value(cacheContextKey{}).(*pcommon.Map)
-	if cache != nil {
-		return *cache
+func NewContextCache(cache map[ContextID]*pcommon.Map, context ContextID, sharedCache bool) *pcommon.Map {
+	if !sharedCache {
+		m := pcommon.NewMap()
+		return &m
 	}
-	return pcommon.NewMap()
+	existing, ok := cache[context]
+	if ok {
+		return existing
+	}
+	m := pcommon.NewMap()
+	cache[context] = &m
+	return &m
 }

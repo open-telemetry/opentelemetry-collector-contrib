@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
@@ -17,27 +17,28 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
 
-var _ consumer.Traces = &traceStatements{}
+type TracesConsumer interface {
+	Context() ContextID
+	ConsumeTraces(ctx context.Context, td ptrace.Traces, cache *pcommon.Map) error
+}
 
 type traceStatements struct {
 	ottl.StatementSequence[ottlspan.TransformContext]
 	expr.BoolExpr[ottlspan.TransformContext]
 }
 
-func (t traceStatements) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{
-		MutatesData: true,
-	}
+func (t traceStatements) Context() ContextID {
+	return Span
 }
 
-func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, cache *pcommon.Map) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspans := rspans.ScopeSpans().At(j)
 			spans := sspans.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				tCtx := ottlspan.NewTransformContextWithCache(spans.At(k), sspans.Scope(), rspans.Resource(), sspans, rspans, newCacheFrom(ctx))
+				tCtx := ottlspan.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource(), sspans, rspans, ottlspan.WithCache(cache))
 				condition, err := t.BoolExpr.Eval(ctx, tCtx)
 				if err != nil {
 					return err
@@ -54,20 +55,16 @@ func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 	return nil
 }
 
-var _ consumer.Traces = &spanEventStatements{}
-
 type spanEventStatements struct {
 	ottl.StatementSequence[ottlspanevent.TransformContext]
 	expr.BoolExpr[ottlspanevent.TransformContext]
 }
 
-func (s spanEventStatements) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{
-		MutatesData: true,
-	}
+func (s spanEventStatements) Context() ContextID {
+	return SpanEvent
 }
 
-func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, cache *pcommon.Map) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
@@ -77,7 +74,7 @@ func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces
 				span := spans.At(k)
 				spanEvents := span.Events()
 				for n := 0; n < spanEvents.Len(); n++ {
-					tCtx := ottlspanevent.NewTransformContextWithCache(spanEvents.At(n), span, sspans.Scope(), rspans.Resource(), sspans, rspans, newCacheFrom(ctx))
+					tCtx := ottlspanevent.NewTransformContext(spanEvents.At(n), span, sspans.Scope(), rspans.Resource(), sspans, rspans, ottlspanevent.WithCache(cache))
 					condition, err := s.BoolExpr.Eval(ctx, tCtx)
 					if err != nil {
 						return err
@@ -95,12 +92,12 @@ func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces
 	return nil
 }
 
-type TraceParserCollection ottl.ParserCollection[consumer.Traces]
+type TraceParserCollection ottl.ParserCollection[TracesConsumer]
 
-type TraceParserCollectionOption ottl.ParserCollectionOption[consumer.Traces]
+type TraceParserCollectionOption ottl.ParserCollectionOption[TracesConsumer]
 
 func WithSpanParser(functions map[string]ottl.Factory[ottlspan.TransformContext]) TraceParserCollectionOption {
-	return func(pc *ottl.ParserCollection[consumer.Traces]) error {
+	return func(pc *ottl.ParserCollection[TracesConsumer]) error {
 		parser, err := ottlspan.NewParser(functions, pc.Settings, ottlspan.EnablePathContextNames())
 		if err != nil {
 			return err
@@ -110,7 +107,7 @@ func WithSpanParser(functions map[string]ottl.Factory[ottlspan.TransformContext]
 }
 
 func WithSpanEventParser(functions map[string]ottl.Factory[ottlspanevent.TransformContext]) TraceParserCollectionOption {
-	return func(pc *ottl.ParserCollection[consumer.Traces]) error {
+	return func(pc *ottl.ParserCollection[TracesConsumer]) error {
 		parser, err := ottlspanevent.NewParser(functions, pc.Settings, ottlspanevent.EnablePathContextNames())
 		if err != nil {
 			return err
@@ -120,17 +117,17 @@ func WithSpanEventParser(functions map[string]ottl.Factory[ottlspanevent.Transfo
 }
 
 func WithTraceErrorMode(errorMode ottl.ErrorMode) TraceParserCollectionOption {
-	return TraceParserCollectionOption(ottl.WithParserCollectionErrorMode[consumer.Traces](errorMode))
+	return TraceParserCollectionOption(ottl.WithParserCollectionErrorMode[TracesConsumer](errorMode))
 }
 
 func NewTraceParserCollection(settings component.TelemetrySettings, options ...TraceParserCollectionOption) (*TraceParserCollection, error) {
-	pcOptions := []ottl.ParserCollectionOption[consumer.Traces]{
-		withCommonContextParsers[consumer.Traces](),
-		ottl.EnableParserCollectionModifiedStatementLogging[consumer.Traces](true),
+	pcOptions := []ottl.ParserCollectionOption[TracesConsumer]{
+		withCommonContextParsers[TracesConsumer](),
+		ottl.EnableParserCollectionModifiedStatementLogging[TracesConsumer](true),
 	}
 
 	for _, option := range options {
-		pcOptions = append(pcOptions, ottl.ParserCollectionOption[consumer.Traces](option))
+		pcOptions = append(pcOptions, ottl.ParserCollectionOption[TracesConsumer](option))
 	}
 
 	pc, err := ottl.NewParserCollection(settings, pcOptions...)
@@ -142,34 +139,50 @@ func NewTraceParserCollection(settings component.TelemetrySettings, options ...T
 	return &tpc, nil
 }
 
-func convertSpanStatements(collection *ottl.ParserCollection[consumer.Traces], _ *ottl.Parser[ottlspan.TransformContext], _ string, statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[ottlspan.TransformContext]) (consumer.Traces, error) {
+func convertSpanStatements(pc *ottl.ParserCollection[TracesConsumer], _ *ottl.Parser[ottlspan.TransformContext], _ string, statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[ottlspan.TransformContext]) (TracesConsumer, error) {
 	contextStatements, err := toContextStatements(statements)
 	if err != nil {
 		return nil, err
 	}
-	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForSpan, contextStatements.Conditions, collection.ErrorMode, collection.Settings, filterottl.StandardSpanFuncs())
+	errorMode := pc.ErrorMode
+	if contextStatements.ErrorMode != "" {
+		errorMode = contextStatements.ErrorMode
+	}
+	var parserOptions []ottlspan.Option
+	if contextStatements.Context == "" {
+		parserOptions = append(parserOptions, ottlspan.EnablePathContextNames())
+	}
+	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForSpanWithOptions, contextStatements.Conditions, errorMode, pc.Settings, filterottl.StandardSpanFuncs(), parserOptions)
 	if errGlobalBoolExpr != nil {
 		return nil, errGlobalBoolExpr
 	}
-	sStatements := ottlspan.NewStatementSequence(parsedStatements, collection.Settings, ottlspan.WithStatementSequenceErrorMode(collection.ErrorMode))
+	sStatements := ottlspan.NewStatementSequence(parsedStatements, pc.Settings, ottlspan.WithStatementSequenceErrorMode(errorMode))
 	return traceStatements{sStatements, globalExpr}, nil
 }
 
-func convertSpanEventStatements(collection *ottl.ParserCollection[consumer.Traces], _ *ottl.Parser[ottlspanevent.TransformContext], _ string, statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[ottlspanevent.TransformContext]) (consumer.Traces, error) {
+func convertSpanEventStatements(pc *ottl.ParserCollection[TracesConsumer], _ *ottl.Parser[ottlspanevent.TransformContext], _ string, statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[ottlspanevent.TransformContext]) (TracesConsumer, error) {
 	contextStatements, err := toContextStatements(statements)
 	if err != nil {
 		return nil, err
 	}
-	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForSpanEvent, contextStatements.Conditions, collection.ErrorMode, collection.Settings, filterottl.StandardSpanEventFuncs())
+	errorMode := pc.ErrorMode
+	if contextStatements.ErrorMode != "" {
+		errorMode = contextStatements.ErrorMode
+	}
+	var parserOptions []ottlspanevent.Option
+	if contextStatements.Context == "" {
+		parserOptions = append(parserOptions, ottlspanevent.EnablePathContextNames())
+	}
+	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForSpanEventWithOptions, contextStatements.Conditions, errorMode, pc.Settings, filterottl.StandardSpanEventFuncs(), parserOptions)
 	if errGlobalBoolExpr != nil {
 		return nil, errGlobalBoolExpr
 	}
-	seStatements := ottlspanevent.NewStatementSequence(parsedStatements, collection.Settings, ottlspanevent.WithStatementSequenceErrorMode(collection.ErrorMode))
+	seStatements := ottlspanevent.NewStatementSequence(parsedStatements, pc.Settings, ottlspanevent.WithStatementSequenceErrorMode(errorMode))
 	return spanEventStatements{seStatements, globalExpr}, nil
 }
 
-func (tpc *TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Traces, error) {
-	pc := ottl.ParserCollection[consumer.Traces](*tpc)
+func (tpc *TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (TracesConsumer, error) {
+	pc := ottl.ParserCollection[TracesConsumer](*tpc)
 	if contextStatements.Context != "" {
 		return pc.ParseStatementsWithContext(string(contextStatements.Context), contextStatements, true)
 	}

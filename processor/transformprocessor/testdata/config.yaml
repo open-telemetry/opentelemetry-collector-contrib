@@ -130,6 +130,34 @@ transform/flat_configuration:
     - set(log.body, "bear") where log.attributes["http.path"] == "/animal"
     - set(resource.attributes["name"], "bear")
 
+transform/structured_configuration_with_path_context:
+  trace_statements:
+    - context: span
+      statements:
+        - set(span.name, "bear") where span.attributes["http.path"] == "/animal"
+  metric_statements:
+    - context: metric
+      statements:
+        - set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"
+  log_statements:
+    - context: log
+      statements:
+        - set(log.body, "bear") where log.attributes["http.path"] == "/animal"
+
+transform/structured_configuration_with_inferred_context:
+  trace_statements:
+    - statements:
+      - set(span.name, "bear") where span.attributes["http.path"] == "/animal"
+      - set(resource.attributes["name"], "bear")
+  metric_statements:
+    - statements:
+      - set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"
+      - set(resource.attributes["name"], "bear")
+  log_statements:
+    - statements:
+      - set(log.body, "bear") where log.attributes["http.path"] == "/animal"
+      - set(resource.attributes["name"], "bear")
+
 transform/mixed_configuration_styles:
   trace_statements:
     - set(span.name, "bear") where span.attributes["http.path"] == "/animal"
@@ -137,15 +165,45 @@ transform/mixed_configuration_styles:
       statements:
         - set(attributes["name"], "bear")
         - keep_keys(attributes, ["http.method", "http.path"])
+    - statements:
+        - set(span.attributes["name"], "lion")
+    - set(span.name, "lion") where span.attributes["http.path"] == "/animal"
   metric_statements:
     - set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"
     - context: resource
       statements:
         - set(attributes["name"], "bear")
         - keep_keys(attributes, ["http.method", "http.path"])
+    - statements:
+        - set(metric.name, "lion")
+    - set(metric.name, "lion") where resource.attributes["http.path"] == "/animal"
   log_statements:
     - set(log.body, "bear") where log.attributes["http.path"] == "/animal"
     - context: resource
       statements:
         - set(attributes["name"], "bear")
         - keep_keys(attributes, ["http.method", "http.path"])
+    - statements:
+        - set(log.attributes["name"], "lion")
+    - set(log.body, "lion") where log.attributes["http.path"] == "/animal"
+
+transform/context_statements_error_mode:
+  error_mode: ignore
+  trace_statements:
+    - error_mode: propagate
+      statements:
+        - set(resource.attributes["name"], "propagate")
+    - statements:
+        - set(resource.attributes["name"], "ignore")
+  metric_statements:
+    - error_mode: silent
+      statements:
+        - set(resource.attributes["name"], "silent")
+    - statements:
+        - set(resource.attributes["name"], "ignore")
+  log_statements:
+    - error_mode: propagate
+      statements:
+        - set(resource.attributes["name"], "propagate")
+    - statements:
+        - set(resource.attributes["name"], "ignore")

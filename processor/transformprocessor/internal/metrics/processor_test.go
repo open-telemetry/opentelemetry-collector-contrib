@@ -5,10 +5,12 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -1572,7 +1574,7 @@ func Test_ProcessMetrics_MixContext(t *testing.T) {
 	}
 }
 
-func Test_ProcessMetrics_Error(t *testing.T) {
+func Test_ProcessMetrics_ErrorMode(t *testing.T) {
 	tests := []struct {
 		statement string
 		context   common.ContextID
@@ -1607,6 +1609,118 @@ func Test_ProcessMetrics_Error(t *testing.T) {
 	}
 }
 
+func Test_ProcessMetrics_StatementsErrorMode(t *testing.T) {
+	tests := []struct {
+		name          string
+		errorMode     ottl.ErrorMode
+		statements    []common.ContextStatements
+		want          func(td pmetric.Metrics)
+		wantErrorWith string
+	}{
+		{
+			name:      "metric: statements group with error mode",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(metric.name, ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(metric.name, "pass") where metric.name == "operationA" `}},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("pass")
+			},
+		},
+		{
+			name:      "metric: statements group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(metric.name, ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(metric.name, ParseJSON(true))`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+		{
+			name:      "datapoint: statements group with error mode",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(datapoint.attributes["test"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(datapoint.attributes["test"], "pass") where metric.name == "operationA" `}},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "datapoint: statements group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(datapoint.attributes["test"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(datapoint.attributes["test"], ParseJSON(true))`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+		{
+			name:      "resource: statements group with error mode",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(resource.attributes["test"], "pass")`}},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).Resource().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "resource: statements group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(true))`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+		{
+			name:      "scope: statements group with error mode",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(scope.attributes["test"], "pass")`}},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "scope: statements group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(true))`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructMetrics()
+			processor, err := NewProcessor(tt.statements, tt.errorMode, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+			_, err = processor.ProcessMetrics(context.Background(), td)
+			if tt.wantErrorWith != "" {
+				if err == nil {
+					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+				}
+				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				return
+			}
+			assert.NoError(t, err)
+			exTd := constructMetrics()
+			tt.want(exTd)
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -1616,8 +1730,8 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		{
 			name: "resource:resource.cache",
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(resource.cache["test"], "pass")`}},
-				{Statements: []string{`set(resource.attributes["test"], resource.cache["test"])`}},
+				{Statements: []string{`set(resource.cache["test"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(resource.attributes["test"], resource.cache["test"])`}, SharedCache: true},
 			},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).Resource().Attributes().PutStr("test", "pass")
@@ -1641,8 +1755,8 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		{
 			name: "scope:scope.cache",
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(scope.cache["test"], "pass")`}},
-				{Statements: []string{`set(scope.attributes["test"], scope.cache["test"])`}},
+				{Statements: []string{`set(scope.cache["test"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(scope.attributes["test"], scope.cache["test"])`}, SharedCache: true},
 			},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes().PutStr("test", "pass")
@@ -1664,8 +1778,8 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		{
 			name: "metric:metric.cache",
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(metric.cache["test"], "pass")`}},
-				{Statements: []string{`set(metric.name, metric.cache["test"]) where metric.name == "operationB"`}},
+				{Statements: []string{`set(metric.cache["test"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(metric.name, metric.cache["test"]) where metric.name == "operationB"`}, SharedCache: true},
 			},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetName("pass")
@@ -1687,8 +1801,8 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 		{
 			name: "datapoint:datapoint.cache",
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(datapoint.cache["test"], "pass")`}},
-				{Statements: []string{`set(datapoint.attributes["test"], datapoint.cache["test"]) where metric.name == "operationA"`}},
+				{Statements: []string{`set(datapoint.cache["test"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(datapoint.attributes["test"], datapoint.cache["test"]) where metric.name == "operationA"`}, SharedCache: true},
 			},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test", "pass")
@@ -1709,6 +1823,48 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "pass")
 			},
 		},
+		{
+			name: "cache isolation",
+			statements: []common.ContextStatements{
+				{
+					Statements:  []string{`set(datapoint.cache["shared"], "fail")`},
+					SharedCache: true,
+				},
+				{
+					Statements: []string{
+						`set(datapoint.cache["test"], "pass")`,
+						`set(datapoint.attributes["test"], datapoint.cache["test"])`,
+						`set(datapoint.attributes["test"], datapoint.cache["shared"])`,
+					},
+					Conditions: []string{
+						`metric.name == "operationA"`,
+					},
+				},
+				{
+					Context: common.DataPoint,
+					Statements: []string{
+						`set(cache["test"], "pass")`,
+						`set(attributes["test"], cache["test"])`,
+						`set(attributes["test"], cache["shared"])`,
+						`set(attributes["test"], datapoint.cache["shared"])`,
+					},
+					Conditions: []string{
+						`metric.name == "operationA"`,
+					},
+				},
+				{
+					Statements:  []string{`set(datapoint.attributes["test"], "pass") where datapoint.cache["shared"] == "fail"`},
+					SharedCache: true,
+					Conditions: []string{
+						`metric.name == "operationA"`,
+					},
+				},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1724,6 +1880,78 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 			tt.want(exTd)
 
 			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_NewProcessor_ConditionsParse(t *testing.T) {
+	type testCase struct {
+		name          string
+		statements    []common.ContextStatements
+		wantErrorWith string
+	}
+
+	contextsTests := map[string][]testCase{"metric": nil, "datapoint": nil, "resource": nil, "scope": nil}
+	for ctx := range contextsTests {
+		contextsTests[ctx] = []testCase{
+			{
+				name: "inferred: condition with context",
+				statements: []common.ContextStatements{
+					{
+						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
+						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
+					},
+				},
+			},
+			{
+				name: "inferred: condition without context",
+				statements: []common.ContextStatements{
+					{
+						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
+						Conditions: []string{`cache["test"] == ""`},
+					},
+				},
+				wantErrorWith: `missing context name for path "cache[test]"`,
+			},
+			{
+				name: "context defined: condition without context",
+				statements: []common.ContextStatements{
+					{
+						Context:    common.ContextID(ctx),
+						Statements: []string{`set(cache["test"], "pass")`},
+						Conditions: []string{`cache["test"] == ""`},
+					},
+				},
+			},
+			{
+				name: "context defined: condition with context",
+				statements: []common.ContextStatements{
+					{
+						Context:    common.ContextID(ctx),
+						Statements: []string{`set(cache["test"], "pass")`},
+						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
+					},
+				},
+				wantErrorWith: fmt.Sprintf(`segment "%s" from path "%[1]s.cache[test]" is not a valid path`, ctx),
+			},
+		}
+	}
+
+	for ctx, tests := range contextsTests {
+		t.Run(ctx, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					_, err := NewProcessor(tt.statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+					if tt.wantErrorWith != "" {
+						if err == nil {
+							t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+						}
+						assert.Contains(t, err.Error(), tt.wantErrorWith)
+						return
+					}
+					require.NoError(t, err)
+				})
+			}
 		})
 	}
 }
