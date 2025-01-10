@@ -74,7 +74,7 @@ func TestConfig(t *testing.T) {
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
-				LogsDynamicID: DynamicIndexSetting{
+				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
@@ -149,7 +149,7 @@ func TestConfig(t *testing.T) {
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
-				LogsDynamicID: DynamicIndexSetting{
+				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
@@ -224,7 +224,7 @@ func TestConfig(t *testing.T) {
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
-				LogsDynamicID: DynamicIndexSetting{
+				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",

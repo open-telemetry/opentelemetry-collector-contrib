@@ -63,7 +63,7 @@ func createDefaultConfig() component.Config {
 		TracesDynamicIndex: DynamicIndexSetting{
 			Enabled: false,
 		},
-		LogsDynamicID: DynamicIndexSetting{
+		LogsDynamicID: DynamicIDSettings{
 			Enabled: false,
 		},
 		Retry: RetrySettings{
