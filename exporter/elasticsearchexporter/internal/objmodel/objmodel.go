@@ -218,12 +218,12 @@ func (doc *Document) sort() {
 // The filtering only keeps the last value for a key.
 //
 // Dedup ensure that keys are sorted.
-func (doc *Document) Dedup(appendValueOnConflict bool) {
+func (doc *Document) Dedup() {
 	// 1. Always ensure the fields are sorted, Dedup support requires
 	// Fields to be sorted.
 	doc.sort()
 
-	// 2. rename fields if a primitive value is overwritten by an object if appendValueOnConflict.
+	// 2. rename fields if a primitive value is overwritten by an object.
 	//    For example the pair (path.x=1, path.x.a="test") becomes:
 	//    (path.x.value=1, path.x.a="test").
 	//
@@ -236,18 +236,16 @@ func (doc *Document) Dedup(appendValueOnConflict bool) {
 	//    field in favor of the `value` field in the document.
 	//
 	//    This step removes potential conflicts when dedotting and serializing fields.
-	if appendValueOnConflict {
-		var renamed bool
-		for i := 0; i < len(doc.fields)-1; i++ {
-			key, nextKey := doc.fields[i].key, doc.fields[i+1].key
-			if len(key) < len(nextKey) && strings.HasPrefix(nextKey, key) && nextKey[len(key)] == '.' {
-				renamed = true
-				doc.fields[i].key = key + ".value"
-			}
+	var renamed bool
+	for i := 0; i < len(doc.fields)-1; i++ {
+		key, nextKey := doc.fields[i].key, doc.fields[i+1].key
+		if len(key) < len(nextKey) && strings.HasPrefix(nextKey, key) && nextKey[len(key)] == '.' {
+			renamed = true
+			doc.fields[i].key = key + ".value"
 		}
-		if renamed {
-			doc.sort()
-		}
+	}
+	if renamed {
+		doc.sort()
 	}
 
 	// 3. mark duplicates as 'ignore'
@@ -262,7 +260,7 @@ func (doc *Document) Dedup(appendValueOnConflict bool) {
 
 	// 4. fix objects that might be stored in arrays
 	for i := range doc.fields {
-		doc.fields[i].value.Dedup(appendValueOnConflict)
+		doc.fields[i].value.Dedup()
 	}
 }
 
@@ -478,13 +476,13 @@ func (v *Value) sort() {
 // Dedup recursively dedups keys in stored documents.
 //
 // NOTE: The value MUST be sorted.
-func (v *Value) Dedup(appendValueOnConflict bool) {
+func (v *Value) Dedup() {
 	switch v.kind {
 	case KindObject:
-		v.doc.Dedup(appendValueOnConflict)
+		v.doc.Dedup()
 	case KindArr:
 		for i := range v.arr {
-			v.arr[i].Dedup(appendValueOnConflict)
+			v.arr[i].Dedup()
 		}
 	}
 }

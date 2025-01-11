@@ -86,9 +86,8 @@ func TestObjectModel_CreateMap(t *testing.T) {
 
 func TestObjectModel_Dedup(t *testing.T) {
 	tests := map[string]struct {
-		build                 func() Document
-		appendValueOnConflict bool
-		want                  Document
+		build func() Document
+		want  Document
 	}{
 		"no duplicates": {
 			build: func() (doc Document) {
@@ -96,8 +95,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 				doc.AddInt("c", 3)
 				return doc
 			},
-			appendValueOnConflict: true,
-			want:                  Document{fields: []field{{"a", IntValue(1)}, {"c", IntValue(3)}}},
+			want: Document{fields: []field{{"a", IntValue(1)}, {"c", IntValue(3)}}},
 		},
 		"duplicate keys": {
 			build: func() (doc Document) {
@@ -106,8 +104,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 				doc.AddInt("a", 2)
 				return doc
 			},
-			appendValueOnConflict: true,
-			want:                  Document{fields: []field{{"a", ignoreValue}, {"a", IntValue(2)}, {"c", IntValue(3)}}},
+			want: Document{fields: []field{{"a", ignoreValue}, {"a", IntValue(2)}, {"c", IntValue(3)}}},
 		},
 		"duplicate after flattening from map: namespace object at end": {
 			build: func() Document {
@@ -117,8 +114,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 				am.PutEmptyMap("namespace").PutInt("a", 23)
 				return DocumentFromAttributes(am)
 			},
-			appendValueOnConflict: true,
-			want:                  Document{fields: []field{{"namespace.a", ignoreValue}, {"namespace.a", IntValue(23)}, {"toplevel", StringValue("test")}}},
+			want: Document{fields: []field{{"namespace.a", ignoreValue}, {"namespace.a", IntValue(23)}, {"toplevel", StringValue("test")}}},
 		},
 		"duplicate after flattening from map: namespace object at beginning": {
 			build: func() Document {
@@ -128,8 +124,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 				am.PutStr("toplevel", "test")
 				return DocumentFromAttributes(am)
 			},
-			appendValueOnConflict: true,
-			want:                  Document{fields: []field{{"namespace.a", ignoreValue}, {"namespace.a", IntValue(42)}, {"toplevel", StringValue("test")}}},
+			want: Document{fields: []field{{"namespace.a", ignoreValue}, {"namespace.a", IntValue(42)}, {"toplevel", StringValue("test")}}},
 		},
 		"dedup in arrays": {
 			build: func() (doc Document) {
@@ -141,7 +136,6 @@ func TestObjectModel_Dedup(t *testing.T) {
 				doc.Add("arr", ArrValue(Value{kind: KindObject, doc: embedded}))
 				return doc
 			},
-			appendValueOnConflict: true,
 			want: Document{fields: []field{{"arr", ArrValue(Value{kind: KindObject, doc: Document{fields: []field{
 				{"a", ignoreValue},
 				{"a", IntValue(2)},
@@ -154,8 +148,7 @@ func TestObjectModel_Dedup(t *testing.T) {
 				doc.AddInt("namespace.a", 2)
 				return doc
 			},
-			appendValueOnConflict: true,
-			want:                  Document{fields: []field{{"namespace.a", IntValue(2)}, {"namespace.value", IntValue(1)}}},
+			want: Document{fields: []field{{"namespace.a", IntValue(2)}, {"namespace.value", IntValue(1)}}},
 		},
 		"dedup removes primitive if value exists": {
 			build: func() (doc Document) {
@@ -164,25 +157,14 @@ func TestObjectModel_Dedup(t *testing.T) {
 				doc.AddInt("namespace.value", 3)
 				return doc
 			},
-			appendValueOnConflict: true,
-			want:                  Document{fields: []field{{"namespace.a", IntValue(2)}, {"namespace.value", ignoreValue}, {"namespace.value", IntValue(3)}}},
-		},
-		"dedup without append value on conflict": {
-			build: func() (doc Document) {
-				doc.AddInt("namespace", 1)
-				doc.AddInt("namespace.a", 2)
-				doc.AddInt("namespace.value", 3)
-				return doc
-			},
-			appendValueOnConflict: false,
-			want:                  Document{fields: []field{{"namespace", IntValue(1)}, {"namespace.a", IntValue(2)}, {"namespace.value", IntValue(3)}}},
+			want: Document{fields: []field{{"namespace.a", IntValue(2)}, {"namespace.value", ignoreValue}, {"namespace.value", IntValue(3)}}},
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			doc := test.build()
-			doc.Dedup(test.appendValueOnConflict)
+			doc.Dedup()
 			assert.Equal(t, test.want, doc)
 		})
 	}
@@ -300,7 +282,7 @@ func TestDocument_Serialize_Flat(t *testing.T) {
 			m := pcommon.NewMap()
 			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
-			doc.Dedup(true)
+			doc.Dedup()
 			err := doc.Serialize(&buf, false)
 			require.NoError(t, err)
 
@@ -361,7 +343,7 @@ func TestDocument_Serialize_Dedot(t *testing.T) {
 			m := pcommon.NewMap()
 			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
-			doc.Dedup(true)
+			doc.Dedup()
 			err := doc.Serialize(&buf, true)
 			require.NoError(t, err)
 
