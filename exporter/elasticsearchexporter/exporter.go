@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
 	"runtime"
 	"sync"
 	"time"
@@ -34,7 +35,7 @@ type elasticsearchExporter struct {
 	wg          sync.WaitGroup // active sessions
 	bulkIndexer bulkIndexer
 
-	bufferPool *bufferPool
+	bufferPool *pool.BufferPool
 }
 
 func newExporter(
@@ -68,7 +69,7 @@ func newExporter(
 		model:          model,
 		logstashFormat: cfg.LogstashFormat,
 		otel:           otel,
-		bufferPool:     newBufferPool(),
+		bufferPool:     pool.NewBufferPool(),
 	}
 }
 
@@ -173,7 +174,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 		fIndex = formattedIndex
 	}
 
-	buffer := e.bufferPool.newPooledBuffer()
+	buffer := e.bufferPool.NewPooledBuffer()
 	err := e.model.encodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL, buffer.Buffer)
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
@@ -288,7 +289,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 
 			for fIndex, groupedDataPoints := range groupedDataPointsByIndex {
 				for _, dataPoints := range groupedDataPoints {
-					buf := e.bufferPool.newPooledBuffer()
+					buf := e.bufferPool.NewPooledBuffer()
 					dynamicTemplates, err := e.model.encodeMetrics(resource, resourceMetric.SchemaUrl(), scope, scopeMetrics.SchemaUrl(), dataPoints, &validationErrs, buf.Buffer)
 					if err != nil {
 						errs = append(errs, err)
@@ -409,7 +410,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 		fIndex = formattedIndex
 	}
 
-	buf := e.bufferPool.newPooledBuffer()
+	buf := e.bufferPool.NewPooledBuffer()
 	err := e.model.encodeSpan(resource, resourceSchemaURL, span, scope, scopeSchemaURL, buf.Buffer)
 	if err != nil {
 		return fmt.Errorf("failed to encode trace record: %w", err)
@@ -439,7 +440,7 @@ func (e *elasticsearchExporter) pushSpanEvent(
 		}
 		fIndex = formattedIndex
 	}
-	buf := e.bufferPool.newPooledBuffer()
+	buf := e.bufferPool.NewPooledBuffer()
 	e.model.encodeSpanEvent(resource, resourceSchemaURL, span, spanEvent, scope, scopeSchemaURL, buf.Buffer)
 	if buf.Buffer.Len() == 0 {
 		return nil
