@@ -419,7 +419,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 	var buf bytes.Buffer
 	m := encodeModel{}
 	doc := m.encodeLogECSMode(resource, record, scope)
-	require.NoError(t, doc.Serialize(&buf, false, false))
+	require.NoError(t, doc.Serialize(&buf, false))
 
 	require.JSONEq(t, `{
 		"@timestamp":                 "2024-03-12T20:00:41.123456789Z",
@@ -550,7 +550,7 @@ func TestEncodeLogECSModeAgentName(t *testing.T) {
 			var buf bytes.Buffer
 			m := encodeModel{}
 			doc := m.encodeLogECSMode(resource, record, scope)
-			require.NoError(t, doc.Serialize(&buf, false, false))
+			require.NoError(t, doc.Serialize(&buf, false))
 			require.JSONEq(t, fmt.Sprintf(`{
 				"@timestamp": "2024-03-13T23:50:59.123456789Z",
 				"agent.name": %q
@@ -602,7 +602,7 @@ func TestEncodeLogECSModeAgentVersion(t *testing.T) {
 			var buf bytes.Buffer
 			m := encodeModel{}
 			doc := m.encodeLogECSMode(resource, record, scope)
-			require.NoError(t, doc.Serialize(&buf, false, false))
+			require.NoError(t, doc.Serialize(&buf, false))
 
 			if test.expectedAgentVersion == "" {
 				require.JSONEq(t, `{
@@ -709,7 +709,7 @@ func TestEncodeLogECSModeHostOSType(t *testing.T) {
 			var buf bytes.Buffer
 			m := encodeModel{}
 			doc := m.encodeLogECSMode(resource, record, scope)
-			require.NoError(t, doc.Serialize(&buf, false, false))
+			require.NoError(t, doc.Serialize(&buf, false))
 
 			expectedJSON := `{"@timestamp":"2024-03-13T23:50:59.123456789Z", "agent.name":"otlp"`
 			if test.expectedHostOsName != "" {
@@ -760,7 +760,7 @@ func TestEncodeLogECSModeTimestamps(t *testing.T) {
 			var buf bytes.Buffer
 			m := encodeModel{}
 			doc := m.encodeLogECSMode(resource, record, scope)
-			require.NoError(t, doc.Serialize(&buf, false, false))
+			require.NoError(t, doc.Serialize(&buf, false))
 
 			require.JSONEq(t, fmt.Sprintf(
 				`{"@timestamp":%q,"agent.name":"otlp"}`, test.expectedTimestamp,

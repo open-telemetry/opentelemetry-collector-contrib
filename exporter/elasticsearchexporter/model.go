@@ -126,7 +126,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL str
 	}
 	document.Dedup(true)
 
-	return document.Serialize(buf, m.dedot, false)
+	return document.Serialize(buf, m.dedot)
 }
 
 func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
@@ -205,7 +205,7 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 func (m *encodeModel) encodeDocument(document objmodel.Document, buf *bytes.Buffer) error {
 	document.Dedup(true)
 
-	err := document.Serialize(buf, m.dedot, false)
+	err := document.Serialize(buf, m.dedot)
 	if err != nil {
 		return err
 	}
@@ -493,7 +493,7 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL st
 		document = m.encodeSpanDefaultMode(resource, span, scope)
 	}
 	document.Dedup(true)
-	err := document.Serialize(buf, m.dedot, false)
+	err := document.Serialize(buf, m.dedot)
 	return err
 }
 

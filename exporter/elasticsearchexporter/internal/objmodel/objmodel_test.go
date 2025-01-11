@@ -301,7 +301,7 @@ func TestDocument_Serialize_Flat(t *testing.T) {
 			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
 			doc.Dedup(true)
-			err := doc.Serialize(&buf, false, false)
+			err := doc.Serialize(&buf, false)
 			require.NoError(t, err)
 
 			assert.Equal(t, test.want, buf.String())
@@ -362,7 +362,7 @@ func TestDocument_Serialize_Dedot(t *testing.T) {
 			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
 			doc.Dedup(true)
-			err := doc.Serialize(&buf, true, false)
+			err := doc.Serialize(&buf, true)
 			require.NoError(t, err)
 
 			assert.Equal(t, test.want, buf.String())
@@ -410,7 +410,7 @@ func TestValue_Serialize(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var buf strings.Builder
-			err := test.value.iterJSON(newJSONVisitor(&buf), false, false)
+			err := test.value.iterJSON(newJSONVisitor(&buf), false)
 			require.NoError(t, err)
 			assert.Equal(t, test.want, buf.String())
 		})

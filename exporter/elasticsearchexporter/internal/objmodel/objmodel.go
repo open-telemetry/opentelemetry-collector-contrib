@@ -277,19 +277,19 @@ func newJSONVisitor(w io.Writer) *json.Visitor {
 // Serialize writes the document to the given writer. The serializer will create nested objects if dedot is true.
 //
 // NOTE: The documented MUST be sorted if dedot is true.
-func (doc *Document) Serialize(w io.Writer, dedot bool, otel bool) error {
+func (doc *Document) Serialize(w io.Writer, dedot bool) error {
 	v := newJSONVisitor(w)
-	return doc.iterJSON(v, dedot, otel)
+	return doc.iterJSON(v, dedot)
 }
 
-func (doc *Document) iterJSON(v *json.Visitor, dedot bool, otel bool) error {
+func (doc *Document) iterJSON(v *json.Visitor, dedot bool) error {
 	if dedot {
-		return doc.iterJSONDedot(v, otel)
+		return doc.iterJSONDedot(v)
 	}
-	return doc.iterJSONFlat(v, otel)
+	return doc.iterJSONFlat(v)
 }
 
-func (doc *Document) iterJSONFlat(w *json.Visitor, otel bool) error {
+func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 	err := w.OnObjectStart(-1, structform.AnyType)
 	if err != nil {
 		return err
@@ -308,7 +308,7 @@ func (doc *Document) iterJSONFlat(w *json.Visitor, otel bool) error {
 			return err
 		}
 
-		if err := fld.value.iterJSON(w, true, otel); err != nil {
+		if err := fld.value.iterJSON(w, true); err != nil {
 			return err
 		}
 	}
@@ -316,20 +316,7 @@ func (doc *Document) iterJSONFlat(w *json.Visitor, otel bool) error {
 	return nil
 }
 
-// Under OTel mode, set of key prefixes where keys should be flattened from that level,
-// such that a document (root or not) with fields {"attributes.a.b": 1} will be serialized as {"attributes": {"a.b": 1}}
-// It is not aware of whether it is a root document or sub-document.
-// NOTE: This works very delicately with the implementation of OTel mode that
-// e.g. resource.attributes is a "resource" objmodel.Document under the root document that contains attributes
-// added using AddAttributes func as flattened keys.
-// Therefore, there will be correctness issues when attributes are added / used in other ways, but it is working
-// for current use cases and the proper fix will be slightly too complex. YAGNI.
-var otelPrefixSet = map[string]struct{}{
-	"attributes.": {},
-	"metrics.":    {},
-}
-
-func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
+func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 	objPrefix := ""
 	level := 0
 
@@ -381,15 +368,6 @@ func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
 
 		// increase object level up to current field
 		for {
-			// Otel mode serialization
-			if otel {
-				// Check the prefix
-				_, isOtelPrefix := otelPrefixSet[objPrefix]
-				if isOtelPrefix {
-					break
-				}
-			}
-
 			start := len(objPrefix)
 			idx := strings.IndexByte(key[start:], '.')
 			if idx < 0 {
@@ -412,7 +390,7 @@ func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
 		if err := w.OnKey(fieldName); err != nil {
 			return err
 		}
-		if err := fld.value.iterJSON(w, true, otel); err != nil {
+		if err := fld.value.iterJSON(w, true); err != nil {
 			return err
 		}
 	}
@@ -524,7 +502,7 @@ func (v *Value) IsEmpty() bool {
 	}
 }
 
-func (v *Value) iterJSON(w *json.Visitor, dedot bool, otel bool) error {
+func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
 	switch v.kind {
 	case KindNil:
 		return w.OnNil()
@@ -549,18 +527,18 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool, otel bool) error {
 		if len(v.doc.fields) == 0 {
 			return w.OnNil()
 		}
-		return v.doc.iterJSON(w, dedot, otel)
+		return v.doc.iterJSON(w, dedot)
 	case KindUnflattenableObject:
 		if len(v.doc.fields) == 0 {
 			return w.OnNil()
 		}
-		return v.doc.iterJSON(w, true, otel)
+		return v.doc.iterJSON(w, true)
 	case KindArr:
 		if err := w.OnArrayStart(-1, structform.AnyType); err != nil {
 			return err
 		}
 		for i := range v.arr {
-			if err := v.arr[i].iterJSON(w, dedot, otel); err != nil {
+			if err := v.arr[i].iterJSON(w, dedot); err != nil {
 				return err
 			}
 		}
