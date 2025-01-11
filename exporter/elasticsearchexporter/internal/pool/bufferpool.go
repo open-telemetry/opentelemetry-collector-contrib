@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package pool // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
+package pool // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
 
 import (
 	"bytes"
