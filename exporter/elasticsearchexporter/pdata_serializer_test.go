@@ -6,12 +6,14 @@ package elasticsearchexporter
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestSerializeLog(t *testing.T) {
@@ -157,6 +159,48 @@ func TestSerializeLog(t *testing.T) {
 			assert.Equal(t, tt.expected, result, eventAsJSON)
 		})
 	}
+}
+
+func TestSerializeMetricsConflict(t *testing.T) {
+	resourceMetrics := pmetric.NewResourceMetrics()
+	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
+	var dataPoints []dataPoint
+	metric1 := scopeMetrics.Metrics().AppendEmpty()
+	metric2 := scopeMetrics.Metrics().AppendEmpty()
+	for _, m := range []pmetric.Metric{metric1, metric2} {
+		m.SetName("foo")
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp.SetIntValue(42)
+		dataPoints = append(dataPoints, newNumberDataPoint(m, dp))
+	}
+
+	var validationErrors []error
+	var buf bytes.Buffer
+	_, err := serializeMetrics(resourceMetrics.Resource(), "", scopeMetrics.Scope(), "", dataPoints, &validationErrors, &buf)
+	if err != nil {
+		t.Errorf("serializeMetrics() error = %v", err)
+	}
+	b := buf.Bytes()
+	eventAsJSON := string(b)
+	var result any
+	decoder := json.NewDecoder(bytes.NewBuffer(b))
+	decoder.UseNumber()
+	if err := decoder.Decode(&result); err != nil {
+		t.Error(err)
+	}
+
+	assert.Len(t, validationErrors, 1)
+	assert.Equal(t, fmt.Errorf("metric with name 'foo' has already been serialized in document with timestamp 1970-01-01T00:00:00.000000000Z"), validationErrors[0])
+
+	assert.Equal(t, map[string]any{
+		"@timestamp":  "1970-01-01T00:00:00.000000000Z",
+		"data_stream": map[string]any{},
+		"resource":    map[string]any{},
+		"scope":       map[string]any{},
+		"metrics": map[string]any{
+			"foo": json.Number("42"),
+		},
+	}, result, eventAsJSON)
 }
 
 func TestMergeGeolocation(t *testing.T) {

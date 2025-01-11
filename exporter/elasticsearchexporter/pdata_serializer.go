@@ -6,6 +6,7 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"strings"
 
 	"github.com/elastic/go-structform"
@@ -48,8 +49,21 @@ func serializeDataPoints(v *json.Visitor, dataPoints []dataPoint, validationErro
 
 	dynamicTemplates := make(map[string]string, len(dataPoints))
 	var docCount uint64
+	metricNames := make(map[string]bool, len(dataPoints))
 	for _, dp := range dataPoints {
 		metric := dp.Metric()
+		if _, present := metricNames[metric.Name()]; present {
+			*validationErrors = append(
+				*validationErrors,
+				fmt.Errorf(
+					"metric with name '%s' has already been serialized in document with timestamp %s",
+					metric.Name(),
+					dp.Timestamp().AsTime().UTC().Format(tsLayout),
+				),
+			)
+			continue
+		}
+		metricNames[metric.Name()] = true
 		value, err := dp.Value()
 		if dp.HasMappingHint(hintDocCount) {
 			docCount = dp.DocCount()
