@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
+	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
@@ -89,9 +89,9 @@ func RecordSpecMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, c corev1
 	rb.SetK8sNamespaceName(pod.Namespace)
 	rb.SetContainerID(utils.StripContainerID(containerID))
 	rb.SetK8sContainerName(c.Name)
-	image, err := docker.ParseImageName(imageStr)
+	image, err := dcommon.ParseImageName(imageStr)
 	if err != nil {
-		docker.LogParseError(err, imageStr, logger)
+		dcommon.LogParseError(err, imageStr, logger)
 	} else {
 		rb.SetContainerImageName(image.Repository)
 		rb.SetContainerImageTag(image.Tag)
