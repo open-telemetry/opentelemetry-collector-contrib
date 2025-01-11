@@ -25,34 +25,21 @@ import (
 )
 
 var writeV2RequestFixture = &writev2.Request{
-	Symbols: []string{
-		"",
-		"__name__", "test_metric1",
-		"job", "service-x/test",
-		"instance", "107cn001",
-		"d", "e",
-		"foo", "bar",
-		"otel_scope_name", "scope1",
-		"otel_scope_version", "v1",
-		"f", "g",
-		"h", "i",
-		"Test gauge for test purposes", "Maybe op/sec who knows (:",
-		"Test counter for test purposes",
-	},
+	Symbols: []string{"", "__name__", "test_metric1", "job", "service-x/test", "instance", "107cn001", "d", "e", "foo", "bar", "f", "g", "h", "i", "Test gauge for test purposes", "Maybe op/sec who knows (:", "Test counter for test purposes"},
 	Timeseries: []writev2.TimeSeries{
 		{
 			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}, // Symbolized writeRequestFixture.Timeseries[0].Labels
+			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, // Symbolized writeRequestFixture.Timeseries[0].Labels
 			Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 		},
 		{
 			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}, // Same series as first. Should use the same resource metrics.
+			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, // Same series as first. Should use the same resource metrics.
 			Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
 		},
 		{
 			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-			LabelsRefs: []uint32{1, 2, 3, 9, 5, 10, 7, 8, 9, 10, 11, 12, 13, 14}, // This series has different label values for job and instance.
+			LabelsRefs: []uint32{1, 2, 3, 9, 5, 10, 7, 8, 9, 10}, // This series has different label values for job and instance.
 			Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
 		},
 	},
@@ -157,6 +144,63 @@ func TestTranslateV2(t *testing.T) {
 		expectedStats   remote.WriteResponseStats
 	}{
 		{
+			name: "duplicated scope name and version",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric",
+					"job", "service-x/test",
+					"instance", "107cn001",
+					"otel_scope_name", "scope1",
+					"otel_scope_version", "v1",
+					"otel_scope_name", "scope2",
+					"otel_scope_version", "v2",
+					"d", "e",
+					"foo", "bar",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 16}, // Same scope: scope_name: scope1. scope_version v1
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 16}, // Same scope: scope_name: scope1. scope_version v1
+						Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+					},
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 17, 18}, // Different scope: scope_name: scope2. scope_version v2
+						Samples:    []writev2.Sample{{Value: 3, Timestamp: 3}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm1 := expected.ResourceMetrics().AppendEmpty()
+				rmAttributes1 := rm1.Resource().Attributes()
+				rmAttributes1.PutStr("service.namespace", "service-x")
+				rmAttributes1.PutStr("service.name", "test")
+				rmAttributes1.PutStr("service.instance.id", "107cn001")
+				sm1 := rm1.ScopeMetrics().AppendEmpty()
+				sm1.Scope().SetName("scope1")
+				sm1.Scope().SetVersion("v1")
+				sm1Attributes := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
+				sm1Attributes.PutStr("d", "e")
+				sm2Attributes := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
+				sm2Attributes.PutStr("d", "e")
+
+				sm2 := rm1.ScopeMetrics().AppendEmpty()
+				sm2.Scope().SetName("scope2")
+				sm2.Scope().SetVersion("v2")
+				sm3Attributes := sm2.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
+				sm3Attributes.PutStr("foo", "bar")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{},
+		},
+		{
 			name: "missing metric name",
 			request: &writev2.Request{
 				Symbols: []string{"", "foo", "bar"},
@@ -198,8 +242,7 @@ func TestTranslateV2(t *testing.T) {
 				sm1Attributes.PutStr("foo", "bar")
 				// Since we don't check "scope_name" and "scope_version", we end up with duplicated scope metrics for repeated series.
 				// TODO: Properly handle scope metrics.
-				sm2 := rm1.ScopeMetrics().AppendEmpty()
-				sm2Attributes := sm2.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
+				sm2Attributes := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
 				sm2Attributes.PutStr("d", "e")
 				sm2Attributes.PutStr("foo", "bar")
 
