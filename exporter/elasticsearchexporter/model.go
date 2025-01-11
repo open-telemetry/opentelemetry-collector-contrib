@@ -842,6 +842,15 @@ func mergeGeolocation(attributes pcommon.Map) pcommon.Map {
 			s.AppendEmpty().SetDouble(geo.lat)
 			continue
 		}
+		// Place the attributes back if lon and lat are not present together
+		if geo.lonSet {
+			key := prefix + lonKey
+			geoAttributes.PutDouble(key, geo.lon)
+		}
+		if geo.latSet {
+			key := prefix + latKey
+			geoAttributes.PutDouble(key, geo.lat)
+		}
 	}
 	return geoAttributes
 }

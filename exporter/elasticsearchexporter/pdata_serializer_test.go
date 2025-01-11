@@ -111,6 +111,26 @@ func TestSerializeLog(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "geo attributes",
+			logCustomizer: func(_ pcommon.Resource, _ pcommon.InstrumentationScope, record plog.LogRecord) {
+				record.Attributes().PutDouble("foo.geo.location.lon", 1)
+				record.Attributes().PutDouble("foo.geo.location.lat", 2)
+				record.Attributes().PutDouble("bar.geo.location.lat", 3)
+			},
+			wantErr: false,
+			expected: map[string]any{
+				"@timestamp":         "1970-01-01T00:00:00.000000000Z",
+				"observed_timestamp": "1970-01-01T00:00:00.000000000Z",
+				"data_stream":        map[string]any{},
+				"resource":           map[string]any{},
+				"scope":              map[string]any{},
+				"attributes": map[string]any{
+					"foo.geo.location":     []any{json.Number("1.0"), json.Number("2.0")},
+					"bar.geo.location.lat": json.Number("3.0"),
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

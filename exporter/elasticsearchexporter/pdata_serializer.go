@@ -283,7 +283,7 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 		case dataStreamType, dataStreamDataset, dataStreamNamespace, mappingHintsAttrKey:
 			return true
 		}
-		if strings.HasSuffix(k, ".geo.location") {
+		if strings.HasSuffix(k, ".geo.location.lat") || strings.HasSuffix(k, ".geo.location.lon") {
 			return true
 		}
 		_ = v.OnKey(k)
