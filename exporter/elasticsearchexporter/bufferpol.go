@@ -36,5 +36,5 @@ func (p pooledBuffer) recycle() {
 
 func (p pooledBuffer) WriteTo(w io.Writer) (n int64, err error) {
 	defer p.recycle()
-	return bytes.NewReader(p.Buffer.Bytes()).WriteTo(w)
+	return p.Buffer.WriteTo(w)
 }
