@@ -781,8 +781,8 @@ func sliceHash(h hash.Hash, s pcommon.Slice) {
 	}
 }
 
-// mergeGeolocation mutates attributes map to merge all `geo.location.{lon,lat}`,
-// and namespaced `*.geo.location.{lon,lat}` to unnamespaced and namespaced `geo.location`.
+// mergeGeolocation returns a new map that to merges all `geo.location.{lon,lat}`,
+// and namespaced `*.geo.location.{lon,lat}` attributes from the provided map to unnamespaced and namespaced `geo.location`.
 // This is to match the geo_point type in Elasticsearch.
 func mergeGeolocation(attributes pcommon.Map) pcommon.Map {
 	const (
