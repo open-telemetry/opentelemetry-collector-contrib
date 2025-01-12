@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -117,9 +116,17 @@ func TestSerializeLog(t *testing.T) {
 		{
 			name: "geo attributes",
 			logCustomizer: func(_ pcommon.Resource, _ pcommon.InstrumentationScope, record plog.LogRecord) {
-				record.Attributes().PutDouble("foo.geo.location.lon", 1)
-				record.Attributes().PutDouble("foo.geo.location.lat", 2)
-				record.Attributes().PutDouble("bar.geo.location.lat", 3)
+				record.Attributes().PutDouble("geo.location.lon", 1.1)
+				record.Attributes().PutDouble("geo.location.lat", 2.2)
+				record.Attributes().PutDouble("foo.bar.geo.location.lon", 3.3)
+				record.Attributes().PutDouble("foo.bar.geo.location.lat", 4.4)
+				record.Attributes().PutDouble("a.geo.location.lon", 5.5)
+				record.Attributes().PutDouble("b.geo.location.lat", 6.6)
+				record.Attributes().PutDouble("unrelatedgeo.location.lon", 7.7)
+				record.Attributes().PutDouble("unrelatedgeo.location.lat", 8.8)
+				record.Attributes().PutDouble("d", 9.9)
+				record.Attributes().PutStr("e.geo.location.lon", "foo")
+				record.Attributes().PutStr("e.geo.location.lat", "bar")
 			},
 			wantErr: false,
 			expected: map[string]any{
@@ -129,8 +136,15 @@ func TestSerializeLog(t *testing.T) {
 				"resource":           map[string]any{},
 				"scope":              map[string]any{},
 				"attributes": map[string]any{
-					"foo.geo.location":     []any{json.Number("1.0"), json.Number("2.0")},
-					"bar.geo.location.lat": json.Number("3.0"),
+					"geo.location":              []any{json.Number("1.1"), json.Number("2.2")},
+					"foo.bar.geo.location":      []any{json.Number("3.3"), json.Number("4.4")},
+					"a.geo.location.lon":        json.Number("5.5"),
+					"b.geo.location.lat":        json.Number("6.6"),
+					"unrelatedgeo.location.lon": json.Number("7.7"),
+					"unrelatedgeo.location.lat": json.Number("8.8"),
+					"d":                         json.Number("9.9"),
+					"e.geo.location.lon":        "foo",
+					"e.geo.location.lat":        "bar",
 				},
 			},
 		},
@@ -201,32 +215,4 @@ func TestSerializeMetricsConflict(t *testing.T) {
 			"foo": json.Number("42"),
 		},
 	}, result, eventAsJSON)
-}
-
-func TestMergeGeolocation(t *testing.T) {
-	attributes := map[string]any{
-		"geo.location.lon":          1.1,
-		"geo.location.lat":          2.2,
-		"foo.bar.geo.location.lon":  3.3,
-		"foo.bar.geo.location.lat":  4.4,
-		"a.geo.location.lon":        5.5,
-		"b.geo.location.lat":        6.6,
-		"unrelatedgeo.location.lon": 7.7,
-		"unrelatedgeo.location.lat": 8.8,
-		"d":                         9.9,
-		"e.geo.location.lon":        "foo",
-		"e.geo.location.lat":        "bar",
-	}
-	wantAttributes := map[string]any{
-		"a.geo.location.lon":   5.5,
-		"b.geo.location.lat":   6.6,
-		"geo.location":         []any{1.1, 2.2},
-		"foo.bar.geo.location": []any{3.3, 4.4},
-	}
-	input := pcommon.NewMap()
-	err := input.FromRaw(attributes)
-	require.NoError(t, err)
-	output := mergeGeolocation(input)
-	after := output.AsRaw()
-	assert.Equal(t, wantAttributes, after)
 }

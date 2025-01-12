@@ -289,7 +289,7 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 	if attributes.Len() == 0 {
 		return
 	}
-	geoAttributes := mergeGeolocation(attributes)
+
 	_ = v.OnKey("attributes")
 	_ = v.OnObjectStart(-1, structform.AnyType)
 	attributes.Range(func(k string, val pcommon.Value) bool {
@@ -297,25 +297,29 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 		case dataStreamType, dataStreamDataset, dataStreamNamespace, mappingHintsAttrKey:
 			return true
 		}
-		if strings.HasSuffix(k, ".geo.location.lat") || strings.HasSuffix(k, ".geo.location.lon") {
+		if isGeoAttribute(k, val) {
 			return true
 		}
 		_ = v.OnKey(k)
 		writeValue(v, val, stringifyMapValues)
 		return true
 	})
-	geoAttributes.Range(func(k string, val pcommon.Value) bool {
-		_ = v.OnKey(k)
-		writeValue(v, val, stringifyMapValues)
-		return true
-	})
+	writeGeolocationAttributes(v, attributes)
 	_ = v.OnObjectFinished()
 }
 
-// mergeGeolocation returns a new map that to merges all `geo.location.{lon,lat}`,
-// and namespaced `*.geo.location.{lon,lat}` attributes from the provided map to unnamespaced and namespaced `geo.location`.
-// This is to match the geo_point type in Elasticsearch.
-func mergeGeolocation(attributes pcommon.Map) pcommon.Map {
+func isGeoAttribute(k string, val pcommon.Value) bool {
+	if val.Type() != pcommon.ValueTypeDouble {
+		return false
+	}
+	switch k {
+	case "geo.location.lat", "geo.location.lon":
+		return true
+	}
+	return strings.HasSuffix(k, ".geo.location.lat") || strings.HasSuffix(k, ".geo.location.lon")
+}
+
+func writeGeolocationAttributes(v *json.Visitor, attributes pcommon.Map) {
 	const (
 		lonKey    = "geo.location.lon"
 		latKey    = "geo.location.lat"
@@ -362,28 +366,27 @@ func mergeGeolocation(attributes pcommon.Map) pcommon.Map {
 		return true
 	})
 
-	geoAttributes := pcommon.NewMap()
 	for prefix, geo := range prefixToGeo {
 		if geo.lonSet && geo.latSet {
 			key := prefix + mergedKey
 			// Geopoint expressed as an array with the format: [lon, lat]
-			s := geoAttributes.PutEmptySlice(key)
-			s.EnsureCapacity(2)
-			s.AppendEmpty().SetDouble(geo.lon)
-			s.AppendEmpty().SetDouble(geo.lat)
+			_ = v.OnKey(key)
+			_ = v.OnArrayStart(-1, structform.AnyType)
+			_ = v.OnFloat64(geo.lon)
+			_ = v.OnFloat64(geo.lat)
+			_ = v.OnArrayFinished()
 			continue
 		}
 		// Place the attributes back if lon and lat are not present together
 		if geo.lonSet {
-			key := prefix + lonKey
-			geoAttributes.PutDouble(key, geo.lon)
+			_ = v.OnKey(prefix + lonKey)
+			_ = v.OnFloat64(geo.lon)
 		}
 		if geo.latSet {
-			key := prefix + latKey
-			geoAttributes.PutDouble(key, geo.lat)
+			_ = v.OnKey(prefix + latKey)
+			_ = v.OnFloat64(geo.lat)
 		}
 	}
-	return geoAttributes
 }
 
 func writeMap(v *json.Visitor, m pcommon.Map, stringifyMapValues bool) {
