@@ -4,7 +4,6 @@
 package elasticsearchexporter
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,15 +14,15 @@ type routeTestCase struct {
 	name      string
 	otel      bool
 	scopeName string
-	want      string
+	want      esIndex
 }
 
 func createRouteTests(dsType string) []routeTestCase {
-	renderWantRoute := func(dsType, dsDataset string, otel bool) string {
+	renderWantRoute := func(dsType, dsDataset string, otel bool) esIndex {
 		if otel {
-			return fmt.Sprintf("%s-%s.otel-%s", dsType, dsDataset, defaultDataStreamNamespace)
+			dsDataset = dsDataset + ".otel"
 		}
-		return fmt.Sprintf("%s-%s-%s", dsType, dsDataset, defaultDataStreamNamespace)
+		return newDataStream(dsType, dsDataset, defaultDataStreamNamespace)
 	}
 
 	return []routeTestCase{
