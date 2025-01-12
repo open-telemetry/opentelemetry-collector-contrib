@@ -65,6 +65,8 @@ func serializeDataPoints(v *json.Visitor, dataPoints []dataPoint, validationErro
 			continue
 		}
 		metricNames[metric.Name()] = true
+		// TODO here's potential for more optimization by directly serializing the value instead of allocating a pcommon.Value
+		//  the tradeoff is that this would imply a duplicated logic for the ECS mode
 		value, err := dp.Value()
 		if dp.HasMappingHint(hintDocCount) {
 			docCount = dp.DocCount()
