@@ -80,7 +80,12 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					}
 					c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName)
 				case pmetric.MetricTypeSum:
-					// TODO implement
+					dataPoints := metric.Sum().DataPoints()
+					if dataPoints.Len() == 0 {
+						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
+						break
+					}
+					c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName)
 				case pmetric.MetricTypeHistogram:
 					// TODO implement
 				case pmetric.MetricTypeExponentialHistogram:
@@ -129,4 +134,8 @@ func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.
 	c.unique[timeSeriesSignature(lbls)] = &ts
 
 	return &ts
+}
+
+// TODO: implement this function.
+func (c *prometheusConverterV2) addTimeSeriesIfNeeded(_ []prompb.Label, _ pcommon.Timestamp, _ pcommon.Timestamp) {
 }
