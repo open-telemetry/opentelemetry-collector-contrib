@@ -149,13 +149,20 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
         return
     }
 
+    // payload, err := github.Parse
+
     switch e := event.(type) {
     case *github.WorkflowRunEvent:
-		if e.GetWorkflowRun().GetStatus() != "completed" {
-			gtr.logger.Debug("skipping non-completed WorkflowRunEvent", zap.String("status", e.GetWorkflowRun().GetStatus()))
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
+        if e.GetWorkflowRun().GetStatus() == "completed" {
+            var rawEvent []interface{}
+            event := append(rawEvent, e.GetWorkflowRun(), e.GetInstallation(), e.GetSender(), e.GetOrg(), e.GetRepo(), e.GetWorkflow())
+            gtr.logger.Debug("event", zap.Any("event", event))
+        }
+		// if e.GetWorkflowRun().GetStatus() != "completed" {
+		// 	gtr.logger.Debug("skipping non-completed WorkflowRunEvent", zap.String("status", e.GetWorkflowRun().GetStatus()))
+		// 	w.WriteHeader(http.StatusNoContent)
+		// 	return
+		// }
         return
     case *github.WorkflowJobEvent:
 		if e.GetWorkflowJob().GetStatus() != "completed" {

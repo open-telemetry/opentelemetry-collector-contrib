@@ -3,9 +3,9 @@
 
 package githubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver"
 
-// import (
-// 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
-// )
+import (
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+)
 
 // model.go contains specific attributes from the 1.28 and 1.29 releases of
 // SemConv. They are manually added due to issue
@@ -20,6 +20,7 @@ const (
 	AttributeVCSChangeStateClosed = "closed"
 	AttributeVCSChangeStateMerged = "merged"
 
+	// TODO: Eveluate whether or not this should be a head title attribute
 	// vcs.change.title
 	AttributeVCSChangeTitle = "vcs.change.title"
 
@@ -69,41 +70,46 @@ const (
 	// The following prototype attributes that do not exist yet in semconv.
 	// They are highly experimental and subject to change.
 
-	AttributeCICDPipelineRunURLFull            = "cicd.pipeline.run.url.full" // equivalent to GitHub's `html_url`
+	AttributeCICDPipelineRunURLFull = "cicd.pipeline.run.url.full" // equivalent to GitHub's `html_url`
 
-    // These are being added in https://github.com/open-telemetry/semantic-conventions/pull/1681
-	AttributeCICDPipelineRunStatus             = "cicd.pipeline.run.status"   // equivalent to GitHub's `conclusion`
+	// These are being added in https://github.com/open-telemetry/semantic-conventions/pull/1681
+	AttributeCICDPipelineRunStatus             = "cicd.pipeline.run.status" // equivalent to GitHub's `conclusion`
 	AttributeCICDPipelineRunStatusSuccess      = "success"
 	AttributeCICDPipelineRunStatusFailure      = "failure"
 	AttributeCICDPipelineRunStatusCancellation = "cancellation"
 	AttributeCICDPipelineRunStatusError        = "error"
 	AttributeCICDPipelineRunStatusSkip         = "skip"
 
-	AttributeCICDPipelineTaskRunStatus             = "cicd.pipeline.run.task.status"   // equivalent to GitHub's `conclusion`
+	AttributeCICDPipelineTaskRunStatus             = "cicd.pipeline.run.task.status" // equivalent to GitHub's `conclusion`
 	AttributeCICDPipelineTaskRunStatusSuccess      = "success"
 	AttributeCICDPipelineTaskRunStatusFailure      = "failure"
 	AttributeCICDPipelineTaskRunStatusCancellation = "cancellation"
 	AttributeCICDPipelineTaskRunStatusError        = "error"
 	AttributeCICDPipelineTaskRunStatusSkip         = "skip"
 
-    // TODO: Evaluate these
-    AttributeCICDPipelineRunSenderLogin = "cicd.pipeline.run.sender.login" // GitHub's Run Sender Login
-    AttributeCICDPipelineTaskRunSenderLogin = "cicd.pipeline.task.run.sender.login" // GitHub's Task Sender Login
-    AttributeVCSVendorName = "vcs.vendor.name" // GitHub
-    AttributeVCSRepositoryOwner = "vcs.repository.owner" // GitHub's Owner Login
-    
-    AttributeCICDPipelineFilePath = "cicd.pipeline.file.path" // GitHub's Path in workflow_run
-    // path
-    // previous attempt
-    // referenced workflows
-    // author email name & committer, message
-    // pr url
-    // status vs conclusion
-    // associated changes (prs)
-    // run attempt
-    // installation (for the github app)
+	// TODO: Evaluate these
+	AttributeCICDPipelineRunSenderLogin     = "cicd.pipeline.run.sender.login"      // GitHub's Run Sender Login
+	AttributeCICDPipelineTaskRunSenderLogin = "cicd.pipeline.task.run.sender.login" // GitHub's Task Sender Login
+	AttributeVCSVendorName                  = "vcs.vendor.name"                     // GitHub
+	AttributeVCSRepositoryOwner             = "vcs.repository.owner"                // GitHub's Owner Login
 
-    
+	AttributeCICDPipelineFilePath = "cicd.pipeline.file.path" // GitHub's Path in workflow_run
 
+	AttributeGitHubAppInstallationID = "github.app.installation.id" // GitHub's Installation ID
 
+	AttributeGitHubWorkflowRunAttempt = "github.workflow.run.attempt" // GitHub's Run Attempt
+
+	// TODO: Evaluate whether or not these should be added. Always iffy on adding specific usernames and emails.
+	AttributeVCSRefHeadRevisionAuthorName       = "vcs.ref.head.revision.author.name"      // GitHub's Head Revision Author Name
+	AttributeVCSRefHeadRevisionAuthorEmail      = "vcs.ref.head.revision.author.email"     // GitHub's Head Revision Author Email
+	AttributeGitHubWorkflowTriggerActorUsername = "github.workflow.trigger.actor.username" // GitHub's Triggering Actor Username
 )
+
+func (gtr *githubTracesReceiver) genServiceName() (string, error) {
+	// if config.CustomServiceName != "" {
+	// 	return config.CustomServiceName
+	// }
+	// formattedName := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(fullName, "/", "-"), "_", "-"))
+	// return fmt.Sprintf("%s%s%s", config.ServiceNamePrefix, formattedName, config.ServiceNameSuffix)
+    return "", nil
+}
