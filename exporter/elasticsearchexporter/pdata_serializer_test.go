@@ -40,8 +40,8 @@ func TestSerializeLog(t *testing.T) {
 			resource.Attributes().PutEmptyMap("resource_map").PutStr("foo", "bar")
 			scope.Attributes().PutEmptyMap("scope_map").PutStr("foo", "bar")
 		}, wantErr: false, expected: map[string]any{
-			"@timestamp":         "1970-01-01T00:00:00.000000000Z",
-			"observed_timestamp": "1970-01-01T00:00:00.000000000Z",
+			"@timestamp":         "0.0",
+			"observed_timestamp": "0.0",
 			"data_stream": map[string]any{
 				"type": "logs",
 			},
@@ -84,8 +84,8 @@ func TestSerializeLog(t *testing.T) {
 			},
 			wantErr: false,
 			expected: map[string]any{
-				"@timestamp":         "1970-01-01T00:00:00.000000000Z",
-				"observed_timestamp": "1970-01-01T00:00:00.000000000Z",
+				"@timestamp":         "0.0",
+				"observed_timestamp": "0.0",
 				"data_stream":        map[string]any{},
 				"resource":           map[string]any{},
 				"scope":              map[string]any{},
@@ -101,8 +101,8 @@ func TestSerializeLog(t *testing.T) {
 			},
 			wantErr: false,
 			expected: map[string]any{
-				"@timestamp":         "1970-01-01T00:00:00.000000000Z",
-				"observed_timestamp": "1970-01-01T00:00:00.000000000Z",
+				"@timestamp":         "0.0",
+				"observed_timestamp": "0.0",
 				"data_stream":        map[string]any{},
 				"resource":           map[string]any{},
 				"scope":              map[string]any{},
@@ -130,8 +130,8 @@ func TestSerializeLog(t *testing.T) {
 			},
 			wantErr: false,
 			expected: map[string]any{
-				"@timestamp":         "1970-01-01T00:00:00.000000000Z",
-				"observed_timestamp": "1970-01-01T00:00:00.000000000Z",
+				"@timestamp":         "0.0",
+				"observed_timestamp": "0.0",
 				"data_stream":        map[string]any{},
 				"resource":           map[string]any{},
 				"scope":              map[string]any{},
@@ -146,6 +146,39 @@ func TestSerializeLog(t *testing.T) {
 					"e.geo.location.lon":        "foo",
 					"e.geo.location.lat":        "bar",
 				},
+			},
+		},
+		{
+			name: "event_name takes precedent over attributes.event.name",
+			logCustomizer: func(_ pcommon.Resource, _ pcommon.InstrumentationScope, record plog.LogRecord) {
+				record.Attributes().PutStr("event.name", "foo")
+				record.SetEventName("bar")
+			},
+			wantErr: false,
+			expected: map[string]any{
+				"@timestamp":         "0.0",
+				"observed_timestamp": "0.0",
+				"event_name":         "bar",
+				"data_stream":        map[string]any{},
+				"resource":           map[string]any{},
+				"scope":              map[string]any{},
+				"attributes": map[string]any{
+					"event.name": "foo",
+				},
+			},
+		},
+		{
+			name: "timestamp",
+			logCustomizer: func(_ pcommon.Resource, _ pcommon.InstrumentationScope, record plog.LogRecord) {
+				record.SetTimestamp(1721314113467654123)
+			},
+			wantErr: false,
+			expected: map[string]any{
+				"@timestamp":         "1721314113467.654123",
+				"observed_timestamp": "0.0",
+				"data_stream":        map[string]any{},
+				"resource":           map[string]any{},
+				"scope":              map[string]any{},
 			},
 		},
 	}
@@ -207,7 +240,7 @@ func TestSerializeMetricsConflict(t *testing.T) {
 	assert.Equal(t, fmt.Errorf("metric with name 'foo' has already been serialized in document with timestamp 1970-01-01T00:00:00.000000000Z"), validationErrors[0])
 
 	assert.Equal(t, map[string]any{
-		"@timestamp":  "1970-01-01T00:00:00.000000000Z",
+		"@timestamp":  "0.0",
 		"data_stream": map[string]any{},
 		"resource":    map[string]any{},
 		"scope":       map[string]any{},

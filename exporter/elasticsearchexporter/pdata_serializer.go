@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/elastic/go-structform"
@@ -431,7 +432,10 @@ func writeValue(v *json.Visitor, val pcommon.Value, stringifyMaps bool) {
 
 func writeTimestampField(v *json.Visitor, key string, timestamp pcommon.Timestamp) {
 	_ = v.OnKey(key)
-	_ = v.OnString(timestamp.AsTime().UTC().Format(tsLayout))
+	nsec := uint64(timestamp)
+	msec := nsec / 1e6
+	nsec -= msec * 1e6
+	_ = v.OnString(strconv.FormatUint(msec, 10) + "." + strconv.FormatUint(nsec, 10))
 }
 
 func writeUIntField(v *json.Visitor, key string, i uint64) {

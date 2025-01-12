@@ -914,8 +914,6 @@ func TestMapLogAttributesToECS(t *testing.T) {
 type OTelRecord struct {
 	TraceID                OTelTraceID          `json:"trace_id"`
 	SpanID                 OTelSpanID           `json:"span_id"`
-	Timestamp              time.Time            `json:"@timestamp"`
-	ObservedTimestamp      time.Time            `json:"observed_timestamp"`
 	SeverityNumber         int32                `json:"severity_number"`
 	SeverityText           string               `json:"severity_text"`
 	EventName              string               `json:"event_name"`
@@ -1145,8 +1143,6 @@ func TestEncodeLogOtelMode(t *testing.T) {
 // helper function that creates the OTel LogRecord from the test structure
 func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
 	record := plog.NewLogRecord()
-	record.SetTimestamp(pcommon.Timestamp(uint64(rec.Timestamp.UnixNano())))                 //nolint:gosec // this input is controlled by tests
-	record.SetObservedTimestamp(pcommon.Timestamp(uint64(rec.ObservedTimestamp.UnixNano()))) //nolint:gosec // this input is controlled by tests
 
 	record.SetTraceID(pcommon.TraceID(rec.TraceID))
 	record.SetSpanID(pcommon.SpanID(rec.SpanID))
