@@ -188,6 +188,9 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 
 		// Mask any blocked values for the other attributes
 		strVal := value.Str()
+		if s.config.RedactAllTypes {
+			strVal = value.AsString()
+		}
 		var matched bool
 		for _, compiledRE := range s.blockRegexList {
 			match := compiledRE.MatchString(strVal)
