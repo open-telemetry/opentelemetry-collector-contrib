@@ -175,12 +175,14 @@ func (e *elasticsearchExporter) pushLogRecord(
 		fIndex = formattedIndex
 	}
 
-	buffer := e.bufferPool.NewPooledBuffer()
-	err := e.model.encodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL, buffer.Buffer)
+	buf := e.bufferPool.NewPooledBuffer()
+	err := e.model.encodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL, buf.Buffer)
 	if err != nil {
+		buf.Recycle()
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
-	return bulkIndexerSession.Add(ctx, fIndex, buffer, nil)
+	// not recycling after Add returns an error as we don't know if it's already recycled
+	return bulkIndexerSession.Add(ctx, fIndex, buf, nil)
 }
 
 func (e *elasticsearchExporter) pushMetricsData(
@@ -293,10 +295,12 @@ func (e *elasticsearchExporter) pushMetricsData(
 					buf := e.bufferPool.NewPooledBuffer()
 					dynamicTemplates, err := e.model.encodeMetrics(resource, resourceMetric.SchemaUrl(), scope, scopeMetrics.SchemaUrl(), dataPoints, &validationErrs, buf.Buffer)
 					if err != nil {
+						buf.Recycle()
 						errs = append(errs, err)
 						continue
 					}
 					if err := session.Add(ctx, fIndex, buf, dynamicTemplates); err != nil {
+						// not recycling after Add returns an error as we don't know if it's already recycled
 						if cerr := ctx.Err(); cerr != nil {
 							return cerr
 						}
@@ -414,8 +418,10 @@ func (e *elasticsearchExporter) pushTraceRecord(
 	buf := e.bufferPool.NewPooledBuffer()
 	err := e.model.encodeSpan(resource, resourceSchemaURL, span, scope, scopeSchemaURL, buf.Buffer)
 	if err != nil {
+		buf.Recycle()
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
+	// not recycling after Add returns an error as we don't know if it's already recycled
 	return bulkIndexerSession.Add(ctx, fIndex, buf, nil)
 }
 
@@ -444,8 +450,9 @@ func (e *elasticsearchExporter) pushSpanEvent(
 	buf := e.bufferPool.NewPooledBuffer()
 	e.model.encodeSpanEvent(resource, resourceSchemaURL, span, spanEvent, scope, scopeSchemaURL, buf.Buffer)
 	if buf.Buffer.Len() == 0 {
+		buf.Recycle()
 		return nil
 	}
-
+	// not recycling after Add returns an error as we don't know if it's already recycled
 	return bulkIndexerSession.Add(ctx, fIndex, buf, nil)
 }

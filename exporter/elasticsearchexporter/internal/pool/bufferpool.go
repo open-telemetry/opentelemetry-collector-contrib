@@ -29,12 +29,12 @@ type PooledBuffer struct {
 	pool   *sync.Pool
 }
 
-func (p PooledBuffer) recycle() {
+func (p PooledBuffer) Recycle() {
 	p.Buffer.Reset()
 	p.pool.Put(p.Buffer)
 }
 
 func (p PooledBuffer) WriteTo(w io.Writer) (n int64, err error) {
-	defer p.recycle()
+	defer p.Recycle()
 	return p.Buffer.WriteTo(w)
 }
