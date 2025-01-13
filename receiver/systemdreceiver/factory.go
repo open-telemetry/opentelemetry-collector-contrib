@@ -44,22 +44,11 @@ func createMetricsReceiver(
 		return nil, errors.New("provided configuration is invalid")
 	}
 
-	localctx, cancel := context.WithCancel(ctx)
-
-	client, err := dbus.NewSystemConnectionContext(ctx)
-	if err != nil {
-		cancel()
-		return nil, err
+	f := func(ctx context.Context) (dbusClient, error) {
+		return dbus.NewSystemConnectionContext(ctx)
 	}
 
-	s := systemdReceiver{
-		config: config,
-		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		client: client,
-		ctx:    localctx,
-		cancel: cancel,
-		logger: settings.TelemetrySettings.Logger,
-	}
+	s := newSystemdReceiver(settings, config, f)
 
 	sm, err := scraper.NewMetrics(s.scrape, scraper.WithStart(s.Start), scraper.WithShutdown(s.Shutdown))
 	if err != nil {

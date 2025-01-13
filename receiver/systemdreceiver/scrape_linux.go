@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/go-systemd/v22/dbus"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -125,10 +124,20 @@ func (s *systemdReceiver) scrapeUnits(ctx context.Context, now pcommon.Timestamp
 func (s *systemdReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.logger.Debug("Starting scrape")
 
+	if s.client == nil {
+		// This happens when a receiver is created outside of the factory and Start() is not called
+		// Mostly during testing :)
+		client, err := s.newClientFunc(s.ctx)
+		if err != nil {
+			return pmetric.NewMetrics(), err
+		}
+		s.client = client
+	}
+
 	if !s.client.Connected() {
 		s.logger.Debug("Reconnecting to systemd after connection loss")
 		s.client.Close()
-		client, err := dbus.NewSystemConnectionContext(s.ctx)
+		client, err := s.newClientFunc(s.ctx)
 		if err != nil {
 			return pmetric.NewMetrics(), err
 		}
