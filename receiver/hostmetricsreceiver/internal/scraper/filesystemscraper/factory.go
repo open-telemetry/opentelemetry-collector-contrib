@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
 
@@ -24,7 +23,7 @@ var Type = component.MustNewType("filesystem")
 type Factory struct{}
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
-func (f *Factory) CreateDefaultConfig() internal.Config {
+func (f *Factory) CreateDefaultConfig() component.Config {
 	return &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
@@ -34,11 +33,11 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	settings receiver.Settings,
-	config internal.Config,
+	config component.Config,
 ) (scraper.Metrics, error) {
 	cfg := config.(*Config)
 
-	if cfg.RootPath == "" {
+	if cfg.rootPath == "" {
 		inContainer := os.Getpid() == 1
 		for _, p := range []string{
 			"/.dockerenv",        // Mounted by dockerd when starting a container by default
