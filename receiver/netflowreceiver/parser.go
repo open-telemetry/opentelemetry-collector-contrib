@@ -24,7 +24,7 @@ var (
 		0x86dd: "ipv6",
 	}
 
-	// https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
+	// https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
 	transportProtocolNames = map[uint32]string{
 		0:   "hopopt",
 		1:   "icmp",
