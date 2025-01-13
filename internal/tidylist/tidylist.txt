@@ -287,6 +287,7 @@ processor/coralogixprocessor
 processor/logstransformprocessor
 processor/schemaprocessor
 receiver/awscloudwatchmetricsreceiver
+receiver/gitlabreceiver
 receiver/netflowreceiver
 receiver/osqueryreceiver
 receiver/prometheusremotewritereceiver
