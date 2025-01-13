@@ -226,6 +226,15 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 		if !ok {
 			return
 		}
+	// if there is only one container in the pod, we can fall back to that container
+	case len(pod.Containers.ByID) == 1:
+		for _, c := range pod.Containers.ByID {
+			containerSpec = c
+		}
+	case len(pod.Containers.ByName) == 1:
+		for _, c := range pod.Containers.ByName {
+			containerSpec = c
+		}
 	default:
 		return
 	}
