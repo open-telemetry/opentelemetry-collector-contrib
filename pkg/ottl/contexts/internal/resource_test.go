@@ -346,7 +346,7 @@ func TestResourcePathGetSetterCacheAccessError(t *testing.T) {
 
 	_, err := ResourcePathGetSetter[*resourceContext]("log", path)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), `replace "resource.cache[key]" by "log.cache[key]"`)
+	require.Contains(t, err.Error(), `replace "resource.cache[key]" with "log.cache[key]"`)
 }
 
 func createResource() pcommon.Resource {

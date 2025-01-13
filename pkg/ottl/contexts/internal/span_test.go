@@ -638,7 +638,7 @@ func TestSpanPathGetSetterCacheAccessError(t *testing.T) {
 
 	_, err := SpanPathGetSetter[*spanContext]("spanevent", path)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), `replace "span.cache[key]" by "spanevent.cache[key]"`)
+	require.Contains(t, err.Error(), `replace "span.cache[key]" with "spanevent.cache[key]"`)
 }
 
 func createSpan() ptrace.Span {

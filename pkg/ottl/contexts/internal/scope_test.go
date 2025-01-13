@@ -384,7 +384,7 @@ func TestScopePathGetSetterCacheAccessError(t *testing.T) {
 
 	_, err := ScopePathGetSetter[*instrumentationScopeContext]("metric", path)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), `replace "instrumentation_scope.cache[key]" by "metric.cache[key]"`)
+	require.Contains(t, err.Error(), `replace "instrumentation_scope.cache[key]" with "metric.cache[key]"`)
 }
 
 func createInstrumentationScope() pcommon.InstrumentationScope {

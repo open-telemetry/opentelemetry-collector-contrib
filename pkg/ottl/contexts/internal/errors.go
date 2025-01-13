@@ -26,5 +26,5 @@ func FormatDefaultErrorMessage(pathSegment, fullPath, context, ref string) error
 
 func FormatCacheErrorMessage(lowerContext, pathContext, fullPath string) error {
 	pathSuggestion := strings.Replace(fullPath, pathContext+".", lowerContext+".", 1)
-	return fmt.Errorf(`access to cache must be performed using the same statement's context, please replace "%s" by "%s"`, fullPath, pathSuggestion)
+	return fmt.Errorf(`access to cache must be performed using the same statement's context, please replace "%s" with "%s"`, fullPath, pathSuggestion)
 }
