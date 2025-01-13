@@ -87,13 +87,13 @@ The log record will have the following attributes (with examples):
 * **network.type**: Str(ipv4)
 * **network.io.bytes**: Int(853)
 * **network.io.packets**: Int(83)
-* **network.flow.type**: Str(netflow_v5)
-* **network.flow.sequence_num**: Int(191)
-* **network.flow.time_received**: Int(1736309689918929427)
-* **network.flow.start**: Int(1736309689830846400)
-* **network.flow.end**: Int(1736309689871846400)
-* **network.flow.sampling_rate**: Int(0)
-* **network.flow.sampler_address**: Str(172.28.176.1)
+* **flow.type**: Str(netflow_v5)
+* **flow.sequence_num**: Int(191)
+* **flow.time_received**: Int(1736309689918929427)
+* **flow.start**: Int(1736309689830846400)
+* **flow.end**: Int(1736309689871846400)
+* **flow.sampling_rate**: Int(0)
+* **flow.sampler_address**: Str(172.28.176.1)
 
 The log record timestamps will be:
 
