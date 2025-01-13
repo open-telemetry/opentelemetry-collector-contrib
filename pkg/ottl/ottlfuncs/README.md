@@ -467,6 +467,10 @@ Available Converters:
 - [Substring](#substring)
 - [Time](#time)
 - [ToKeyValueString](#tokeyvaluestring)
+- [ToCamelCase](#tocamelcase)
+- [ToLowerCase](#tolowercase)
+- [ToSnakeCase](#tosnakecase)
+- [ToUpperCase](#touppercase)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
@@ -2055,6 +2059,54 @@ Examples:
 
 - `ToKeyValueString(body)`
 - `ToKeyValueString(body, ":", ",", true)`
+
+### ToCamelCase
+
+`ToCamelCase(target)`
+
+The `ToCamelCase` Converter converts the `target` string into camel case.
+
+`target` is a string.
+
+Examples:
+
+- `ToCamelCase(metric.name)`
+
+### ToLowerCase
+
+`ToLowerCase(target)`
+
+The `ToLowerCase` Converter converts the `target` string into lower case.
+
+`target` is a string.
+
+Examples:
+
+- `ToLowerCase(metric.name)`
+
+### ToSnakeCase
+
+`ToSnakeCase(target)`
+
+The `ToSnakeCase` Converter converts the `target` string into snake case.
+
+`target` is a string.
+
+Examples:
+
+- `ToSnakeCase(metric.name)`
+
+### ToUpperCase
+
+`ToUpperCase(target)`
+
+The `ToUpperCase` Converter converts the `target` string into upper case.
+
+`target` is a string.
+
+Examples:
+
+- `ToUpperCase(metric.name)`
 
 ### TraceID
 
