@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"reflect"
 	"regexp"
 	"testing"
@@ -2137,20 +2138,24 @@ func Test_parseValueExpression_full(t *testing.T) {
 		name            string
 		valueExpression string
 		tCtx            any
-		expected        any
+		expected        func() any
 	}{
 		{
 			name:            "string value",
 			valueExpression: `"fido"`,
-			expected:        "fido",
+			expected: func() any {
+				return "fido"
+			},
 		},
 		{
 			name:            "resolve context value",
 			valueExpression: `attributes`,
-			expected: map[string]any{
-				"attributes": map[string]any{
-					"foo": "bar",
-				},
+			expected: func() any {
+				return map[string]any{
+					"attributes": map[string]any{
+						"foo": "bar",
+					},
+				}
 			},
 			tCtx: map[string]any{
 				"attributes": map[string]any{
@@ -2161,10 +2166,61 @@ func Test_parseValueExpression_full(t *testing.T) {
 		{
 			name:            "resolve math expression",
 			valueExpression: `time2 - time1`,
-			expected:        5 * time.Second,
+			expected: func() any {
+				return 5 * time.Second
+			},
 			tCtx: map[string]time.Time{
 				"time1": time1,
 				"time2": time2,
+			},
+		},
+		{
+			name:            "nil",
+			valueExpression: `nil`,
+			expected: func() any {
+				return nil
+			},
+		},
+		{
+			name:            "string",
+			valueExpression: `"string"`,
+			expected: func() any {
+				return "string"
+			},
+		},
+		{
+			name:            "hex values",
+			valueExpression: `[0x0000000000000000, 0x0000000000000000]`,
+			expected: func() any {
+				return []interface{}{
+					[]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					[]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+				}
+			},
+		},
+		{
+			name:            "boolean",
+			valueExpression: `true`,
+			expected: func() any {
+				return true
+			},
+		},
+		{
+			name:            "map",
+			valueExpression: `{"map": 1}`,
+			expected: func() any {
+				m := pcommon.NewMap()
+				_ = m.FromRaw(map[string]any{
+					"map": 1,
+				})
+				return m
+			},
+		},
+		{
+			name:            "string list",
+			valueExpression: `["list", "of", "strings"]`,
+			expected: func() any {
+				return []interface{}{"list", "of", "strings"}
 			},
 		},
 	}
@@ -2182,7 +2238,7 @@ func Test_parseValueExpression_full(t *testing.T) {
 
 			v, err := parsed.Eval(context.Background(), tt.tCtx)
 			require.NoError(t, err)
-			assert.Equal(t, tt.expected, v)
+			assert.Equal(t, tt.expected(), v)
 		})
 	}
 }

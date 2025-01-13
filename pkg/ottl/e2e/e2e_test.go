@@ -1209,12 +1209,12 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 		{
 			name:      "Adding results of two converter operations",
 			statement: `Len(attributes) + Len(attributes)`,
-			want:      int64(14),
+			want:      int64(24),
 		},
 		{
 			name:      "Nested converter operations",
 			statement: `Hex(Len(attributes) + Len(attributes))`,
-			want:      "000000000000000e",
+			want:      "0000000000000018",
 		},
 	}
 
