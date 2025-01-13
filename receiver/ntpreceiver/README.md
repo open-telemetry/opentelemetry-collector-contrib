@@ -24,7 +24,7 @@ This receiver periodically retrieves the clock offset from a NTP server.
 
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
-- `metrics` (default: see DefaultMetricsSettings [here])(./internal/metadata/generated_metrics.go): Allows enabling and disabling specific metrics from being collected in this receiver.
+- `metrics` (default: see DefaultMetricsSettings [here](./internal/metadata/generated_metrics.go)): Allows enabling and disabling specific metrics from being collected in this receiver.
 
 ### Example Configuration
 
