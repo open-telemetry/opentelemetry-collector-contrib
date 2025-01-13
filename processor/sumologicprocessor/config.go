@@ -26,7 +26,7 @@ const (
 	defaultAddCloudNamespace           = true
 	defaultTranslateAttributes         = true
 	defaultTranslateTelegrafAttributes = true
-	defaultTranlateDockerMetrics       = false
+	defaultTranslateDockerMetrics      = false
 
 	// Nesting processor default config
 	defaultNestingEnabled            = false
@@ -72,7 +72,7 @@ func createDefaultConfig() component.Config {
 			SpanIDAttribute:         &logFieldAttribute{defaultAddSpanIDAttribute, SpanIDAttributeName},
 			TraceIDAttribute:        &logFieldAttribute{defaultAddTraceIDAttribute, TraceIDAttributeName},
 		},
-		TranslateDockerMetrics: defaultTranlateDockerMetrics,
+		TranslateDockerMetrics: defaultTranslateDockerMetrics,
 	}
 }
 

@@ -1,0 +1,13 @@
+signaltometrics:
+  datapoints:
+    - name: gauge.to.exphistogram
+      description: An exponential histogram created from gague values
+      include_resource_attributes:
+        - key: resource.foo
+      attributes:
+        - key: datapoint.foo
+      conditions:
+        - metric.type == 1 # select all gauges
+      exponential_histogram:
+        count: "1" # 1 count for each datapoint
+        value: Double(value_int) + value_double # handle both int and double
