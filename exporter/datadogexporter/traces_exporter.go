@@ -45,8 +45,8 @@ var receiveResourceSpansV2FeatureGate = featuregate.GlobalRegistry().MustRegiste
 	"exporter.datadogexporter.EnableReceiveResourceSpansV2",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, use a refactored implementation of the span receiver which gives a 10% performance and deprecates some functionality."),
-	featuregate.WithRegisterFromVersion("v0.117.0"),
-	featuregate.WithRegisterToVersion("v0.123.0"),
+	featuregate.WithRegisterFromVersion("v0.118.0"),
+	featuregate.WithRegisterToVersion("v0.124.0"),
 )
 
 type traceExporter struct {
