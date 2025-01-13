@@ -91,9 +91,9 @@ func (f internalFilterRegexp) submatches(metric pmetric.Metric) []int {
 	return f.include.FindStringSubmatchIndex(metric.Name())
 }
 
-func (f internalFilterRegexp) expand(metricTempate, metricName string) string {
+func (f internalFilterRegexp) expand(metricTemplate, metricName string) string {
 	if submatches := f.include.FindStringSubmatchIndex(metricName); submatches != nil {
-		return string(f.include.ExpandString([]byte{}, metricTempate, metricName, submatches))
+		return string(f.include.ExpandString([]byte{}, metricTemplate, metricName, submatches))
 	}
 	return ""
 }
@@ -442,7 +442,7 @@ func combine(transform internalTransform, metrics pmetric.MetricSlice) pmetric.M
 
 // groupMetrics groups all the provided timeseries that will be aggregated together based on all the label values.
 // Returns a map of grouped timeseries and the corresponding selected labels
-// canBeCombined must be callled before.
+// canBeCombined must be called before.
 func groupMetrics(metrics pmetric.MetricSlice, aggType aggregateutil.AggregationType, to pmetric.Metric) {
 	ag := aggregateutil.AggGroups{}
 	for i := 0; i < metrics.Len(); i++ {
