@@ -152,6 +152,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.117.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/envoyalsreceiver v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver v0.117.0
@@ -354,6 +355,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => ../../internal/aws/ecsutil
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver => ../../receiver/rabbitmqreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver => ../../receiver/elasticsearchreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/envoyalsreceiver => ../../receiver/envoyalsreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor => ../../processor/metricsgenerationprocessor
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor => ../../processor/attributesprocessor
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver => ../../receiver/sqlqueryreceiver
