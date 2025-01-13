@@ -241,7 +241,7 @@ func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2
 	// Otherwise, we should append to the existing ScopeMetrics.
 	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 		scope := rm.ScopeMetrics().At(j)
-		if scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
+		if scopeName != "" && scopeVersion != "" && scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
 			addDatapoints(scope.Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
 			return
 		}
