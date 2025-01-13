@@ -135,7 +135,7 @@ func (nr *netflowReceiver) handleErrors() {
 			nr.logger.Info("UDP receiver closed, exiting error handler")
 			return
 
-		case !errors.Is(err, netflow.ErrorTemplateNotFound) && !errors.Is(err, ErrorProducerProcessing):
+		case !errors.Is(err, netflow.ErrorTemplateNotFound):
 			nr.logger.Error("received a generic error while processing a flow message via GoFlow2 for the netflow receiver", zap.Error(err))
 			continue
 
@@ -143,7 +143,7 @@ func (nr *netflowReceiver) handleErrors() {
 			nr.logger.Warn("we could not find a template for a flow message, this error is expected from time to time until the device sends a template", zap.Error(err))
 			continue
 
-		case errors.Is(err, ErrorProducerProcessing):
+		default:
 			nr.logger.Error("unexpected error processing the message", zap.Error(err))
 			continue
 		}

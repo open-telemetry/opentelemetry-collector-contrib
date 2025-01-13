@@ -5,7 +5,6 @@ package netflowreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/netsampler/goflow2/v2/producer"
 	"go.opentelemetry.io/collector/consumer"
@@ -22,17 +21,14 @@ type OtelLogsProducerWrapper struct {
 	logger      *zap.Logger
 }
 
-var ErrorProducerProcessing = errors.New("unexpected error processing the message")
-
 // Produce converts the message into a list log records and sends them to log consumer
 func (o *OtelLogsProducerWrapper) Produce(msg any, args *producer.ProduceArgs) ([]producer.ProducerMessage, error) {
 	defer func() {
 		if pErr := recover(); pErr != nil {
 			errMessage, _ := pErr.(string)
 			o.logger.Error("unexpected error processing the message", zap.String("error", errMessage))
-			return nil, ErrorProducerProcessing
 		}
-	}
+	}()
 
 	// First we let the proto producer parse the message
 	// All the netflow protocol and structure is handled by the proto producer

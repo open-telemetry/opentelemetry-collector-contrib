@@ -4,6 +4,7 @@
 package netflowreceiver
 
 import (
+	"net/netip"
 	"testing"
 
 	"github.com/netsampler/goflow2/v2/decoders/netflow"
@@ -14,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestProduce(t *testing.T) {
@@ -66,4 +68,41 @@ func TestProduce(t *testing.T) {
 	assert.Equal(t, uint64(1), pm.Packets)
 	assert.Equal(t, uint32(256), pm.ObservationDomainId)
 	assert.Equal(t, uint32(838987416), pm.SequenceNum)
+}
+
+// This PanicProducer replaces the ProtoProducer, to simulate it producing a panic
+type PanicProducer struct{}
+
+func (m *PanicProducer) Produce(_ any, _ *producer.ProduceArgs) ([]producer.ProducerMessage, error) {
+	panic("producer panic!")
+}
+
+func (m *PanicProducer) Close() {}
+
+func (m *PanicProducer) Commit(_ []producer.ProducerMessage) {}
+
+func TestProducerPanic(t *testing.T) {
+	// Create a mock logger that can capture logged messages
+	observedZapCore, observedLogs := observer.New(zap.InfoLevel)
+	logger := zap.New(observedZapCore)
+
+	// Create a mock consumer
+	mockConsumer := consumertest.NewNop()
+
+	// Wrap a PanicProducer (instead of ProtoProducer) in the OtelLogsProducerWrapper
+	wrapper := newOtelLogsProducer(&PanicProducer{}, mockConsumer, logger)
+
+	// Call Produce which should recover from panic
+	messages, err := wrapper.Produce(nil, &producer.ProduceArgs{
+		SamplerAddress: netip.MustParseAddr("127.0.0.1"),
+	})
+
+	// Verify that no error is returned (since panic was recovered)
+	assert.NoError(t, err)
+	assert.Empty(t, messages)
+
+	// Verify that the error was logged
+	log := observedLogs.All()[0]
+	assert.Equal(t, "unexpected error processing the message", log.Message)
+	assert.Equal(t, "producer panic!", log.ContextMap()["error"])
 }
