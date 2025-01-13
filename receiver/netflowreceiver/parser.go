@@ -235,18 +235,15 @@ func addMessageAttributes(m producer.ProducerMessage, r *plog.LogRecord) error {
 	r.Attributes().PutStr(semconv.AttributeNetworkType, getEtypeName(pm.Etype))
 
 	// There is no semconv as of today for these
-	// Network IO attributes
-	r.Attributes().PutInt("network.io.bytes", int64(pm.Bytes))
-	r.Attributes().PutInt("network.io.packets", int64(pm.Packets))
-
-	// Flow attributes
-	r.Attributes().PutStr("network.flow.type", getFlowTypeName(int32(pm.Type)))
-	r.Attributes().PutInt("network.flow.sequence_num", int64(pm.SequenceNum))
-	r.Attributes().PutInt("network.flow.time_received", int64(pm.TimeReceivedNs))
-	r.Attributes().PutInt("network.flow.start", int64(pm.TimeFlowStartNs))
-	r.Attributes().PutInt("network.flow.end", int64(pm.TimeFlowEndNs))
-	r.Attributes().PutInt("network.flow.sampling_rate", int64(pm.SamplingRate))
-	r.Attributes().PutStr("network.flow.sampler_address", samplerAddr.String())
+	r.Attributes().PutInt("flow.io.bytes", int64(pm.Bytes))
+	r.Attributes().PutInt("flow.io.packets", int64(pm.Packets))
+	r.Attributes().PutStr("flow.type", getFlowTypeName(int32(pm.Type)))
+	r.Attributes().PutInt("flow.sequence_num", int64(pm.SequenceNum))
+	r.Attributes().PutInt("flow.time_received", int64(pm.TimeReceivedNs))
+	r.Attributes().PutInt("flow.start", int64(pm.TimeFlowStartNs))
+	r.Attributes().PutInt("flow.end", int64(pm.TimeFlowEndNs))
+	r.Attributes().PutInt("flow.sampling_rate", int64(pm.SamplingRate))
+	r.Attributes().PutStr("flow.sampler_address", samplerAddr.String())
 
 	return nil
 }
