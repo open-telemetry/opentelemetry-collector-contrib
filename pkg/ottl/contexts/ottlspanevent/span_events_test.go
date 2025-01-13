@@ -49,11 +49,12 @@ func Test_newPathGetSetter(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[TransformContext]
-		orig     any
-		newVal   any
-		modified func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
+		name              string
+		path              ottl.Path[TransformContext]
+		orig              any
+		newVal            any
+		expectSetterError bool
+		modified          func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
 	}{
 		{
 			name: "span event time",
@@ -412,10 +413,9 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: &internal.TestPath[TransformContext]{
 				N: "event_index",
 			},
-			orig:   int64(0),
-			newVal: int64(1),
-			modified: func(_ ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
-			},
+			orig:              int64(0),
+			newVal:            int64(1),
+			expectSetterError: true,
 		},
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
@@ -443,6 +443,10 @@ func Test_newPathGetSetter(t *testing.T) {
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), tCtx, tt.newVal)
+			if tt.expectSetterError {
+				assert.Error(t, err)
+				return
+			}
 			assert.NoError(t, err)
 
 			exSpanEvent, exSpan, exIl, exRes := createTelemetry()
