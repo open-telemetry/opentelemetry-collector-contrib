@@ -49,7 +49,7 @@ The following configuration options can also be modified:
 - `decision_cache`: Options for configuring caches for sampling decisions. You may want to vary the size of these caches
   depending on how many "keep" vs "drop" decisions you expect from your policies. For example, you may allocate a
   larger `non_sampled_cache_size` if you expect most traces to be dropped.
-  Additionally, if using, configure this as much higher than `num_traces` so decisions for trace IDs are kept
+  Additionally, if using, configure this as much greater than `num_traces` so decisions for trace IDs are kept
   longer than the span data for the trace.
   - `sampled_cache_size` (default = 0): Configures amount of trace IDs to be kept in an LRU cache,
   persisting the "keep" decisions for traces that may have already been released from memory. 
@@ -469,7 +469,7 @@ A circular buffer is used to ensure the number of traces in-memory doesn't excee
 otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
 ```
 
-**Pre-emptively Preventing Dropped Traces**
+**Preemptively Preventing Dropped Traces**
 
 A trace is dropped without sampling if it's removed from the circular buffer before `decision_wait`.
 

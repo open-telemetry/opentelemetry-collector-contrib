@@ -68,7 +68,7 @@ var dockerMetricsTranslations = map[string]string{
 	"container.blockio.sectors_recursive":             "sectors_recursive",
 }
 
-var dockerReasourceAttributeTranslations = map[string]string{
+var dockerResourceAttributeTranslations = map[string]string{
 	"container.id":         "container.FullID",
 	"container.image.name": "container.ImageName",
 	"container.name":       "container.Name",
@@ -132,7 +132,7 @@ func translateDockerResourceAttributes(attributes pcommon.Map) {
 	result.EnsureCapacity(attributes.Len())
 
 	attributes.Range(func(otKey string, value pcommon.Value) bool {
-		if sumoKey, ok := dockerReasourceAttributeTranslations[otKey]; ok {
+		if sumoKey, ok := dockerResourceAttributeTranslations[otKey]; ok {
 			// Only insert if it doesn't exist yet to prevent overwriting.
 			// We have to do it this way since the final return value is not
 			// ready yet to rely on .Insert() not overwriting.

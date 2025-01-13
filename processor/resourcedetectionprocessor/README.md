@@ -410,7 +410,7 @@ If accurate parsing cannot be performed, the infrastructure resource group value
 
 ### Consul
 
-Queries a [consul agent](https://www.consul.io/docs/agent) and reads its' [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve related resource attributes:
+Queries a [consul agent](https://www.consul.io/docs/agent) and reads its [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve related resource attributes:
 
 The list of the populated resource attributes can be found at [Consul Detector Resource Attributes](./internal/consul/documentation.md).
 
@@ -481,11 +481,11 @@ and add this to your workload:
                 fieldPath: spec.nodeName
 ```
 
-### Openshift
+### OpenShift
 
 Queries the OpenShift and Kubernetes API to retrieve related resource attributes.
 
-The list of the populated resource attributes can be found at [Openshift Detector Resource Attributes](./internal/openshift/documentation.md).
+The list of the populated resource attributes can be found at [OpenShift Detector Resource Attributes](./internal/openshift/documentation.md).
 
 The following permissions are required:
 ```yaml
@@ -588,5 +588,5 @@ Note that if multiple detectors are inserting the same attribute name, the first
 * ecs
 * ec2
 
-The full list of settings exposed for this extension are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this extension are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).

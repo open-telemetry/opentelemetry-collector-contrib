@@ -311,7 +311,7 @@ operations:
 ```yaml
 # Group metrics from one single ResourceMetrics and report them as multiple ResourceMetrics.
 # 
-# ex: Consider pod and container metrics collected from Kubernetes. Both the metrics are recorded under under one ResourceMetric
+# ex: Consider pod and container metrics collected from Kubernetes. Both the metrics are recorded under one ResourceMetric
 # applying this transformation will result in two separate ResourceMetric packets with corresponding resource labels in the resource headers
 #
 # instead of regular $ use double dollar $$. Because $ is treated as a special character.
@@ -320,11 +320,11 @@ operations:
 - include: ^k8s\.pod\.(.*)$$
   match_type: regexp
   action: group
-  group_resource_labels: {"resouce.type": "k8s.pod", "source": "kubelet"}
+  group_resource_labels: {"resource.type": "k8s.pod", "source": "kubelet"}
 - include: ^container\.(.*)$$
   match_type: regexp
   action: group
-  group_resource_labels: {"resouce.type": "container", "source": "kubelet"}
+  group_resource_labels: {"resource.type": "container", "source": "kubelet"}
 ```
 
 ### Metric Transform Processor vs. [Attributes Processor for Metrics](../attributesprocessor)
