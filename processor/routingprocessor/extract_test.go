@@ -68,7 +68,7 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 			expectedValue: "acme",
 		},
 		{
-			name: "value from existing HTTP attribute: case insensitive",
+			name: "value from existing HTTP attribute: case-insensitive",
 			ctxFunc: func() context.Context {
 				return client.NewContext(context.Background(),
 					client.Info{Metadata: client.NewMetadata(map[string][]string{
