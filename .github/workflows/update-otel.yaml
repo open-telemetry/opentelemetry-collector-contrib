@@ -29,8 +29,10 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           branch: opentelemetrybot/update-otel
+          path: opentelemetry-collector-contrib
+          base: main
           token: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
-          commit-message: Update to latest opentelemetry-collector release.
+          commit-message: [chore] Update to latest opentelemetry-collector release.
           title: "[chore] Update to latest opentelemetry-collector"
           body: |
               This PR updates the opentelemetry-collector dependency to the latest release.
