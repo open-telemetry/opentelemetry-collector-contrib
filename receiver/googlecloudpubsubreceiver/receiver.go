@@ -116,62 +116,14 @@ func (receiver *pubsubReceiver) Start(ctx context.Context, host component.Host) 
 		}
 		encodingID := convertEncoding(receiver.config.Encoding)
 		if encodingID == unknown {
-			extensionID := component.ID{}
-			err := extensionID.UnmarshalText([]byte(receiver.config.Encoding))
+			err := receiver.setMarshallerFromExtension(host)
 			if err != nil {
-				return errors.New("cannot start receiver: neither a build in encoder, or an extension")
-			}
-			extensions := host.GetExtensions()
-			if extension, ok := extensions[extensionID]; ok {
-				if receiver.tracesConsumer != nil {
-					receiver.tracesUnmarshaler, ok = extension.(encoding.TracesUnmarshalerExtension)
-					if !ok {
-						return fmt.Errorf("cannot start receiver: extension %q is not a trace unmarshaler", extensionID)
-					}
-				}
-				if receiver.logsConsumer != nil {
-					receiver.logsUnmarshaler, ok = extension.(encoding.LogsUnmarshalerExtension)
-					if !ok {
-						return fmt.Errorf("cannot start receiver: extension %q is not a logs unmarshaler", extensionID)
-					}
-				}
-				if receiver.metricsConsumer != nil {
-					receiver.metricsUnmarshaler, ok = extension.(encoding.MetricsUnmarshalerExtension)
-					if !ok {
-						return fmt.Errorf("cannot start receiver: extension %q is not a metrics unmarshaler", extensionID)
-					}
-				}
-			} else {
-				return fmt.Errorf("cannot start receiver: extension %q not found", extensionID)
+				return err
 			}
 		} else {
-			if receiver.tracesConsumer != nil {
-				switch encodingID {
-				case otlpProtoTrace:
-					receiver.tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
-				default:
-					return fmt.Errorf("cannot start receiver: build in encoding %s is not supported for traces", receiver.config.Encoding)
-				}
-			}
-			if receiver.logsConsumer != nil {
-				switch encodingID {
-				case otlpProtoLog:
-					receiver.logsUnmarshaler = &plog.ProtoUnmarshaler{}
-				case rawTextLog:
-					receiver.logsUnmarshaler = unmarshalLogStrings{}
-				case cloudLogging:
-					receiver.logsUnmarshaler = unmarshalCloudLoggingLogEntry{}
-				default:
-					return fmt.Errorf("cannot start receiver: build in encoding %s is not supported for logs", receiver.config.Encoding)
-				}
-			}
-			if receiver.metricsConsumer != nil {
-				switch encodingID {
-				case otlpProtoMetric:
-					receiver.metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
-				default:
-					return fmt.Errorf("cannot start receiver: build in encoding %s is not supported for metrics", receiver.config.Encoding)
-				}
+			err := receiver.setMarshallerFromEncodingID(encodingID)
+			if err != nil {
+				return err
 			}
 		}
 		createHandlerFn = receiver.createReceiverHandler
@@ -200,6 +152,70 @@ func (receiver *pubsubReceiver) Start(ctx context.Context, host component.Host) 
 		}
 	})
 	return startErr
+}
+
+func (receiver *pubsubReceiver) setMarshallerFromExtension(host component.Host) error {
+	extensionID := component.ID{}
+	err := extensionID.UnmarshalText([]byte(receiver.config.Encoding))
+	if err != nil {
+		return errors.New("cannot start receiver: neither a build in encoder, or an extension")
+	}
+	extensions := host.GetExtensions()
+	if extension, ok := extensions[extensionID]; ok {
+		if receiver.tracesConsumer != nil {
+			receiver.tracesUnmarshaler, ok = extension.(encoding.TracesUnmarshalerExtension)
+			if !ok {
+				return fmt.Errorf("cannot start receiver: extension %q is not a trace unmarshaler", extensionID)
+			}
+		}
+		if receiver.logsConsumer != nil {
+			receiver.logsUnmarshaler, ok = extension.(encoding.LogsUnmarshalerExtension)
+			if !ok {
+				return fmt.Errorf("cannot start receiver: extension %q is not a logs unmarshaler", extensionID)
+			}
+		}
+		if receiver.metricsConsumer != nil {
+			receiver.metricsUnmarshaler, ok = extension.(encoding.MetricsUnmarshalerExtension)
+			if !ok {
+				return fmt.Errorf("cannot start receiver: extension %q is not a metrics unmarshaler", extensionID)
+			}
+		}
+	} else {
+		return fmt.Errorf("cannot start receiver: extension %q not found", extensionID)
+	}
+	return nil
+}
+
+func (receiver *pubsubReceiver) setMarshallerFromEncodingID(encodingID buildInEncoding) error {
+	if receiver.tracesConsumer != nil {
+		switch encodingID {
+		case otlpProtoTrace:
+			receiver.tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
+		default:
+			return fmt.Errorf("cannot start receiver: build in encoding %s is not supported for traces", receiver.config.Encoding)
+		}
+	}
+	if receiver.logsConsumer != nil {
+		switch encodingID {
+		case otlpProtoLog:
+			receiver.logsUnmarshaler = &plog.ProtoUnmarshaler{}
+		case rawTextLog:
+			receiver.logsUnmarshaler = unmarshalLogStrings{}
+		case cloudLogging:
+			receiver.logsUnmarshaler = unmarshalCloudLoggingLogEntry{}
+		default:
+			return fmt.Errorf("cannot start receiver: build in encoding %s is not supported for logs", receiver.config.Encoding)
+		}
+	}
+	if receiver.metricsConsumer != nil {
+		switch encodingID {
+		case otlpProtoMetric:
+			receiver.metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
+		default:
+			return fmt.Errorf("cannot start receiver: build in encoding %s is not supported for metrics", receiver.config.Encoding)
+		}
+	}
+	return nil
 }
 
 func (receiver *pubsubReceiver) Shutdown(_ context.Context) error {
