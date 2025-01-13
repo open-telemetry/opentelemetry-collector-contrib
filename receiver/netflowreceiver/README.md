@@ -71,7 +71,7 @@ You would then configure your network devices to send netflow, sflow, or ipfix d
 | port | The port to bind to | `2055` or `6343` | `2055` |
 | sockets | The number of sockets to use | 1 | 1 |
 | workers | The number of workers used to decode incoming flow messages | 2 | 2 |
-| queue_size | The size of the incoming netflow packets queue | 1000 | 1000 |
+| queue_size | The size of the incoming netflow packets queue, it will always be at least 1000. | 5000 | 1000 |
 
 ## Data format
 
