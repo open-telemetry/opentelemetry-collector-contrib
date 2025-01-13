@@ -22,7 +22,9 @@ func NewFactory() extension.Factory {
 }
 
 func createExtension(_ context.Context, _ extension.Settings, _ component.Config) (extension.Extension, error) {
-	return &skywalkingExtension{}, nil
+	return &skywalkingExtension{
+		unmarshaler: skywalkingProtobufTrace{},
+	}, nil
 }
 
 func createDefaultConfig() component.Config {

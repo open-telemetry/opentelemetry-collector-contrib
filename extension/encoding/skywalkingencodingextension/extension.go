@@ -19,7 +19,6 @@ func (e *skywalkingExtension) UnmarshalTraces(buf []byte) (ptrace.Traces, error)
 }
 
 func (e *skywalkingExtension) Start(_ context.Context, _ component.Host) error {
-	e.unmarshaler = skywalkingProtobufTrace{}
 	return nil
 }
 
