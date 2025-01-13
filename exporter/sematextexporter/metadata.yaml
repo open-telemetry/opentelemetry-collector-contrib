@@ -4,7 +4,7 @@ status:
   class: exporter
   stability:
     development: [metrics,logs]
-  distributions: [contrib]
+  distributions: []
   codeowners:
     active: [AkhigbeEromo,boratanrikulu,akshatagarwl]
 
