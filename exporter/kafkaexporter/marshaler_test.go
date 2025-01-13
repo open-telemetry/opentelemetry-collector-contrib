@@ -466,7 +466,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 		require.NoError(t, err, "Must have marshaled the data without error")
 		require.Len(t, msg, test.numExpectedMessages, "Expected number of messages in the message")
 
-		for idx, singleMsg := range msg {
+		for idx, singleMsg := range msg[0].msg {
 			data, err := singleMsg.Value.Encode()
 			require.NoError(t, err, "Must not error when encoding value")
 			require.NotNil(t, data, "Must have valid data to test")

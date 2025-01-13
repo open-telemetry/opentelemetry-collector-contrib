@@ -16,21 +16,27 @@ import (
 )
 
 type jaegerMarshaler struct {
-	marshaler jaegerSpanMarshaler
+	marshaler            jaegerSpanMarshaler
+	partitionedByTraceID bool
+	maxMessageBytes      int
 }
 
 var _ TracesMarshaler = (*jaegerMarshaler)(nil)
 
-func (j jaegerMarshaler) Marshal(traces ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
+func (j jaegerMarshaler) Marshal(traces ptrace.Traces, topic string) ([]*ProducerMessageChunks, error) {
+	// ToDo: implement partitionedByTraceID
+
 	batches := jaeger.ProtoFromTraces(traces)
 	var messages []*sarama.ProducerMessage
+
+	// ToDo: effectively chunk the spans adhering to j.maxMessageBytes
+	var messageChunks []*ProducerMessageChunks
 
 	var errs error
 	for _, batch := range batches {
 		for _, span := range batch.Spans {
 			span.Process = batch.Process
 			bts, err := j.marshaler.marshal(span)
-			// continue to process spans that can be serialized
 			if err != nil {
 				errs = multierr.Append(errs, err)
 				continue
@@ -43,7 +49,8 @@ func (j jaegerMarshaler) Marshal(traces ptrace.Traces, topic string) ([]*sarama.
 			})
 		}
 	}
-	return messages, errs
+	messageChunks = append(messageChunks, &ProducerMessageChunks{messages})
+	return messageChunks, errs
 }
 
 func (j jaegerMarshaler) Encoding() string {

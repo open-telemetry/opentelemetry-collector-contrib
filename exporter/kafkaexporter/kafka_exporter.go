@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
@@ -42,20 +43,48 @@ func (ke kafkaErrors) Error() string {
 }
 
 func (e *kafkaTracesProducer) tracesPusher(ctx context.Context, td ptrace.Traces) error {
-	messages, err := e.marshaler.Marshal(td, getTopic(ctx, &e.cfg, td.ResourceSpans()))
+	messageChunks, err := e.marshaler.Marshal(td, getTopic(ctx, &e.cfg, td.ResourceSpans()))
 	if err != nil {
-		return consumererror.NewPermanent(err)
+		return consumererror.NewPermanent(
+			fmt.Errorf("failed to marshal trace data: %w", err),
+		)
 	}
-	err = e.producer.SendMessages(messages)
-	if err != nil {
-		var prodErr sarama.ProducerErrors
-		if errors.As(err, &prodErr) {
-			if len(prodErr) > 0 {
-				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
-			}
+
+	var allErrors []string
+
+	for i, chunk := range messageChunks {
+		sendErr := e.producer.SendMessages(chunk.msg)
+		if sendErr == nil {
+			continue
 		}
-		return err
+
+		var prodErrs sarama.ProducerErrors
+		if errors.As(sendErr, &prodErrs) {
+			for _, pErr := range prodErrs {
+				allErrors = append(allErrors,
+					fmt.Sprintf(
+						"chunk[%d] partition=%d offset=%d error=%v",
+						i,
+						pErr.Msg.Partition,
+						pErr.Msg.Offset,
+						pErr.Err,
+					),
+				)
+			}
+		} else {
+			allErrors = append(allErrors,
+				fmt.Sprintf("chunk[%d] error=%v", i, sendErr),
+			)
+		}
 	}
+
+	if len(allErrors) > 0 {
+		return fmt.Errorf("encountered %d errors sending Kafka messages: %s",
+			len(allErrors),
+			strings.Join(allErrors, "; "),
+		)
+	}
+
 	return nil
 }
 
@@ -73,8 +102,10 @@ func (e *kafkaTracesProducer) start(ctx context.Context, host component.Host) er
 		e.cfg.Encoding,
 	); errExt == nil {
 		e.marshaler = &tracesEncodingMarshaler{
-			marshaler: *marshaler,
-			encoding:  e.cfg.Encoding,
+			marshaler:            *marshaler,
+			encoding:             e.cfg.Encoding,
+			partitionedByTraceID: e.cfg.PartitionTracesByID,
+			maxMessageBytes:      e.cfg.Producer.MaxMessageBytes,
 		}
 	}
 	if marshaler, errInt := createTracesMarshaler(e.cfg); e.marshaler == nil && errInt == nil {

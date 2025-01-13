@@ -125,9 +125,14 @@ type pdataTracesMarshaler struct {
 	marshaler            ptrace.Marshaler
 	encoding             string
 	partitionedByTraceID bool
+	maxMessageBytes      int
 }
 
-func (p *pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
+func (p *pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*ProducerMessageChunks, error) {
+
+	// ToDo: effectively chunk the spans adhering to j.maxMessageBytes
+	var messageChunks []*ProducerMessageChunks
+
 	var msgs []*sarama.ProducerMessage
 	if p.partitionedByTraceID {
 		for _, trace := range batchpersignal.SplitTraces(td) {
@@ -152,17 +157,20 @@ func (p *pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*saram
 		})
 	}
 
-	return msgs, nil
+	messageChunks = append(messageChunks, &ProducerMessageChunks{msg: msgs})
+
+	return messageChunks, nil
 }
 
 func (p *pdataTracesMarshaler) Encoding() string {
 	return p.encoding
 }
 
-func newPdataTracesMarshaler(marshaler ptrace.Marshaler, encoding string, partitionedByTraceID bool) TracesMarshaler {
+func newPdataTracesMarshaler(marshaler ptrace.Marshaler, encoding string, partitionedByTraceID bool, maxMessageBytes int) TracesMarshaler {
 	return &pdataTracesMarshaler{
 		marshaler:            marshaler,
 		encoding:             encoding,
 		partitionedByTraceID: partitionedByTraceID,
+		maxMessageBytes:      maxMessageBytes,
 	}
 }

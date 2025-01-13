@@ -61,9 +61,9 @@ func TestJaegerMarshaler(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.encoding, func(t *testing.T) {
-			messages, err := test.unmarshaler.Marshal(td, "topic")
+			msg, err := test.unmarshaler.Marshal(td, "topic")
 			require.NoError(t, err)
-			assert.Equal(t, test.messages, messages)
+			assert.Equal(t, test.messages, msg[0])
 			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
 		})
 	}

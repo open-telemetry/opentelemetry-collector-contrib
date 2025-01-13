@@ -14,10 +14,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
 
+type ProducerMessageChunks struct {
+	msg []*sarama.ProducerMessage
+}
+
 // TracesMarshaler marshals traces into Message array.
 type TracesMarshaler interface {
 	// Marshal serializes spans into sarama's ProducerMessages
-	Marshal(traces ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error)
+	Marshal(traces ptrace.Traces, topic string) ([]*ProducerMessageChunks, error)
 
 	// Encoding returns encoding name
 	Encoding() string
@@ -45,20 +49,21 @@ type LogsMarshaler interface {
 func createTracesMarshaler(config Config) (TracesMarshaler, error) {
 	encoding := config.Encoding
 	partitionTracesByID := config.PartitionTracesByID
+	maxMessageBytes := config.Producer.MaxMessageBytes
 
 	jaegerProto := jaegerMarshaler{marshaler: jaegerProtoSpanMarshaler{}}
 	jaegerJSON := jaegerMarshaler{marshaler: newJaegerJSONMarshaler()}
 
 	switch encoding {
 	case defaultEncoding:
-		return newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, partitionTracesByID), nil
+		return newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, partitionTracesByID, maxMessageBytes), nil
 	case "otlp_json":
-		return newPdataTracesMarshaler(&ptrace.JSONMarshaler{}, "otlp_json", partitionTracesByID), nil
+		return newPdataTracesMarshaler(&ptrace.JSONMarshaler{}, "otlp_json", partitionTracesByID, maxMessageBytes), nil
 	case "zipkin_proto":
-		return newPdataTracesMarshaler(zipkinv2.NewProtobufTracesMarshaler(), "zipkin_proto", partitionTracesByID), nil
+		return newPdataTracesMarshaler(zipkinv2.NewProtobufTracesMarshaler(), "zipkin_proto", partitionTracesByID, maxMessageBytes), nil
 	case "zipkin_json":
-		return newPdataTracesMarshaler(zipkinv2.NewJSONTracesMarshaler(), "zipkin_json", partitionTracesByID), nil
-	case jaegerProtoSpanMarshaler{}.encoding():
+		return newPdataTracesMarshaler(zipkinv2.NewJSONTracesMarshaler(), "zipkin_json", partitionTracesByID, maxMessageBytes), nil
+	case jaegerProto.Encoding():
 		return jaegerProto, nil
 	case jaegerJSON.Encoding():
 		return jaegerJSON, nil
@@ -101,12 +106,20 @@ func createLogMarshaler(config Config) (LogsMarshaler, error) {
 
 // tracesEncodingMarshaler is a wrapper around ptrace.Marshaler that implements TracesMarshaler.
 type tracesEncodingMarshaler struct {
-	marshaler ptrace.Marshaler
-	encoding  string
+	marshaler            ptrace.Marshaler
+	encoding             string
+	partitionedByTraceID bool
+	maxMessageBytes      int
 }
 
-func (t *tracesEncodingMarshaler) Marshal(traces ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
+func (t *tracesEncodingMarshaler) Marshal(traces ptrace.Traces, topic string) ([]*ProducerMessageChunks, error) {
+	// ToDo: implement partitionedByTraceID
+
 	var messages []*sarama.ProducerMessage
+
+	// ToDo: effectively chunk the spans adhering to j.maxMessageBytes
+	var messageChunks []*ProducerMessageChunks
+
 	data, err := t.marshaler.MarshalTraces(traces)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal traces: %w", err)
@@ -115,7 +128,8 @@ func (t *tracesEncodingMarshaler) Marshal(traces ptrace.Traces, topic string) ([
 		Topic: topic,
 		Value: sarama.ByteEncoder(data),
 	})
-	return messages, nil
+	messageChunks = append(messageChunks, &ProducerMessageChunks{msg: messages})
+	return messageChunks, nil
 }
 
 func (t *tracesEncodingMarshaler) Encoding() string {
