@@ -8,7 +8,8 @@ component: datadogexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Add a feature gate exporter.datadogexporter.EnableReceiveResourceSpansV2. Enabling this gate uses a refactored implementation of OTLP->Datadog Span translation which improves performance by 10%, and deprecates the following functionality:
-        - No longer checks for resource-related values (container, env, hostname) in span attributes. This previous behavior did not follow the OTel spec."
+        - No longer checks for resource-related values (container, env, hostname) in span attributes. This previous behavior did not follow the OTel spec.
+        A similar gate is added for datadogconnector as well (connector.datadogconnector.EnableReceiveResourceSpansV2). Both should be enabled together."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [37077]
