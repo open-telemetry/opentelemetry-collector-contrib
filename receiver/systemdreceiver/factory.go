@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/coreos/go-systemd/v22/dbus"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -44,11 +43,7 @@ func createMetricsReceiver(
 		return nil, errors.New("provided configuration is invalid")
 	}
 
-	f := func(ctx context.Context) (dbusClient, error) {
-		return dbus.NewSystemConnectionContext(ctx)
-	}
-
-	s := newSystemdReceiver(settings, config, f)
+	s := newSystemdReceiver(settings, config, newDbusClient)
 
 	sm, err := scraper.NewMetrics(s.scrape, scraper.WithStart(s.Start), scraper.WithShutdown(s.Shutdown))
 	if err != nil {
