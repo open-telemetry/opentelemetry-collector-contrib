@@ -81,7 +81,6 @@ func (nr *netflowReceiver) Start(_ context.Context, _ component.Host) error {
 }
 
 func (nr *netflowReceiver) Shutdown(context.Context) error {
-	nr.logger.Info("NetFlow receiver is shutting down...")
 	if nr.udpReceiver == nil {
 		return nil
 	}
