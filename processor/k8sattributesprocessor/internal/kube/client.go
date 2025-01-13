@@ -210,11 +210,10 @@ func New(
 func (c *WatchClient) Start() error {
 	synced := make([]cache.InformerSynced, 0)
 
-	waitForReplicaSets := false
+	waitForInformers := []cache.SharedInformer{}
 	// start the replicaSet informer first, as the replica sets need to be
 	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
 	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
-		waitForReplicaSets = true
 		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
@@ -224,10 +223,37 @@ func (c *WatchClient) Start() error {
 			return err
 		}
 		synced = append(synced, reg.HasSynced)
+		waitForInformers = append(waitForInformers, c.replicasetInformer)
 		go c.runInformer(c.replicasetInformer)
 	}
 
-	reg, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	reg, err := c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    c.handleNamespaceAdd,
+		UpdateFunc: c.handleNamespaceUpdate,
+		DeleteFunc: c.handleNamespaceDelete,
+	})
+	if err != nil {
+		return err
+	}
+	synced = append(synced, reg.HasSynced)
+	waitForInformers = append(waitForInformers, c.namespaceInformer)
+	go c.runInformer(c.namespaceInformer)
+
+	if c.nodeInformer != nil {
+		reg, err := c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleNodeAdd,
+			UpdateFunc: c.handleNodeUpdate,
+			DeleteFunc: c.handleNodeDelete,
+		})
+		if err != nil {
+			return err
+		}
+		synced = append(synced, reg.HasSynced)
+		waitForInformers = append(waitForInformers, c.nodeInformer)
+		go c.runInformer(c.nodeInformer)
+	}
+
+	reg, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
 		DeleteFunc: c.handlePodDelete,
@@ -237,35 +263,8 @@ func (c *WatchClient) Start() error {
 	}
 	synced = append(synced, reg.HasSynced)
 
-	if waitForReplicaSets {
-		go c.runInformer(c.informer, c.replicasetInformer)
-	} else {
-		go c.runInformer(c.informer)
-	}
-
-	reg, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.handleNamespaceAdd,
-		UpdateFunc: c.handleNamespaceUpdate,
-		DeleteFunc: c.handleNamespaceDelete,
-	})
-	if err != nil {
-		return err
-	}
-	synced = append(synced, reg.HasSynced)
-	go c.runInformer(c.namespaceInformer)
-
-	if c.nodeInformer != nil {
-		reg, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.handleNodeAdd,
-			UpdateFunc: c.handleNodeUpdate,
-			DeleteFunc: c.handleNodeDelete,
-		})
-		if err != nil {
-			return err
-		}
-		synced = append(synced, reg.HasSynced)
-		go c.runInformer(c.nodeInformer)
-	}
+	// start the podInformer with the prerequisite of the other informers to be finished first
+	go c.runInformer(c.informer, waitForInformers...)
 
 	if c.waitForMetadata {
 		timeoutCh := make(chan struct{})
