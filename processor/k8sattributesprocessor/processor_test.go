@@ -1296,7 +1296,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 	}
 }
 
-func TestProcessorPicksUpPassthoughPodIp(t *testing.T) {
+func TestProcessorPicksUpPassthroughPodIp(t *testing.T) {
 	m := newMultiTest(
 		t,
 		NewFactory().CreateDefaultConfig(),

@@ -50,6 +50,7 @@ var _ ottl.Key[any] = &TestKey[any]{}
 type TestKey[K any] struct {
 	S *string
 	I *int64
+	G ottl.Getter[K]
 }
 
 func (k *TestKey[K]) String(_ context.Context, _ K) (*string, error) {
@@ -58,4 +59,8 @@ func (k *TestKey[K]) String(_ context.Context, _ K) (*string, error) {
 
 func (k *TestKey[K]) Int(_ context.Context, _ K) (*int64, error) {
 	return k.I, nil
+}
+
+func (k *TestKey[K]) ExpressionGetter(_ context.Context, _ K) (ottl.Getter[K], error) {
+	return k.G, nil
 }

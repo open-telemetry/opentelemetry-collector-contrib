@@ -704,13 +704,13 @@ func Test_ProcessLogs_InferredLogContext(t *testing.T) {
 
 func Test_ProcessLogs_MixContext(t *testing.T) {
 	tests := []struct {
-		name             string
-		contextStatments []common.ContextStatements
-		want             func(td plog.Logs)
+		name              string
+		contextStatements []common.ContextStatements
+		want              func(td plog.Logs)
 	}{
 		{
 			name: "set resource and then use",
-			contextStatments: []common.ContextStatements{
+			contextStatements: []common.ContextStatements{
 				{
 					Context: "resource",
 					Statements: []string{
@@ -732,7 +732,7 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 		},
 		{
 			name: "set scope and then use",
-			contextStatments: []common.ContextStatements{
+			contextStatements: []common.ContextStatements{
 				{
 					Context: "scope",
 					Statements: []string{
@@ -754,7 +754,7 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 		},
 		{
 			name: "order matters",
-			contextStatments: []common.ContextStatements{
+			contextStatements: []common.ContextStatements{
 				{
 					Context: "log",
 					Statements: []string{
@@ -774,7 +774,7 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 		},
 		{
 			name: "reuse context",
-			contextStatments: []common.ContextStatements{
+			contextStatements: []common.ContextStatements{
 				{
 					Context: "scope",
 					Statements: []string{
@@ -805,7 +805,7 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor(tt.contextStatments, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessLogs(context.Background(), td)
