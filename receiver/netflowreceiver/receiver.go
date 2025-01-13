@@ -127,7 +127,6 @@ func (nr *netflowReceiver) buildDecodeFunc() (utils.DecoderFunc, error) {
 }
 
 // handleErrors handles errors from the listener
-// These come from the panic decoder wrapper around the decode function
 // We don't want the receiver to stop if there is an error processing a packet
 func (nr *netflowReceiver) handleErrors() {
 	for err := range nr.udpReceiver.Errors() {

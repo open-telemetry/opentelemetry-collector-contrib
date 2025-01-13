@@ -22,13 +22,10 @@ type OtelLogsProducerWrapper struct {
 	logger      *zap.Logger
 }
 
-var (
-	ErrorProducerProcessing = fmt.Errorf("unexpected error processing the message")
-)
+var ErrorProducerProcessing = fmt.Errorf("unexpected error processing the message")
 
 // Produce converts the message into a list log records and sends them to log consumer
 func (o *OtelLogsProducerWrapper) Produce(msg any, args *producer.ProduceArgs) ([]producer.ProducerMessage, error) {
-
 	if pErr := recover(); pErr != nil {
 		errMessage, _ := pErr.(string)
 		o.logger.Error("unexpected error processing the message", zap.String("error", errMessage))
