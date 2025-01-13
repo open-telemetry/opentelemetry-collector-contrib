@@ -240,7 +240,7 @@ func (c *WatchClient) Start() error {
 	go c.runInformer(c.namespaceInformer)
 
 	if c.nodeInformer != nil {
-		reg, err := c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		reg, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleNodeAdd,
 			UpdateFunc: c.handleNodeUpdate,
 			DeleteFunc: c.handleNodeDelete,
