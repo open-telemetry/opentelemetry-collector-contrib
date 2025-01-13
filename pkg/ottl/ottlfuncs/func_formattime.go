@@ -5,7 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -24,7 +24,7 @@ func createFormatTimeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argument
 	args, ok := oArgs.(*FormatTimeArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("FormatTimeFactory args must be of type *FormatTimeArguments[K]")
+		return nil, errors.New("FormatTimeFactory args must be of type *FormatTimeArguments[K]")
 	}
 
 	return FormatTime(args.Time, args.Format)
@@ -32,7 +32,7 @@ func createFormatTimeFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argument
 
 func FormatTime[K any](timeValue ottl.TimeGetter[K], format string) (ottl.ExprFunc[K], error) {
 	if format == "" {
-		return nil, fmt.Errorf("format cannot be nil")
+		return nil, errors.New("format cannot be nil")
 	}
 
 	gotimeFormat, err := timeutils.StrptimeToGotime(format)
