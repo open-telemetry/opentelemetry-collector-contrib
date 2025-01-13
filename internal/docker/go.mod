@@ -7,7 +7,7 @@ require (
 	github.com/docker/docker v27.4.1+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/confmap v1.22.1-0.20241220212031-7c2639723f67
+	go.opentelemetry.io/collector/confmap v1.23.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
