@@ -284,6 +284,76 @@ func TestLoadConfig(t *testing.T) {
 				SendOTLPHistograms:            true,
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				AccessToken: "",
+				Realm:       "ap0",
+				ClientConfig: confighttp.ClientConfig{
+					Timeout:              10 * time.Second,
+					Headers:              map[string]configopaque.String{},
+					MaxIdleConns:         &hundred,
+					MaxIdleConnsPerHost:  &hundred,
+					MaxConnsPerHost:      &defaultMaxConnsPerHost,
+					IdleConnTimeout:      &idleConnTimeout,
+					HTTP2ReadIdleTimeout: 10 * time.Second,
+					HTTP2PingTimeout:     10 * time.Second,
+				},
+				BackOffConfig: configretry.BackOffConfig{
+					Enabled:             true,
+					InitialInterval:     5 * time.Second,
+					MaxInterval:         30 * time.Second,
+					MaxElapsedTime:      5 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
+				},
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+					AccessTokenPassthrough: true,
+				},
+				LogDimensionUpdates: false,
+				DimensionClient: DimensionClientConfig{
+					MaxBuffered:         10000,
+					SendDelay:           10 * time.Second,
+					MaxIdleConns:        20,
+					MaxIdleConnsPerHost: 20,
+					MaxConnsPerHost:     20,
+					IdleConnTimeout:     30 * time.Second,
+					Timeout:             10 * time.Second,
+				},
+				TranslationRules:    nil,
+				ExcludeMetrics:      nil,
+				IncludeMetrics:      nil,
+				DeltaTranslationTTL: 3600,
+				ExcludeProperties:   nil,
+				Correlation: &correlation.Config{
+					ClientConfig: confighttp.ClientConfig{
+						Endpoint:            "",
+						Timeout:             5 * time.Second,
+						Headers:             map[string]configopaque.String{},
+						MaxIdleConns:        &defaultMaxIdleConns,
+						MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
+						MaxConnsPerHost:     &defaultMaxConnsPerHost,
+						IdleConnTimeout:     &defaultIdleConnTimeout,
+					},
+					StaleServiceTimeout: 5 * time.Minute,
+					SyncAttributes: map[string]string{
+						"k8s.pod.uid":  "k8s.pod.uid",
+						"container.id": "container.id",
+					},
+					Config: apmcorrelation.Config{
+						MaxRequests:     20,
+						MaxBuffered:     10_000,
+						MaxRetries:      2,
+						LogUpdates:      false,
+						RetryDelay:      30 * time.Second,
+						CleanupInterval: 1 * time.Minute,
+					},
+				},
+				NonAlphanumericDimensionChars: "_-.",
+				SendOTLPHistograms:            false,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -294,6 +364,114 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			// We need to add the default exclude rules.
+			assert.NoError(t, setDefaultExcludes(tt.expected))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestEmptyAccessTokenPassValidate(t *testing.T) {
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	hundred := 100
+	idleConnTimeout := 30 * time.Second
+	defaultMaxIdleConns := http.DefaultTransport.(*http.Transport).MaxIdleConns
+	defaultMaxIdleConnsPerHost := http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
+	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
+	defaultIdleConnTimeout := http.DefaultTransport.(*http.Transport).IdleConnTimeout
+
+	tests := []struct {
+		id       component.ID
+		expected *Config
+	}{
+		{
+			id: component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				AccessToken: "",
+				Realm:       "ap0",
+				ClientConfig: confighttp.ClientConfig{
+					Timeout:              10 * time.Second,
+					Headers:              map[string]configopaque.String{},
+					MaxIdleConns:         &hundred,
+					MaxIdleConnsPerHost:  &hundred,
+					MaxConnsPerHost:      &defaultMaxConnsPerHost,
+					IdleConnTimeout:      &idleConnTimeout,
+					HTTP2ReadIdleTimeout: 10 * time.Second,
+					HTTP2PingTimeout:     10 * time.Second,
+				},
+				BackOffConfig: configretry.BackOffConfig{
+					Enabled:             true,
+					InitialInterval:     5 * time.Second,
+					MaxInterval:         30 * time.Second,
+					MaxElapsedTime:      5 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
+				},
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+					AccessTokenPassthrough: true,
+				},
+				LogDimensionUpdates: false,
+				DimensionClient: DimensionClientConfig{
+					MaxBuffered:         10000,
+					SendDelay:           10 * time.Second,
+					MaxIdleConns:        20,
+					MaxIdleConnsPerHost: 20,
+					MaxConnsPerHost:     20,
+					IdleConnTimeout:     30 * time.Second,
+					Timeout:             10 * time.Second,
+				},
+				TranslationRules:    nil,
+				ExcludeMetrics:      nil,
+				IncludeMetrics:      nil,
+				DeltaTranslationTTL: 3600,
+				ExcludeProperties:   nil,
+				Correlation: &correlation.Config{
+					ClientConfig: confighttp.ClientConfig{
+						Endpoint:            "",
+						Timeout:             5 * time.Second,
+						Headers:             map[string]configopaque.String{},
+						MaxIdleConns:        &defaultMaxIdleConns,
+						MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
+						MaxConnsPerHost:     &defaultMaxConnsPerHost,
+						IdleConnTimeout:     &defaultIdleConnTimeout,
+					},
+					StaleServiceTimeout: 5 * time.Minute,
+					SyncAttributes: map[string]string{
+						"k8s.pod.uid":  "k8s.pod.uid",
+						"container.id": "container.id",
+					},
+					Config: apmcorrelation.Config{
+						MaxRequests:     20,
+						MaxBuffered:     10_000,
+						MaxRetries:      2,
+						LogUpdates:      false,
+						RetryDelay:      30 * time.Second,
+						CleanupInterval: 1 * time.Minute,
+					},
+				},
+				NonAlphanumericDimensionChars: "_-.",
+				SendOTLPHistograms:            false,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+
+			cfg.(*Config).AccessToken = ""
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			// We need to add the default exclude rules.

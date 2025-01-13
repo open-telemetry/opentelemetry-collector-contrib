@@ -215,7 +215,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 // Validate checks if the exporter configuration is valid.
 func (cfg *Config) Validate() error {
-	if cfg.AccessToken == "" {
+	if cfg.AccessToken == "" && !cfg.AccessTokenPassthrough {
 		return errors.New(`requires a non-empty "access_token"`)
 	}
 
