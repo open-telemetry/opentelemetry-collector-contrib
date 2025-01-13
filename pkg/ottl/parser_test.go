@@ -2192,7 +2192,7 @@ func Test_parseValueExpression_full(t *testing.T) {
 			name:            "hex values",
 			valueExpression: `[0x0000000000000000, 0x0000000000000000]`,
 			expected: func() any {
-				return []interface{}{
+				return []any{
 					[]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 					[]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 				}
@@ -2220,7 +2220,7 @@ func Test_parseValueExpression_full(t *testing.T) {
 			name:            "string list",
 			valueExpression: `["list", "of", "strings"]`,
 			expected: func() any {
-				return []interface{}{"list", "of", "strings"}
+				return []any{"list", "of", "strings"}
 			},
 		},
 	}
