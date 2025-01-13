@@ -109,6 +109,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				WaitForMetadataTimeout: 10 * time.Second,
 			},
+			disallowRegex: false,
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "3"),
@@ -155,6 +156,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				WaitForMetadataTimeout: 10 * time.Second,
 			},
+			disallowRegex: false,
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "too_many_sources"),
@@ -209,10 +211,10 @@ func TestLoadConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
-			if tt.disallowRegex {
-				require.NoError(t, featuregate.GlobalRegistry().Set(disallowFieldExtractConfigRegex.ID(), true))
+			if !tt.disallowRegex {
+				require.NoError(t, featuregate.GlobalRegistry().Set(disallowFieldExtractConfigRegex.ID(), false))
 				t.Cleanup(func() {
-					require.NoError(t, featuregate.GlobalRegistry().Set(disallowFieldExtractConfigRegex.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(disallowFieldExtractConfigRegex.ID(), true))
 				})
 			}
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

@@ -56,6 +56,44 @@ var portEndpoint = observer.Endpoint{
 	},
 }
 
+var config = `
+int_field: 20`
+
+var portEndpointWithHints = observer.Endpoint{
+	ID:     "namespace/pod-2-UID/redis(6379)",
+	Target: "1.2.3.4:6379",
+	Details: &observer.Port{
+		Name: "redis", Pod: observer.Pod{
+			Name:      "pod-2",
+			Namespace: "default",
+			UID:       "pod-2-UID",
+			Labels:    map[string]string{"env": "prod"},
+			Annotations: map[string]string{
+				otelMetricsHints + "/enabled": "true",
+				otelMetricsHints + "/scraper": "with_endpoint",
+				otelMetricsHints + "/config":  config,
+			},
+		},
+		Port: 6379,
+	},
+}
+
+var podContainerEndpointWithHints = observer.Endpoint{
+	ID:     "namespace/pod-2-UID/redis(6379)",
+	Target: "1.2.3.4:6379",
+	Details: &observer.PodContainer{
+		Name: "redis", Pod: observer.Pod{
+			Name:      "pod-2",
+			Namespace: "default",
+			UID:       "pod-2-UID",
+			Labels:    map[string]string{"env": "prod"},
+			Annotations: map[string]string{
+				otelLogsHints + "/enabled": "true",
+			},
+		},
+	},
+}
+
 var hostportEndpoint = observer.Endpoint{
 	ID:     "port-1",
 	Target: "localhost:1234",

@@ -61,7 +61,6 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"https://elastic.example.com:9200"},
-				Index:     "",
 				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -93,7 +92,8 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Flush: FlushSettings{
-					Bytes: 10485760,
+					Bytes:    10485760,
+					Interval: 30 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -117,7 +117,7 @@ func TestConfig(t *testing.T) {
 						MinSizeItems: 5000,
 					},
 					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 10000,
+						MaxSizeItems: 0,
 					},
 				},
 			},
@@ -132,7 +132,6 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
-				Index:     "",
 				LogsIndex: "my_log_index",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -164,7 +163,8 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Flush: FlushSettings{
-					Bytes: 10485760,
+					Bytes:    10485760,
+					Interval: 30 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -188,7 +188,7 @@ func TestConfig(t *testing.T) {
 						MinSizeItems: 5000,
 					},
 					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 10000,
+						MaxSizeItems: 0,
 					},
 				},
 			},
@@ -203,7 +203,6 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
-				Index:     "",
 				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -235,7 +234,8 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Flush: FlushSettings{
-					Bytes: 10485760,
+					Bytes:    10485760,
+					Interval: 30 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -259,7 +259,7 @@ func TestConfig(t *testing.T) {
 						MinSizeItems: 5000,
 					},
 					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 10000,
+						MaxSizeItems: 0,
 					},
 				},
 			},
@@ -279,14 +279,6 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.CloudID = "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY="
-			}),
-		},
-		{
-			id:         component.NewIDWithName(metadata.Type, "deprecated_index"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoints = []string{"https://elastic.example.com:9200"}
-				cfg.Index = "my_log_index"
 			}),
 		},
 		{
@@ -327,7 +319,6 @@ func TestConfig(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(strings.ReplaceAll(tt.id.String(), "/", "_"), func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()

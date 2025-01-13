@@ -7,7 +7,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
@@ -16,11 +16,6 @@ import (
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow")
-}
-
-// Deprecated: [v0.114.0] use Meter instead.
-func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
-	return settings.LeveledMeterProvider(level).Meter("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
@@ -100,5 +95,5 @@ func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Leve
 	if cfgLevel <= srvLevel {
 		return meter
 	}
-	return noop.Meter{}
+	return noopmetric.Meter{}
 }

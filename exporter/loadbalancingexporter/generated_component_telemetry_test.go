@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
@@ -19,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
+// Deprecated: [v0.117.0] use metadatatest.Telemetry
 type componentTestTelemetry struct {
 	reader        *sdkmetric.ManualReader
 	meterProvider *sdkmetric.MeterProvider
@@ -35,12 +35,10 @@ func (tt *componentTestTelemetry) newTelemetrySettings() component.TelemetrySett
 	set := componenttest.NewNopTelemetrySettings()
 	set.MeterProvider = tt.meterProvider
 	set.MetricsLevel = configtelemetry.LevelDetailed
-	set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
-		return tt.meterProvider
-	}
 	return set
 }
 
+// Deprecated: [v0.116.0] use metadatatest.SetupTelemetry
 func setupTestTelemetry() componentTestTelemetry {
 	reader := sdkmetric.NewManualReader()
 	return componentTestTelemetry{

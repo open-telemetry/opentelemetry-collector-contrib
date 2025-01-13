@@ -62,7 +62,7 @@ func TestExtension_Start(t *testing.T) {
 	}
 }
 
-func testOTLPMarshal(ex *otlpExtension, t *testing.T) {
+func testOTLPMarshal(t *testing.T, ex *otlpExtension) {
 	traces := generateTraces()
 	_, err := ex.MarshalTraces(traces)
 	require.NoError(t, err)
@@ -80,7 +80,7 @@ func testOTLPMarshal(ex *otlpExtension, t *testing.T) {
 	require.NoError(t, err)
 }
 
-func testOTLPUnmarshal(ex *otlpExtension, t *testing.T) {
+func testOTLPUnmarshal(t *testing.T, ex *otlpExtension) {
 	traces := generateTraces()
 	logs := generateLogs()
 	metrics := generateMetrics()
@@ -112,33 +112,33 @@ func testOTLPUnmarshal(ex *otlpExtension, t *testing.T) {
 
 func TestOTLPJSONMarshal(t *testing.T) {
 	conf := &Config{Protocol: otlpJSON}
-	ex := createAndExtension0(conf, t)
+	ex := createAndExtension0(t, conf)
 
-	testOTLPMarshal(ex, t)
+	testOTLPMarshal(t, ex)
 }
 
 func TestOTLPProtoMarshal(t *testing.T) {
 	conf := &Config{Protocol: otlpProto}
-	ex := createAndExtension0(conf, t)
+	ex := createAndExtension0(t, conf)
 
-	testOTLPMarshal(ex, t)
+	testOTLPMarshal(t, ex)
 }
 
 func TestOTLPJSONUnmarshal(t *testing.T) {
 	conf := &Config{Protocol: otlpJSON}
-	ex := createAndExtension0(conf, t)
-	testOTLPUnmarshal(ex, t)
+	ex := createAndExtension0(t, conf)
+	testOTLPUnmarshal(t, ex)
 }
 
 func TestOTLPProtoUnmarshal(t *testing.T) {
 	conf := &Config{Protocol: otlpProto}
-	ex := createAndExtension0(conf, t)
+	ex := createAndExtension0(t, conf)
 
-	testOTLPUnmarshal(ex, t)
+	testOTLPUnmarshal(t, ex)
 }
 
 // createAndExtension0 Create extension
-func createAndExtension0(c *Config, t *testing.T) *otlpExtension {
+func createAndExtension0(t *testing.T, c *Config) *otlpExtension {
 	ex, err := newExtension(c)
 	require.NoError(t, err)
 	err = ex.Start(context.TODO(), nil)
@@ -147,7 +147,7 @@ func createAndExtension0(c *Config, t *testing.T) *otlpExtension {
 }
 
 func generateTraces() ptrace.Traces {
-	var num = 10
+	num := 10
 	now := time.Now()
 	md := ptrace.NewTraces()
 	ilm := md.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
@@ -162,7 +162,7 @@ func generateTraces() ptrace.Traces {
 }
 
 func generateLogs() plog.Logs {
-	var num = 10
+	num := 10
 	md := plog.NewLogs()
 	ilm := md.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 	ilm.LogRecords().EnsureCapacity(num)
@@ -174,7 +174,7 @@ func generateLogs() plog.Logs {
 }
 
 func generateMetrics() pmetric.Metrics {
-	var num = 10
+	num := 10
 	now := time.Now()
 	startTime := pcommon.NewTimestampFromTime(now.Add(-10 * time.Second))
 	endTime := pcommon.NewTimestampFromTime(now)
@@ -194,16 +194,16 @@ func generateMetrics() pmetric.Metrics {
 }
 
 func generateProfiles() pprofile.Profiles {
-	var num = 10
+	num := 10
 	now := time.Now()
 	pd := pprofile.NewProfiles()
 	ilm := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
 	ilm.Profiles().EnsureCapacity(num)
 	for i := 0; i < num; i++ {
 		im := ilm.Profiles().AppendEmpty()
-		im.SetProfileID(pprofile.ProfileID([16]byte{0x01, 0x02, 0x03, 0x04}))
+		im.SetProfileID([16]byte{0x01, 0x02, 0x03, 0x04})
 		im.SetStartTime(pcommon.NewTimestampFromTime(now))
-		im.SetEndTime(pcommon.NewTimestampFromTime(now))
+		im.SetDuration(pcommon.NewTimestampFromTime(time.Now()))
 	}
 	return pd
 }

@@ -12,8 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type distributionsGenerator struct {
-}
+type distributionsGenerator struct{}
 
 type distOutput struct {
 	Name        string              `yaml:"name"`
@@ -54,7 +53,7 @@ func (cg distributionsGenerator) generate(data *githubData) error {
 		if err != nil {
 			return nil
 		}
-		err = os.WriteFile(filepath.Join("reports", "distributions", fmt.Sprintf("%s.yaml", dist.Name)), b, 0600)
+		err = os.WriteFile(filepath.Join("reports", "distributions", fmt.Sprintf("%s.yaml", dist.Name)), b, 0o600)
 		if err != nil {
 			return nil
 		}

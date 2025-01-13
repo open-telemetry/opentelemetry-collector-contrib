@@ -183,7 +183,7 @@ func Test_onMessage(t *testing.T) {
 			cfgState:                     &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
-			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
+			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop(), "opamp-client")),
 		}
 		require.NoError(t, s.createTemplates())
 
@@ -339,7 +339,7 @@ func Test_onMessage(t *testing.T) {
 			cfgState:                     &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
-			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
+			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop(), "opamp-client")),
 		}
 		require.NoError(t, s.createTemplates())
 
@@ -1042,12 +1042,14 @@ type mockConn struct {
 func (mockConn) Connection() net.Conn {
 	return nil
 }
+
 func (m mockConn) Send(ctx context.Context, message *protobufs.ServerToAgent) error {
 	if m.sendFunc != nil {
 		return m.sendFunc(ctx, message)
 	}
 	return nil
 }
+
 func (mockConn) Disconnect() error {
 	return nil
 }
@@ -1273,8 +1275,8 @@ service:
 		marshalledOwnMetricsCfg, err := proto.Marshal(ownMetricsCfg)
 		require.NoError(t, err)
 
-		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvRemoteConfigFile), marshalledRemoteCfg, 0600))
-		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvOwnMetricsConfigFile), marshalledOwnMetricsCfg, 0600))
+		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvRemoteConfigFile), marshalledRemoteCfg, 0o600))
+		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvOwnMetricsConfigFile), marshalledOwnMetricsCfg, 0o600))
 
 		s := Supervisor{
 			logger: zap.NewNop(),
@@ -1363,4 +1365,33 @@ service:
 
 	require.NoError(t, err)
 	require.Equal(t, expectedConfig, noopConfig)
+}
+
+func TestSupervisor_configStrictUnmarshal(t *testing.T) {
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "*")
+	require.NoError(t, err)
+
+	configuration := `
+server:
+  endpoint: ws://localhost/v1/opamp
+  tls:
+    insecure: true
+
+capabilities:
+  reports_effective_config: true
+  invalid_key: invalid_value
+`
+
+	cfgPath := filepath.Join(tmpDir, "config.yaml")
+	err = os.WriteFile(cfgPath, []byte(configuration), 0o600)
+	require.NoError(t, err)
+
+	_, err = config.Load(cfgPath)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "decoding failed")
+
+	t.Cleanup(func() {
+		require.NoError(t, os.Chmod(tmpDir, 0o700))
+		require.NoError(t, os.RemoveAll(tmpDir))
+	})
 }

@@ -7,30 +7,23 @@ import (
 	"context"
 	"os"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
 
 // This file implements Factory for FileSystem scraper.
 
-const (
-	// TypeStr the value of "type" key in configuration.
-	TypeStr = "filesystem"
-)
+// Type the value of "type" key in configuration.
+var Type = component.MustNewType("filesystem")
 
 // Factory is the Factory for scraper.
 type Factory struct{}
 
-// Type gets the type of the scraper config created by this Factory.
-func (f *Factory) Type() string {
-	return TypeStr
-}
-
 // CreateDefaultConfig creates the default configuration for the Scraper.
-func (f *Factory) CreateDefaultConfig() internal.Config {
+func (f *Factory) CreateDefaultConfig() component.Config {
 	return &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
@@ -40,11 +33,11 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	settings receiver.Settings,
-	config internal.Config,
-) (scraperhelper.Scraper, error) {
+	config component.Config,
+) (scraper.Metrics, error) {
 	cfg := config.(*Config)
 
-	if cfg.RootPath == "" {
+	if cfg.rootPath == "" {
 		inContainer := os.Getpid() == 1
 		for _, p := range []string{
 			"/.dockerenv",        // Mounted by dockerd when starting a container by default
@@ -67,5 +60,5 @@ func (f *Factory) CreateMetricsScraper(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperWithoutType(s.scrape, scraperhelper.WithStart(s.start))
+	return scraper.NewMetrics(s.scrape, scraper.WithStart(s.start))
 }

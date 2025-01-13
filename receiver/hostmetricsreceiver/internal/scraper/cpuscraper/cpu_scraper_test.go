@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
@@ -163,7 +163,6 @@ func TestScrape_CpuUtilization(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			settings := test.metricsConfig

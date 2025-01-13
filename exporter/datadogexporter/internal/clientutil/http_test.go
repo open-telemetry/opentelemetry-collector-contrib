@@ -19,12 +19,10 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
-var (
-	buildInfo = component.BuildInfo{
-		Command: "otelcontribcol",
-		Version: "1.0",
-	}
-)
+var buildInfo = component.BuildInfo{
+	Command: "otelcontribcol",
+	Version: "1.0",
+}
 
 func TestNewHTTPClient(t *testing.T) {
 	hcsEmpty := confighttp.ClientConfig{}

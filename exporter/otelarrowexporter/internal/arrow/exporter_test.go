@@ -41,9 +41,11 @@ var AllPrioritizers = []PrioritizerName{LeastLoadedPrioritizer, LeastLoadedTwoPr
 
 const defaultMaxStreamLifetime = 11 * time.Second
 
-type compareJSONTraces struct{ ptrace.Traces }
-type compareJSONMetrics struct{ pmetric.Metrics }
-type compareJSONLogs struct{ plog.Logs }
+type (
+	compareJSONTraces  struct{ ptrace.Traces }
+	compareJSONMetrics struct{ pmetric.Metrics }
+	compareJSONLogs    struct{ plog.Logs }
+)
 
 func (c compareJSONTraces) MarshalJSON() ([]byte, error) {
 	var m ptrace.JSONMarshaler
@@ -920,9 +922,7 @@ func benchmarkPrioritizer(b *testing.B, numStreams int, pname PrioritizerName) {
 
 	wg.Add(1)
 	defer func() {
-		if err := tc.exporter.Shutdown(bg); err != nil {
-			b.Errorf("shutdown failed: %v", err)
-		}
+		assert.NoError(b, tc.exporter.Shutdown(bg), "shutdown failed")
 		wg.Done()
 		wg.Wait()
 	}()
