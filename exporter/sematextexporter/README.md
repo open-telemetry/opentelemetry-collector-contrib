@@ -20,7 +20,7 @@ The following configuration options are supported:
 * `region`  Region specifies the Sematext region the user is operating in; must be one of:
   * `US`
   * `EU`
-* `app_token` specifies the token of the Sematext Monitoring App to which the user wants to send data. It must be a valid UUID string in the format `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`. For example: `2064e37c-4fac-45f6-831d-922d43fde759`.
+* `app_token` specifies the token of the Sematext Monitoring/Logs App to which the user wants to send data. It must be a valid UUID string in the format `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`. For example: `2064e37c-4fac-45f6-831d-922d43fde759`.
 * `payload_max_lines` (default = 1_000) Maximum number of lines allowed per HTTP POST request
 * `payload_max_bytes` (default = 300_000) Maximum number of bytes allowed per HTTP POST request
 * `metrics_schema` (default = telegraf-prometheus-v2) The chosen metrics schema to write
