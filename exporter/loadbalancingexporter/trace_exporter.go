@@ -69,7 +69,7 @@ func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceEx
 	case svcRoutingStr:
 		traceExporter.routingKey = resourceKeysRouting
 		traceExporter.routingResourceKeys = []string{"service.name"}
-	case resourceKeysRoutingStr:
+	case resourceKeysRoutingStr, resourceRoutingStr:
 		traceExporter.routingKey = resourceKeysRouting
 		traceExporter.routingResourceKeys = cfg.(*Config).ResourceKeys
 	case traceIDRoutingStr, "":
