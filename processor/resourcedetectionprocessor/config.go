@@ -80,7 +80,7 @@ type DetectorConfig struct {
 	// SystemConfig contains user-specified configurations for the System detector
 	SystemConfig system.Config `mapstructure:"system"`
 
-	// OpenShift contains user-specified configurations for the Openshift detector
+	// OpenShift contains user-specified configurations for the OpenShift detector
 	OpenShiftConfig openshift.Config `mapstructure:"openshift"`
 
 	// K8SNode contains user-specified configurations for the K8SNode detector

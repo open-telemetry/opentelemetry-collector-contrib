@@ -175,7 +175,7 @@ It is also possible to mix both the conventional routing configuration and the r
   - [delete_key](../../pkg/ottl/ottlfuncs/README.md#delete_key)
   - [delete_matching_keys](../../pkg/ottl/ottlfuncs/README.md#delete_matching_keys)
 
-The full list of settings exposed for this processor are documented [here](./config.go) with detailed sample configuration files:
+The full list of settings exposed for this processor are documented in [config.go](./config.go) with detailed sample configuration files:
 
 - [logs](./testdata/config_logs.yaml)
 - [metrics](./testdata/config_metrics.yaml)
