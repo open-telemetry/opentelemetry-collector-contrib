@@ -90,7 +90,7 @@ func TestLoadConfig(t *testing.T) {
 						Rule:               `type == "port"`,
 						ResourceAttributes: map[string]any{"one": "two"},
 						rule:               portRule,
-						signals:            receiverSignals{true, true, true},
+						signals:            receiverSignals{metrics: true, logs: true, traces: true},
 					},
 					"nop/1": {
 						receiverConfig: receiverConfig{
@@ -103,7 +103,7 @@ func TestLoadConfig(t *testing.T) {
 						Rule:               `type == "port"`,
 						ResourceAttributes: map[string]any{"two": "three"},
 						rule:               portRule,
-						signals:            receiverSignals{true, true, true},
+						signals:            receiverSignals{metrics: true, logs: true, traces: true},
 					},
 				},
 				WatchObservers: []component.ID{

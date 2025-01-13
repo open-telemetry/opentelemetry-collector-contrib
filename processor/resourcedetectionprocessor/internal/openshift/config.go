@@ -47,7 +47,7 @@ type Config struct {
 	Token string `mapstructure:"token"`
 
 	// TLSSettings contains TLS configurations that are specific to client
-	// connection used to communicate with the Openshift API.
+	// connection used to communicate with the OpenShift API.
 	TLSSettings configtls.ClientConfig `mapstructure:"tls"`
 
 	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`

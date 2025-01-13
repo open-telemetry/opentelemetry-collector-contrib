@@ -130,7 +130,7 @@ func createAddScraperOptions(
 	return scraperControllerOptions, nil
 }
 
-func createHostMetricsScraper(ctx context.Context, set receiver.Settings, key component.Type, cfg internal.Config, factories map[component.Type]internal.ScraperFactory) (s scraper.Metrics, ok bool, err error) {
+func createHostMetricsScraper(ctx context.Context, set receiver.Settings, key component.Type, cfg component.Config, factories map[component.Type]internal.ScraperFactory) (s scraper.Metrics, ok bool, err error) {
 	factory := factories[key]
 	if factory == nil {
 		ok = false
