@@ -1,0 +1,120 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: The current state of the service manager
+            gauge:
+              dataPoints:
+                - asInt: "3"
+                  attributes:
+                    - key: architecture
+                      value:
+                        stringValue: x86-64
+                    - key: system_state
+                      value:
+                        stringValue: running
+                    - key: systemd_version
+                      value:
+                        stringValue: "240"
+                    - key: virtualization
+                      value:
+                        stringValue: kvm
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: systemd.system_state
+            unit: '{system_state}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver
+          version: latest
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: How many jobs are currently queued
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: systemd.jobs
+            unit: '{jobs}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver
+          version: latest
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: How many jobs have ever been queued in total
+            name: systemd.installed_jobs
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3528"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{jobs}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver
+          version: latest
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: How many jobs have ever failed in total
+            name: systemd.failed_jobs
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "44"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{jobs}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: systemd.unit.name
+          value:
+            stringValue: foo.service
+    scopeMetrics:
+      - metrics:
+          - description: The errno (exit code) of the last error/exit
+            gauge:
+              dataPoints:
+                - asInt: "7"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: systemd.unit.errno
+            unit: '{errno}'
+          - description: Amount of time the unit was restarted this boot
+            name: systemd.unit.restarts
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{restarts}'
+          - description: The full state of the unit. The gauge value is the sub state, but all states (load, active, sub) are exposed as attributes
+            gauge:
+              dataPoints:
+                - asInt: "6"
+                  attributes:
+                    - key: active_state
+                      value:
+                        stringValue: active
+                    - key: load_state
+                      value:
+                        stringValue: loaded
+                    - key: sub_state
+                      value:
+                        stringValue: running
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: systemd.unit.state
+            unit: '{state}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver
+          version: latest

@@ -44,14 +44,11 @@ func createMetricsReceiver(
 		return nil, errors.New("provided configuration is invalid")
 	}
 
-	if len(config.Units) == 0 {
-		return nil, errors.New("no units provided")
-	}
-
 	localctx, cancel := context.WithCancel(ctx)
 
 	client, err := dbus.NewSystemConnectionContext(ctx)
 	if err != nil {
+		cancel()
 		return nil, err
 	}
 
@@ -64,7 +61,7 @@ func createMetricsReceiver(
 		logger: settings.TelemetrySettings.Logger,
 	}
 
-	sm, err := scraper.NewMetrics(s.scrape, scraper.WithStart(s.Start))
+	sm, err := scraper.NewMetrics(s.scrape, scraper.WithStart(s.Start), scraper.WithShutdown(s.Shutdown))
 	if err != nil {
 		return nil, err
 	}

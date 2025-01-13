@@ -8,5 +8,5 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("github.com/godbus/dbus/v5.newConn.func1"), goleak.IgnoreTopFunction("github.com/coreos/go-systemd/v22/dbus.(*Conn).dispatch.func1"))
 }

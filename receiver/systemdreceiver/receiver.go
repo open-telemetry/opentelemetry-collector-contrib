@@ -27,16 +27,16 @@ type systemdReceiver struct {
 }
 
 func newSystemdReceiver(
-	set receiver.Settings,
-	logger *zap.Logger,
+	settings receiver.Settings,
 	cfg *Config,
-) (receiver.Metrics, error) {
+	client dbusClient) *systemdReceiver {
 	r := &systemdReceiver{
-		logger: logger,
+		logger: settings.TelemetrySettings.Logger,
 		config: cfg,
-		mb:     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, set),
+		mb:     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+		client: client,
 	}
-	return r, nil
+	return r
 }
 
 func (s *systemdReceiver) Start(ctx context.Context, _ component.Host) error {
