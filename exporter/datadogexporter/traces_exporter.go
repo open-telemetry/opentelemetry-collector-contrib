@@ -45,7 +45,7 @@ var operationAndResourceNameV2FeatureGate = featuregate.GlobalRegistry().MustReg
 	"exporter.datadogexporter.EnableOperationAndResourceNameV2",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, datadogexporter uses improved logic to compute operation name and resource name."),
-	featuregate.WithRegisterFromVersion("v0.105.0"),
+	featuregate.WithRegisterFromVersion("v0.118.0"),
 )
 
 type traceExporter struct {
