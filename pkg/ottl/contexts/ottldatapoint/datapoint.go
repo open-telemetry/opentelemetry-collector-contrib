@@ -64,10 +64,8 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 
 type Option func(*ottl.Parser[TransformContext])
 
-type TransformContextOption func(*TransformContext)
-
-func NewTransformContext(dataPoint any, metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics, options ...TransformContextOption) TransformContext {
-	tc := TransformContext{
+func NewTransformContext(dataPoint any, metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) TransformContext {
+	return TransformContext{
 		dataPoint:            dataPoint,
 		metric:               metric,
 		metrics:              metrics,
@@ -76,19 +74,6 @@ func NewTransformContext(dataPoint any, metric pmetric.Metric, metrics pmetric.M
 		cache:                pcommon.NewMap(),
 		scopeMetrics:         scopeMetrics,
 		resourceMetrics:      resourceMetrics,
-	}
-	for _, opt := range options {
-		opt(&tc)
-	}
-	return tc
-}
-
-// Experimental: *NOTE* this option is subject to change or removal in the future.
-func WithCache(cache *pcommon.Map) TransformContextOption {
-	return func(p *TransformContext) {
-		if cache != nil {
-			p.cache = *cache
-		}
 	}
 }
 
@@ -304,9 +289,9 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	switch context {
 	case internal.ResourceContextName:
-		return internal.ResourcePathGetSetter(ContextName, path)
+		return internal.ResourcePathGetSetter(path)
 	case internal.InstrumentationScopeContextName:
-		return internal.ScopePathGetSetter(ContextName, path)
+		return internal.ScopePathGetSetter(path)
 	case internal.MetricContextName:
 		return internal.MetricPathGetSetter(path)
 	default:

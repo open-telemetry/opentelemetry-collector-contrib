@@ -16,7 +16,6 @@ type TestPath[K any] struct {
 	N        string
 	KeySlice []ottl.Key[K]
 	NextPath *TestPath[K]
-	FullPath string
 }
 
 func (p *TestPath[K]) Name() string {
@@ -39,9 +38,6 @@ func (p *TestPath[K]) Keys() []ottl.Key[K] {
 }
 
 func (p *TestPath[K]) String() string {
-	if p.FullPath != "" {
-		return p.FullPath
-	}
 	return p.N
 }
 

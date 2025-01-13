@@ -20,7 +20,7 @@ type ResourceContext interface {
 	GetResourceSchemaURLItem() SchemaURLItem
 }
 
-func ResourcePathGetSetter[K ResourceContext](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func ResourcePathGetSetter[K ResourceContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
 		return nil, FormatDefaultErrorMessage(ResourceContextName, ResourceContextName, "Resource", ResourceContextRef)
 	}
@@ -34,8 +34,6 @@ func ResourcePathGetSetter[K ResourceContext](lowerContext string, path ottl.Pat
 		return accessResourceDroppedAttributesCount[K](), nil
 	case "schema_url":
 		return accessResourceSchemaURLItem[K](), nil
-	case "cache":
-		return nil, FormatCacheErrorMessage(lowerContext, path.Context(), path.String())
 	default:
 		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Resource", ResourceContextRef)
 	}

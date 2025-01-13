@@ -52,10 +52,8 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 
 type Option func(*ottl.Parser[TransformContext])
 
-type TransformContextOption func(*TransformContext)
-
-func NewTransformContext(spanEvent ptrace.SpanEvent, span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSpans ptrace.ScopeSpans, resourceSpans ptrace.ResourceSpans, options ...TransformContextOption) TransformContext {
-	tc := TransformContext{
+func NewTransformContext(spanEvent ptrace.SpanEvent, span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSpans ptrace.ScopeSpans, resourceSpans ptrace.ResourceSpans) TransformContext {
+	return TransformContext{
 		spanEvent:            spanEvent,
 		span:                 span,
 		instrumentationScope: instrumentationScope,
@@ -63,19 +61,6 @@ func NewTransformContext(spanEvent ptrace.SpanEvent, span ptrace.Span, instrumen
 		cache:                pcommon.NewMap(),
 		scopeSpans:           scopeSpans,
 		resouceSpans:         resourceSpans,
-	}
-	for _, opt := range options {
-		opt(&tc)
-	}
-	return tc
-}
-
-// Experimental: *NOTE* this option is subject to change or removal in the future.
-func WithCache(cache *pcommon.Map) TransformContextOption {
-	return func(p *TransformContext) {
-		if cache != nil {
-			p.cache = *cache
-		}
 	}
 }
 
@@ -229,11 +214,11 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	switch context {
 	case internal.ResourceContextName:
-		return internal.ResourcePathGetSetter(ContextName, path)
+		return internal.ResourcePathGetSetter(path)
 	case internal.InstrumentationScopeContextName:
-		return internal.ScopePathGetSetter(ContextName, path)
+		return internal.ScopePathGetSetter(path)
 	case internal.SpanContextName:
-		return internal.SpanPathGetSetter(ContextName, path)
+		return internal.SpanPathGetSetter(path)
 	default:
 		var fullPath string
 		if path != nil {

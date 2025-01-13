@@ -3,10 +3,7 @@
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 
-import (
-	"fmt"
-	"strings"
-)
+import "fmt"
 
 const (
 	DefaultErrorMessage = "segment %q from path %q is not a valid path nor a valid OTTL keyword for the %v context - review %v to see all valid paths"
@@ -22,9 +19,4 @@ const (
 
 func FormatDefaultErrorMessage(pathSegment, fullPath, context, ref string) error {
 	return fmt.Errorf(DefaultErrorMessage, pathSegment, fullPath, context, ref)
-}
-
-func FormatCacheErrorMessage(lowerContext, pathContext, fullPath string) error {
-	pathSuggestion := strings.Replace(fullPath, pathContext+".", lowerContext+".", 1)
-	return fmt.Errorf(`access to cache must be performed using the same statement's context, please replace "%s" by "%s"`, fullPath, pathSuggestion)
 }

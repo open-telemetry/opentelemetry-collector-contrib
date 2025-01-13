@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -312,7 +311,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := ResourcePathGetSetter[*resourceContext](tt.path.Context(), tt.path)
+			accessor, err := ResourcePathGetSetter[*resourceContext](tt.path)
 			assert.NoError(t, err)
 
 			resource := createResource()
@@ -330,23 +329,6 @@ func TestResourcePathGetSetter(t *testing.T) {
 			assert.Equal(t, expectedResource, resource)
 		})
 	}
-}
-
-func TestResourcePathGetSetterCacheAccessError(t *testing.T) {
-	path := &TestPath[*resourceContext]{
-		N: "cache",
-		C: "resource",
-		KeySlice: []ottl.Key[*resourceContext]{
-			&TestKey[*resourceContext]{
-				S: ottltest.Strp("key"),
-			},
-		},
-		FullPath: "resource.cache[key]",
-	}
-
-	_, err := ResourcePathGetSetter[*resourceContext]("log", path)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), `replace "resource.cache[key]" by "log.cache[key]"`)
 }
 
 func createResource() pcommon.Resource {
