@@ -6,6 +6,7 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"net/http"
 	"sync"
 	"time"
@@ -39,14 +40,6 @@ var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, trace export uses the HTTP client from the exporter HTTP configs"),
 	featuregate.WithRegisterFromVersion("v0.105.0"),
-)
-
-var receiveResourceSpansV2FeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.EnableReceiveResourceSpansV2",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, use a refactored implementation of the span receiver which gives a 10% performance and deprecates some functionality. If you're using datadogconnector, please enable connector.datadogconnector.EnableReceiveResourceSpansV2 as well."),
-	featuregate.WithRegisterFromVersion("v0.118.0"),
-	featuregate.WithRegisterToVersion("v0.124.0"),
 )
 
 type traceExporter struct {
@@ -246,7 +239,7 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 	if cfg.Traces.ComputeTopLevelBySpanKind {
 		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
 	}
-	if receiveResourceSpansV2FeatureGate.IsEnabled() {
+	if datadog.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["enable_receive_resource_spans_v2"] = struct{}{}
 	}
 	tracelog.SetLogger(&zaplogger{params.Logger}) // TODO: This shouldn't be a singleton

@@ -6,7 +6,7 @@ package datadogconnector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/featuregate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"sync"
 	"time"
 
@@ -25,14 +25,6 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
-)
-
-var receiveResourceSpansV2FeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"connector.datadogconnector.EnableReceiveResourceSpansV2",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, use a refactored implementation of the span receiver which gives a 10% performance and deprecates some functionality. If you're using datadogexporter, please enable exporter.datadogexporter.EnableReceiveResourceSpansV2 as well."),
-	featuregate.WithRegisterFromVersion("v0.118.0"),
-	featuregate.WithRegisterToVersion("v0.124.0"),
 )
 
 // traceToMetricConnector is the schema for connector
@@ -126,7 +118,7 @@ func getTraceAgentCfg(logger *zap.Logger, cfg TracesConfig, attributesTranslator
 		logger.Info("traces::compute_top_level_by_span_kind needs to be enabled in both the Datadog connector and Datadog exporter configs if both components are being used")
 		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
 	}
-	if receiveResourceSpansV2FeatureGate.IsEnabled() {
+	if datadog.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["enable_receive_resource_spans_v2"] = struct{}{}
 	}
 	if v := cfg.BucketInterval; v > 0 {

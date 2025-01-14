@@ -115,7 +115,7 @@ func TestTracesSource(t *testing.T) {
 
 func testTracesSource(enableReceiveResourceSpansV2 bool, t *testing.T) {
 	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.EnableReceiveResourceSpansV2", true); err != nil {
+		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -262,7 +262,7 @@ func TestTraceExporter(t *testing.T) {
 
 func testTraceExporter(enableReceiveResourceSpansV2 bool, t *testing.T) {
 	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.EnableReceiveResourceSpansV2", true); err != nil {
+		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -347,7 +347,7 @@ func TestPushTraceData(t *testing.T) {
 
 func testPushTraceData(enableReceiveResourceSpansV2 bool, t *testing.T) {
 	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.EnableReceiveResourceSpansV2", true); err != nil {
+		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -399,7 +399,7 @@ func TestPushTraceData_NewEnvConvention(t *testing.T) {
 
 func testPushTraceData_NewEnvConvention(enableReceiveResourceSpansV2 bool, t *testing.T) {
 	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.EnableReceiveResourceSpansV2", true); err != nil {
+		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -444,7 +444,7 @@ func testPushTraceData_NewEnvConvention(enableReceiveResourceSpansV2 bool, t *te
 }
 
 func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *testing.T) {
-	if err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.EnableReceiveResourceSpansV2", true); err != nil {
+	if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
 		t.Fatal(err)
 	}
 
