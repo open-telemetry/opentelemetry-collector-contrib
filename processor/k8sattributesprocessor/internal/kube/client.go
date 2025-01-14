@@ -279,7 +279,7 @@ func (c *WatchClient) Start() error {
 	return nil
 }
 
-// Stop signals the the k8s watcher/informer to stop watching for new events.
+// Stop signals the k8s watcher/informer to stop watching for new events.
 func (c *WatchClient) Stop() {
 	close(c.stopCh)
 }

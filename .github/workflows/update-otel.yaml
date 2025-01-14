@@ -1,0 +1,38 @@
+name: 'Update contrib to the latest core source'
+on:
+  workflow_dispatch:
+  # TODO: Enable schedule once it's verified that the action works as expected.
+  #  schedule:
+  #    - cron: "27 21 * * *" # Run at an arbitrary time on weekdays.
+
+jobs:
+  update-otel:
+    runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'open-telemetry' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: opentelemetry-collector-contrib
+      - name: Pull the latest collector repo
+        uses: actions/checkout@v4
+        with:
+          path: opentelemetry-collector
+          repository: open-telemetry/opentelemetry-collector
+      - name: Update to latest opentelemetry-collector release
+        run: |
+          cd opentelemetry-collector-contrib
+          git config user.name opentelemetrybot
+          git config user.email 107717825+opentelemetrybot@users.noreply.github.com
+          make genotelcontribcol
+          make update-otel
+      - name: Create pull request against main
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: opentelemetrybot/update-otel
+          path: opentelemetry-collector-contrib
+          base: main
+          token: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+          commit-message: [chore] Update to latest opentelemetry-collector release.
+          title: "[chore] Update to latest opentelemetry-collector"
+          body: |
+              This PR updates the opentelemetry-collector dependency to the latest release.
