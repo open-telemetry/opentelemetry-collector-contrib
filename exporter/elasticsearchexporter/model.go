@@ -122,7 +122,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL str
 	case mapping.ModeBodyMap:
 		return m.encodeLogBodyMapMode(record)
 	default:
-		document = m.encodeLogDefaultMode(resource, record, scopeLogs.Scope())
+		document = mapping.DefaultEncoder{Mode: m.mode}.EncodeLog(resource, record, scopeLogs)
 	}
 	// For OTel mode, prefix conflicts are not a problem as otel-data has subobjects: false
 	document.Dedup(m.mode != mapping.ModeOTel)
@@ -130,27 +130,6 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL str
 	var buf bytes.Buffer
 	err := document.Serialize(&buf, m.dedot, m.mode == mapping.ModeOTel)
 	return buf.Bytes(), err
-}
-
-func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
-	var document objmodel.Document
-
-	docTimeStamp := record.Timestamp()
-	if docTimeStamp.AsTime().UnixNano() == 0 {
-		docTimeStamp = record.ObservedTimestamp()
-	}
-	document.AddTimestamp("@timestamp", docTimeStamp) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
-	document.AddTraceID("TraceId", record.TraceID())
-	document.AddSpanID("SpanId", record.SpanID())
-	document.AddInt("TraceFlags", int64(record.Flags()))
-	document.AddString("SeverityText", record.SeverityText())
-	document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
-	document.AddAttribute("Body", record.Body())
-	m.encodeAttributes(&document, record.Attributes())
-	document.AddAttributes("Resource", resource.Attributes())
-	document.AddAttributes("Scope", scopeToAttributes(scope))
-
-	return document
 }
 
 func (m *encodeModel) encodeLogBodyMapMode(record plog.LogRecord) ([]byte, error) {
