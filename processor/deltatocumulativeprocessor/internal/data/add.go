@@ -12,7 +12,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/putil/pslice"
 )
 
-const maxBuckets = 160
+var maxBuckets = 160
 
 func (dp Number) Add(in Number) Number {
 	switch in.ValueType() {

@@ -22,6 +22,10 @@ func TestExpoAdd(t *testing.T) {
 	type bins = expotest.Bins
 	obs0 := expotest.Observe0
 
+	prevMaxBuckets := maxBuckets
+	maxBuckets = 8
+	defer func() { maxBuckets = prevMaxBuckets }()
+
 	cases := []struct {
 		name   string
 		dp, in expdp
@@ -89,29 +93,89 @@ func TestExpoAdd(t *testing.T) {
 		}()},
 	}, {
 		name: "scale/no_downscale_within_limit",
-		dp:   expdp{Scale: 0, PosNeg: generateBins(10, 80, 1), Count: 160},
-		in:   expdp{Scale: 0, PosNeg: generateBins(80+10, 60, 2), Count: 120},
-		want: expdp{Scale: 0, PosNeg: generateBins(10, 80, 1, 60, 2), Count: 280},
+		dp: expdp{
+			Scale:  0,
+			PosNeg: bins{1, 1, 1, 1, 1, 1, 1, 1}.Into(),
+			Count:  8,
+		},
+		in: expdp{
+			Scale:  0,
+			PosNeg: bins{2, 2, 2, 2, 2, 2, 2, 2}.Into(),
+			Count:  16,
+		},
+		want: expdp{
+			Scale:  0,
+			PosNeg: bins{3, 3, 3, 3, 3, 3, 3, 3}.Into(),
+			Count:  24,
+		},
 	}, {
 		name: "scale/downscale_once_exceeds_limit",
-		dp:   expdp{Scale: 0, PosNeg: generateBins(0, 100, 1), Count: 200},
-		in:   expdp{Scale: 0, PosNeg: generateBins(80, 100, 2), Count: 200},
-		want: expdp{Scale: -1, PosNeg: downscaled(generateBins(0, 80, 1, 20, 3, 80, 2), 1), Count: 400},
+		dp: expdp{
+			Scale:  0,
+			PosNeg: rawbs([]uint64{1, 1, 1, 1, 1, 1, 1, 1}, 0),
+			Count:  8,
+		},
+		in: expdp{
+			Scale:  0,
+			PosNeg: rawbs([]uint64{2, 2, 2, 2, 2, 2, 2, 2}, 6),
+			Count:  16,
+		},
+		want: expdp{
+			Scale:  -1,
+			PosNeg: rawbs([]uint64{2, 2, 2, 6, 4, 4, 4}, 0),
+			Count:  24,
+		},
 	}, {
 		name: "scale/downscale_multiple_times_until_within_limit",
-		dp:   expdp{Scale: 0, PosNeg: generateBins(0, 200, 1), Count: 400},
-		in:   expdp{Scale: 0, PosNeg: generateBins(180, 200, 2), Count: 400},
-		want: expdp{Scale: -2, PosNeg: downscaled(generateBins(0, 180, 1, 20, 3, 180, 2), 2), Count: 800},
+		dp: expdp{
+			Scale:  0,
+			PosNeg: rawbs([]uint64{1, 1, 1, 1, 1, 1, 1, 1}, -6),
+			Count:  8,
+		},
+		in: expdp{
+			Scale:  0,
+			PosNeg: rawbs([]uint64{2, 2, 2, 2, 2, 2, 2, 2}, 6),
+			Count:  16,
+		},
+		want: expdp{
+			Scale:  -2,
+			PosNeg: rawbs([]uint64{2, 4, 2, 4, 8, 4}, -2),
+			Count:  24,
+		},
 	}, {
 		name: "scale/ignore_leading_trailing_zeros_in_bucket_count",
-		dp:   expdp{Scale: 0, PosNeg: generateBins(0, 10, 0, 150, 1, 10, 0), Count: 170},
-		in:   expdp{Scale: 0, PosNeg: generateBins(0, 20, 0, 120, 2, 20, 0), Count: 140},
-		want: expdp{Scale: 0, PosNeg: generateBins(10, 10, 1, 120, 3, 20, 1), Count: 310},
+		dp: expdp{
+			Scale:  0,
+			PosNeg: rawbs([]uint64{0, 0, 1, 5, 5, 1, 0, 0}, -2),
+			Count:  12,
+		},
+		in: expdp{
+			Scale:  0,
+			PosNeg: rawbs([]uint64{0, 2, 2, 3, 3, 2, 2, 0}, 0),
+			Count:  14,
+		},
+		want: expdp{
+			Scale:  0,
+			PosNeg: rawbs([]uint64{1, 7, 7, 4, 3, 2, 2}, 0),
+			Count:  26,
+		},
 	}, {
 		name: "scale/downscale_with_leading_trailing_zeros",
-		dp:   expdp{Scale: 0, PosNeg: generateBins(0, 5, 0, 180, 1, 5, 0), Count: 190},
-		in:   expdp{Scale: 0, PosNeg: generateBins(0, 10, 0, 180, 2, 10, 0), Count: 200},
-		want: expdp{Scale: -1, PosNeg: downscaled(generateBins(5, 5, 1, 175, 3, 5, 2), 1), Count: 390},
+		dp: expdp{
+			Scale:  0,
+			PosNeg: rawbs([]uint64{0, 0, 1, 10, 10, 1, 0, 0}, -4),
+			Count:  22,
+		},
+		in: expdp{
+			Scale:  0,
+			PosNeg: rawbs([]uint64{0, 0, 2, 10, 10, 2, 0, 0}, 4),
+			Count:  24,
+		},
+		want: expdp{
+			Scale:  -1,
+			PosNeg: rawbs([]uint64{11, 11, 0, 0, 12, 12}, -1),
+			Count:  46,
+		},
 	}}
 
 	for _, cs := range cases {
@@ -141,42 +205,6 @@ func TestExpoAdd(t *testing.T) {
 		}
 		t.Run(cs.name, run(cs.dp, cs.in))
 	}
-}
-
-// generateBins creates a bins slice by concatenating multiple slices with specified lengths and values.
-func generateBins(offset int, pairs ...int) expo.Buckets {
-	buckets := pmetric.NewExponentialHistogramDataPointBuckets()
-	buckets.SetOffset(int32(offset))
-	expectedLength := 0
-	for i := 0; i < len(pairs); i += 2 {
-		expectedLength += pairs[i]
-	}
-	counts := make([]uint64, 0, expectedLength)
-	for i := 0; i < len(pairs); i += 2 {
-		length, value := pairs[i], pairs[i+1]
-		for j := 0; j < length; j++ {
-			counts = append(counts, uint64(value))
-		}
-	}
-	buckets.BucketCounts().FromRaw(counts)
-	return buckets
-}
-
-func downscaled(in expo.Buckets, delta int) expo.Buckets {
-	out := pmetric.NewExponentialHistogramDataPointBuckets()
-	inOffset := in.Offset()
-	outOffset := inOffset >> delta
-	out.SetOffset(outOffset)
-	counts := make([]uint64, 0)
-	for i := 0; i < in.BucketCounts().Len(); i++ {
-		j := int(((inOffset + int32(i)) >> delta) - outOffset)
-		for len(counts) <= j {
-			counts = append(counts, 0)
-		}
-		counts[j] += in.BucketCounts().At(i)
-	}
-	out.BucketCounts().FromRaw(counts)
-	return out
 }
 
 func rawbs(data []uint64, offset int32) expo.Buckets {
