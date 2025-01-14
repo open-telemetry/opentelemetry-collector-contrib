@@ -17,7 +17,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 )
 
@@ -41,7 +40,7 @@ func Test_ProcessScrape(t *testing.T) {
 					Config: filterset.Config{MatchType: filterset.Regexp},
 					Names:  []string{"sleep"},
 				}
-				rCfg.Scrapers = map[component.Type]internal.Config{
+				rCfg.Scrapers = map[component.Type]component.Config{
 					processscraper.Type: pCfg,
 				}
 			}),
@@ -71,8 +70,7 @@ func Test_ProcessScrapeWithCustomRootPath(t *testing.T) {
 				rCfg.CollectionInterval = time.Second
 				rCfg.RootPath = rootPath
 				pCfg := (&processscraper.Factory{}).CreateDefaultConfig().(*processscraper.Config)
-				pCfg.SetRootPath(rootPath)
-				rCfg.Scrapers = map[component.Type]internal.Config{
+				rCfg.Scrapers = map[component.Type]component.Config{
 					processscraper.Type: pCfg,
 				}
 			}),
@@ -99,12 +97,11 @@ func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
+				rCfg.RootPath = badRootPath
 				pCfg := (&processscraper.Factory{}).CreateDefaultConfig().(*processscraper.Config)
-				pCfg.SetRootPath(badRootPath)
-				rCfg.Scrapers = map[component.Type]internal.Config{
+				rCfg.Scrapers = map[component.Type]component.Config{
 					processscraper.Type: pCfg,
 				}
-				rCfg.RootPath = badRootPath
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(

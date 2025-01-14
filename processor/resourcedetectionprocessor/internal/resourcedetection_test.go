@@ -119,7 +119,7 @@ func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
-func TestDetectResource_DetectoryFactoryError(t *testing.T) {
+func TestDetectResource_DetectorFactoryError(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{
 		mockDetectorKey: func(processor.Settings, DetectorConfig) (Detector, error) {

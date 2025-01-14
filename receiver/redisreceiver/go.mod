@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.117.0
 	github.com/redis/go-redis/v9 v9.7.0
 	github.com/stretchr/testify v1.10.0
-	github.com/testcontainers/testcontainers-go v0.34.0
+	github.com/testcontainers/testcontainers-go v0.35.0
 	go.opentelemetry.io/collector/component v0.117.0
 	go.opentelemetry.io/collector/component/componenttest v0.117.0
 	go.opentelemetry.io/collector/config/confignet v1.23.0

@@ -1,0 +1,9 @@
+type: resourcedetectionprocessor/kubeadm
+
+parent: resourcedetection
+
+resource_attributes:
+  k8s.cluster.name:
+    description: The Kubernetes cluster name
+    type: string
+    enabled: true

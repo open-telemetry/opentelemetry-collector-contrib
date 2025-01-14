@@ -12,7 +12,7 @@ The `severity_parser` operator sets the severity on an entry by parsing a value 
 | `on_error`       | `send`            | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md). |
 | `preset`         | `default`         | A predefined set of values that should be interpreted at specific severity levels. |
 | `mapping`        |                   | A formatted set of values that should be interpreted as severity levels. |
-| `overwrite_with` | `false`           | If `true`, the severity text will be set to the [standard short name](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#displaying-severity) corresponding to the severity number. |
+| `overwrite_text` | `false`           | If `true`, the severity text will be set to the [standard short name](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#displaying-severity) corresponding to the severity number. |
 | `if`             |                   | An [expression](../types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 
 ### Example Configurations

@@ -199,7 +199,7 @@ var midpointAlgorithm distAlgorithm = func(count uint64,
 	(*bucketCountsDst)[len(boundaries)-1] += count // Overflow bucket
 }
 
-// uniformAlgorithm distributes counts from a given set of bucket sounrces into a set of linear boundaries using uniform distribution
+// uniformAlgorithm distributes counts from a given set of bucket sources into a set of linear boundaries using uniform distribution
 var uniformAlgorithm distAlgorithm = func(count uint64,
 	upper, lower float64, boundaries []float64,
 	bucketCountsDst *[]uint64,

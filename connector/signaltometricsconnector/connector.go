@@ -23,8 +23,9 @@ import (
 )
 
 type signalToMetrics struct {
-	next   consumer.Metrics
-	logger *zap.Logger
+	next                  consumer.Metrics
+	collectorInstanceInfo *model.CollectorInstanceInfo
+	logger                *zap.Logger
 
 	spanMetricDefs []model.MetricDef[ottlspan.TransformContext]
 	dpMetricDefs   []model.MetricDef[ottldatapoint.TransformContext]
@@ -75,7 +76,7 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 						}
 					}
 
-					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs)
+					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
 					if err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredSpanAttrs, 1); err != nil {
 						return err
 					}
@@ -104,7 +105,7 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 				metrics := scopeMetric.Metrics()
 				metric := metrics.At(k)
 				for _, md := range sm.dpMetricDefs {
-					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs)
+					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
 					aggregate := func(dp any, dpAttrs pcommon.Map) error {
 						// The transform context is created from original attributes so that the
 						// OTTL expressions are also applied on the original attributes.
@@ -230,7 +231,7 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 							continue
 						}
 					}
-					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs)
+					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs, sm.collectorInstanceInfo)
 					if err := aggregator.Aggregate(ctx, tCtx, md, filteredResAttrs, filteredLogAttrs, 1); err != nil {
 						return err
 					}

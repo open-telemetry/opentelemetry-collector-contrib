@@ -61,24 +61,6 @@ func TestFactory_CreateTraces(t *testing.T) {
 	require.NoError(t, exporter.Shutdown(context.Background()))
 }
 
-func TestFactory_CreateLogsAndTracesExporterWithDeprecatedIndexOption(t *testing.T) {
-	factory := NewFactory()
-	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoints = []string{"http://test:9200"}
-		cfg.Index = "test_index"
-	})
-	params := exportertest.NewNopSettings()
-	logsExporter, err := factory.CreateLogs(context.Background(), params, cfg)
-	require.NoError(t, err)
-	require.NotNil(t, logsExporter)
-	require.NoError(t, logsExporter.Shutdown(context.Background()))
-
-	tracesExporter, err := factory.CreateTraces(context.Background(), params, cfg)
-	require.NoError(t, err)
-	require.NotNil(t, tracesExporter)
-	require.NoError(t, tracesExporter.Shutdown(context.Background()))
-}
-
 func TestFactory_DedupDeprecated(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {

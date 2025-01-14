@@ -33,7 +33,7 @@ attributes/regex_insert:
     # http_path: path
     # http_query_params=queryParam1=value1,queryParam2=value2
     # http.url value does NOT change.
-    # Note: Similar to the Span Procesor, if a target key already exists,
+    # Note: Similar to the Span Processor, if a target key already exists,
     # it will be updated.
     - key: "http.url"
       pattern: ^(?P<http_protocol>.*):\/\/(?P<http_domain>.*)\/(?P<http_path>.*)(\?|\&)(?P<http_query_params>.*)

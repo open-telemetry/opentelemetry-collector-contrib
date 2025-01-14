@@ -60,11 +60,11 @@ func createDefaultConfig() component.Config {
 			ThriftHTTP: &confighttp.ServerConfig{
 				Endpoint: defaultHTTPEndpoint,
 			},
-			ThriftBinary: &ProtocolUDP{
+			ThriftBinaryUDP: &ProtocolUDP{
 				Endpoint:        defaultThriftBinaryEndpoint,
 				ServerConfigUDP: defaultServerConfigUDP(),
 			},
-			ThriftCompact: &ProtocolUDP{
+			ThriftCompactUDP: &ProtocolUDP{
 				Endpoint:        defaultThriftCompactEndpoint,
 				ServerConfigUDP: defaultServerConfigUDP(),
 			},
@@ -85,28 +85,10 @@ func createTracesReceiver(
 
 	rCfg := cfg.(*Config)
 
-	var config configuration
-	// Set ports
-	if rCfg.Protocols.GRPC != nil {
-		config.GRPCServerConfig = *rCfg.Protocols.GRPC
-	}
-
-	if rCfg.Protocols.ThriftHTTP != nil {
-		config.HTTPServerConfig = *rCfg.ThriftHTTP
-	}
-
-	if rCfg.Protocols.ThriftBinary != nil {
-		config.AgentBinaryThrift = *rCfg.ThriftBinary
-	}
-
-	if rCfg.Protocols.ThriftCompact != nil {
-		config.AgentCompactThrift = *rCfg.ThriftCompact
-	}
-
 	if rCfg.RemoteSampling != nil {
 		set.Logger.Warn("You are using a deprecated no-op `remote_sampling` option which will be removed soon; use a `jaegerremotesampling` extension instead")
 	}
 
 	// Create the receiver.
-	return newJaegerReceiver(set.ID, &config, nextConsumer, set)
+	return newJaegerReceiver(set.ID, rCfg.Protocols, nextConsumer, set)
 }

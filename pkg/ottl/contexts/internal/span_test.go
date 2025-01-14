@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -603,7 +604,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := SpanPathGetSetter[*spanContext](tt.path)
+			accessor, err := SpanPathGetSetter[*spanContext](tt.path.Context(), tt.path)
 			assert.NoError(t, err)
 
 			span := createSpan()
@@ -621,6 +622,23 @@ func TestSpanPathGetSetter(t *testing.T) {
 			assert.Equal(t, expectedSpan, span)
 		})
 	}
+}
+
+func TestSpanPathGetSetterCacheAccessError(t *testing.T) {
+	path := &TestPath[*spanContext]{
+		N: "cache",
+		C: "span",
+		KeySlice: []ottl.Key[*spanContext]{
+			&TestKey[*spanContext]{
+				S: ottltest.Strp("key"),
+			},
+		},
+		FullPath: "span.cache[key]",
+	}
+
+	_, err := SpanPathGetSetter[*spanContext]("spanevent", path)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `replace "span.cache[key]" with "spanevent.cache[key]"`)
 }
 
 func createSpan() ptrace.Span {

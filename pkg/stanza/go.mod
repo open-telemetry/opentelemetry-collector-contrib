@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
 go 1.22.0
 
 require (
-	github.com/bmatcuk/doublestar/v4 v4.7.1
+	github.com/bmatcuk/doublestar/v4 v4.8.0
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/expr-lang/expr v1.16.9
 	github.com/fsnotify/fsnotify v1.8.0
