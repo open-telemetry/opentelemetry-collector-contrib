@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/mapping"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
 
@@ -49,7 +50,7 @@ func newExporter(
 		mode:  cfg.MappingMode(),
 	}
 
-	otel := model.mode == MappingOTel
+	otel := model.mode == mapping.ModeOTel
 
 	userAgent := fmt.Sprintf(
 		"%s/%s (%s/%s)",

@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/mapping"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
 
@@ -96,7 +97,7 @@ func TestEncodeMetric(t *testing.T) {
 	// Encode the metrics.
 	model := &encodeModel{
 		dedot: true,
-		mode:  MappingECS,
+		mode:  mapping.ModeECS,
 	}
 
 	docs := make(map[uint32]objmodel.Document)
@@ -208,17 +209,17 @@ func TestEncodeAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := map[string]struct {
-		mappingMode MappingMode
+		mappingMode mapping.Mode
 		want        func() objmodel.Document
 	}{
 		"raw": {
-			mappingMode: MappingRaw,
+			mappingMode: mapping.ModeRaw,
 			want: func() objmodel.Document {
 				return objmodel.DocumentFromAttributes(attributes)
 			},
 		},
 		"none": {
-			mappingMode: MappingNone,
+			mappingMode: mapping.ModeNone,
 			want: func() objmodel.Document {
 				doc := objmodel.Document{}
 				doc.AddAttributes("Attributes", attributes)
@@ -226,7 +227,7 @@ func TestEncodeAttributes(t *testing.T) {
 			},
 		},
 		"ecs": {
-			mappingMode: MappingECS,
+			mappingMode: mapping.ModeECS,
 			want: func() objmodel.Document {
 				doc := objmodel.Document{}
 				doc.AddAttributes("Attributes", attributes)
@@ -260,11 +261,11 @@ func TestEncodeEvents(t *testing.T) {
 	}
 
 	tests := map[string]struct {
-		mappingMode MappingMode
+		mappingMode mapping.Mode
 		want        func() objmodel.Document
 	}{
 		"raw": {
-			mappingMode: MappingRaw,
+			mappingMode: mapping.ModeRaw,
 			want: func() objmodel.Document {
 				doc := objmodel.Document{}
 				doc.AddEvents("", events)
@@ -272,7 +273,7 @@ func TestEncodeEvents(t *testing.T) {
 			},
 		},
 		"none": {
-			mappingMode: MappingNone,
+			mappingMode: mapping.ModeNone,
 			want: func() objmodel.Document {
 				doc := objmodel.Document{}
 				doc.AddEvents("Events", events)
@@ -280,7 +281,7 @@ func TestEncodeEvents(t *testing.T) {
 			},
 		},
 		"ecs": {
-			mappingMode: MappingECS,
+			mappingMode: mapping.ModeECS,
 			want: func() objmodel.Document {
 				doc := objmodel.Document{}
 				doc.AddEvents("Events", events)
@@ -333,7 +334,7 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	record.SetObservedTimestamp(observedTimestamp)
 
 	m := encodeModel{
-		mode:  MappingECS,
+		mode:  mapping.ModeECS,
 		dedot: true,
 	}
 	doc, err := m.encodeLog(resource, "", record, scope, "")
@@ -1105,7 +1106,7 @@ func TestEncodeLogOtelMode(t *testing.T) {
 
 	m := encodeModel{
 		dedot: true, // default
-		mode:  MappingOTel,
+		mode:  mapping.ModeOTel,
 	}
 
 	for _, tc := range tests {

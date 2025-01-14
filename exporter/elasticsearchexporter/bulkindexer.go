@@ -18,6 +18,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/mapping"
 )
 
 type bulkIndexer interface {
@@ -79,7 +81,7 @@ func bulkIndexerConfig(client *elasticsearch.Client, config *Config) docappender
 		MaxDocumentRetries:    maxDocRetries,
 		Pipeline:              config.Pipeline,
 		RetryOnDocumentStatus: config.Retry.RetryOnStatus,
-		RequireDataStream:     config.MappingMode() == MappingOTel,
+		RequireDataStream:     config.MappingMode() == mapping.ModeOTel,
 		CompressionLevel:      compressionLevel,
 	}
 }

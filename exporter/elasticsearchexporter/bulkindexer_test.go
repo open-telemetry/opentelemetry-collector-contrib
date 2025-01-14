@@ -20,6 +20,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/mapping"
 )
 
 var defaultRoundTripFunc = func(*http.Request) (*http.Response, error) {
@@ -121,7 +123,7 @@ func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
 			name: "ecs",
 			config: Config{
 				NumWorkers: 1,
-				Mapping:    MappingsSettings{Mode: MappingECS.String()},
+				Mapping:    MappingsSettings{Mode: mapping.ModeECS.String()},
 				Flush:      FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 			wantRequireDataStream: false,
@@ -130,7 +132,7 @@ func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
 			name: "otel",
 			config: Config{
 				NumWorkers: 1,
-				Mapping:    MappingsSettings{Mode: MappingOTel.String()},
+				Mapping:    MappingsSettings{Mode: mapping.ModeOTel.String()},
 				Flush:      FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 			wantRequireDataStream: true,
