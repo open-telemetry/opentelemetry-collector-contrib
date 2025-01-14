@@ -1,0 +1,9 @@
+firehose_encoding:
+
+firehose_encoding/logs_invalid_encoding:
+  logs:
+    content_encoding: invalid
+
+firehose_encoding/metrics_invalid_encoding:
+  metrics:
+    content_encoding: invalid

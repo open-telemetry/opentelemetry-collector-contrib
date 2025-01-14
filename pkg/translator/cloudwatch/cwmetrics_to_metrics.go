@@ -1,18 +1,17 @@
-package cloudwatch // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/cloudwatch"
+package cloudwatch
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	expmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"io"
 	"strings"
 	"time"
-
-	expmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 // The cloudwatchMetric is the format for the CloudWatch metric stream records.
@@ -37,6 +36,8 @@ type cloudwatchMetricValue struct {
 	Min   float64 `json:"min"`
 	Sum   float64 `json:"sum"`
 	Count float64 `json:"count"`
+	Q1    float64 `json:"p99"`
+	Q2    float64 `json:"p99.9"`
 }
 
 const (
@@ -45,13 +46,21 @@ const (
 	namespaceDelimiter                     = "/"
 )
 
-var (
-	errInvalidMetricRecord = errors.New("no resource metrics were obtained from the record")
-)
-
 // isMetricValid validates that the cloudwatch metric has been unmarshalled correctly
-func isMetricValid(metric cloudwatchMetric) bool {
-	return metric.MetricName != "" && metric.Namespace != "" && metric.Unit != "" && metric.Value != nil
+func isMetricValid(metric cloudwatchMetric) (bool, error) {
+	if metric.MetricName == "" {
+		return false, errors.New("cloudwatch metric is missing metric name field")
+	}
+	if metric.Namespace == "" {
+		return false, errors.New("cloudwatch metric is missing namespace field")
+	}
+	if metric.Unit == "" {
+		return false, errors.New("cloudwatch metric is missing unit field")
+	}
+	if metric.Value == nil {
+		return false, errors.New("cloudwatch metric is missing value")
+	}
+	return true, nil
 }
 
 // setResourceAttributes sets attributes on a pcommon.Resource from a cwMetric.
@@ -72,14 +81,15 @@ func setResourceAttributes(m cloudwatchMetric, resource pcommon.Resource) {
 // if prepended by AWS/. Otherwise, it returns the CloudWatch namespace as the
 // service name with an empty service namespace
 func toServiceAttributes(namespace string) (serviceNamespace, serviceName string) {
-	index := strings.Index(namespace, namespaceDelimiter)
-	if index != -1 && strings.EqualFold(namespace[:index], conventions.AttributeCloudProviderAWS) {
-		return namespace[:index], namespace[index+1:]
+	if strings.HasPrefix(namespace, strings.ToUpper(conventions.AttributeCloudProviderAWS)+"/") {
+		parts := strings.SplitN(namespace, namespaceDelimiter, 2)
+		return parts[0], parts[1]
 	}
 	return "", namespace
 }
 
-// setResourceAttributes sets attributes on a metric data point from a cloudwatchMetric.
+// setResourceAttributes sets attributes on a metric data point from
+// a cloudwatchMetric dimensions
 func setDataPointAttributes(m cloudwatchMetric, dp pmetric.SummaryDataPoint) {
 	attrs := dp.Attributes()
 	for k, v := range m.Dimensions {
@@ -92,7 +102,42 @@ func setDataPointAttributes(m cloudwatchMetric, dp pmetric.SummaryDataPoint) {
 	}
 }
 
-func UnmarshalMetrics(record []byte, logger *zap.Logger) (pmetric.Metrics, error) {
+// addMetric transforms the cloudwatch metric to pmetric.Metric
+// and appends it to pmetric.Metrics
+func addMetric(cwMetric cloudwatchMetric, metrics pmetric.Metrics) {
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	setResourceAttributes(cwMetric, rm.Resource())
+
+	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetName(cwMetric.MetricName)
+	metric.SetUnit(cwMetric.Unit)
+
+	dp := metric.SetEmptySummary().DataPoints().AppendEmpty()
+	dp.SetCount(uint64(cwMetric.Value.Count))
+	dp.SetSum(cwMetric.Value.Sum)
+	qv := dp.QuantileValues()
+	qvs := qv.AppendEmpty()
+	qvs.SetQuantile(99)
+	qvs.SetValue(cwMetric.Value.Q1)
+	qvs = qv.AppendEmpty()
+	qvs.SetQuantile(99.9)
+	qvs.SetValue(cwMetric.Value.Q2)
+	qvs = qv.AppendEmpty()
+	qvs.SetQuantile(0)
+	qvs.SetValue(cwMetric.Value.Min)
+	qvs = qv.AppendEmpty()
+	qvs.SetQuantile(100)
+	qvs.SetValue(cwMetric.Value.Max)
+
+	// all dimensions are metric attributes
+	setDataPointAttributes(cwMetric, dp)
+
+	// cloudwatch timestamp is in ms, but the metric
+	// expects it in ns
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(cwMetric.Timestamp)))
+}
+
+func UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 	decoder := json.NewDecoder(bytes.NewReader(record))
 	metrics := pmetric.NewMetrics()
 	for datumIndex := 0; ; datumIndex++ {
@@ -101,43 +146,18 @@ func UnmarshalMetrics(record []byte, logger *zap.Logger) (pmetric.Metrics, error
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			logger.Error(
-				"Unable to unmarshal input",
-				zap.Int("datum_index", datumIndex),
-				zap.Error(err),
-			)
-			continue
+			return pmetric.Metrics{},
+				fmt.Errorf("unable to unmarshal datum [%d] into cloudwatch metric: %w", datumIndex, err)
 		}
-		if !isMetricValid(cwMetric) {
-			logger.Error(
-				"Invalid cloudwatch cwMetric",
-				zap.Int("datum_index", datumIndex),
-			)
-			continue
+		if valid, err := isMetricValid(cwMetric); !valid {
+			return pmetric.Metrics{},
+				fmt.Errorf("cloudwatch metric from datum [%d] is invalid: %w", datumIndex, err)
 		}
-
-		rm := metrics.ResourceMetrics().AppendEmpty()
-		setResourceAttributes(cwMetric, rm.Resource())
-
-		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-		metric.SetName(cwMetric.MetricName)
-		metric.SetUnit(cwMetric.Unit)
-
-		dp := metric.SetEmptySummary().DataPoints().AppendEmpty()
-		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(cwMetric.Timestamp)))
-		setDataPointAttributes(cwMetric, dp)
-		dp.SetCount(uint64(cwMetric.Value.Count))
-		dp.SetSum(cwMetric.Value.Sum)
-		minQ := dp.QuantileValues().AppendEmpty()
-		minQ.SetQuantile(0)
-		minQ.SetValue(cwMetric.Value.Min)
-		maxQ := dp.QuantileValues().AppendEmpty()
-		maxQ.SetQuantile(1)
-		maxQ.SetValue(cwMetric.Value.Max)
+		addMetric(cwMetric, metrics)
 	}
 
 	if metrics.MetricCount() == 0 {
-		return metrics, errInvalidMetricRecord
+		return metrics, errors.New("no resource metrics could be obtained from the record")
 	}
 
 	metrics = expmetrics.Merge(pmetric.NewMetrics(), metrics)

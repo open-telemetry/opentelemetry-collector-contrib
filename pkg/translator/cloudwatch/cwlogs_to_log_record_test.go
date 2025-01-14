@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
-	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
-func TestUnmarshalMetrics(t *testing.T) {
+func TestUnmarshalLogs(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]struct {
@@ -26,32 +26,29 @@ func TestUnmarshalMetrics(t *testing.T) {
 		"MultipleRecords": {
 			filename: "multiple_records",
 		},
-		"MultipleResources": {
-			filename: "multiple_resources",
-		},
 		"InvalidRecord": {
 			filename: "invalid_record",
 			err: fmt.Errorf(
-				"cloudwatch metric from datum [0] is invalid: %w",
-				errors.New("cloudwatch metric is missing metric name field"),
+				"cloudwatch log from datum [0] is invalid: %w",
+				errors.New("cloudwatch log is missing timestamp field"),
 			),
 		},
 		"SomeInvalidRecord": {
 			filename: "some_invalid_record",
 			err: fmt.Errorf(
-				"cloudwatch metric from datum [1] is invalid: %w",
-				errors.New("cloudwatch metric is missing metric name field"),
+				"cloudwatch log from datum [1] is invalid: %w",
+				errors.New("cloudwatch log is missing timestamp field"),
 			),
 		},
 		"EmptyRecord": {
 			filename: "empty_record",
-			err:      errors.New("no resource metrics could be obtained from the record"),
+			err:      errors.New("no log records could be obtained from the record"),
 		},
 	}
-	unmarshaller := &pmetric.JSONUnmarshaler{}
+	unmarshaller := &plog.JSONUnmarshaler{}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			content, err := os.ReadFile(filepath.Join("testdata/metric", testCase.filename+".json"))
+			content, err := os.ReadFile(filepath.Join("testdata/log", testCase.filename+".json"))
 			require.NoError(t, err)
 			// since new line represents the end of the record, we
 			// need to remove all new lines from the json file, so
@@ -63,18 +60,20 @@ func TestUnmarshalMetrics(t *testing.T) {
 				require.NoError(t, err)
 				return true
 			})
-			result, err := UnmarshalMetrics(buf.Bytes())
+			result, err := UnmarshalLogs(buf.Bytes())
 			require.Equal(t, testCase.err, err)
 			if err != nil {
 				return
 			}
 
-			content, err = os.ReadFile(filepath.Join("testdata/metric", testCase.filename+"_expected.json"))
+			content, err = os.ReadFile(filepath.Join("testdata/log", testCase.filename+"_expected.json"))
 			require.NoError(t, err)
-			expected, err := unmarshaller.UnmarshalMetrics(content)
+			expected, err := unmarshaller.UnmarshalLogs(content)
 			require.NoError(t, err)
 
-			require.Equal(t, expected, result)
+			// get log records
+			expectedLogs := expected.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+			require.Equal(t, expectedLogs, result)
 		})
 	}
 }

@@ -1,0 +1,26 @@
+{
+  "resourceLogs":[
+    {
+      "resource":{
+
+      },
+      "scopeLogs":[
+        {
+          "scope":{
+
+          },
+          "logRecords":[
+            {
+              "timeUnixNano":"1725544035523000000",
+              "body":{
+                "stringValue":"Hello world!"
+              },
+              "traceId":"",
+              "spanId":""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

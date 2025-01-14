@@ -1,0 +1,34 @@
+[
+  {
+    "messageType":"DATA_MESSAGE",
+    "owner":"1234567890",
+    "logGroup":"test",
+    "logStream":"test-log-stream-1",
+    "subscriptionFilters":[
+      "logs filter"
+    ],
+    "logEvents":[
+      {
+        "id":"38480917865042697267627490045603633139480491071049695232",
+        "timestamp":1725544035523,
+        "message":"Hello world!"
+      }
+    ]
+  },
+  {
+    "messageType":"DATA_MESSAGE",
+    "owner":"1234567890",
+    "logGroup":"test",
+    "logStream":"test-log-stream-1",
+    "subscriptionFilters":[
+      "logs filter"
+    ],
+    "logEvents":[
+      {
+        "id":"38480917865042697267627490045603633139480491071049695232",
+        "timestamp":1725544035523,
+        "message":"Hello world!"
+      }
+    ]
+  }
+]

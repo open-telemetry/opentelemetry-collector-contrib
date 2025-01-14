@@ -1,0 +1,19 @@
+{
+  "messageType":"DATA_MESSAGE",
+  "owner":"1234567890",
+  "logGroup":"vpc-flow-logs",
+  "logStream":"test-log-stream",
+  "subscriptionFilters":[
+    "vpc flow logs filter"
+  ],
+  "logEvents":[
+    {
+      "id":"111",
+      "timestamp":1646096348000,
+      "message":"REJECT",
+      "extractedFields":{
+        "action":"REJECT"
+      }
+    }
+  ]
+}

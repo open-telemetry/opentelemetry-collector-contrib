@@ -1,0 +1,10 @@
+{
+  "messageType":"DATA_MESSAGE",
+  "owner":"1234567890",
+  "logGroup":"test",
+  "logStream":"test-log-stream",
+  "subscriptionFilters":[
+    "test logs filter"
+  ],
+  "logEvents":[]
+}
