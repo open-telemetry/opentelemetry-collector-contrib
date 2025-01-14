@@ -116,9 +116,8 @@ func Collapse(bs Buckets) {
 	}
 }
 
-// Limit computes how many times the histograms need to be downscaled to ensure
-// the bucket range after their merge fits within maxBuckets.
-// This logic assumes that trailing and leading zeros are going to be removed.
+// Limit returns a delta Scale that when be downscaled by,
+// the total bucket count after [Merge] never exceeds maxBuckets.
 func Limit(maxBuckets int, arel, brel pmetric.ExponentialHistogramDataPointBuckets) Scale {
 	a, b := Abs(arel), Abs(brel)
 
