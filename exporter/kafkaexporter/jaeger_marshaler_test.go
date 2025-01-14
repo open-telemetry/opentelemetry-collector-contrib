@@ -38,32 +38,57 @@ func TestJaegerMarshaler(t *testing.T) {
 	require.NoError(t, jsonMarshaler.Marshal(jsonByteBuffer, batches[0].Spans[0]))
 
 	tests := []struct {
-		unmarshaler TracesMarshaler
+		name        string
+		unmarshaler jaegerMarshaler
 		encoding    string
-		messages    []*sarama.ProducerMessage
+		messages    []*ProducerMessageChunks
 	}{
 		{
+			name: "proto_marshaler",
 			unmarshaler: jaegerMarshaler{
-				marshaler: jaegerProtoSpanMarshaler{},
+				marshaler:       jaegerProtoSpanMarshaler{},
+				maxMessageBytes: defaultProducerMaxMessageBytes,
 			},
 			encoding: "jaeger_proto",
-			messages: []*sarama.ProducerMessage{{Topic: "topic", Value: sarama.ByteEncoder(jaegerProtoBytes), Key: sarama.ByteEncoder(messageKey)}},
+			messages: []*ProducerMessageChunks{
+				{
+					Messages: []*sarama.ProducerMessage{
+						{
+							Topic: "topic",
+							Value: sarama.ByteEncoder(jaegerProtoBytes),
+							Key:   sarama.ByteEncoder(messageKey),
+						},
+					},
+				},
+			},
 		},
 		{
+			name: "json_marshaler",
 			unmarshaler: jaegerMarshaler{
 				marshaler: jaegerJSONSpanMarshaler{
 					pbMarshaler: &jsonpb.Marshaler{},
 				},
+				maxMessageBytes: defaultProducerMaxMessageBytes,
 			},
 			encoding: "jaeger_json",
-			messages: []*sarama.ProducerMessage{{Topic: "topic", Value: sarama.ByteEncoder(jsonByteBuffer.Bytes()), Key: sarama.ByteEncoder(messageKey)}},
+			messages: []*ProducerMessageChunks{
+				{
+					Messages: []*sarama.ProducerMessage{
+						{
+							Topic: "topic",
+							Value: sarama.ByteEncoder(jsonByteBuffer.Bytes()),
+							Key:   sarama.ByteEncoder(messageKey),
+						},
+					},
+				},
+			},
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.encoding, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			msg, err := test.unmarshaler.Marshal(td, "topic")
 			require.NoError(t, err)
-			assert.Equal(t, test.messages, msg[0])
+			assert.Equal(t, test.messages, msg)
 			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
 		})
 	}
