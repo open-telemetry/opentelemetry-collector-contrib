@@ -76,6 +76,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - [Braydon Kains](https://github.com/braydonk), Google
+- [James Moessis](https://github.com/jamesmoessis), Atlassian
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:
