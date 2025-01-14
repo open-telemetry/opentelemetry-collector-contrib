@@ -16,7 +16,17 @@ var (
 	errNoStartTimeMetrics             = errors.New("start_time metric is missing")
 	errNoDataPointsStartTimeMetric    = errors.New("start time metric with no data points")
 	errUnsupportedTypeStartTimeMetric = errors.New("unsupported data type for start time metric")
+
+	// approximateCollectorStartTime is the approximate start time of the collector. Used
+	// as a fallback start time for metrics that don't have a start time set.
+	// Set when the component is initialized.
+	approximateCollectorStartTime *time.Time
 )
+
+func init() {
+	now := time.Now()
+	approximateCollectorStartTime = &now
+}
 
 type startTimeMetricAdjuster struct {
 	startTimeMetricRegex *regexp.Regexp
@@ -28,8 +38,7 @@ type startTimeMetricAdjuster struct {
 func NewStartTimeMetricAdjuster(logger *zap.Logger, startTimeMetricRegex *regexp.Regexp, useCollectorStartTimeFallback bool) MetricsAdjuster {
 	var fallbackStartTime *time.Time
 	if useCollectorStartTimeFallback {
-		now := time.Now()
-		fallbackStartTime = &now
+		fallbackStartTime = approximateCollectorStartTime
 	}
 	return &startTimeMetricAdjuster{
 		startTimeMetricRegex: startTimeMetricRegex,
@@ -44,7 +53,7 @@ func (stma *startTimeMetricAdjuster) AdjustMetrics(metrics pmetric.Metrics) erro
 		if stma.fallbackStartTime == nil {
 			return err
 		}
-		stma.logger.Warn("Couldn't get start time for metrics. Using fallback start time.", zap.Error(err))
+		stma.logger.Info("Couldn't get start time for metrics. Using fallback start time.", zap.Error(err))
 		startTime = float64(stma.fallbackStartTime.Unix())
 	}
 
