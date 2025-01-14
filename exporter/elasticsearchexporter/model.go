@@ -78,7 +78,7 @@ var resourceAttrsToPreserve = map[string]bool{
 var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
 
 type mappingModel interface {
-	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string) ([]byte, error)
+	encodeLog(pcommon.Resource, string, plog.LogRecord, plog.ScopeLogs) ([]byte, error)
 	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string) ([]byte, error)
 	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document
 	upsertMetricDataPointValue(map[uint32]objmodel.Document, pcommon.Resource, string, pcommon.InstrumentationScope, string, pmetric.Metric, dataPoint) error
@@ -112,17 +112,17 @@ const (
 	attributeField = "attribute"
 )
 
-func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
+func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scopeLogs plog.ScopeLogs) ([]byte, error) {
 	var document objmodel.Document
 	switch m.mode {
 	case mapping.ModeECS:
-		document = m.encodeLogECSMode(resource, record, scope)
+		document = m.encodeLogECSMode(resource, record, scopeLogs.Scope())
 	case mapping.ModeOTel:
-		document = m.encodeLogOTelMode(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
+		document = m.encodeLogOTelMode(resource, resourceSchemaURL, record, scopeLogs.Scope(), scopeLogs.SchemaUrl())
 	case mapping.ModeBodyMap:
 		return m.encodeLogBodyMapMode(record)
 	default:
-		document = m.encodeLogDefaultMode(resource, record, scope)
+		document = m.encodeLogDefaultMode(resource, record, scopeLogs.Scope())
 	}
 	// For OTel mode, prefix conflicts are not a problem as otel-data has subobjects: false
 	document.Dedup(m.mode != mapping.ModeOTel)

@@ -67,7 +67,7 @@ func TestEncodeLog(t *testing.T) {
 		model := &encodeModel{dedot: false}
 		td := mockResourceLogs()
 		td.ScopeLogs().At(0).LogRecords().At(0).SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)))
-		logByte, err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl())
+		logByte, err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0))
 		assert.NoError(t, err)
 		assert.Equal(t, expectedLogBody, string(logByte))
 	})
@@ -75,7 +75,7 @@ func TestEncodeLog(t *testing.T) {
 	t.Run("both timestamp and observedTimestamp empty", func(t *testing.T) {
 		model := &encodeModel{dedot: false}
 		td := mockResourceLogs()
-		logByte, err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl())
+		logByte, err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0))
 		assert.NoError(t, err)
 		assert.Equal(t, expectedLogBodyWithEmptyTimestamp, string(logByte))
 	})
@@ -84,7 +84,7 @@ func TestEncodeLog(t *testing.T) {
 		model := &encodeModel{dedot: true}
 		td := mockResourceLogs()
 		td.Resource().Attributes().PutStr("foo.bar", "baz")
-		logByte, err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl())
+		logByte, err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0))
 		require.NoError(t, err)
 		require.Equal(t, expectedLogBodyDeDottedWithEmptyTimestamp, string(logByte))
 	})
@@ -323,7 +323,7 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
 	require.NoError(t, err)
 
-	scope := pcommon.NewInstrumentationScope()
+	scopeLogs := plog.NewScopeLogs()
 
 	record := plog.NewLogRecord()
 	err = record.Attributes().FromRaw(map[string]any{
@@ -337,7 +337,7 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 		mode:  mapping.ModeECS,
 		dedot: true,
 	}
-	doc, err := m.encodeLog(resource, "", record, scope, "")
+	doc, err := m.encodeLog(resource, "", record, scopeLogs)
 	require.NoError(t, err)
 
 	assert.Equal(t, want, string(doc))
@@ -1110,30 +1110,33 @@ func TestEncodeLogOtelMode(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		record, scope, resource := createTestOTelLogRecord(t, tc.rec)
+		t.Run(tc.name, func(t *testing.T) {
+			record, scopeLogs, resource := createTestOTelLogRecord(t, tc.rec)
+			scope := scopeLogs.Scope()
 
-		// This sets the data_stream values default or derived from the record/scope/resources
-		routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), "", true, scope.Name())
+			// This sets the data_stream values default or derived from the record/scope/resources
+			routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), "", true, scope.Name())
 
-		b, err := m.encodeLog(resource, tc.rec.Resource.SchemaURL, record, scope, tc.rec.Scope.SchemaURL)
-		require.NoError(t, err)
+			b, err := m.encodeLog(resource, tc.rec.Resource.SchemaURL, record, scopeLogs)
+			require.NoError(t, err)
 
-		want := tc.rec
-		if tc.wantFn != nil {
-			want = tc.wantFn(want)
-		}
+			want := tc.rec
+			if tc.wantFn != nil {
+				want = tc.wantFn(want)
+			}
 
-		var got OTelRecord
-		err = json.Unmarshal(b, &got)
+			var got OTelRecord
+			err = json.Unmarshal(b, &got)
 
-		require.NoError(t, err)
+			require.NoError(t, err)
 
-		assert.Equal(t, want, got)
+			assert.Equal(t, want, got)
+		})
 	}
 }
 
 // helper function that creates the OTel LogRecord from the test structure
-func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
+func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, plog.ScopeLogs, pcommon.Resource) {
 	record := plog.NewLogRecord()
 	record.SetTimestamp(pcommon.Timestamp(uint64(rec.Timestamp.UnixNano())))                 //nolint:gosec // this input is controlled by tests
 	record.SetObservedTimestamp(pcommon.Timestamp(uint64(rec.ObservedTimestamp.UnixNano()))) //nolint:gosec // this input is controlled by tests
@@ -1148,19 +1151,22 @@ func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcom
 	err := record.Attributes().FromRaw(rec.Attributes)
 	require.NoError(t, err)
 
-	scope := pcommon.NewInstrumentationScope()
+	scopeLogs := plog.NewScopeLogs()
+	scope := scopeLogs.Scope()
 	scope.SetName(rec.Scope.Name)
 	scope.SetVersion(rec.Scope.Version)
 	scope.SetDroppedAttributesCount(rec.Scope.DroppedAttributesCount)
 	err = scope.Attributes().FromRaw(rec.Scope.Attributes)
 	require.NoError(t, err)
 
+	scopeLogs.SetSchemaUrl(rec.Scope.SchemaURL)
+
 	resource := pcommon.NewResource()
 	resource.SetDroppedAttributesCount(rec.Resource.DroppedAttributesCount)
 	err = resource.Attributes().FromRaw(rec.Resource.Attributes)
 	require.NoError(t, err)
 
-	return record, scope, resource
+	return record, scopeLogs, resource
 }
 
 func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelRecord {
@@ -1247,7 +1253,7 @@ func TestEncodeLogScalarObjectConflict(t *testing.T) {
 	td := mockResourceLogs()
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo", "scalar")
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo.bar", "baz")
-	encoded, err := model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "")
+	encoded, err := model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0))
 	assert.NoError(t, err)
 
 	assert.True(t, gjson.ValidBytes(encoded))
@@ -1259,7 +1265,7 @@ func TestEncodeLogScalarObjectConflict(t *testing.T) {
 
 	// If there is an attribute named "foo.value", then "foo" would be omitted rather than renamed.
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo.value", "foovalue")
-	encoded, err = model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "")
+	encoded, err = model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0))
 	assert.NoError(t, err)
 
 	assert.False(t, gjson.GetBytes(encoded, "Attributes\\.foo").Exists())

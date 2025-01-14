@@ -124,10 +124,9 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
 			ill := ills.At(j)
-			scope := ill.Scope()
 			logs := ill.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				if err := e.pushLogRecord(ctx, resource, rl.SchemaUrl(), logs.At(k), scope, ill.SchemaUrl(), session); err != nil {
+				if err := e.pushLogRecord(ctx, resource, rl.SchemaUrl(), logs.At(k), ill, session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -157,12 +156,12 @@ func (e *elasticsearchExporter) pushLogRecord(
 	resource pcommon.Resource,
 	resourceSchemaURL string,
 	record plog.LogRecord,
-	scope pcommon.InstrumentationScope,
-	scopeSchemaURL string,
+	scopeLogs plog.ScopeLogs,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
+		scope := scopeLogs.Scope()
 		fIndex = routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
 	}
 
@@ -174,7 +173,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 		fIndex = formattedIndex
 	}
 
-	document, err := e.model.encodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
+	document, err := e.model.encodeLog(resource, resourceSchemaURL, record, scopeLogs)
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
