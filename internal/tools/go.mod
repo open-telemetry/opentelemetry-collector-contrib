@@ -11,11 +11,11 @@ require (
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	go.opentelemetry.io/build-tools/checkfile v0.15.0
-	go.opentelemetry.io/build-tools/chloggen v0.15.0
-	go.opentelemetry.io/build-tools/crosslink v0.15.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.15.0
-	go.opentelemetry.io/build-tools/multimod v0.15.0
+	go.opentelemetry.io/build-tools/checkfile v0.16.0
+	go.opentelemetry.io/build-tools/chloggen v0.16.0
+	go.opentelemetry.io/build-tools/crosslink v0.16.0
+	go.opentelemetry.io/build-tools/issuegenerator v0.16.0
+	go.opentelemetry.io/build-tools/multimod v0.16.0
 	go.opentelemetry.io/collector/cmd/builder v0.117.0
 	go.opentelemetry.io/collector/cmd/mdatagen v0.117.0
 	go.uber.org/goleak v1.3.0
