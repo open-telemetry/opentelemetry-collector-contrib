@@ -15,7 +15,7 @@ import (
 )
 
 type ProducerMessageChunks struct {
-	msg []*sarama.ProducerMessage
+	Messages []*sarama.ProducerMessage
 }
 
 // TracesMarshaler marshals traces into Message array.
@@ -115,20 +115,91 @@ type tracesEncodingMarshaler struct {
 func (t *tracesEncodingMarshaler) Marshal(traces ptrace.Traces, topic string) ([]*ProducerMessageChunks, error) {
 	// ToDo: implement partitionedByTraceID
 
-	var messages []*sarama.ProducerMessage
+	messageChunks := make([]*ProducerMessageChunks, 0)
+	spanCount := traces.SpanCount()
 
-	// ToDo: effectively chunk the spans adhering to j.maxMessageBytes
-	var messageChunks []*ProducerMessageChunks
-
+	// If the entire trace data fits within maxMessageBytes, send it as a single message
+	msg := &sarama.ProducerMessage{
+		Topic: topic,
+	}
 	data, err := t.marshaler.MarshalTraces(traces)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal traces: %w", err)
 	}
-	messages = append(messages, &sarama.ProducerMessage{
-		Topic: topic,
-		Value: sarama.ByteEncoder(data),
-	})
-	messageChunks = append(messageChunks, &ProducerMessageChunks{msg: messages})
+	msg.Value = sarama.ByteEncoder(data)
+	
+	// Deriving version from sarama library
+	// https://github.com/IBM/sarama/blob/main/async_producer.go#L454
+	currentMsgSize := msg.ByteSize(2)
+
+	if currentMsgSize <= t.maxMessageBytes || spanCount <= 1 {
+		messageChunks = append(messageChunks, &ProducerMessageChunks{[]*sarama.ProducerMessage{msg}})
+		return messageChunks, nil
+	}
+
+	// Split traces using binary search
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+			ss := rs.ScopeSpans().At(j)
+			spans := ss.Spans()
+			start := 0
+
+			for start < spans.Len() {
+				// Binary search to find the maximum number of spans that fit within maxMessageBytes
+				left, right := 1, spans.Len()-start
+				for left < right {
+					mid := (left + right + 1) / 2
+					chunk := ptrace.NewTraces()
+					rs.CopyTo(chunk.ResourceSpans().AppendEmpty())
+					newSS := chunk.ResourceSpans().At(0).ScopeSpans().AppendEmpty()
+					ss.Scope().CopyTo(newSS.Scope())
+					for k := 0; k < mid; k++ {
+						spans.At(start + k).CopyTo(newSS.Spans().AppendEmpty())
+					}
+
+					chunkData, err := t.marshaler.MarshalTraces(chunk)
+					if err != nil {
+						return nil, fmt.Errorf("failed to marshal traces chunk: %w", err)
+					}
+
+					msg := &sarama.ProducerMessage{
+						Topic: topic,
+						Value: sarama.ByteEncoder(chunkData),
+					}
+					currentMsgSize := msg.ByteSize(2)
+
+					if currentMsgSize <= t.maxMessageBytes {
+						left = mid
+					} else {
+						right = mid - 1
+					}
+				}
+
+				// Create chunk with the found number of spans
+				chunk := ptrace.NewTraces()
+				rs.CopyTo(chunk.ResourceSpans().AppendEmpty())
+				newSS := chunk.ResourceSpans().At(0).ScopeSpans().AppendEmpty()
+				ss.Scope().CopyTo(newSS.Scope())
+				for k := 0; k < left; k++ {
+					spans.At(start + k).CopyTo(newSS.Spans().AppendEmpty())
+				}
+
+				chunkData, err := t.marshaler.MarshalTraces(chunk)
+				if err != nil {
+					return nil, fmt.Errorf("failed to marshal traces chunk: %w", err)
+				}
+
+				msg := &sarama.ProducerMessage{
+					Topic: topic,
+					Value: sarama.ByteEncoder(chunkData),
+				}
+				messageChunks = append(messageChunks, &ProducerMessageChunks{[]*sarama.ProducerMessage{msg}})
+				start += left
+			}
+		}
+	}
+
 	return messageChunks, nil
 }
 
