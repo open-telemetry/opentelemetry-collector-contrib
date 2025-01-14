@@ -79,12 +79,12 @@ func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 	}
 
 	// Downscale if an expected number of buckets after the merge is too large.
-	if deltaScale := max(
-		expo.Limit(maxBuckets, dp.Positive(), in.Positive()),
-		expo.Limit(maxBuckets, dp.Negative(), in.Negative()),
-	); deltaScale > 0 {
-		from := expo.Scale(dp.Scale())
-		to := expo.Scale(dp.Scale()) - deltaScale
+	from := expo.Scale(dp.Scale())
+	to := max(
+		expo.Limit(maxBuckets, from, dp.Positive(), in.Positive()),
+		expo.Limit(maxBuckets, from, dp.Negative(), in.Negative()),
+	)
+	if from != to {
 		expo.Downscale(dp.Positive(), from, to)
 		expo.Downscale(dp.Negative(), from, to)
 		expo.Downscale(in.Positive(), from, to)
