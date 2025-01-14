@@ -266,6 +266,9 @@ func (c *WatchClient) Start() error {
 			close(timeoutCh)
 		})
 		defer t.Stop()
+		// Wait for the Pod informer to be completed.
+		// The other informers will already be finished at this point, as the pod informer
+		// waits for them be finished before it can run
 		if !cache.WaitForCacheSync(timeoutCh, reg.HasSynced) {
 			return errors.New("failed to wait for caches to sync")
 		}
