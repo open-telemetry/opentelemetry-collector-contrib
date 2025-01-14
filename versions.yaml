@@ -126,6 +126,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter

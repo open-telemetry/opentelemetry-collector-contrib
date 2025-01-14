@@ -6,10 +6,11 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 
 	gzip "github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"

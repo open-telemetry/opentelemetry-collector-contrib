@@ -6,9 +6,10 @@ package datadogconnector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"sync"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"

@@ -200,6 +200,7 @@ func TestReceiveResourceSpansV2(t *testing.T) {
 		testReceiveResourceSpansV2(t, true)
 	})
 }
+
 func testReceiveResourceSpansV2(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	if enableReceiveResourceSpansV2 {
 		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
