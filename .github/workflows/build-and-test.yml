@@ -351,8 +351,7 @@ jobs:
           - exporter-1
           - exporter-2
           - exporter-3
-          - extension-0
-          - extension-1
+          - extension
           - connector
           - internal
           - pkg
