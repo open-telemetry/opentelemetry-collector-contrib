@@ -398,3 +398,19 @@ func Test_UnknownErrorMode(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Error(t, sub.Unmarshal(cfg))
 }
+
+func Test_SharedCacheKeyError(t *testing.T) {
+	id := component.NewIDWithName(metadata.Type, "with_shared_cache_key")
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(id.String())
+	assert.NoError(t, err)
+
+	err = sub.Unmarshal(cfg)
+	assert.ErrorContains(t, err, "metric_statements[0] has invalid keys: shared_cache")
+}

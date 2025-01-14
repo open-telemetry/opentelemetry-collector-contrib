@@ -27,8 +27,8 @@ var (
 		featuregate.WithRegisterFromVersion("v0.103.0"),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080#issuecomment-2120764953"),
 	)
-	errFlatLogsGateDisabled       = errors.New("'flatten_data' requires the 'transform.flatten.logs' feature gate to be enabled")
-	configContextStatementsFields = map[string]string{"trace_statements": "TraceStatements", "metric_statements": "MetricStatements", "log_statements": "LogStatements"}
+	errFlatLogsGateDisabled = errors.New("'flatten_data' requires the 'transform.flatten.logs' feature gate to be enabled")
+	contextStatementsFields = []string{"trace_statements", "metric_statements", "log_statements"}
 )
 
 // Config defines the configuration for the processor.
@@ -48,16 +48,6 @@ type Config struct {
 	logger      *zap.Logger
 }
 
-// The Unmarshal function sets the [common.ContextStatements.SharedCache] field with reflection.
-// These variables ensure that all required fields are still present, otherwise the Config
-// unmarshalling would fail.
-var (
-	_ = common.ContextStatements{}.SharedCache
-	_ = Config{}.TraceStatements
-	_ = Config{}.MetricStatements
-	_ = Config{}.LogStatements
-)
-
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
 // adding support to structured and flat configuration styles (array of statements strings).
 // When the flat configuration style is used, each statement becomes a new common.ContextStatements
@@ -69,16 +59,15 @@ func (c *Config) Unmarshal(component *confmap.Conf) error {
 		return nil
 	}
 
-	flatStatementsFieldsIndexes := map[string][]int{}
 	contextStatementsPatch := map[string]any{}
-	for configName, structFieldName := range configContextStatementsFields {
-		if !component.IsSet(configName) {
+	for _, fieldName := range contextStatementsFields {
+		if !component.IsSet(fieldName) {
 			continue
 		}
-		rawVal := component.Get(configName)
+		rawVal := component.Get(fieldName)
 		values, ok := rawVal.([]any)
 		if !ok {
-			return fmt.Errorf("invalid %s type, expected: array, got: %t", configName, rawVal)
+			return fmt.Errorf("invalid %s type, expected: array, got: %t", fieldName, rawVal)
 		}
 		if len(values) == 0 {
 			continue
@@ -88,13 +77,22 @@ func (c *Config) Unmarshal(component *confmap.Conf) error {
 		for i, value := range values {
 			// Array of strings means it's a flat configuration style
 			if reflect.TypeOf(value).Kind() == reflect.String {
-				stmts = append(stmts, map[string]any{"statements": []any{value}})
-				flatStatementsFieldsIndexes[structFieldName] = append(flatStatementsFieldsIndexes[structFieldName], i)
+				stmts = append(stmts, map[string]any{
+					"statements":   []any{value},
+					"shared_cache": true,
+				})
 			} else {
+				configuredKeys, ok := value.(map[string]any)
+				if ok {
+					_, hasShareCacheKey := configuredKeys["shared_cache"]
+					if hasShareCacheKey {
+						return fmt.Errorf("%s[%d] has invalid keys: %s", fieldName, i, "shared_cache")
+					}
+				}
 				stmts = append(stmts, value)
 			}
 		}
-		contextStatementsPatch[configName] = stmts
+		contextStatementsPatch[fieldName] = stmts
 	}
 
 	if len(contextStatementsPatch) > 0 {
@@ -104,21 +102,7 @@ func (c *Config) Unmarshal(component *confmap.Conf) error {
 		}
 	}
 
-	err := component.Unmarshal(c)
-	if err != nil {
-		return err
-	}
-
-	if len(flatStatementsFieldsIndexes) > 0 {
-		configValue := reflect.ValueOf(*c)
-		for fieldName, indexes := range flatStatementsFieldsIndexes {
-			for _, index := range indexes {
-				configValue.FieldByName(fieldName).Index(index).FieldByName("SharedCache").Set(reflect.ValueOf(true))
-			}
-		}
-	}
-
-	return nil
+	return component.Unmarshal(c)
 }
 
 var _ component.Config = (*Config)(nil)
