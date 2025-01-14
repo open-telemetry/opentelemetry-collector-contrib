@@ -5,9 +5,11 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"errors"
+	"os"
 	"regexp"
 	"time"
 
+	"github.com/shirou/gopsutil/v4/process"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
@@ -17,15 +19,25 @@ var (
 	errNoDataPointsStartTimeMetric    = errors.New("start time metric with no data points")
 	errUnsupportedTypeStartTimeMetric = errors.New("unsupported data type for start time metric")
 
-	// approximateCollectorStartTime is the approximate start time of the collector. Used
+	// collectorStartTime is the approximate start time of the collector. Used
 	// as a fallback start time for metrics that don't have a start time set.
 	// Set when the component is initialized.
-	approximateCollectorStartTime *time.Time
+	collectorStartTime *time.Time
 )
 
 func init() {
-	now := time.Now()
-	approximateCollectorStartTime = &now
+	p, err := process.NewProcess(int32(os.Getpid()))
+	if err != nil {
+		panic("Unable to find current process" + err.Error())
+	}
+
+	ct, err := p.CreateTime()
+	if err != nil {
+		panic("Unable to find process start time" + err.Error())
+	}
+
+	startTime := time.Unix(ct/1000, 0) // Convert milliseconds to seconds
+	collectorStartTime = &startTime
 }
 
 type startTimeMetricAdjuster struct {
@@ -38,7 +50,7 @@ type startTimeMetricAdjuster struct {
 func NewStartTimeMetricAdjuster(logger *zap.Logger, startTimeMetricRegex *regexp.Regexp, useCollectorStartTimeFallback bool) MetricsAdjuster {
 	var fallbackStartTime *time.Time
 	if useCollectorStartTimeFallback {
-		fallbackStartTime = approximateCollectorStartTime
+		fallbackStartTime = collectorStartTime
 	}
 	return &startTimeMetricAdjuster{
 		startTimeMetricRegex: startTimeMetricRegex,
