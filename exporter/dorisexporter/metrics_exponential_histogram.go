@@ -117,5 +117,5 @@ func (m *metricModelExponentialHistogram) size() int {
 }
 
 func (m *metricModelExponentialHistogram) bytes() ([]byte, error) {
-	return toJsonLines(m.data)
+	return toJSONLines(m.data)
 }
