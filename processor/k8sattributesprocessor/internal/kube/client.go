@@ -209,8 +209,6 @@ func New(
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
 	synced := make([]cache.InformerSynced, 0)
-
-	waitForInformers := []cache.SharedInformer{}
 	// start the replicaSet informer first, as the replica sets need to be
 	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
 	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
@@ -223,8 +221,7 @@ func (c *WatchClient) Start() error {
 			return err
 		}
 		synced = append(synced, reg.HasSynced)
-		waitForInformers = append(waitForInformers, c.replicasetInformer)
-		go c.runInformer(c.replicasetInformer)
+		go c.replicasetInformer.Run(c.stopCh)
 	}
 
 	reg, err := c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -236,8 +233,7 @@ func (c *WatchClient) Start() error {
 		return err
 	}
 	synced = append(synced, reg.HasSynced)
-	waitForInformers = append(waitForInformers, c.namespaceInformer)
-	go c.runInformer(c.namespaceInformer)
+	go c.namespaceInformer.Run(c.stopCh)
 
 	if c.nodeInformer != nil {
 		reg, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -249,8 +245,7 @@ func (c *WatchClient) Start() error {
 			return err
 		}
 		synced = append(synced, reg.HasSynced)
-		waitForInformers = append(waitForInformers, c.nodeInformer)
-		go c.runInformer(c.nodeInformer)
+		go c.nodeInformer.Run(c.stopCh)
 	}
 
 	reg, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -261,10 +256,9 @@ func (c *WatchClient) Start() error {
 	if err != nil {
 		return err
 	}
-	synced = append(synced, reg.HasSynced)
 
 	// start the podInformer with the prerequisite of the other informers to be finished first
-	go c.runInformer(c.informer, waitForInformers...)
+	go c.runInformerWithDependencies(c.informer, synced)
 
 	if c.waitForMetadata {
 		timeoutCh := make(chan struct{})
@@ -272,7 +266,7 @@ func (c *WatchClient) Start() error {
 			close(timeoutCh)
 		})
 		defer t.Stop()
-		if !cache.WaitForCacheSync(timeoutCh, synced...) {
+		if !cache.WaitForCacheSync(timeoutCh, reg.HasSynced) {
 			return errors.New("failed to wait for caches to sync")
 		}
 	}
@@ -1129,10 +1123,10 @@ func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {
 	return nil, false
 }
 
-// runInformer starts the given informer. This method optionally takes a list of other informers that should complete
+// runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete
 // before the informer is started. This is necessary e.g. for the pod informer which requires the replica set informer
 // to be finished to correctly establish the connection to the replicaset/deployment it belongs to.
-func (c *WatchClient) runInformer(informer cache.SharedInformer, dependencies ...cache.SharedInformer) {
+func (c *WatchClient) runInformerWithDependencies(informer cache.SharedInformer, dependencies []cache.InformerSynced) {
 	if len(dependencies) > 0 {
 		timeoutCh := make(chan struct{})
 		// TODO hard coding the timeout for now, check if we should make this configurable
@@ -1141,7 +1135,7 @@ func (c *WatchClient) runInformer(informer cache.SharedInformer, dependencies ..
 		})
 		defer t.Stop()
 		for _, dependency := range dependencies {
-			cache.WaitForCacheSync(timeoutCh, dependency.HasSynced)
+			cache.WaitForCacheSync(timeoutCh, dependency)
 		}
 	}
 	informer.Run(c.stopCh)
