@@ -78,6 +78,10 @@ type Config struct {
 	// If Batcher.Enabled is non-nil (i.e. batcher::enabled is specified),
 	// then the Flush will be ignored even if Batcher.Enabled is false.
 	Batcher BatcherConfig `mapstructure:"batcher"`
+
+	// Version holds the major version of Elasticsearch that the exporter
+	// will target: 7 or 8.
+	Version int `mapstructure:"version"`
 }
 
 // BatcherConfig holds configuration for exporterbatcher.
@@ -271,6 +275,11 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.Retry.MaxRetries < 0 {
 		return errors.New("retry::max_retries should be non-negative")
+	}
+	switch cfg.Version {
+	case 7, 8:
+	default:
+		return fmt.Errorf("version must be 7 or 8, got %d", cfg.Version)
 	}
 
 	return nil

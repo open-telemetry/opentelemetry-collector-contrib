@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/elastic/go-docappender/v2"
-	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
 )
@@ -55,14 +55,14 @@ type bulkIndexerSession interface {
 
 const defaultMaxRetries = 2
 
-func newBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) (bulkIndexer, error) {
+func newBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config) (bulkIndexer, error) {
 	if config.Batcher.Enabled != nil {
 		return newSyncBulkIndexer(logger, client, config), nil
 	}
 	return newAsyncBulkIndexer(logger, client, config)
 }
 
-func bulkIndexerConfig(client *elasticsearch.Client, config *Config) docappender.BulkIndexerConfig {
+func bulkIndexerConfig(client esapi.Transport, config *Config) docappender.BulkIndexerConfig {
 	var maxDocRetries int
 	if config.Retry.Enabled {
 		maxDocRetries = defaultMaxRetries
@@ -84,7 +84,7 @@ func bulkIndexerConfig(client *elasticsearch.Client, config *Config) docappender
 	}
 }
 
-func newSyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) *syncBulkIndexer {
+func newSyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config) *syncBulkIndexer {
 	return &syncBulkIndexer{
 		config:       bulkIndexerConfig(client, config),
 		flushTimeout: config.Timeout,
@@ -175,7 +175,7 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 	}
 }
 
-func newAsyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) (*asyncBulkIndexer, error) {
+func newAsyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config) (*asyncBulkIndexer, error) {
 	numWorkers := config.NumWorkers
 	if numWorkers == 0 {
 		numWorkers = runtime.NumCPU()

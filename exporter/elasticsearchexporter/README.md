@@ -228,6 +228,21 @@ The Elasticsearch Exporter's own telemetry settings for testing and debugging pu
   - `log_request_body` (default=false): Logs Elasticsearch client request body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
   - `log_response_body` (default=false): Logs Elasticsearch client response body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
 
+### Elasticsearch version compatibility
+
+The Elasticsearch Exporter uses the [go-elasticsearch](https://github.com/elastic/go-elasticsearch)
+client for communicating with Elasticsearch, and has forward compatibility with Elasticsearch 8+ by
+default. It is possible to enable best-effort support for older Elasticsearch 7.x versions by
+setting the Elasticsearch exporter config `version` to `7`.
+
+Certain features of the exporter, such as the `otel` mapping mode, may require newer versions of
+Elasticsearch. In general it is recommended to use the exporter with the most recent supported,
+as this will have the most in-depth testing.
+
+> [!NOTE]
+> See https://www.elastic.co/support/eol for Elasticsearch's End Of Life policy.
+> Versions prior to 7.17.x are no longer supported by Elastic.
+
 ## Exporting metrics
 
 Metrics support is currently in development.

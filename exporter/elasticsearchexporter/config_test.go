@@ -120,6 +120,7 @@ func TestConfig(t *testing.T) {
 						MaxSizeItems: 0,
 					},
 				},
+				Version: 8,
 			},
 		},
 		{
@@ -191,6 +192,7 @@ func TestConfig(t *testing.T) {
 						MaxSizeItems: 0,
 					},
 				},
+				Version: 8,
 			},
 		},
 		{
@@ -262,6 +264,7 @@ func TestConfig(t *testing.T) {
 						MaxSizeItems: 0,
 					},
 				},
+				Version: 8,
 			},
 		},
 		{
