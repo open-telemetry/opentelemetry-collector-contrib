@@ -133,12 +133,11 @@ func Limit(maxBuckets int, scale Scale, arel, brel pmetric.ExponentialHistogramD
 	}
 
 	// Keep downscaling until the number of buckets is within the limit.
-	var deltaScale Scale
 	for up-lo > maxBuckets {
 		lo /= 2
 		up /= 2
-		deltaScale++
+		scale--
 	}
 
-	return scale - deltaScale
+	return scale
 }
