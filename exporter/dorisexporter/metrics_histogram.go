@@ -107,5 +107,5 @@ func (m *metricModelHistogram) size() int {
 }
 
 func (m *metricModelHistogram) bytes() ([]byte, error) {
-	return toJsonLines(m.data)
+	return toJSONLines(m.data)
 }
