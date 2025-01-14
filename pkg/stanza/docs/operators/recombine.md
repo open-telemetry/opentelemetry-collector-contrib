@@ -17,7 +17,7 @@ The `recombine` operator combines consecutive logs into single logs based on sim
 | `max_unmatched_batch_size`     | 100                        | The maximum number of consecutive entries that will be combined into a single entry before the match occurs (with `is_first_entry` or `is_last_entry`), e.g. `max_unmatched_batch_size=0` - all entries combined, `max_unmatched_batch_size=1` - all entries uncombined until the match occurs, `max_unmatched_batch_size=100` - entries combined into 100-entry-packages until the match occurs  |
 | `overwrite_with`               | `newest`                   | Whether to use the fields from the `oldest` or the `newest` entry for all the fields that are not combined. |
 | `force_flush_period`           | `5s`                       | Flush timeout after which entries will be flushed aborting the wait for their sub parts to be merged with. |
-| `source_identifier`            | `$attributes["file.path"]` | The [field](../types/field.md) to separate one source of logs from others when combining them. |
+| `source_identifier`            |                            | The [field](../types/field.md) to separate one source of logs from others when combining them. |
 | `max_sources`                  | 1000                       | The maximum number of unique sources allowed concurrently to be tracked for combining separately. |
 | `max_log_size`                 | 0                          | The maximum bytes size of the combined field. Once the size exceeds the limit, all received entries of the source will be combined and flushed. "0" of max_log_size means no limit. |
 
