@@ -6,11 +6,13 @@ package mapping // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
 
 // Encoder provider an interface for all mapping encoders
 type Encoder interface {
-	EncodeLog(pcommon.Resource, plog.LogRecord, plog.ScopeLogs) objmodel.Document
+	EncodeLog(pcommon.Resource, plog.ScopeLogs, plog.LogRecord) objmodel.Document
+	EncodeSpan(ptrace.ResourceSpans, ptrace.ScopeSpans, ptrace.Span) objmodel.Document
 }

@@ -6,7 +6,6 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"hash"
@@ -14,7 +13,6 @@ import (
 	"math"
 	"slices"
 	"strings"
-	"time"
 
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -26,7 +24,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/exphistogram"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/mapping"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 // resourceAttrsConversionMap contains conversions for resource-level attributes
@@ -106,12 +103,6 @@ type dataPoint interface {
 	HasMappingHint(mappingHint) bool
 }
 
-const (
-	traceIDField   = "traceID"
-	spanIDField    = "spanID"
-	attributeField = "attribute"
-)
-
 func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scopeLogs plog.ScopeLogs) ([]byte, error) {
 	var document objmodel.Document
 	switch m.mode {
@@ -122,7 +113,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL str
 	case mapping.ModeBodyMap:
 		return m.encodeLogBodyMapMode(record)
 	default:
-		document = mapping.DefaultEncoder{Mode: m.mode}.EncodeLog(resource, record, scopeLogs)
+		document = mapping.DefaultEncoder{Mode: m.mode}.EncodeLog(resource, scopeLogs, record)
 	}
 	// For OTel mode, prefix conflicts are not a problem as otel-data has subobjects: false
 	document.Dedup(m.mode != mapping.ModeOTel)
@@ -644,7 +635,7 @@ func (m *encodeModel) encodeSpan(resourceSpans ptrace.ResourceSpans, scopeSpans 
 	case mapping.ModeOTel:
 		document = m.encodeSpanOTelMode(resourceSpans.Resource(), resourceSpans.SchemaUrl(), span, scopeSpans.Scope(), scopeSpans.SchemaUrl())
 	default:
-		document = m.encodeSpanDefaultMode(resourceSpans.Resource(), span, scopeSpans.Scope())
+		document = mapping.DefaultEncoder{Mode: m.mode}.EncodeSpan(resourceSpans, scopeSpans, span)
 	}
 	// For OTel mode, prefix conflicts are not a problem as otel-data has subobjects: false
 	document.Dedup(m.mode != mapping.ModeOTel)
@@ -694,26 +685,6 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	return document
 }
 
-func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) objmodel.Document {
-	var document objmodel.Document
-	document.AddTimestamp("@timestamp", span.StartTimestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
-	document.AddTimestamp("EndTimestamp", span.EndTimestamp())
-	document.AddTraceID("TraceId", span.TraceID())
-	document.AddSpanID("SpanId", span.SpanID())
-	document.AddSpanID("ParentSpanId", span.ParentSpanID())
-	document.AddString("Name", span.Name())
-	document.AddString("Kind", traceutil.SpanKindStr(span.Kind()))
-	document.AddInt("TraceStatus", int64(span.Status().Code()))
-	document.AddString("TraceStatusDescription", span.Status().Message())
-	document.AddString("Link", spanLinksToString(span.Links()))
-	m.encodeAttributes(&document, span.Attributes())
-	document.AddAttributes("Resource", resource.Attributes())
-	m.encodeEvents(&document, span.Events())
-	document.AddInt("Duration", durationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
-	document.AddAttributes("Scope", scopeToAttributes(scope))
-	return document
-}
-
 func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document {
 	if m.mode != mapping.ModeOTel {
 		// Currently span events are stored separately only in OTel mapping mode.
@@ -734,52 +705,6 @@ func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaU
 	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 
 	return &document
-}
-
-func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map) {
-	key := "Attributes"
-	if m.mode == mapping.ModeRaw {
-		key = ""
-	}
-	document.AddAttributes(key, attributes)
-}
-
-func (m *encodeModel) encodeEvents(document *objmodel.Document, events ptrace.SpanEventSlice) {
-	key := "Events"
-	if m.mode == mapping.ModeRaw {
-		key = ""
-	}
-	document.AddEvents(key, events)
-}
-
-func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
-	linkArray := make([]map[string]any, 0, spanLinkSlice.Len())
-	for i := 0; i < spanLinkSlice.Len(); i++ {
-		spanLink := spanLinkSlice.At(i)
-		link := map[string]any{}
-		link[spanIDField] = traceutil.SpanIDToHexOrEmptyString(spanLink.SpanID())
-		link[traceIDField] = traceutil.TraceIDToHexOrEmptyString(spanLink.TraceID())
-		link[attributeField] = spanLink.Attributes().AsRaw()
-		linkArray = append(linkArray, link)
-	}
-	linkArrayBytes, _ := json.Marshal(&linkArray)
-	return string(linkArrayBytes)
-}
-
-// durationAsMicroseconds calculate span duration through end - start nanoseconds and converts time.Time to microseconds,
-// which is the format the Duration field is stored in the Span.
-func durationAsMicroseconds(start, end time.Time) int64 {
-	return (end.UnixNano() - start.UnixNano()) / 1000
-}
-
-func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
-	attrs := pcommon.NewMap()
-	attrs.PutStr("name", scope.Name())
-	attrs.PutStr("version", scope.Version())
-	for k, v := range scope.Attributes().AsRaw() {
-		attrs.PutStr(k, v.(string))
-	}
-	return attrs
 }
 
 func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string, preserveMap map[string]bool) {
