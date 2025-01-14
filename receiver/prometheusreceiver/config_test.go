@@ -354,3 +354,47 @@ func TestFileSDConfigWithoutSDFile(t *testing.T) {
 
 	require.NoError(t, component.ValidateConfig(cfg))
 }
+
+func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_prometheus_api_server.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "withAPIEnabled").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
+
+	r0 := cfg.(*Config)
+	assert.NotNil(t, r0.PrometheusConfig)
+	assert.Equal(t, true, r0.APIServer.Enabled)
+	assert.NotNil(t, r0.APIServer.ServerConfig)
+	assert.Equal(t, "localhost:9090", r0.APIServer.ServerConfig.Endpoint)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIDisabled").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
+
+	r1 := cfg.(*Config)
+	assert.NotNil(t, r1.APIServer)
+	assert.Equal(t, false, r1.APIServer.Enabled)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withoutAPI").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
+
+	r2 := cfg.(*Config)
+	assert.NotNil(t, r2.PrometheusConfig)
+	assert.Nil(t, r2.APIServer)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withInvalidAPIConfig").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.Error(t, component.ValidateConfig(cfg))
+}
