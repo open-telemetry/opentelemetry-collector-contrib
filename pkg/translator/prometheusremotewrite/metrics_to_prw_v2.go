@@ -75,14 +75,12 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 				case pmetric.MetricTypeGauge:
 					dataPoints := metric.Gauge().DataPoints()
 					if dataPoints.Len() == 0 {
-						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
 					c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName)
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
 					if dataPoints.Len() == 0 {
-						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
 					c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName)
