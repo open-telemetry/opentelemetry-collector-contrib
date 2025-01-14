@@ -57,7 +57,11 @@ var (
 func TestEncodeSpan(t *testing.T) {
 	model := &encodeModel{dedot: false}
 	td := mockResourceSpans()
-	spanByte, err := model.encodeSpan(td.ResourceSpans().At(0).Resource(), "", td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0), td.ResourceSpans().At(0).ScopeSpans().At(0).Scope(), "")
+	spanByte, err := model.encodeSpan(
+		td.ResourceSpans().At(0),
+		td.ResourceSpans().At(0).ScopeSpans().At(0),
+		td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0),
+	)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSpanBody, string(spanByte))
 }

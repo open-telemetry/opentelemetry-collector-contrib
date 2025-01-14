@@ -360,11 +360,10 @@ func (e *elasticsearchExporter) pushTraceData(
 		scopeSpans := il.ScopeSpans()
 		for j := 0; j < scopeSpans.Len(); j++ {
 			scopeSpan := scopeSpans.At(j)
-			scope := scopeSpan.Scope()
 			spans := scopeSpan.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if err := e.pushTraceRecord(ctx, resource, il.SchemaUrl(), span, scope, scopeSpan.SchemaUrl(), session); err != nil {
+				if err := e.pushTraceRecord(ctx, il, scopeSpan, span, session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -372,7 +371,7 @@ func (e *elasticsearchExporter) pushTraceData(
 				}
 				for ii := 0; ii < span.Events().Len(); ii++ {
 					spanEvent := span.Events().At(ii)
-					if err := e.pushSpanEvent(ctx, resource, il.SchemaUrl(), span, spanEvent, scope, scopeSpan.SchemaUrl(), session); err != nil {
+					if err := e.pushSpanEvent(ctx, resource, il.SchemaUrl(), span, spanEvent, scopeSpan.Scope(), scopeSpan.SchemaUrl(), session); err != nil {
 						errs = append(errs, err)
 					}
 				}
@@ -391,16 +390,21 @@ func (e *elasticsearchExporter) pushTraceData(
 
 func (e *elasticsearchExporter) pushTraceRecord(
 	ctx context.Context,
-	resource pcommon.Resource,
-	resourceSchemaURL string,
+	resourceSpans ptrace.ResourceSpans,
+	scopeSpans ptrace.ScopeSpans,
 	span ptrace.Span,
-	scope pcommon.InstrumentationScope,
-	scopeSchemaURL string,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeSpan(span.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, span.Name())
+		fIndex = routeSpan(
+			span.Attributes(),
+			scopeSpans.Scope().Attributes(),
+			resourceSpans.Resource().Attributes(),
+			fIndex,
+			e.otel,
+			span.Name(),
+		)
 	}
 
 	if e.logstashFormat.Enabled {
@@ -411,7 +415,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 		fIndex = formattedIndex
 	}
 
-	document, err := e.model.encodeSpan(resource, resourceSchemaURL, span, scope, scopeSchemaURL)
+	document, err := e.model.encodeSpan(resourceSpans, scopeSpans, span)
 	if err != nil {
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}

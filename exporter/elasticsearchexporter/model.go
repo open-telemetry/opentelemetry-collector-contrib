@@ -79,7 +79,7 @@ var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 
 
 type mappingModel interface {
 	encodeLog(pcommon.Resource, string, plog.LogRecord, plog.ScopeLogs) ([]byte, error)
-	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string) ([]byte, error)
+	encodeSpan(ptrace.ResourceSpans, ptrace.ScopeSpans, ptrace.Span) ([]byte, error)
 	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document
 	upsertMetricDataPointValue(map[uint32]objmodel.Document, pcommon.Resource, string, pcommon.InstrumentationScope, string, pmetric.Metric, dataPoint) error
 	encodeDocument(objmodel.Document) ([]byte, error)
@@ -638,13 +638,13 @@ func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attr
 	document.AddAttributes("attributes", attrsCopy)
 }
 
-func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
+func (m *encodeModel) encodeSpan(resourceSpans ptrace.ResourceSpans, scopeSpans ptrace.ScopeSpans, span ptrace.Span) ([]byte, error) {
 	var document objmodel.Document
 	switch m.mode {
 	case mapping.ModeOTel:
-		document = m.encodeSpanOTelMode(resource, resourceSchemaURL, span, scope, scopeSchemaURL)
+		document = m.encodeSpanOTelMode(resourceSpans.Resource(), resourceSpans.SchemaUrl(), span, scopeSpans.Scope(), scopeSpans.SchemaUrl())
 	default:
-		document = m.encodeSpanDefaultMode(resource, span, scope)
+		document = m.encodeSpanDefaultMode(resourceSpans.Resource(), span, scopeSpans.Scope())
 	}
 	// For OTel mode, prefix conflicts are not a problem as otel-data has subobjects: false
 	document.Dedup(m.mode != mapping.ModeOTel)
