@@ -1769,6 +1769,7 @@ func TestExporterBatcher(t *testing.T) {
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
 		cfg.Batcher = BatcherConfig{Enabled: &batcherEnabled}
 		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
+		cfg.Retry.Enabled = false
 	})
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{
