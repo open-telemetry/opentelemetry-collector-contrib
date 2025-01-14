@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package grpc
 
 import (
 	"context"
@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/mocks"
 )
 
 func TestMissingClientConfigManagerGRPC(t *testing.T) {
@@ -30,7 +32,7 @@ func TestStartAndStopGRPC(t *testing.T) {
 			Transport: confignet.TransportTypeTCP,
 		},
 	}
-	s, err := NewGRPC(componenttest.NewNopTelemetrySettings(), srvSettings, &mockCfgMgr{})
+	s, err := NewGRPC(componenttest.NewNopTelemetrySettings(), srvSettings, &mocks.MockCfgMgr{})
 	require.NoError(t, err)
 	require.NotNil(t, s)
 
