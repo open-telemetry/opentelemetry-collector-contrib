@@ -44,6 +44,14 @@ type MetricsConfig struct {
 	SqlserverPageOperationRate                  MetricConfig `mapstructure:"sqlserver.page.operation.rate"`
 	SqlserverPageSplitRate                      MetricConfig `mapstructure:"sqlserver.page.split.rate"`
 	SqlserverProcessesBlocked                   MetricConfig `mapstructure:"sqlserver.processes.blocked"`
+	SqlserverQueryExecutionCount                MetricConfig `mapstructure:"sqlserver.query.execution_count"`
+	SqlserverQueryTotalElapsedTime              MetricConfig `mapstructure:"sqlserver.query.total_elapsed_time"`
+	SqlserverQueryTotalGrantKb                  MetricConfig `mapstructure:"sqlserver.query.total_grant_kb"`
+	SqlserverQueryTotalLogicalReads             MetricConfig `mapstructure:"sqlserver.query.total_logical_reads"`
+	SqlserverQueryTotalLogicalWrites            MetricConfig `mapstructure:"sqlserver.query.total_logical_writes"`
+	SqlserverQueryTotalPhysicalReads            MetricConfig `mapstructure:"sqlserver.query.total_physical_reads"`
+	SqlserverQueryTotalRows                     MetricConfig `mapstructure:"sqlserver.query.total_rows"`
+	SqlserverQueryTotalWorkerTime               MetricConfig `mapstructure:"sqlserver.query.total_worker_time"`
 	SqlserverResourcePoolDiskThrottledReadRate  MetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.read.rate"`
 	SqlserverResourcePoolDiskThrottledWriteRate MetricConfig `mapstructure:"sqlserver.resource_pool.disk.throttled.write.rate"`
 	SqlserverTransactionRate                    MetricConfig `mapstructure:"sqlserver.transaction.rate"`
@@ -106,6 +114,30 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverProcessesBlocked: MetricConfig{
 			Enabled: false,
+		},
+		SqlserverQueryExecutionCount: MetricConfig{
+			Enabled: true,
+		},
+		SqlserverQueryTotalElapsedTime: MetricConfig{
+			Enabled: true,
+		},
+		SqlserverQueryTotalGrantKb: MetricConfig{
+			Enabled: true,
+		},
+		SqlserverQueryTotalLogicalReads: MetricConfig{
+			Enabled: true,
+		},
+		SqlserverQueryTotalLogicalWrites: MetricConfig{
+			Enabled: true,
+		},
+		SqlserverQueryTotalPhysicalReads: MetricConfig{
+			Enabled: true,
+		},
+		SqlserverQueryTotalRows: MetricConfig{
+			Enabled: true,
+		},
+		SqlserverQueryTotalWorkerTime: MetricConfig{
+			Enabled: true,
 		},
 		SqlserverResourcePoolDiskThrottledReadRate: MetricConfig{
 			Enabled: false,
@@ -171,9 +203,12 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for sqlserver resource attributes.
 type ResourceAttributesConfig struct {
-	SqlserverComputerName ResourceAttributeConfig `mapstructure:"sqlserver.computer.name"`
-	SqlserverDatabaseName ResourceAttributeConfig `mapstructure:"sqlserver.database.name"`
-	SqlserverInstanceName ResourceAttributeConfig `mapstructure:"sqlserver.instance.name"`
+	SqlserverComputerName    ResourceAttributeConfig `mapstructure:"sqlserver.computer.name"`
+	SqlserverDatabaseName    ResourceAttributeConfig `mapstructure:"sqlserver.database.name"`
+	SqlserverInstanceName    ResourceAttributeConfig `mapstructure:"sqlserver.instance.name"`
+	SqlserverQueryHash       ResourceAttributeConfig `mapstructure:"sqlserver.query.hash"`
+	SqlserverQueryPlanHandle ResourceAttributeConfig `mapstructure:"sqlserver.query_plan.handle"`
+	SqlserverQueryPlanHash   ResourceAttributeConfig `mapstructure:"sqlserver.query_plan.hash"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -185,6 +220,15 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		SqlserverInstanceName: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		SqlserverQueryHash: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		SqlserverQueryPlanHandle: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		SqlserverQueryPlanHash: ResourceAttributeConfig{
 			Enabled: false,
 		},
 	}

@@ -42,6 +42,27 @@ func (rb *ResourceBuilder) SetSqlserverInstanceName(val string) {
 	}
 }
 
+// SetSqlserverQueryHash sets provided value as "sqlserver.query.hash" attribute.
+func (rb *ResourceBuilder) SetSqlserverQueryHash(val string) {
+	if rb.config.SqlserverQueryHash.Enabled {
+		rb.res.Attributes().PutStr("sqlserver.query.hash", val)
+	}
+}
+
+// SetSqlserverQueryPlanHandle sets provided value as "sqlserver.query_plan.handle" attribute.
+func (rb *ResourceBuilder) SetSqlserverQueryPlanHandle(val string) {
+	if rb.config.SqlserverQueryPlanHandle.Enabled {
+		rb.res.Attributes().PutStr("sqlserver.query_plan.handle", val)
+	}
+}
+
+// SetSqlserverQueryPlanHash sets provided value as "sqlserver.query_plan.hash" attribute.
+func (rb *ResourceBuilder) SetSqlserverQueryPlanHash(val string) {
+	if rb.config.SqlserverQueryPlanHash.Enabled {
+		rb.res.Attributes().PutStr("sqlserver.query_plan.hash", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res

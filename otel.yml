@@ -1,0 +1,43 @@
+receivers:
+  sqlserver:
+    collection_interval: 5s
+    username: sa
+    password: sqlpass123!
+    server: sqlserver
+    port: 1433
+
+  sqlserver/2:
+    collection_interval: 5s
+    username: SA
+    password: password123
+    server: localhost
+    port: 1433
+
+  sqlserver/localhost:
+    collection_interval: 5s
+    username: sa
+    password: sqlpass123!
+    server: localhost
+    port: 1433
+
+exporters:
+  debug:
+    verbosity: detailed
+  prometheus:
+    endpoint: "0.0.0.0:9091"
+  elasticsearch:
+    endpoint: "http://elasticsearch:9200"
+
+processors:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [ sqlserver ]
+      processors: []
+      exporters: [ prometheus, elasticsearch ]
+
+    logs:
+      receivers: [ sqlserver ]
+      processors: []
+      exporters: [ elasticsearch ]

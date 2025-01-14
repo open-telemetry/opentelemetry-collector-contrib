@@ -1,0 +1,1 @@
+[{"computer_name":"5e389100f106", "execution_count":"10", "query_hash":"s1", "query_plan_handle":"s2", "query_plan_hash":"s3", "sql_instance":"sqlserver" ,"total_elapsed_time":"149705", "total_grant_kb":"13312", "total_logical_reads":"0", "total_logical_writes":"0", "total_physical_reads":"0","total_rows":"107","total_worker_time":"149660"}]

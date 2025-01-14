@@ -1,0 +1,68 @@
+version: "3.8"
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+    volumes:
+      - ./grafana-datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:latest
+    platform: linux/amd64
+    container_name: sqlserver
+    hostname: sqlserver
+    ports:
+      - 1433:1433
+    env_file:
+      - sqlserver.env
+
+
+  otel-collector:
+    container_name: otel
+    image: otelcontribcol
+    restart: always
+    command: ["--config=/etc/otel.yml"]
+    volumes:
+      - ./otel.yml:/etc/otel.yml
+    ports:
+      - 9091:9091
+    depends_on:
+      - sqlserver
+      - prometheus
+
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    container_name: es
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.15.2
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://es:9200
+    ports:
+      - "5601:5601"
