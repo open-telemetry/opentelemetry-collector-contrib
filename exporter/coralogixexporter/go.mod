@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.23.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241104194629-dd2ea8efbc28
-	google.golang.org/grpc v1.69.2
+	google.golang.org/grpc v1.69.4
 )
 
 require (
