@@ -166,5 +166,4 @@ func addExpectedHistogramBuckets(metrics pmetric.MetricSlice) {
 		dataPoint.SetTimestamp(timestamp2)
 		dataPoint.SetIntValue(bucketCount)
 	}
-
 }

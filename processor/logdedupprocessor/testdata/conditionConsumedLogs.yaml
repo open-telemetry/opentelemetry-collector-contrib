@@ -1,0 +1,69 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: bool
+                value:
+                  boolValue: true
+              - key: str
+                value:
+                  stringValue: attr str
+              - key: ID
+                value:
+                  intValue: "2"
+            body:
+              stringValue: Body of the log2
+            severityText: info
+            spanId: ""
+            timeUnixNano: "1728069505995028000"
+            traceId: ""
+          - attributes:
+              - key: bool
+                value:
+                  boolValue: true
+              - key: str
+                value:
+                  stringValue: attr str
+              - key: ID
+                value:
+                  intValue: "2"
+            body:
+              stringValue: Body of the log2
+            severityText: info
+            spanId: ""
+            timeUnixNano: "1728069565995028000"
+            traceId: ""
+          - attributes:
+              - key: bool
+                value:
+                  boolValue: true
+              - key: str
+                value:
+                  stringValue: attr str
+              - key: ID
+                value:
+                  intValue: "3"
+            body:
+              stringValue: Body of the log3
+            severityText: info
+            spanId: ""
+            timeUnixNano: "1728069625995028000"
+            traceId: ""
+          - attributes:
+              - key: bool
+                value:
+                  boolValue: true
+              - key: str
+                value:
+                  stringValue: attr str
+              - key: ID
+                value:
+                  intValue: "3"
+            body:
+              stringValue: Body of the log3
+            severityText: info
+            spanId: ""
+            timeUnixNano: "1728069685995028000"
+            traceId: ""
+        scope: {}

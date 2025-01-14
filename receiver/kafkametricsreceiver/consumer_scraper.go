@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -29,10 +29,6 @@ type consumerScraper struct {
 	saramaConfig *sarama.Config
 	config       Config
 	mb           *metadata.MetricsBuilder
-}
-
-func (s *consumerScraper) Name() string {
-	return consumersScraperName
 }
 
 func (s *consumerScraper) start(_ context.Context, _ component.Host) error {
@@ -168,7 +164,8 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,
-	settings receiver.Settings) (scraperhelper.Scraper, error) {
+	settings receiver.Settings,
+) (scraper.Metrics, error) {
 	groupFilter, err := regexp.Compile(cfg.GroupMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile group_match: %w", err)
@@ -184,10 +181,9 @@ func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.C
 		config:       cfg,
 		saramaConfig: saramaConfig,
 	}
-	return scraperhelper.NewScraper(
-		s.Name(),
+	return scraper.NewMetrics(
 		s.scrape,
-		scraperhelper.WithStart(s.start),
-		scraperhelper.WithShutdown(s.shutdown),
+		scraper.WithStart(s.start),
+		scraper.WithShutdown(s.shutdown),
 	)
 }

@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/configssh"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/metadata"
@@ -50,11 +50,11 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "creates a new factory and CreateMetricsReceiver returns no error",
+			desc: "creates a new factory and CreateMetrics returns no error",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
-				_, err := factory.CreateMetricsReceiver(
+				_, err := factory.CreateMetrics(
 					context.Background(),
 					receivertest.NewNopSettings(),
 					cfg,
@@ -64,10 +64,10 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "creates a new factory and CreateMetricsReceiver returns error with incorrect config",
+			desc: "creates a new factory and CreateMetrics returns error with incorrect config",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
-				_, err := factory.CreateMetricsReceiver(
+				_, err := factory.CreateMetrics(
 					context.Background(),
 					receivertest.NewNopSettings(),
 					nil,

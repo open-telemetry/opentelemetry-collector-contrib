@@ -26,17 +26,17 @@ func TestCreateTestProcessor(t *testing.T) {
 	tp, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
-	assert.Equal(t, true, tp.Capabilities().MutatesData)
+	assert.True(t, tp.Capabilities().MutatesData)
 
 	lp, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
-	assert.Equal(t, true, lp.Capabilities().MutatesData)
+	assert.True(t, lp.Capabilities().MutatesData)
 
 	mp, err := createMetricsProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
-	assert.Equal(t, true, mp.Capabilities().MutatesData)
+	assert.True(t, mp.Capabilities().MutatesData)
 }
 
 func TestNoKeys(t *testing.T) {

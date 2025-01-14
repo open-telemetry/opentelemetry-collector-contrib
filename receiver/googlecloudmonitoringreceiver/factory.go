@@ -9,7 +9,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver/internal/metadata"
 )
@@ -23,8 +24,11 @@ func NewFactory() receiver.Factory {
 
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultControllerConfig()
+	cfg.CollectionInterval = defaultCollectionInterval
+
 	return &Config{
-		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		ControllerConfig: cfg,
 	}
 }
 
@@ -34,16 +38,15 @@ func createMetricsReceiver(
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	rCfg := baseCfg.(*Config)
 	r := newGoogleCloudMonitoringReceiver(rCfg, settings.Logger)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), r.Scrape, scraperhelper.WithStart(r.Start),
-		scraperhelper.WithShutdown(r.Shutdown))
+	s, err := scraper.NewMetrics(r.Scrape, scraper.WithStart(r.Start),
+		scraper.WithShutdown(r.Shutdown))
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(&rCfg.ControllerConfig, settings, consumer,
-		scraperhelper.AddScraper(scraper))
+		scraperhelper.AddScraper(metadata.Type, s))
 }

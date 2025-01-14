@@ -154,9 +154,11 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 
 // A guesstimated value > length of bytes of a single event.
 // Added to buffer capacity so that buffer is likely to grow by reslicing when buf.Len() > bufCap.
-const bufCapPadding = uint(4096)
-const libraryHeaderName = "X-Splunk-Instrumentation-Library"
-const profilingLibraryName = "otel.profiling"
+const (
+	bufCapPadding        = uint(4096)
+	libraryHeaderName    = "X-Splunk-Instrumentation-Library"
+	profilingLibraryName = "otel.profiling"
+)
 
 func isProfilingData(sl plog.ScopeLogs) bool {
 	return sl.Scope().Name() == profilingLibraryName
@@ -205,6 +207,10 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 				} else {
 					// Parsing log record to Splunk event.
 					event := mapLogRecordToSplunkEvent(rl.Resource(), logRecord, c.config)
+					if event == nil {
+						// TODO record this drop as a metric
+						continue
+					}
 
 					// JSON encoding event and writing to buffer.
 					var err error
@@ -607,7 +613,6 @@ func (c *client) stop(context.Context) error {
 }
 
 func (c *client) start(ctx context.Context, host component.Host) (err error) {
-
 	httpClient, err := buildHTTPClient(ctx, c.config, host, c.telemetrySettings)
 	if err != nil {
 		return err
@@ -632,7 +637,6 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 }
 
 func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *url.URL) error {
-
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthCheckURL.String(), nil)
 	if err != nil {
 		return consumererror.NewPermanent(err)

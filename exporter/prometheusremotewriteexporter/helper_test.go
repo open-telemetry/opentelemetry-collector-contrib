@@ -59,14 +59,14 @@ func Test_batchTimeSeries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			state := newBatchTimeSericesState()
-			requests, err := batchTimeSeries(tt.tsMap, tt.maxBatchByteSize, nil, &state)
+			requests, err := batchTimeSeries(tt.tsMap, tt.maxBatchByteSize, nil, state)
 			if tt.returnErr {
 				assert.Error(t, err)
 				return
 			}
 
 			assert.NoError(t, err)
-			assert.Equal(t, tt.numExpectedRequests, len(requests))
+			assert.Len(t, requests, tt.numExpectedRequests)
 			if tt.numExpectedRequests <= 1 {
 				assert.Equal(t, math.MaxInt, state.nextTimeSeriesBufferSize)
 				assert.Equal(t, math.MaxInt, state.nextMetricMetadataBufferSize)
@@ -97,10 +97,10 @@ func Test_batchTimeSeriesUpdatesStateForLargeBatches(t *testing.T) {
 	tsMap1 := getTimeseriesMap(tsArray)
 
 	state := newBatchTimeSericesState()
-	requests, err := batchTimeSeries(tsMap1, 1000000, nil, &state)
+	requests, err := batchTimeSeries(tsMap1, 1000000, nil, state)
 
 	assert.NoError(t, err)
-	assert.Equal(t, 18, len(requests))
+	assert.Len(t, requests, 18)
 	assert.Equal(t, len(requests[len(requests)-2].Timeseries)*2, state.nextTimeSeriesBufferSize)
 	assert.Equal(t, math.MaxInt, state.nextMetricMetadataBufferSize)
 	assert.Equal(t, 36, state.nextRequestBufferSize)
@@ -132,9 +132,9 @@ func Benchmark_batchTimeSeries(b *testing.B) {
 	state := newBatchTimeSericesState()
 	// Run batchTimeSeries 100 times with a 1mb max request size
 	for i := 0; i < b.N; i++ {
-		requests, err := batchTimeSeries(tsMap1, 1000000, nil, &state)
+		requests, err := batchTimeSeries(tsMap1, 1000000, nil, state)
 		assert.NoError(b, err)
-		assert.Equal(b, 18, len(requests))
+		assert.Len(b, requests, 18)
 	}
 }
 
@@ -233,7 +233,7 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 			},
 		},
 	}
-	assert.Equal(t, got, want)
+	assert.Equal(t, want, got)
 
 	// For a full sanity/logical check, assert that EVERY
 	// Sample has a Timestamp bigger than its prior values.
@@ -242,10 +242,8 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 			si := ts.Samples[i]
 			for j := 0; j < i; j++ {
 				sj := ts.Samples[j]
-				if sj.Timestamp > si.Timestamp {
-					t.Errorf("Timeseries[%d]: Sample[%d].Timestamp(%d) > Sample[%d].Timestamp(%d)",
-						ti, j, sj.Timestamp, i, si.Timestamp)
-				}
+				assert.LessOrEqual(t, sj.Timestamp, si.Timestamp, "Timeseries[%d]: Sample[%d].Timestamp(%d) > Sample[%d].Timestamp(%d)",
+					ti, j, sj.Timestamp, i, si.Timestamp)
 			}
 		}
 	}

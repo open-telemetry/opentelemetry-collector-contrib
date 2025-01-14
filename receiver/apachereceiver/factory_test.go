@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
@@ -28,9 +28,9 @@ func TestValidConfig(t *testing.T) {
 	require.NoError(t, component.ValidateConfig(factory.CreateDefaultConfig()))
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
-	metricsReceiver, err := factory.CreateMetricsReceiver(
+	metricsReceiver, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		&Config{
@@ -49,6 +49,7 @@ func TestPortValidate(t *testing.T) {
 		desc         string
 		endpoint     string
 		expectedPort string
+		expectError  bool
 	}{
 		{
 			desc:         "http with specified port",
@@ -80,6 +81,12 @@ func TestPortValidate(t *testing.T) {
 			endpoint:     "abc://localhost/server-status?auto",
 			expectedPort: "",
 		},
+		{
+			desc:         "invalid endpoint",
+			endpoint:     ":missing-schema",
+			expectedPort: "",
+			expectError:  true,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -87,7 +94,12 @@ func TestPortValidate(t *testing.T) {
 			cfg.Endpoint = tc.endpoint
 			_, port, err := parseResourceAttributes(tc.endpoint)
 
-			require.NoError(t, err)
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
 			require.Equal(t, tc.expectedPort, port)
 		})
 	}

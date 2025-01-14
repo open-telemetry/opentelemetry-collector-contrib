@@ -189,7 +189,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 			// Create a file, then start
 			temp := openTemp(t, tempDir)
 			bytesWritten, err := temp.Write(tc.input)
-			require.Greater(t, bytesWritten, 0)
+			require.Positive(t, bytesWritten)
 			require.NoError(t, err)
 			require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
 			defer func() {

@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -47,7 +47,7 @@ func parseJSON[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 			return nil, err
 		}
 		var parsedValue any
-		err = jsoniter.UnmarshalFromString(targetVal, &parsedValue)
+		err = json.Unmarshal([]byte(targetVal), &parsedValue)
 		if err != nil {
 			return nil, err
 		}

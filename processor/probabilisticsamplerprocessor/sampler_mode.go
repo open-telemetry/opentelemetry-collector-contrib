@@ -63,7 +63,7 @@ const (
 
 	// Proportional uses OpenTelemetry consistent probability
 	// sampling information (OTEP 235), multiplies incoming
-	// sampling probaiblities.
+	// sampling probabilities.
 	Proportional SamplerMode = "proportional"
 
 	// defaultHashSeed is applied when the mode is unset.
@@ -84,10 +84,12 @@ func (rm randomnessMethod) randomness() sampling.Randomness {
 	return sampling.Randomness(rm)
 }
 
-type traceIDHashingMethod struct{ randomnessMethod }
-type traceIDW3CSpecMethod struct{ randomnessMethod }
-type samplingRandomnessMethod struct{ randomnessMethod }
-type samplingPriorityMethod struct{ randomnessMethod }
+type (
+	traceIDHashingMethod     struct{ randomnessMethod }
+	traceIDW3CSpecMethod     struct{ randomnessMethod }
+	samplingRandomnessMethod struct{ randomnessMethod }
+	samplingPriorityMethod   struct{ randomnessMethod }
+)
 
 type missingRandomnessMethod struct{}
 
@@ -124,11 +126,13 @@ func (samplingPriorityMethod) policyName() string {
 	return "sampling_priority"
 }
 
-var _ randomnessNamer = missingRandomnessMethod{}
-var _ randomnessNamer = traceIDHashingMethod{}
-var _ randomnessNamer = traceIDW3CSpecMethod{}
-var _ randomnessNamer = samplingRandomnessMethod{}
-var _ randomnessNamer = samplingPriorityMethod{}
+var (
+	_ randomnessNamer = missingRandomnessMethod{}
+	_ randomnessNamer = traceIDHashingMethod{}
+	_ randomnessNamer = traceIDW3CSpecMethod{}
+	_ randomnessNamer = samplingRandomnessMethod{}
+	_ randomnessNamer = samplingPriorityMethod{}
+)
 
 func newMissingRandomnessMethod() randomnessNamer {
 	return missingRandomnessMethod{}
@@ -243,12 +247,10 @@ func (th *hashingSampler) decide(_ samplingCarrier) sampling.Threshold {
 // consistentTracestateCommon contains the common aspects of the
 // Proportional and Equalizing sampler modes.  These samplers sample
 // using the TraceID and do not support use of logs source attribute.
-type consistentTracestateCommon struct {
-}
+type consistentTracestateCommon struct{}
 
 // neverSampler always decides false.
-type neverSampler struct {
-}
+type neverSampler struct{}
 
 func (*neverSampler) decide(_ samplingCarrier) sampling.Threshold {
 	return sampling.NeverSampleThreshold

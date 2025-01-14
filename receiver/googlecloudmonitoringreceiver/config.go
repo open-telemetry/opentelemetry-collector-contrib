@@ -8,10 +8,13 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
-const minCollectionIntervalSeconds = 60
+const (
+	defaultCollectionInterval = 300 * time.Second // Default value for collection interval
+	defaultFetchDelay         = 60 * time.Second  // Default value for fetch delay
+)
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
@@ -21,13 +24,12 @@ type Config struct {
 }
 
 type MetricConfig struct {
-	MetricName string        `mapstructure:"metric_name"`
-	Delay      time.Duration `mapstructure:"delay"`
+	MetricName string `mapstructure:"metric_name"`
 }
 
 func (config *Config) Validate() error {
-	if config.CollectionInterval.Seconds() < minCollectionIntervalSeconds {
-		return fmt.Errorf("\"collection_interval\" must be not lower than %v seconds, current value is %v seconds", minCollectionIntervalSeconds, config.CollectionInterval.Seconds())
+	if config.CollectionInterval < defaultCollectionInterval {
+		return fmt.Errorf("\"collection_interval\" must be not lower than the collection interval: %v, current value is %v", defaultCollectionInterval, config.CollectionInterval)
 	}
 
 	if len(config.MetricsList) == 0 {
@@ -46,10 +48,6 @@ func (config *Config) Validate() error {
 func (metric MetricConfig) Validate() error {
 	if metric.MetricName == "" {
 		return errors.New("field \"metric_name\" is required and cannot be empty for metric configuration")
-	}
-
-	if metric.Delay < 0 {
-		return errors.New("field \"delay\" cannot be negative for metric configuration")
 	}
 
 	return nil

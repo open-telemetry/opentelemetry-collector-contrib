@@ -14,7 +14,6 @@ import (
 )
 
 func TestNewTracesExporter(t *testing.T) {
-
 	got, err := newTracesExporter(exportertest.NewNopSettings(), &Config{
 		Endpoint: "cn-hangzhou.log.aliyuncs.com",
 		Project:  "demo-project",
@@ -31,11 +30,10 @@ func TestNewTracesExporter(t *testing.T) {
 	// This will put trace data to send buffer and return success.
 	err = got.ConsumeTraces(context.Background(), traces)
 	assert.NoError(t, err)
-	assert.Nil(t, got.Shutdown(context.Background()))
+	assert.NoError(t, got.Shutdown(context.Background()))
 }
 
 func TestNewFailsWithEmptyTracesExporterName(t *testing.T) {
-
 	got, err := newTracesExporter(exportertest.NewNopSettings(), &Config{})
 	assert.Error(t, err)
 	require.Nil(t, got)

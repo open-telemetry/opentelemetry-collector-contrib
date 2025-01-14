@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeConnectionOp specifies the a value connection_op attribute.
+// AttributeConnectionOp specifies the value connection_op attribute.
 type AttributeConnectionOp int
 
 const (
@@ -40,7 +40,7 @@ var MapAttributeConnectionOp = map[string]AttributeConnectionOp{
 	"open":  AttributeConnectionOpOpen,
 }
 
-// AttributeConnectionType specifies the a value connection_type attribute.
+// AttributeConnectionType specifies the value connection_type attribute.
 type AttributeConnectionType int
 
 const (
@@ -70,7 +70,7 @@ var MapAttributeConnectionType = map[string]AttributeConnectionType{
 	"heartbeat": AttributeConnectionTypeHeartbeat,
 }
 
-// AttributeIndexType specifies the a value index_type attribute.
+// AttributeIndexType specifies the value index_type attribute.
 type AttributeIndexType int
 
 const (
@@ -96,7 +96,7 @@ var MapAttributeIndexType = map[string]AttributeIndexType{
 	"secondary": AttributeIndexTypeSecondary,
 }
 
-// AttributeNamespaceComponent specifies the a value namespace_component attribute.
+// AttributeNamespaceComponent specifies the value namespace_component attribute.
 type AttributeNamespaceComponent int
 
 const (
@@ -130,7 +130,7 @@ var MapAttributeNamespaceComponent = map[string]AttributeNamespaceComponent{
 	"secondary_index": AttributeNamespaceComponentSecondaryIndex,
 }
 
-// AttributeQueryResult specifies the a value query_result attribute.
+// AttributeQueryResult specifies the value query_result attribute.
 type AttributeQueryResult int
 
 const (
@@ -164,7 +164,7 @@ var MapAttributeQueryResult = map[string]AttributeQueryResult{
 	"timeout":  AttributeQueryResultTimeout,
 }
 
-// AttributeQueryType specifies the a value query_type attribute.
+// AttributeQueryType specifies the value query_type attribute.
 type AttributeQueryType int
 
 const (
@@ -210,7 +210,7 @@ var MapAttributeQueryType = map[string]AttributeQueryType{
 	"udf_background": AttributeQueryTypeUdfBackground,
 }
 
-// AttributeScanResult specifies the a value scan_result attribute.
+// AttributeScanResult specifies the value scan_result attribute.
 type AttributeScanResult int
 
 const (
@@ -240,7 +240,7 @@ var MapAttributeScanResult = map[string]AttributeScanResult{
 	"error":    AttributeScanResultError,
 }
 
-// AttributeScanType specifies the a value scan_type attribute.
+// AttributeScanType specifies the value scan_type attribute.
 type AttributeScanType int
 
 const (
@@ -274,7 +274,7 @@ var MapAttributeScanType = map[string]AttributeScanType{
 	"udf_background": AttributeScanTypeUdfBackground,
 }
 
-// AttributeTransactionResult specifies the a value transaction_result attribute.
+// AttributeTransactionResult specifies the value transaction_result attribute.
 type AttributeTransactionResult int
 
 const (
@@ -312,7 +312,7 @@ var MapAttributeTransactionResult = map[string]AttributeTransactionResult{
 	"timeout":      AttributeTransactionResultTimeout,
 }
 
-// AttributeTransactionType specifies the a value transaction_type attribute.
+// AttributeTransactionType specifies the value transaction_type attribute.
 type AttributeTransactionType int
 
 const (
@@ -1097,17 +1097,25 @@ type MetricsBuilder struct {
 	metricAerospikeNodeQueryTracked                         metricAerospikeNodeQueryTracked
 }
 
-// metricBuilderOption applies changes to default metrics builder.
-type metricBuilderOption func(*MetricsBuilder)
-
-// WithStartTime sets startTime on the metrics builder.
-func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.startTime = startTime
-	}
+// MetricBuilderOption applies changes to default metrics builder.
+type MetricBuilderOption interface {
+	apply(*MetricsBuilder)
 }
 
-func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...metricBuilderOption) *MetricsBuilder {
+type metricBuilderOptionFunc func(mb *MetricsBuilder)
+
+func (mbof metricBuilderOptionFunc) apply(mb *MetricsBuilder) {
+	mbof(mb)
+}
+
+// WithStartTime sets startTime on the metrics builder.
+func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
+	return metricBuilderOptionFunc(func(mb *MetricsBuilder) {
+		mb.startTime = startTime
+	})
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                mbc,
 		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
@@ -1144,7 +1152,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 
 	for _, op := range options {
-		op(mb)
+		op.apply(mb)
 	}
 	return mb
 }
@@ -1162,20 +1170,28 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption interface {
+	apply(pmetric.ResourceMetrics)
+}
+
+type resourceMetricsOptionFunc func(pmetric.ResourceMetrics)
+
+func (rmof resourceMetricsOptionFunc) apply(rm pmetric.ResourceMetrics) {
+	rmof(rm)
+}
 
 // WithResource sets the provided resource on the emitted ResourceMetrics.
 // It's recommended to use ResourceBuilder to create the resource.
 func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
 		res.CopyTo(rm.Resource())
-	}
+	})
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1189,7 +1205,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 				dps.At(j).SetStartTimestamp(start)
 			}
 		}
-	}
+	})
 }
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
@@ -1197,7 +1213,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
 // just `Emit` function can be called instead.
 // Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
+func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver")
@@ -1218,8 +1234,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricAerospikeNodeMemoryFree.emit(ils.Metrics())
 	mb.metricAerospikeNodeQueryTracked.emit(ils.Metrics())
 
-	for _, op := range rmo {
-		op(rm)
+	for _, op := range options {
+		op.apply(rm)
 	}
 	for attr, filter := range mb.resourceAttributeIncludeFilter {
 		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
@@ -1241,8 +1257,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
+func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(options...)
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
@@ -1390,9 +1406,9 @@ func (mb *MetricsBuilder) RecordAerospikeNodeQueryTrackedDataPoint(ts pcommon.Ti
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
 // and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
+func (mb *MetricsBuilder) Reset(options ...MetricBuilderOption) {
 	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op.apply(mb)
 	}
 }

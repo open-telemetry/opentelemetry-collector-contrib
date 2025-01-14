@@ -6,6 +6,7 @@
 package commander
 
 import (
+	"fmt"
 	"os"
 	"syscall"
 
@@ -24,7 +25,7 @@ func sendShutdownSignal(process *os.Process) error {
 	// See: https://learn.microsoft.com/en-us/windows/console/generateconsolectrlevent
 	r, _, e := ctrlEventProc.Call(syscall.CTRL_BREAK_EVENT, uintptr(process.Pid))
 	if r == 0 {
-		return e
+		return fmt.Errorf("sendShutdownSignal to PID '%d': %w", process.Pid, e)
 	}
 
 	return nil

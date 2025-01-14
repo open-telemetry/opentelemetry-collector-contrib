@@ -9,7 +9,7 @@ package solace.messaging.proto.broker.trace.receive.v1;
 // the future. Receiving clients must not assume there are no additional topic
 // levels.
 //
-// This message describes telemetry data that a Solace PubSub+ broker captures 
+// This message describes telemetry data that a Solace PubSub+ broker captures
 // when a received message is identified as a message to be traced.
 //
 // Fields with names that end in "time_unix_nano" are 64-bit timestamps, in
@@ -102,16 +102,20 @@ message SpanData {
   string client_username = 7;
 
   // The IP and port the broker received the message on.
-  // Note: host_ip can be either an IPv4 or IPv6 address. If it is IPv4, the
-  // length is 4; an IPv6 address is 16 bytes.
+  // Note: host_ip can be either an IPv4 address, an IPv6 address, or no
+  // address at all. If it is IPv4, the length is 4; an IPv6 address is 16
+  // bytes; no address is indicated with a 0-length value. When the IP address
+  // is not included, the host_port should not be read.
   bytes host_ip = 8;
   uint32 host_port = 9;
 
   // The IP and port of the publishing client, from the broker's point of view.
   // This may not be the client's local IP and port if there is network address
   // translation involved between the client and the broker.
-  // Note: peer_ip can be either an IPv4 or IPv6 address. If it is IPv4, the
-  // length is 4; an IPv6 address is 16 bytes.
+  // Note: peer_ip can be either an IPv4 address, an IPv6 address, or no
+  // address at all. If it is IPv4, the length is 4; an IPv6 address is 16
+  // bytes; no address is indicated with a 0-length value. When the IP address
+  // is not included, the peer_port should not be read.
   bytes peer_ip = 10;
   uint32 peer_port = 11;
 
@@ -205,7 +209,7 @@ message SpanData {
     // The Solace SDT Types Map, Stream, and SMF are not supported. Other SDT
     // types from other protocols, such as AMQP symbol, timestamp, UUID, and
     // decimal types are not supported.
-    // 
+    //
     oneof value {
       bytes null_value = 1;
       bool bool_value = 2;
@@ -277,7 +281,7 @@ message SpanData {
       // have the span's error_description set, but all ROLLBACK_ONLY
       // transaction events will have an error_description set, which indicate
       // the transaction's error.
-      // 
+      //
       // Since the only record of these messages in the context of the
       // transaction has been discarded, no further span can be generated in
       // the context of a client, admin, or session timeout operation. When a
@@ -288,7 +292,7 @@ message SpanData {
       ROLLBACK_ONLY = 5;
     }
     Type type = 2;
-    
+
     enum Initiator {
       CLIENT = 0;
       ADMIN = 1;
@@ -360,5 +364,10 @@ message SpanData {
     // If the message is enqueued to a partitioned queue, this field indicates
     // the partition number the message is enqueued to.
     optional uint32 partition_number = 6;
+    
+    // If the message will have a TTL other than the value indicated by the
+    // receive span containing this event, it is indicated with this value.
+    optional int64 ttl = 7;
+    
   }
 }

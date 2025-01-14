@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 type Config struct {
@@ -68,7 +68,8 @@ func (q Query) Validate() error {
 }
 
 type LogsCfg struct {
-	BodyColumn string `mapstructure:"body_column"`
+	BodyColumn       string   `mapstructure:"body_column"`
+	AttributeColumns []string `mapstructure:"attribute_columns"`
 }
 
 func (config LogsCfg) Validate() error {

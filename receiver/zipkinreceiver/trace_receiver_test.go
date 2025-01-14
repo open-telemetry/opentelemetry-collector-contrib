@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 )
 
 const (
@@ -139,7 +139,7 @@ func TestStartTraceReception(t *testing.T) {
 			err = zr.Start(context.Background(), tt.host)
 			assert.Equal(t, tt.wantErr, err != nil)
 			if !tt.wantErr {
-				require.Nil(t, zr.Shutdown(context.Background()))
+				require.NoError(t, zr.Shutdown(context.Background()))
 			}
 		})
 	}
@@ -215,7 +215,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			r := httptest.NewRequest("POST", test.endpoint, requestBody)
+			r := httptest.NewRequest(http.MethodPost, test.endpoint, requestBody)
 			r.Header.Add("content-type", test.content)
 			r.Header.Add("content-encoding", test.encoding)
 
@@ -243,7 +243,7 @@ func TestReceiverContentTypes(t *testing.T) {
 func TestReceiverInvalidContentType(t *testing.T) {
 	body := `{ invalid json `
 
-	r := httptest.NewRequest("POST", "/api/v2/spans",
+	r := httptest.NewRequest(http.MethodPost, "/api/v2/spans",
 		bytes.NewBuffer([]byte(body)))
 	r.Header.Add("content-type", "application/json")
 
@@ -266,7 +266,7 @@ func TestReceiverConsumerError(t *testing.T) {
 	body, err := os.ReadFile(zipkinV2Single)
 	require.NoError(t, err)
 
-	r := httptest.NewRequest("POST", "/api/v2/spans", bytes.NewBuffer(body))
+	r := httptest.NewRequest(http.MethodPost, "/api/v2/spans", bytes.NewBuffer(body))
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
@@ -288,7 +288,7 @@ func TestReceiverConsumerPermanentError(t *testing.T) {
 	body, err := os.ReadFile(zipkinV2Single)
 	require.NoError(t, err)
 
-	r := httptest.NewRequest("POST", "/api/v2/spans", bytes.NewBuffer(body))
+	r := httptest.NewRequest(http.MethodPost, "/api/v2/spans", bytes.NewBuffer(body))
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
@@ -413,7 +413,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	body, err := os.ReadFile(zipkinV2Single)
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 
-	r := httptest.NewRequest("POST", "/api/v2/spans", bytes.NewBuffer(body))
+	r := httptest.NewRequest(http.MethodPost, "/api/v2/spans", bytes.NewBuffer(body))
 	r.Header.Add("content-type", "application/json")
 
 	next := new(consumertest.TracesSink)

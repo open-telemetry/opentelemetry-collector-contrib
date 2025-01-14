@@ -9,11 +9,17 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 )
 
 func TestValidate(t *testing.T) {
+	clientConfigInvalid := confighttp.NewDefaultClientConfig()
+	clientConfigInvalid.Endpoint = "invalid://endpoint:  12efg"
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+
 	testCases := []struct {
 		desc        string
 		cfg         *Config
@@ -22,9 +28,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing username, password, and invalid endpoint",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "invalid://endpoint:  12efg",
-				},
+				ClientConfig:     clientConfigInvalid,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: multierr.Combine(
@@ -36,10 +40,8 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing password and invalid endpoint",
 			cfg: &Config{
-				Username: "otelu",
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "invalid://endpoint:  12efg",
-				},
+				Username:         "otelu",
+				ClientConfig:     clientConfigInvalid,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: multierr.Combine(
@@ -50,10 +52,8 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing username and invalid endpoint",
 			cfg: &Config{
-				Password: "otelp",
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "invalid://endpoint:  12efg",
-				},
+				Password:         "otelp",
+				ClientConfig:     clientConfigInvalid,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: multierr.Combine(
@@ -64,11 +64,9 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "invalid endpoint",
 			cfg: &Config{
-				Username: "otelu",
-				Password: "otelp",
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "invalid://endpoint:  12efg",
-				},
+				Username:         "otelu",
+				Password:         "otelp",
+				ClientConfig:     clientConfigInvalid,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: multierr.Combine(
@@ -78,11 +76,9 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config",
 			cfg: &Config{
-				Username: "otelu",
-				Password: "otelp",
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: defaultEndpoint,
-				},
+				Username:         "otelu",
+				Password:         "otelp",
+				ClientConfig:     clientConfig,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: nil,
@@ -97,7 +93,6 @@ func TestValidate(t *testing.T) {
 			} else {
 				require.NoError(t, actualErr)
 			}
-
 		})
 	}
 }

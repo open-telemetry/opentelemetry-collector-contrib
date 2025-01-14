@@ -1,116 +1,219 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "labels": [
-      "renovatebot",
-      "dependencies"
-    ],
-    "constraints": {
-      "go": "1.22.0"
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "labels": [
+    "renovatebot",
+    "dependencies"
+  ],
+  "constraints": {
+    "go": "1.22.0"
+  },
+  "schedule": [
+    "on tuesday"
+  ],
+  "extends": [
+    "config:recommended",
+    "customManagers:githubActionsVersions"
+  ],
+  "ignorePaths": [
+    "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
+    "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_16_3",
+    "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_9_3",
+    "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_0",
+    "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_4.lpu",
+    "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_4lpu",
+    "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.5_0"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchUpdateTypes": [
+        "pin",
+        "pinDigest",
+        "digest",
+        "lockFileMaintenance",
+        "rollback",
+        "bump",
+        "replacement"
+      ],
+      "enabled": false
     },
-    "schedule": ["every tuesday"],
-    "extends": ["config:recommended"],
-    "ignorePaths": [
-      "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
-      "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_16_3",
-      "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_9_3",
-      "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_0",
-      "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_4.lpu",
-      "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_4lpu",
-      "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.5_0"
-    ],
-    "packageRules": [
-      {
-        "matchManagers": ["gomod"],
-        "matchUpdateTypes": ["pin", "pinDigest", "digest", "lockFileMaintenance", "rollback", "bump", "replacement"],
-        "enabled": false
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchUpdateTypes": ["major"],
-        "prBodyNotes": [":warning: MAJOR VERSION UPDATE :warning: - please manually update this package"],
-        "labels": ["dependency-major-update"]
-      },
-      {
-        "matchManagers": ["dockerfile"],
-        "groupName": "dockerfile deps"
-      },
-      {
-        "matchManagers": ["docker-compose"],
-        "groupName": "docker-compose deps"
-      },
-      {
-        "matchManagers": ["github-actions"],
-        "groupName": "github-actions deps"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://github.com/aws"],
-        "groupName": "All github.com/aws packages"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://github.com/azure"],
-        "groupName": "All github.com/azure packages"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://github.com/datadog"],
-        "groupName": "All github.com/datadog packages"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://google.golang.org"],
-        "groupName": "All google.golang.org packages"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchPackagePrefixes": ["golang.org/x"],
-        "groupName": "All golang.org/x packages"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchPackagePrefixes": ["go.opentelemetry.io/build-tools"],
-        "groupName": "All go.opentelemetry.io/build-tools packages"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/otel"],
-        "groupName": "All go.opentelemetry.io/otel packages"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchPackagePrefixes": ["cloud.google.com/go"],
-        "groupName": "All cloud.google.com/go packages"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://github.com/googlecloudplatform"],
-        "groupName": "All github.com/googlecloudplatform packages"
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrls": ["https://github.com/open-telemetry/opentelemetry-collector"],
-        "groupName": "All OpenTelemetry Collector dev packages",
-        "matchUpdateTypes": ["digest"]
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrls": ["https://github.com/open-telemetry/opentelemetry-collector"],
-        "groupName": "All OpenTelemetry Collector packages",
-        "matchUpdateTypes": ["major", "minor", "patch"]
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrls": [
-          "https://github.com/open-telemetry/opentelemetry-go-contrib"
-        ],
-        "groupName": "All opentelemetry-go-contrib packages"
-      }
-    ],
-    "ignoreDeps": [
-      "github.com/mattn/go-ieproxy",
-      "github.com/DataDog/datadog-agent/pkg/trace/exportable"
-    ],
-    "prConcurrentLimit": 200,
-    "suppressNotifications": ["prEditedNotification"]
-  }
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "prBodyNotes": [
+        ":warning: MAJOR VERSION UPDATE :warning: - please manually update this package"
+      ],
+      "labels": [
+        "dependency-major-update"
+      ]
+    },
+    {
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "groupName": "dockerfile deps"
+    },
+    {
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "groupName": "docker-compose deps"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github-actions deps"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All github.com/aws packages",
+      "matchSourceUrls": [
+        "https://github.com/aws{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All github.com/azure packages",
+      "matchSourceUrls": [
+        "https://github.com/azure{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All github.com/datadog packages",
+      "matchSourceUrls": [
+        "https://github.com/datadog{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All google.golang.org packages",
+      "matchSourceUrls": [
+        "https://google.golang.org{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All golang.org/x packages",
+      "matchPackageNames": [
+        "golang.org/x{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All go.opentelemetry.io/build-tools packages",
+      "matchPackageNames": [
+        "go.opentelemetry.io/build-tools{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All go.opentelemetry.io/otel packages",
+      "matchSourceUrls": [
+        "https://go.opentelemetry.io/otel{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All cloud.google.com/go packages",
+      "matchPackageNames": [
+        "cloud.google.com/go{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All github.com/googlecloudplatform packages",
+      "matchSourceUrls": [
+        "https://github.com/googlecloudplatform{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchSourceUrls": [
+        "https://github.com/open-telemetry/opentelemetry-collector"
+      ],
+      "groupName": "All OpenTelemetry Collector dev packages",
+      "matchUpdateTypes": [
+        "digest"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchSourceUrls": [
+        "https://github.com/open-telemetry/opentelemetry-collector"
+      ],
+      "groupName": "All OpenTelemetry Collector packages",
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchSourceUrls": [
+        "https://github.com/open-telemetry/opentelemetry-collector-contrib"
+      ],
+      "groupName": "All OpenTelemetry Collector Contrib packages",
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchSourceUrls": [
+        "https://github.com/open-telemetry/opentelemetry-go-contrib"
+      ],
+      "groupName": "All opentelemetry-go-contrib packages"
+    },
+    {
+      "matchPackageNames": [
+        "google.golang.org/grpc"
+      ],
+      "allowedVersions": "!/v1.68.0$/"
+    }
+  ],
+  "ignoreDeps": [
+    "github.com/DataDog/datadog-agent/pkg/trace/exportable",
+    "github.com/DataDog/datadog-api-client-go"
+  ],
+  "prConcurrentLimit": 200,
+  "suppressNotifications": [
+    "prEditedNotification"
+  ]
+}

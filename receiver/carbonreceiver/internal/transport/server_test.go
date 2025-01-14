@@ -71,7 +71,8 @@ func Test_Server_ListenAndServe(t *testing.T) {
 
 			ts := time.Date(2020, 2, 20, 20, 20, 20, 20, time.UTC)
 			err = gc.SendMetric(client.Metric{
-				Name: "test.metric", Value: 1, Timestamp: ts})
+				Name: "test.metric", Value: 1, Timestamp: ts,
+			})
 			assert.NoError(t, err)
 			runtime.Gosched()
 

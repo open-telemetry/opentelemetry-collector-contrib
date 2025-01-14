@@ -11,7 +11,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
 )
@@ -54,13 +55,13 @@ func createMetricsReceiver(
 
 	ms := newMemcachedScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ms.scrape)
+	scraper, err := scraper.NewMetrics(ms.scrape)
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&cfg.ControllerConfig, params, consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraper(metadata.Type, scraper),
 	)
 }

@@ -22,23 +22,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system/internal/metadata"
 )
 
-var (
-	_ = featuregate.GlobalRegistry().MustRegister(
-		"processor.resourcedetection.hostCPUModelAndFamilyAsString",
-		featuregate.StageStable,
-		featuregate.WithRegisterDescription("Change type of host.cpu.model.id and host.cpu.model.family to string."),
-		featuregate.WithRegisterFromVersion("v0.89.0"),
-		featuregate.WithRegisterToVersion("v0.101.0"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/495"),
-	)
-	hostCPUSteppingAsStringID          = "processor.resourcedetection.hostCPUSteppingAsString"
-	hostCPUSteppingAsStringFeatureGate = featuregate.GlobalRegistry().MustRegister(
-		hostCPUSteppingAsStringID,
-		featuregate.StageBeta,
-		featuregate.WithRegisterDescription("Change type of host.cpu.stepping to string."),
-		featuregate.WithRegisterFromVersion("v0.95.0"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/664"),
-	)
+var _ = featuregate.GlobalRegistry().MustRegister(
+	"processor.resourcedetection.hostCPUSteppingAsString",
+	featuregate.StageStable,
+	featuregate.WithRegisterDescription("Change type of host.cpu.stepping to string."),
+	featuregate.WithRegisterFromVersion("v0.95.0"),
+	featuregate.WithRegisterToVersion("v0.110.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/664"),
 )
 
 const (
@@ -215,15 +205,6 @@ func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) {
 	}
 
 	d.rb.SetHostCPUModelName(cpuInfo.ModelName)
-	if hostCPUSteppingAsStringFeatureGate.IsEnabled() {
-		d.rb.SetHostCPUStepping(fmt.Sprintf("%d", cpuInfo.Stepping))
-	} else {
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31136
-		d.logger.Info("This attribute will change from int to string. Switch now using the feature gate.",
-			zap.String("attribute", "host.cpu.stepping"),
-			zap.String("feature gate", hostCPUSteppingAsStringID),
-		)
-		d.rb.SetHostCPUSteppingAsInt(int64(cpuInfo.Stepping))
-	}
+	d.rb.SetHostCPUStepping(fmt.Sprintf("%d", cpuInfo.Stepping))
 	d.rb.SetHostCPUCacheL2Size(int64(cpuInfo.CacheSize))
 }

@@ -34,8 +34,8 @@ func createDefaultConfig() component.Config {
 			Endpoint: defaultEndpoint,
 		},
 		MaxIdleConns:    100,
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		QueueConfig:     exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+		QueueConfig:     exporterhelper.NewDefaultQueueConfig(),
 		RetryConfig:     configretry.NewDefaultBackOffConfig(),
 	}
 }
@@ -46,7 +46,6 @@ func createMetricsExporter(
 	config component.Config,
 ) (exporter.Metrics, error) {
 	exp, err := newCarbonExporter(ctx, config.(*Config), params)
-
 	if err != nil {
 		return nil, err
 	}

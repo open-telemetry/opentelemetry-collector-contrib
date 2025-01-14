@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeBufferPoolData specifies the a value buffer_pool_data attribute.
+// AttributeBufferPoolData specifies the value buffer_pool_data attribute.
 type AttributeBufferPoolData int
 
 const (
@@ -40,7 +40,7 @@ var MapAttributeBufferPoolData = map[string]AttributeBufferPoolData{
 	"clean": AttributeBufferPoolDataClean,
 }
 
-// AttributeBufferPoolOperations specifies the a value buffer_pool_operations attribute.
+// AttributeBufferPoolOperations specifies the value buffer_pool_operations attribute.
 type AttributeBufferPoolOperations int
 
 const (
@@ -86,7 +86,7 @@ var MapAttributeBufferPoolOperations = map[string]AttributeBufferPoolOperations{
 	"write_requests":     AttributeBufferPoolOperationsWriteRequests,
 }
 
-// AttributeBufferPoolPages specifies the a value buffer_pool_pages attribute.
+// AttributeBufferPoolPages specifies the value buffer_pool_pages attribute.
 type AttributeBufferPoolPages int
 
 const (
@@ -116,7 +116,7 @@ var MapAttributeBufferPoolPages = map[string]AttributeBufferPoolPages{
 	"misc": AttributeBufferPoolPagesMisc,
 }
 
-// AttributeCacheStatus specifies the a value cache_status attribute.
+// AttributeCacheStatus specifies the value cache_status attribute.
 type AttributeCacheStatus int
 
 const (
@@ -146,7 +146,7 @@ var MapAttributeCacheStatus = map[string]AttributeCacheStatus{
 	"overflow": AttributeCacheStatusOverflow,
 }
 
-// AttributeCommand specifies the a value command attribute.
+// AttributeCommand specifies the value command attribute.
 type AttributeCommand int
 
 const (
@@ -180,7 +180,7 @@ var MapAttributeCommand = map[string]AttributeCommand{
 	"update": AttributeCommandUpdate,
 }
 
-// AttributeConnectionError specifies the a value connection_error attribute.
+// AttributeConnectionError specifies the value connection_error attribute.
 type AttributeConnectionError int
 
 const (
@@ -234,7 +234,7 @@ var MapAttributeConnectionError = map[string]AttributeConnectionError{
 	"locked":          AttributeConnectionErrorLocked,
 }
 
-// AttributeConnectionStatus specifies the a value connection_status attribute.
+// AttributeConnectionStatus specifies the value connection_status attribute.
 type AttributeConnectionStatus int
 
 const (
@@ -264,7 +264,7 @@ var MapAttributeConnectionStatus = map[string]AttributeConnectionStatus{
 	"rejected": AttributeConnectionStatusRejected,
 }
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -290,7 +290,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"sent":     AttributeDirectionSent,
 }
 
-// AttributeDoubleWrites specifies the a value double_writes attribute.
+// AttributeDoubleWrites specifies the value double_writes attribute.
 type AttributeDoubleWrites int
 
 const (
@@ -316,7 +316,7 @@ var MapAttributeDoubleWrites = map[string]AttributeDoubleWrites{
 	"writes":        AttributeDoubleWritesWrites,
 }
 
-// AttributeEventState specifies the a value event_state attribute.
+// AttributeEventState specifies the value event_state attribute.
 type AttributeEventState int
 
 const (
@@ -374,7 +374,7 @@ var MapAttributeEventState = map[string]AttributeEventState{
 	"no_index_used":           AttributeEventStateNoIndexUsed,
 }
 
-// AttributeHandler specifies the a value handler attribute.
+// AttributeHandler specifies the value handler attribute.
 type AttributeHandler int
 
 const (
@@ -464,7 +464,7 @@ var MapAttributeHandler = map[string]AttributeHandler{
 	"write":              AttributeHandlerWrite,
 }
 
-// AttributeIoWaitsOperations specifies the a value io_waits_operations attribute.
+// AttributeIoWaitsOperations specifies the value io_waits_operations attribute.
 type AttributeIoWaitsOperations int
 
 const (
@@ -498,7 +498,7 @@ var MapAttributeIoWaitsOperations = map[string]AttributeIoWaitsOperations{
 	"update": AttributeIoWaitsOperationsUpdate,
 }
 
-// AttributeJoinKind specifies the a value join_kind attribute.
+// AttributeJoinKind specifies the value join_kind attribute.
 type AttributeJoinKind int
 
 const (
@@ -536,7 +536,7 @@ var MapAttributeJoinKind = map[string]AttributeJoinKind{
 	"scan":        AttributeJoinKindScan,
 }
 
-// AttributeLocks specifies the a value locks attribute.
+// AttributeLocks specifies the value locks attribute.
 type AttributeLocks int
 
 const (
@@ -562,7 +562,7 @@ var MapAttributeLocks = map[string]AttributeLocks{
 	"waited":    AttributeLocksWaited,
 }
 
-// AttributeLogOperations specifies the a value log_operations attribute.
+// AttributeLogOperations specifies the value log_operations attribute.
 type AttributeLogOperations int
 
 const (
@@ -592,7 +592,7 @@ var MapAttributeLogOperations = map[string]AttributeLogOperations{
 	"writes":         AttributeLogOperationsWrites,
 }
 
-// AttributeMysqlxThreads specifies the a value mysqlx_threads attribute.
+// AttributeMysqlxThreads specifies the value mysqlx_threads attribute.
 type AttributeMysqlxThreads int
 
 const (
@@ -618,7 +618,7 @@ var MapAttributeMysqlxThreads = map[string]AttributeMysqlxThreads{
 	"active":    AttributeMysqlxThreadsActive,
 }
 
-// AttributeOpenedResources specifies the a value opened_resources attribute.
+// AttributeOpenedResources specifies the value opened_resources attribute.
 type AttributeOpenedResources int
 
 const (
@@ -648,7 +648,7 @@ var MapAttributeOpenedResources = map[string]AttributeOpenedResources{
 	"table":            AttributeOpenedResourcesTable,
 }
 
-// AttributeOperations specifies the a value operations attribute.
+// AttributeOperations specifies the value operations attribute.
 type AttributeOperations int
 
 const (
@@ -678,7 +678,7 @@ var MapAttributeOperations = map[string]AttributeOperations{
 	"writes": AttributeOperationsWrites,
 }
 
-// AttributePageOperations specifies the a value page_operations attribute.
+// AttributePageOperations specifies the value page_operations attribute.
 type AttributePageOperations int
 
 const (
@@ -708,7 +708,7 @@ var MapAttributePageOperations = map[string]AttributePageOperations{
 	"written": AttributePageOperationsWritten,
 }
 
-// AttributePreparedStatementsCommand specifies the a value prepared_statements_command attribute.
+// AttributePreparedStatementsCommand specifies the value prepared_statements_command attribute.
 type AttributePreparedStatementsCommand int
 
 const (
@@ -750,7 +750,7 @@ var MapAttributePreparedStatementsCommand = map[string]AttributePreparedStatemen
 	"send_long_data": AttributePreparedStatementsCommandSendLongData,
 }
 
-// AttributeReadLockType specifies the a value read_lock_type attribute.
+// AttributeReadLockType specifies the value read_lock_type attribute.
 type AttributeReadLockType int
 
 const (
@@ -788,7 +788,7 @@ var MapAttributeReadLockType = map[string]AttributeReadLockType{
 	"external":          AttributeReadLockTypeExternal,
 }
 
-// AttributeRowLocks specifies the a value row_locks attribute.
+// AttributeRowLocks specifies the value row_locks attribute.
 type AttributeRowLocks int
 
 const (
@@ -814,7 +814,7 @@ var MapAttributeRowLocks = map[string]AttributeRowLocks{
 	"time":  AttributeRowLocksTime,
 }
 
-// AttributeRowOperations specifies the a value row_operations attribute.
+// AttributeRowOperations specifies the value row_operations attribute.
 type AttributeRowOperations int
 
 const (
@@ -848,7 +848,7 @@ var MapAttributeRowOperations = map[string]AttributeRowOperations{
 	"updated":  AttributeRowOperationsUpdated,
 }
 
-// AttributeSorts specifies the a value sorts attribute.
+// AttributeSorts specifies the value sorts attribute.
 type AttributeSorts int
 
 const (
@@ -882,7 +882,7 @@ var MapAttributeSorts = map[string]AttributeSorts{
 	"scan":         AttributeSortsScan,
 }
 
-// AttributeTableSizeType specifies the a value table_size_type attribute.
+// AttributeTableSizeType specifies the value table_size_type attribute.
 type AttributeTableSizeType int
 
 const (
@@ -908,7 +908,7 @@ var MapAttributeTableSizeType = map[string]AttributeTableSizeType{
 	"index": AttributeTableSizeTypeIndex,
 }
 
-// AttributeThreads specifies the a value threads attribute.
+// AttributeThreads specifies the value threads attribute.
 type AttributeThreads int
 
 const (
@@ -942,7 +942,7 @@ var MapAttributeThreads = map[string]AttributeThreads{
 	"running":   AttributeThreadsRunning,
 }
 
-// AttributeTmpResource specifies the a value tmp_resource attribute.
+// AttributeTmpResource specifies the value tmp_resource attribute.
 type AttributeTmpResource int
 
 const (
@@ -972,7 +972,7 @@ var MapAttributeTmpResource = map[string]AttributeTmpResource{
 	"tables":      AttributeTmpResourceTables,
 }
 
-// AttributeWriteLockType specifies the a value write_lock_type attribute.
+// AttributeWriteLockType specifies the value write_lock_type attribute.
 type AttributeWriteLockType int
 
 const (
@@ -3515,17 +3515,25 @@ type MetricsBuilder struct {
 	metricMysqlUptime                  metricMysqlUptime
 }
 
-// metricBuilderOption applies changes to default metrics builder.
-type metricBuilderOption func(*MetricsBuilder)
-
-// WithStartTime sets startTime on the metrics builder.
-func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.startTime = startTime
-	}
+// MetricBuilderOption applies changes to default metrics builder.
+type MetricBuilderOption interface {
+	apply(*MetricsBuilder)
 }
 
-func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...metricBuilderOption) *MetricsBuilder {
+type metricBuilderOptionFunc func(mb *MetricsBuilder)
+
+func (mbof metricBuilderOptionFunc) apply(mb *MetricsBuilder) {
+	mbof(mb)
+}
+
+// WithStartTime sets startTime on the metrics builder.
+func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
+	return metricBuilderOptionFunc(func(mb *MetricsBuilder) {
+		mb.startTime = startTime
+	})
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                             mbc,
 		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
@@ -3588,7 +3596,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 
 	for _, op := range options {
-		op(mb)
+		op.apply(mb)
 	}
 	return mb
 }
@@ -3606,20 +3614,28 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption interface {
+	apply(pmetric.ResourceMetrics)
+}
+
+type resourceMetricsOptionFunc func(pmetric.ResourceMetrics)
+
+func (rmof resourceMetricsOptionFunc) apply(rm pmetric.ResourceMetrics) {
+	rmof(rm)
+}
 
 // WithResource sets the provided resource on the emitted ResourceMetrics.
 // It's recommended to use ResourceBuilder to create the resource.
 func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
 		res.CopyTo(rm.Resource())
-	}
+	})
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -3633,7 +3649,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 				dps.At(j).SetStartTimestamp(start)
 			}
 		}
-	}
+	})
 }
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
@@ -3641,7 +3657,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
 // just `Emit` function can be called instead.
 // Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
+func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver")
@@ -3694,8 +3710,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlTmpResources.emit(ils.Metrics())
 	mb.metricMysqlUptime.emit(ils.Metrics())
 
-	for _, op := range rmo {
-		op(rm)
+	for _, op := range options {
+		op.apply(rm)
 	}
 	for attr, filter := range mb.resourceAttributeIncludeFilter {
 		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
@@ -3717,8 +3733,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
+func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(options...)
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
@@ -4101,9 +4117,9 @@ func (mb *MetricsBuilder) RecordMysqlUptimeDataPoint(ts pcommon.Timestamp, input
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
 // and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
+func (mb *MetricsBuilder) Reset(options ...MetricBuilderOption) {
 	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op.apply(mb)
 	}
 }

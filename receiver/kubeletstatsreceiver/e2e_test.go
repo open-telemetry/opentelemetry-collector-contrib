@@ -28,7 +28,6 @@ import (
 const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 
 func TestE2E(t *testing.T) {
-
 	var expected pmetric.Metrics
 	expectedFile := filepath.Join("testdata", "e2e", "expected.yaml")
 	expected, err := golden.ReadMetrics(expectedFile)
@@ -72,7 +71,7 @@ func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
 	cfg.HTTP = nil
 	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
 
-	rcvr, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mc)
+	rcvr, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, mc)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, err, "failed creating metrics receiver")
 	return func() {

@@ -10,12 +10,13 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/grpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/http"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
 type eventSourcePair struct {
@@ -33,9 +34,11 @@ type healthCheckExtension struct {
 	host          component.Host
 }
 
-var _ component.Component = (*healthCheckExtension)(nil)
-var _ extension.ConfigWatcher = (*healthCheckExtension)(nil)
-var _ extension.PipelineWatcher = (*healthCheckExtension)(nil)
+var (
+	_ component.Component                   = (*healthCheckExtension)(nil)
+	_ extensioncapabilities.ConfigWatcher   = (*healthCheckExtension)(nil)
+	_ extensioncapabilities.PipelineWatcher = (*healthCheckExtension)(nil)
+)
 
 func newExtension(
 	ctx context.Context,
@@ -142,11 +145,11 @@ func (hc *healthCheckExtension) ComponentStatusChanged(
 	hc.eventCh <- &eventSourcePair{source: source, event: event}
 }
 
-// NotifyConfig implements the extension.ConfigWatcher interface.
+// NotifyConfig implements the extensioncapabilities.ConfigWatcher interface.
 func (hc *healthCheckExtension) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
 	var err error
 	for _, comp := range hc.subcomponents {
-		if cw, ok := comp.(extension.ConfigWatcher); ok {
+		if cw, ok := comp.(extensioncapabilities.ConfigWatcher); ok {
 			err = multierr.Append(err, cw.NotifyConfig(ctx, conf))
 		}
 	}

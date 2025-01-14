@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 const targetExternalLabels = `
@@ -37,7 +37,7 @@ func TestExternalLabels(t *testing.T) {
 
 func verifyExternalLabels(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	wantAttributes := td.attributes
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -67,7 +67,7 @@ test_gauge0{label1="value1",label2="value2"} 10
 func verifyLabelLimitTarget1(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	// each sample in the scraped metrics is within the configured label_limit, scrape should be successful
 	verifyNumValidScrapeResults(t, td, rms)
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	want := td.attributes
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -159,7 +159,7 @@ test_summary0_count{label1="value1",label2="value2"} 1000
 
 func verifyLabelConfigTarget1(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	want := td.attributes
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -322,7 +322,7 @@ test_summary0_count{id="1",testLabel=""} 1000
 `
 
 func verifyEmptyLabelValuesTarget1(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	want := td.attributes
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -397,7 +397,7 @@ test_counter0{id="2",testLabel="foobar"} 110
 `
 
 func verifyEmptyLabelValuesTarget2(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	want := td.attributes
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -474,7 +474,7 @@ test_gauge0{instance="hostname:8080",job="honor_labels_test",testLabel="value1"}
 
 func verifyHonorLabelsFalse(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	want := td.attributes
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
@@ -508,7 +508,7 @@ test_counter0 100
 `
 
 func verifyEmptyLabelsTarget1(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	want := td.attributes
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -575,7 +575,7 @@ func TestHonorLabelsFalseConfig(t *testing.T) {
 }
 
 func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	// job and instance label values should be honored from honorLabelsTarget
 	expectedResourceAttributes := pcommon.NewMap()
@@ -692,7 +692,7 @@ func TestRelabelJobInstance(t *testing.T) {
 
 func verifyRelabelJobInstance(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	wantAttributes := td.attributes
 	wantAttributes.PutStr("service.name", "not-target1")
@@ -722,7 +722,6 @@ func verifyRelabelJobInstance(t *testing.T, td *testData, rms []pmetric.Resource
 				},
 			},
 		})(t, rms[0])
-
 }
 
 const targetResourceAttsInTargetInfo = `
@@ -750,7 +749,7 @@ func TestTargetInfoResourceAttributes(t *testing.T) {
 
 func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	wantAttributes := td.attributes
 	wantAttributes.PutStr("foo", "bar")
@@ -800,22 +799,22 @@ func TestScopeInfoScopeAttributes(t *testing.T) {
 
 func verifyMultipleScopes(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
-	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, rms, "At least one resource metric should be present")
 
 	sms := rms[0].ScopeMetrics()
-	require.Equal(t, sms.Len(), 3, "Three scope metrics should be present")
+	require.Equal(t, 3, sms.Len(), "Three scope metrics should be present")
 	sms.Sort(func(a, b pmetric.ScopeMetrics) bool {
 		return a.Scope().Name() < b.Scope().Name()
 	})
-	require.Equal(t, sms.At(0).Scope().Name(), "fake.scope.name")
-	require.Equal(t, sms.At(0).Scope().Version(), "v0.1.0")
-	require.Equal(t, sms.At(0).Scope().Attributes().Len(), 0)
-	require.Equal(t, sms.At(1).Scope().Name(), "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver")
-	require.Equal(t, sms.At(1).Scope().Attributes().Len(), 0)
-	require.Equal(t, sms.At(2).Scope().Name(), "scope.with.attributes")
-	require.Equal(t, sms.At(2).Scope().Version(), "v1.5.0")
-	require.Equal(t, sms.At(2).Scope().Attributes().Len(), 1)
+	require.Equal(t, "fake.scope.name", sms.At(0).Scope().Name())
+	require.Equal(t, "v0.1.0", sms.At(0).Scope().Version())
+	require.Equal(t, 0, sms.At(0).Scope().Attributes().Len())
+	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver", sms.At(1).Scope().Name())
+	require.Equal(t, 0, sms.At(1).Scope().Attributes().Len())
+	require.Equal(t, "scope.with.attributes", sms.At(2).Scope().Name())
+	require.Equal(t, "v1.5.0", sms.At(2).Scope().Version())
+	require.Equal(t, 1, sms.At(2).Scope().Attributes().Len())
 	scopeAttrVal, found := sms.At(2).Scope().Attributes().Get("animal")
 	require.True(t, found)
-	require.Equal(t, scopeAttrVal.Str(), "bear")
+	require.Equal(t, "bear", scopeAttrVal.Str())
 }

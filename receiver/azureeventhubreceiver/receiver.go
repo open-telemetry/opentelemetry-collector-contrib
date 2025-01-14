@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
@@ -42,7 +43,7 @@ type eventTracesUnmarshaler interface {
 
 type eventhubReceiver struct {
 	eventHandler        *eventhubHandler
-	dataType            component.Type
+	signal              pipeline.Signal
 	logger              *zap.Logger
 	logsUnmarshaler     eventLogsUnmarshaler
 	metricsUnmarshaler  eventMetricsUnmarshaler
@@ -74,20 +75,19 @@ func (receiver *eventhubReceiver) setNextTracesConsumer(nextTracesConsumer consu
 }
 
 func (receiver *eventhubReceiver) consume(ctx context.Context, event *eventhub.Event) error {
-	switch receiver.dataType {
-	case component.DataTypeLogs:
+	switch receiver.signal {
+	case pipeline.SignalLogs:
 		return receiver.consumeLogs(ctx, event)
-	case component.DataTypeMetrics:
+	case pipeline.SignalMetrics:
 		return receiver.consumeMetrics(ctx, event)
-	case component.DataTypeTraces:
+	case pipeline.SignalTraces:
 		return receiver.consumeTraces(ctx, event)
 	default:
-		return fmt.Errorf("invalid data type: %v", receiver.dataType)
+		return fmt.Errorf("invalid data type: %v", receiver.signal)
 	}
 }
 
 func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *eventhub.Event) error {
-
 	if receiver.nextLogsConsumer == nil {
 		return nil
 	}
@@ -111,7 +111,6 @@ func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *eventh
 }
 
 func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *eventhub.Event) error {
-
 	if receiver.nextMetricsConsumer == nil {
 		return nil
 	}
@@ -136,7 +135,6 @@ func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *eve
 }
 
 func (receiver *eventhubReceiver) consumeTraces(ctx context.Context, event *eventhub.Event) error {
-
 	if receiver.nextTracesConsumer == nil {
 		return nil
 	}
@@ -161,14 +159,13 @@ func (receiver *eventhubReceiver) consumeTraces(ctx context.Context, event *even
 }
 
 func newReceiver(
-	receiverType component.Type,
+	signal pipeline.Signal,
 	logsUnmarshaler eventLogsUnmarshaler,
 	metricsUnmarshaler eventMetricsUnmarshaler,
 	tracesUnmarshaler eventTracesUnmarshaler,
 	eventHandler *eventhubHandler,
 	settings receiver.Settings,
 ) (component.Component, error) {
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              "event",
@@ -179,7 +176,7 @@ func newReceiver(
 	}
 
 	eventhubReceiver := &eventhubReceiver{
-		dataType:           receiverType,
+		signal:             signal,
 		eventHandler:       eventHandler,
 		logger:             settings.Logger,
 		logsUnmarshaler:    logsUnmarshaler,

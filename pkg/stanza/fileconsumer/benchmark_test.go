@@ -12,9 +12,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -186,8 +188,8 @@ func BenchmarkFileInput(b *testing.B) {
 			cfg.PollInterval = time.Microsecond
 
 			doneChan := make(chan bool, len(files))
-			callback := func(_ context.Context, token []byte, _ map[string]any) error {
-				if len(token) == 0 {
+			callback := func(_ context.Context, token emit.Token) error {
+				if len(token.Body) == 0 {
 					doneChan <- true
 				}
 				return nil
@@ -210,12 +212,12 @@ func BenchmarkFileInput(b *testing.B) {
 					// Write the other half of the content while running
 					for i := 0; i < b.N/2; i++ {
 						_, err := f.WriteString(severalLines)
-						require.NoError(b, err)
+						assert.NoError(b, err)
 					}
 					// Signal end of file
 					_, err := f.WriteString("\n")
-					require.NoError(b, err)
-					require.NoError(b, f.Sync())
+					assert.NoError(b, err)
+					assert.NoError(b, f.Sync())
 				}(file)
 			}
 

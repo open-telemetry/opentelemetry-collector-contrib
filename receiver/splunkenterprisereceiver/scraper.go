@@ -19,14 +19,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 )
 
-var (
-	errMaxSearchWaitTimeExceeded = errors.New("maximum search wait time exceeded for metric")
-)
+var errMaxSearchWaitTimeExceeded = errors.New("maximum search wait time exceeded for metric")
 
 type splunkScraper struct {
 	splunkClient *splunkEntClient
@@ -101,6 +99,8 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeAvgIopsByHost,
 		s.scrapeSchedulerRunTimeByHost,
 		s.scrapeIndexerAvgRate,
+		s.scrapeKVStoreStatus,
+		s.scrapeSearchArtifacts,
 	}
 	errChan := make(chan error, len(metricScrapes))
 
@@ -114,7 +114,8 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			fn func(ctx context.Context, now pcommon.Timestamp, errs chan error),
 			ctx context.Context,
 			now pcommon.Timestamp,
-			errs chan error) {
+			errs chan error,
+		) {
 			// actual function body
 			defer wg.Done()
 			fn(ctx, now, errs)
@@ -424,7 +425,6 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pco
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
-
 	}
 	// Record the results
 	var host string
@@ -1558,5 +1558,178 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now 
 		currentQueueSizeBytes := int64(f.Content.CurrentSizeBytes)
 
 		s.mb.RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(now, currentQueueSizeBytes, name)
+	}
+}
+
+// Scrape introspection kv store status
+func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Timestamp, errs chan error) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreStatus.Enabled ||
+		!s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreReplicationStatus.Enabled ||
+		!s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreBackupStatus.Enabled ||
+		!s.splunkClient.isConfigured(typeCm) {
+		return
+	}
+
+	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	var kvs KVStoreStatus
+
+	ept := apiDict[`SplunkKVStoreStatus`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs <- err
+		return
+	}
+	defer res.Body.Close()
+
+	if err := json.NewDecoder(res.Body).Decode(&kvs); err != nil {
+		errs <- err
+		return
+	}
+
+	var st, brs, rs, se, ext string
+	for _, kv := range kvs.Entries {
+		st = kv.Content.Current.Status // overall status
+		brs = kv.Content.Current.BackupRestoreStatus
+		rs = kv.Content.Current.ReplicationStatus
+		se = kv.Content.Current.StorageEngine
+		ext = kv.Content.KVService.Status
+
+		// a 0 gauge value means that the metric was not reported in the api call
+		// to the introspection endpoint.
+		if st == "" {
+			st = KVStatusUnknown
+			// set to 0 to indicate no status being reported
+			s.mb.RecordSplunkKvstoreStatusDataPoint(now, 0, se, ext, st)
+		} else {
+			s.mb.RecordSplunkKvstoreStatusDataPoint(now, 1, se, ext, st)
+		}
+
+		if rs == "" {
+			rs = KVRestoreStatusUnknown
+			s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 0, rs)
+		} else {
+			s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 1, rs)
+		}
+
+		if brs == "" {
+			brs = KVBackupStatusFailed
+			s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 0, brs)
+		} else {
+			s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 1, brs)
+		}
+	}
+}
+
+// Scrape dispatch artifacts
+func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.Timestamp, errs chan error) {
+	if !s.splunkClient.isConfigured(typeSh) {
+		return
+	}
+
+	ctx = context.WithValue(ctx, endpointType("type"), typeSh)
+	var da DispatchArtifacts
+
+	ept := apiDict[`SplunkDispatchArtifacts`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs <- err
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		errs <- err
+		return
+	}
+	err = json.Unmarshal(body, &da)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	for _, f := range da.Entries {
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsAdhoc.Enabled {
+			adhocCount, err := strconv.ParseInt(f.Content.AdhocCount, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsAdhocDataPoint(now, adhocCount, s.conf.SHEndpoint.Endpoint)
+		}
+
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsScheduled.Enabled {
+			scheduledCount, err := strconv.ParseInt(f.Content.ScheduledCount, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsScheduledDataPoint(now, scheduledCount, s.conf.SHEndpoint.Endpoint)
+		}
+
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsCompleted.Enabled {
+			completedCount, err := strconv.ParseInt(f.Content.CompletedCount, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsCompletedDataPoint(now, completedCount, s.conf.SHEndpoint.Endpoint)
+		}
+
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsIncomplete.Enabled {
+			incompleteCount, err := strconv.ParseInt(f.Content.IncompleteCount, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsIncompleteDataPoint(now, incompleteCount, s.conf.SHEndpoint.Endpoint)
+		}
+
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsInvalid.Enabled {
+			invalidCount, err := strconv.ParseInt(f.Content.InvalidCount, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsInvalidDataPoint(now, invalidCount, s.conf.SHEndpoint.Endpoint)
+		}
+
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsSavedsearches.Enabled {
+			savedSearchesCount, err := strconv.ParseInt(f.Content.SavedSearchesCount, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsSavedsearchesDataPoint(now, savedSearchesCount, s.conf.SHEndpoint.Endpoint)
+		}
+
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsJobCacheSize.Enabled {
+			infoCacheSize, err := strconv.ParseInt(f.Content.InfoCacheSize, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			statusCacheSize, err := strconv.ParseInt(f.Content.StatusCacheSize, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(now, infoCacheSize, s.conf.SHEndpoint.Endpoint, "info")
+			s.mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(now, statusCacheSize, s.conf.SHEndpoint.Endpoint, "status")
+		}
+
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsJobCacheCount.Enabled {
+			cacheTotalEntries, err := strconv.ParseInt(f.Content.CacheTotalEntries, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(now, cacheTotalEntries, s.conf.SHEndpoint.Endpoint)
+		}
 	}
 }

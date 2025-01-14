@@ -38,7 +38,6 @@ func TestNewZorkianType(t *testing.T) {
 
 	count := NewZorkianCount(name, ts, value, tags)
 	assert.Equal(t, count.GetType(), string(Count))
-
 }
 
 func TestDefaultZorkianMetrics(t *testing.T) {
@@ -51,7 +50,7 @@ func TestDefaultZorkianMetrics(t *testing.T) {
 
 	assert.Equal(t, "otel.datadog_exporter.metrics.running", *ms[0].Metric)
 	// Assert metrics list length (should be 1)
-	assert.Equal(t, 1, len(ms))
+	assert.Len(t, ms, 1)
 	// Assert timestamp
 	assert.Equal(t, 2.0, *ms[0].Points[0][0])
 	// Assert value (should always be 1.0)

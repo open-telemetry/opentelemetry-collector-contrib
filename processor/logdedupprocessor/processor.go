@@ -11,16 +11,20 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
 // logDedupProcessor is a logDedupProcessor that counts duplicate instances of logs.
 type logDedupProcessor struct {
 	emitInterval time.Duration
+	conditions   *ottl.ConditionSequence[ottllog.TransformContext]
 	aggregator   *logAggregator
 	remover      *fieldRemover
 	nextConsumer consumer.Logs
@@ -78,7 +82,7 @@ func (p *logDedupProcessor) Shutdown(_ context.Context) error {
 }
 
 // ConsumeLogs processes the logs.
-func (p *logDedupProcessor) ConsumeLogs(_ context.Context, pl plog.Logs) error {
+func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error {
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
@@ -89,19 +93,42 @@ func (p *logDedupProcessor) ConsumeLogs(_ context.Context, pl plog.Logs) error {
 		for j := 0; j < rl.ScopeLogs().Len(); j++ {
 			sl := rl.ScopeLogs().At(j)
 			scope := sl.Scope()
+			logs := sl.LogRecords()
 
-			for k := 0; k < sl.LogRecords().Len(); k++ {
-				logRecord := sl.LogRecords().At(k)
-				// Remove excluded fields if any
-				p.remover.RemoveFields(logRecord)
+			logs.RemoveIf(func(logRecord plog.LogRecord) bool {
+				if p.conditions == nil {
+					p.aggregateLog(logRecord, scope, resource)
+					return true
+				}
 
-				// Add the log to the aggregator
-				p.aggregator.Add(resource, scope, logRecord)
-			}
+				logCtx := ottllog.NewTransformContext(logRecord, scope, resource, sl, rl)
+				logMatch, err := p.conditions.Eval(ctx, logCtx)
+				if err != nil {
+					p.logger.Error("error matching conditions", zap.Error(err))
+					return false
+				}
+				if logMatch {
+					p.aggregateLog(logRecord, scope, resource)
+				}
+				return logMatch
+			})
+		}
+	}
+
+	// immediately consume any logs that didn't match any conditions
+	if pl.LogRecordCount() > 0 {
+		err := p.nextConsumer.ConsumeLogs(ctx, pl)
+		if err != nil {
+			p.logger.Error("failed to consume logs", zap.Error(err))
 		}
 	}
 
 	return nil
+}
+
+func (p *logDedupProcessor) aggregateLog(logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource) {
+	p.remover.RemoveFields(logRecord)
+	p.aggregator.Add(resource, scope, logRecord)
 }
 
 // handleExportInterval sends metrics at the configured interval.

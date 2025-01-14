@@ -43,7 +43,8 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 }
 
 func setupMock(sess *session.Session) (f1 func(s *session.Session) (string, error),
-	f2 func(roleArn string, region string, logger *zap.Logger) (*session.Session, error)) {
+	f2 func(roleArn string, region string, logger *zap.Logger) (*session.Session, error),
+) {
 	f1 = getEC2Region
 	f2 = newAWSSession
 	m := mock{sn: sess}
@@ -174,7 +175,7 @@ func TestRegionFromEC2(t *testing.T) {
 	logs := recordedLogs.All()
 	lastEntry := logs[len(logs)-1]
 	assert.Contains(t, lastEntry.Message, "Fetched region from EC2 metadata", "expected log message")
-	assert.Equal(t, lastEntry.Context[0].Key, "region", "expected log key")
+	assert.Equal(t, "region", lastEntry.Context[0].Key, "expected log key")
 	assert.Equal(t, lastEntry.Context[0].String, ec2Region)
 }
 
@@ -255,8 +256,7 @@ func TestLoadEnvConfigCreds(t *testing.T) {
 	assert.Equal(t, cases.Val, value, "Expect the credentials value to match")
 
 	_, err = newAWSSession("ROLEARN", "TEST", zap.NewNop())
-	assert.Error(t, err, "expected error")
-	assert.Contains(t, err.Error(), "unable to handle AWS error", "expected error message")
+	assert.ErrorContains(t, err, "unable to handle AWS error", "expected error message")
 }
 
 func TestGetProxyUrlProxyAddressNotValid(t *testing.T) {
@@ -339,8 +339,7 @@ func TestProxyServerTransportInvalidProxyAddr(t *testing.T) {
 	_, err := proxyServerTransport(&Config{
 		ProxyAddress: "invalid\n",
 	})
-	assert.Error(t, err, "expected error")
-	assert.Contains(t, err.Error(), "invalid control character in URL")
+	assert.ErrorContains(t, err, "invalid control character in URL")
 }
 
 func TestProxyServerTransportHappyCase(t *testing.T) {
@@ -356,8 +355,8 @@ func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 	fake := &stsCalls{
 		log: zap.NewNop(),
 		getSTSCredsFromRegionEndpoint: func(_ *zap.Logger, _ *session.Session, region, roleArn string) *credentials.Credentials {
-			assert.Equal(t, region, endpoints.UsEast1RegionID, "expected region differs")
-			assert.Equal(t, roleArn, expectedRoleARN, "expected role ARN differs")
+			assert.Equal(t, endpoints.UsEast1RegionID, region, "expected region differs")
+			assert.Equal(t, expectedRoleARN, roleArn, "expected role ARN differs")
 			called = true
 			return nil
 		},
@@ -368,8 +367,8 @@ func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 
 	called = false
 	fake.getSTSCredsFromRegionEndpoint = func(_ *zap.Logger, _ *session.Session, region, roleArn string) *credentials.Credentials {
-		assert.Equal(t, region, endpoints.CnNorth1RegionID, "expected region differs")
-		assert.Equal(t, roleArn, expectedRoleARN, "expected role ARN differs")
+		assert.Equal(t, endpoints.CnNorth1RegionID, region, "expected region differs")
+		assert.Equal(t, expectedRoleARN, roleArn, "expected role ARN differs")
 		called = true
 		return nil
 	}
@@ -379,8 +378,8 @@ func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 
 	called = false
 	fake.getSTSCredsFromRegionEndpoint = func(_ *zap.Logger, _ *session.Session, region, roleArn string) *credentials.Credentials {
-		assert.Equal(t, region, endpoints.UsGovWest1RegionID, "expected region differs")
-		assert.Equal(t, roleArn, expectedRoleARN, "expected role ARN differs")
+		assert.Equal(t, endpoints.UsGovWest1RegionID, region, "expected region differs")
+		assert.Equal(t, expectedRoleARN, roleArn, "expected role ARN differs")
 		called = true
 		return nil
 	}
@@ -401,8 +400,7 @@ func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 		"expected error message")
 }
 
-type mockAWSErr struct {
-}
+type mockAWSErr struct{}
 
 func (m *mockAWSErr) Error() string {
 	return "mockAWSErr"
@@ -435,6 +433,7 @@ func (m *mockProvider) Retrieve() (credentials.Value, error) {
 func (m *mockProvider) IsExpired() bool {
 	return true
 }
+
 func TestSTSRegionalEndpointDisabled(t *testing.T) {
 	logger, recordedLogs := logSetup()
 
@@ -461,8 +460,7 @@ func TestSTSRegionalEndpointDisabled(t *testing.T) {
 		"STS regional endpoint disabled. Credentials for provided RoleARN will be fetched from STS primary region endpoint instead",
 		"expected log message")
 	assert.Equal(t,
-		lastEntry.Context[0].String,
-		expectedRegion, "expected error")
+		expectedRegion, lastEntry.Context[0].String, "expected error")
 	assert.EqualError(t,
 		lastEntry.Context[1].Interface.(error),
 		expectedErr.Error(), "expected error")

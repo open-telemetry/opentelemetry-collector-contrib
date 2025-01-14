@@ -30,12 +30,18 @@ var testMetadata = map[string]scrape.MetricMetadata{
 	"poor_name":       {Metric: "poor_name", Type: model.MetricTypeGauge, Help: "", Unit: ""},
 	"poor_name_count": {Metric: "poor_name_count", Type: model.MetricTypeCounter, Help: "", Unit: ""},
 	"scrape_foo":      {Metric: "scrape_foo", Type: model.MetricTypeCounter, Help: "", Unit: ""},
-	"example_process_start_time_seconds": {Metric: "example_process_start_time_seconds",
-		Type: model.MetricTypeGauge, Help: "", Unit: ""},
-	"process_start_time_seconds": {Metric: "process_start_time_seconds",
-		Type: model.MetricTypeGauge, Help: "", Unit: ""},
-	"subprocess_start_time_seconds": {Metric: "subprocess_start_time_seconds",
-		Type: model.MetricTypeGauge, Help: "", Unit: ""},
+	"example_process_start_time_seconds": {
+		Metric: "example_process_start_time_seconds",
+		Type:   model.MetricTypeGauge, Help: "", Unit: "",
+	},
+	"process_start_time_seconds": {
+		Metric: "process_start_time_seconds",
+		Type:   model.MetricTypeGauge, Help: "", Unit: "",
+	},
+	"subprocess_start_time_seconds": {
+		Metric: "subprocess_start_time_seconds",
+		Type:   model.MetricTypeGauge, Help: "", Unit: "",
+	},
 }
 
 func TestTimestampFromMs(t *testing.T) {
@@ -107,11 +113,10 @@ func TestConvToMetricType(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			got, monotonic := convToMetricType(tt.mtype)
 			require.Equal(t, got.String(), tt.want.String())
-			require.Equal(t, monotonic, tt.wantMonotonic)
+			require.Equal(t, tt.wantMonotonic, monotonic)
 		})
 	}
 }
@@ -163,7 +168,6 @@ func TestGetBoundary(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			value, err := getBoundary(tt.mtype, tt.labels)
 			if tt.wantErr != nil {
@@ -172,7 +176,7 @@ func TestGetBoundary(t *testing.T) {
 			}
 
 			assert.NoError(t, err)
-			assert.Equal(t, value, tt.wantValue)
+			assert.Equal(t, tt.wantValue, value)
 		})
 	}
 }

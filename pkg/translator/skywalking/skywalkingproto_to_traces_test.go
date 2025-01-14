@@ -69,7 +69,7 @@ func TestSwKvPairsToInternalAttributes(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			swKvPairsToInternalAttributes(test.swSpan.GetSpans()[0].Tags, test.dest.Attributes())
-			assert.Equal(t, test.dest.Attributes().Len(), len(test.swSpan.GetSpans()[0].Tags))
+			assert.Len(t, test.swSpan.GetSpans()[0].Tags, test.dest.Attributes().Len())
 			for _, tag := range test.swSpan.GetSpans()[0].Tags {
 				value, _ := test.dest.Attributes().Get(tag.Key)
 				assert.Equal(t, tag.Value, value.AsString())
@@ -216,7 +216,7 @@ func Test_stringToTraceID_Unique(t *testing.T) {
 	}
 
 	var results [2][16]byte
-	for i := 0; i < 2; i++ {
+	for i := 0; i < len(tests); i++ {
 		tt := tests[i]
 		t.Run(tt.name, func(_ *testing.T) {
 			got := swTraceIDToTraceID(tt.segmentObject.traceID)
@@ -317,7 +317,8 @@ func Test_swSpanToSpan_ParentSpanId(t *testing.T) {
 				Refs: []*agentV3.SegmentReference{{
 					ParentTraceSegmentId: "4f2f27748b8e44ecaf18fe0347194e86.33.16560607369950066",
 					ParentSpanId:         123,
-				}}}},
+				}},
+			}},
 			want: [8]byte{233, 196, 85, 168, 37, 66, 48, 106},
 		},
 		{

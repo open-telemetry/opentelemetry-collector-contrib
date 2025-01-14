@@ -38,10 +38,8 @@ type Parser struct {
 
 // Process will parse an entry field as syslog.
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
-
 	// if pri header is missing and this is an expected behavior then facility and severity values should be skipped.
 	if !p.enableOctetCounting && p.allowSkipPriHeader {
-
 		bytes, err := toBytes(entry.Body)
 		if err != nil {
 			return err

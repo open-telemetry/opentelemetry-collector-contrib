@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
 
 var version = "1.40"
@@ -34,14 +35,16 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "all_settings"),
 			expected: &Config{
-				Endpoint:              "unix:///var/run/docker.sock",
+				Config: docker.Config{
+					Endpoint:         "unix:///var/run/docker.sock",
+					Timeout:          20 * time.Second,
+					ExcludedImages:   []string{"excluded", "image"},
+					DockerAPIVersion: version,
+				},
 				CacheSyncInterval:     5 * time.Minute,
-				Timeout:               20 * time.Second,
-				ExcludedImages:        []string{"excluded", "image"},
 				UseHostnameIfPresent:  true,
 				UseHostBindings:       true,
 				IgnoreNonHostBindings: true,
-				DockerAPIVersion:      version,
 			},
 		},
 	}
@@ -59,35 +62,35 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestValidateConfig(t *testing.T) {
-	cfg := &Config{}
+	cfg := &Config{Config: docker.Config{DockerAPIVersion: "1.24", Timeout: 5 * time.Second}, CacheSyncInterval: 5 * time.Second}
 	assert.Equal(t, "endpoint must be specified", component.ValidateConfig(cfg).Error())
 
-	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: "1.23"}
+	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: "1.23"}}
 	assert.Equal(t, `"api_version" 1.23 must be at least 1.24`, component.ValidateConfig(cfg).Error())
 
-	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: version}
+	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: version}}
 	assert.Equal(t, "timeout must be specified", component.ValidateConfig(cfg).Error())
 
-	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: version, Timeout: 5 * time.Minute}
+	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: version, Timeout: 5 * time.Minute}}
 	assert.Equal(t, "cache_sync_interval must be specified", component.ValidateConfig(cfg).Error())
 
-	cfg = &Config{Endpoint: "someEndpoint", DockerAPIVersion: version, Timeout: 5 * time.Minute, CacheSyncInterval: 5 * time.Minute}
-	assert.Nil(t, component.ValidateConfig(cfg))
+	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: version, Timeout: 5 * time.Minute}, CacheSyncInterval: 5 * time.Minute}
+	assert.NoError(t, component.ValidateConfig(cfg))
 }
 
-func loadConf(t testing.TB, path string, id component.ID) *confmap.Conf {
+func loadConf(tb testing.TB, path string, id component.ID) *confmap.Conf {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", path))
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	sub, err := cm.Sub(id.String())
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	return sub
 }
 
-func loadConfig(t testing.TB, id component.ID) *Config {
+func loadConfig(tb testing.TB, id component.ID) *Config {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	sub := loadConf(t, "config.yaml", id)
-	require.NoError(t, sub.Unmarshal(cfg))
+	sub := loadConf(tb, "config.yaml", id)
+	require.NoError(tb, sub.Unmarshal(cfg))
 	return cfg.(*Config)
 }
 
@@ -96,8 +99,7 @@ func TestApiVersionCustomError(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	err := sub.Unmarshal(cfg)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(),
+	assert.ErrorContains(t, err,
 		`Hint: You may want to wrap the 'api_version' value in quotes (api_version: "1.40")`,
 	)
 

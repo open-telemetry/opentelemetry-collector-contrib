@@ -30,17 +30,16 @@ func TestGetHostname(t *testing.T) {
 		FQDN: "fqdn",
 		OS:   "os",
 	}
-	assert.Equal(t, hostInfoAll.GetHostname(logger), "fqdn")
+	assert.Equal(t, "fqdn", hostInfoAll.GetHostname(logger))
 
 	hostInfoInvalid := &HostInfo{
 		FQDN: "fqdn_invalid",
 		OS:   "os",
 	}
-	assert.Equal(t, hostInfoInvalid.GetHostname(logger), "os")
+	assert.Equal(t, "os", hostInfoInvalid.GetHostname(logger))
 
 	hostInfoMissingFQDN := &HostInfo{
 		OS: "os",
 	}
-	assert.Equal(t, hostInfoMissingFQDN.GetHostname(logger), "os")
-
+	assert.Equal(t, "os", hostInfoMissingFQDN.GetHostname(logger))
 }

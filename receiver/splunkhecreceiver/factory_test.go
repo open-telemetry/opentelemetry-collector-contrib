@@ -28,35 +28,17 @@ func TestCreateReceiver(t *testing.T) {
 
 	mockLogsConsumer := consumertest.NewNop()
 	lReceiver, err := createLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockLogsConsumer)
-	assert.Nil(t, err, "receiver creation failed")
+	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, lReceiver, "receiver creation failed")
 
 	mockMetricsConsumer := consumertest.NewNop()
 	mReceiver, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockMetricsConsumer)
-	assert.Nil(t, err, "receiver creation failed")
+	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 }
 
 func TestFactoryType(t *testing.T) {
 	assert.Equal(t, metadata.Type, NewFactory().Type())
-}
-
-func TestCreateNilNextConsumerMetrics(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1"
-
-	mReceiver, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
-	assert.EqualError(t, err, "nil metricsConsumer")
-	assert.Nil(t, mReceiver, "receiver creation failed")
-}
-
-func TestCreateNilNextConsumerLogs(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1"
-
-	mReceiver, err := createLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
-	assert.EqualError(t, err, "nil logsConsumer")
-	assert.Nil(t, mReceiver, "receiver creation failed")
 }
 
 func TestMultipleLogsReceivers(t *testing.T) {

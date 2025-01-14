@@ -20,13 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
 )
 
-const (
-	defaultEndpoint = "https://dc.services.visualstudio.com/v2/track"
-)
-
-var (
-	errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Monitor Config")
-)
+var errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Monitor Config")
 
 // NewFactory returns a factory for Azure Monitor exporter.
 func NewFactory() exporter.Factory {
@@ -46,11 +40,10 @@ type factory struct {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Endpoint:          defaultEndpoint,
 		MaxBatchSize:      1024,
 		MaxBatchInterval:  10 * time.Second,
 		SpanEventsEnabled: false,
-		QueueSettings:     exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:     exporterhelper.NewDefaultQueueConfig(),
 	}
 }
 
@@ -114,7 +107,6 @@ func (f *factory) createMetricsExporter(
 // Configures the transport channel.
 // This method is not thread-safe
 func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger) (transportChannel, error) {
-
 	// The default transport channel uses the default send mechanism from the AppInsights telemetry client.
 	// This default channel handles batching, appropriate retries, and is backed by memory.
 	if f.tChannel == nil {

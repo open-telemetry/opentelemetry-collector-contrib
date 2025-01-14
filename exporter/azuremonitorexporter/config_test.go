@@ -29,7 +29,6 @@ func TestLoadConfig(t *testing.T) {
 		id       component.ID
 		expected component.Config
 	}{
-
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
@@ -37,13 +36,13 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
-				Endpoint:           defaultEndpoint,
+				Endpoint:           "https://dc.services.visualstudio.com/v2/track",
 				ConnectionString:   "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://ingestion.azuremonitor.com/",
 				InstrumentationKey: "00000000-0000-0000-0000-000000000000",
 				MaxBatchSize:       100,
 				MaxBatchInterval:   10 * time.Second,
 				SpanEventsEnabled:  false,
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					QueueSize:    1000,
 					Enabled:      true,
 					NumConsumers: 10,

@@ -62,10 +62,12 @@ func TestLoadConfig(t *testing.T) {
 					Enable:   true,
 					Interval: 1 * time.Second,
 				},
+				MinFetchSize:     1,
+				DefaultFetchSize: 1048576,
+				MaxFetchSize:     0,
 			},
 		},
 		{
-
 			id: component.NewIDWithName(metadata.Type, "logs"),
 			expected: &Config{
 				Topic:             "logs",
@@ -96,6 +98,9 @@ func TestLoadConfig(t *testing.T) {
 					Enable:   true,
 					Interval: 1 * time.Second,
 				},
+				MinFetchSize:     1,
+				DefaultFetchSize: 1048576,
+				MaxFetchSize:     0,
 			},
 		},
 	}

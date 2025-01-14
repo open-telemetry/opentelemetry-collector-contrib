@@ -5,7 +5,6 @@ package diskscraper // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
 )
 
@@ -13,7 +12,6 @@ import (
 type Config struct {
 	// MetricsbuilderConfig allows to customize scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	internal.ScraperConfig
 
 	// Include specifies a filter on the devices that should be included from the generated metrics.
 	// Exclude specifies a filter on the devices that should be excluded from the generated metrics.

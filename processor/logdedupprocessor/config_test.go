@@ -75,7 +75,7 @@ func TestValidateConfig(t *testing.T) {
 			expectedErr: errors.New("an excludefield must start with"),
 		},
 		{
-			desc: "invalid duplice exclude field",
+			desc: "invalid duplicate exclude field",
 			cfg: &Config{
 				LogCountAttribute: defaultLogCountAttribute,
 				Interval:          defaultInterval,
@@ -90,6 +90,7 @@ func TestValidateConfig(t *testing.T) {
 				LogCountAttribute: defaultLogCountAttribute,
 				Interval:          defaultInterval,
 				Timezone:          defaultTimezone,
+				Conditions:        []string{},
 				ExcludeFields:     []string{"body.thing", "attributes.otherthing"},
 			},
 			expectedErr: nil,

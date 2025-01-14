@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/session"
@@ -230,7 +229,7 @@ func TestDatacenterInventoryListObjects(t *testing.T) {
 		}
 		dcs, err := client.DatacenterInventoryListObjects(ctx)
 		require.NoError(t, err)
-		require.Equal(t, len(dcs), 2)
+		require.Len(t, dcs, 2)
 	}, vpx)
 }
 
@@ -292,10 +291,6 @@ func TestEmptyVAppInventoryListObjects(t *testing.T) {
 func TestSessionReestablish(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		sm := session.NewManager(c)
-		moClient := &govmomi.Client{
-			Client:         c,
-			SessionManager: sm,
-		}
 		pw, _ := simulator.DefaultLogin.Password()
 		client := vcenterClient{
 			vimDriver: c,
@@ -307,19 +302,19 @@ func TestSessionReestablish(t *testing.T) {
 					Insecure: true,
 				},
 			},
-			moClient: moClient,
+			sessionManager: sm,
 		}
 		err := sm.Logout(ctx)
 		require.NoError(t, err)
 
-		connected, err := client.moClient.SessionManager.SessionIsActive(ctx)
+		connected, err := client.sessionManager.SessionIsActive(ctx)
 		require.NoError(t, err)
 		require.False(t, connected)
 
 		err = client.EnsureConnection(ctx)
 		require.NoError(t, err)
 
-		connected, err = client.moClient.SessionManager.SessionIsActive(ctx)
+		connected, err = client.sessionManager.SessionIsActive(ctx)
 		require.NoError(t, err)
 		require.True(t, connected)
 	})

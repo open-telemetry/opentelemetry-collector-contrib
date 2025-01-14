@@ -117,7 +117,6 @@ func TestDocument_Sort(t *testing.T) {
 			assert.Equal(t, test.want, doc)
 		})
 	}
-
 }
 
 func TestObjectModel_Dedup(t *testing.T) {

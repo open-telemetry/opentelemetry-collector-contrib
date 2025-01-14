@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"sort"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/multierr"
@@ -87,4 +88,23 @@ func CompareDroppedAttributesCount(expected, actual uint32) error {
 		return fmt.Errorf("dropped attributes count doesn't match expected: %d, actual: %d", expected, actual)
 	}
 	return nil
+}
+
+func OrderMapByKey(input map[string]any) map[string]any {
+	// Create a slice to hold the keys
+	keys := make([]string, 0, len(input))
+	for k := range input {
+		keys = append(keys, k)
+	}
+
+	// Sort the keys
+	sort.Strings(keys)
+
+	// Create a new map to hold the sorted key-value pairs
+	orderedMap := make(map[string]any, len(input))
+	for _, k := range keys {
+		orderedMap[k] = input[k]
+	}
+
+	return orderedMap
 }

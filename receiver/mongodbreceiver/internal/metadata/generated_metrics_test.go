@@ -966,6 +966,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "The amount of time that the server has been running.", ms.At(i).Description())
 					assert.Equal(t, "ms", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mongodb.wtcache.bytes.read":
 					assert.False(t, validatedMetrics["mongodb.wtcache.bytes.read"], "Found a duplicate in the metrics slice: mongodb.wtcache.bytes.read")
 					validatedMetrics["mongodb.wtcache.bytes.read"] = true
@@ -973,8 +979,8 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The number of bytes read into the WiredTiger cache.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.True(t, ms.At(i).Sum().IsMonotonic())          
-				}
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+        }
 			}
 		})
 	}

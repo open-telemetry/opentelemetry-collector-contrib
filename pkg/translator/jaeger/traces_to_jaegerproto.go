@@ -15,11 +15,11 @@ import (
 
 // ProtoFromTraces translates internal trace data into the Jaeger Proto for GRPC.
 // Returns slice of translated Jaeger batches and error if translation failed.
-func ProtoFromTraces(td ptrace.Traces) ([]*model.Batch, error) {
+func ProtoFromTraces(td ptrace.Traces) []*model.Batch {
 	resourceSpans := td.ResourceSpans()
 
 	if resourceSpans.Len() == 0 {
-		return nil, nil
+		return nil
 	}
 
 	batches := make([]*model.Batch, 0, resourceSpans.Len())
@@ -31,7 +31,7 @@ func ProtoFromTraces(td ptrace.Traces) ([]*model.Batch, error) {
 		}
 	}
 
-	return batches, nil
+	return batches
 }
 
 func resourceSpansToJaegerProto(rs ptrace.ResourceSpans) *model.Batch {
@@ -90,7 +90,6 @@ func resourceToJaegerProtoProcess(resource pcommon.Resource) *model.Process {
 	tags := make([]model.KeyValue, 0, attrsCount)
 	process.Tags = appendTagsFromResourceAttributes(tags, attrs)
 	return process
-
 }
 
 func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pcommon.Map) []model.KeyValue {
@@ -355,7 +354,6 @@ func getErrorTagFromStatusCode(statusCode ptrace.StatusCode) (model.KeyValue, bo
 		}, true
 	}
 	return model.KeyValue{}, false
-
 }
 
 func getTagFromStatusMsg(statusMsg string) (model.KeyValue, bool) {

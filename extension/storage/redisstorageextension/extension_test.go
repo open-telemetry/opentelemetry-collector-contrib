@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
 
 func TestExtensionIntegrity(t *testing.T) {
@@ -61,7 +61,6 @@ func TestExtensionIntegrity(t *testing.T) {
 
 		// Repeatedly thrash client
 		for j := 0; j < 100; j++ {
-
 			// Make sure my values are still mine
 			for i := 0; i < len(keys); i++ {
 				v, err := c.Get(ctx, keys[i])
@@ -136,7 +135,6 @@ func TestClientHandlesSimpleCases(t *testing.T) {
 	data, err = client.Get(ctx, "key")
 	require.NoError(t, err)
 	require.Nil(t, data)
-
 }
 
 func TestTwoClientsWithDifferentNames(t *testing.T) {
@@ -190,7 +188,7 @@ func newTestExtension(t *testing.T) storage.Extension {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)

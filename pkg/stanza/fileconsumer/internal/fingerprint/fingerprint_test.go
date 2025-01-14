@@ -114,7 +114,6 @@ func TestNewFromFile(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -134,7 +133,7 @@ func TestNewFromFile(t *testing.T) {
 			fp, err := NewFromFile(temp, tc.fingerprintSize)
 			require.NoError(t, err)
 
-			require.Equal(t, tc.expectedLen, len(fp.firstBytes))
+			require.Len(t, fp.firstBytes, tc.expectedLen)
 		})
 	}
 }

@@ -21,8 +21,7 @@ func TestEventCloseSyscallFailure(t *testing.T) {
 	event := NewEvent(5)
 	closeProc = SimpleMockProc(0, 0, ErrorNotSupported)
 	err := event.Close()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to close event handle")
+	require.ErrorContains(t, err, "failed to close event handle")
 }
 
 func TestEventCloseSuccess(t *testing.T) {

@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 const (
@@ -137,12 +137,12 @@ func (mb *metricBuilder) toDataPoint(dp pmetric.SummaryDataPoint, metric cWMetri
 	dp.SetCount(uint64(metric.Value.Count))
 	dp.SetSum(metric.Value.Sum)
 	qv := dp.QuantileValues()
-	min := qv.AppendEmpty()
-	min.SetQuantile(0)
-	min.SetValue(metric.Value.Min)
-	max := qv.AppendEmpty()
-	max.SetQuantile(1)
-	max.SetValue(metric.Value.Max)
+	minQ := qv.AppendEmpty()
+	minQ.SetQuantile(0)
+	minQ.SetValue(metric.Value.Min)
+	maxQ := qv.AppendEmpty()
+	maxQ.SetQuantile(1)
+	maxQ.SetValue(metric.Value.Max)
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(metric.Timestamp)))
 	for k, v := range metric.Dimensions {
 		dp.Attributes().PutStr(ToSemConvAttributeKey(k), v)

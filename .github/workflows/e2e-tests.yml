@@ -19,14 +19,14 @@ env:
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 jobs:
   collector-build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.6"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -40,6 +40,8 @@ jobs:
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
+      - name: Generate otelcontribcol files
+        run: make genotelcontribcol
       - name: Build Collector
         run: make otelcontribcol
       - name: Upload Collector Binary
@@ -49,13 +51,13 @@ jobs:
           path: ./bin/*
 
   supervisor-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: collector-build
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.6"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -81,13 +83,13 @@ jobs:
           go test -v --tags=e2e
 
   docker-build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.6"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -101,6 +103,8 @@ jobs:
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
+      - name: Generate otelcontribcol files
+        run: make genotelcontribcol
       - name: Build Docker Image
         run: |
           make docker-otelcontribcol
@@ -127,13 +131,13 @@ jobs:
           - processor/k8sattributesprocessor
           - receiver/kubeletstatsreceiver
           - receiver/k8sobjectsreceiver
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: docker-build
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.6"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -148,7 +152,7 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Create kind cluster
-        uses: helm/kind-action@v1.10.0
+        uses: helm/kind-action@v1.12.0
         with:
           node_image: kindest/node:${{ matrix.k8s-version }}
           kubectl_version: ${{ matrix.k8s-version }}
@@ -175,7 +179,7 @@ jobs:
 
   kubernetes-test:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [kubernetes-test-matrix]
     steps:
       - name: Print result

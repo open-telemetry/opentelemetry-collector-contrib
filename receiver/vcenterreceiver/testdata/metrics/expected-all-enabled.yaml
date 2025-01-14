@@ -48,7 +48,7 @@ resourceMetrics:
                 - asInt: "186696"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{MHz}'
+            unit: MHz
           - description: The number of datastores in the datacenter.
             name: vcenter.datacenter.datastore.count
             sum:
@@ -150,7 +150,7 @@ resourceMetrics:
                 - asInt: "252846"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{MHz}'
+            unit: MHz
           - description: The amount of CPU available to the cluster.
             name: vcenter.cluster.cpu.limit
             sum:
@@ -159,7 +159,7 @@ resourceMetrics:
                 - asInt: "280044"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{MHz}'
+            unit: MHz
           - description: The number of hosts in the cluster.
             name: vcenter.cluster.host.count
             sum:
@@ -244,7 +244,7 @@ resourceMetrics:
                   startTimeUnixNano: "3000000"
                   timeUnixNano: "2000000"
             name: vcenter.cluster.vsan.congestions
-            unit: '{congestions/sec}'
+            unit: '{congestions/s}'
           - description: The overall cluster latency while accessing vSAN storage.
             gauge:
               dataPoints:
@@ -310,7 +310,7 @@ resourceMetrics:
                   startTimeUnixNano: "3000000"
                   timeUnixNano: "2000000"
             name: vcenter.cluster.vsan.operations
-            unit: '{operations/sec}'
+            unit: '{operations/s}'
           - description: The vSAN throughput of a cluster.
             gauge:
               dataPoints:
@@ -638,7 +638,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: vcenter.host.network.packet.drop.rate
-            unit: '{packets/sec}'
+            unit: '{packets/s}'
           - description: The rate of packet errors transmitted or received on the host network.
             gauge:
               dataPoints:
@@ -743,7 +743,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: vcenter.host.network.packet.error.rate
-            unit: '{errors/sec}'
+            unit: '{errors/s}'
           - description: The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
             gauge:
               dataPoints:
@@ -848,7 +848,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: vcenter.host.network.packet.rate
-            unit: '{packets/sec}'
+            unit: '{packets/s}'
           - description: The amount of data that was transmitted or received over the network by the host.
             name: vcenter.host.network.throughput
             sum:
@@ -1017,7 +1017,7 @@ resourceMetrics:
                   startTimeUnixNano: "3000000"
                   timeUnixNano: "2000000"
             name: vcenter.host.vsan.congestions
-            unit: '{congestions/sec}'
+            unit: '{congestions/s}'
           - description: The host latency while accessing vSAN storage.
             gauge:
               dataPoints:
@@ -1083,7 +1083,7 @@ resourceMetrics:
                   startTimeUnixNano: "3000000"
                   timeUnixNano: "2000000"
             name: vcenter.host.vsan.operations
-            unit: '{operations/sec}'
+            unit: '{operations/s}'
           - description: The vSAN throughput of a host.
             gauge:
               dataPoints:
@@ -1373,7 +1373,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: vcenter.host.network.packet.drop.rate
-            unit: '{packets/sec}'
+            unit: '{packets/s}'
           - description: The rate of packet errors transmitted or received on the host network.
             gauge:
               dataPoints:
@@ -1478,7 +1478,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: vcenter.host.network.packet.error.rate
-            unit: '{errors/sec}'
+            unit: '{errors/s}'
           - description: The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
             gauge:
               dataPoints:
@@ -1583,7 +1583,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: vcenter.host.network.packet.rate
-            unit: '{packets/sec}'
+            unit: '{packets/s}'
           - description: The amount of data that was transmitted or received over the network by the host.
             name: vcenter.host.network.throughput
             sum:
@@ -1752,7 +1752,7 @@ resourceMetrics:
                   startTimeUnixNano: "3000000"
                   timeUnixNano: "2000000"
             name: vcenter.host.vsan.congestions
-            unit: '{congestions/sec}'
+            unit: '{congestions/s}'
           - description: The host latency while accessing vSAN storage.
             gauge:
               dataPoints:
@@ -1818,7 +1818,7 @@ resourceMetrics:
                   startTimeUnixNano: "3000000"
                   timeUnixNano: "2000000"
             name: vcenter.host.vsan.operations
-            unit: '{operations/sec}'
+            unit: '{operations/s}'
           - description: The vSAN throughput of a host.
             gauge:
               dataPoints:
@@ -1888,7 +1888,7 @@ resourceMetrics:
                 - asInt: "13791"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{MHz}'
+            unit: MHz
           - description: The amount of memory in a resource pool that is ballooned due to virtualization.
             name: vcenter.resource_pool.memory.ballooned
             sum:
@@ -1999,7 +1999,7 @@ resourceMetrics:
                 - asInt: "13791"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{MHz}'
+            unit: MHz
           - description: The amount of memory in a resource pool that is ballooned due to virtualization.
             name: vcenter.resource_pool.memory.ballooned
             sum:
@@ -2450,7 +2450,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: vcenter.vm.network.packet.drop.rate
-            unit: '{packets/sec}'
+            unit: '{packets/s}'
           - description: The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
             gauge:
               dataPoints:
@@ -2575,7 +2575,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: vcenter.vm.network.packet.rate
-            unit: '{packets/sec}'
+            unit: '{packets/s}'
           - description: The amount of data that was transmitted or received over the network of the virtual machine.
             name: vcenter.vm.network.throughput
             sum:
@@ -2701,7 +2701,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-            unit: By/sec
+            unit: By/s
           - description: The network utilization combined transmit and receive rates during an interval.
             name: vcenter.vm.network.usage
             sum:
@@ -3087,7 +3087,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: vcenter.vm.network.packet.drop.rate
-            unit: '{packets/sec}'
+            unit: '{packets/s}'
           - description: The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
             gauge:
               dataPoints:
@@ -3212,7 +3212,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: vcenter.vm.network.packet.rate
-            unit: '{packets/sec}'
+            unit: '{packets/s}'
           - description: The amount of data that was transmitted or received over the network of the virtual machine.
             name: vcenter.vm.network.throughput
             sum:
@@ -3338,7 +3338,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-            unit: By/sec
+            unit: By/s
           - description: The network utilization combined transmit and receive rates during an interval.
             name: vcenter.vm.network.usage
             sum:
@@ -3452,7 +3452,7 @@ resourceMetrics:
                   startTimeUnixNano: "3000000"
                   timeUnixNano: "2000000"
             name: vcenter.vm.vsan.operations
-            unit: '{operations/sec}'
+            unit: '{operations/s}'
           - description: The vSAN throughput of a virtual machine.
             gauge:
               dataPoints:
@@ -3823,7 +3823,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: vcenter.vm.network.packet.drop.rate
-            unit: '{packets/sec}'
+            unit: '{packets/s}'
           - description: The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
             gauge:
               dataPoints:
@@ -3948,7 +3948,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             name: vcenter.vm.network.packet.rate
-            unit: '{packets/sec}'
+            unit: '{packets/s}'
           - description: The amount of data that was transmitted or received over the network of the virtual machine.
             name: vcenter.vm.network.throughput
             sum:
@@ -4074,7 +4074,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-            unit: By/sec
+            unit: By/s
           - description: The network utilization combined transmit and receive rates during an interval.
             name: vcenter.vm.network.usage
             sum:
@@ -4188,7 +4188,7 @@ resourceMetrics:
                   startTimeUnixNano: "3000000"
                   timeUnixNano: "2000000"
             name: vcenter.vm.vsan.operations
-            unit: '{operations/sec}'
+            unit: '{operations/s}'
           - description: The vSAN throughput of a virtual machine.
             gauge:
               dataPoints:

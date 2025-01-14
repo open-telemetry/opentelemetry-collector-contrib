@@ -15,9 +15,8 @@ import (
 )
 
 func TestBooleanTagFilter(t *testing.T) {
-
-	var empty = map[string]any{}
-	filter := NewBooleanAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", true)
+	empty := map[string]any{}
+	filter := NewBooleanAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", true, false)
 
 	resAttr := map[string]any{}
 	resAttr["example"] = 8
@@ -41,6 +40,45 @@ func TestBooleanTagFilter(t *testing.T) {
 			Desc:     "span attribute with wanted boolean value",
 			Trace:    newTraceBoolAttrs(empty, "example", true),
 			Decision: Sampled,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Desc, func(t *testing.T) {
+			u, _ := uuid.NewRandom()
+			decision, err := filter.Evaluate(context.Background(), pcommon.TraceID(u), c.Trace)
+			assert.NoError(t, err)
+			assert.Equal(t, decision, c.Decision)
+		})
+	}
+}
+
+func TestBooleanTagFilterInverted(t *testing.T) {
+	empty := map[string]any{}
+	filter := NewBooleanAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", true, true)
+
+	resAttr := map[string]any{}
+	resAttr["example"] = 8
+
+	cases := []struct {
+		Desc     string
+		Trace    *TraceData
+		Decision Decision
+	}{
+		{
+			Desc:     "non-matching span attribute",
+			Trace:    newTraceBoolAttrs(empty, "non_matching", true),
+			Decision: InvertSampled,
+		},
+		{
+			Desc:     "span attribute with non matching boolean value",
+			Trace:    newTraceBoolAttrs(empty, "example", false),
+			Decision: InvertSampled,
+		},
+		{
+			Desc:     "span attribute with matching boolean value",
+			Trace:    newTraceBoolAttrs(empty, "example", true),
+			Decision: InvertNotSampled,
 		},
 	}
 

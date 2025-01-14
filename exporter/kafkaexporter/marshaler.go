@@ -4,6 +4,8 @@
 package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 
 import (
+	"fmt"
+
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -63,7 +65,6 @@ func createTracesMarshaler(config Config) (TracesMarshaler, error) {
 	default:
 		return nil, errUnrecognizedEncoding
 	}
-
 }
 
 // creates MetricsMarshaler based on the provided config
@@ -96,4 +97,73 @@ func createLogMarshaler(config Config) (LogsMarshaler, error) {
 	default:
 		return nil, errUnrecognizedEncoding
 	}
+}
+
+// tracesEncodingMarshaler is a wrapper around ptrace.Marshaler that implements TracesMarshaler.
+type tracesEncodingMarshaler struct {
+	marshaler ptrace.Marshaler
+	encoding  string
+}
+
+func (t *tracesEncodingMarshaler) Marshal(traces ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
+	var messages []*sarama.ProducerMessage
+	data, err := t.marshaler.MarshalTraces(traces)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal traces: %w", err)
+	}
+	messages = append(messages, &sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.ByteEncoder(data),
+	})
+	return messages, nil
+}
+
+func (t *tracesEncodingMarshaler) Encoding() string {
+	return t.encoding
+}
+
+// metricsEncodingMarshaler is a wrapper around pmetric.Marshaler that implements MetricsMarshaler.
+type metricsEncodingMarshaler struct {
+	marshaler pmetric.Marshaler
+	encoding  string
+}
+
+func (m *metricsEncodingMarshaler) Marshal(metrics pmetric.Metrics, topic string) ([]*sarama.ProducerMessage, error) {
+	var messages []*sarama.ProducerMessage
+	data, err := m.marshaler.MarshalMetrics(metrics)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal metrics: %w", err)
+	}
+	messages = append(messages, &sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.ByteEncoder(data),
+	})
+	return messages, nil
+}
+
+func (m *metricsEncodingMarshaler) Encoding() string {
+	return m.encoding
+}
+
+// logsEncodingMarshaler is a wrapper around plog.Marshaler that implements LogsMarshaler.
+type logsEncodingMarshaler struct {
+	marshaler plog.Marshaler
+	encoding  string
+}
+
+func (l *logsEncodingMarshaler) Marshal(logs plog.Logs, topic string) ([]*sarama.ProducerMessage, error) {
+	var messages []*sarama.ProducerMessage
+	data, err := l.marshaler.MarshalLogs(logs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal logs: %w", err)
+	}
+	messages = append(messages, &sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.ByteEncoder(data),
+	})
+	return messages, nil
+}
+
+func (l *logsEncodingMarshaler) Encoding() string {
+	return l.encoding
 }

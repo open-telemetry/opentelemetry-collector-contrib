@@ -4,16 +4,19 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"compress/gzip"
 	"context"
 	"errors"
 	"io"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/elastic/go-docappender/v2"
 	"github.com/elastic/go-elasticsearch/v7"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
 )
 
@@ -50,6 +53,8 @@ type bulkIndexerSession interface {
 	Flush(context.Context) error
 }
 
+const defaultMaxRetries = 2
+
 func newBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) (bulkIndexer, error) {
 	if config.Batcher.Enabled != nil {
 		return newSyncBulkIndexer(logger, client, config), nil
@@ -57,21 +62,33 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Co
 	return newAsyncBulkIndexer(logger, client, config)
 }
 
-func newSyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) *syncBulkIndexer {
-	var maxDocRetry int
+func bulkIndexerConfig(client *elasticsearch.Client, config *Config) docappender.BulkIndexerConfig {
+	var maxDocRetries int
 	if config.Retry.Enabled {
-		// max_requests includes initial attempt
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32344
-		maxDocRetry = config.Retry.MaxRequests - 1
+		maxDocRetries = defaultMaxRetries
+		if config.Retry.MaxRetries != 0 {
+			maxDocRetries = config.Retry.MaxRetries
+		}
 	}
+	var compressionLevel int
+	if config.Compression == configcompression.TypeGzip {
+		compressionLevel = gzip.BestSpeed
+	}
+	return docappender.BulkIndexerConfig{
+		Client:                client,
+		MaxDocumentRetries:    maxDocRetries,
+		Pipeline:              config.Pipeline,
+		RetryOnDocumentStatus: config.Retry.RetryOnStatus,
+		RequireDataStream:     config.MappingMode() == MappingOTel,
+		CompressionLevel:      compressionLevel,
+	}
+}
+
+func newSyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) *syncBulkIndexer {
 	return &syncBulkIndexer{
-		config: docappender.BulkIndexerConfig{
-			Client:                client,
-			MaxDocumentRetries:    maxDocRetry,
-			Pipeline:              config.Pipeline,
-			RetryOnDocumentStatus: config.Retry.RetryOnStatus,
-		},
+		config:       bulkIndexerConfig(client, config),
 		flushTimeout: config.Timeout,
+		flushBytes:   config.Flush.Bytes,
 		retryConfig:  config.Retry,
 		logger:       logger,
 	}
@@ -80,6 +97,7 @@ func newSyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config
 type syncBulkIndexer struct {
 	config       docappender.BulkIndexerConfig
 	flushTimeout time.Duration
+	flushBytes   int
 	retryConfig  RetrySettings
 	logger       *zap.Logger
 }
@@ -108,8 +126,17 @@ type syncBulkIndexerSession struct {
 }
 
 // Add adds an item to the sync bulk indexer session.
-func (s *syncBulkIndexerSession) Add(_ context.Context, index string, document io.WriterTo, dynamicTemplates map[string]string) error {
-	return s.bi.Add(docappender.BulkIndexerItem{Index: index, Body: document, DynamicTemplates: dynamicTemplates})
+func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, document io.WriterTo, dynamicTemplates map[string]string) error {
+	err := s.bi.Add(docappender.BulkIndexerItem{Index: index, Body: document, DynamicTemplates: dynamicTemplates})
+	if err != nil {
+		return err
+	}
+	// flush bytes should operate on uncompressed length
+	// as Elasticsearch http.max_content_length measures uncompressed length.
+	if s.bi.UncompressedLen() >= s.s.flushBytes {
+		return s.Flush(ctx)
+	}
+	return nil
 }
 
 // End is a no-op.
@@ -154,23 +181,6 @@ func newAsyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, confi
 		numWorkers = runtime.NumCPU()
 	}
 
-	flushInterval := config.Flush.Interval
-	if flushInterval == 0 {
-		flushInterval = 30 * time.Second
-	}
-
-	flushBytes := config.Flush.Bytes
-	if flushBytes == 0 {
-		flushBytes = 5e+6
-	}
-
-	var maxDocRetry int
-	if config.Retry.Enabled {
-		// max_requests includes initial attempt
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32344
-		maxDocRetry = config.Retry.MaxRequests - 1
-	}
-
 	pool := &asyncBulkIndexer{
 		wg:    sync.WaitGroup{},
 		items: make(chan docappender.BulkIndexerItem, config.NumWorkers),
@@ -179,21 +189,16 @@ func newAsyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, confi
 	pool.wg.Add(numWorkers)
 
 	for i := 0; i < numWorkers; i++ {
-		bi, err := docappender.NewBulkIndexer(docappender.BulkIndexerConfig{
-			Client:                client,
-			MaxDocumentRetries:    maxDocRetry,
-			Pipeline:              config.Pipeline,
-			RetryOnDocumentStatus: config.Retry.RetryOnStatus,
-		})
+		bi, err := docappender.NewBulkIndexer(bulkIndexerConfig(client, config))
 		if err != nil {
 			return nil, err
 		}
 		w := asyncBulkIndexerWorker{
 			indexer:       bi,
 			items:         pool.items,
-			flushInterval: flushInterval,
+			flushInterval: config.Flush.Interval,
 			flushTimeout:  config.Timeout,
-			flushBytes:    flushBytes,
+			flushBytes:    config.Flush.Bytes,
 			logger:        logger,
 			stats:         &pool.stats,
 		}
@@ -294,8 +299,9 @@ func (w *asyncBulkIndexerWorker) run() {
 				w.logger.Error("error adding item to bulk indexer", zap.Error(err))
 			}
 
-			// w.indexer.Len() can be either compressed or uncompressed bytes
-			if w.indexer.Len() >= w.flushBytes {
+			// flush bytes should operate on uncompressed length
+			// as Elasticsearch http.max_content_length measures uncompressed length.
+			if w.indexer.UncompressedLen() >= w.flushBytes {
 				w.flush()
 				flushTick.Reset(w.flushInterval)
 			}
@@ -329,12 +335,22 @@ func flushBulkIndexer(
 		logger.Error("bulk indexer flush error", zap.Error(err))
 	}
 	for _, resp := range stat.FailedDocs {
-		logger.Error(
-			"failed to index document",
+		fields := []zap.Field{
 			zap.String("index", resp.Index),
 			zap.String("error.type", resp.Error.Type),
 			zap.String("error.reason", resp.Error.Reason),
-		)
+		}
+		if hint := getErrorHint(resp.Index, resp.Error.Type); hint != "" {
+			fields = append(fields, zap.String("hint", hint))
+		}
+		logger.Error("failed to index document", fields...)
 	}
 	return stat, err
+}
+
+func getErrorHint(index, errorType string) string {
+	if strings.HasPrefix(index, ".ds-metrics-") && errorType == "version_conflict_engine_exception" {
+		return "check the \"Known issues\" section of Elasticsearch Exporter docs"
+	}
+	return ""
 }

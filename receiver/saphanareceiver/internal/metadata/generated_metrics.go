@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeActivePendingRequestState specifies the a value active_pending_request_state attribute.
+// AttributeActivePendingRequestState specifies the value active_pending_request_state attribute.
 type AttributeActivePendingRequestState int
 
 const (
@@ -40,7 +40,7 @@ var MapAttributeActivePendingRequestState = map[string]AttributeActivePendingReq
 	"pending": AttributeActivePendingRequestStatePending,
 }
 
-// AttributeColumnMemorySubtype specifies the a value column_memory_subtype attribute.
+// AttributeColumnMemorySubtype specifies the value column_memory_subtype attribute.
 type AttributeColumnMemorySubtype int
 
 const (
@@ -74,7 +74,7 @@ var MapAttributeColumnMemorySubtype = map[string]AttributeColumnMemorySubtype{
 	"misc":  AttributeColumnMemorySubtypeMisc,
 }
 
-// AttributeColumnMemoryType specifies the a value column_memory_type attribute.
+// AttributeColumnMemoryType specifies the value column_memory_type attribute.
 type AttributeColumnMemoryType int
 
 const (
@@ -100,7 +100,7 @@ var MapAttributeColumnMemoryType = map[string]AttributeColumnMemoryType{
 	"delta": AttributeColumnMemoryTypeDelta,
 }
 
-// AttributeConnectionStatus specifies the a value connection_status attribute.
+// AttributeConnectionStatus specifies the value connection_status attribute.
 type AttributeConnectionStatus int
 
 const (
@@ -130,7 +130,7 @@ var MapAttributeConnectionStatus = map[string]AttributeConnectionStatus{
 	"queueing": AttributeConnectionStatusQueueing,
 }
 
-// AttributeCPUType specifies the a value cpu_type attribute.
+// AttributeCPUType specifies the value cpu_type attribute.
 type AttributeCPUType int
 
 const (
@@ -164,7 +164,7 @@ var MapAttributeCPUType = map[string]AttributeCPUType{
 	"idle":    AttributeCPUTypeIdle,
 }
 
-// AttributeDiskStateUsedFree specifies the a value disk_state_used_free attribute.
+// AttributeDiskStateUsedFree specifies the value disk_state_used_free attribute.
 type AttributeDiskStateUsedFree int
 
 const (
@@ -190,7 +190,7 @@ var MapAttributeDiskStateUsedFree = map[string]AttributeDiskStateUsedFree{
 	"free": AttributeDiskStateUsedFreeFree,
 }
 
-// AttributeHostSwapState specifies the a value host_swap_state attribute.
+// AttributeHostSwapState specifies the value host_swap_state attribute.
 type AttributeHostSwapState int
 
 const (
@@ -216,7 +216,7 @@ var MapAttributeHostSwapState = map[string]AttributeHostSwapState{
 	"free": AttributeHostSwapStateFree,
 }
 
-// AttributeInternalExternalRequestType specifies the a value internal_external_request_type attribute.
+// AttributeInternalExternalRequestType specifies the value internal_external_request_type attribute.
 type AttributeInternalExternalRequestType int
 
 const (
@@ -242,7 +242,7 @@ var MapAttributeInternalExternalRequestType = map[string]AttributeInternalExtern
 	"external": AttributeInternalExternalRequestTypeExternal,
 }
 
-// AttributeMemoryStateUsedFree specifies the a value memory_state_used_free attribute.
+// AttributeMemoryStateUsedFree specifies the value memory_state_used_free attribute.
 type AttributeMemoryStateUsedFree int
 
 const (
@@ -268,7 +268,7 @@ var MapAttributeMemoryStateUsedFree = map[string]AttributeMemoryStateUsedFree{
 	"free": AttributeMemoryStateUsedFreeFree,
 }
 
-// AttributeRowMemoryType specifies the a value row_memory_type attribute.
+// AttributeRowMemoryType specifies the value row_memory_type attribute.
 type AttributeRowMemoryType int
 
 const (
@@ -294,7 +294,7 @@ var MapAttributeRowMemoryType = map[string]AttributeRowMemoryType{
 	"variable": AttributeRowMemoryTypeVariable,
 }
 
-// AttributeSchemaMemoryType specifies the a value schema_memory_type attribute.
+// AttributeSchemaMemoryType specifies the value schema_memory_type attribute.
 type AttributeSchemaMemoryType int
 
 const (
@@ -328,7 +328,7 @@ var MapAttributeSchemaMemoryType = map[string]AttributeSchemaMemoryType{
 	"history_delta": AttributeSchemaMemoryTypeHistoryDelta,
 }
 
-// AttributeSchemaOperationType specifies the a value schema_operation_type attribute.
+// AttributeSchemaOperationType specifies the value schema_operation_type attribute.
 type AttributeSchemaOperationType int
 
 const (
@@ -358,7 +358,7 @@ var MapAttributeSchemaOperationType = map[string]AttributeSchemaOperationType{
 	"merge": AttributeSchemaOperationTypeMerge,
 }
 
-// AttributeSchemaRecordType specifies the a value schema_record_type attribute.
+// AttributeSchemaRecordType specifies the value schema_record_type attribute.
 type AttributeSchemaRecordType int
 
 const (
@@ -392,7 +392,7 @@ var MapAttributeSchemaRecordType = map[string]AttributeSchemaRecordType{
 	"history_delta": AttributeSchemaRecordTypeHistoryDelta,
 }
 
-// AttributeServiceMemoryUsedType specifies the a value service_memory_used_type attribute.
+// AttributeServiceMemoryUsedType specifies the value service_memory_used_type attribute.
 type AttributeServiceMemoryUsedType int
 
 const (
@@ -418,7 +418,7 @@ var MapAttributeServiceMemoryUsedType = map[string]AttributeServiceMemoryUsedTyp
 	"physical": AttributeServiceMemoryUsedTypePhysical,
 }
 
-// AttributeServiceStatus specifies the a value service_status attribute.
+// AttributeServiceStatus specifies the value service_status attribute.
 type AttributeServiceStatus int
 
 const (
@@ -444,7 +444,7 @@ var MapAttributeServiceStatus = map[string]AttributeServiceStatus{
 	"inactive": AttributeServiceStatusInactive,
 }
 
-// AttributeThreadStatus specifies the a value thread_status attribute.
+// AttributeThreadStatus specifies the value thread_status attribute.
 type AttributeThreadStatus int
 
 const (
@@ -470,7 +470,7 @@ var MapAttributeThreadStatus = map[string]AttributeThreadStatus{
 	"inactive": AttributeThreadStatusInactive,
 }
 
-// AttributeTransactionType specifies the a value transaction_type attribute.
+// AttributeTransactionType specifies the value transaction_type attribute.
 type AttributeTransactionType int
 
 const (
@@ -500,7 +500,7 @@ var MapAttributeTransactionType = map[string]AttributeTransactionType{
 	"rollback": AttributeTransactionTypeRollback,
 }
 
-// AttributeVolumeOperationType specifies the a value volume_operation_type attribute.
+// AttributeVolumeOperationType specifies the value volume_operation_type attribute.
 type AttributeVolumeOperationType int
 
 const (
@@ -2976,17 +2976,25 @@ type MetricsBuilder struct {
 	metricSaphanaVolumeOperationTime              metricSaphanaVolumeOperationTime
 }
 
-// metricBuilderOption applies changes to default metrics builder.
-type metricBuilderOption func(*MetricsBuilder)
-
-// WithStartTime sets startTime on the metrics builder.
-func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.startTime = startTime
-	}
+// MetricBuilderOption applies changes to default metrics builder.
+type MetricBuilderOption interface {
+	apply(*MetricsBuilder)
 }
 
-func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...metricBuilderOption) *MetricsBuilder {
+type metricBuilderOptionFunc func(mb *MetricsBuilder)
+
+func (mbof metricBuilderOptionFunc) apply(mb *MetricsBuilder) {
+	mbof(mb)
+}
+
+// WithStartTime sets startTime on the metrics builder.
+func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
+	return metricBuilderOptionFunc(func(mb *MetricsBuilder) {
+		mb.startTime = startTime
+	})
+}
+
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                        mbc,
 		startTime:                                     pcommon.NewTimestampFromTime(time.Now()),
@@ -3054,7 +3062,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 
 	for _, op := range options {
-		op(mb)
+		op.apply(mb)
 	}
 	return mb
 }
@@ -3072,20 +3080,28 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
+type ResourceMetricsOption interface {
+	apply(pmetric.ResourceMetrics)
+}
+
+type resourceMetricsOptionFunc func(pmetric.ResourceMetrics)
+
+func (rmof resourceMetricsOptionFunc) apply(rm pmetric.ResourceMetrics) {
+	rmof(rm)
+}
 
 // WithResource sets the provided resource on the emitted ResourceMetrics.
 // It's recommended to use ResourceBuilder to create the resource.
 func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
 		res.CopyTo(rm.Resource())
-	}
+	})
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
+	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -3099,7 +3115,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 				dps.At(j).SetStartTimestamp(start)
 			}
 		}
-	}
+	})
 }
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
@@ -3107,7 +3123,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
 // just `Emit` function can be called instead.
 // Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
+func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver")
@@ -3159,8 +3175,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSaphanaVolumeOperationSize.emit(ils.Metrics())
 	mb.metricSaphanaVolumeOperationTime.emit(ils.Metrics())
 
-	for _, op := range rmo {
-		op(rm)
+	for _, op := range options {
+		op.apply(rm)
 	}
 	for attr, filter := range mb.resourceAttributeIncludeFilter {
 		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
@@ -3182,8 +3198,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
+func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(options...)
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
@@ -3641,9 +3657,9 @@ func (mb *MetricsBuilder) RecordSaphanaVolumeOperationTimeDataPoint(ts pcommon.T
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
 // and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
+func (mb *MetricsBuilder) Reset(options ...MetricBuilderOption) {
 	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op.apply(mb)
 	}
 }

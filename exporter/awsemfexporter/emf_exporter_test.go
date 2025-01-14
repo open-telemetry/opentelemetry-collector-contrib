@@ -102,7 +102,6 @@ func TestConsumeMetricsWithNaNValues(t *testing.T) {
 			require.NoError(t, exp.shutdown(ctx))
 		})
 	}
-
 }
 
 func TestConsumeMetricsWithInfValues(t *testing.T) {
@@ -142,7 +141,6 @@ func TestConsumeMetricsWithInfValues(t *testing.T) {
 			require.NoError(t, exp.shutdown(ctx))
 		})
 	}
-
 }
 
 func TestConsumeMetricsWithOutputDestination(t *testing.T) {
@@ -314,10 +312,10 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 		metricNames:  []string{"metric_1", "metric_2"},
 		metricValues: [][]float64{{100}, {4}},
 	})
-	assert.NotNil(t, exp.pushMetricsData(ctx, md))
-	assert.NotNil(t, exp.pushMetricsData(ctx, md))
-	assert.Nil(t, exp.pushMetricsData(ctx, md))
-	assert.Nil(t, exp.shutdown(ctx))
+	assert.Error(t, exp.pushMetricsData(ctx, md))
+	assert.Error(t, exp.pushMetricsData(ctx, md))
+	assert.NoError(t, exp.pushMetricsData(ctx, md))
+	assert.NoError(t, exp.shutdown(ctx))
 }
 
 func TestNewExporterWithoutConfig(t *testing.T) {
@@ -329,7 +327,7 @@ func TestNewExporterWithoutConfig(t *testing.T) {
 	exp, err := newEmfExporter(expCfg, settings)
 	assert.Error(t, err)
 	assert.Nil(t, exp)
-	assert.Equal(t, settings.Logger, expCfg.logger)
+	assert.Equal(t, expCfg.logger, settings.Logger)
 }
 
 func TestNewExporterWithMetricDeclarations(t *testing.T) {
@@ -370,9 +368,9 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Invalid metric declaration should be filtered out
-	assert.Equal(t, 3, len(exp.config.MetricDeclarations))
+	assert.Len(t, exp.config.MetricDeclarations, 3)
 	// Invalid dimensions (> 10 dims) should be filtered out
-	assert.Equal(t, 1, len(exp.config.MetricDeclarations[2].Dimensions))
+	assert.Len(t, exp.config.MetricDeclarations[2].Dimensions, 1)
 
 	// Test output warning logs
 	expectedLogs := []observer.LoggedEntry{
@@ -421,5 +419,5 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	exp, err := newEmfExporter(expCfg, settings)
 	assert.Error(t, err)
 	assert.Nil(t, exp)
-	assert.Equal(t, settings.Logger, expCfg.logger)
+	assert.Equal(t, expCfg.logger, settings.Logger)
 }

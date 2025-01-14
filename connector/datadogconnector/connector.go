@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.17.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
 )
@@ -197,7 +197,6 @@ func (c *traceToMetricConnector) enrichStatsPayload(stats *pb.StatsPayload) {
 	for _, stat := range stats.Stats {
 		if stat.ContainerID != "" {
 			if tags, ok := c.containerTagCache.Get(stat.ContainerID); ok {
-
 				tagList := tags.(*sync.Map)
 				for _, tag := range stat.Tags {
 					tagList.Store(tag, struct{}{})

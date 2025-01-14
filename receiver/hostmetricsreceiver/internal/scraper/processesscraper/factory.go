@@ -6,26 +6,23 @@ package processesscraper // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
 )
 
 // This file implements Factory for Processes scraper.
 
-const (
-	// TypeStr the value of "type" key in configuration.
-	TypeStr = "processes"
-)
+// Type the value of "type" key in configuration.
+var Type = component.MustNewType("processes")
 
 // Factory is the Factory for scraper.
-type Factory struct {
-}
+type Factory struct{}
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
-func (f *Factory) CreateDefaultConfig() internal.Config {
+func (f *Factory) CreateDefaultConfig() component.Config {
 	return &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
@@ -35,14 +32,13 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	settings receiver.Settings,
-	config internal.Config,
-) (scraperhelper.Scraper, error) {
+	config component.Config,
+) (scraper.Metrics, error) {
 	cfg := config.(*Config)
 	s := newProcessesScraper(ctx, settings, cfg)
 
-	return scraperhelper.NewScraper(
-		TypeStr,
+	return scraper.NewMetrics(
 		s.scrape,
-		scraperhelper.WithStart(s.start),
+		scraper.WithStart(s.start),
 	)
 }

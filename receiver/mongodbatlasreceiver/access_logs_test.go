@@ -17,11 +17,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -103,7 +103,7 @@ func TestAccessLogToLogRecord(t *testing.T) {
 	}))
 
 	lr.SetObservedTimestamp(now)
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 02, 38, 56, 444000000, time.UTC)))
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 0o2, 38, 56, 444000000, time.UTC)))
 	lr.SetSeverityNumber(plog.SeverityNumberInfo)
 	lr.SetSeverityText(plog.SeverityNumberInfo.String())
 
@@ -125,7 +125,7 @@ func TestAccessLogToLogRecord(t *testing.T) {
 
 	lr.SetObservedTimestamp(now)
 	// Second log does not have internal timestamp in ISO8601, it has external in unixDate format with less precision
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 02, 38, 56, 0, time.UTC)))
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 0o2, 38, 56, 0, time.UTC)))
 	lr.SetSeverityNumber(plog.SeverityNumberWarn)
 	lr.SetSeverityText(plog.SeverityNumberWarn.String())
 

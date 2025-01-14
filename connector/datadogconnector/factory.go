@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector/internal/metadata"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 const nativeIngestFeatureGateName = "connector.datadogconnector.NativeIngest"
@@ -43,9 +44,15 @@ func NewFactory() connector.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Traces: TracesConfig{
-			IgnoreResources: []string{},
-			TraceBuffer:     1000,
-			BucketInterval:  10 * time.Second,
+			TracesConfig: datadogconfig.TracesConfig{
+				IgnoreResources:        []string{},
+				PeerServiceAggregation: true,
+				PeerTagsAggregation:    true,
+				ComputeStatsBySpanKind: true,
+			},
+
+			TraceBuffer:    1000,
+			BucketInterval: 10 * time.Second,
 		},
 	}
 }

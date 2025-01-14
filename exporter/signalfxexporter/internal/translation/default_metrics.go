@@ -85,21 +85,6 @@ exclude_metrics:
 
 # k8s metrics.
 - metric_names:
-  - k8s.cronjob.active_jobs
-  - k8s.job.active_pods
-  - k8s.job.desired_successful_pods
-  - k8s.job.failed_pods
-  - k8s.job.max_parallel_pods
-  - k8s.job.successful_pods
-  - k8s.statefulset.desired_pods
-  - k8s.statefulset.current_pods
-  - k8s.statefulset.ready_pods
-  - k8s.statefulset.updated_pods
-  - k8s.hpa.max_replicas
-  - k8s.hpa.min_replicas
-  - k8s.hpa.current_replicas
-  - k8s.hpa.desired_replicas
-
   # matches all container limit metrics but k8s.container.cpu_limit and k8s.container.memory_limit
   - /^k8s\.container\..+_limit$/
   - '!k8s.container.memory_limit'
@@ -121,7 +106,7 @@ exclude_metrics:
   - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.page_faults$/
   - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.rss$/
   - /^(?i:(k8s\.node)|(k8s\.pod))\.memory\.usage$/
-  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.working_set$/
+  - /^(?i:(k8s\.node)|(k8s\.pod))\.memory\.working_set$/
 
   # matches (k8s.node|k8s.pod).filesystem...
   - /^k8s\.(?i:(node)|(pod))\.filesystem\.available$/

@@ -40,7 +40,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 	future := time.Now().Add(1 * time.Hour)
 
 	keepSubsequentTest := subTest{
-		name: "keep subsequet value",
+		name: "keep subsequent value",
 		value: ValuePoint{
 			ObservedTimestamp: pcommon.NewTimestampFromTime(future.Add(time.Minute)),
 			FloatValue:        225,
@@ -242,9 +242,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 				IntValue:          100,
 			},
 		})
-		if valid {
-			t.Error("Expected invalid for non cumulative metric")
-		}
+		assert.False(t, valid, "Expected invalid for non cumulative metric")
 	})
 }
 
@@ -338,7 +336,5 @@ func Test_metricTracker_sweeper(t *testing.T) {
 	cancel()
 	for range sweepEvent { // nolint
 	}
-	if !closed.Load() {
-		t.Errorf("Sweeper did not terminate.")
-	}
+	assert.True(t, closed.Load(), "Sweeper did not terminate.")
 }

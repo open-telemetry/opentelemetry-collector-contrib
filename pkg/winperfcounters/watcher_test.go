@@ -128,7 +128,7 @@ func TestPerfCounter_Reset(t *testing.T) {
 
 	// new query is different instance of same counter.
 	require.NoError(t, err)
-	assert.NotSame(t, handle, pc.handle)
+	assert.NotEqual(t, handle, pc.handle)
 	assert.NotSame(t, query, pc.query)
 	assert.Equal(t, path, pc.Path())
 
@@ -158,7 +158,7 @@ func TestPerfCounter_ScrapeData(t *testing.T) {
 			name: "total instance",
 			path: `\LogicalDisk(_Total)\Free Megabytes`,
 			assertExpected: func(t *testing.T, data []CounterValue) {
-				assert.Equal(t, 1, len(data))
+				assert.Len(t, data, 1)
 				assert.Empty(t, data[0].InstanceName)
 			},
 		},

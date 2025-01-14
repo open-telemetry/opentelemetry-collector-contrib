@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/metadata"
 )
@@ -50,7 +50,7 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "creates a new factory and CreateMetricsReceiver returns no error",
+			desc: "creates a new factory and CreateMetrics returns no error",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
@@ -64,7 +64,7 @@ func TestNewFactory(t *testing.T) {
 						}},
 					},
 				}
-				_, err := factory.CreateMetricsReceiver(
+				_, err := factory.CreateMetrics(
 					context.Background(),
 					receivertest.NewNopSettings(),
 					cfg,
@@ -74,10 +74,10 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "creates a new factory and CreateMetricsReceiver returns error with incorrect config",
+			desc: "creates a new factory and CreateMetrics returns error with incorrect config",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
-				_, err := factory.CreateMetricsReceiver(
+				_, err := factory.CreateMetrics(
 					context.Background(),
 					receivertest.NewNopSettings(),
 					nil,
@@ -87,7 +87,7 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "CreateMetricsReceiver adds missing scheme to endpoint",
+			desc: "CreateMetrics adds missing scheme to endpoint",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
@@ -102,7 +102,7 @@ func TestNewFactory(t *testing.T) {
 						}},
 					},
 				}
-				_, err := factory.CreateMetricsReceiver(
+				_, err := factory.CreateMetrics(
 					context.Background(),
 					receivertest.NewNopSettings(),
 					cfg,
@@ -113,7 +113,7 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "CreateMetricsReceiver adds missing port to endpoint",
+			desc: "CreateMetrics adds missing port to endpoint",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
@@ -128,7 +128,7 @@ func TestNewFactory(t *testing.T) {
 						}},
 					},
 				}
-				_, err := factory.CreateMetricsReceiver(
+				_, err := factory.CreateMetrics(
 					context.Background(),
 					receivertest.NewNopSettings(),
 					cfg,
@@ -139,7 +139,7 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "CreateMetricsReceiver adds missing port to endpoint with trailing colon",
+			desc: "CreateMetrics adds missing port to endpoint with trailing colon",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
@@ -154,7 +154,7 @@ func TestNewFactory(t *testing.T) {
 						}},
 					},
 				}
-				_, err := factory.CreateMetricsReceiver(
+				_, err := factory.CreateMetrics(
 					context.Background(),
 					receivertest.NewNopSettings(),
 					cfg,
@@ -165,7 +165,7 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "CreateMetricsReceiver adds missing metric gauge value type as double",
+			desc: "CreateMetrics adds missing metric gauge value type as double",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
@@ -178,7 +178,7 @@ func TestNewFactory(t *testing.T) {
 						}},
 					},
 				}
-				_, err := factory.CreateMetricsReceiver(
+				_, err := factory.CreateMetrics(
 					context.Background(),
 					receivertest.NewNopSettings(),
 					cfg,
@@ -189,7 +189,7 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "CreateMetricsReceiver adds missing metric sum value type as double",
+			desc: "CreateMetrics adds missing metric sum value type as double",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
@@ -202,7 +202,7 @@ func TestNewFactory(t *testing.T) {
 						}},
 					},
 				}
-				_, err := factory.CreateMetricsReceiver(
+				_, err := factory.CreateMetrics(
 					context.Background(),
 					receivertest.NewNopSettings(),
 					cfg,
@@ -213,7 +213,7 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "CreateMetricsReceiver adds missing metric sum aggregation as cumulative",
+			desc: "CreateMetrics adds missing metric sum aggregation as cumulative",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
@@ -226,7 +226,7 @@ func TestNewFactory(t *testing.T) {
 						}},
 					},
 				}
-				_, err := factory.CreateMetricsReceiver(
+				_, err := factory.CreateMetrics(
 					context.Background(),
 					receivertest.NewNopSettings(),
 					cfg,
@@ -237,7 +237,7 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "CreateMetricsReceiver adds missing metric unit as 1",
+			desc: "CreateMetrics adds missing metric unit as 1",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
@@ -250,7 +250,7 @@ func TestNewFactory(t *testing.T) {
 						}},
 					},
 				}
-				_, err := factory.CreateMetricsReceiver(
+				_, err := factory.CreateMetrics(
 					context.Background(),
 					receivertest.NewNopSettings(),
 					cfg,

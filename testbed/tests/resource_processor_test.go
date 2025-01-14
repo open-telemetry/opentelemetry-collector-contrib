@@ -49,7 +49,6 @@ type resourceProcessorTestCase struct {
 }
 
 func getResourceProcessorTestCases() []resourceProcessorTestCase {
-
 	tests := []resourceProcessorTestCase{
 		{
 			name: "update_and_rename_existing_attributes",
@@ -109,8 +108,8 @@ func TestMetricResourceProcessor(t *testing.T) {
 			require.NoError(t, err)
 
 			agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
-			processors := map[string]string{
-				"resource": test.resourceProcessorConfig,
+			processors := []ProcessorNameAndConfigBody{
+				{Name: "resource", Body: test.resourceProcessorConfig},
 			}
 			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
 			configCleanup, err := agentProc.PrepareConfig(configStr)

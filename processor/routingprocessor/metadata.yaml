@@ -3,13 +3,14 @@ type: routing
 status:
   class: processor
   stability:
-    beta: [traces, metrics, logs]
+    deprecated: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
     active: [jpkrohling]
 
 tests:
   config:
+  host: "&mockHost{}"
 
 telemetry:
   metrics:

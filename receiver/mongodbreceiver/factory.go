@@ -13,7 +13,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
@@ -53,15 +54,16 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 	ms := newMongodbScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ms.scrape,
-		scraperhelper.WithStart(ms.start),
-		scraperhelper.WithShutdown(ms.shutdown))
+	s, err := scraper.NewMetrics(
+		ms.scrape,
+		scraper.WithStart(ms.start),
+		scraper.WithShutdown(ms.shutdown))
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&cfg.ControllerConfig, params, consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraper(metadata.Type, s),
 	)
 }

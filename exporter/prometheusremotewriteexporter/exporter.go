@@ -53,23 +53,42 @@ func (p *prwTelemetryOtel) recordTranslatedTimeSeries(ctx context.Context, numTS
 	p.telemetryBuilder.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(ctx, int64(numTS), metric.WithAttributes(p.otelAttrs...))
 }
 
+type buffer struct {
+	protobuf *proto.Buffer
+	snappy   []byte
+}
+
+// A reusable buffer pool for serializing protobufs and compressing them with Snappy.
+var bufferPool = sync.Pool{
+	New: func() any {
+		return &buffer{
+			protobuf: proto.NewBuffer(nil),
+			snappy:   nil,
+		}
+	},
+}
+
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
-	endpointURL          *url.URL
-	client               *http.Client
-	wg                   *sync.WaitGroup
-	closeChan            chan struct{}
-	concurrency          int
-	userAgentHeader      string
-	maxBatchSizeBytes    int
-	clientSettings       *confighttp.ClientConfig
-	settings             component.TelemetrySettings
-	retrySettings        configretry.BackOffConfig
-	retryOnHTTP429       bool
-	wal                  *prweWAL
-	exporterSettings     prometheusremotewrite.Settings
-	telemetry            prwTelemetry
-	batchTimeSeriesState batchTimeSeriesState
+	endpointURL       *url.URL
+	client            *http.Client
+	wg                *sync.WaitGroup
+	closeChan         chan struct{}
+	concurrency       int
+	userAgentHeader   string
+	maxBatchSizeBytes int
+	clientSettings    *confighttp.ClientConfig
+	settings          component.TelemetrySettings
+	retrySettings     configretry.BackOffConfig
+	retryOnHTTP429    bool
+	wal               *prweWAL
+	exporterSettings  prometheusremotewrite.Settings
+	telemetry         prwTelemetry
+
+	// When concurrency is enabled, concurrent goroutines would potentially
+	// fight over the same batchState object. To avoid this, we use a pool
+	// to provide each goroutine with its own state.
+	batchStatePool sync.Pool
 }
 
 func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
@@ -124,8 +143,12 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 			AddMetricSuffixes:   cfg.AddMetricSuffixes,
 			SendMetadata:        cfg.SendMetadata,
 		},
-		telemetry:            prwTelemetry,
-		batchTimeSeriesState: newBatchTimeSericesState(),
+		telemetry:      prwTelemetry,
+		batchStatePool: sync.Pool{New: func() any { return newBatchTimeSericesState() }},
+	}
+
+	if prwe.exporterSettings.ExportCreatedMetric {
+		prwe.settings.Logger.Warn("export_created_metric is deprecated and will be removed in a future release")
 	}
 
 	prwe.wal = newWAL(cfg.WAL, prwe.export)
@@ -209,8 +232,10 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 		return nil
 	}
 
+	state := prwe.batchStatePool.Get().(*batchTimeSeriesState)
+	defer prwe.batchStatePool.Put(state)
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, &prwe.batchTimeSeriesState)
+	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, state)
 	if err != nil {
 		return err
 	}
@@ -271,14 +296,26 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 }
 
 func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
+	buf := bufferPool.Get().(*buffer)
+	buf.protobuf.Reset()
+	defer bufferPool.Put(buf)
+
 	// Uses proto.Marshal to convert the WriteRequest into bytes array
-	data, errMarshal := proto.Marshal(writeReq)
+	errMarshal := buf.protobuf.Marshal(writeReq)
 	if errMarshal != nil {
 		return consumererror.NewPermanent(errMarshal)
 	}
 	// If we don't pass a buffer large enough, Snappy Encode function will not use it and instead will allocate a new buffer.
-	// Therefore we always let Snappy decide the size of the buffer.
-	compressedData := snappy.Encode(nil, data)
+	// Manually grow the buffer to make sure Snappy uses it and we can re-use it afterwards.
+	maxCompressedLen := snappy.MaxEncodedLen(len(buf.protobuf.Bytes()))
+	if maxCompressedLen > len(buf.snappy) {
+		if cap(buf.snappy) < maxCompressedLen {
+			buf.snappy = make([]byte, maxCompressedLen)
+		} else {
+			buf.snappy = buf.snappy[:maxCompressedLen]
+		}
+	}
+	compressedData := snappy.Encode(buf.snappy, buf.protobuf.Bytes())
 
 	// executeFunc can be used for backoff and non backoff scenarios.
 	executeFunc := func() error {
@@ -292,7 +329,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		}
 
 		// Create the HTTP POST request to send to the endpoint
-		req, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, prwe.endpointURL.String(), bytes.NewReader(compressedData))
 		if err != nil {
 			return backoff.Permanent(consumererror.NewPermanent(err))
 		}
@@ -326,7 +363,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 
 		// 429 errors are recoverable and the exporter should retry if RetryOnHTTP429 enabled
 		// Reference: https://github.com/prometheus/prometheus/pull/12677
-		if prwe.retryOnHTTP429 && resp.StatusCode == 429 {
+		if prwe.retryOnHTTP429 && resp.StatusCode == http.StatusTooManyRequests {
 			return rerr
 		}
 
