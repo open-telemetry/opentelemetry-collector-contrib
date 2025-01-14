@@ -5,6 +5,7 @@ package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/config/confignet"
 	"testing"
 	"time"
 
@@ -36,13 +37,14 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				var expectedCfg component.Config = &Config{
 					ControllerConfig: scraperhelper.ControllerConfig{
-						CollectionInterval: 10 * time.Second,
+						CollectionInterval: 60 * time.Second,
 						InitialDelay:       time.Second,
 					},
 					//TCPClientSettings: configtcp.TCPClientSettings{
 					//	Timeout: 10 * time.Second,
 					//},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+					Targets:              []*confignet.TCPAddrConfig{},
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())

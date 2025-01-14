@@ -27,7 +27,7 @@ var (
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	tcpConfigs                     []*confignet.TCPAddrConfig `mapstructure:",squash"`
+	Targets                        []*confignet.TCPAddrConfig `mapstructure:",squash"`
 }
 
 func validatePort(port string) error {
@@ -68,15 +68,13 @@ func validateTarget(cfg *confignet.TCPAddrConfig) error {
 func (cfg *Config) Validate() error {
 	var err error
 
-	if len(cfg.tcpConfigs) == 0 {
+	if len(cfg.Targets) == 0 {
 		err = multierr.Append(err, errMissingTargets)
 	}
 
-	for _, tcpConfig := range cfg.tcpConfigs {
+	for _, tcpConfig := range cfg.Targets {
 		err = multierr.Append(err, validateTarget(tcpConfig))
 	}
 
 	return err
 }
-
-// createcient

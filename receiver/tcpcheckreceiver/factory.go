@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	collectorscraper "go.opentelemetry.io/collector/scraper"
 )
 
 // NewFactory creates a factory for tcpcheckreceiver receiver.
@@ -28,32 +29,30 @@ func newDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		tcpConfigs:           []*confignet.TCPAddrConfig{},
+		Targets:              []*confignet.TCPAddrConfig{},
 	}
 }
 
-// todo:  match new version
 func newReceiver(
 	_ context.Context,
 	settings receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	tlsCheckConfig, ok := cfg.(*Config)
+	tcpCheckConfig, ok := cfg.(*Config)
 	if !ok {
 		return nil, errConfigTCPCheck
 	}
 
-	//mp := newScraper(tlsCheckConfig, settings, getConnectionState)
-	mp := newScraper(tlsCheckConfig, settings)
-	s, err := scraperhelper.NewScraperWithoutType(mp.scrape)
+	mp := newScraper(tcpCheckConfig, settings)
+	s, err := collectorscraper.NewMetrics(mp.scrape)
 	if err != nil {
 		return nil, err
 	}
-	opt := scraperhelper.AddScraperWithType(metadata.Type, s)
+	opt := scraperhelper.AddScraper(metadata.Type, s)
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&tlsCheckConfig.ControllerConfig,
+		&tcpCheckConfig.ControllerConfig,
 		settings,
 		consumer,
 		opt,

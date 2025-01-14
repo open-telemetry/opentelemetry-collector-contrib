@@ -5,16 +5,15 @@ package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
 )
 
 type scraper struct {
@@ -35,44 +34,48 @@ type TCPConnectionState struct {
 func getConnectionState(tcpConfig *confignet.TCPAddrConfig) (TCPConnectionState, error) {
 
 	conn, err := tcpConfig.Dial(context.Background())
-	//conn, err := tls.Dial("tcp", endpoint, &tls.Config{InsecureSkipVerify: true})
 	if err != nil {
 		return TCPConnectionState{}, err
 	}
 	defer conn.Close()
-	//state := TCPConnectionState{
-	//	LocalAddr:  conn.LocalAddr().String(),  // Local endpoint (IP:port)
-	//	RemoteAddr: conn.RemoteAddr().String(), // Remote endpoint (IP:port)
-	//	Network:    conn.LocalAddr().Network(), // Connection network type
-	//}
-	return TCPConnectionState{}, nil
+	state := TCPConnectionState{
+		LocalAddr:  conn.LocalAddr().String(),  // Local endpoint (IP:port)
+		RemoteAddr: conn.RemoteAddr().String(), // Remote endpoint (IP:port)
+		Network:    conn.LocalAddr().Network(), // Connection network type
+	}
+	return state, nil
 }
 
 func (s *scraper) scrapeEndpoint(tcpConfig *confignet.TCPAddrConfig, wg *sync.WaitGroup, mux *sync.Mutex) {
 	defer wg.Done()
-	const pointVal int64 = 1 // Use a constant for clarity and immutability
+	const pointValue int64 = 1 // Use a constant for clarity and immutability
+	const fail int64 = 0
+
 	start := time.Now()
 	// Attempt to get the connection state
 	//tcpClient, err := tcpConfig.ToClient()
-	_, err1 := s.getConnectionState(tcpConfig)
+	_, err := s.getConnectionState(tcpConfig)
 	now := pcommon.NewTimestampFromTime(time.Now())
-
-	if err1 != nil {
-		// Record error data point and log the error
-		mux.Lock()
-		s.mb.RecordTcpcheckErrorDataPoint(now, pointVal, tcpConfig.Endpoint, err1.Error())
-		s.settings.Logger.Error("TCP connection error encountered", zap.String("endpoint", tcpConfig.Endpoint), zap.Error(err1))
-		defer mux.Unlock()
-		return
-	}
 
 	// Record success metrics
 	duration := time.Since(start).Milliseconds()
 
 	mux.Lock()
-	s.mb.RecordTcpcheckDurationDataPoint(now, duration, tcpConfig.Endpoint)
-	s.mb.RecordTcpcheckStatusDataPoint(now, pointVal, tcpConfig.Endpoint)
 	defer mux.Unlock()
+
+	if err != nil {
+		// Record error data point and log the error
+		s.mb.RecordTcpcheckDurationDataPoint(now, duration, tcpConfig.Endpoint)
+		s.mb.RecordTcpcheckStatusDataPoint(now, fail, tcpConfig.Endpoint)
+		s.mb.RecordTcpcheckErrorDataPoint(now, pointValue, tcpConfig.Endpoint, err.Error())
+		s.settings.Logger.Error("TCP connection error encountered", zap.String("endpoint", tcpConfig.Endpoint), zap.Error(err))
+		return
+	}
+
+	// Record success data points
+	s.mb.RecordTcpcheckDurationDataPoint(now, duration, tcpConfig.Endpoint)
+	s.mb.RecordTcpcheckStatusDataPoint(now, pointValue, tcpConfig.Endpoint)
+	return
 }
 
 //func (s *scraper) scrapeEndpoint(tcpConfig *confignet.TCPAddrConfig, wg *sync.WaitGroup, mux *sync.Mutex) {
@@ -96,15 +99,15 @@ func (s *scraper) scrapeEndpoint(tcpConfig *confignet.TCPAddrConfig, wg *sync.Wa
 //# scrape -> to client -> dial
 
 func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
-	if s.cfg == nil || len(s.cfg.tcpConfigs) == 0 {
+	if s.cfg == nil || len(s.cfg.Targets) == 0 {
 		return pmetric.NewMetrics(), errMissingTargets
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(len(s.cfg.tcpConfigs))
+	wg.Add(len(s.cfg.Targets))
 	var mux sync.Mutex
 
-	for _, tcpConfig := range s.cfg.tcpConfigs {
+	for _, tcpConfig := range s.cfg.Targets {
 		go s.scrapeEndpoint(tcpConfig, &wg, &mux)
 	}
 

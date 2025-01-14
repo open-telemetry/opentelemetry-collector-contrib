@@ -121,3 +121,33 @@ func TestValidate(t *testing.T) {
 		})
 	}
 }
+
+//''' others: configtcp  test??
+//func TestLoadConfig(t *testing.T) {
+//	// load test config
+//	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+//	require.NoError(t, err)
+//	rcvrs, err := cm.Sub("receivers")
+//	require.NoError(t, err)
+//	tcpconf, err := rcvrs.Sub("tcpcheck")
+//	require.NoError(t, err)
+//	// unmarshal to receiver config
+//	actualConfig, ok := NewFactory().CreateDefaultConfig().(*Config)
+//	require.True(t, ok)
+//	require.NoError(t, tcpconf.Unmarshal(actualConfig))
+//
+//	// set expected config
+//	expectedConfig, ok := NewFactory().CreateDefaultConfig().(*Config)
+//	require.True(t, ok)
+//
+//	expectedConfig.ControllerConfig = scraperhelper.ControllerConfig{
+//		InitialDelay:       time.Second,
+//		CollectionInterval: 60 * time.Second,
+//	}
+//	expectedConfig.TCPClientSettings = configtcp.TCPClientSettings{
+//		Endpoint: "localhost:80",
+//		Timeout:  10 * time.Second,
+//	}
+//	require.Equal(t, expectedConfig, actualConfig)
+//}
+//''''
