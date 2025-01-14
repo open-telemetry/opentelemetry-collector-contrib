@@ -330,7 +330,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 		},
 	}
 
-	unkeyedMessageKey := []sarama.Encoder{nil}
+	unkeyedMessageKey := []sarama.ByteEncoder{nil}
 
 	keyedOtlpJSON2 := map[string]any{
 		"resourceSpans": []any{
@@ -363,7 +363,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 	keyedOtlpJSONResult[0] = keyedOtlpJSON1
 	keyedOtlpJSONResult[1] = keyedOtlpJSON2
 
-	keyedMessageKey := []sarama.Encoder{sarama.ByteEncoder("0102030405060708090a0b0c0d0e0f10"), sarama.ByteEncoder("1112131415161718191a1b1c1d1e1f20")}
+	keyedMessageKey := []sarama.ByteEncoder{sarama.ByteEncoder("0102030405060708090a0b0c0d0e0f10"), sarama.ByteEncoder("1112131415161718191a1b1c1d1e1f20")}
 
 	unkeyedZipkinJSON := []any{
 		map[string]any{
@@ -446,7 +446,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 		partitionTracesByID bool
 		numExpectedMessages int
 		expectedJSON        []any
-		expectedMessageKey  []sarama.Encoder
+		expectedMessageKey  []sarama.ByteEncoder
 		unmarshaled         any
 	}{
 		{encoding: "otlp_json", numExpectedMessages: 1, expectedJSON: unkeyedOtlpJSONResult, expectedMessageKey: unkeyedMessageKey, unmarshaled: map[string]any{}},
@@ -459,14 +459,19 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 		marshaler, err := createTracesMarshaler(Config{
 			Encoding:            test.encoding,
 			PartitionTracesByID: test.partitionTracesByID,
+			Producer:            Producer{MaxMessageBytes: defaultProducerMaxMessageBytes},
 		})
 		require.NoErrorf(t, err, "Must have %s marshaler", test.encoding)
 
 		msg, err := marshaler.Marshal(traces, t.Name())
+		var messages []*sarama.ProducerMessage
+		if len(msg) > 0 {
+			messages = msg[0].Messages
+		}
 		require.NoError(t, err, "Must have marshaled the data without error")
-		require.Len(t, msg, test.numExpectedMessages, "Expected number of messages in the message")
+		require.Len(t, messages, test.numExpectedMessages, "Expected number of messages in the message")
 
-		for idx, singleMsg := range msg[0].msg {
+		for idx, singleMsg := range messages {
 			data, err := singleMsg.Value.Encode()
 			require.NoError(t, err, "Must not error when encoding value")
 			require.NotNil(t, data, "Must have valid data to test")
