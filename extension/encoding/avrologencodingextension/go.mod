@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encod
 go 1.22.0
 
 require (
-	github.com/linkedin/goavro/v2 v2.13.0
+	github.com/linkedin/goavro/v2 v2.13.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.117.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.117.0
