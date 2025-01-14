@@ -87,5 +87,5 @@ func (m *metricModelSum) size() int {
 }
 
 func (m *metricModelSum) bytes() ([]byte, error) {
-	return toJsonLines(m.data)
+	return toJSONLines(m.data)
 }
