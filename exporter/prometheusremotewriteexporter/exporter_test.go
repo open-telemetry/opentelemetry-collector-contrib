@@ -36,7 +36,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -736,7 +738,7 @@ func Test_PushMetrics(t *testing.T) {
 						Description: "OpenTelemetry Collector",
 						Version:     "1.0",
 					}
-					tel := setupTestTelemetry()
+					tel := metadatatest.SetupTelemetry()
 					set := tel.NewSettings()
 					// detailed level enables otelhttp client instrumentation which we dont want to test here
 					set.MetricsLevel = configtelemetry.LevelBasic
@@ -790,7 +792,7 @@ func Test_PushMetrics(t *testing.T) {
 							},
 						},
 					})
-					tel.assertMetrics(t, expectedMetrics)
+					tel.AssertMetrics(t, expectedMetrics, metricdatatest.IgnoreTimestamp())
 					assert.NoError(t, err)
 				})
 			}
@@ -1293,7 +1295,7 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 	endpointURL, err := url.Parse(mockServer.URL)
 	require.NoError(b, err)
 
-	tel := setupTestTelemetry()
+	tel := metadatatest.SetupTelemetry()
 	set := tel.NewSettings()
 	// Adjusted retry settings for faster testing
 	retrySettings := configretry.BackOffConfig{
