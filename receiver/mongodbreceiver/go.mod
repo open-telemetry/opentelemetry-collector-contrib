@@ -13,15 +13,15 @@ require (
 	go.mongodb.org/mongo-driver v1.17.2
 	go.opentelemetry.io/collector/component v0.117.0
 	go.opentelemetry.io/collector/component/componenttest v0.117.0
-	go.opentelemetry.io/collector/config/confignet v1.23.0
-	go.opentelemetry.io/collector/config/configopaque v1.23.0
-	go.opentelemetry.io/collector/config/configtls v1.23.0
-	go.opentelemetry.io/collector/confmap v1.23.0
-	go.opentelemetry.io/collector/consumer v1.23.0
+	go.opentelemetry.io/collector/config/confignet v1.23.1-0.20250114172347-71aae791d7f8
+	go.opentelemetry.io/collector/config/configopaque v1.23.1-0.20250114172347-71aae791d7f8
+	go.opentelemetry.io/collector/config/configtls v1.23.1-0.20250114172347-71aae791d7f8
+	go.opentelemetry.io/collector/confmap v1.23.1-0.20250114172347-71aae791d7f8
+	go.opentelemetry.io/collector/consumer v1.23.1-0.20250114172347-71aae791d7f8
 	go.opentelemetry.io/collector/consumer/consumertest v0.117.0
-	go.opentelemetry.io/collector/featuregate v1.23.0
+	go.opentelemetry.io/collector/featuregate v1.23.1-0.20250114172347-71aae791d7f8
 	go.opentelemetry.io/collector/filter v0.117.0
-	go.opentelemetry.io/collector/pdata v1.23.0
+	go.opentelemetry.io/collector/pdata v1.23.1-0.20250114172347-71aae791d7f8
 	go.opentelemetry.io/collector/receiver v0.117.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.117.0
 	go.opentelemetry.io/collector/scraper v0.117.0
