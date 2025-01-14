@@ -1,4 +1,4 @@
-package firehoseencodingextension
+package cloudwatchencoding
 
 import (
 	"errors"
@@ -25,12 +25,8 @@ func TestLoadConfig(t *testing.T) {
 			expected: defaultCfg,
 		},
 		{
-			id:          component.NewIDWithName(metadata.Type, "metrics_invalid_encoding"),
-			expectedErr: errors.New("unknown metrics encoding invalid"),
-		},
-		{
-			id:          component.NewIDWithName(metadata.Type, "logs_invalid_encoding"),
-			expectedErr: errors.New("unknown logs encoding invalid"),
+			id:          component.NewIDWithName(metadata.Type, "invalid_encoding"),
+			expectedErr: errors.New("unknown content encoding invalid"),
 		},
 	}
 

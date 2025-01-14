@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("firehose_encoding")
+	Type      = component.MustNewType("cloudwatch_encoding")
 	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/cloudwatchencodingextension"
 )
 

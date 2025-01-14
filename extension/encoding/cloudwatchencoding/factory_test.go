@@ -1,4 +1,4 @@
-package firehoseencodingextension
+package cloudwatchencoding
 
 import (
 	"context"

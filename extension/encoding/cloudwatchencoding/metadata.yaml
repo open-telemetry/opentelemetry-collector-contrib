@@ -1,4 +1,4 @@
-type: firehose_encoding
+type: cloudwatch_encoding
 
 status:
   class: extension

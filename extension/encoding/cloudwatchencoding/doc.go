@@ -1,2 +1,2 @@
 //go:generate mdatagen metadata.yaml
-package firehoseencodingextension
+package cloudwatchencoding

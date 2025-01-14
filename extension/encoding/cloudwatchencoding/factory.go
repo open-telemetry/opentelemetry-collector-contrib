@@ -1,4 +1,4 @@
-package firehoseencodingextension
+package cloudwatchencoding
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/cloudwatchencodingextension/internal/metadata"

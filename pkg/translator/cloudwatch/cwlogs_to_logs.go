@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"time"
 
@@ -28,14 +29,16 @@ func isLogValid(log cloudwatchLog) (bool, error) {
 	return true, nil
 }
 
-func addRecord(log cloudwatchLog, records plog.LogRecordSlice) {
-	logRecord := records.AppendEmpty()
+func addRecord(log cloudwatchLog, logs plog.Logs) {
+	rl := logs.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	logRecord := sl.LogRecords().AppendEmpty()
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(log.Timestamp)))
 	logRecord.Body().SetStr(log.Message)
 }
 
-func UnmarshalLogs(record []byte) (plog.LogRecordSlice, error) {
-	logs := plog.NewLogRecordSlice()
+func UnmarshalLogs(record []byte) (plog.Logs, error) {
+	logs := plog.NewLogs()
 	decoder := json.NewDecoder(bytes.NewReader(record))
 	for datumIndex := 0; ; datumIndex++ {
 		var log cloudwatchLog
@@ -43,18 +46,19 @@ func UnmarshalLogs(record []byte) (plog.LogRecordSlice, error) {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			return plog.LogRecordSlice{},
+			return plog.Logs{},
 				fmt.Errorf("unable to unmarshal datum [%d] into cloudwatch log: %w", datumIndex, err)
 		}
 		if valid, err := isLogValid(log); !valid {
-			return plog.LogRecordSlice{},
+			return plog.Logs{},
 				fmt.Errorf("cloudwatch log from datum [%d] is invalid: %w", datumIndex, err)
 		}
 		addRecord(log, logs)
 	}
 
-	if logs.Len() == 0 {
+	if logs.LogRecordCount() == 0 {
 		return logs, errors.New("no log records could be obtained from the record")
 	}
+	pdatautil.GroupByResourceLogs(logs.ResourceLogs())
 	return logs, nil
 }
