@@ -83,7 +83,11 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 					if dataPoints.Len() == 0 {
 						break
 					}
-					c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName)
+					if !metric.Sum().IsMonotonic() {
+						c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName)
+					} else {
+						c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName)
+					}
 				case pmetric.MetricTypeHistogram:
 					// TODO implement
 				case pmetric.MetricTypeExponentialHistogram:
