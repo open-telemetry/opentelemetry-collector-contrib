@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkin
 go 1.22.7
 
 require (
-	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cenkalti/backoff/v5 v5.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.117.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.117.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.117.0

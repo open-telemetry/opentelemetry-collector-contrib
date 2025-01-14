@@ -17,7 +17,7 @@ require (
 )
 
 require (
-	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cenkalti/backoff/v5 v5.0.0
 	go.opentelemetry.io/collector/component/componenttest v0.117.0
 	go.opentelemetry.io/collector/config/configopaque v1.23.0
 	go.opentelemetry.io/collector/config/configretry v1.23.0
