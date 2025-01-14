@@ -353,7 +353,6 @@ jobs:
           - exporter-3
           - extension-0
           - extension-1
-          - extension-2
           - connector
           - internal
           - pkg
@@ -382,7 +381,7 @@ jobs:
 
   integration-tests:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment, integration-tests-matrix]
     steps:
       - name: Print result
