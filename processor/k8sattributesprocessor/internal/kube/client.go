@@ -1137,9 +1137,7 @@ func (c *WatchClient) runInformerWithDependencies(informer cache.SharedInformer,
 			close(timeoutCh)
 		})
 		defer t.Stop()
-		for _, dependency := range dependencies {
-			cache.WaitForCacheSync(timeoutCh, dependency)
-		}
+		cache.WaitForCacheSync(timeoutCh, dependencies...)
 	}
 	informer.Run(c.stopCh)
 }
