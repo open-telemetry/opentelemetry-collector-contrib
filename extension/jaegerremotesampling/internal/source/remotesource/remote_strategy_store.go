@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal"
+package remotesource // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/source/remotesource"
 
 import (
 	"context"
@@ -9,30 +9,30 @@ import (
 	"io"
 	"time"
 
-	grpcstore "github.com/jaegertracing/jaeger/cmd/agent/app/configmanager/grpc"
-	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/samplingstrategy"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/source"
 )
 
 type grpcRemoteStrategyStore struct {
 	headerAdditions map[string]configopaque.String
-	delegate        *grpcstore.ConfigManagerProxy
+	delegate        *ConfigManagerProxy
 	cache           serviceStrategyCache
 }
 
-// NewRemoteStrategyStore returns a StrategyStore that delegates to the configured Jaeger gRPC endpoint, making
+// NewRemoteSource returns a StrategyStore that delegates to the configured Jaeger gRPC endpoint, making
 // extension-configured enhancements (header additions only for now) to the gRPC context of every outbound gRPC call.
 // Note: it would be nice to expand the configuration surface to include an optional TTL-based caching behavior
 // for service-specific outbound GetSamplingStrategy calls.
-func NewRemoteStrategyStore(
+func NewRemoteSource(
 	conn *grpc.ClientConn,
 	grpcClientSettings *configgrpc.ClientConfig,
 	reloadInterval time.Duration,
-) (samplingstrategy.Provider, io.Closer) {
+) (source.Source, io.Closer) {
 	cache := newNoopStrategyCache()
 	if reloadInterval > 0 {
 		cache = newServiceStrategyCache(reloadInterval)
@@ -40,7 +40,7 @@ func NewRemoteStrategyStore(
 
 	return &grpcRemoteStrategyStore{
 		headerAdditions: grpcClientSettings.Headers,
-		delegate:        grpcstore.NewConfigManager(conn),
+		delegate:        NewConfigManager(conn),
 		cache:           cache,
 	}, cache
 }
