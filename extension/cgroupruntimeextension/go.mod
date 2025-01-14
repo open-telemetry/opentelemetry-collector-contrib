@@ -4,7 +4,7 @@ go 1.22.4
 
 require (
 	github.com/KimMachineGun/automemlimit v0.7.0
-	github.com/rdforte/gomaxecs v1.1.0
+	github.com/rdforte/gomaxecs v1.1.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.117.0
 	go.opentelemetry.io/collector/component/componenttest v0.117.0
