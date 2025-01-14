@@ -1,0 +1,9 @@
+default:
+all_set:
+  resource_attributes:
+    k8s.cluster.name:
+      enabled: true
+none_set:
+  resource_attributes:
+    k8s.cluster.name:
+      enabled: false
