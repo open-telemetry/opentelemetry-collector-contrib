@@ -53,7 +53,7 @@ func (e *kafkaTracesProducer) tracesPusher(ctx context.Context, td ptrace.Traces
 	var allErrors []string
 
 	for i, chunk := range messageChunks {
-		sendErr := e.producer.SendMessages(chunk.msg)
+		sendErr := e.producer.SendMessages(chunk.Messages)
 		if sendErr == nil {
 			continue
 		}
