@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
@@ -130,7 +130,7 @@ func createAddScraperOptions(
 	return scraperControllerOptions, nil
 }
 
-func createHostMetricsScraper(ctx context.Context, set receiver.Settings, key component.Type, cfg internal.Config, factories map[component.Type]internal.ScraperFactory) (s scraper.Metrics, ok bool, err error) {
+func createHostMetricsScraper(ctx context.Context, set receiver.Settings, key component.Type, cfg component.Config, factories map[component.Type]internal.ScraperFactory) (s scraper.Metrics, ok bool, err error) {
 	factory := factories[key]
 	if factory == nil {
 		ok = false

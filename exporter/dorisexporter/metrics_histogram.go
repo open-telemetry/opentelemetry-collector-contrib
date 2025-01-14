@@ -5,7 +5,6 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	_ "embed"
-	"encoding/json"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -108,5 +107,5 @@ func (m *metricModelHistogram) size() int {
 }
 
 func (m *metricModelHistogram) bytes() ([]byte, error) {
-	return json.Marshal(m.data)
+	return toJsonLines(m.data)
 }
