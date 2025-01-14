@@ -9,6 +9,10 @@ on:
 jobs:
   CodeQL-Build:
     runs-on: macos-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     if: ${{ github.actor != 'dependabot[bot]' }}
     env:
       # Force CodeQL to run the extraction on the files compiled by our custom
