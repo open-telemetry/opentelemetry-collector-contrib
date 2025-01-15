@@ -94,6 +94,24 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 	}
 }
 
+func Test_newPathGetSetter_WithCache(t *testing.T) {
+	cacheValue := pcommon.NewMap()
+	cacheValue.PutStr("test", "pass")
+
+	ctx := NewTransformContext(
+		pmetric.NewNumberDataPoint(),
+		pmetric.NewMetric(),
+		pmetric.NewMetricSlice(),
+		pcommon.NewInstrumentationScope(),
+		pcommon.NewResource(),
+		pmetric.NewScopeMetrics(),
+		pmetric.NewResourceMetrics(),
+		WithCache(&cacheValue),
+	)
+
+	assert.Equal(t, cacheValue, ctx.getCache())
+}
+
 func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 	refNumberDataPoint := createNumberDataPointTelemetry(pmetric.NumberDataPointValueTypeInt)
 
