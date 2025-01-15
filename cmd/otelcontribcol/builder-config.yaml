@@ -510,3 +510,4 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver => ../../receiver/awss3receiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter => ../../exporter/dorisexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension => ../../extension/storage/redisstorageextension
+  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver => ../../receiver/huaweicloudcesreceiver
