@@ -182,6 +182,12 @@ func (r *Reader) readContents(ctx context.Context) {
 
 	tokens := make([]emit.Token, 0, r.maxBatchSize)
 
+	// Initialize space in memory for r.maxBatchSize token buffers, to avoid allocations inside the loop.
+	tokenBodies := make([][]byte, r.maxBatchSize)
+	for i := range tokenBodies {
+		tokenBodies[i] = make([]byte, 1<<12)
+	}
+
 	// Iterate over the contents of the file.
 	for {
 		select {
@@ -208,7 +214,8 @@ func (r *Reader) readContents(ctx context.Context) {
 			return
 		}
 
-		token, err := r.decoder.Decode(s.Bytes())
+		var err error
+		tokenBodies[len(tokens)], err = r.decoder.DecodeTo(tokenBodies[len(tokens)], s.Bytes())
 		if err != nil {
 			r.set.Logger.Error("failed to decode token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
@@ -220,7 +227,7 @@ func (r *Reader) readContents(ctx context.Context) {
 			r.FileAttributes[attrs.LogFileRecordNumber] = r.RecordNum
 		}
 
-		tokens = append(tokens, emit.NewToken(copyBody(token), copyAttributes(r.FileAttributes)))
+		tokens = append(tokens, emit.NewToken(tokenBodies[len(tokens)], copyAttributes(r.FileAttributes)))
 
 		if r.maxBatchSize > 0 && len(tokens) >= r.maxBatchSize {
 			err := r.emitFunc(ctx, tokens)
@@ -231,15 +238,6 @@ func (r *Reader) readContents(ctx context.Context) {
 			r.Offset = s.Pos()
 		}
 	}
-}
-
-func copyBody(body []byte) []byte {
-	if body == nil {
-		return nil
-	}
-	copied := make([]byte, len(body))
-	copy(copied, body)
-	return copied
 }
 
 func copyAttributes(attrs map[string]any) map[string]any {
