@@ -136,7 +136,7 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 	for _, part := range parts[1:] {
 		parameter := strings.Split(part, "=")
 		if len(parameter) != 2 {
-			return "", fmt.Errorf("error as per https://www.rfc-editor.org/rfc/rfc9110#parameter expected parameters to be key-values, got %v in %v content-type", part, contentType)
+			return "", fmt.Errorf("as per https://www.rfc-editor.org/rfc/rfc9110#parameter expected parameters to be key-values, got %v in %v content-type", part, contentType)
 		}
 
 		if strings.TrimSpace(parameter[0]) == "proto" {
