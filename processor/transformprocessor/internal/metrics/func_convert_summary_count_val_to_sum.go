@@ -16,6 +16,7 @@ import (
 type convertSummaryCountValToSumArguments struct {
 	StringAggTemp string
 	Monotonic     bool
+	Suffix        ottl.Optional[string]
 }
 
 func newConvertSummaryCountValToSumFactory() ottl.Factory[ottldatapoint.TransformContext] {
@@ -29,10 +30,14 @@ func createConvertSummaryCountValToSumFunction(_ ottl.FunctionContext, oArgs ott
 		return nil, fmt.Errorf("convertSummaryCountValToSumFactory args must be of type *convertSummaryCountValToSumArguments")
 	}
 
-	return convertSummaryCountValToSum(args.StringAggTemp, args.Monotonic)
+	return convertSummaryCountValToSum(args.StringAggTemp, args.Monotonic, args.Suffix)
 }
 
-func convertSummaryCountValToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+func convertSummaryCountValToSum(stringAggTemp string, monotonic bool, suffix ottl.Optional[string]) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	metricNameSuffix := ".count"
+	if !suffix.IsEmpty() {
+		metricNameSuffix = suffix.Get()
+	}
 	var aggTemp pmetric.AggregationTemporality
 	switch stringAggTemp {
 	case "delta":
@@ -50,7 +55,7 @@ func convertSummaryCountValToSum(stringAggTemp string, monotonic bool) (ottl.Exp
 
 		sumMetric := tCtx.GetMetrics().AppendEmpty()
 		sumMetric.SetDescription(metric.Description())
-		sumMetric.SetName(metric.Name() + "_count")
+		sumMetric.SetName(metric.Name() + metricNameSuffix)
 		sumMetric.SetUnit(metric.Unit())
 		sumMetric.SetEmptySum().SetAggregationTemporality(aggTemp)
 		sumMetric.Sum().SetIsMonotonic(monotonic)
