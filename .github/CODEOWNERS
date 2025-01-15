@@ -120,7 +120,6 @@ extension/sigv4authextension/                     @open-telemetry/collector-cont
 extension/solarwindsapmsettingsextension/         @open-telemetry/collector-contrib-approvers @jerrytfleung @cheempz
 extension/storage/                                @open-telemetry/collector-contrib-approvers @dmitryax @atoulme @djaglowski
 extension/storage/dbstorage/                      @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
-extension/storage/filestorage/                    @open-telemetry/collector-contrib-approvers @djaglowski
 extension/storage/redisstorageextension/          @open-telemetry/collector-contrib-approvers @atoulme
 extension/sumologicextension/                     @open-telemetry/collector-contrib-approvers @rnishtala-sumo @chan-tim-sumo
 
@@ -317,4 +316,5 @@ reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers
 exporter/kineticaexporter/                        @open-telemetry/collector-contrib-approvers 
 exporter/opensearchexporter/                      @open-telemetry/collector-contrib-approvers 
 extension/observer/ecstaskobserver/               @open-telemetry/collector-contrib-approvers 
+extension/storage/filestorage/                    @open-telemetry/collector-contrib-approvers 
 receiver/jmxreceiver/                             @open-telemetry/collector-contrib-approvers 
