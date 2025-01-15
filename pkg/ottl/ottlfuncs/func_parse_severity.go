@@ -8,7 +8,7 @@ import (
 )
 
 type ParseSeverityArguments[K any] struct {
-	Target  ottl.StringGetter[K]
+	Target  ottl.Getter[K]
 	Mapping ottl.PMapGetter[K]
 }
 
@@ -26,7 +26,7 @@ func createParseSeverityFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argum
 	return parseSeverity[K](args.Target, args.Mapping)
 }
 
-func parseSeverity[K any](target ottl.StringGetter[K], mapping ottl.PMapGetter[K]) (ottl.ExprFunc[K], error) {
+func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) (ottl.ExprFunc[K], error) {
 
 	return func(ctx context.Context, tCtx K) (any, error) {
 		severityMap, err := mapping.Get(ctx, tCtx)
@@ -38,15 +38,28 @@ func parseSeverity[K any](target ottl.StringGetter[K], mapping ottl.PMapGetter[K
 		if err != nil {
 			return nil, fmt.Errorf("invalid severity mapping: %w", err)
 		}
-		return nil, nil
+
+		value, err := target.Get(ctx, tCtx)
+		if err != nil {
+			return nil, fmt.Errorf("could not get log level: %w", err)
+		}
+
+		logLevel, err := sev.evaluate(value)
+		if err != nil {
+			return nil, fmt.Errorf("could not map log level: %w", err)
+		}
+
+		return logLevel, nil
 	}, nil
 }
 
-func validateSeverity(raw map[string]any) (map[string]any, error) {
+func validateSeverity(raw map[string]any) (*severities, error) {
 	s := &severities{}
 	if err := mapstructure.Decode(raw, s); err != nil {
 		return nil, fmt.Errorf("cannot decode severity mapping: %w", err)
 	}
+
+	return s, nil
 
 }
 
@@ -58,12 +71,77 @@ type severities struct {
 	Info  *severity `mapstructure:"info,omitempty"`
 }
 
+func (s severities) evaluate(value any) (string, error) {
+	if s.Debug != nil {
+		match, err := s.Debug.matches(value)
+		if err != nil {
+			return "", fmt.Errorf("could not evaluate log level of value '%v': %w", value, err)
+		}
+		if match {
+			return "debug", nil
+		}
+	}
+	if s.Fatal != nil {
+		match, err := s.Fatal.matches(value)
+		if err != nil {
+			return "", fmt.Errorf("could not evaluate log level of value '%v': %w", value, err)
+		}
+		if match {
+			return "fatal", nil
+		}
+	}
+	if s.Error != nil {
+		match, err := s.Error.matches(value)
+		if err != nil {
+			return "", fmt.Errorf("could not evaluate log level of value '%v': %w", value, err)
+		}
+		if match {
+			return "error", nil
+		}
+	}
+	if s.Warn != nil {
+		match, err := s.Warn.matches(value)
+		if err != nil {
+			return "", fmt.Errorf("could not evaluate log level of value '%v': %w", value, err)
+		}
+		if match {
+			return "warn", nil
+		}
+	}
+	if s.Info != nil {
+		match, err := s.Info.matches(value)
+		if err != nil {
+			return "", fmt.Errorf("could not evaluate log level of value '%v': %w", value, err)
+		}
+		if match {
+			return "info", nil
+		}
+	}
+	return "", fmt.Errorf("no matching log level found for value '%v'", value)
+}
+
 type severity struct {
 	Range   *severityRange `mapstructure:"range,omitempty"`
 	MapFrom []string       `mapstructure:"mapFrom,omitempty"`
 }
 
+func (s severity) matches(value any) (bool, error) {
+	switch v := value.(type) {
+	case string:
+		for _, mappedLevel := range s.MapFrom {
+			if mappedLevel == v {
+				return true, nil
+			}
+		}
+	case int64:
+		return s.Range.Min <= v && s.Range.Max >= v, nil
+	default:
+		return false, fmt.Errorf("log level must be either string or int")
+	}
+	return false, nil
+}
+
 type severityRange struct {
-	Min int `mapstructure:"min"`
-	Max int `mapstructure:"max"`
+	Min int64 `mapstructure:"min"`
+	Max int64 `mapstructure:"max"`
 }
