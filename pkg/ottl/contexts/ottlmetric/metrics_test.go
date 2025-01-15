@@ -239,6 +239,23 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	}
 }
 
+func Test_newPathGetSetter_WithCache(t *testing.T) {
+	cacheValue := pcommon.NewMap()
+	cacheValue.PutStr("test", "pass")
+
+	ctx := NewTransformContext(
+		pmetric.NewMetric(),
+		pmetric.NewMetricSlice(),
+		pcommon.NewInstrumentationScope(),
+		pcommon.NewResource(),
+		pmetric.NewScopeMetrics(),
+		pmetric.NewResourceMetrics(),
+		WithCache(&cacheValue),
+	)
+
+	assert.Equal(t, cacheValue, ctx.getCache())
+}
+
 func createMetricTelemetry() pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName("name")

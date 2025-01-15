@@ -139,7 +139,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   respond to GET requests for the health check only.
   
 - `kafkaexporter, kafkareceiver`: Add a new mechanism "AWS_MSK_IAM_OAUTHBEARER" for kafka exporter and kafka receiver. This mechanism use the AWS MSK IAM SASL Signer for Go https://github.com/aws/aws-msk-iam-sasl-signer-go. (#19747)
-- `loadbalancingexporter`: Adds a an optional configuration to the k8s resolver which returns hostnames instead of IPs for headless services pointing at statefulsets (#18412)
+- `loadbalancingexporter`: Adds an optional configuration to the k8s resolver which returns hostnames instead of IPs for headless services pointing at statefulsets (#18412)
 - `mongodbatlasreceiver`: Adds additional metrics to the MongoDB Atlas receiver (#36525)
   Adds a number of new default disabled metrics to the MongoDB Atlas receiver. These metrics are:
   - mongodbatlas.disk.partition.queue.depth
@@ -154,7 +154,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `signaltometrics`: Add config validation and custom OTTL functions (#35930)
   Adds config validation for the signal to metrics connector. Also introduces `AdjustedCount` OTTL function.
 - `testbed`: Add batcher performance tests (#36206)
-- `tesbed`: add options for retry/storage for filelog sender (#36781)
+- `testbed`: add options for retry/storage for filelog sender (#36781)
 
 ### 🧰 Bug fixes 🧰
 
@@ -212,7 +212,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `awsemfexporter`: Add support for 1 second metric resolution in CloudWatch Embedded Metrics Format based on metric attributes (#29506)
 - `awsemfexporter`: Improvement unit conversion during EMF log translation (#35937)
 - `sumologicexporter`: adding new products for auto discovery (#35622)
-- `postgresqlreceiver`: Added new postgresql metrics to acheive parity with Telegraf (#36528)
+- `postgresqlreceiver`: Added new postgresql metrics to achieve parity with Telegraf (#36528)
 - `loadbalancingexporter`: Adding sending_queue, retry_on_failure and timeout settings to loadbalancing exporter configuration (#35378, #16826)
   When switching to top-level sending_queue configuration - users should carefully review queue size
   In some rare cases setting top-level queue size to n*queueSize might be not enough to prevent data loss
@@ -222,7 +222,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `tailsamplingprocessor`: Adds decision cache for non-sampled trace IDs (#31583)
 - `cmd/opampsupervisor`: Support environment variable expansion in the OpAMP supervisor config. (#36269)
 - `pkg/ottl`: Move debug log to `Statement.Execute` so that components using it instead of `StatementSequence` also get debug logs. (#36456)
-- `routingconnector`: Add abiilty to route by 'datapoint' context (#36523)
+- `routingconnector`: Add ability to route by 'datapoint' context (#36523)
 - `signalfxreceiver`: Follow receiver contract based on type of error (#5909)
   Use 503 error code for retryable and 400 error code for not-retryable errors instead of responding with a 500 unconditionally.
 
@@ -296,7 +296,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `exporter/loadbalancing`: Shutdown exporters during collector shutdown. This fixes a memory leak. (#36024)
 - `pkg/ottl`: Respect the `depth` option when flattening slices using `flatten` (#36161)
   The `depth` option is also now required to be at least `1`.
-- `prometheusexporter`: reject metrics whose types have changed, use pre-existing descriptions when help strings change (#28617)
+- `prometheusexporter`: reject metrics whose types have changed, use preexisting descriptions when help strings change (#28617)
 - `pkg/stanza`: Synchronous handling of entries passed from the log emitter to the receiver adapter (#35453)
 - `prometheusreceiver`: Fix prometheus receiver to support static scrape config with Target Allocator (#36062)
 
@@ -360,7 +360,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 ### 🧰 Bug fixes 🧰
 
 - `awsfirehosereceiver`: make otlp_v1 a valid record type (#35750, #36125)
-- `datadogreceiver`: Return a json reponse instead of "OK" when a trace is received with a newer protocol version. (#35705)
+- `datadogreceiver`: Return a json response instead of "OK" when a trace is received with a newer protocol version. (#35705)
 - `datadogreceiver`: Changes response message for `/api/v1/check_run` 202 response to be JSON and on par with Datadog API spec (#36027)
 - `receiver/windowseventlog`: Fix panic when rendering long event messages. (#36179)
 - `hostmetricsreceiver`: Do not set the default value of HOST_PROC_MOUNTINFO to respect root_path (#35990)
@@ -714,7 +714,7 @@ arrow.waiter_limit -> admission.waiter_limit
   Span events are now supported in OTel mapping mode. They will be routed to `logs-${data_stream.dataset}-${data_stream.namespace}` if `traces_dynamic_index::enabled` is `true`.
 - `transformprocessor`: Support aggregating metrics based on their attribute values and substituting the values with a new value. (#16224)
 - `kafkareceiver`: Adds tunable fetch sizes to Kafka Receiver (#22741, #34431)
-  Adds the ability to tune the minumum, default and maximum fetch sizes for the Kafka Receiver
+  Adds the ability to tune the minimum, default and maximum fetch sizes for the Kafka Receiver
 - `solarwindsapmsettingsextension`: Added logic for refresh function (#27668)
 - `githubreceiver`: Promote GitHub receiver metrics to alpha status. (#34960)
 - `googlecloudmonitoringreceiver`: Enhancing the Google Cloud monitoring receiver to establish a client connection, scrape GCP Cloud Metrics, and transform them into an OpenTelemetry compatible format for pipeline processing. (#33762)
@@ -980,7 +980,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 ### 🚀 New components 🚀
 
-- `logdedupeprocessor`: Add new logdedupeprocessor processor that deduplicates log entries. (#34118)
+- `logdedupprocessor`: Add new logdedupprocessor processor that deduplicates log entries. (#34118)
 - `coralogixprocessor`: creating new component for coralogix features (#33090)
 - `googlecloudmonitoringreceiver`: Adding new component - [Google Cloud monitoring](https://cloud.google.com/monitoring/api/metrics_gcp) receiver to fetch GCP Cloud Metrics and transform to OpenTelemetry compatible format. (#33762)
 
@@ -995,7 +995,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `bearertokenauthextension`: use constant time comparison. This fixes CVE-2024-42368 (#34516)
 - `processor/k8sattributes`: Add support for `container.image.repo_digests` metadata (#34029)
 - `datadogconnector`: Move feature gate `connector.datadogconnector.NativeIngest` to beta (#34549)
-  When this feature gate is enabled (default), the datadog connector uses the new API to produce APM stats under the hood. | The new API has better throughput when your spans have many attributes (especially container related attributes). Funtional-wise the new API should have no user-facing change compared to the old API. | However if you observe any unexpected behaviors, you can disable this feature gate to revert to the old stats processing APIs.
+  When this feature gate is enabled (default), the datadog connector uses the new API to produce APM stats under the hood. | The new API has better throughput when your spans have many attributes (especially container related attributes). Functional-wise the new API should have no user-facing change compared to the old API. | However if you observe any unexpected behaviors, you can disable this feature gate to revert to the old stats processing APIs.
 - `elasticsearchexporter`: Add opt-in support for the experimental `batcher` config (#32377)
   By enabling (or explicitly disabling) the batcher, the Elasticsearch exporter's
   existing batching/buffering logic will be disabled, and the batch sender will be used.
@@ -1153,7 +1153,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 - `pkg/ottl`: Added Hex() converter function (#31929)
 - `pkg/ottl`: Add IsRootSpan() converter function. (#32918)
-  Converter `IsRootSpan()` returns `true` if the span in the corresponding context is root, that means its `parent_span_id` equals to hexadecimal representation of zero. In all other scenarios function returns `false`.
+  Converter `IsRootSpan()` returns `true` if the span in the corresponding context is root, that means its `parent_span_id` equals the hexadecimal representation of zero. In all other scenarios function returns `false`.
 - `vcenterreceiver`: Adds additional vCenter resource pool metrics and a memory_usage_type attribute for vcenter.resource_pool.memory.usage metric to use. (#33607)
   Added "vcenter.resource_pool.memory.swapped", "vcenter.resource_pool.memory.ballooned", and "vcenter.resource_pool.memory.granted"
   metrics. Also added an additional attribute, "memory_usage_type" for "vcenter.resource_pool.memory.usage" metric, which is
@@ -1200,7 +1200,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   which fields should be redacted. As a result, fields that are not sensitive are no longer redacted.
   
 - `azuremonitorreceiver`: Upgrade stability to alpha (#33689)
-- `windowsperfcountersreceiver`: `windowsperfcountersreceiver` now appends an index number to additional instance names that share a name. An example of this is when scraping ` rocess(*)` counters with multiple running instances of the same executable. (#32319)
+- `windowsperfcountersreceiver`: `windowsperfcountersreceiver` now appends an index number to additional instance names that share a name. An example of this is when scraping `\Process(*)` counters with multiple running instances of the same executable. (#32319)
   **NOTES**
   - This change can expose cardinality issues where the counters were previously collapsed under the non-indexed instance name.
   - The change mimics Windows Performance Monitor behavior: The first instance name remains unchanged, additional instances are suffixed with `#<N>` where `N=1` and is increased for each duplicate.
@@ -1436,7 +1436,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `OTel-Arrow`: Update to OTel-Arrow v0.24.0 (#26491)
 - `pkg/ottl`: Add debug logs to help troubleshoot OTTL statements/conditions (#33274)
 - `pkg/ottl`: Introducing `append` function for appending items into an existing array (#32141)
-- `pkg/ottl`: Introducing `Uri` converter parsing URI string into SemConv (#32433)
+- `pkg/ottl`: Introducing `URI` converter parsing URI string into SemConv (#32433)
 - `probabilisticsamplerprocessor`: Add Proportional and Equalizing sampling modes (#31918)
   Both the existing hash_seed mode and the two new modes use OTEP 235 semantic conventions to encode sampling probability.
 - `prometheusreceiver`: Resource attributes produced by the prometheus receiver now include stable semantic conventions for `server` and `url`. (#32814)
@@ -1540,7 +1540,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   * do not support source headers
   
 - `sumologicexporter`: change metrics behavior (#31479)
-  * remove suppport for carbon2 and graphite
+  * remove support for carbon2 and graphite
   * add support for otlp format
   * do not support metadata attributes
   * do not support source headers
@@ -1581,7 +1581,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 - `filelogreceiver`: Add container operator parser (#31959)
 - `jsonlogencodingextension`: Move jsonlogencodingextension to alpha (#32697)
-- `exceptionsconnector`: Make span name a default dimension for ouput metrics and log records. (#32162)
+- `exceptionsconnector`: Make span name a default dimension for output metrics and log records. (#32162)
 - `azureblobreceiver`: Support service principal authentication for Blob storage (#32705)
 - `deltatocumulativeprocessor`: exponential histogram accumulation (#31340)
   accumulates exponential histogram datapoints by adding respective bucket counts. also handles downscaling, changing zero-counts, offset adaptions and optional fields
@@ -1607,7 +1607,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `processor/transform`: Allow common where clause (#27830)
 - `loadbalancingexporter`: Improve the performance when merging traces belonging to the same backend (#32032)
 - `pkg/ottl`: Added support for timezone in Time converter (#32140)
-- `jsonlogencodingextension`: Adds a new encoding option for JSON log encoding exension to grab attributes and resources from a log and output that in JSON format. (#32679)
+- `jsonlogencodingextension`: Adds a new encoding option for JSON log encoding extension to grab attributes and resources from a log and output that in JSON format. (#32679)
 - `probabilisticsamplerprocessor`: Adds the `FailClosed` flag to solidify current behavior when randomness source is missing. (#31918)
 - `prometheusremotewriteexporter`: Add `exporter.prometheusremotewritexporter.RetryOn429` feature gate to retry on http status code 429 response. (#31032)
   The feature gate is initially disabled by default.
@@ -1639,11 +1639,11 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   This fixes the bug when all errors are retriable in bulk request response, retried docs will be included in failed docs.
   
 - `cmd/opampsupervisor`: The OpAMP supervisor now configures the `ppid` parameter of the opamp extension, which allows the collector to shut down if the supervisor is no longer running. (#32189)
-- `vcenterreceiver`: Adds inititially disabled packet drop rate metric for VMs. (#32929)
+- `vcenterreceiver`: Adds initially disabled packet drop rate metric for VMs. (#32929)
 - `awskinesisexporter`: fixed compressed data not generating the compression footers (#32860)
 - `splunkhecreceiver`: Fix single metric value parsing (#33084)
 - `vcenterreceiver`: vcenterreceiver client no longer returns error if no Virtual Apps are found. (#33073)
-- `vcenterreceiver`: Adds inititially disabled new packet rate metrics to replace the existing ones for VMs & Hosts. (#32835)
+- `vcenterreceiver`: Adds initially disabled new packet rate metrics to replace the existing ones for VMs & Hosts. (#32835)
 - `googlecloudpubsubreceiver`: Fix memory leak during shutdown (#32361)
 - `datadogexporter`: Compress host metadata before sending with gzip. (#32992)
 - `resourcedetectionprocessor`: Change type of `host.cpu.stepping` from int to string. (#31136)
@@ -1968,8 +1968,8 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `prometheusremotewriteexporter`: Publish telemetry about translation of metrics from Otel to Prometheus. Don't drop all data points if some fail translation. (#29729)
 - `prometheusreceiver`: Use confighttp for target allocator client (#31449)
 - `spanmetricsconnector`: Add `metrics_expiration` option to enable expiration of metrics if spans are not received within a certain time frame. (#30559)
-  The feature can be configured by specifiying the desired duration in the `metrics_expiration` option. By default, the expiration is disabled (set to 0).
-- `splunkentreceiver`: Updated the config.go and propogated these changes to other receiver components. Change was necessary to differentiate different configurable endpoints. (#30254)
+  The feature can be configured by specifying the desired duration in the `metrics_expiration` option. By default, the expiration is disabled (set to 0).
+- `splunkentreceiver`: Updated the config.go and propagated these changes to other receiver components. Change was necessary to differentiate different configurable endpoints. (#30254)
 - `exporter/datadogexporter`: Do not drop traces when payload channel is full. (#31893)
 - `connector/datadogconnector`: Do not resolve container tags if payload already has tags associated with it. (#31893)
 
@@ -2160,7 +2160,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 ### 🚀 New components 🚀
 
 - `sumologicextension`: add configuration and readme (#29601)
-- `failoverconnector`: Refactor of connector to seperate concerns between managing indexes and core failover component (#20766)
+- `failoverconnector`: Refactor of connector to separate concerns between managing indexes and core failover component (#20766)
 - `otelarrow`: Skeleton of new OpenTelemetry Protocol with Apache Arrow Receiver (#26491)
 - `processor/interval`: Adds the initial structure for a new processor that aggregates metrics and periodically forwards the latest values to the next component in the pipeline. (#29461)
   As per the CONTRIBUTING.md recommendations, this PR only creates the basic structure of the processor. The concrete implementation will come as a separate followup PR
@@ -2237,7 +2237,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `pkg/ottl`: Fix parsing of string escapes in OTTL (#23238)
 - `pkg/stanza`: Recombine operator should always recombine partial logs (#30797)
   Previously, certain circumstances could result in partial logs being emitted without any
-  recombiniation. This could occur when using `is_first_entry`, if the first partial log from
+  recombination. This could occur when using `is_first_entry`, if the first partial log from
   a source was emitted before a matching "start of log" indicator was found. This could also
   occur when the collector was shutting down.
   
@@ -2276,7 +2276,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 ### 💡 Enhancements 💡
 
 - `pkg/stanza`: Add a json array parser operator and an assign keys transformer. (#30321)
-  Json array parser opreator can be used to parse a json array string input into a list of objects. |
+  Json array parser operator can be used to parse a json array string input into a list of objects. |
   Assign keys transformer can be used to assigns keys from the configuration to an input list
   
 - `splunkhecexporter`: Batch data according to access token and index, if present. (#30404)
@@ -2297,7 +2297,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   
 - `opensearchexporter`: added opensearch exporter to the contrib distribution metadata (#30183)
 - `pkg/ottl`: Add `flatten` function for flattening maps (#30455)
-- `redisreciever`: adds metric for slave_repl_offset (#6942)
+- `redisreceiver`: adds metric for slave_repl_offset (#6942)
   also adds a shell script to set up docker-compose integration test
 - `exporter/datadogexporter`: Add kafka metrics mapping. This allows users of the JMX Receiver/JMX Metrics Gatherer and kafka metrics receiver to have access to the OOTB kafka Dashboard. (#30731)
 - `receiver/sqlquery`: Add debug log when running SQL query (#29672)
@@ -2308,7 +2308,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `receiver/filelog`: fix panic after upgrading from v0.71.0 when using storage (#30235)
 - `clickhouseexporter`: Fix clickhouse exporter insert metrics data bug (#30210)
 - `prometheusremotewriteexporter`: Check if the context was canceled by a timeout in the component level to avoid unnecessary retries. (#30308)
-- `elasticsearchreceifver`: Fix nil panic on non-linux systems (#30140)
+- `elasticsearchreceiver`: Fix nil panic on non-linux systems (#30140)
 - `kafkareceiver`: The Kafka receiver now exports some partition-specific metrics per-partition, with a `partition` tag (#30177)
   The following metrics now render per partition:
     - kafka_receiver_messages
@@ -2517,7 +2517,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   This is an alternative to `system.memory.usage` metric with `state=free`.
   Linux starting from 3.14 exports "available" memory. It takes "free" memory as a baseline, and then factors in kernel-specific values.
   This is supposed to be more accurate than just "free" memory.
-  For reference, see the calculations [here](https://superuser.com/a/980821).
+  For reference, see the calculations referenced in [What is the difference between MemFree and MemAvailable in /proc/meminfo](https://superuser.com/a/980821).
   See also `MemAvailable` in [/proc/meminfo](https://man7.org/linux/man-pages/man5/proc.5.html).
   
 - `azuremonitorexporter`: Updated Azure Monitor Exporter service version from v2.0 to v2.1. (#29234)
@@ -2551,7 +2551,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   The purpose of this list was to allow us to emit a lot whenever a path was seen for the first time.
   This removes the separate list and relies instead on the same mechanism as checkpointing. Now, a similar log is emitted
   any time a file is found which is not currently checkpointed. Because the checkpointing mechanism does not maintain history
-  indefintiely, it is now possible that a log will be emitted for the same file path. This will happen when no file exists at
+  indefinitely, it is now possible that a log will be emitted for the same file path. This will happen when no file exists at
   the path for a period of time.
   
 - `dockerstatsreceiver`: cpu.container.percent metric is removed in favor of container.cpu.utilization (#21807)
@@ -2660,7 +2660,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `processor/k8sattributes`: Set attributes from namespace/node labels or annotations even if node/namespaces attribute are not set. (#28837)
 - `datadogexporter`: Only extract DD container tags from resource attributes. Previously, container tags were also extracted from span attributes. (#29156)
 - `datadogexporter`: Only add container tags in dedicated container tag section. Previously, container tags were also added as span tags. Container tags will now only be accessible via the span container tab, and not as span tags. (#29156)
-- `pkg/stanza`: Fix data-corruption/race-condition issue in udp async (reuse of buffer); use buffer pool isntead. (#27613)
+- `pkg/stanza`: Fix data-corruption/race-condition issue in udp async (reuse of buffer); use buffer pool instead. (#27613)
 - `datadogexporter`: Fixes potential log records loss on a transient network/connectivity error (#24550)
   The Datadog exporter threats network/connectivity errors (http client doesn't receive a response) as permanent errors, which can lead to log records loss. This change makes these errors retryable.
 - `servicegraphprocessor, servicegraphconnector`: Measure latency in seconds instead of milliseconds (#27488)
@@ -2711,7 +2711,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `doubleconverter`: Adding a double converter into pkg/ottl (#22056)
 - `syslogreceiver`: validate protocol name (#27581)
 - `elasticsearchexporter`: add missing scope info in span attributes (#27282)
-- `entension/storage/filestorage`: Add support for setting bbolt fsync option (#20266)
+- `extension/storage/filestorage`: Add support for setting bbolt fsync option (#20266)
 - `filelogreceiver`: Add a new "top_n" option to specify the number of files to track when using ordering criteria (#23788)
 - `azuredataexplorerexporter`: Added exporter helper config support for Azure Data Explorer exporter (#24329)
 - `k8sclusterreceiver`: add optional k8s.pod.qos_class resource attribute (#27483)
@@ -2820,7 +2820,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   In Linux and Darwin all fields are populated. In Windows only family, vendor.id and model.name are populated.
 - `pkg/stanza`: Add 'omit_pattern' setting to `split.Config`. (#26381)
   This can be used omit the start or end pattern from a log entry.
-- `skywaklingreceiver`: implement receiver for JVM metrics in Skywalking and adapted it to the OpenTelemetry protocol. (#20315)
+- `skywalkingreceiver`: implement receiver for JVM metrics in Skywalking and adapted it to the OpenTelemetry protocol. (#20315)
 - `statsdreceiver`: Add TCP support to statsdreceiver (#23327)
 - `azuredataexplorerexporter`: Added an optional column in the exported trace data to store the status code and message as a dynamic field. (#26496)
 - `statsdreceiver`: Allow for empty tag sets (#27011)
@@ -2907,12 +2907,12 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `processor/routing`: When using attributes instead of resource attributes, the routing processor would crash the collector. This does not affect the connector version of this component. (#26462)
 - `awsemfexporter`: Fix possible panic in when configuration option `awsemf.output_destination:stdout` is set (#26250)
 - `snmpreceiver`: Fix how to determine how many RAs on a metric are scalar (#26363)
-  We now create the proper number of resources for configurations where a resource uses fewer than the available number of scalar resource attribtues.
+  We now create the proper number of resources for configurations where a resource uses fewer than the available number of scalar resource attributes.
 - `processor/tailsampling`: Added saving instrumentation library information for tail-sampling (#13642)
 - `receiver/kubeletstats`: Fixes client to refresh service account token when authenticating with kubelet (#26120)
 - `datadogexporter`: Fixes crash when mapping OTLP Exponential Histograms with no buckets. These will now be dropped instead. (#26103)
 - `filelogreceiver`: Fix the behavior of the add operator to continue to support EXPR(env("MY_ENV_VAR")) expressions (#26373)
-- `snmpreceiver`: SNMP values of type Counter64 were seen as unsupported, because the returned data type unint64 was unhandeled. (#23897, #26119)
+- `snmpreceiver`: SNMP values of type Counter64 were seen as unsupported, because the returned data type uint64 was unhandeled. (#23897, #26119)
 - `pkg/stanza`: Fix issue unsupported type 'syslog_parser' (#26452)
 
 ## v0.84.0
@@ -2937,7 +2937,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 - `redisreceiver`: Adding username parameter for connecting to redis (#24408)
 - `postgresqlreceiver`: Added `postgresql.temp_files` metric. (#26080)
-- `receiver/azuremonitor`: Added new attrbutes to the metrics like name, type and resource_group. (#24774)
+- `receiver/azuremonitor`: Added new attributes to the metrics like name, type and resource_group. (#24774)
 - `clickhouseexporter`: Change writing of metrics data to batch (#24403)
 - `signalfxexporter`: Added a mechanism to drop histogram buckets (#25845)
 - `journaldreceiver`: add support for identifiers (#20295)
@@ -3014,7 +3014,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   This allows OTTL to pass Converters themselves as a parameter so they can be executed within the function.
   
 - `resourcedetectionprocessor`: GCP resource detection processor can automatically add `gcp.gce.instance.hostname` and `gcp.gce.instance.name` attributes. (#24598)
-- `splunkhecexporter`: Add heartbeat check while startup and new config param, heartbeat/startup (defaults to false). This is different than the healtcheck_startup, as the latter doesn't take token or index into account. (#24411)
+- `splunkhecexporter`: Add heartbeat check while startup and new config param, heartbeat/startup (defaults to false). This is different than the healthcheck_startup, as the latter doesn't take token or index into account. (#24411)
 - `hostmetricsreceiver`: Report  logical and physical number of CPUs as metric. (#22099)
   Use the `system.cpu.logical.count::enabled` and `system.cpu.physical.count::enabled` flags to enable them
   
@@ -3121,7 +3121,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `receiver/nsxt`: Change the type of `Config.Password` to be `configopaque.String` (#17273)
 - `receiver/podman`: Change the type of `Config.SSHPassphrase` to be `configopaque.String` (#17273)
 - `receiver/postgresql`: Change the type of `Config.Password` to be `configopaque.String` (#17273)
-- `prometheusreciever`: Remove unused buffer_period and buffer_count configuration options (#24258)
+- `prometheusreceiver`: Remove unused buffer_period and buffer_count configuration options (#24258)
 - `prometheusreceiver`: Add the `trim_metric_suffixes` configuration option to allow enable metric suffix trimming. (#21743, #8950)
   When enabled, suffixes for unit and type are trimmed from metric names. 
   If you previously enabled the `pkg.translator.prometheus.NormalizeName` 
@@ -3145,7 +3145,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 - `dynatraceexporter`: Add deprecation note to Dynatrace metrics exporter (#23992)
 - `pkg/stanza`: Deprecate fileconsumer.EmitFunc in favor of fileconsumer.emit.Callback (#24036)
-- `pkg/stanza`: Deprecate filconsumer.Finder and related sortation structs and functions (#24013)
+- `pkg/stanza`: Deprecate fileconsumer.Finder and related sortation structs and functions (#24013)
 - `servicegraphprocessor`: Service Graph Processor is deprecated in favor of the Service Graph Connector (#19737)
 
 ### 🚀 New components 🚀
@@ -3414,7 +3414,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `pkg/ottl`: Add new `IsString` and `IsMap` functions to facilitate type checking. (#22750)
   Especially useful for checking log body type before parsing.
 - `pkg/ottl`: Adds `StandardFuncs` and `StandardConverters` to facilitate function map generation. (#23190)
-  This change means that new functions added to ottlfuncs get automatically added to Cotnrib components that use OTTL
+  This change means that new functions added to ottlfuncs get automatically added to Contrib components that use OTTL
 - `pkg/ottl`: Change replacement functions to accept a path expression as a replacement (#22787)
   The following replacement functions now accept a path expression as a replacement:
   - replace_match
@@ -3539,7 +3539,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `filelogreceiver`: Fix issue where empty files would not be skipped, resulting in extraneous errors. (#22815)
 - `servicegraphprocessor`: consume traces even metric count is equal to 0 (#23028)
 - `fileexporter`: Fixes broken lines when rotation is set. (#22747)
-- `receiver/purefareceiver`: Ensure that all endpoints beyond volumes and hosts are beeing scraped. (#14886)
+- `receiver/purefareceiver`: Ensure that all endpoints beyond volumes and hosts are being scraped. (#14886)
 - `exporter/datadog`: `tls::insecure_skip_verify` is now honored when exporting traces. (#22772)
 - `exporter/splunk_hec`: Make sure the `max_event_size` option is used to drop events larger than `max_event_size` instead of using it for batch size. (#18066)
 - `httpcheckreceiver`: Update default collection interval to match documented value (#23019)
@@ -3567,7 +3567,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `receivers`: Updating receivers that run intervals to use standard interval by default (#22138)
 - `datadog receiver`: Updating datadog translations to align more closely to semantic convention (#21210, #21525)
   - `service.name` is moved from assigned from span attributes to resource attributes
-  - Moved from using datadog's `span.Resouce` to `span.Name` to set span name
+  - Moved from using datadog's `span.Resource` to `span.Name` to set span name
   - Exported traces are now grouped by `service.name` by default
   
 - `nginxreceiver`: Add featuregate to emit 'nginx.connections_current' as a non-monotonic sum (#4326)
@@ -3612,7 +3612,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `cmd/mdatagen`: Allow setting resource_attributes without introducing the metrics builder. (#21516)
 - `receiver/mongodbatlasreceiver`: Allow collection of MongoDB Atlas Access Logs as a new feature of the MongoDBAtlas receiver. (#21182)
 - `sshcheckreceiver`: Promote sshcheckreceiver to alpha (#21488)
-- `pkg/ottl`: Add `FloatLikeGetter` and `FloatGetter` to facilitate float retrival for functions. (#21896)
+- `pkg/ottl`: Add `FloatLikeGetter` and `FloatGetter` to facilitate float retrieval for functions. (#21896)
 - `pkg/ottl`: Add access to get and set span kind using a string (#21773)
 - `processor/routingprocessor`: Instrument the routing processor with non-routed spans/metricpoints/logrecords counters (OTel SDK). (#21476)
 - `skywalkingreceiver`: Refactoring the code structure/directory for the following metrics receiver implementation (#20315)
@@ -3804,7 +3804,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 - `clickhouseexporter`: Insert instrumentation scope name and version to SpanAttributes column in traces table (#17408)
 - `stanza`: Enhancement pkg/stanza/flatten to support resource and attributes (#20448)
-- `azuredataexplorerexporter`: Migrate stablity to beta. All the dependent libraries have moved to beta. (#19161)
+- `azuredataexplorerexporter`: Migrate stability to beta. All the dependent libraries have moved to beta. (#19161)
 - `awsecscontainermetricsreceiver`: Add ServiceName from task metadata endpoint (#19728)
 - `mdatagen`: Warnings can now be specified in metadata.yaml to be included in the generated status table. (#20242)
 - `coralogixexporter`: Change coralogixexporter to default to gzip compression for logs and traces (#20337)
@@ -3873,7 +3873,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 ### 🚀 New components 🚀
 
-- `lokireceiver`: The Loki receiver implements the [Loki push api](https://grafana.com/docs/loki/latest/clients/promtail/#loki-push-api) as specified [here](https://grafana.com/docs/loki/latest/api/#push-log-entries-to-loki) (#18635)
+- `lokireceiver`: The Loki receiver implements the [Loki push api](https://grafana.com/docs/loki/latest/clients/promtail/#loki-push-api) as specified in [Loki HTTP API: Ingest logs](https://grafana.com/docs/loki/latest/reference/loki-http-api/#ingest-logs) (#18635)
 - `cloudflarereceiver`: Adds support for receiving logs from Cloudflare's LogPush API. (#19201)
 - `webhookeventreceiver`: New component wireframe for webhookeventreceiver (#18101)
 - `spanmetricsconnector`: Add the `spanmetricsconnector` connector to build. (#18760)
@@ -3904,7 +3904,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   
 - `splunkhecreceiver`: Appends query param (index, source, sourcetype, and host) for raw path (#19632)
 - `splunkhecreceiver`: align error message with splunk enterprise to include No Data, Invalid Data Format, Event field is required, and  Event field cannot be blank (#19219)
-- `reciver/statsdreceiver`: Metrics emitted by the statsd receiver are batched by source IP address, available in context. (#15290)
+- `receiver/statsdreceiver`: Metrics emitted by the statsd receiver are batched by source IP address, available in context. (#15290)
 
 ### 🧰 Bug fixes 🧰
 
@@ -3962,7 +3962,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   Add emf and raw log support for aws cloudwatch exporter.
 - `awsemfexporter`: The AWS EMF exporter now supports the additional configuration flag `retain_initial_value_of_delta_metric`. With this flag active the first value of a metric is not discarded but instead sent to AWS. (#16218)
 - `processor/tailsampling`: adds support for a BooleanAttribute PolicyType (#17545)
-  enables use of boolean attrbiutes in defining tail sampling policies
+  enables use of boolean attributes in defining tail sampling policies
 - `pkg/stanza`: Add `header_delimiter` option to the `csv_parser`. (#18198)
 - `datadogexporter`: Enable gzip compression for metric payloads submitted by native Datadog client (#17373)
 - `hostmetrics`: Have the hostmetrics receiver file system scraper use more debug messages (#18236)
@@ -4026,7 +4026,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   They are now being removed. You should use the following metrics instead: `process.memory.usage`, `process.memory.virtual`.
   For details, see the [docs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.71.0/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification).
   
-- `promtailreceiver`: Promtail recevier is completely removed from the repository (#18474, #18493)
+- `promtailreceiver`: Promtail receiver is completely removed from the repository (#18474, #18493)
   Promtail receiver in its current implementation has a dependency on Loki that leads to a huge amount of |
   dependencies. It is getting difficult to maintain those dependencies. That's why the decision to |
   remove promtail receiver was made
@@ -4186,7 +4186,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `receiver/splunkhec`: Return 400 status code when nested indextime fields are present (#17308)
 - `exporter/loki`: Do not retry on 4xx status code (excluding 429), as these are permanent errors (#18059)
 - `mezmoexporter`: No longer require a specific path.  This will allow for compatibility with both log analysis and pipeline. (#18011)
-- `servicegraphprocessor`: Fix cache cleanup in servicegraph proccesor to also purge stale series (#16262)
+- `servicegraphprocessor`: Fix cache cleanup in servicegraph processor to also purge stale series (#16262)
 - `snmpreceiver`: Set StartTimestamp to scraper start time. (#17984)
 - `snowflakereceiver`: added doc.go containing pragma for mdatagen (#17978)
 - `spanmetricsprocessor`: Fix a flaky test caused by a race condition between WaitGroup completion and observed logs being written and flushed. (#18014)
@@ -4239,7 +4239,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `coralogixexporter`: improve coralogix exporter performance (#17268)
   improves coralogix exporter to send batched telemetry data to the backend
 - `internal/comparetest`: Do not ignore order of any slices by default, use an options for that. (#17551)
-- `mysqlreceiver`: add mysql.commands metric with supprot for delete, insert, select, update (#14138)
+- `mysqlreceiver`: add mysql.commands metric with support for delete, insert, select, update (#14138)
 - `exporter/dynatrace`: Provide more logs on the results of metrics submissions (#15248)
 - `prometheusremotewriteexporter`: Add support for converting OTLP Exponential Histograms to Prometheus Native Histograms (#16207)
 - `pkg/pdatautil`: Export comparetest and pdatautil modules under github.com/open-telemetry/opentelemetry-collector-contrib/pkg (#17873)
@@ -4250,7 +4250,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `datadogprocessor`: Now that the Datadog processor is part of the official contrib distribution, it has been moved to the beta stability level. (#17862)
 - `kafkareceiver`: Prevent offset commit failures and connection issues by ensuring that sessions are quickly completed after consumer group rebalances. (#17312)
 - `lokiexporter`: Added QueueSettings validation into Config Validate method (#7841)
-- `telemetrygen`: Moves tracegen functionality to the telemetrygen traces subcommand, as well as the existing Github actions (#9597)
+- `telemetrygen`: Moves tracegen functionality to the telemetrygen traces subcommand, as well as the existing GitHub actions (#9597)
 - `pkg/ottl`: Add new `cache` path to all contexts which can be used as temporary cache during complex transformations (#16994)
 - `pkg/pdatatest`: Metric support compare exemplar (#17580)
 - `processor/probabilisticsampler`: Implement the FNV hash library for the probabilistic sampler. (#16456)
@@ -4329,7 +4329,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `internal/comparetest`: add golden functions ReadLogs, WriteLogs, CompareLogs (#10896)
 - `haproxyreceiver`: Adds a new socket interface and CSV reader for haproxy stats (#16829)
 - `resourcedetectionprocessor`: Add support to detect Heroku resources (#16833)
-- `logstransformprocessor`: Lets the logs transform processor directly pass messags to next consumer, avoiding the timing issues it previously exhibited. (#16604, #15378, #9761)
+- `logstransformprocessor`: Lets the logs transform processor directly pass messages to next consumer, avoiding the timing issues it previously exhibited. (#16604, #15378, #9761)
 - `mdatagen`: Add ability to specify additional warnings in metadata.yaml (#17180)
 - `signalfxexporter`: Add all HTTP client settings to the SignalFx exporter configuration (#16807)
 - `snowflakereceiver`: added client to snowflakereceiver (#14754)
@@ -4351,7 +4351,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `receiver/purefareceiver`: Set an explicit reload interval for all scrapers. (#16992)
 - `servicegraphprocessor`: fix servicegraphprocessor concurrent map read and write (#16850)
 - `filelogreceiver`: Truncate log entry if it is longer than `max_log_size` (#16487)
-- `cmd/metadata`: Ensure template files are downloaded as part of the `go get` and embeded into the application (#17442)
+- `cmd/metadata`: Ensure template files are downloaded as part of the `go get` and embedded into the application (#17442)
 
 ## v0.68.0
 
@@ -4363,7 +4363,6 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 ### 🚩 Deprecations 🚩
 
 - `humioexporter`: Humio now known as LogScale beginning with version 1.68 supports OTLP using HTTP and no longer requires a product specific exporter. (#17013)
-  See https://library.humio.com/humio-server/endpoints.html
 
 ### 🚀 New components 🚀
 
@@ -4395,7 +4394,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `postgresqlreceiver`: Fix issue where WAL stats query was incorrectly coalescing intervals. (#16769)
 - `splunkhecexporter`: Fix data race when gzip compression is enabled (#17083)
   Removed gzip writer pool and create a new one when needed.
-- `splunkhecexporter`: Fix isssue where splunkhec exporter always returns over capacity error when compression is enabled and MaxContentLength is 0 (#17035)
+- `splunkhecexporter`: Fix issue where splunkhec exporter always returns over capacity error when compression is enabled and MaxContentLength is 0 (#17035)
 
 ## v0.67.0
 
@@ -4507,7 +4506,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `splunkhecreceiver`: Add a healthcheck endpoint as part of the splunkhecreceiver. Just returns 200 for now if the receiver is running. (#15367)
 - `filterprocessor`: Add ability to filter spans, span events, metrics, datapoints, and logs via OTTL conditions (#16369)
 - `googlecloudspannerreceiver`: Configurably mask the PII in lock stats metrics. (#16343)
-- `interna/coreinternal`: Split internal/coreinternal/processor into a separate internal/filter module (#16410)
+- `internal/coreinternal`: Split internal/coreinternal/processor into a separate internal/filter module (#16410)
 
 ### 🧰 Bug fixes 🧰
 
@@ -4525,7 +4524,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 ### 💡 Enhancements 💡
 
-- `exporter/loki`: Automatic mapping beetwen `LogRecord.SeverityNumber` to `LogRecord.Attributes["level"]` (#14313)
+- `exporter/loki`: Automatic mapping between `LogRecord.SeverityNumber` to `LogRecord.Attributes["level"]` (#14313)
 - `jmxreceiver`: Add the JMX metrics gatherer version 1.20.0-alpha to the supported jars hash list (#16356)
 - `mongodbreceiver`: Add additional metrics for mongodb locks (#13661)
   Add additional metrics for locks.acquire_count, locks.acquire_wait_count, locks.deadlock_count, locks.time_acquiring_micros
@@ -4576,7 +4575,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `mongodbatlasreceiver`: Checks host and port before assigning attributes in `poll` mode (#16284)
 - `datadogexporter`: Fixes crash when logging error on logs exporter (#16077)
 - `pkg/ottl`: Fix list argument parsing when using internal arguments (#16298)
-- `pkg/stanza, filelog, journald, windowseventlog`: Fix issue where specifying a non-existent storage extension caused panic during shutdown. (#16212)
+- `pkg/stanza, filelog, journald, windowseventlog`: Fix issue where specifying a nonexistent storage extension caused panic during shutdown. (#16212)
 - `pkg/stanza`: Fix severity range unmarshaling (#16339)
 - `splunkhecexporter`: Do not log a warning on mapping empty metrics. (#3549)
 - `exporter/datadog`: Fixes bug to append tags in attributes instead of replacing them, simplifies filelog receiver setup, and adds `otel_source` tag. (#15387)
@@ -4635,7 +4634,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   - Add mysql.client.network.io metric (#14744)
 
 - `elasticsearchreceiver`: Add metrics related to GET operations (#14635)
-- `elastisearchreceiver`: Add new metrics related to segments, aggregated by all shards (#14635)
+- `elasticsearchreceiver`: Add new metrics related to segments, aggregated by all shards (#14635)
 - `elasticsearchreceiver`: add store size metric for index level (#14635)
 - `elasticsearchreceiver`: Add metrics related to merge operations with aggregated for all shards (#14635)
 - `elasticsearchreceiver`: add translog metrics on index level (#14635)
@@ -4712,10 +4711,10 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 ### 🚀 New components 🚀
 
-- `azureblobreciver`: Add a new component `azureblobreciver` (#8834)
+- `azureblobreceiver`: Add a new component `azureblobreceiver` (#8834)
   Add a new component `azureblobreceiver` that reads logs and traces from Azure Blob Storage
 - `k8sobjectsreceiver`: Add a new k8sobjects receiver to collect(pull/watch) Kubernetes Objects (#14185)
-- `httpcheckreceiver`: New HTTP Check receiver allows users to run synthethic checks from the collector (#10607)
+- `httpcheckreceiver`: New HTTP Check receiver allows users to run synthetic checks from the collector (#10607)
 
 ### 💡 Enhancements 💡
 
@@ -4809,7 +4808,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `pkg/stanza`: `readerFactory` and  `Reader` use  `helper.Encoding` directly, no longer depends on `helper.Splitter` (#14593)
 - `pkg/stanza`: `readerFactory` and  `Reader` use  `bufio.SplitFunc` directly, no longer depends on `helper.Splitter` (#14766)
 - `pkg/stanza`: add splitter factory which return a split func (#14766)
-- `exporter/awsxrayexporter`: Change the value of xraysegment.url from `dbConnectionString` to the span name. This makes the XRay segment timeline more informationally useful. (#14342)
+- `exporter/awsxrayexporter`: Change the value of xraysegment.url from `dbConnectionString` to the span name. This makes the XRay segment timeline more useful. (#14342)
   This change contravenes the AWS documentation for what values should go into this segment field.
 - `pkg/translator/zipkin`: Change zipkin V1 conversion to use pdata. (#14592)
 - `filterexpr`: Prevent the matcher from panicking (#13573)
@@ -4980,9 +4979,9 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `chronyreceiver`: When trying to read from socket, the socket type was incorrect (#13862)
 - `postgresqlreceiver`: Uses the postgres databasename when retrieving database inventory information (#13641)
 - `prometheusreceiver/prometheusremotewriteexporter`: Leave the sum unset in histograms without sums, and don't produce _sum metric points for histograms without sums (#7546)
-- `processor/redaction`: Update redaction attributes in case if data sent through the processor more than once, not not ignore them. (#13854)
+- `processor/redaction`: Update redaction attributes in case if data sent through the processor more than once, not ignore them. (#13854)
 - `chloggen`: changelog generation tool moved to https://github.com/open-telemetry/opentelemetry-go-build-tools (#14022)
-- `exporter/AlibabaCloudLogServiceExporter`: Fix issue that promethus occuring error when the resource metric labels contains dot (#3429)
+- `exporter/AlibabaCloudLogServiceExporter`: Fix issue that prometheus occurring error when the resource metric labels contains dot (#3429)
 - `exporter/tanzuobservabilityexporter`: This change causes tanzuobservabilityexporter to depend on 0.10.4 of the
 wavefront-sdk-go library.
  (#13417)
@@ -5053,7 +5052,7 @@ in outgoing logs data.
   This allows users to disable particular metrics in through user settings.
 - `mongodbatlasreceiver`: Add logs retrieval capability (#12347)
 - `mongodbreceiver`: Enhance partial error handling with descriptive metric/attribute messages. (#13367)
-- `filelog, journald, syslog, tcplog, udplog, windowseventlog receivers`: Add ability to set log body when when parsing. (#10274)
+- `filelog, journald, syslog, tcplog, udplog, windowseventlog receivers`: Add ability to set log body when parsing. (#10274)
 - `filelog, journald, syslog, tcplog, udplog, windowseventlog receivers`: Enhance error message when csv_parser finds unexpected number of fields (#13427)
 - `filelog, journald, syslog, tcplog, udplog, windowseventlog receivers`: Enable debugging operators `stdout` and `file_output` (#13394)
 - `postgresqlreceiver`: Adds background writer metrics (#13327)
@@ -5131,7 +5130,7 @@ in outgoing logs data.
 - `dotnetdiagnosticsreceiver`: Change status to unmaintained (#12757)
 
 ### 🚀 New components 🚀
-- `azureblobreceiver`: Add a new component `azureblobreciver` (#8834)
+- `azureblobreceiver`: Add a new component `azureblobreceiver` (#8834)
   Add a new component `azureblobreceiver` that reads logs and traces from Azure Blob Storage
 - `azureeventhubreceiver`: New component to receive logs from Azure Event Hubs (#12786)
 - `headers_setter`: Add support for setting exporter headers from the upstream requests context (#5733, #7945, #4814)
@@ -5287,7 +5286,7 @@ This version has been skipped.
     - `vcenter.host.disk.latency.avg.read`
     - `vcenter.host.disk.latency.avg.write`
   - `vcenter.host.network.throughput` will become:
-    - `vcenter.host.network.throughputt.receive`
+    - `vcenter.host.network.throughput.receive`
     - `vcenter.host.network.throughput.transmit`
   - `vcenter.host.network.packet.errors` will become:
     - `vcenter.host.network.packet.errors.receive`
@@ -5338,7 +5337,7 @@ This version has been skipped.
 - `dockerobserver`: incorporate observer.EndpointsWatcher in preparation of multiple event subscribers and use existing internal event loop watcher (#10830, #11541)
 - `hostmetrics`: Adding connection tracking count and max metrics for linux (#11769)
 - `hostmetricsreceiver`: New config setting scrape_process_delay is used to indicate the minimum amount of time a process must be running before process metrics can be scraped for it. The default value is 0 seconds ("0s"). (#8976)
-- `transformprocessor`: Add ability to interact with enums via sybmols. (#10349)
+- `transformprocessor`: Add ability to interact with enums via symbols. (#10349)
 - `telemetryquerylanguage`: Adds to the grammar the ability to interpret Enums. (#11751)
 - `transformprocessor`: Update the transform processor to use the Telemetry Query Language package (#11751)
 - `transformprocessor`: Add `delete_key` and `delete_matching_keys` which allow deleting keys from maps. (#11823)
@@ -5361,7 +5360,7 @@ This version has been skipped.
 - `cmd/chloggen`: Compare changelog to common ancestor with main (#12149)
 - `logstransformprocessor`: Remove support for storage (#12424)
 - `elasticsearchreceiver`: Remove unused `disk_usage_state` attribute from documentation (#12429)
-- `filterlog`: change OR to AND logic for filtering logs - as desribed, and as is done for span filtering (#11439)
+- `filterlog`: change OR to AND logic for filtering logs - as described, and as is done for span filtering (#11439)
 - `lokiexporter`: Wrap quotes around log message (#11827)
 - `tooling`: Fix a bug in the makefile causing `make rpm-package` to fail (#12162)
 - `prometheusexporter`: Fix cumulative condition for the delta-to-cumulative (#4153)
@@ -5372,7 +5371,7 @@ This version has been skipped.
 - `datadogexporter`: Fix logs related to the source provider. (#12160)
 - `pkg/stanza/fileconsumer`: Fix issue where reader could become stuck on newlines (#10125, #10127, #10128)
 - `receivercreator`: dynamically created receivers log with their `name` field (#16481)
-- `skywalkingreceiver`: Fix skywalking traceid and spanid convertion (#11562)
+- `skywalkingreceiver`: Fix skywalking traceid and spanid conversion (#11562)
 - `spanmetricsprocessor`: Fixes the number of explicit bucket counts by removing the manually added "catch-all" bucket. (#11784)
 - `spanmetricsprocessor`: Fix concurrency bug causing premature key eviction. (#9018)
 - `spanmetricsprocessor`: Removes a comment that is no longer relevant due to a fix. (#12427)
@@ -5509,7 +5508,7 @@ This version has been skipped.
 
 ### 🧰 Bug fixes 🧰
 
-- `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
+- `kubeletstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
 - `transformprocessor`: Fix issue where some metric fields were not working correctly in conditions. (#10473)
 - `transformprocessor`: Fix issue where some trace fields were not working correctly in conditions. (#10471)
 - `transformprocessor`: Fix issue where some log fields were not working correctly in conditions. (#10903)
@@ -5534,7 +5533,7 @@ This version has been skipped.
 - `resourcedetectionprocessor`: 'gke' and 'gce' resource detectors are replaced with a single 'gcp' detector (#10347)
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 - `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
-- `hostmetricsreciever`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
+- `hostmetricsreceiver`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
 
 ### 🚀 New components 🚀
 
@@ -5549,7 +5548,7 @@ This version has been skipped.
 
 - `awsemfexporter`: Add min and max support for histograms (#10577)
 - `tailsamplingprocessor`: Add support for string invert matching to `and` policy (#9553)
-- `mezemoexporter`: Add user agent string to outgoing HTTP requests (#10470)
+- `mezmoexporter`: Add user agent string to outgoing HTTP requests (#10470)
 - `prometheusreceiver`: Improve performance of metrics builder (#10546)
 - `transformprocessor`: Add functions for conversion of scalar metric types (`gauge_to_sum` and `sum_to_gauge`) (#10255)
 - `dynatraceexporter`: Use min and max when provided in a data point for histograms (#10815)
@@ -5713,7 +5712,7 @@ This version has been skipped.
 - `fluentforwardreceiver`: Release port on shutdown (#9111)
 - `prometheusexporter`: Prometheus fails to generate logs when prometheus exporter produced a check exception occurs. (#8949)
 - `resourcedetectionprocessor`: Wire docker detector (#9372)
-- `kafkametricsreceiver`: The kafkametricsreceiver was changed to connect to kafka during scrape, rather than startup. If kafka is unavailable the receiver will attempt to connect during subsequent scrapes until succcessful (#8817).
+- `kafkametricsreceiver`: The kafkametricsreceiver was changed to connect to kafka during scrape, rather than startup. If kafka is unavailable the receiver will attempt to connect during subsequent scrapes until successful (#8817).
 - `datadogexporter`: Update Kubernetes example manifest to new executable name. (#9425).
 - `riakreceiver`: Fix issue where user configured metric settings were ignored. (#9561)
 - `sqlserverreceiver`: Update `sqlserver.transaction_log.growth.count` and `sqlserver.transaction_log.shrink.count` to be monotonic sums. (#9522)
@@ -5781,7 +5780,7 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 - `filestorageextension`: use correct bbolt options for compaction (#9134)
 - `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8857)
 - `dynatraceexporter`: Remove overly verbose stacktrace from certain logs (#8989)
-- `googlecloudexporter`: fix the `exporter.googlecloud.OTLPDirect` fature-gate, which was not applied when the flag was provided (#9116)
+- `googlecloudexporter`: fix the `exporter.googlecloud.OTLPDirect` feature-gate, which was not applied when the flag was provided (#9116)
 - `signalfxexporter`: Fix bug to enable timeouts for correlating traces and metrics (#9101)
 - `windowsperfcountersreceiver`: fix exported values being integers instead of doubles (#9138)
 - `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
@@ -5896,7 +5895,7 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 - `honeycombexporter`: Add validation for `sending_queue` setting (#8113)
 - `routingprocessor`: Expand error handling on failure to build exporters (#8125)
 - `skywalkingreceiver`: Add new skywalking receiver component folder and structure (#8107)
-- `groupbyattrsprocesor`: Allow empty keys, which allows to use the processor for compaction (#7793)
+- `groupbyattrsprocessor`: Allow empty keys, which allows to use the processor for compaction (#7793)
 - `datadogexporter`: Add rbac to example k8s manifest file (#8186)
 - `splunkhecexporter`: Add validation for `sending_queue` setting (#8256)
 
@@ -6053,7 +6052,7 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 - `elasticsearchreceiver`: Use same metrics as JMX receiver for JVM metrics (#7160)
 - `elasticsearchreceiver`: Implement scraping logic (#7174)
 - `datadogexporter`: Add http.status_code tag to trace stats (#6889)
-- `datadogexporter`: Add configuration option to use OTel span name into the Datatog resource name (#6611)
+- `datadogexporter`: Add configuration option to use OTel span name into the Datadog resource name (#6611)
 - `mongodbreceiver`: Add initial client code to the component (#7125)
 - `tanzuobservabilityexporter`: Support delta histograms (#6897)
 - `awscloudwatchlogsexporter`: Use cwlogs package to export logs (#7152)
@@ -6628,7 +6627,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 ### 🚀 New components 🚀
 
-- `humio` exporter to export data to Humio using JSON over the HTTP [Ingest API](https://library.humio.com/humio-server/api-ingest.html)
+- `humio` exporter to export data to Humio using JSON over the HTTP Ingest API
 - `udplog` receiver to receives logs from udp using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library
 - `tanzuobservability` exporter to send traces to [Tanzu Observability](https://tanzu.vmware.com/observability)
 
@@ -6639,7 +6638,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 ### 💡 Enhancements 💡
 
-- Enabled Dependabot for Github Actions (#3543)
+- Enabled Dependabot for GitHub Actions (#3543)
 - Change obsreport helpers for receivers to use the new pattern created in Collector (#3439,#3443,#3449,#3504,#3521,#3548)
 - `datadog` exporter:
   - Add logging for unknown or unsupported metric types (#3421)
@@ -7140,7 +7139,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 ### 🚀 New components 🚀
 
 - `zookeeper` receiver: Collects metrics from a Zookeeper instance using the `mntr` command
-- `loadbalacing` exporter: Consistently exports spans belonging to the same trace to the same backend
+- `loadbalancing` exporter: Consistently exports spans belonging to the same trace to the same backend
 - `windowsperfcounters` receiver: Captures the configured system, application, or custom performance counter data from the Windows registry using the PDH interface
 - `awsprometheusremotewrite` exporter:  Sends metrics data in Prometheus TimeSeries format to a Prometheus Remote Write Backend and signs each outgoing HTTP request following the AWS Signature Version 4 signing process
 
@@ -7206,7 +7205,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
   - Add EC2 hostname attribute (#1324)
   - Add ECS Resource detector (#1360)
 - `sapm` exporter: Add queue settings (#1390)
-- `metrictransform` processor: Add metric filter option (#1447)
+- `metricstransform` processor: Add metric filter option (#1447)
 - `awsxray` exporter: Improve ECS attribute and origin translation (#1428)
 - `resourcedetection` processor: Initial system detector (#1405)
 
@@ -7420,7 +7419,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
   - Add working-set and page-fault metrics (#666)
   - Add basic support for volume metrics (#667)
 - `stackdriver` trace exporter: Move to new interface and pdata (#486)
-- `metricstranform` processor: Keep timeseries and points in order after aggregation (#663)
+- `metricstransform` processor: Keep timeseries and points in order after aggregation (#663)
 - `k8scluster` receiver: Change `container.spec.name` label to `k8s.container.name` (#681)
 - Migrate receiver creator to internal data model (#701)
 - Add ec2 support to `resourcedetection` processor (#587)
