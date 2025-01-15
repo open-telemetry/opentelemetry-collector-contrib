@@ -2,10 +2,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/opamp
 
 go 1.22.0
 
+replace github.com/open-telemetry/opamp-go => /Users/ian/git/opamp-go
+
 require (
 	github.com/google/uuid v1.6.0
 	github.com/oklog/ulid/v2 v2.1.0
-	github.com/open-telemetry/opamp-go v0.18.0
+	github.com/open-telemetry/opamp-go v0.18.1-0.20250109233938-e6fac32dddf5
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.117.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.117.0
 	github.com/shirou/gopsutil/v4 v4.24.12

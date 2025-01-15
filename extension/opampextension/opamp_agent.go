@@ -5,6 +5,7 @@ package opampextension // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"net/http"
@@ -66,7 +67,8 @@ type opampAgent struct {
 
 	capabilities Capabilities
 
-	agentDescription *protobufs.AgentDescription
+	agentDescription    *protobufs.AgentDescription
+	availableComponents *protobufs.AvailableComponents
 
 	opampClient client.OpAMPClient
 
@@ -133,7 +135,8 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 			},
 			OnMessage: o.onMessage,
 		},
-		Capabilities: o.capabilities.toAgentCapabilities(),
+		Capabilities:        o.capabilities.toAgentCapabilities(),
+		AvailableComponents: o.availableComponents,
 	}
 
 	if err := o.createAgentDescription(); err != nil {
@@ -303,6 +306,8 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		agent.initHealthReporting()
 	}
 
+	agent.initAvailableComponents(set.ModuleInfo)
+
 	return agent, nil
 }
 
@@ -470,6 +475,83 @@ func (o *opampAgent) initHealthReporting() {
 	o.componentStatusCh = make(chan *eventSourcePair)
 	o.componentHealthWg.Add(1)
 	go o.componentHealthEventLoop()
+}
+
+func (o *opampAgent) initAvailableComponents(set extension.ModuleInfo) {
+	if !o.capabilities.ReportsAvailableComponents {
+		return
+	}
+
+	o.availableComponents = &protobufs.AvailableComponents{
+		Hash: generateAvailableComponentsHash(set),
+		Components: map[string]*protobufs.ComponentDetails{
+			"receivers": {
+				SubComponentMap: createComponentTypeAvailableComponentDetails(set.Receiver),
+			},
+			"processors": {
+				SubComponentMap: createComponentTypeAvailableComponentDetails(set.Processor),
+			},
+			"exporters": {
+				SubComponentMap: createComponentTypeAvailableComponentDetails(set.Exporter),
+			},
+			"extensions": {
+				SubComponentMap: createComponentTypeAvailableComponentDetails(set.Extension),
+			},
+			"connectors": {
+				SubComponentMap: createComponentTypeAvailableComponentDetails(set.Connector),
+			},
+		},
+	}
+}
+
+func generateAvailableComponentsHash(set extension.ModuleInfo) []byte {
+	var builder strings.Builder
+
+	addComponentTypeComponentsToStringBuilder(&builder, set.Receiver, "receiver")
+	addComponentTypeComponentsToStringBuilder(&builder, set.Processor, "processor")
+	addComponentTypeComponentsToStringBuilder(&builder, set.Exporter, "exporter")
+	addComponentTypeComponentsToStringBuilder(&builder, set.Extension, "extension")
+	addComponentTypeComponentsToStringBuilder(&builder, set.Connector, "connector")
+
+	// Compute the SHA-256 hash of the serialized representation.
+	hash := sha256.Sum256([]byte(builder.String()))
+	return hash[:]
+}
+
+func addComponentTypeComponentsToStringBuilder(builder *strings.Builder, componentTypeComponents map[component.Type]string, componentType string) {
+	// Collect components and sort them to ensure deterministic ordering.
+	components := make([]component.Type, 0, len(componentTypeComponents))
+	for k := range componentTypeComponents {
+		components = append(components, k)
+	}
+	sort.Slice(components, func(i, j int) bool {
+		return components[i].String() < components[j].String()
+	})
+
+	// Append the component type and its sorted key-value pairs.
+	builder.WriteString(componentType + ":")
+	for _, k := range components {
+		builder.WriteString(k.String() + "=" + componentTypeComponents[k] + ";")
+	}
+}
+
+func createComponentTypeAvailableComponentDetails(componentTypeComponents map[component.Type]string) map[string]*protobufs.ComponentDetails {
+	availableComponentDetails := map[string]*protobufs.ComponentDetails{}
+	for componentType, r := range componentTypeComponents {
+		availableComponentDetails[componentType.String()] = &protobufs.ComponentDetails{
+			Metadata: []*protobufs.KeyValue{
+				{
+					Key: "code.namespace",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: r,
+						},
+					},
+				},
+			},
+		}
+	}
+	return availableComponentDetails
 }
 
 func (o *opampAgent) componentHealthEventLoop() {
