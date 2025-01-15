@@ -13,9 +13,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadatatest"
 	egress_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/egress/v1"
 )
 
@@ -303,10 +305,10 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 			if tt.want != nil {
 				assert.Equal(t, 1, actual.Len())
 				compareSpans(t, *tt.want, actual.At(0))
-				tel.assertMetrics(t, []metricdata.Metrics{})
+				tel.AssertMetrics(t, []metricdata.Metrics{}, metricdatatest.IgnoreTimestamp())
 			} else {
 				assert.Equal(t, 0, actual.Len())
-				tel.assertMetrics(t, []metricdata.Metrics{
+				tel.AssertMetrics(t, []metricdata.Metrics{
 					{
 						Name:        "otelcol_solacereceiver_dropped_egress_spans",
 						Description: "Number of dropped egress spans",
@@ -322,7 +324,7 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 							},
 						},
 					},
-				})
+				}, metricdatatest.IgnoreTimestamp())
 			}
 		})
 	}
@@ -450,7 +452,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 					},
 				})
 			}
-			tel.assertMetrics(t, expectedMetrics)
+			tel.AssertMetrics(t, expectedMetrics, metricdatatest.IgnoreTimestamp())
 		})
 	}
 	// test the various outcomes
@@ -764,7 +766,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 					},
 				})
 			}
-			tel.assertMetrics(t, expectedMetrics)
+			tel.AssertMetrics(t, expectedMetrics, metricdatatest.IgnoreTimestamp())
 		})
 	}
 }
@@ -946,14 +948,14 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 					},
 				})
 			}
-			tel.assertMetrics(t, expectedMetrics)
+			tel.AssertMetrics(t, expectedMetrics, metricdatatest.IgnoreTimestamp())
 		})
 	}
 }
 
-func newTestEgressV1Unmarshaller(t *testing.T) (*brokerTraceEgressUnmarshallerV1, componentTestTelemetry) {
-	tt := setupTestTelemetry()
-	builder, err := metadata.NewTelemetryBuilder(tt.NewSettings().TelemetrySettings)
+func newTestEgressV1Unmarshaller(t *testing.T) (*brokerTraceEgressUnmarshallerV1, metadatatest.Telemetry) {
+	tt := metadatatest.SetupTelemetry()
+	builder, err := metadata.NewTelemetryBuilder(tt.NewTelemetrySettings())
 	require.NoError(t, err)
 	metricAttr := attribute.NewSet(attribute.String("receiver_name", tt.NewSettings().ID.Name()))
 	return &brokerTraceEgressUnmarshallerV1{zap.NewNop(), builder, metricAttr}, tt

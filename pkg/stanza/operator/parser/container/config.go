@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
@@ -25,11 +24,13 @@ const (
 	removeOriginalTimeFieldFeatureFlag = "filelog.container.removeOriginalTimeField"
 )
 
-var removeOriginalTimeField = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	removeOriginalTimeFieldFeatureFlag,
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, deletes the original `time` field from the Log Attributes. Time is parsed to Timestamp field, which should be used instead."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33389"),
+	featuregate.WithRegisterFromVersion("v0.105.0"),
+	featuregate.WithRegisterToVersion("v0.118.0"),
 )
 
 func init() {
@@ -77,14 +78,6 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 				"format", c.OnError,
 			)
 		}
-	}
-
-	if !removeOriginalTimeField.IsEnabled() {
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33389
-		set.Logger.Info("`time` log record attribute will be removed in a future release. Switch now using the feature gate.",
-			zap.String("attribute", "time"),
-			zap.String("feature gate", removeOriginalTimeFieldFeatureFlag),
-		)
 	}
 
 	wg := sync.WaitGroup{}

@@ -47,7 +47,7 @@ func Downscale(bs Buckets, from, to Scale) {
 	case from < to:
 		// because even distribution within the buckets cannot be assumed, it is
 		// not possible to correctly upscale (split) buckets.
-		// any attempt to do so would yield erronous data.
+		// any attempt to do so would yield erroneous data.
 		panic(fmt.Sprintf("cannot upscale without introducing error (%d -> %d)", from, to))
 	}
 
@@ -107,7 +107,7 @@ func Collapse(bs Buckets) {
 	// zero the excess area. its not needed to represent the observation
 	// anymore, but kept for two reasons:
 	// 1. future observations may need it, no need to re-alloc then if kept
-	// 2. [pcommon.Uint64Slice] can not, in fact, be sliced, so getting rid
+	// 2. [pcommon.Uint64Slice] cannot, in fact, be sliced, so getting rid
 	//    of it would alloc ¯\_(ツ)_/¯
 	for i := size; i < counts.Len(); i++ {
 		counts.SetAt(i, 0)

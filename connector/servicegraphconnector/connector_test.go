@@ -25,8 +25,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -569,8 +571,8 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	}
 
 	mockMetricsExporter := newMockMetricsExporter()
-	set := setupTestTelemetry()
-	p, err := newConnector(set.NewSettings().TelemetrySettings, cfg, mockMetricsExporter)
+	set := metadatatest.SetupTelemetry()
+	p, err := newConnector(set.NewTelemetrySettings(), cfg, mockMetricsExporter)
 	require.NoError(t, err)
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -592,7 +594,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 
 	// Shutdown the connector
 	assert.NoError(t, p.Shutdown(context.Background()))
-	set.assertMetrics(t, []metricdata.Metrics{
+	set.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_connector_servicegraph_total_edges",
 			Description: "Total number of unique edges",
@@ -605,7 +607,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
 	require.NoError(t, set.Shutdown(context.Background()))
 }
 

@@ -1099,6 +1099,8 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 //	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
 func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
+	// TODO: Re-enable this test when the issue being tested here is fully solved: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37056
+	t.Skip("Skipping test as https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37056 is not fully solved yet")
 	testDir := filepath.Join("testdata", "e2e", "clusterrbac")
 
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)

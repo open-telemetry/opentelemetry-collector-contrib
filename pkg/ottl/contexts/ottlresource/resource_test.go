@@ -398,6 +398,19 @@ func Test_newPathGetSetter(t *testing.T) {
 	}
 }
 
+func Test_newPathGetSetter_WithCache(t *testing.T) {
+	cacheValue := pcommon.NewMap()
+	cacheValue.PutStr("test", "pass")
+
+	ctx := NewTransformContext(
+		pcommon.NewResource(),
+		pmetric.NewResourceMetrics(),
+		WithCache(&cacheValue),
+	)
+
+	assert.Equal(t, cacheValue, ctx.getCache())
+}
+
 func createTelemetry() pcommon.Resource {
 	resource := pcommon.NewResource()
 

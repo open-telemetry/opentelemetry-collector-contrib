@@ -172,17 +172,19 @@ func (md *MetricDef[K]) FromMetricInfo(
 // definition.
 func (md *MetricDef[K]) FilterResourceAttributes(
 	attrs pcommon.Map,
+	collectorInfo *CollectorInstanceInfo,
 ) pcommon.Map {
 	var filteredAttributes pcommon.Map
 	switch {
 	case len(md.IncludeResourceAttributes) == 0:
 		filteredAttributes = pcommon.NewMap()
-		filteredAttributes.EnsureCapacity(attrs.Len())
+		filteredAttributes.EnsureCapacity(attrs.Len() + collectorInfo.Size())
 		attrs.CopyTo(filteredAttributes)
 	default:
-		expectedLen := len(md.IncludeResourceAttributes)
+		expectedLen := len(md.IncludeResourceAttributes) + collectorInfo.Size()
 		filteredAttributes = filterAttributes(attrs, md.IncludeResourceAttributes, expectedLen)
 	}
+	collectorInfo.Copy(filteredAttributes)
 	return filteredAttributes
 }
 

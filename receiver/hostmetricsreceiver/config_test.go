@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
@@ -43,8 +42,8 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewID(metadata.Type),
 			expected: func() component.Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Scrapers = map[component.Type]internal.Config{
-					cpuscraper.Type: func() internal.Config {
+				cfg.Scrapers = map[component.Type]component.Config{
+					cpuscraper.Type: func() component.Config {
 						cfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
 						return cfg
 					}(),
@@ -60,29 +59,29 @@ func TestLoadConfig(t *testing.T) {
 					CollectionInterval: 30 * time.Second,
 					InitialDelay:       time.Second,
 				},
-				Scrapers: map[component.Type]internal.Config{
-					cpuscraper.Type: func() internal.Config {
+				Scrapers: map[component.Type]component.Config{
+					cpuscraper.Type: func() component.Config {
 						cfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
 						return cfg
 					}(),
-					diskscraper.Type: func() internal.Config {
+					diskscraper.Type: func() component.Config {
 						cfg := (&diskscraper.Factory{}).CreateDefaultConfig()
 						return cfg
 					}(),
-					loadscraper.Type: (func() internal.Config {
+					loadscraper.Type: (func() component.Config {
 						cfg := (&loadscraper.Factory{}).CreateDefaultConfig()
 						cfg.(*loadscraper.Config).CPUAverage = true
 						return cfg
 					})(),
-					filesystemscraper.Type: func() internal.Config {
+					filesystemscraper.Type: func() component.Config {
 						cfg := (&filesystemscraper.Factory{}).CreateDefaultConfig()
 						return cfg
 					}(),
-					memoryscraper.Type: func() internal.Config {
+					memoryscraper.Type: func() component.Config {
 						cfg := (&memoryscraper.Factory{}).CreateDefaultConfig()
 						return cfg
 					}(),
-					networkscraper.Type: (func() internal.Config {
+					networkscraper.Type: (func() component.Config {
 						cfg := (&networkscraper.Factory{}).CreateDefaultConfig()
 						cfg.(*networkscraper.Config).Include = networkscraper.MatchConfig{
 							Interfaces: []string{"test1"},
@@ -90,15 +89,15 @@ func TestLoadConfig(t *testing.T) {
 						}
 						return cfg
 					})(),
-					processesscraper.Type: func() internal.Config {
+					processesscraper.Type: func() component.Config {
 						cfg := (&processesscraper.Factory{}).CreateDefaultConfig()
 						return cfg
 					}(),
-					pagingscraper.Type: func() internal.Config {
+					pagingscraper.Type: func() component.Config {
 						cfg := (&pagingscraper.Factory{}).CreateDefaultConfig()
 						return cfg
 					}(),
-					processscraper.Type: (func() internal.Config {
+					processscraper.Type: (func() component.Config {
 						cfg := (&processscraper.Factory{}).CreateDefaultConfig()
 						cfg.(*processscraper.Config).Include = processscraper.MatchConfig{
 							Names:  []string{"test2", "test3"},
@@ -106,7 +105,7 @@ func TestLoadConfig(t *testing.T) {
 						}
 						return cfg
 					})(),
-					systemscraper.Type: (func() internal.Config {
+					systemscraper.Type: (func() component.Config {
 						cfg := (&systemscraper.Factory{}).CreateDefaultConfig()
 						return cfg
 					})(),

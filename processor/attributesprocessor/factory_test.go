@@ -91,7 +91,7 @@ func TestFactory_CreateMetrics(t *testing.T) {
 		{Key: "fake_key", Action: attraction.UPSERT},
 	}
 
-	// Upsert should fail on non-existent key
+	// Upsert should fail on nonexistent key
 	mp, err = factory.CreateMetrics(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	require.Nil(t, mp)
 	require.Error(t, err)

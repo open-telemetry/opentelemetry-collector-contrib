@@ -101,7 +101,7 @@ processors:
 ### Adding `cloud.namespace` resource attribute
 
 Some of the apps in Sumo Logic require the `cloud.namespace` attribute to be set
-to better understand the data coming from AWS EC2, AWS ECS and AWS Elactic Beanstalk.
+to better understand the data coming from AWS EC2, AWS ECS and AWS Elastic Beanstalk.
 This attribute is similar to the standard OpenTelemetry attribute [`cloud.provider`][opentelemetry_cloud_provider_attribute].
 In the future, the Sumo Logic apps might switch to the standard `cloud.provider` attribute.
 Before this happens, the following mapping defines the relationship between `cloud.provider` and `cloud.namespace` values:

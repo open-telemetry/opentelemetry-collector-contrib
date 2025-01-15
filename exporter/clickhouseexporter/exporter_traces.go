@@ -14,7 +14,6 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
@@ -77,7 +76,8 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 			spans := td.ResourceSpans().At(i)
 			res := spans.Resource()
 			resAttr := internal.AttributesToMap(res.Attributes())
-			serviceName, _ := res.Attributes().Get(conventions.AttributeServiceName)
+			serviceName := internal.GetServiceName(res.Attributes())
+
 			for j := 0; j < spans.ScopeSpans().Len(); j++ {
 				rs := spans.ScopeSpans().At(j).Spans()
 				scopeName := spans.ScopeSpans().At(j).Scope().Name()
@@ -96,7 +96,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 						r.TraceState().AsRaw(),
 						r.Name(),
 						r.Kind().String(),
-						serviceName.AsString(),
+						serviceName,
 						resAttr,
 						scopeName,
 						scopeVersion,

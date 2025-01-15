@@ -73,7 +73,7 @@ func TestRemoveFields(t *testing.T) {
 	nestedAttrMap := logRecord.Attributes().PutEmptyMap("nested")
 	nestedAttrMap.PutInt("int", 2)
 
-	// Expected attribut map
+	// Expected attribute map
 	expectedAttrsMap := pcommon.NewMap()
 	expectedAttrsMap.PutStr("str", "attr str")
 	expectedAttrHash := pdatautil.MapHash(expectedAttrsMap)

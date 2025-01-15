@@ -61,7 +61,6 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"https://elastic.example.com:9200"},
-				Index:     "",
 				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -133,7 +132,6 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
-				Index:     "",
 				LogsIndex: "my_log_index",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -205,7 +203,6 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
-				Index:     "",
 				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -282,14 +279,6 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.CloudID = "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY="
-			}),
-		},
-		{
-			id:         component.NewIDWithName(metadata.Type, "deprecated_index"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoints = []string{"https://elastic.example.com:9200"}
-				cfg.Index = "my_log_index"
 			}),
 		},
 		{

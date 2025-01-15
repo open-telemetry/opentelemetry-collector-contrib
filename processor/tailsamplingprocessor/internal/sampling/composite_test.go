@@ -119,7 +119,7 @@ func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 	decision, err = c.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
-	// The first policy fails as the tag value is higher than the range set where as the second policy is AlwaysSample, so the decision should be Sampled.
+	// The first policy fails as the tag value is greater than the range set whereas the second policy is AlwaysSample, so the decision should be Sampled.
 	expected = Sampled
 	assert.Equal(t, expected, decision)
 }

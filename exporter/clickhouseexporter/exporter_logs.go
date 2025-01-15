@@ -12,7 +12,6 @@ import (
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
@@ -77,10 +76,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			res := logs.Resource()
 			resURL := logs.SchemaUrl()
 			resAttr := internal.AttributesToMap(res.Attributes())
-			var serviceName string
-			if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
-				serviceName = v.Str()
-			}
+			serviceName := internal.GetServiceName(res.Attributes())
 
 			for j := 0; j < logs.ScopeLogs().Len(); j++ {
 				rs := logs.ScopeLogs().At(j).LogRecords()

@@ -68,7 +68,7 @@ The following metrics are recorded by this processor:
 
 A healthy system would have the same value for the metric `otelcol_processor_groupbytrace_spans_released` and for three events under `otelcol_processor_groupbytrace_event_latency_bucket`: `onTraceExpired`, `onTraceRemoved` and `onTraceReleased`.
 
-The metric `otelcol_processor_groupbytrace_event_latency_bucket` is a bucket and shows how long each event took to be processed in miliseconds. In most cases, it should take less than 5ms for an event to be processed, but it might be the case where an event could take 10ms. Higher latencies are possible, but it should never really reach the last item, representing 1s. Events taking more than 1s are killed automatically, and if you have multiple items in this bucket, it might indicate a bug in the software.
+The metric `otelcol_processor_groupbytrace_event_latency_bucket` is a bucket and shows how long each event took to be processed in milliseconds. In most cases, it should take less than 5ms for an event to be processed, but it might be the case where an event could take 10ms. Higher latencies are possible, but it should never really reach the last item, representing 1s. Events taking more than 1s are killed automatically, and if you have multiple items in this bucket, it might indicate a bug in the software.
 
 Most metrics are updated when the events occur, except for the following ones, which are updated periodically:
 * `otelcol_processor_groupbytrace_num_events_in_queue`

@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/internal/metadata"
 )
 
@@ -23,7 +22,7 @@ var Type = component.MustNewType("load")
 type Factory struct{}
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
-func (f *Factory) CreateDefaultConfig() internal.Config {
+func (f *Factory) CreateDefaultConfig() component.Config {
 	return &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
@@ -33,7 +32,7 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	settings receiver.Settings,
-	config internal.Config,
+	config component.Config,
 ) (scraper.Metrics, error) {
 	cfg := config.(*Config)
 	s := newLoadScraper(ctx, settings, cfg)

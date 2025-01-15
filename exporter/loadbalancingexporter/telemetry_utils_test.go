@@ -8,10 +8,11 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadatatest"
 )
 
 func getTelemetryAssets(t require.TestingT) (exporter.Settings, *metadata.TelemetryBuilder) {
-	s := setupTestTelemetry()
+	s := metadatatest.SetupTelemetry()
 	st := s.NewSettings()
 	ts := st.TelemetrySettings
 	tb, err := metadata.NewTelemetryBuilder(ts)

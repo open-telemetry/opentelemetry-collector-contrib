@@ -30,12 +30,13 @@ jobs:
               - '**/*_test.go'
 
   scoped-tests:
+    needs: changedfiles
+    if: needs.changedfiles.outputs.go_sources != '' || needs.changedfiles.outputs.go_tests != ''
     strategy:
       fail-fast: false
       matrix:
         os: [ windows-latest ]
     runs-on: ${{ matrix.os }}
-    needs: changedfiles
     steps:
       - name: Echo changed files
         shell: bash
@@ -59,8 +60,13 @@ jobs:
             ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
 
-      - name: Build test tools
+      - name: Build gotestsum on Windows
+        if: runner.os == 'Windows'
         run: make "$(${PWD} -replace '\\', '/')/.tools/gotestsum"
+
+      - name: Build gotestsum
+        if: runner.os != 'Windows'
+        run: make "$PWD/.tools/gotestsum"
 
       - name: Run changed tests
         if: needs.changedfiles.outputs.go_tests

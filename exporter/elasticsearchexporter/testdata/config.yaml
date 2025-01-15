@@ -77,9 +77,6 @@ elasticsearch/raw:
     mode: raw
 elasticsearch/cloudid:
   cloudid: foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY=
-elasticsearch/deprecated_index:
-  endpoints: [https://elastic.example.com:9200]
-  index: my_log_index
 elasticsearch/confighttp_endpoint:
   endpoint: https://elastic.example.com:9200
 elasticsearch/batcher_disabled:

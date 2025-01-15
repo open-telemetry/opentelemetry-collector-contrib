@@ -86,7 +86,7 @@ func TestAddCloudNamespaceForLogs(t *testing.T) {
 			},
 		},
 		{
-			name:              "does not add cloud.namespce attribute when disabled",
+			name:              "does not add cloud.namespace attribute when disabled",
 			addCloudNamespace: false,
 			createLogs: func() plog.Logs {
 				inputLogs := plog.NewLogs()
@@ -212,7 +212,7 @@ func TestAddCloudNamespaceForMetrics(t *testing.T) {
 			},
 		},
 		{
-			name:              "does not add cloud.namespce attribute when disabled",
+			name:              "does not add cloud.namespace attribute when disabled",
 			addCloudNamespace: false,
 			createMetrics: func() pmetric.Metrics {
 				inputMetrics := pmetric.NewMetrics()
@@ -338,7 +338,7 @@ func TestAddCloudNamespaceForTraces(t *testing.T) {
 			},
 		},
 		{
-			name:              "does not add cloud.namespce attribute when disabled",
+			name:              "does not add cloud.namespace attribute when disabled",
 			addCloudNamespace: false,
 			createTraces: func() ptrace.Traces {
 				inputTraces := ptrace.NewTraces()

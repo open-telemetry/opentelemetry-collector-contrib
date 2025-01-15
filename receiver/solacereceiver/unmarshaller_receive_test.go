@@ -13,9 +13,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadatatest"
 	receive_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/receive/v1"
 )
 
@@ -77,7 +79,7 @@ func TestReceiveUnmarshallerMapResourceSpan(t *testing.T) {
 					},
 				})
 			}
-			tel.assertMetrics(t, expectedMetrics)
+			tel.AssertMetrics(t, expectedMetrics, metricdatatest.IgnoreTimestamp())
 		})
 	}
 }
@@ -353,7 +355,7 @@ func TestReceiveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 					},
 				})
 			}
-			tel.assertMetrics(t, expectedMetrics)
+			tel.AssertMetrics(t, expectedMetrics, metricdatatest.IgnoreTimestamp())
 		})
 	}
 }
@@ -627,7 +629,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 					},
 				})
 			}
-			tel.assertMetrics(t, expectedMetrics)
+			tel.AssertMetrics(t, expectedMetrics, metricdatatest.IgnoreTimestamp())
 		})
 	}
 }
@@ -685,7 +687,7 @@ func TestReceiveUnmarshallerRGMID(t *testing.T) {
 					},
 				})
 			}
-			tel.assertMetrics(t, expectedMetrics)
+			tel.AssertMetrics(t, expectedMetrics, metricdatatest.IgnoreTimestamp())
 		})
 	}
 }
@@ -904,7 +906,7 @@ func TestSolaceMessageReceiveUnmarshallerV1InsertUserPropertyUnsupportedType(t *
 	u.insertUserProperty(attributeMap, key, "invalid data type")
 	_, ok := attributeMap.Get("messaging.solace.user_properties." + key)
 	assert.False(t, ok)
-	tt.assertMetrics(t, []metricdata.Metrics{
+	tt.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 			Description: "Number of recoverable message unmarshalling errors",
@@ -920,12 +922,12 @@ func TestSolaceMessageReceiveUnmarshallerV1InsertUserPropertyUnsupportedType(t *
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
 }
 
-func newTestReceiveV1Unmarshaller(t *testing.T) (*brokerTraceReceiveUnmarshallerV1, componentTestTelemetry) {
-	tt := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tt.NewSettings().TelemetrySettings)
+func newTestReceiveV1Unmarshaller(t *testing.T) (*brokerTraceReceiveUnmarshallerV1, metadatatest.Telemetry) {
+	tt := metadatatest.SetupTelemetry()
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tt.NewTelemetrySettings())
 	require.NoError(t, err)
 	metricAttr := attribute.NewSet(attribute.String("receiver_name", tt.NewSettings().ID.Name()))
 	return &brokerTraceReceiveUnmarshallerV1{zap.NewNop(), telemetryBuilder, metricAttr}, tt

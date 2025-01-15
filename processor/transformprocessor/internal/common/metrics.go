@@ -88,7 +88,7 @@ func (d dataPointStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metr
 				case pmetric.MetricTypeHistogram:
 					err = d.handleHistogramDataPoints(ctx, metric.Histogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource(), smetrics, rmetrics)
 				case pmetric.MetricTypeExponentialHistogram:
-					err = d.handleExponetialHistogramDataPoints(ctx, metric.ExponentialHistogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource(), smetrics, rmetrics)
+					err = d.handleExponentialHistogramDataPoints(ctx, metric.ExponentialHistogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource(), smetrics, rmetrics)
 				case pmetric.MetricTypeSummary:
 					err = d.handleSummaryDataPoints(ctx, metric.Summary().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource(), smetrics, rmetrics)
 				}
@@ -135,7 +135,7 @@ func (d dataPointStatements) handleHistogramDataPoints(ctx context.Context, dps 
 	return nil
 }
 
-func (d dataPointStatements) handleExponetialHistogramDataPoints(ctx context.Context, dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) error {
+func (d dataPointStatements) handleExponentialHistogramDataPoints(ctx context.Context, dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) error {
 	for i := 0; i < dps.Len(); i++ {
 		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, scopeMetrics, resourceMetrics)
 		condition, err := d.BoolExpr.Eval(ctx, tCtx)
