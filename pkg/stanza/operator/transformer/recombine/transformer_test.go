@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -184,19 +185,19 @@ func TestTransformer(t *testing.T) {
 				return cfg
 			}(),
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "more1a", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "more1b", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "start", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "more2a", map[string]string{"file.path": "file2"}),
-				entryWithBodyAttr(t2, "more2b", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t1, "start", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "more1a", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "start", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "more1b", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "start", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "more2a", map[string]string{attrs.LogFilePath: "file2"}),
+				entryWithBodyAttr(t2, "more2b", map[string]string{attrs.LogFilePath: "file2"}),
 			},
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "start\nmore1a", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "start\nmore1b", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "start", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "more2a\nmore2b", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t1, "start\nmore1a", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "start\nmore1b", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "start", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "more2a\nmore2b", map[string]string{attrs.LogFilePath: "file2"}),
 			},
 		},
 		{
@@ -343,14 +344,14 @@ func TestTransformer(t *testing.T) {
 				return cfg
 			}(),
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "file2", map[string]string{"file.path": "file2"}),
-				entryWithBodyAttr(t2, "end", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "end", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t1, "file1", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "file2", map[string]string{attrs.LogFilePath: "file2"}),
+				entryWithBodyAttr(t2, "end", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "end", map[string]string{attrs.LogFilePath: "file2"}),
 			},
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "file1\nend", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "file2\nend", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t1, "file1\nend", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "file2\nend", map[string]string{attrs.LogFilePath: "file2"}),
 			},
 		},
 		{
@@ -387,17 +388,17 @@ func TestTransformer(t *testing.T) {
 				return cfg
 			}(),
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "start1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1.Add(10*time.Millisecond), "middle1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "start2", map[string]string{"file.path": "file2"}),
-				entryWithBodyAttr(t2.Add(10*time.Millisecond), "middle2", map[string]string{"file.path": "file2"}),
-				entryWithBodyAttr(t2.Add(20*time.Millisecond), "end2", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t1, "start1", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1.Add(10*time.Millisecond), "middle1", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "start2", map[string]string{attrs.LogFilePath: "file2"}),
+				entryWithBodyAttr(t2.Add(10*time.Millisecond), "middle2", map[string]string{attrs.LogFilePath: "file2"}),
+				entryWithBodyAttr(t2.Add(20*time.Millisecond), "end2", map[string]string{attrs.LogFilePath: "file2"}),
 			},
 			[]*entry.Entry{
 				// First entry is booted before end comes in, but partial recombination should occur
-				entryWithBodyAttr(t1.Add(10*time.Millisecond), "start1\nmiddle1", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1.Add(10*time.Millisecond), "start1\nmiddle1", map[string]string{attrs.LogFilePath: "file1"}),
 				// Second entry is flushed automatically when end comes in
-				entryWithBodyAttr(t2.Add(20*time.Millisecond), "start2\nmiddle2\nend2", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t2.Add(20*time.Millisecond), "start2\nmiddle2\nend2", map[string]string{attrs.LogFilePath: "file2"}),
 			},
 		},
 		{
@@ -411,16 +412,16 @@ func TestTransformer(t *testing.T) {
 				return cfg
 			}(),
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "file1_event1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "file2_event1", map[string]string{"file.path": "file2"}),
-				entryWithBodyAttr(t2, "end", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t2, "file2_event2", map[string]string{"file.path": "file2"}),
-				entryWithBodyAttr(t2, "end", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t1, "file1_event1", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "file2_event1", map[string]string{attrs.LogFilePath: "file2"}),
+				entryWithBodyAttr(t2, "end", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t2, "file2_event2", map[string]string{attrs.LogFilePath: "file2"}),
+				entryWithBodyAttr(t2, "end", map[string]string{attrs.LogFilePath: "file2"}),
 			},
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "file1_event1\nend", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "file2_event1\nfile2_event2", map[string]string{"file.path": "file2"}),
-				entryWithBodyAttr(t2, "end", map[string]string{"file.path": "file2"}),
+				entryWithBodyAttr(t1, "file1_event1\nend", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "file2_event1\nfile2_event2", map[string]string{attrs.LogFilePath: "file2"}),
+				entryWithBodyAttr(t2, "end", map[string]string{attrs.LogFilePath: "file2"}),
 			},
 		},
 		{
@@ -434,14 +435,14 @@ func TestTransformer(t *testing.T) {
 				return cfg
 			}(),
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "file1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "file2", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "end", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "file1", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "file1", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "file2", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "end", map[string]string{attrs.LogFilePath: "file1"}),
 			},
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "file1\nfile1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "file2\nend", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "file1\nfile1", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "file2\nend", map[string]string{attrs.LogFilePath: "file1"}),
 			},
 		},
 		{
@@ -455,20 +456,20 @@ func TestTransformer(t *testing.T) {
 				return cfg
 			}(),
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content2", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content3", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content4", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content5", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "start", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content1", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content2", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content3", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content4", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content5", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "start", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "start", map[string]string{attrs.LogFilePath: "file1"}),
 			},
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "start\ncontent1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content2\ncontent3", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content4\ncontent5", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "start\ncontent1", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content2\ncontent3", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content4\ncontent5", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "start", map[string]string{attrs.LogFilePath: "file1"}),
 			},
 		},
 		{
@@ -482,20 +483,20 @@ func TestTransformer(t *testing.T) {
 				return cfg
 			}(),
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "start", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content1", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content2", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content3", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content4", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content5", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content6", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content7", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content8", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content9", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "start", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content1", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content2", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content3", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content4", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content5", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content6", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content7", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content8", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content9", map[string]string{attrs.LogFilePath: "file1"}),
 			},
 			[]*entry.Entry{
-				entryWithBodyAttr(t1, "start\ncontent1\ncontent2\ncontent3\ncontent4", map[string]string{"file.path": "file1"}),
-				entryWithBodyAttr(t1, "content5\ncontent6\ncontent7\ncontent8\ncontent9", map[string]string{"file.path": "file1"}),
+				entryWithBodyAttr(t1, "start\ncontent1\ncontent2\ncontent3\ncontent4", map[string]string{attrs.LogFilePath: "file1"}),
+				entryWithBodyAttr(t1, "content5\ncontent6\ncontent7\ncontent8\ncontent9", map[string]string{attrs.LogFilePath: "file1"}),
 			},
 		},
 		{
@@ -738,7 +739,7 @@ func BenchmarkRecombine(b *testing.B) {
 	cfg.CombineField = entry.NewBodyField()
 	cfg.IsFirstEntry = "body startsWith 'log-0'"
 	cfg.OutputIDs = []string{"fake"}
-	cfg.SourceIdentifier = entry.NewAttributeField("file.path")
+	cfg.SourceIdentifier = entry.NewAttributeField(attrs.LogFilePath)
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
 	require.NoError(b, err)
@@ -761,7 +762,7 @@ func BenchmarkRecombine(b *testing.B) {
 			start := entry.New()
 			start.Timestamp = time.Now()
 			start.Body = strings.Repeat(fmt.Sprintf("log-%d", i), 50)
-			start.Attributes = map[string]any{"file.path": fmt.Sprintf("file-%d", j)}
+			start.Attributes = map[string]any{attrs.LogFilePath: fmt.Sprintf("file-%d", j)}
 			entries = append(entries, start)
 		}
 	}
@@ -933,17 +934,17 @@ func TestSourceBatchDelete(t *testing.T) {
 	start := entry.New()
 	start.Timestamp = time.Now()
 	start.Body = "start"
-	start.AddAttribute("file.path", "file1")
+	start.AddAttribute(attrs.LogFilePath, "file1")
 
 	next := entry.New()
 	next.Timestamp = time.Now()
 	next.Body = "next"
-	next.AddAttribute("file.path", "file1")
+	next.AddAttribute(attrs.LogFilePath, "file1")
 
 	expect := entry.New()
 	expect.ObservedTimestamp = start.ObservedTimestamp
 	expect.Timestamp = start.Timestamp
-	expect.AddAttribute("file.path", "file1")
+	expect.AddAttribute(attrs.LogFilePath, "file1")
 	expect.Body = "start\nnext"
 
 	ctx := context.Background()

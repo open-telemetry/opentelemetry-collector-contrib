@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -41,7 +42,7 @@ func NewConfigWithID(operatorID string) *Config {
 		CombineWith:           defaultCombineWith,
 		OverwriteWith:         "oldest",
 		ForceFlushTimeout:     5 * time.Second,
-		SourceIdentifier:      entry.NewAttributeField("file.path"),
+		SourceIdentifier:      entry.NewAttributeField(attrs.LogFilePath),
 	}
 }
 
