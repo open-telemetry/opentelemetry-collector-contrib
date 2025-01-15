@@ -256,6 +256,7 @@ In addition to the common OTTL functions, the processor defines its own function
 - [convert_gauge_to_sum](#convert_gauge_to_sum)
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
+- [convert_summary_quantile_val_to_gauge](#convert_summary_quantile_val_to_gauge)
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
 - [aggregate_on_attributes](#aggregate_on_attributes)
@@ -376,6 +377,10 @@ Examples:
 
 
 - `convert_summary_sum_val_to_sum("cumulative", false)`
+
+### convert_summary_quantile_val_to_gauge
+
+TODO
 
 ### copy_metric
 
