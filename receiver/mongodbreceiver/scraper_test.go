@@ -44,14 +44,14 @@ func TestScraperLifecycle(t *testing.T) {
 	// Mock the replica set status command to return an empty set
 	mc.On("RunCommand", mock.Anything, "admin", bson.M{"replSetGetStatus": 1}).Return(bson.M{
 		"ok":      1,
-		"members": []interface{}{},
+		"members": []any{},
 	}, nil)
 	mc.On("Disconnect", mock.Anything).Return(nil)
 
 	scraper := newMongodbScraper(receivertest.NewNopSettings(), cfg)
 	// Save original and replace with test version
 	originalNewClient := newClient
-	newClient = func(ctx context.Context, cfg *Config, logger *zap.Logger, secondary bool) (client, error) {
+	newClient = func(_ context.Context, _ *Config, _ *zap.Logger, _ bool) (client, error) {
 		return mc, nil
 	}
 	defer func() {

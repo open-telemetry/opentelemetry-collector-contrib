@@ -89,12 +89,12 @@ func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 			},
 		}
 
-		client, err := newClient(ctx, &secondaryConfig, s.logger, true)
+		secondaryClient, err := newClient(ctx, &secondaryConfig, s.logger, true)
 		if err != nil {
 			s.logger.Warn("failed to connect to secondary", zap.String("host", secondary), zap.Error(err))
 			continue
 		}
-		s.secondaryClients = append(s.secondaryClients, client)
+		s.secondaryClients = append(s.secondaryClients, secondaryClient)
 	}
 
 	return nil
