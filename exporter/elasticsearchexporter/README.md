@@ -362,6 +362,7 @@ This happens when the target data stream is a TSDB metrics data stream (e.g. usi
 `version_conflict_engine_exception` is returned by Elasticsearch when these metrics are not grouped into the same document.
 It also means that they have to be in the same batch in the exporter, as metric grouping is done per-batch in elasticsearchexporter.
 To work around the issue, use a [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md) to ensure different metrics to never share the same set of dimensions. This is done at the expense of storage efficiency.
+This workaround will no longer be necessary once the limitation is lifted in Elasticsearch (see [issue](https://github.com/elastic/elasticsearch/issues/99123)).
 
 ```yaml
 processors:
