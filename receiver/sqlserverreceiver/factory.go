@@ -83,7 +83,7 @@ func setupLogQueries(cfg *Config) []string {
 	var queries []string
 
 	queries = append(queries, getQueryTextQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.Granularity))
-	queries = append(queries, getQuerySampleQuery())
+	queries = append(queries, getSQLServerQuerySamplesQuery())
 	return queries
 }
 
@@ -184,7 +184,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 				continue
 			}
 		}
-		if query == getQuerySampleQuery() {
+		if query == getSQLServerQuerySamplesQuery() {
 			cache, err = lru.New[string, float64](10000 * 10)
 			if err != nil {
 				params.Logger.Error("Failed to create LRU cache, skipping the current scraper", zap.Error(err))

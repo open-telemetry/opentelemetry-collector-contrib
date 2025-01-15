@@ -127,7 +127,7 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	case getQueryTextQuery(s.instanceName, s.maxQuerySampleCount, s.granularity):
 		// TODO: Add a logs builder for that
 		return s.recordDatabaseQueryText(ctx, s.topQueryCount)
-	case getQuerySampleQuery():
+	case getSQLServerQuerySamplesQuery():
 		return s.recordDatabaseSampleQuery(ctx)
 	default:
 		return plog.Logs{}, fmt.Errorf("Attempted to get logs from unsupported query: %s", s.sqlQuery)

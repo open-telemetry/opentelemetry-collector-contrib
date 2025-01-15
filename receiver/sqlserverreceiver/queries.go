@@ -430,7 +430,7 @@ func getQueryTextQuery(instanceName string, maxQuerySampleCount uint, granularit
 	return fmt.Sprintf(getQueryText, granularityStatement, topQueryCountStatement, instanceNameClause)
 }
 
-const sqlSampleQuery = `
+const sqlServerQuerySamples = `
 SELECT
 s.host_name,
 USER_NAME(r.user_id) AS user_name,
@@ -455,6 +455,6 @@ ON r.session_id = s.session_id
 CROSS APPLY sys.dm_exec_sql_text(r.plan_handle) AS o;
 `
 
-func getQuerySampleQuery() string {
-	return sqlSampleQuery
+func getSQLServerQuerySamplesQuery() string {
+	return sqlServerQuerySamples
 }
