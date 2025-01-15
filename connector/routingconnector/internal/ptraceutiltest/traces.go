@@ -43,56 +43,43 @@ func NewTraces(resourceIDs, scopeIDs, spanIDs, spanEventIDs string) ptrace.Trace
 	return td
 }
 
-type Resource struct {
-	id     byte
-	scopes []Scope
+func NewTracesFromOpts(resources ...ptrace.ResourceSpans) ptrace.Traces {
+	md := ptrace.NewTraces()
+	for _, resource := range resources {
+		resource.CopyTo(md.ResourceSpans().AppendEmpty())
+	}
+	return md
 }
 
-type Scope struct {
-	id    byte
-	spans []Span
+func Resource(id string, scopes ...ptrace.ScopeSpans) ptrace.ResourceSpans {
+	rm := ptrace.NewResourceSpans()
+	rm.Resource().Attributes().PutStr("resourceName", "resource"+id)
+	for _, scope := range scopes {
+		scope.CopyTo(rm.ScopeSpans().AppendEmpty())
+	}
+	return rm
 }
 
-type Span struct {
-	id         byte
-	spanEvents string
-}
-
-func WithResource(id byte, scopes ...Scope) Resource {
-	r := Resource{id: id}
-	r.scopes = append(r.scopes, scopes...)
-	return r
-}
-
-func WithScope(id byte, spans ...Span) Scope {
-	s := Scope{id: id}
-	s.spans = append(s.spans, spans...)
+func Scope(id string, spans ...ptrace.Span) ptrace.ScopeSpans {
+	s := ptrace.NewScopeSpans()
+	s.Scope().SetName("scope" + id)
+	for _, span := range spans {
+		span.CopyTo(s.Spans().AppendEmpty())
+	}
 	return s
 }
 
-func WithSpan(id byte, spanEvents string) Span {
-	return Span{id: id, spanEvents: spanEvents}
+func Span(id string, ses ...ptrace.SpanEvent) ptrace.Span {
+	m := ptrace.NewSpan()
+	m.SetName("span" + id)
+	for _, se := range ses {
+		se.CopyTo(m.Events().AppendEmpty())
+	}
+	return m
 }
 
-// NewTracesFromOpts creates a ptrace.Traces with the specified resources, scopes, metrics,
-// and data points. The general idea is the same as NewMetrics, but this function allows for
-// more flexibility in creating non-uniform structures.
-func NewTracesFromOpts(resources ...Resource) ptrace.Traces {
-	td := ptrace.NewTraces()
-	for _, resource := range resources {
-		r := td.ResourceSpans().AppendEmpty()
-		r.Resource().Attributes().PutStr("resourceName", "resource"+string(resource.id))
-		for _, scope := range resource.scopes {
-			ss := r.ScopeSpans().AppendEmpty()
-			ss.Scope().SetName("scope" + string(scope.id))
-			for _, span := range scope.spans {
-				s := ss.Spans().AppendEmpty()
-				s.SetName("span" + string(span.id))
-				for i := 0; i < len(span.spanEvents); i++ {
-					s.Events().AppendEmpty().Attributes().PutStr("spanEventName", "spanEvent"+string(span.spanEvents[i]))
-				}
-			}
-		}
-	}
-	return td
+func SpanEvent(id string) ptrace.SpanEvent {
+	dp := ptrace.NewSpanEvent()
+	dp.Attributes().PutStr("spanEventName", "spanEvent"+id)
+	return dp
 }

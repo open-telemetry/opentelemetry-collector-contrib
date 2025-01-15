@@ -6,7 +6,7 @@
 |               | [beta]: logs, metrics, traces   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fk8sattributes) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fk8sattributes) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark) |
 | Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -98,7 +98,9 @@ are then also available for the use within association rules. Available attribut
 Not all the attributes are guaranteed to be added. Only attribute names from `metadata` should be used for 
 pod_association's `resource_attribute`, because empty or non-existing values will be ignored.
 
-Additional container level attributes can be extracted provided that certain resource attributes are provided:
+Additional container level attributes can be extracted. If a pod contains more than one container,
+either the `container.id`, or the `k8s.container.name` attribute must be provided in the incoming resource attributes to
+correctly associate the matching container to the resource:
 
 1. If the `container.id` resource attribute is provided, the following additional attributes will be available:
    - k8s.container.name
@@ -170,7 +172,7 @@ spec:
     - --duration=10s
     - --rate=1
     - --otlp-attributes=k8s.container.name="telemetrygen"
-    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:0.112.0@sha256:b248ef911f93ae27cbbc85056d1ffacc87fd941bbdc2ffd951b6df8df72b8096
     name: telemetrygen
 status:
   podIP: 10.244.0.11
@@ -193,9 +195,25 @@ the processor associates the received trace to the pod, based on the connection 
     "k8s.pod.name": "telemetrygen-pod",
     "k8s.pod.uid": "038e2267-b473-489b-b48c-46bafdb852eb",
     "container.image.name": "telemetrygen",
-    "container.image.tag": "latest"
+    "container.image.tag": "0.112.0", 
+    "container.image.repo_digests": ["ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:b248ef911f93ae27cbbc85056d1ffacc87fd941bbdc2ffd951b6df8df72b8096"]
   }
 }
+```
+
+By default, the processor will be ready as soon as it starts, even if no metadata has been fetched yet.
+If data is sent to this processor before the metadata is synced, there will be no metadata to enrich the data with.
+
+To wait for the metadata to be synced before the processor is ready, set the `wait_for_metadata` option to `true`.
+Then the processor will not be ready until the metadata is fully synced. As a result, the start-up of the Collector will be blocked. If the metadata cannot be synced, the Collector will ultimately fail to start.
+If a timeout is reached, the processor will fail to start and return an error, which will cause the collector to exit.
+The timeout defaults to 10s and can be configured with the `metadata_sync_timeout` option.
+
+example for setting the processor to wait for metadata to be synced before it is ready:
+
+```yaml
+wait_for_metadata: true
+wait_for_metadata_timeout: 10s
 ```
 
 ## Extracting attributes from pod labels and annotations
@@ -325,7 +343,7 @@ k8sattributes:
   filter:
     namespace: <WORKLOAD_NAMESPACE>
 ```
-With the namespace filter set, the processor will only look up pods and replicasets in the selected namespace. Note that with just a role binding, the processor can not query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor can not set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
+With the namespace filter set, the processor will only look up pods and replicasets in the selected namespace. Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
 
 Example `Role` and `RoleBinding` to create in the namespace being watched.
 ```yaml
@@ -373,7 +391,7 @@ When running as an agent, the processor detects IP addresses of pods sending spa
 and uses this information to extract metadata from pods. When running as an agent, it is important to apply
 a discovery filter so that the processor only discovers pods from the same host that it is running on. Not using
 such a filter can result in unnecessary resource usage especially on very large clusters. Once the filter is applied,
-each processor will only query the k8s API for pods running on it's own node.
+each processor will only query the k8s API for pods running on its own node.
 
 Node filter can be applied by setting the `filter.node` config option to the name of a k8s node. While this works
 as expected, it cannot be used to automatically filter pods by the same node that the processor is running on in
@@ -482,7 +500,7 @@ The following config with the feature gate set will lead to validation error:
 
 #### Migration
 
-Deprecation of the `extract.annotations.regex` and `extract.labels.regex` fields means that it is recommended to use the `ExtractPatterns` function from the transform processor instead. To convert your current configuration please check the `ExtractPatterns` function [documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#extractpatterns). You should use the `pattern` parameter of `ExtractPatterns` instead of using the the `extract.annotations.regex` and `extract.labels.regex` fields.
+Deprecation of the `extract.annotations.regex` and `extract.labels.regex` fields means that it is recommended to use the `ExtractPatterns` function from the transform processor instead. To convert your current configuration please check the `ExtractPatterns` function [documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#extractpatterns). You should use the `pattern` parameter of `ExtractPatterns` instead of using the `extract.annotations.regex` and `extract.labels.regex` fields.
 
 ##### Example
 

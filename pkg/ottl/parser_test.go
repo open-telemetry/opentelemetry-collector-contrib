@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -2130,6 +2131,118 @@ func testParseEnum(val *EnumSymbol) (*Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
+func Test_parseValueExpression_full(t *testing.T) {
+	time1 := time.Now()
+	time2 := time1.Add(5 * time.Second)
+	tests := []struct {
+		name            string
+		valueExpression string
+		tCtx            any
+		expected        func() any
+	}{
+		{
+			name:            "string value",
+			valueExpression: `"fido"`,
+			expected: func() any {
+				return "fido"
+			},
+		},
+		{
+			name:            "resolve context value",
+			valueExpression: `attributes`,
+			expected: func() any {
+				return map[string]any{
+					"attributes": map[string]any{
+						"foo": "bar",
+					},
+				}
+			},
+			tCtx: map[string]any{
+				"attributes": map[string]any{
+					"foo": "bar",
+				},
+			},
+		},
+		{
+			name:            "resolve math expression",
+			valueExpression: `time2 - time1`,
+			expected: func() any {
+				return 5 * time.Second
+			},
+			tCtx: map[string]time.Time{
+				"time1": time1,
+				"time2": time2,
+			},
+		},
+		{
+			name:            "nil",
+			valueExpression: `nil`,
+			expected: func() any {
+				return nil
+			},
+		},
+		{
+			name:            "string",
+			valueExpression: `"string"`,
+			expected: func() any {
+				return "string"
+			},
+		},
+		{
+			name:            "hex values",
+			valueExpression: `[0x0000000000000000, 0x0000000000000000]`,
+			expected: func() any {
+				return []any{
+					[]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+					[]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+				}
+			},
+		},
+		{
+			name:            "boolean",
+			valueExpression: `true`,
+			expected: func() any {
+				return true
+			},
+		},
+		{
+			name:            "map",
+			valueExpression: `{"map": 1}`,
+			expected: func() any {
+				m := pcommon.NewMap()
+				_ = m.FromRaw(map[string]any{
+					"map": 1,
+				})
+				return m
+			},
+		},
+		{
+			name:            "string list",
+			valueExpression: `["list", "of", "strings"]`,
+			expected: func() any {
+				return []any{"list", "of", "strings"}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.valueExpression, func(t *testing.T) {
+			p, _ := NewParser(
+				CreateFactoryMap[any](),
+				testParsePath[any],
+				componenttest.NewNopTelemetrySettings(),
+				WithEnumParser[any](testParseEnum),
+			)
+			parsed, err := p.ParseValueExpression(tt.valueExpression)
+			assert.NoError(t, err)
+
+			v, err := parsed.Eval(context.Background(), tt.tCtx)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected(), v)
+		})
+	}
+}
+
 func Test_ParseStatements_Error(t *testing.T) {
 	statements := []string{
 		`set(`,
@@ -2343,6 +2456,44 @@ func Test_parseCondition(t *testing.T) {
 	}
 }
 
+// This test doesn't validate parser results, simply checks whether the parse succeeds or not.
+// It's a fast way to check a large range of possible syntaxes.
+func Test_parseValueExpression(t *testing.T) {
+	converterNameErrorPrefix := "converter names must start with an uppercase letter"
+	editorWithIndexErrorPrefix := "only paths and converters may be indexed"
+
+	tests := []struct {
+		valueExpression   string
+		wantErr           bool
+		wantErrContaining string
+	}{
+		{valueExpression: `time_end - time_end`},
+		{valueExpression: `time_end - time_end - attributes["foo"]`},
+		{valueExpression: `Test("foo")`},
+		{valueExpression: `Test(Test("foo")) - attributes["bar"]`},
+		{valueExpression: `Test(Test("foo")) - attributes["bar"]"`, wantErr: true},
+		{valueExpression: `test("foo")`, wantErr: true, wantErrContaining: converterNameErrorPrefix},
+		{valueExpression: `test(animal)["kind"]`, wantErrContaining: editorWithIndexErrorPrefix},
+		{valueExpression: `Test("a"")foo"`, wantErr: true},
+		{valueExpression: `Test("a"") == 1"`, wantErr: true},
+	}
+	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
+	for _, tt := range tests {
+		name := pat.ReplaceAllString(tt.valueExpression, "_")
+		t.Run(name, func(t *testing.T) {
+			ast, err := parseValueExpression(tt.valueExpression)
+			if (err != nil) != (tt.wantErr || tt.wantErrContaining != "") {
+				t.Errorf("parseCondition(%s) error = %v, wantErr %v", tt.valueExpression, err, tt.wantErr)
+				t.Errorf("AST: %+v", ast)
+				return
+			}
+			if tt.wantErrContaining != "" {
+				require.ErrorContains(t, err, tt.wantErrContaining)
+			}
+		})
+	}
+}
+
 func Test_Statement_Execute(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -2382,8 +2533,9 @@ func Test_Statement_Execute(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			statement := Statement[any]{
-				condition: BoolExpr[any]{tt.condition},
-				function:  Expr[any]{exprFunc: tt.function},
+				condition:         BoolExpr[any]{tt.condition},
+				function:          Expr[any]{exprFunc: tt.function},
+				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 			}
 
 			result, condition, err := statement.Execute(context.Background(), nil)
@@ -2497,8 +2649,9 @@ func Test_Statements_Execute_Error(t *testing.T) {
 			statements := StatementSequence[any]{
 				statements: []*Statement[any]{
 					{
-						condition: BoolExpr[any]{tt.condition},
-						function:  Expr[any]{exprFunc: tt.function},
+						condition:         BoolExpr[any]{tt.condition},
+						function:          Expr[any]{exprFunc: tt.function},
+						telemetrySettings: componenttest.NewNopTelemetrySettings(),
 					},
 				},
 				errorMode:         tt.errorMode,

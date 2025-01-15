@@ -161,31 +161,6 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		assert.Empty(t, sink1.AllTraces())
 	})
 
-	t.Run("span matched by all expressions", func(t *testing.T) {
-		resetSinks()
-
-		tr := ptrace.NewTraces()
-		rl := tr.ResourceSpans().AppendEmpty()
-		rl.Resource().Attributes().PutInt("value", 2)
-		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-		span.SetName("span")
-
-		rl = tr.ResourceSpans().AppendEmpty()
-		rl.Resource().Attributes().PutInt("value", 3)
-		span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-		span.SetName("span1")
-
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
-
-		assert.Empty(t, defaultSink.AllTraces())
-		assert.Len(t, sink0.AllTraces(), 1)
-		assert.Len(t, sink1.AllTraces(), 1)
-
-		assert.Equal(t, 2, sink0.AllTraces()[0].SpanCount())
-		assert.Equal(t, 2, sink1.AllTraces()[0].SpanCount())
-		assert.Equal(t, sink0.AllTraces(), sink1.AllTraces())
-	})
-
 	t.Run("span matched by one expression, multiple pipelines", func(t *testing.T) {
 		resetSinks()
 
@@ -214,7 +189,6 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 	cfg := &Config{
 		DefaultPipelines: []pipeline.ID{tracesDefault},
-		MatchOnce:        true,
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where attributes["value"] > 0 and attributes["value"] < 4`,
@@ -766,12 +740,21 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			expectSink0: ptraceutiltest.NewTraces("B", "D", "EF", "GH"),
 			expectSink1: ptrace.Traces{},
 			expectSinkD: ptraceutiltest.NewTracesFromOpts(
-				ptraceutiltest.WithResource('A',
-					ptraceutiltest.WithScope('C', ptraceutiltest.WithSpan('E', "GH"), ptraceutiltest.WithSpan('F', "GH")),
-					ptraceutiltest.WithScope('D', ptraceutiltest.WithSpan('E', "GH"), ptraceutiltest.WithSpan('F', "GH")),
+				ptraceutiltest.Resource("A",
+					ptraceutiltest.Scope("C",
+						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
+						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
+					),
+					ptraceutiltest.Scope("D",
+						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
+						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
+					),
 				),
-				ptraceutiltest.WithResource('B',
-					ptraceutiltest.WithScope('C', ptraceutiltest.WithSpan('E', "GH"), ptraceutiltest.WithSpan('F', "GH")),
+				ptraceutiltest.Resource("B",
+					ptraceutiltest.Scope("C",
+						ptraceutiltest.Span("E", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
+						ptraceutiltest.Span("F", ptraceutiltest.SpanEvent("G"), ptraceutiltest.SpanEvent("H")),
+					),
 				),
 			),
 		},

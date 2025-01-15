@@ -22,7 +22,8 @@ type ReqSender struct {
 }
 
 func NewReqSender(client *http.Client,
-	workerCount uint, diagnosticDimensions map[string]string) *ReqSender {
+	workerCount uint, diagnosticDimensions map[string]string,
+) *ReqSender {
 	return &ReqSender{
 		client:               client,
 		additionalDimensions: diagnosticDimensions,
@@ -94,11 +95,15 @@ func (rs *ReqSender) sendRequest(req *http.Request) error {
 
 type key int
 
-const RequestFailedCallbackKey key = 1
-const RequestSuccessCallbackKey key = 2
+const (
+	RequestFailedCallbackKey  key = 1
+	RequestSuccessCallbackKey key = 2
+)
 
-type RequestFailedCallback func(statusCode int, err error)
-type RequestSuccessCallback func([]byte)
+type (
+	RequestFailedCallback  func(statusCode int, err error)
+	RequestSuccessCallback func([]byte)
+)
 
 func onRequestSuccess(req *http.Request, body []byte) {
 	ctx := req.Context()
@@ -108,6 +113,7 @@ func onRequestSuccess(req *http.Request, body []byte) {
 	}
 	cb(body)
 }
+
 func onRequestFailed(req *http.Request, statusCode int, err error) {
 	ctx := req.Context()
 	cb, ok := ctx.Value(RequestFailedCallbackKey).(RequestFailedCallback)
@@ -119,7 +125,6 @@ func onRequestFailed(req *http.Request, statusCode int, err error) {
 
 func sendRequest(client *http.Client, req *http.Request) ([]byte, int, error) {
 	resp, err := client.Do(req)
-
 	if err != nil {
 		return nil, 0, err
 	}

@@ -17,9 +17,11 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
 
 type logNameTest struct {
@@ -766,7 +768,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 }
 
 func TestFilterLogProcessorTelemetry(t *testing.T) {
-	tel := setupTestTelemetry()
+	tel := metadatatest.SetupTelemetry()
 	processor, err := newFilterLogsProcessor(tel.NewSettings(), &Config{
 		Logs: LogFilters{LogConditions: []string{`IsMatch(body, "operationA")`}},
 	})
@@ -793,7 +795,8 @@ func TestFilterLogProcessorTelemetry(t *testing.T) {
 		},
 	}
 
-	tel.assertMetrics(t, want)
+	tel.AssertMetrics(t, want, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreTimestamp())
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func constructLogs() plog.Logs {

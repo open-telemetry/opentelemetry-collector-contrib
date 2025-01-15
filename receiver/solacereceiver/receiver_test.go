@@ -20,8 +20,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadatatest"
 )
 
 // connectAndReceive with connect failure
@@ -30,8 +32,8 @@ import (
 
 func TestReceiveMessage(t *testing.T) {
 	someError := errors.New("some error")
-	validateMetrics := func(receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan int64) func(t *testing.T, tt componentTestTelemetry) {
-		return func(t *testing.T, tt componentTestTelemetry) {
+	validateMetrics := func(receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan int64) func(t *testing.T, tt metadatatest.Telemetry) {
+		return func(t *testing.T, tt metadatatest.Telemetry) {
 			var expected []metricdata.Metrics
 			if reportedSpan > 0 {
 				expected = append(expected,
@@ -98,7 +100,7 @@ func TestReceiveMessage(t *testing.T) {
 					},
 				})
 			}
-			tt.assertMetrics(t, expected)
+			tt.AssertMetrics(t, expected, metricdatatest.IgnoreTimestamp())
 		}
 	}
 
@@ -112,7 +114,7 @@ func TestReceiveMessage(t *testing.T) {
 		// expected error from receiveMessage
 		expectedErr error
 		// validate constraints after the fact
-		validation func(t *testing.T, tt componentTestTelemetry)
+		validation func(t *testing.T, tt metadatatest.Telemetry)
 		// traces provided by the trace function
 		traces ptrace.Traces
 	}{
@@ -217,6 +219,7 @@ func TestReceiveMessage(t *testing.T) {
 			if testCase.validation != nil {
 				testCase.validation(t, tt)
 			}
+			require.NoError(t, tt.Shutdown(context.Background()))
 		})
 	}
 }
@@ -251,7 +254,7 @@ func TestReceiveMessagesTerminateWithCtxDone(t *testing.T) {
 	assert.True(t, receiveMessagesCalled)
 	assert.True(t, unmarshalCalled)
 	assert.True(t, ackCalled)
-	tt.assertMetrics(t, []metricdata.Metrics{
+	tt.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_solacereceiver_received_span_messages",
 			Description: "Number of received span messages",
@@ -280,14 +283,15 @@ func TestReceiveMessagesTerminateWithCtxDone(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
+	require.NoError(t, tt.Shutdown(context.Background()))
 }
 
 func TestReceiverLifecycle(t *testing.T) {
 	receiver, messagingService, _, tt := newReceiver(t)
 	dialCalled := make(chan struct{})
 	messagingService.dialFunc = func(context.Context) error {
-		tt.assertMetrics(t, []metricdata.Metrics{
+		tt.AssertMetrics(t, []metricdata.Metrics{
 			{
 				Name:        "otelcol_solacereceiver_receiver_status",
 				Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
@@ -312,13 +316,13 @@ func TestReceiverLifecycle(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, metricdatatest.IgnoreTimestamp())
 		close(dialCalled)
 		return nil
 	}
 	closeCalled := make(chan struct{})
 	messagingService.closeFunc = func(context.Context) {
-		tt.assertMetrics(t, []metricdata.Metrics{
+		tt.AssertMetrics(t, []metricdata.Metrics{
 			{
 				Name:        "otelcol_solacereceiver_receiver_status",
 				Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
@@ -343,12 +347,12 @@ func TestReceiverLifecycle(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, metricdatatest.IgnoreTimestamp())
 		close(closeCalled)
 	}
 	receiveMessagesCalled := make(chan struct{})
 	messagingService.receiveMessageFunc = func(ctx context.Context) (*inboundMessage, error) {
-		tt.assertMetrics(t, []metricdata.Metrics{
+		tt.AssertMetrics(t, []metricdata.Metrics{
 			{
 				Name:        "otelcol_solacereceiver_receiver_status",
 				Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
@@ -373,7 +377,7 @@ func TestReceiverLifecycle(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, metricdatatest.IgnoreTimestamp())
 		close(receiveMessagesCalled)
 		<-ctx.Done()
 		return nil, errors.New("some error")
@@ -387,7 +391,7 @@ func TestReceiverLifecycle(t *testing.T) {
 	assert.NoError(t, err)
 	assertChannelClosed(t, closeCalled)
 	// we error on receive message, so we should not report any additional metrics
-	tt.assertMetrics(t, []metricdata.Metrics{
+	tt.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_solacereceiver_receiver_status",
 			Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
@@ -412,7 +416,8 @@ func TestReceiverLifecycle(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
+	require.NoError(t, tt.Shutdown(context.Background()))
 }
 
 func TestReceiverDialFailureContinue(t *testing.T) {
@@ -442,7 +447,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 	msgService.closeFunc = func(ctx context.Context) {
 		closeCalled++
 		// assert we never left connecting state prior to closing closeDone
-		tt.assertMetrics(t, []metricdata.Metrics{
+		tt.AssertMetrics(t, []metricdata.Metrics{
 			{
 				Name:        "otelcol_solacereceiver_receiver_status",
 				Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
@@ -481,7 +486,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, metricdatatest.IgnoreTimestamp())
 		if closeCalled == expectedAttempts {
 			close(closeDone)
 			<-ctx.Done() // wait for ctx.Done
@@ -502,7 +507,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
 	// we error on dial, should never get to receive messages
-	tt.assertMetrics(t, []metricdata.Metrics{
+	tt.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_solacereceiver_receiver_status",
 			Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
@@ -541,7 +546,8 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
+	require.NoError(t, tt.Shutdown(context.Background()))
 }
 
 func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
@@ -588,7 +594,7 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 	assertChannelClosed(t, closeDone)
 	// we receive 1 message, encounter a fatal unmarshalling error and we nack the message so it is not actually dropped
 	// assert idle state
-	tt.assertMetrics(t, []metricdata.Metrics{
+	tt.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_solacereceiver_received_span_messages",
 			Description: "Number of received span messages",
@@ -653,9 +659,10 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
+	require.NoError(t, tt.Shutdown(context.Background()))
 }
 
 func TestReceiverFlowControlDelayedRetry(t *testing.T) {
@@ -663,7 +670,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 	testCases := []struct {
 		name         string
 		nextConsumer consumer.Traces
-		validation   func(*testing.T, componentTestTelemetry)
+		validation   func(*testing.T, metadatatest.Telemetry)
 	}{
 		{
 			name:         "Without error",
@@ -672,8 +679,8 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 		{
 			name:         "With error",
 			nextConsumer: consumertest.NewErr(someError),
-			validation: func(t *testing.T, tt componentTestTelemetry) {
-				tt.assertMetrics(t, []metricdata.Metrics{
+			validation: func(t *testing.T, tt metadatatest.Telemetry) {
+				tt.AssertMetrics(t, []metricdata.Metrics{
 					{
 						Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
 						Description: "Most recent/current retry count when flow controlled",
@@ -754,7 +761,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 							},
 						},
 					},
-				})
+				}, metricdatatest.IgnoreTimestamp())
 			},
 		},
 	}
@@ -801,7 +808,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 				require.Fail(t, "Did not expect receiveMessage to return before delay interval")
 			}
 			// Check that we are currently flow controlled
-			tt.assertMetrics(t, []metricdata.Metrics{
+			tt.AssertMetrics(t, []metricdata.Metrics{
 				{
 					Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
 					Description: "Most recent/current retry count when flow controlled",
@@ -840,7 +847,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 						},
 					},
 				},
-			})
+			}, metricdatatest.IgnoreTimestamp())
 			// since we set the next consumer to a noop, this should succeed
 			select {
 			case <-time.After(delay):
@@ -852,7 +859,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 			if tc.validation != nil {
 				tc.validation(t, tt)
 			} else {
-				tt.assertMetrics(t, []metricdata.Metrics{
+				tt.AssertMetrics(t, []metricdata.Metrics{
 					{
 						Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
 						Description: "Most recent/current retry count when flow controlled",
@@ -933,8 +940,9 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 							},
 						},
 					},
-				})
+				}, metricdatatest.IgnoreTimestamp())
 			}
+			require.NoError(t, tt.Shutdown(context.Background()))
 		})
 	}
 }
@@ -1001,7 +1009,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 	// we want to return an error at first, then set the next consumer to a noop consumer
 	receiver.nextConsumer, err = consumer.NewTraces(func(context.Context, ptrace.Traces) error {
 		if currentRetries > 0 {
-			tt.assertMetrics(t, []metricdata.Metrics{
+			tt.AssertMetrics(t, []metricdata.Metrics{
 				{
 					Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
 					Description: "Most recent/current retry count when flow controlled",
@@ -1040,7 +1048,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 						},
 					},
 				},
-			})
+			}, metricdatatest.IgnoreTimestamp())
 		}
 		currentRetries++
 		if currentRetries == retryCount {
@@ -1085,7 +1093,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 		assert.NoError(t, err)
 	}
 	assert.True(t, ackCalled)
-	tt.assertMetrics(t, []metricdata.Metrics{
+	tt.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
 			Description: "Most recent/current retry count when flow controlled",
@@ -1152,17 +1160,18 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
+	require.NoError(t, tt.Shutdown(context.Background()))
 }
 
-func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *mockUnmarshaller, componentTestTelemetry) {
+func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *mockUnmarshaller, metadatatest.Telemetry) {
 	unmarshaller := &mockUnmarshaller{}
 	service := &mockMessagingService{}
 	messagingServiceFactory := func() messagingService {
 		return service
 	}
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := metadatatest.SetupTelemetry()
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	receiver := &solaceTracesReceiver{
 		settings: receivertest.NewNopSettings(),

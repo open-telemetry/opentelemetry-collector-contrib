@@ -18,9 +18,10 @@ import (
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
 // invocation and the boolean expression to match telemetry for invoking the function.
 type Statement[K any] struct {
-	function  Expr[K]
-	condition BoolExpr[K]
-	origText  string
+	function          Expr[K]
+	condition         BoolExpr[K]
+	origText          string
+	telemetrySettings component.TelemetrySettings
 }
 
 // Execute is a function that will execute the statement's function if the statement's condition is met.
@@ -29,6 +30,11 @@ type Statement[K any] struct {
 // In addition, the functions return value is always returned.
 func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	condition, err := s.condition.Eval(ctx, tCtx)
+	defer func() {
+		if s.telemetrySettings.Logger != nil {
+			s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", s.origText), zap.Bool("condition matched", condition), zap.Any("TransformContext", tCtx))
+		}
+	}()
 	if err != nil {
 		return nil, false, err
 	}
@@ -150,9 +156,10 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 		return nil, err
 	}
 	return &Statement[K]{
-		function:  function,
-		condition: expression,
-		origText:  statement,
+		function:          function,
+		condition:         expression,
+		origText:          statement,
+		telemetrySettings: p.telemetrySettings,
 	}, nil
 }
 
@@ -225,8 +232,9 @@ func (p *Parser[K]) prependContextToStatementPaths(context string, statement str
 }
 
 var (
-	parser          = newParser[parsedStatement]()
-	conditionParser = newParser[booleanExpression]()
+	parser                = newParser[parsedStatement]()
+	conditionParser       = newParser[booleanExpression]()
+	valueExpressionParser = newParser[value]()
 )
 
 func parseStatement(raw string) (*parsedStatement, error) {
@@ -246,6 +254,19 @@ func parseCondition(raw string) (*booleanExpression, error) {
 	parsed, err := conditionParser.ParseString("", raw)
 	if err != nil {
 		return nil, fmt.Errorf("condition has invalid syntax: %w", err)
+	}
+	err = parsed.checkForCustomError()
+	if err != nil {
+		return nil, err
+	}
+
+	return parsed, nil
+}
+
+func parseValueExpression(raw string) (*value, error) {
+	parsed, err := valueExpressionParser.ParseString("", raw)
+	if err != nil {
+		return nil, fmt.Errorf("expression has invalid syntax: %w", err)
 	}
 	err = parsed.checkForCustomError()
 	if err != nil {
@@ -332,10 +353,9 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
 // When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
-	s.telemetrySettings.Logger.Debug("initial TransformContext", zap.Any("TransformContext", tCtx))
+	s.telemetrySettings.Logger.Debug("initial TransformContext before executing StatementSequence", zap.Any("TransformContext", tCtx))
 	for _, statement := range s.statements {
-		_, condition, err := statement.Execute(ctx, tCtx)
-		s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", statement.origText), zap.Bool("condition matched", condition), zap.Any("TransformContext", tCtx))
+		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
 			if s.errorMode == PropagateError {
 				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
@@ -432,4 +452,34 @@ func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	// idea to return False when ANDing and everything errored. We use atLeastOneMatch here to return true if anything did match.
 	// It is not possible to get here if any condition during an AND explicitly failed.
 	return c.logicOp == And && atLeastOneMatch, nil
+}
+
+// ValueExpression represents an expression that resolves to a value. The returned value can be of any type,
+// and the expression can be either a literal value, a path value within the context, or the result of a converter and/or
+// a mathematical expression.
+// This allows other components using this library to extract data from the context of the incoming signal using OTTL.
+type ValueExpression[K any] struct {
+	getter Getter[K]
+}
+
+// Eval evaluates the given expression and returns the value the expression resolves to.
+func (e *ValueExpression[K]) Eval(ctx context.Context, tCtx K) (any, error) {
+	return e.getter.Get(ctx, tCtx)
+}
+
+// ParseValueExpression parses an expression string into a ValueExpression. The ValueExpression's Eval
+// method can then be used to extract the value from the context of the incoming signal.
+func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error) {
+	parsed, err := parseValueExpression(raw)
+	if err != nil {
+		return nil, err
+	}
+	getter, err := p.newGetter(*parsed)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ValueExpression[K]{
+		getter: getter,
+	}, nil
 }

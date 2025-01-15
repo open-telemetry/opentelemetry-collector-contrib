@@ -31,7 +31,7 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `status_code`: Sample based upon the status code (`OK`, `ERROR` or `UNSET`)
 - `string_attribute`: Sample based on string attributes (resource and record) value matches, both exact and regex value matches are supported
 - `trace_state`: Sample based on [TraceState](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#tracestate) value matches
-- `rate_limiting`: Sample based on rate
+- `rate_limiting`: Sample based on the rate of spans per second.
 - `span_count`: Sample based on the minimum and/or maximum number of spans, inclusive. If the sum of all spans in the trace is outside the range threshold, the trace will not be sampled.
 - `boolean_attribute`: Sample based on boolean attribute (resource and record).
 - `ottl_condition`: Sample based on given boolean OTTL condition (span and span event).
@@ -46,11 +46,18 @@ The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
 - `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
-- `decision_cache` (default = `sampled_cache_size: 0`): Configures amount of trace IDs to be kept in an LRU cache,
-  persisting the "keep" decisions for traces that may have already been released from memory. 
-  By default, the size is 0 and the cache is inactive. 
-  If using, configure this as much higher than `num_traces` so decisions for trace IDs are kept 
+- `decision_cache`: Options for configuring caches for sampling decisions. You may want to vary the size of these caches
+  depending on how many "keep" vs "drop" decisions you expect from your policies. For example, you may allocate a
+  larger `non_sampled_cache_size` if you expect most traces to be dropped.
+  Additionally, if using, configure this as much greater than `num_traces` so decisions for trace IDs are kept
   longer than the span data for the trace.
+  - `sampled_cache_size` (default = 0): Configures amount of trace IDs to be kept in an LRU cache,
+  persisting the "keep" decisions for traces that may have already been released from memory. 
+  By default, the size is 0 and the cache is inactive.
+  - `non_sampled_cache_size` (default = 0) Configures amount of trace IDs to be kept in an LRU cache,
+    persisting the "drop" decisions for traces that may have already been released from memory.
+    By default, the size is 0 and the cache is inactive.
+
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
 
@@ -70,7 +77,8 @@ processors:
     num_traces: 100
     expected_new_traces_per_sec: 10
     decision_cache:
-      sampled_cache_size: 100000
+      sampled_cache_size: 100_000
+      non_sampled_cache_size: 100_000
     policies:
       [
           {
@@ -461,7 +469,7 @@ A circular buffer is used to ensure the number of traces in-memory doesn't excee
 otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
 ```
 
-**Pre-emptively Preventing Dropped Traces**
+**Preemptively Preventing Dropped Traces**
 
 A trace is dropped without sampling if it's removed from the circular buffer before `decision_wait`.
 

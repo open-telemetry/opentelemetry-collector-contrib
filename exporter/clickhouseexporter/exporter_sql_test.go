@@ -13,12 +13,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type clusterTestCompletion func(t *testing.T, dsn string, clusterTest clusterTestConfig, fns ...func(*Config))
-type clusterTestConfig struct {
-	name       string
-	cluster    string
-	shouldPass bool
-}
+type (
+	clusterTestCompletion func(t *testing.T, dsn string, clusterTest clusterTestConfig, fns ...func(*Config))
+	clusterTestConfig     struct {
+		name       string
+		cluster    string
+		shouldPass bool
+	}
+)
 
 func (test clusterTestConfig) verifyConfig(t *testing.T, cfg *Config) {
 	if test.cluster == "" {
@@ -86,14 +88,16 @@ func testClusterConfig(t *testing.T, completion clusterTestCompletion) {
 	}
 }
 
-type tableEngineTestCompletion func(t *testing.T, dsn string, engineTest tableEngineTestConfig, fns ...func(*Config))
-type tableEngineTestConfig struct {
-	name              string
-	engineName        string
-	engineParams      string
-	expectedTableName string
-	shouldPass        bool
-}
+type (
+	tableEngineTestCompletion func(t *testing.T, dsn string, engineTest tableEngineTestConfig, fns ...func(*Config))
+	tableEngineTestConfig     struct {
+		name              string
+		engineName        string
+		engineParams      string
+		expectedTableName string
+		shouldPass        bool
+	}
+)
 
 func (engineTest tableEngineTestConfig) verifyConfig(t *testing.T, te TableEngine) {
 	if engineTest.engineName == "" {

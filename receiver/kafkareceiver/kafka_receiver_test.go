@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -33,6 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadatatest"
 )
 
 func TestNewTracesReceiver_version_err(t *testing.T) {
@@ -150,8 +152,8 @@ func TestTracesReceiver_error(t *testing.T) {
 }
 
 func TestTracesConsumerGroupHandler(t *testing.T) {
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := metadatatest.SetupTelemetry()
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
@@ -189,11 +191,12 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	close(groupClaim.messageChan)
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := metadatatest.SetupTelemetry()
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
@@ -233,13 +236,14 @@ func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	cancelFunc()
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := metadatatest.SetupTelemetry()
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	c := tracesConsumerGroupHandler{
 		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
@@ -264,7 +268,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: []byte("!@#")}
 	close(groupClaim.messageChan)
 	wg.Wait()
-	tel.assertMetrics(t, []metricdata.Metrics{
+	tel.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_kafka_receiver_offset_lag",
 			Unit:        "1",
@@ -330,7 +334,8 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
@@ -492,8 +497,8 @@ func TestMetricsReceiver_error(t *testing.T) {
 }
 
 func TestMetricsConsumerGroupHandler(t *testing.T) {
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := metadatatest.SetupTelemetry()
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
@@ -531,11 +536,12 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	close(groupClaim.messageChan)
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := metadatatest.SetupTelemetry()
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
@@ -574,13 +580,14 @@ func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	cancelFunc()
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := metadatatest.SetupTelemetry()
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	c := metricsConsumerGroupHandler{
 		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
@@ -605,7 +612,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: []byte("!@#")}
 	close(groupClaim.messageChan)
 	wg.Wait()
-	tel.assertMetrics(t, []metricdata.Metrics{
+	tel.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_kafka_receiver_offset_lag",
 			Unit:        "1",
@@ -671,7 +678,8 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
@@ -848,8 +856,8 @@ func TestLogsReceiver_error(t *testing.T) {
 }
 
 func TestLogsConsumerGroupHandler(t *testing.T) {
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := metadatatest.SetupTelemetry()
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
@@ -887,11 +895,12 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	close(groupClaim.messageChan)
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := metadatatest.SetupTelemetry()
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
@@ -930,13 +939,14 @@ func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	cancelFunc()
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := metadatatest.SetupTelemetry()
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
 		unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
@@ -961,7 +971,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: []byte("!@#")}
 	close(groupClaim.messageChan)
 	wg.Wait()
-	tel.assertMetrics(t, []metricdata.Metrics{
+	tel.AssertMetrics(t, []metricdata.Metrics{
 		{
 			Name:        "otelcol_kafka_receiver_offset_lag",
 			Unit:        "1",
@@ -1027,7 +1037,8 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, metricdatatest.IgnoreTimestamp())
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
@@ -1343,7 +1354,7 @@ func (t *testConsumerGroup) ResumeAll() {
 	panic("implement me")
 }
 
-func assertInternalTelemetry(t *testing.T, tel componentTestTelemetry, partitionClose int64) {
+func assertInternalTelemetry(t *testing.T, tel metadatatest.Telemetry, partitionClose int64) {
 	wantMetrics := []metricdata.Metrics{
 		{
 			Name:        "otelcol_kafka_receiver_partition_start",
@@ -1378,7 +1389,7 @@ func assertInternalTelemetry(t *testing.T, tel componentTestTelemetry, partition
 			},
 		})
 	}
-	tel.assertMetrics(t, wantMetrics)
+	tel.AssertMetrics(t, wantMetrics, metricdatatest.IgnoreTimestamp())
 }
 
 func nopTelemetryBuilder(t *testing.T) *metadata.TelemetryBuilder {

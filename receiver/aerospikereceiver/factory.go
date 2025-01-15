@@ -10,7 +10,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
 )
@@ -38,16 +39,14 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
-	receiver, err := newAerospikeReceiver(params, cfg, consumer)
+	r, err := newAerospikeReceiver(params, cfg, consumer)
 	if err != nil {
 		return nil, err
 	}
 
-	scraper, err := scraperhelper.NewScraper(
-		metadata.Type,
-		receiver.scrape,
-		scraperhelper.WithStart(receiver.start),
-		scraperhelper.WithShutdown(receiver.shutdown),
+	s, err := scraper.NewMetrics(r.scrape,
+		scraper.WithStart(r.start),
+		scraper.WithShutdown(r.shutdown),
 	)
 	if err != nil {
 		return nil, err
@@ -55,7 +54,7 @@ func createMetricsReceiver(
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&cfg.ControllerConfig, params, consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraper(metadata.Type, s),
 	)
 }
 

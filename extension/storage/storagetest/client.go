@@ -13,12 +13,10 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
 
-var (
-	errClientClosed = errors.New("client closed")
-)
+var errClientClosed = errors.New("client closed")
 
 type TestClient struct {
 	cache    map[string][]byte
@@ -101,7 +99,7 @@ func (p *TestClient) Delete(_ context.Context, key string) error {
 	return nil
 }
 
-func (p *TestClient) Batch(_ context.Context, ops ...storage.Operation) error {
+func (p *TestClient) Batch(_ context.Context, ops ...*storage.Operation) error {
 	p.cacheMux.Lock()
 	defer p.cacheMux.Unlock()
 	if p.closed {
@@ -139,7 +137,7 @@ func (p *TestClient) Close(_ context.Context) error {
 		return err
 	}
 
-	return os.WriteFile(p.storageFile, contents, os.FileMode(0600))
+	return os.WriteFile(p.storageFile, contents, os.FileMode(0o600))
 }
 
 const clientCreatorID = "client_creator_id"

@@ -11,7 +11,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
 )
@@ -38,10 +39,9 @@ func newMetricsReceiver(
 	cfg := rCfg.(*Config)
 
 	expVar := newExpVarScraper(cfg, set)
-	scraper, err := scraperhelper.NewScraper(
-		metadata.Type,
+	s, err := scraper.NewMetrics(
 		expVar.scrape,
-		scraperhelper.WithStart(expVar.start),
+		scraper.WithStart(expVar.start),
 	)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func newMetricsReceiver(
 		&cfg.ControllerConfig,
 		set,
 		consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraper(metadata.Type, s),
 	)
 }
 

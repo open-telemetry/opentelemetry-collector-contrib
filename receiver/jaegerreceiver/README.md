@@ -28,7 +28,7 @@ object configuration parameter.
 - `thrift_compact` (default `endpoint` = localhost:6831)
 - `thrift_http` (default `endpoint` = localhost:14268)
 
-You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change tgese endpoints to 0.0.0.0:14250, 0.0.0.0:6832, 0.0.0.0:6831 and 0.0.0.0:14268. This feature gate will be removed in a future release.
+See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
 Examples:
 
