@@ -136,7 +136,7 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 	for _, part := range parts[1:] {
 		parameter := strings.Split(part, "=")
 		if len(parameter) != 2 {
-			return "", fmt.Errorf("as per https://www.rfc-editor.org/rfc/rfc9110#parameter expected parameters to be key-values, got %v in %v content-type", part, contentType)
+			return "", fmt.Errorf("error as per https://www.rfc-editor.org/rfc/rfc9110#parameter expected parameters to be key-values, got %v in %v content-type", part, contentType)
 		}
 
 		if strings.TrimSpace(parameter[0]) == "proto" {
@@ -241,7 +241,9 @@ func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2
 	// Otherwise, we should append to the existing ScopeMetrics.
 	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 		scope := rm.ScopeMetrics().At(j)
-		if scopeName != "" && scopeVersion != "" && scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
+		// TODO: use the collector build information as the scope.
+		// More: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#:~:text=Metrics%20which%20do%20not%20have%20an%20otel_scope_name%20or%20otel_scope_version%20label%20MUST%20be%20assigned%20an%20instrumentation%20scope%20identifying%20the%20entity%20performing%20the%20translation%20from%20Prometheus%20to%20OpenTelemetry%20(e.g.%20the%20collector%E2%80%99s%20prometheus%20receiver)
+		if scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
 			addDatapoints(scope.Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
 			return
 		}
