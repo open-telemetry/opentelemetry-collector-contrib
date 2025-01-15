@@ -35,8 +35,8 @@ func newLogsConnector(
 ) (*logsConnector, error) {
 	cfg := config.(*Config)
 
-	if !cfg.MatchOnce {
-		set.Logger.Error("The 'match_once' field has been deprecated and will be removed in v0.120.0. Remove usage of the parameter to suppress this warning.")
+	if cfg.MatchOnce != nil {
+		set.Logger.Error("The 'match_once' field has been deprecated and no longer has any effect. It will be removed in v0.120.0.")
 	}
 
 	lr, ok := logs.(connector.LogsRouterAndConsumer)
@@ -65,15 +65,6 @@ func (c *logsConnector) Capabilities() consumer.Capabilities {
 }
 
 func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	if c.config.MatchOnce {
-		return c.switchLogs(ctx, ld)
-	}
-	return c.matchAllLogs(ctx, ld)
-}
-
-// switchLogs removes items from the original plog.Logs as they are matched,
-// and sends them to the appropriate consumer.
-func (c *logsConnector) switchLogs(ctx context.Context, ld plog.Logs) error {
 	groups := make(map[consumer.Logs]plog.Logs)
 	var errs error
 	for i := 0; i < len(c.router.routeSlice) && ld.ResourceLogs().Len() > 0; i++ {
@@ -114,42 +105,6 @@ func (c *logsConnector) switchLogs(ctx context.Context, ld plog.Logs) error {
 	}
 	// anything left wasn't matched by any route. Send to default consumer
 	groupAllLogs(groups, c.router.defaultConsumer, ld)
-	for consumer, group := range groups {
-		errs = errors.Join(errs, consumer.ConsumeLogs(ctx, group))
-	}
-	return errs
-}
-
-func (c *logsConnector) matchAllLogs(ctx context.Context, ld plog.Logs) error {
-	// routingEntry is used to group plog.ResourceLogs that are routed to
-	// the same set of exporters.
-	// This way we're not ending up with all the logs split up which would cause
-	// higher CPU usage.
-	groups := make(map[consumer.Logs]plog.Logs)
-	var errs error
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
-		rlogs := ld.ResourceLogs().At(i)
-		rtx := ottlresource.NewTransformContext(rlogs.Resource(), rlogs)
-		noRoutesMatch := true
-		for _, route := range c.router.routeSlice {
-			_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
-			if err != nil {
-				if c.config.ErrorMode == ottl.PropagateError {
-					return err
-				}
-				groupLogs(groups, c.router.defaultConsumer, rlogs)
-				continue
-			}
-			if isMatch {
-				noRoutesMatch = false
-				groupLogs(groups, route.consumer, rlogs)
-			}
-		}
-		if noRoutesMatch {
-			// no route conditions are matched, add resource logs to default exporters group
-			groupLogs(groups, c.router.defaultConsumer, rlogs)
-		}
-	}
 	for consumer, group := range groups {
 		errs = errors.Join(errs, consumer.ConsumeLogs(ctx, group))
 	}
