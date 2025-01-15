@@ -294,7 +294,7 @@ func simpleMetrics(count int) pmetric.Metrics {
 	}
 
 	rm = metrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("service.name", "demo 2")
+	// Removed service.name from second metric to test both with/without ServiceName cases
 	rm.Resource().Attributes().PutStr("Resource Attributes 2", "value2")
 	rm.Resource().SetDroppedAttributesCount(20)
 	rm.SetSchemaUrl("Resource SchemaUrl 2")

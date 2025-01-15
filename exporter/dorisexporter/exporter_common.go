@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -81,7 +82,7 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 
 	req.Header.Set("format", "json")
 	req.Header.Set("Expect", "100-continue")
-	req.Header.Set("strip_outer_array", "true")
+	req.Header.Set("read_json_by_line", "true")
 	if cfg.ClientConfig.Timeout != 0 {
 		req.Header.Set("timeout", fmt.Sprintf("%d", cfg.ClientConfig.Timeout/time.Second))
 	}
@@ -117,4 +118,20 @@ func createAndUseDatabase(ctx context.Context, conn *sql.DB, cfg *Config) error 
 	}
 	_, err = conn.ExecContext(ctx, "USE "+cfg.Database)
 	return err
+}
+
+type metric interface {
+	dMetricGauge | dMetricSum | dMetricHistogram | dMetricExponentialHistogram | dMetricSummary
+}
+
+func toJSONLines[T dLog | dTrace | metric](data []*T) ([]byte, error) {
+	buf := &bytes.Buffer{}
+	enc := json.NewEncoder(buf)
+	for _, d := range data {
+		err := enc.Encode(d)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return buf.Bytes(), nil
 }
