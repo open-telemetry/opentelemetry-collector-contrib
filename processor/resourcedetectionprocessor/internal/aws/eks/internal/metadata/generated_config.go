@@ -36,7 +36,7 @@ type ResourceAttributesConfig struct {
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		CloudAccountID: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		CloudPlatform: ResourceAttributeConfig{
 			Enabled: true,

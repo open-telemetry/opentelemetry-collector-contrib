@@ -20,7 +20,7 @@ import (
 
 const (
 	clusterName    = "my-cluster"
-	cloudAccountId = "cloud1234"
+	cloudAccountID = "cloud1234"
 )
 
 type MockDetectorUtils struct {
@@ -42,7 +42,7 @@ func (detectorUtils *MockDetectorUtils) getClusterNameTagFromReservations(_ []*e
 }
 
 func (detectorUtils *MockDetectorUtils) getCloudAccountID(_ context.Context, _ *zap.Logger) string {
-	return cloudAccountId
+	return cloudAccountID
 }
 
 func TestNewDetector(t *testing.T) {
@@ -65,9 +65,8 @@ func TestEKS(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, map[string]any{
-		"cloud.provider":   "aws",
-		"cloud.platform":   "aws_eks",
-		"cloud.account.id": "cloud1234",
+		"cloud.provider": "aws",
+		"cloud.platform": "aws_eks",
 	}, res.Attributes().AsRaw(), "Resource object returned is incorrect")
 }
 

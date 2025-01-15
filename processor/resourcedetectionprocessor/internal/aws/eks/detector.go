@@ -89,8 +89,8 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
 	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEKS)
 	if d.ra.CloudAccountID.Enabled {
-		accountId := d.utils.getCloudAccountID(ctx, d.logger)
-		d.rb.SetCloudAccountID(accountId)
+		accountID := d.utils.getCloudAccountID(ctx, d.logger)
+		d.rb.SetCloudAccountID(accountID)
 	}
 
 	if d.ra.K8sClusterName.Enabled {
