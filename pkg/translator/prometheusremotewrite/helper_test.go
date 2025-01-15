@@ -13,6 +13,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/prompb"
+	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -532,6 +533,46 @@ func Test_getPromExemplars(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			requests := getPromExemplars(tt.histogram)
+			assert.Exactly(t, tt.expected, requests)
+		})
+	}
+}
+
+func Test_getPromExemplarsV2(t *testing.T) {
+	tnow := time.Now()
+	tests := []struct {
+		name      string
+		histogram pmetric.HistogramDataPoint
+		expected  []writev2.Exemplar
+	}{
+		{
+			name:      "with_exemplars_double_value",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, label11, value11),
+			expected: []writev2.Exemplar{
+				{
+					Value:     floatVal1,
+					Timestamp: timestamp.FromTime(tnow),
+					// TODO: after deal with examplar labels on getPromExemplarsV2, add the labels here
+					// LabelsRefs: []uint32{},
+				},
+			},
+		},
+		{
+			name:      "with_exemplars_int_value",
+			histogram: getHistogramDataPointWithExemplars(t, tnow, intVal2, traceIDValue1, spanIDValue1, label11, value11),
+			expected: []writev2.Exemplar{
+				{
+					Value:     float64(intVal2),
+					Timestamp: timestamp.FromTime(tnow),
+					// TODO: after deal with examplar labels on getPromExemplarsV2, add the labels here
+					// LabelsRefs: []uint32{},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requests := getPromExemplarsV2(tt.histogram)
 			assert.Exactly(t, tt.expected, requests)
 		})
 	}

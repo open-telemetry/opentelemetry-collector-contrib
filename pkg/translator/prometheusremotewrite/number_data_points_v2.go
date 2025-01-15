@@ -76,11 +76,8 @@ func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.Number
 		if pt.Flags().NoRecordedValue() {
 			sample.Value = math.Float64frombits(value.StaleNaN)
 		}
-		ts := c.addSample(sample, lbls)
-		if ts != nil {
-			exemplars := getPromExemplarsV2[pmetric.NumberDataPoint](pt)
-			ts.Exemplars = append(ts.Exemplars, exemplars...)
-		}
+		// TODO: properly add exemplars to the TimeSeries
+		c.addSample(sample, lbls)
 
 		if settings.ExportCreatedMetric && metric.Sum().IsMonotonic() {
 			startTimestamp := pt.StartTimestamp()
