@@ -1,7 +1,11 @@
-package leaderelector
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package leaderelector // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector"
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"

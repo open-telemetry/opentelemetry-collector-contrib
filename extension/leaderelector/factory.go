@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package leaderelector
+package leaderelector // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector"
 
 import (
 	"context"
@@ -22,8 +22,8 @@ const (
 	defaultRetryPeriod   = 2 * time.Second
 )
 
-// CreateDefaultConfig returns the default configuration for the extension.
-func CreateDefaultConfig() component.Config {
+// createDefaultConfig returns the default configuration for the extension.
+func createDefaultConfig() component.Config {
 	return &Config{
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
@@ -34,8 +34,8 @@ func CreateDefaultConfig() component.Config {
 	}
 }
 
-// CreateExtension creates the extension instance based on the configuration.
-func CreateExtension(
+// createExtension creates the extension instance based on the configuration.
+func createExtension(
 	ctx context.Context,
 	set extension.Settings,
 	cfg component.Config,
@@ -69,8 +69,8 @@ func CreateExtension(
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
 		component.MustNewType(metadata.Type.String()),
-		CreateDefaultConfig,
-		CreateExtension,
+		createDefaultConfig,
+		createExtension,
 		component.StabilityLevelDevelopment,
 	)
 }

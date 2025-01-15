@@ -98,6 +98,7 @@ body:
       - extension/healthcheckv2
       - extension/httpforwarder
       - extension/jaegerremotesampling
+      - extension/leaderelector
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/cfgardenobserver
