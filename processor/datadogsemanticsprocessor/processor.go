@@ -9,8 +9,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
 	"strings"
 
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
-	"github.com/DataDog/datadog-agent/pkg/trace/transform"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -24,44 +22,70 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 			libspans := rspan.ScopeSpans().At(j)
 			for k := 0; k < libspans.Spans().Len(); k++ {
 				otelspan := libspans.Spans().At(k)
-				var ddspan *pb.Span
-				ddspan = transform.OtelSpanToDDSpan(otelspan, otelres, libspans.Scope(), tp.agentCfg, []string{""})
+				sattr := otelspan.Attributes()
 				if tp.overrideIncomingDatadogFields {
-					otelspan.Attributes().RemoveIf(func(k string, v pcommon.Value) bool {
+					sattr.RemoveIf(func(k string, v pcommon.Value) bool {
 						return strings.HasPrefix(k, "datadog.")
 					})
 				}
-				if _, ok := otelspan.Attributes().Get("datadog.service"); !ok {
-					otelspan.Attributes().PutStr("datadog.service", traceutil.GetOTelService(otelres, true)
+				if _, ok := sattr.Get("datadog.service"); !ok {
+					sattr.PutStr("datadog.service", traceutil.GetOTelService(otelres, true))
 				}
-				if _, ok := otelspan.Attributes().Get("datadog.name"); !ok {
-					otelspan.Attributes().PutStr("datadog.name", traceutil.GetOTelAttrValInResAndSpanAttrs(otelspan, otelres, true, "datadog.name"))
+				if _, ok := sattr.Get("datadog.name"); !ok {
+					sattr.PutStr("datadog.name", traceutil.GetOTelOperationNameV2(otelspan))
 				}
-				if _, ok := otelspan.Attributes().Get("datadog.resource"); !ok {
-					otelspan.Attributes().PutStr("datadog.resource", ddspan.Resource)
+				if _, ok := sattr.Get("datadog.resource"); !ok {
+					sattr.PutStr("datadog.resource", traceutil.GetOTelResourceV2(otelspan, otelres))
 				}
-				if _, ok := otelspan.Attributes().Get("datadog.trace_id"); !ok {
-					otelspan.Attributes().PutStr("datadog.trace_id", fmt.Sprintf("%d", ddspan.TraceID))
+				if _, ok := sattr.Get("datadog.trace_id"); !ok {
+					sattr.PutStr("datadog.trace_id", fmt.Sprintf("%d", traceutil.OTelTraceIDToUint64(otelspan.TraceID())))
 				}
-				if _, ok := otelspan.Attributes().Get("datadog.span_id"); !ok {
-					otelspan.Attributes().PutStr("datadog.span_id", fmt.Sprintf("%d", ddspan.SpanID))
+				if _, ok := sattr.Get("datadog.span_id"); !ok {
+					sattr.PutStr("datadog.span_id", fmt.Sprintf("%d", traceutil.OTelSpanIDToUint64(otelspan.SpanID())))
 				}
-				if _, ok := otelspan.Attributes().Get("datadog.parent_id"); !ok {
-					otelspan.Attributes().PutStr("datadog.parent_id", fmt.Sprintf("%d", ddspan.ParentID))
+				if _, ok := sattr.Get("datadog.parent_id"); !ok {
+					sattr.PutStr("datadog.parent_id", fmt.Sprintf("%d", traceutil.OTelSpanIDToUint64(otelspan.ParentSpanID())))
 				}
-				if _, ok := otelspan.Attributes().Get("datadog.type"); !ok {
-					otelspan.Attributes().PutStr("datadog.type", ddspan.Type)
+				if _, ok := sattr.Get("datadog.type"); !ok {
+					sattr.PutStr("datadog.type", traceutil.GetOTelSpanType(otelspan, otelres))
 				}
-				if _, ok := otelspan.Attributes().Get("datadog.meta"); !ok {
-					metaMap := otelspan.Attributes().PutEmptyMap("datadog.meta")
-					for key, value := range ddspan.Meta {
-						metaMap.PutStr(key, value)
-					}
+
+				var metaMap pcommon.Map
+				if existingMetaMap, ok := sattr.Get("datadog.meta"); !ok {
+					metaMap = sattr.PutEmptyMap("datadog.meta")
+				} else {
+					metaMap = existingMetaMap.Map()
 				}
-				if _, ok := otelspan.Attributes().Get("datadog.metrics"); !ok {
-					metricsMap := otelspan.Attributes().PutEmptyMap("datadog.metrics")
-					for key, value := range ddspan.Metrics {
-						metricsMap.PutDouble(key, value)
+				var metricsMap pcommon.Map
+				if existingMetricsMap, ok := sattr.Get("datadog.metrics"); !ok {
+					metricsMap = sattr.PutEmptyMap("datadog.metrics")
+				} else {
+					metricsMap = existingMetricsMap.Map()
+				}
+				spanKind := otelspan.Kind()
+				metaMap.PutStr("span.kind", traceutil.OTelSpanKindName(spanKind))
+				code := traceutil.GetOTelStatusCode(otelspan)
+				if code != 0 {
+					metricsMap.PutDouble(traceutil.TagStatusCode, float64(code))
+				}
+				if otelspan.Status().Code() == ptrace.StatusCodeError {
+					sattr.PutInt("datadog.error", 1)
+				} else {
+					sattr.PutInt("datadog.error", 0)
+				}
+				isTopLevel := otelspan.ParentSpanID() == pcommon.NewSpanIDEmpty() || spanKind == ptrace.SpanKindServer || spanKind == ptrace.SpanKindConsumer
+				if isTopLevel {
+					metricsMap.PutDouble("_top_level", 1.0)
+				} else {
+					metricsMap.PutDouble("_top_level", 0.0)
+				}
+				if spanKind == ptrace.SpanKindClient || spanKind == ptrace.SpanKindProducer {
+					// Compute stats for client-side spans
+					metricsMap.PutDouble("_dd.measured", 1.0)
+				}
+				for _, peerTagKey := range tp.peerTagKeys {
+					if peerTagVal := traceutil.GetOTelAttrValInResAndSpanAttrs(otelspan, otelres, false, peerTagKey); peerTagVal != "" {
+						metaMap.PutStr(peerTagKey, peerTagVal)
 					}
 				}
 			}
