@@ -84,6 +84,13 @@ func (receiver *pubsubReceiver) generateClientOptions() (copts []option.ClientOp
 			copts = append(copts, option.WithEndpoint(receiver.config.Endpoint))
 		}
 	}
+	if receiver.config.CredentialsFilePath != "" {
+		copts = append(copts, option.WithCredentialsFile(receiver.config.CredentialsFilePath))
+	}
+	if receiver.config.CredentialsJSON != "" {
+		copts = append(copts, option.WithCredentialsJSON([]byte(receiver.config.CredentialsJSON)))
+	}
+
 	return copts
 }
 
@@ -100,6 +107,7 @@ func (receiver *pubsubReceiver) Start(ctx context.Context, _ component.Host) err
 			startErr = fmt.Errorf("failed creating the gRPC client to Pubsub: %w", err)
 			return
 		}
+
 		receiver.client = client
 
 		err = receiver.createReceiverHandler(ctx)

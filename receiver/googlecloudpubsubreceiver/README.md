@@ -30,6 +30,8 @@ The following configuration options are supported:
   or switching between [global and regional service endpoints](https://cloud.google.com/pubsub/docs/reference/service_apis_overview#service_endpoints).
 * `insecure` (Optional): allows performing “insecure” SSL connections and transfers, useful when connecting to a local
    emulator instance. Only has effect if Endpoint is not ""
+* `credentials_file_path` (Optional): Path to a credentials file to use to connect.
+* `credentials_json` (Optional): Credentials JSON to use to connect.
 
 ```yaml
 receivers:

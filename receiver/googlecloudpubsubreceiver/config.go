@@ -4,6 +4,7 @@
 package googlecloudpubsubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 
@@ -13,6 +14,10 @@ import (
 var subscriptionMatcher = regexp.MustCompile(`projects/[a-z][a-z0-9\-]*/subscriptions/`)
 
 type Config struct {
+	// Path to a credentials file to connect to the service
+	CredentialsFilePath string `mapstructure:"credentials_file_path"`
+	// JSON string containing credentials data to connect to the service
+	CredentialsJSON string `mapstructure:"credentials_json"`
 	// Google Cloud Project ID where the Pubsub client will connect to
 	ProjectID string `mapstructure:"project"`
 	// User agent that will be used by the Pubsub client to connect to the service
@@ -90,5 +95,16 @@ func (config *Config) validate() error {
 	default:
 		return fmt.Errorf("compression %v is not supported.  supported compression formats include [gzip]", config.Compression)
 	}
+
+	if config.CredentialsJSON != "" && config.CredentialsFilePath != "" {
+		return fmt.Errorf("only one of credentials_file_path and credentials_json must be specified")
+	}
+
+	if config.CredentialsJSON != "" {
+		if !json.Valid([]byte(config.CredentialsJSON)) {
+			return fmt.Errorf("credentials_json is an invalid JSON")
+		}
+	}
+
 	return nil
 }

@@ -130,3 +130,39 @@ func TestLogConfigValidation(t *testing.T) {
 	c.Encoding = "otlp_proto_log"
 	assert.NoError(t, c.validateForLog())
 }
+
+func TestConfigCredentialsValidation(t *testing.T) {
+	factory := NewFactory()
+	c := factory.CreateDefaultConfig().(*Config)
+	c.Subscription = "projects/my-project/subscriptions/my-subscription"
+
+	dummyCredentialsJSON := `{
+		"type": "service_account",
+		"project_id": "my-project",
+		"private_key_id": "d41d8cd98f00b204e9800998ecf8427e",
+		"private_key": "-----BEGIN PRIVATE KEY-----\njciFXV3SnwCNXBLSykSNBQ\n-----END PRIVATE KEY-----\n",
+		"client_email": "me@my-project.iam.gserviceaccount.com",
+		"client_id": "87689569482041111",
+		"auth_uri": "https://accounts.google.com/o/oauth2/auth",
+		"token_uri": "https://oauth2.googleapis.com/token",
+		"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+		"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/my-project.iam.gserviceaccount.com",
+		"universe_domain": "googleapis.com"
+	  }`
+
+	c.CredentialsFilePath = "/home/service-principal-01ba5c7dde9b.json"
+	c.CredentialsJSON = ""
+	assert.NoError(t, c.validate())
+
+	c.CredentialsFilePath = ""
+	c.CredentialsJSON = dummyCredentialsJSON
+	assert.NoError(t, c.validate())
+
+	c.CredentialsFilePath = "/home/service-principal-01ba5c7dde9b.json"
+	c.CredentialsJSON = dummyCredentialsJSON
+	assert.Error(t, c.validate(), "only one of")
+
+	c.CredentialsFilePath = ""
+	c.CredentialsJSON = "invalid JSON"
+	assert.Error(t, c.validate(), "credentials_json is an invalid JSON")
+}
