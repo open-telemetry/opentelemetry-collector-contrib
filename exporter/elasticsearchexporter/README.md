@@ -372,17 +372,4 @@ processors:
           - set(attributes["metric_name"], metric.name)
 ```
 
-2. If the problem persists, the error may be caused by metrics with data points with only nanosecond differences, as metric grouping is done in nanoseconds as opposed to milliseconds in while Elasticsearch checks for duplicates in milliseconds.
-This will be fixed in a future version of Elasticsearch. To work around the issue, use a [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md) to truncate the timestamp,
-but this will cause duplicate data in the same millisecond to be dropped silently.
-
-```yaml
-processors:
-  transform/truncate_timestamp:
-    metric_statements:
-      - context: datapoint
-        statements:
-          - set(time, TruncateTime(time, Duration("1ms")))
-```
-
-3. If all of the above do not apply, check your metrics pipeline setup for misconfiguration that causes an actual violation of the [single writer principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer).
+2. Otherwise, check your metrics pipeline setup for misconfiguration that causes an actual violation of the [single writer principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer).
