@@ -1,17 +1,22 @@
-package cloudwatch
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package cloudwatch // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/cloudwatch"
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	expmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"io"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+
+	expmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 )
 
 // The cloudwatchMetric is the format for the CloudWatch metric stream records.
@@ -46,6 +51,38 @@ const (
 	namespaceDelimiter                     = "/"
 )
 
+// find the valid unit values for cloudwatch metric in unit section of
+// https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_MetricDatum.html#API_MetricDatum_Contents
+var validUnitValues = map[string]bool{
+	"Seconds":          true,
+	"Microseconds":     true,
+	"Milliseconds":     true,
+	"Bytes":            true,
+	"Kilobytes":        true,
+	"Megabytes":        true,
+	"Gigabytes":        true,
+	"Terabytes":        true,
+	"Bits":             true,
+	"Kilobits":         true,
+	"Megabits":         true,
+	"Gigabits":         true,
+	"Terabits":         true,
+	"Percent":          true,
+	"Count":            true,
+	"Bytes/Second":     true,
+	"Kilobytes/Second": true,
+	"Megabytes/Second": true,
+	"Gigabytes/Second": true,
+	"Terabytes/Second": true,
+	"Bits/Second":      true,
+	"Kilobits/Second":  true,
+	"Megabits/Second":  true,
+	"Gigabits/Second":  true,
+	"Terabits/Second":  true,
+	"Count/Second":     true,
+	"None":             true,
+}
+
 // isMetricValid validates that the cloudwatch metric has been unmarshalled correctly
 func isMetricValid(metric cloudwatchMetric) (bool, error) {
 	if metric.MetricName == "" {
@@ -54,8 +91,8 @@ func isMetricValid(metric cloudwatchMetric) (bool, error) {
 	if metric.Namespace == "" {
 		return false, errors.New("cloudwatch metric is missing namespace field")
 	}
-	if metric.Unit == "" {
-		return false, errors.New("cloudwatch metric is missing unit field")
+	if _, exists := validUnitValues[metric.Unit]; !exists {
+		return false, fmt.Errorf("cloudwatch metric unit '%s' value is not valid", metric.Unit)
 	}
 	if metric.Value == nil {
 		return false, errors.New("cloudwatch metric is missing value")

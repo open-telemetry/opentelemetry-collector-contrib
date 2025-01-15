@@ -1,13 +1,18 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package cloudwatchencoding
 
 import (
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/cloudwatchencodingextension/internal/metadata"
+	"path/filepath"
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"path/filepath"
-	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/cloudwatchencodingextension/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -26,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "invalid_encoding"),
-			expectedErr: errors.New("unknown content encoding invalid"),
+			expectedErr: errors.New("unknown content encoding \"invalid\""),
 		},
 	}
 
@@ -42,7 +47,8 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expectedErr != nil {
-				require.Equal(t, tt.expectedErr, component.ValidateConfig(cfg))
+				err = component.ValidateConfig(cfg)
+				require.Equal(t, tt.expectedErr, err)
 				return
 			}
 
@@ -50,5 +56,4 @@ func TestLoadConfig(t *testing.T) {
 			require.Equal(t, tt.expected, cfg)
 		})
 	}
-
 }

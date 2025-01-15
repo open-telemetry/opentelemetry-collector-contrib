@@ -6,4 +6,4 @@ status:
     alpha: [extension]
   distributions: []
   codeowners:
-    active: []
+    active: [constanca-m, axw]

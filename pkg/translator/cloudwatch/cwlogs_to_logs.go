@@ -1,16 +1,21 @@
-package cloudwatch
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package cloudwatch // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/cloudwatch"
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"io"
 	"time"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
+
 	"go.opentelemetry.io/collector/pdata/plog"
-	"io"
 )
 
 type cloudwatchLog struct {

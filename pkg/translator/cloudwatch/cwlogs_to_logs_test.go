@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package cloudwatch
 
 import (
@@ -5,12 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"github.com/tidwall/gjson"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 func TestUnmarshalLogs(t *testing.T) {
@@ -72,7 +76,7 @@ func TestUnmarshalLogs(t *testing.T) {
 			require.NoError(t, err)
 
 			// get log records
-			//expectedLogs := expected.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+			// expectedLogs := expected.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 			require.Equal(t, expected, result)
 		})
 	}

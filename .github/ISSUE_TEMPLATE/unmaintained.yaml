@@ -91,6 +91,7 @@ body:
       - extension/cgroupruntime
       - extension/encoding
       - extension/encoding/avrologencoding
+      - extension/encoding/cloudwatchencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
       - extension/encoding/otlpencoding
@@ -157,6 +158,7 @@ body:
       - pkg/status
       - pkg/translator/azure
       - pkg/translator/azurelogs
+      - pkg/translator/cloudwatch
       - pkg/translator/jaeger
       - pkg/translator/loki
       - pkg/translator/opencensus

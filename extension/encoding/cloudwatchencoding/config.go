@@ -1,7 +1,11 @@
-package cloudwatchencoding
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package cloudwatchencoding // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/cloudwatchencodingextension"
 
 import (
 	"fmt"
+
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -25,7 +29,7 @@ func (c *Config) Validate() error {
 	case NoEncoding:
 	case GZipEncoded:
 	default:
-		return fmt.Errorf("unknown content encoding %s", c.Encoding)
+		return fmt.Errorf("unknown content encoding %q", c.Encoding)
 	}
 	return nil
 }

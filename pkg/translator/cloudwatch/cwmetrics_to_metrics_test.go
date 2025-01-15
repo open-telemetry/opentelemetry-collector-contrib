@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package cloudwatch
 
 import (
@@ -5,12 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"github.com/tidwall/gjson"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestUnmarshalMetrics(t *testing.T) {

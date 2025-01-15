@@ -1,18 +1,23 @@
-package cloudwatchencoding
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package cloudwatchencoding // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/cloudwatchencodingextension"
 
 import (
 	"bytes"
 	"compress/gzip"
 	"context"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/cloudwatch"
+	"io"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-	"io"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/cloudwatch"
 )
 
 var (
@@ -50,12 +55,7 @@ func decompress(buf []byte, encoding contentEncoding) ([]byte, error) {
 			return nil, fmt.Errorf("failed to create gzip reader: %w", err)
 		}
 		defer reader.Close()
-
-		decompressed, err := io.ReadAll(reader)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read from gzip reader: %w", err)
-		}
-		return decompressed, nil
+		return io.ReadAll(reader)
 	default:
 		// not possible, prevented by config.Validate
 		return nil, nil
