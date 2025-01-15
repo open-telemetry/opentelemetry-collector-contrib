@@ -5,17 +5,16 @@ package bmchelixexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"errors"
-	"time"
 
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 )
 
 // Config struct is used to store the configuration of the exporter
 type Config struct {
-	Endpoint    string                    `mapstructure:"endpoint"`
-	APIKey      string                    `mapstructure:"api_key"`
-	Timeout     time.Duration             `mapstructure:"timeout"`
-	RetryConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	confighttp.ClientConfig `mapstructure:",squash"`
+	APIKey                  string                    `mapstructure:"api_key"`
+	RetryConfig             configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 }
 
 // validate the configuration

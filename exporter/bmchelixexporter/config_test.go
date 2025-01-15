@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -31,18 +32,16 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "helix1"),
 			expected: &Config{
-				Endpoint:    "https://helix1:8080",
-				APIKey:      "api_key",
-				Timeout:     10 * time.Second,
-				RetryConfig: configretry.NewDefaultBackOffConfig(),
+				ClientConfig: createDefaultClientConfig("https://helix1:8080", 10*time.Second),
+				APIKey:       "api_key",
+				RetryConfig:  configretry.NewDefaultBackOffConfig(),
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "helix2"),
 			expected: &Config{
-				Endpoint: "https://helix2:8080",
-				APIKey:   "api_key",
-				Timeout:  20 * time.Second,
+				ClientConfig: createDefaultClientConfig("https://helix2:8080", 20*time.Second),
+				APIKey:       "api_key",
 				RetryConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     5 * time.Second,
@@ -79,9 +78,8 @@ func TestValidateConfig(t *testing.T) {
 		{
 			name: "valid_config",
 			config: &Config{
-				Endpoint: "https://helix:8080",
-				APIKey:   "api_key",
-				Timeout:  10 * time.Second,
+				ClientConfig: createDefaultClientConfig("https://helix:8080", 10*time.Second),
+				APIKey:       "api_key",
 			},
 		},
 		{
@@ -94,25 +92,23 @@ func TestValidateConfig(t *testing.T) {
 		{
 			name: "invalid_config2",
 			config: &Config{
-				Endpoint: "https://helix:8080",
+				ClientConfig: createDefaultClientConfig("https://helix:8080", 10*time.Second),
 			},
 			err: "api key is required",
 		},
 		{
 			name: "invalid_config3",
 			config: &Config{
-				Endpoint: "https://helix:8080",
-				APIKey:   "api_key",
-				Timeout:  -1,
+				ClientConfig: createDefaultClientConfig("https://helix:8080", -1),
+				APIKey:       "api_key",
 			},
 			err: "timeout must be a positive integer",
 		},
 		{
 			name: "invalid_config4",
 			config: &Config{
-				Endpoint: "https://helix:8080",
-				APIKey:   "api_key",
-				Timeout:  0,
+				ClientConfig: createDefaultClientConfig("https://helix:8080", 0),
+				APIKey:       "api_key",
 			},
 			err: "timeout must be a positive integer",
 		},
@@ -129,4 +125,12 @@ func TestValidateConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+// createDefaultClientConfig creates a default client config for testing
+func createDefaultClientConfig(endpoint string, timeout time.Duration) confighttp.ClientConfig {
+	cfg := confighttp.NewDefaultClientConfig()
+	cfg.Endpoint = endpoint
+	cfg.Timeout = timeout
+	return cfg
 }
