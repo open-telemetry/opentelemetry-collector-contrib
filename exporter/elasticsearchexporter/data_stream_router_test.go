@@ -20,7 +20,7 @@ type routeTestCase struct {
 func createRouteTests(dsType string) []routeTestCase {
 	renderWantRoute := func(dsType, dsDataset string, otel bool) esIndex {
 		if otel {
-			dsDataset = dsDataset + ".otel"
+			dsDataset += ".otel"
 		}
 		return newDataStream(dsType, dsDataset, defaultDataStreamNamespace)
 	}
