@@ -481,6 +481,7 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				ReportsOwnMetrics:              true,
 				ReportsHealth:                  true,
 				ReportsRemoteConfig:            true,
+				ReportsAvailableComponents:     true,
 			},
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
@@ -489,7 +490,8 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand |
-				protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings,
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents,
 		},
 	}
 

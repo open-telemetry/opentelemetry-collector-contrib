@@ -103,7 +103,8 @@ type Supervisor struct {
 	// Supervisor's own config.
 	config config.Supervisor
 
-	agentDescription *atomic.Value
+	agentDescription    *atomic.Value
+	availableComponents *atomic.Value
 
 	// Supervisor's persistent state
 	persistentState *persistentState
@@ -174,6 +175,7 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		cfgState:                     &atomic.Value{},
 		effectiveConfig:              &atomic.Value{},
 		agentDescription:             &atomic.Value{},
+		availableComponents:          &atomic.Value{},
 		doneChan:                     make(chan struct{}),
 		customMessageToServer:        make(chan *protobufs.CustomMessage, maxBufferedCustomMessages),
 		agentConn:                    &atomic.Value{},
@@ -302,14 +304,19 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	var connected atomic.Bool
 
 	// Start a one-shot server to get the Collector's agent description
-	// using the Collector's OpAMP extension.
+	// and available components using the Collector's OpAMP extension.
 	err = srv.Start(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
 		onConnecting: func(_ *http.Request) (bool, int) {
 			connected.Store(true)
 			return true, http.StatusOK
 		},
-		onMessage: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
+		onMessage: func(_ serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			response := &protobufs.ServerToAgent{}
+			if message.GetAvailableComponents() != nil {
+				s.setAvailableComponents(message.AvailableComponents)
+			}
+
 			if message.AgentDescription != nil {
 				instanceIDSeen := false
 				s.setAgentDescription(message.AgentDescription)
@@ -324,7 +331,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s)",
 								attr.Value.GetStringValue(),
 								s.persistentState.InstanceID.String())
-							return
+							return response
 						}
 						instanceIDSeen = true
 					}
@@ -332,11 +339,31 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 				if !instanceIDSeen {
 					done <- errors.New("the Collector did not specify an instance ID in its AgentDescription message")
-					return
+					return response
 				}
-
-				done <- nil
 			}
+
+			// agent description must be defined
+			_, ok := s.agentDescription.Load().(*protobufs.AgentDescription)
+			if !ok {
+				return response
+			}
+
+			availableComponents, availableComponentsOk := s.availableComponents.Load().(*protobufs.AvailableComponents)
+			if availableComponentsOk {
+				// must have a full list of components if available components have been reported
+				if availableComponents.GetComponents() != nil {
+					done <- nil
+				} else {
+					// if we don't have a full component list, ask for it
+					response.Flags = uint64(protobufs.ServerToAgentFlags_ServerToAgentFlags_ReportAvailableComponents)
+				}
+				return response
+			}
+
+			// if available components have not been reported, agent description is sufficient
+			done <- nil
+			return response
 		},
 	}.toServerSettings())
 	if err != nil {
@@ -456,6 +483,10 @@ func (s *Supervisor) startOpAMPClient() error {
 		return err
 	}
 
+	if ac, ok := s.availableComponents.Load().(*protobufs.AvailableComponents); ok {
+		settings.AvailableComponents = ac
+	}
+
 	s.logger.Debug("Starting OpAMP client...")
 	if err = s.opampClient.Start(context.Background(), settings); err != nil {
 		return err
@@ -505,7 +536,7 @@ func (s *Supervisor) startOpAMPServer() error {
 	return nil
 }
 
-func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, message *protobufs.AgentToServer) {
+func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 	s.agentConn.Store(conn)
 
 	s.logger.Debug("Received OpAMP message from the agent")
@@ -551,6 +582,8 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 		s.logger.Debug("Received health status from agent", zap.Bool("healthy", message.Health.Healthy))
 		s.lastHealthFromClient = message.Health
 	}
+
+	return &protobufs.ServerToAgent{}
 }
 
 func (s *Supervisor) forwardCustomMessagesToServerLoop() {
@@ -582,6 +615,11 @@ func (s *Supervisor) setAgentDescription(ad *protobufs.AgentDescription) {
 	ad.IdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.IdentifyingAttributes, ad.IdentifyingAttributes)
 	ad.NonIdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.NonIdentifyingAttributes, ad.NonIdentifyingAttributes)
 	s.agentDescription.Store(ad)
+}
+
+// setAvailableComponents sets the available components of the OpAMP agent
+func (s *Supervisor) setAvailableComponents(ac *protobufs.AvailableComponents) {
+	s.availableComponents.Store(ac)
 }
 
 // applyKeyValueOverrides merges the overrides map into the array of key value pairs.
@@ -1022,7 +1060,7 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 	err := s.commander.Start(context.Background())
 	if err != nil {
 		s.logger.Error("Cannot start the agent", zap.Error(err))
-		startErr := fmt.Errorf("Cannot start the agent: %w", err)
+		startErr := fmt.Errorf("cannot start the agent: %w", err)
 		err = s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: startErr.Error()})
 		if err != nil {
 			s.logger.Error("Failed to report OpAMP client health", zap.Error(err))
