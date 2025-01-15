@@ -147,7 +147,7 @@ internal/tools/                                   @open-telemetry/collector-cont
 
 pkg/batchperresourceattr/                         @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 pkg/batchpersignal/                               @open-telemetry/collector-contrib-approvers @jpkrohling
-pkg/datadog/                                      @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96 @jade-guiton-dd
+pkg/datadog/                                      @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96 @jade-guiton-dd @IbraheemA
 pkg/experimentalmetricmetadata/                   @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/golden/                                       @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
 pkg/kafka/topic/                                  @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
