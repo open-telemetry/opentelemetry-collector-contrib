@@ -16,8 +16,6 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/featuregate"
-
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
@@ -27,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
@@ -106,15 +105,15 @@ func (testlogger) Flush() {}
 
 func TestTracesSource(t *testing.T) {
 	t.Run("ReceiveResourceSpansV1", func(t *testing.T) {
-		testTracesSource(false, t)
+		testTracesSource(t, false)
 	})
 
 	t.Run("ReceiveResourceSpansV2", func(t *testing.T) {
-		testTracesSource(true, t)
+		testTracesSource(t, true)
 	})
 }
 
-func testTracesSource(enableReceiveResourceSpansV2 bool, t *testing.T) {
+func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	if enableReceiveResourceSpansV2 {
 		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
 			t.Fatal(err)
@@ -253,15 +252,15 @@ func testTracesSource(enableReceiveResourceSpansV2 bool, t *testing.T) {
 
 func TestTraceExporter(t *testing.T) {
 	t.Run("ReceiveResourceSpansV1", func(t *testing.T) {
-		testTraceExporter(false, t)
+		testTraceExporter(t, false)
 	})
 
 	t.Run("ReceiveResourceSpansV2", func(t *testing.T) {
-		testTraceExporter(true, t)
+		testTraceExporter(t, true)
 	})
 }
 
-func testTraceExporter(enableReceiveResourceSpansV2 bool, t *testing.T) {
+func testTraceExporter(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	if enableReceiveResourceSpansV2 {
 		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
 			t.Fatal(err)
@@ -338,15 +337,15 @@ func TestNewTracesExporter(t *testing.T) {
 
 func TestPushTraceData(t *testing.T) {
 	t.Run("ReceiveResourceSpansV1", func(t *testing.T) {
-		testPushTraceData(false, t)
+		testPushTraceData(t, false)
 	})
 
 	t.Run("ReceiveResourceSpansV2", func(t *testing.T) {
-		testPushTraceData(true, t)
+		testPushTraceData(t, true)
 	})
 }
 
-func testPushTraceData(enableReceiveResourceSpansV2 bool, t *testing.T) {
+func testPushTraceData(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	if enableReceiveResourceSpansV2 {
 		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
 			t.Fatal(err)
@@ -388,17 +387,17 @@ func testPushTraceData(enableReceiveResourceSpansV2 bool, t *testing.T) {
 	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
 }
 
-func TestPushTraceData_NewEnvConvention(t *testing.T) {
+func TestPushTraceDataNewEnvConvention(t *testing.T) {
 	t.Run("ReceiveResourceSpansV1", func(t *testing.T) {
-		testPushTraceData_NewEnvConvention(false, t)
+		testPushTraceDataNewEnvConvention(t, false)
 	})
 
 	t.Run("ReceiveResourceSpansV2", func(t *testing.T) {
-		testPushTraceData_NewEnvConvention(true, t)
+		testPushTraceDataNewEnvConvention(t, true)
 	})
 }
 
-func testPushTraceData_NewEnvConvention(enableReceiveResourceSpansV2 bool, t *testing.T) {
+func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	if enableReceiveResourceSpansV2 {
 		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
 			t.Fatal(err)
@@ -473,7 +472,7 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
-	sattr := map[string]interface{}{
+	sattr := map[string]any{
 		"datadog.host.name":           "do-not-use",
 		"container.id":                "do-not-use",
 		"k8s.pod.id":                  "do-not-use",
@@ -495,7 +494,7 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 	assert.Len(t, traces.TracerPayloads, 1)
 	tracerPayload := traces.TracerPayloads[0]
 	span := tracerPayload.Chunks[0].Spans[0]
-	assert.Equal(t, tracerPayload.Hostname, "test-host")
+	assert.Equal(t, "test-host", tracerPayload.Hostname)
 	assert.Empty(t, tracerPayload.ContainerID)
 	assert.Empty(t, tracerPayload.Env)
 	assert.Equal(t, "otlpresourcenoservicename", span.Service)
@@ -520,13 +519,16 @@ func genTraces(traceID pcommon.TraceID, rattrs map[string]any, sattrs map[string
 	span := rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4})
-	if sattrs != nil {
-		span.Attributes().FromRaw(sattrs)
-	}
 	if rattrs == nil {
 		return traces
 	}
 	//nolint:errcheck
 	rspans.Resource().Attributes().FromRaw(rattrs)
+	if sattrs != nil {
+		err := span.Attributes().FromRaw(sattrs)
+		if err != nil {
+			return traces
+		}
+	}
 	return traces
 }
