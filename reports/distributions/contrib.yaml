@@ -130,6 +130,7 @@ components:
         - datadog
         - docker_stats
         - elasticsearch
+        - envoyals
         - expvar
         - filelog
         - filestats
