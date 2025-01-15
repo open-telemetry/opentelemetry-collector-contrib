@@ -121,6 +121,7 @@ body:
       - internal/aws
       - internal/collectd
       - internal/core
+      - internal/datadog
       - internal/docker
       - internal/exp/metrics
       - internal/filter
