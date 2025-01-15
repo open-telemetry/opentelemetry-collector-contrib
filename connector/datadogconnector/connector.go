@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 
 // traceToMetricConnector is the schema for connector

@@ -127,7 +127,6 @@ extension/sumologicextension/                     @open-telemetry/collector-cont
 internal/aws/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 internal/collectd/                                @open-telemetry/collector-contrib-approvers @atoulme
 internal/coreinternal/                            @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
-internal/datadog/                                 @open-telemetry/collector-contrib-approvers @IbraheemA @songy23
 internal/docker/                                  @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 internal/exp/metrics/                             @open-telemetry/collector-contrib-approvers @sh0rez @RichieSams
 internal/filter/                                  @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers

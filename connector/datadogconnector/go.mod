@@ -12,7 +12,6 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.22.0
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.117.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.117.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.117.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -397,5 +396,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdata
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../pkg/experimentalmetricmetadata
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog => ../../pkg/datadog
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
