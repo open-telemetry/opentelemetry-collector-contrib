@@ -17,12 +17,11 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/exphistogram"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -79,9 +78,9 @@ type mappingModel interface {
 	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string, esIndex, *bytes.Buffer) error
 	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string, esIndex, *bytes.Buffer) error
 	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string, idx esIndex, buf *bytes.Buffer)
-	hashDataPoint(dataPoint) uint32
+	hashDataPoint(datapoints.DataPoint) uint32
 	encodeDocument(objmodel.Document, *bytes.Buffer) error
-	encodeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []dataPoint, validationErrors *[]error, idx esIndex, buf *bytes.Buffer) (map[string]string, error)
+	encodeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx esIndex, buf *bytes.Buffer) (map[string]string, error)
 }
 
 // encodeModel tries to keep the event as close to the original open telemetry semantics as is.
@@ -93,17 +92,6 @@ type mappingModel interface {
 type encodeModel struct {
 	dedot bool
 	mode  MappingMode
-}
-
-type dataPoint interface {
-	Timestamp() pcommon.Timestamp
-	StartTimestamp() pcommon.Timestamp
-	Attributes() pcommon.Map
-	Value() (pcommon.Value, error)
-	DynamicTemplate(pmetric.Metric) string
-	DocCount() uint64
-	HasMappingHint(elasticsearch.MappingHint) bool
-	Metric() pmetric.Metric
 }
 
 const (
@@ -214,7 +202,7 @@ func (m *encodeModel) encodeDocument(document objmodel.Document, buf *bytes.Buff
 }
 
 // upsertMetricDataPointValue upserts a datapoint value to documents which is already hashed by resource and index
-func (m *encodeModel) hashDataPoint(dp dataPoint) uint32 {
+func (m *encodeModel) hashDataPoint(dp datapoints.DataPoint) uint32 {
 	switch m.mode {
 	case MappingOTel:
 		return metricOTelHash(dp, dp.Metric().Unit())
@@ -224,7 +212,7 @@ func (m *encodeModel) hashDataPoint(dp dataPoint) uint32 {
 	}
 }
 
-func (m *encodeModel) encodeDataPointsECSMode(resource pcommon.Resource, dataPoints []dataPoint, validationErrors *[]error, idx esIndex, buf *bytes.Buffer) (map[string]string, error) {
+func (m *encodeModel) encodeDataPointsECSMode(resource pcommon.Resource, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx esIndex, buf *bytes.Buffer) (map[string]string, error) {
 	dp0 := dataPoints[0]
 	var document objmodel.Document
 	encodeAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
@@ -253,7 +241,7 @@ func addDataStreamAttributes(document *objmodel.Document, key string, idx esInde
 	}
 }
 
-func (m *encodeModel) encodeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []dataPoint, validationErrors *[]error, idx esIndex, buf *bytes.Buffer) (map[string]string, error) {
+func (m *encodeModel) encodeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx esIndex, buf *bytes.Buffer) (map[string]string, error) {
 	switch m.mode {
 	case MappingOTel:
 		return serializeMetrics(resource, resourceSchemaURL, scope, scopeSchemaURL, dataPoints, validationErrors, idx, buf)
@@ -261,238 +249,6 @@ func (m *encodeModel) encodeMetrics(resource pcommon.Resource, resourceSchemaURL
 		return m.encodeDataPointsECSMode(resource, dataPoints, validationErrors, idx, buf)
 	}
 }
-
-type summaryDataPoint struct {
-	pmetric.SummaryDataPoint
-	elasticsearch.MappingHintGetter
-	metric pmetric.Metric
-}
-
-func newSummaryDataPoint(metric pmetric.Metric, dp pmetric.SummaryDataPoint) summaryDataPoint {
-	return summaryDataPoint{SummaryDataPoint: dp, MappingHintGetter: elasticsearch.NewMappingHintGetter(dp.Attributes()), metric: metric}
-}
-
-func (dp summaryDataPoint) Value() (pcommon.Value, error) {
-	// TODO: Add support for quantiles
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34561
-	vm := pcommon.NewValueMap()
-	m := vm.Map()
-	m.PutDouble("sum", dp.Sum())
-	m.PutInt("value_count", safeUint64ToInt64(dp.Count()))
-	return vm, nil
-}
-
-func (dp summaryDataPoint) DynamicTemplate(_ pmetric.Metric) string {
-	return "summary"
-}
-
-func (dp summaryDataPoint) DocCount() uint64 {
-	return dp.Count()
-}
-
-func (dp summaryDataPoint) Metric() pmetric.Metric {
-	return dp.metric
-}
-
-type exponentialHistogramDataPoint struct {
-	pmetric.ExponentialHistogramDataPoint
-	elasticsearch.MappingHintGetter
-	metric pmetric.Metric
-}
-
-func newExponentialHistogramDataPoint(metric pmetric.Metric, dp pmetric.ExponentialHistogramDataPoint) exponentialHistogramDataPoint {
-	return exponentialHistogramDataPoint{ExponentialHistogramDataPoint: dp, MappingHintGetter: elasticsearch.NewMappingHintGetter(dp.Attributes()), metric: metric}
-}
-
-func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
-	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
-		vm := pcommon.NewValueMap()
-		m := vm.Map()
-		m.PutDouble("sum", dp.Sum())
-		m.PutInt("value_count", safeUint64ToInt64(dp.Count()))
-		return vm, nil
-	}
-
-	counts, values := exphistogram.ToTDigest(dp.ExponentialHistogramDataPoint)
-
-	vm := pcommon.NewValueMap()
-	m := vm.Map()
-	vmCounts := m.PutEmptySlice("counts")
-	vmCounts.EnsureCapacity(len(counts))
-	for _, c := range counts {
-		vmCounts.AppendEmpty().SetInt(c)
-	}
-	vmValues := m.PutEmptySlice("values")
-	vmValues.EnsureCapacity(len(values))
-	for _, v := range values {
-		vmValues.AppendEmpty().SetDouble(v)
-	}
-
-	return vm, nil
-}
-
-func (dp exponentialHistogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
-	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
-		return "summary"
-	}
-	return "histogram"
-}
-
-func (dp exponentialHistogramDataPoint) DocCount() uint64 {
-	return dp.Count()
-}
-
-func (dp exponentialHistogramDataPoint) Metric() pmetric.Metric {
-	return dp.metric
-}
-
-type histogramDataPoint struct {
-	pmetric.HistogramDataPoint
-	elasticsearch.MappingHintGetter
-	metric pmetric.Metric
-}
-
-func newHistogramDataPoint(metric pmetric.Metric, dp pmetric.HistogramDataPoint) histogramDataPoint {
-	return histogramDataPoint{HistogramDataPoint: dp, MappingHintGetter: elasticsearch.NewMappingHintGetter(dp.Attributes()), metric: metric}
-}
-
-func (dp histogramDataPoint) Value() (pcommon.Value, error) {
-	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
-		vm := pcommon.NewValueMap()
-		m := vm.Map()
-		m.PutDouble("sum", dp.Sum())
-		m.PutInt("value_count", safeUint64ToInt64(dp.Count()))
-		return vm, nil
-	}
-	return histogramToValue(dp.HistogramDataPoint)
-}
-
-func (dp histogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
-	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
-		return "summary"
-	}
-	return "histogram"
-}
-
-func (dp histogramDataPoint) DocCount() uint64 {
-	return dp.HistogramDataPoint.Count()
-}
-
-func (dp histogramDataPoint) Metric() pmetric.Metric {
-	return dp.metric
-}
-
-func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
-	// Histogram conversion function is from
-	// https://github.com/elastic/apm-data/blob/3b28495c3cbdc0902983134276eb114231730249/input/otlp/metrics.go#L277
-	bucketCounts := dp.BucketCounts()
-	explicitBounds := dp.ExplicitBounds()
-	if bucketCounts.Len() != explicitBounds.Len()+1 || explicitBounds.Len() == 0 {
-		return pcommon.Value{}, errors.New("invalid histogram data point")
-	}
-
-	vm := pcommon.NewValueMap()
-	m := vm.Map()
-	counts := m.PutEmptySlice("counts")
-	values := m.PutEmptySlice("values")
-
-	values.EnsureCapacity(bucketCounts.Len())
-	counts.EnsureCapacity(bucketCounts.Len())
-	for i := 0; i < bucketCounts.Len(); i++ {
-		count := bucketCounts.At(i)
-		if count == 0 {
-			continue
-		}
-
-		var value float64
-		switch i {
-		// (-infinity, explicit_bounds[i]]
-		case 0:
-			value = explicitBounds.At(i)
-			if value > 0 {
-				value /= 2
-			}
-
-		// (explicit_bounds[i], +infinity)
-		case bucketCounts.Len() - 1:
-			value = explicitBounds.At(i - 1)
-
-		// [explicit_bounds[i-1], explicit_bounds[i])
-		default:
-			// Use the midpoint between the boundaries.
-			value = explicitBounds.At(i-1) + (explicitBounds.At(i)-explicitBounds.At(i-1))/2.0
-		}
-
-		counts.AppendEmpty().SetInt(safeUint64ToInt64(count))
-		values.AppendEmpty().SetDouble(value)
-	}
-
-	return vm, nil
-}
-
-type numberDataPoint struct {
-	pmetric.NumberDataPoint
-	elasticsearch.MappingHintGetter
-	metric pmetric.Metric
-}
-
-func newNumberDataPoint(metric pmetric.Metric, dp pmetric.NumberDataPoint) numberDataPoint {
-	return numberDataPoint{NumberDataPoint: dp, MappingHintGetter: elasticsearch.NewMappingHintGetter(dp.Attributes()), metric: metric}
-}
-
-func (dp numberDataPoint) Value() (pcommon.Value, error) {
-	switch dp.ValueType() {
-	case pmetric.NumberDataPointValueTypeDouble:
-		value := dp.DoubleValue()
-		if math.IsNaN(value) || math.IsInf(value, 0) {
-			return pcommon.Value{}, errInvalidNumberDataPoint
-		}
-		return pcommon.NewValueDouble(value), nil
-	case pmetric.NumberDataPointValueTypeInt:
-		return pcommon.NewValueInt(dp.IntValue()), nil
-	}
-	return pcommon.Value{}, errInvalidNumberDataPoint
-}
-
-func (dp numberDataPoint) DynamicTemplate(metric pmetric.Metric) string {
-	switch metric.Type() {
-	case pmetric.MetricTypeSum:
-		switch dp.NumberDataPoint.ValueType() {
-		case pmetric.NumberDataPointValueTypeDouble:
-			if metric.Sum().IsMonotonic() {
-				return "counter_double"
-			}
-			return "gauge_double"
-		case pmetric.NumberDataPointValueTypeInt:
-			if metric.Sum().IsMonotonic() {
-				return "counter_long"
-			}
-			return "gauge_long"
-		default:
-			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
-		}
-	case pmetric.MetricTypeGauge:
-		switch dp.NumberDataPoint.ValueType() {
-		case pmetric.NumberDataPointValueTypeDouble:
-			return "gauge_double"
-		case pmetric.NumberDataPointValueTypeInt:
-			return "gauge_long"
-		default:
-			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
-		}
-	}
-	return ""
-}
-
-func (dp numberDataPoint) DocCount() uint64 {
-	return 1
-}
-
-func (dp numberDataPoint) Metric() pmetric.Metric {
-	return dp.metric
-}
-
-var errInvalidNumberDataPoint = errors.New("invalid number data point")
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string, idx esIndex, buf *bytes.Buffer) error {
 	var document objmodel.Document
@@ -713,7 +469,7 @@ func metricECSHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
 	return hasher.Sum32()
 }
 
-func metricOTelHash(dp dataPoint, unit string) uint32 {
+func metricOTelHash(dp datapoints.DataPoint, unit string) uint32 {
 	hasher := fnv.New32a()
 
 	timestampBuf := make([]byte, 8)
@@ -790,11 +546,4 @@ func sliceHash(h hash.Hash, s pcommon.Slice) {
 	for i := 0; i < s.Len(); i++ {
 		valueHash(h, s.At(i))
 	}
-}
-
-func safeUint64ToInt64(v uint64) int64 {
-	if v > math.MaxInt64 {
-		return math.MaxInt64
-	}
-	return int64(v) // nolint:goset // overflow checked
 }
