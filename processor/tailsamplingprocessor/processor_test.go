@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
@@ -123,7 +124,7 @@ func TestTraceIntegrity(t *testing.T) {
 		NumTraces:    defaultNumTraces,
 	}
 	nextConsumer := new(consumertest.TracesSink)
-	s := setupTestTelemetry()
+	s := metadatatest.SetupTelemetry()
 	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 
@@ -390,7 +391,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 			},
 		},
 	}
-	s := setupTestTelemetry()
+	s := metadatatest.SetupTelemetry()
 	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 	msp := new(consumertest.TracesSink)
@@ -462,7 +463,7 @@ func TestSetSamplingPolicy(t *testing.T) {
 			},
 		},
 	}
-	s := setupTestTelemetry()
+	s := metadatatest.SetupTelemetry()
 	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 	msp := new(consumertest.TracesSink)
