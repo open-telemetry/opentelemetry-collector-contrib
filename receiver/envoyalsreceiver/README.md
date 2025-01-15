@@ -15,6 +15,15 @@
 
 This is a receiver for the [Envoy gRPC ALS](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/access_loggers/grpc/v3/als.proto#envoy-v3-api-msg-extensions-access-loggers-grpc-v3-httpgrpcaccesslogconfig) sink.
 
+Envoy ALS (Access Log Service) is a feature of Envoy Proxy that allows for the
+centralized collection and management of access logs.
+
+Instead of writing access logs to local files, Envoy can be configured to send these logs to a remote gRPC service.
+
+This is particularly useful in distributed systems where centralized logging is required for monitoring, auditing, and debugging purposes.
+
+[Istio](https://istio.io) and [Envoy Gateway](https://gateway.envoyproxy.io) support this feature with first class API.
+
 ## Getting Started
 
 The settings are:
