@@ -11,10 +11,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
@@ -38,7 +42,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 		},
 	}
 	cs := &consumertest.TracesSink{}
-	ct := s.NewSettings()
+	ct := s.newSettings()
 	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {
@@ -231,7 +235,7 @@ func TestMetricsWithComponentID(t *testing.T) {
 		},
 	}
 	cs := &consumertest.TracesSink{}
-	ct := s.NewSettings()
+	ct := s.newSettings()
 	ct.ID = component.MustNewIDWithName("tail_sampling", "unique_id") // e.g tail_sampling/unique_id
 	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
@@ -335,7 +339,7 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 		},
 	}
 	cs := &consumertest.TracesSink{}
-	ct := s.NewSettings()
+	ct := s.newSettings()
 	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {
@@ -400,7 +404,7 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 		},
 	}
 	cs := &consumertest.TracesSink{}
-	ct := s.NewSettings()
+	ct := s.newSettings()
 	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {
@@ -461,7 +465,7 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 		},
 	}
 	cs := &consumertest.TracesSink{}
-	ct := s.NewSettings()
+	ct := s.newSettings()
 	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {
@@ -525,7 +529,7 @@ func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 		},
 	}
 	cs := &consumertest.TracesSink{}
-	ct := s.NewSettings()
+	ct := s.newSettings()
 	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {
@@ -568,4 +572,50 @@ func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
 
 	got := s.getMetric(m.Name, md)
 	metricdatatest.AssertEqual(t, m, got, metricdatatest.IgnoreTimestamp())
+}
+
+type testTelemetry struct {
+	reader        *sdkmetric.ManualReader
+	meterProvider *sdkmetric.MeterProvider
+}
+
+func setupTestTelemetry() testTelemetry {
+	reader := sdkmetric.NewManualReader()
+	return testTelemetry{
+		reader:        reader,
+		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
+	}
+}
+
+func (tt *testTelemetry) newSettings() processor.Settings {
+	set := processortest.NewNopSettings()
+	set.ID = component.NewID(component.MustNewType("tail_sampling"))
+	set.TelemetrySettings.MeterProvider = tt.meterProvider
+	set.TelemetrySettings.MetricsLevel = configtelemetry.LevelDetailed
+	return set
+}
+
+func (tt *testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+	for _, sm := range got.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if m.Name == name {
+				return m
+			}
+		}
+	}
+
+	return metricdata.Metrics{}
+}
+
+func (tt *testTelemetry) len(got metricdata.ResourceMetrics) int {
+	metricsCount := 0
+	for _, sm := range got.ScopeMetrics {
+		metricsCount += len(sm.Metrics)
+	}
+
+	return metricsCount
+}
+
+func (tt *testTelemetry) Shutdown(ctx context.Context) error {
+	return tt.meterProvider.Shutdown(ctx)
 }
