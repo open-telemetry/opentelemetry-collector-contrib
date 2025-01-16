@@ -98,7 +98,7 @@ extension/encoding/otlpencodingextension/         @open-telemetry/collector-cont
 extension/encoding/textencodingextension/         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/zipkinencodingextension/       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
 extension/googleclientauthextension/              @open-telemetry/collector-contrib-approvers @dashpole @aabmass @jsuereth @punya @psx95
-extension/headerssetterextension/                 @open-telemetry/collector-contrib-approvers
+extension/headerssetterextension/                 @open-telemetry/collector-contrib-approvers @VihasMakwana
 extension/healthcheckextension/                   @open-telemetry/collector-contrib-approvers
 extension/healthcheckv2extension/                 @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 extension/httpforwarderextension/                 @open-telemetry/collector-contrib-approvers @atoulme
