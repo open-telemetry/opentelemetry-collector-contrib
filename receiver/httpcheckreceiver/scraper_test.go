@@ -25,8 +25,6 @@ import (
 func newMockServer(t *testing.T, responseCode int) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(responseCode)
-		// This could be expanded if the checks for the server include
-		// parsing the response content
 		_, err := rw.Write([]byte(``))
 		assert.NoError(t, err)
 	}))

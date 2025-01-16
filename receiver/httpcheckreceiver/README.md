@@ -25,6 +25,7 @@ httpcheck.status{http.status_class:4xx, http.status_code:200,...} = 0
 httpcheck.status{http.status_class:5xx, http.status_code:200,...} = 0
 ```
 
+
 ## Configuration
 
 The following configuration settings are available:
@@ -35,26 +36,47 @@ The following configuration settings are available:
 
 Each target has the following properties:
 
-- `endpoint` (required): the URL to be monitored
-- `method` (optional, default: `GET`): The HTTP method used to call the endpoint
+- `endpoint` (optional): A single URL to be monitored.
+- `endpoints` (optional): A list of URLs to be monitored.
+- `method` (optional, default: `GET`): The HTTP method used to call the endpoint or endpoints.
 
-Additionally, each target supports the client configuration options of [confighttp].
+At least one of `endpoint` or `endpoints` must be specified. Additionally, each target supports the client configuration options of [confighttp].
 
 ### Example Configuration
 
 ```yaml
 receivers:
   httpcheck:
+    collection_interval: 30s
     targets:
-      - endpoint: http://endpoint:80
-        method: GET
-      - endpoint: http://localhost:8080/health
-        method: GET
-      - endpoint: http://localhost:8081/health
-        method: POST
+      - method: "GET"
+        endpoints:
+          - "https://opentelemetry.io"
+      - method: "GET"
+        endpoints: 
+          - "http://localhost:8080/hello"
+          - "http://localhost:8080/hello"
         headers:
-          test-header: "test-value"
-    collection_interval: 10s
+          Authorization: "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJqYXZhaW51c2UiLCJleHAiOjE3MzcwMzMzMTcsImlhdCI6MTczNzAxNTMxN30.qNb_hckvlqfWmnnaw2xP9ie2AKGO6ljzGxcMotoFZg3CwcYSTGu7VE6ERsvX_nHlcZOYZHgPc7_9WSBlCZ9M_w"
+      - method: "GET"
+        endpoint: "http://localhost:8080/hello"
+        headers:
+          Authorization: "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJqYXZhaW51c2UiLCJleHAiOjE3MzcwMzMzMTcsImlhdCI6MTczNzAxNTMxN30.qNb_hckvlqfWmnnaw2xP9ie2AKGO6ljzGxcMotoFZg3CwcYSTGu7VE6ERsvX_nHlcZOYZHgPc7_9WSBlCZ9M_w"
+processors:
+  batch:
+    send_batch_max_size: 1000
+    send_batch_size: 100
+    timeout: 10s
+exporters:
+  debug:
+    verbosity: detailed
+service:
+  pipelines:
+    metrics:
+      receivers: [httpcheck]
+      processors: [batch]
+      exporters: [debug]
+
 ```
 
 ## Metrics
