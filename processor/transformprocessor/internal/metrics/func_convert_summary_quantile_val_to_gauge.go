@@ -68,7 +68,7 @@ func quantileToStringSuffix(q float64) string {
 	str := strconv.FormatFloat(q, 'f', -1, 64)
 	result := strings.TrimPrefix(str, "0.")
 	if len(result) < 2 && result != "0" && result != "1" {
-		result = result + "0"
+		result += "0"
 	}
 	return result
 }
