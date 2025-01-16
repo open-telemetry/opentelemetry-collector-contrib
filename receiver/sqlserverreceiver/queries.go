@@ -407,7 +407,13 @@ GROUP BY
 qs.query_hash,
 qs.query_plan_hash
 )
-SELECT *, st.text, qp.query_plan FROM qstats AS qs
+SELECT qs.*,
+SUBSTRING(st.text, (stats.statement_start_offset / 2) + 1,
+		 ((CASE statement_end_offset
+			   WHEN -1 THEN DATALENGTH(st.text)
+			   ELSE stats.statement_end_offset END - stats.statement_start_offset) / 2) + 1) AS text,
+qp.query_plan FROM qstats AS qs
+INNER JOIN sys.dm_exec_query_stats AS stats on qs.query_plan_handle = stats.plan_handle
 CROSS APPLY sys.dm_exec_query_plan(qs.query_plan_handle) AS qp
 CROSS APPLY sys.dm_exec_sql_text(qs.query_plan_handle) AS st;
 `
