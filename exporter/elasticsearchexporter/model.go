@@ -13,10 +13,8 @@ import (
 	"hash/fnv"
 	"math"
 	"slices"
-	"strings"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -77,11 +75,12 @@ var resourceAttrsToPreserve = map[string]bool{
 var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
 
 type mappingModel interface {
-	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string) ([]byte, error)
-	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string) ([]byte, error)
-	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document
-	upsertMetricDataPointValue(map[uint32]objmodel.Document, pcommon.Resource, string, pcommon.InstrumentationScope, string, pmetric.Metric, dataPoint) error
-	encodeDocument(objmodel.Document) ([]byte, error)
+	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string, *bytes.Buffer) error
+	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string, *bytes.Buffer) error
+	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string, buf *bytes.Buffer)
+	hashDataPoint(dataPoint) uint32
+	encodeDocument(objmodel.Document, *bytes.Buffer) error
+	encodeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []dataPoint, validationErrors *[]error, buf *bytes.Buffer) (map[string]string, error)
 }
 
 // encodeModel tries to keep the event as close to the original open telemetry semantics as is.
@@ -103,6 +102,7 @@ type dataPoint interface {
 	DynamicTemplate(pmetric.Metric) string
 	DocCount() uint64
 	HasMappingHint(mappingHint) bool
+	Metric() pmetric.Metric
 }
 
 const (
@@ -111,24 +111,21 @@ const (
 	attributeField = "attribute"
 )
 
-func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
+func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string, buf *bytes.Buffer) error {
 	var document objmodel.Document
 	switch m.mode {
 	case MappingECS:
 		document = m.encodeLogECSMode(resource, record, scope)
 	case MappingOTel:
-		document = m.encodeLogOTelMode(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
+		return serializeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, record, buf)
 	case MappingBodyMap:
-		return m.encodeLogBodyMapMode(record)
+		return m.encodeLogBodyMapMode(record, buf)
 	default:
 		document = m.encodeLogDefaultMode(resource, record, scope)
 	}
-	// For OTel mode, prefix conflicts are not a problem as otel-data has subobjects: false
-	document.Dedup(m.mode != MappingOTel)
+	document.Dedup()
 
-	var buf bytes.Buffer
-	err := document.Serialize(&buf, m.dedot, m.mode == MappingOTel)
-	return buf.Bytes(), err
+	return document.Serialize(buf, m.dedot)
 }
 
 func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
@@ -152,93 +149,14 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 	return document
 }
 
-func (m *encodeModel) encodeLogBodyMapMode(record plog.LogRecord) ([]byte, error) {
+func (m *encodeModel) encodeLogBodyMapMode(record plog.LogRecord, buf *bytes.Buffer) error {
 	body := record.Body()
 	if body.Type() != pcommon.ValueTypeMap {
-		return nil, fmt.Errorf("%w: %q", ErrInvalidTypeForBodyMapMode, body.Type())
+		return fmt.Errorf("%w: %q", ErrInvalidTypeForBodyMapMode, body.Type())
 	}
 
-	return jsoniter.Marshal(body.Map().AsRaw())
-}
-
-func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
-	var document objmodel.Document
-
-	docTimeStamp := record.Timestamp()
-	if docTimeStamp.AsTime().UnixNano() == 0 {
-		docTimeStamp = record.ObservedTimestamp()
-	}
-
-	document.AddTimestamp("@timestamp", docTimeStamp)
-	document.AddTimestamp("observed_timestamp", record.ObservedTimestamp())
-
-	document.AddTraceID("trace_id", record.TraceID())
-	document.AddSpanID("span_id", record.SpanID())
-	document.AddString("severity_text", record.SeverityText())
-	document.AddInt("severity_number", int64(record.SeverityNumber()))
-	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
-
-	if record.EventName() != "" {
-		document.AddString("event_name", record.EventName())
-	} else if eventNameAttr, ok := record.Attributes().Get("event.name"); ok && eventNameAttr.Str() != "" {
-		document.AddString("event_name", eventNameAttr.Str())
-	}
-
-	m.encodeAttributesOTelMode(&document, record.Attributes())
-	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
-
-	// Body
-	setOTelLogBody(&document, record)
-
-	return document
-}
-
-func setOTelLogBody(doc *objmodel.Document, record plog.LogRecord) {
-	// Determine if this log record is an event, as they are mapped differently
-	// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/general/events.md
-	_, isEvent := record.Attributes().Get("event.name")
-	isEvent = isEvent || record.EventName() != ""
-
-	body := record.Body()
-	switch body.Type() {
-	case pcommon.ValueTypeMap:
-		if isEvent {
-			doc.AddAttribute("body.structured", body)
-		} else {
-			doc.AddAttribute("body.flattened", body)
-		}
-	case pcommon.ValueTypeSlice:
-		// output must be an array of objects due to ES limitations
-		// otherwise, wrap the array in an object
-		s := body.Slice()
-		allMaps := true
-		for i := 0; i < s.Len(); i++ {
-			if s.At(i).Type() != pcommon.ValueTypeMap {
-				allMaps = false
-			}
-		}
-
-		var outVal pcommon.Value
-		if allMaps {
-			outVal = body
-		} else {
-			vm := pcommon.NewValueMap()
-			m := vm.SetEmptyMap()
-			body.Slice().CopyTo(m.PutEmptySlice("value"))
-			outVal = vm
-		}
-
-		if isEvent {
-			doc.AddAttribute("body.structured", outVal)
-		} else {
-			doc.AddAttribute("body.flattened", outVal)
-		}
-	case pcommon.ValueTypeStr:
-		doc.AddString("body.text", body.Str())
-	default:
-		doc.AddString("body.text", body.AsString())
-	}
+	serializeMap(body.Map(), buf)
+	return nil
 }
 
 func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
@@ -283,110 +201,64 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 	return document
 }
 
-func (m *encodeModel) encodeDocument(document objmodel.Document) ([]byte, error) {
-	// For OTel mode, prefix conflicts are not a problem as otel-data has subobjects: false
-	document.Dedup(m.mode != MappingOTel)
+func (m *encodeModel) encodeDocument(document objmodel.Document, buf *bytes.Buffer) error {
+	document.Dedup()
 
-	var buf bytes.Buffer
-	err := document.Serialize(&buf, m.dedot, m.mode == MappingOTel)
+	err := document.Serialize(buf, m.dedot)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return buf.Bytes(), nil
+	return nil
 }
 
 // upsertMetricDataPointValue upserts a datapoint value to documents which is already hashed by resource and index
-func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, metric pmetric.Metric, dp dataPoint) error {
+func (m *encodeModel) hashDataPoint(dp dataPoint) uint32 {
 	switch m.mode {
 	case MappingOTel:
-		return m.upsertMetricDataPointValueOTelMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp)
-	case MappingECS:
-		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp)
+		return metricOTelHash(dp, dp.Metric().Unit())
 	default:
 		// Defaults to ECS for backward compatibility
-		return m.upsertMetricDataPointValueECSMode(documents, resource, resourceSchemaURL, scope, scopeSchemaURL, metric, dp)
+		return metricECSHash(dp.Timestamp(), dp.Attributes())
 	}
 }
 
-func (m *encodeModel) upsertMetricDataPointValueECSMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, _ string, _ pcommon.InstrumentationScope, _ string, metric pmetric.Metric, dp dataPoint) error {
-	value, err := dp.Value()
-	if err != nil {
-		return err
-	}
+func (m *encodeModel) encodeDataPointsECSMode(resource pcommon.Resource, dataPoints []dataPoint, validationErrors *[]error, buf *bytes.Buffer) (map[string]string, error) {
+	dp0 := dataPoints[0]
+	var document objmodel.Document
+	encodeAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
+	document.AddTimestamp("@timestamp", dp0.Timestamp())
+	document.AddAttributes("", dp0.Attributes())
 
-	hash := metricECSHash(dp.Timestamp(), dp.Attributes())
-	var (
-		document objmodel.Document
-		ok       bool
-	)
-	if document, ok = documents[hash]; !ok {
-		encodeAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
-		document.AddTimestamp("@timestamp", dp.Timestamp())
-		document.AddAttributes("", dp.Attributes())
-	}
-
-	document.AddAttribute(metric.Name(), value)
-
-	documents[hash] = document
-	return nil
-}
-
-func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]objmodel.Document, resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, metric pmetric.Metric, dp dataPoint) error {
-	value, err := dp.Value()
-	if err != nil {
-		return err
-	}
-
-	// documents is per-resource. Therefore, there is no need to hash resource attributes
-	hash := metricOTelHash(dp, scope.Attributes(), metric.Unit())
-	var (
-		document objmodel.Document
-		ok       bool
-	)
-	if document, ok = documents[hash]; !ok {
-		document.AddTimestamp("@timestamp", dp.Timestamp())
-		if dp.StartTimestamp() != 0 {
-			document.AddTimestamp("start_timestamp", dp.StartTimestamp())
+	for _, dp := range dataPoints {
+		value, err := dp.Value()
+		if err != nil {
+			*validationErrors = append(*validationErrors, err)
+			continue
 		}
-		document.AddString("unit", metric.Unit())
-
-		m.encodeAttributesOTelMode(&document, dp.Attributes())
-		m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+		document.AddAttribute(dp.Metric().Name(), value)
 	}
+	err := m.encodeDocument(document, buf)
 
-	if dp.HasMappingHint(hintDocCount) {
-		docCount := dp.DocCount()
-		document.AddUInt("_doc_count", docCount)
-	}
+	return document.DynamicTemplates(), err
+}
 
-	switch value.Type() {
-	case pcommon.ValueTypeMap:
-		m := pcommon.NewMap()
-		value.Map().CopyTo(m)
-		document.Add("metrics."+metric.Name(), objmodel.UnflattenableObjectValue(m))
+func (m *encodeModel) encodeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []dataPoint, validationErrors *[]error, buf *bytes.Buffer) (map[string]string, error) {
+	switch m.mode {
+	case MappingOTel:
+		return serializeMetrics(resource, resourceSchemaURL, scope, scopeSchemaURL, dataPoints, validationErrors, buf)
 	default:
-		document.Add("metrics."+metric.Name(), objmodel.ValueFromAttribute(value))
+		return m.encodeDataPointsECSMode(resource, dataPoints, validationErrors, buf)
 	}
-	// TODO: support quantiles
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34561
-
-	// DynamicTemplate returns the name of dynamic template that applies to the metric and data point,
-	// so that the field is indexed into Elasticsearch with the correct mapping. The name should correspond to a
-	// dynamic template that is defined in ES mapping, e.g.
-	// https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json
-	document.AddDynamicTemplate("metrics."+metric.Name(), dp.DynamicTemplate(metric))
-	documents[hash] = document
-	return nil
 }
 
 type summaryDataPoint struct {
 	pmetric.SummaryDataPoint
 	mappingHintGetter
+	metric pmetric.Metric
 }
 
-func newSummaryDataPoint(dp pmetric.SummaryDataPoint) summaryDataPoint {
-	return summaryDataPoint{SummaryDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
+func newSummaryDataPoint(metric pmetric.Metric, dp pmetric.SummaryDataPoint) summaryDataPoint {
+	return summaryDataPoint{SummaryDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes()), metric: metric}
 }
 
 func (dp summaryDataPoint) Value() (pcommon.Value, error) {
@@ -407,13 +279,18 @@ func (dp summaryDataPoint) DocCount() uint64 {
 	return dp.Count()
 }
 
+func (dp summaryDataPoint) Metric() pmetric.Metric {
+	return dp.metric
+}
+
 type exponentialHistogramDataPoint struct {
 	pmetric.ExponentialHistogramDataPoint
 	mappingHintGetter
+	metric pmetric.Metric
 }
 
-func newExponentialHistogramDataPoint(dp pmetric.ExponentialHistogramDataPoint) exponentialHistogramDataPoint {
-	return exponentialHistogramDataPoint{ExponentialHistogramDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
+func newExponentialHistogramDataPoint(metric pmetric.Metric, dp pmetric.ExponentialHistogramDataPoint) exponentialHistogramDataPoint {
+	return exponentialHistogramDataPoint{ExponentialHistogramDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes()), metric: metric}
 }
 
 func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
@@ -454,13 +331,18 @@ func (dp exponentialHistogramDataPoint) DocCount() uint64 {
 	return dp.Count()
 }
 
+func (dp exponentialHistogramDataPoint) Metric() pmetric.Metric {
+	return dp.metric
+}
+
 type histogramDataPoint struct {
 	pmetric.HistogramDataPoint
 	mappingHintGetter
+	metric pmetric.Metric
 }
 
-func newHistogramDataPoint(dp pmetric.HistogramDataPoint) histogramDataPoint {
-	return histogramDataPoint{HistogramDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
+func newHistogramDataPoint(metric pmetric.Metric, dp pmetric.HistogramDataPoint) histogramDataPoint {
+	return histogramDataPoint{HistogramDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes()), metric: metric}
 }
 
 func (dp histogramDataPoint) Value() (pcommon.Value, error) {
@@ -483,6 +365,10 @@ func (dp histogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
 
 func (dp histogramDataPoint) DocCount() uint64 {
 	return dp.HistogramDataPoint.Count()
+}
+
+func (dp histogramDataPoint) Metric() pmetric.Metric {
+	return dp.metric
 }
 
 func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
@@ -536,10 +422,11 @@ func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
 type numberDataPoint struct {
 	pmetric.NumberDataPoint
 	mappingHintGetter
+	metric pmetric.Metric
 }
 
-func newNumberDataPoint(dp pmetric.NumberDataPoint) numberDataPoint {
-	return numberDataPoint{NumberDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes())}
+func newNumberDataPoint(metric pmetric.Metric, dp pmetric.NumberDataPoint) numberDataPoint {
+	return numberDataPoint{NumberDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes()), metric: metric}
 }
 
 func (dp numberDataPoint) Value() (pcommon.Value, error) {
@@ -590,128 +477,23 @@ func (dp numberDataPoint) DocCount() uint64 {
 	return 1
 }
 
+func (dp numberDataPoint) Metric() pmetric.Metric {
+	return dp.metric
+}
+
 var errInvalidNumberDataPoint = errors.New("invalid number data point")
 
-func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resource pcommon.Resource, resourceSchemaURL string) {
-	resourceMapVal := pcommon.NewValueMap()
-	resourceMap := resourceMapVal.Map()
-	if resourceSchemaURL != "" {
-		resourceMap.PutStr("schema_url", resourceSchemaURL)
-	}
-	resourceMap.PutInt("dropped_attributes_count", int64(resource.DroppedAttributesCount()))
-	resourceAttrMap := resourceMap.PutEmptyMap("attributes")
-	resource.Attributes().CopyTo(resourceAttrMap)
-	resourceAttrMap.RemoveIf(func(key string, _ pcommon.Value) bool {
-		switch key {
-		case dataStreamType, dataStreamDataset, dataStreamNamespace:
-			return true
-		}
-		return false
-	})
-	mergeGeolocation(resourceAttrMap)
-	document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
-}
-
-func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pcommon.InstrumentationScope, scopeSchemaURL string) {
-	scopeMapVal := pcommon.NewValueMap()
-	scopeMap := scopeMapVal.Map()
-	if scope.Name() != "" {
-		scopeMap.PutStr("name", scope.Name())
-	}
-	if scope.Version() != "" {
-		scopeMap.PutStr("version", scope.Version())
-	}
-	if scopeSchemaURL != "" {
-		scopeMap.PutStr("schema_url", scopeSchemaURL)
-	}
-	scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
-	scopeAttrMap := scopeMap.PutEmptyMap("attributes")
-	scope.Attributes().CopyTo(scopeAttrMap)
-	scopeAttrMap.RemoveIf(func(key string, _ pcommon.Value) bool {
-		switch key {
-		case dataStreamType, dataStreamDataset, dataStreamNamespace:
-			return true
-		}
-		return false
-	})
-	mergeGeolocation(scopeAttrMap)
-	document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
-}
-
-func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attributeMap pcommon.Map) {
-	attrsCopy := pcommon.NewMap() // Copy to avoid mutating original map
-	attributeMap.CopyTo(attrsCopy)
-	attrsCopy.RemoveIf(func(key string, val pcommon.Value) bool {
-		switch key {
-		case dataStreamType, dataStreamDataset, dataStreamNamespace:
-			// At this point the data_stream attributes are expected to be in the record attributes,
-			// updated by the router.
-			// Move them to the top of the document and remove them from the record
-			document.AddAttribute(key, val)
-			return true
-		case mappingHintsAttrKey:
-			return true
-		}
-		return false
-	})
-	mergeGeolocation(attrsCopy)
-	document.AddAttributes("attributes", attrsCopy)
-}
-
-func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
+func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string, buf *bytes.Buffer) error {
 	var document objmodel.Document
 	switch m.mode {
 	case MappingOTel:
-		document = m.encodeSpanOTelMode(resource, resourceSchemaURL, span, scope, scopeSchemaURL)
+		return serializeSpan(resource, resourceSchemaURL, scope, scopeSchemaURL, span, buf)
 	default:
 		document = m.encodeSpanDefaultMode(resource, span, scope)
 	}
-	// For OTel mode, prefix conflicts are not a problem as otel-data has subobjects: false
-	document.Dedup(m.mode != MappingOTel)
-	var buf bytes.Buffer
-	err := document.Serialize(&buf, m.dedot, m.mode == MappingOTel)
-	return buf.Bytes(), err
-}
-
-func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
-	var document objmodel.Document
-	document.AddTimestamp("@timestamp", span.StartTimestamp())
-	document.AddTraceID("trace_id", span.TraceID())
-	document.AddSpanID("span_id", span.SpanID())
-	document.AddString("trace_state", span.TraceState().AsRaw())
-	document.AddSpanID("parent_span_id", span.ParentSpanID())
-	document.AddString("name", span.Name())
-	document.AddString("kind", span.Kind().String())
-	document.AddUInt("duration", uint64(span.EndTimestamp()-span.StartTimestamp()))
-
-	m.encodeAttributesOTelMode(&document, span.Attributes())
-
-	document.AddInt("dropped_attributes_count", int64(span.DroppedAttributesCount()))
-	document.AddInt("dropped_events_count", int64(span.DroppedEventsCount()))
-
-	links := pcommon.NewValueSlice()
-	linkSlice := links.SetEmptySlice()
-	spanLinks := span.Links()
-	for i := 0; i < spanLinks.Len(); i++ {
-		linkMap := linkSlice.AppendEmpty().SetEmptyMap()
-		spanLink := spanLinks.At(i)
-		linkMap.PutStr("trace_id", spanLink.TraceID().String())
-		linkMap.PutStr("span_id", spanLink.SpanID().String())
-		linkMap.PutStr("trace_state", spanLink.TraceState().AsRaw())
-		mAttr := linkMap.PutEmptyMap("attributes")
-		spanLink.Attributes().CopyTo(mAttr)
-		linkMap.PutInt("dropped_attributes_count", int64(spanLink.DroppedAttributesCount()))
-	}
-	document.AddAttribute("links", links)
-
-	document.AddInt("dropped_links_count", int64(span.DroppedLinksCount()))
-	document.AddString("status.message", span.Status().Message())
-	document.AddString("status.code", span.Status().Code().String())
-
-	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
-
-	return document
+	document.Dedup()
+	err := document.Serialize(buf, m.dedot)
+	return err
 }
 
 func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) objmodel.Document {
@@ -734,26 +516,13 @@ func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptra
 	return document
 }
 
-func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document {
+func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string, buf *bytes.Buffer) {
 	if m.mode != MappingOTel {
 		// Currently span events are stored separately only in OTel mapping mode.
 		// In other modes, they are stored within the span document.
-		return nil
+		return
 	}
-	var document objmodel.Document
-	document.AddTimestamp("@timestamp", spanEvent.Timestamp())
-	document.AddString("event_name", spanEvent.Name())
-	// todo remove before GA, make sure Kibana uses event_name
-	document.AddString("attributes.event.name", spanEvent.Name())
-	document.AddSpanID("span_id", span.SpanID())
-	document.AddTraceID("trace_id", span.TraceID())
-	document.AddInt("dropped_attributes_count", int64(spanEvent.DroppedAttributesCount()))
-
-	m.encodeAttributesOTelMode(&document, spanEvent.Attributes())
-	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
-
-	return &document
+	serializeSpanEvent(resource, resourceSchemaURL, scope, scopeSchemaURL, span, spanEvent, buf)
 }
 
 func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map) {
@@ -932,7 +701,7 @@ func metricECSHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
 	return hasher.Sum32()
 }
 
-func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string) uint32 {
+func metricOTelHash(dp dataPoint, unit string) uint32 {
 	hasher := fnv.New32a()
 
 	timestampBuf := make([]byte, 8)
@@ -944,7 +713,6 @@ func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string) uint32 {
 
 	hasher.Write([]byte(unit))
 
-	mapHashExcludeReservedAttrs(hasher, scopeAttrs)
 	mapHashExcludeReservedAttrs(hasher, dp.Attributes(), mappingHintsAttrKey)
 
 	return hasher.Sum32()
@@ -1009,79 +777,6 @@ func valueHash(h hash.Hash, v pcommon.Value) {
 func sliceHash(h hash.Hash, s pcommon.Slice) {
 	for i := 0; i < s.Len(); i++ {
 		valueHash(h, s.At(i))
-	}
-}
-
-// mergeGeolocation mutates attributes map to merge all `geo.location.{lon,lat}`,
-// and namespaced `*.geo.location.{lon,lat}` to unnamespaced and namespaced `geo.location`.
-// This is to match the geo_point type in Elasticsearch.
-func mergeGeolocation(attributes pcommon.Map) {
-	const (
-		lonKey    = "geo.location.lon"
-		latKey    = "geo.location.lat"
-		mergedKey = "geo.location"
-	)
-	// Prefix is the attribute name without lonKey or latKey suffix
-	// e.g. prefix of "foo.bar.geo.location.lon" is "foo.bar.", prefix of "geo.location.lon" is "".
-	prefixToGeo := make(map[string]struct {
-		lon, lat       float64
-		lonSet, latSet bool
-	})
-	setLon := func(prefix string, v float64) {
-		g := prefixToGeo[prefix]
-		g.lon = v
-		g.lonSet = true
-		prefixToGeo[prefix] = g
-	}
-	setLat := func(prefix string, v float64) {
-		g := prefixToGeo[prefix]
-		g.lat = v
-		g.latSet = true
-		prefixToGeo[prefix] = g
-	}
-	attributes.RemoveIf(func(key string, val pcommon.Value) bool {
-		if val.Type() != pcommon.ValueTypeDouble {
-			return false
-		}
-
-		if key == lonKey {
-			setLon("", val.Double())
-			return true
-		} else if key == latKey {
-			setLat("", val.Double())
-			return true
-		} else if namespace, found := strings.CutSuffix(key, "."+lonKey); found {
-			prefix := namespace + "."
-			setLon(prefix, val.Double())
-			return true
-		} else if namespace, found := strings.CutSuffix(key, "."+latKey); found {
-			prefix := namespace + "."
-			setLat(prefix, val.Double())
-			return true
-		}
-		return false
-	})
-
-	for prefix, geo := range prefixToGeo {
-		if geo.lonSet && geo.latSet {
-			key := prefix + mergedKey
-			// Geopoint expressed as an array with the format: [lon, lat]
-			s := attributes.PutEmptySlice(key)
-			s.EnsureCapacity(2)
-			s.AppendEmpty().SetDouble(geo.lon)
-			s.AppendEmpty().SetDouble(geo.lat)
-			continue
-		}
-
-		// Place the attributes back if lon and lat are not present together
-		if geo.lonSet {
-			key := prefix + lonKey
-			attributes.PutDouble(key, geo.lon)
-		}
-		if geo.latSet {
-			key := prefix + latKey
-			attributes.PutDouble(key, geo.lat)
-		}
 	}
 }
 
