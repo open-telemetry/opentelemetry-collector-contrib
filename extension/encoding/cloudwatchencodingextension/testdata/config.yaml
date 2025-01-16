@@ -1,4 +1,1 @@
 cloudwatch_encoding:
-
-cloudwatch_encoding/invalid_format:
-  format: invalid

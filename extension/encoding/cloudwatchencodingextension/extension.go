@@ -44,5 +44,5 @@ func (c *cloudwatchExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 }
 
 func (c *cloudwatchExtension) UnmarshalMetrics(buf []byte) (pmetric.Metrics, error) {
-	return cloudwatch.UnmarshalMetrics(c.config.Format, buf)
+	return cloudwatch.UnmarshalMetrics(buf)
 }

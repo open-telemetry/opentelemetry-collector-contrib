@@ -36,14 +36,14 @@ func TestUnmarshalMetrics(t *testing.T) {
 		"InvalidRecord": {
 			filename: "invalid_record",
 			err: fmt.Errorf(
-				"unable to unmarshal datum [0] into cloudwatch metric: %w",
+				"cloudwatch metric from datum [0] is not valid: %w",
 				errors.New("cloudwatch metric is missing metric name field"),
 			),
 		},
 		"SomeInvalidRecord": {
 			filename: "some_invalid_record",
 			err: fmt.Errorf(
-				"unable to unmarshal datum [1] into cloudwatch metric: %w",
+				"cloudwatch metric from datum [1] is not valid: %w",
 				errors.New("cloudwatch metric is missing metric name field"),
 			),
 		},
@@ -57,17 +57,16 @@ func TestUnmarshalMetrics(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			content, err := os.ReadFile(filepath.Join("testdata/metric", testCase.filename+".json"))
 			require.NoError(t, err)
-			// since new line represents the end of the record, we
-			// need to remove all new lines from the json file, so
-			// the record will not get incorrectly split. We keep
-			// the new lines between different records.
+
 			var buf bytes.Buffer
+			// the file has a list of metrics
+			// we want to remove the list bytes [ ]
 			gjson.ParseBytes(content).ForEach(func(_, value gjson.Result) bool {
 				err := json.NewEncoder(&buf).Encode(value.Value())
 				require.NoError(t, err)
 				return true
 			})
-			result, err := UnmarshalMetrics(JSONFormat, buf.Bytes())
+			result, err := UnmarshalMetrics(buf.Bytes())
 			require.Equal(t, testCase.err, err)
 			if err != nil {
 				return

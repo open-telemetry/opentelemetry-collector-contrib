@@ -54,10 +54,8 @@ func TestUnmarshalLogs(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			content, err := os.ReadFile(filepath.Join("testdata/log", testCase.filename+".json"))
 			require.NoError(t, err)
-			// since new line represents the end of the record, we
-			// need to remove all new lines from the json file, so
-			// the record will not get incorrectly split. We keep
-			// the new lines between different records.
+			// the file has a list of logs
+			// we want to remove the list bytes [ ]
 			var buf bytes.Buffer
 			gjson.ParseBytes(content).ForEach(func(_, value gjson.Result) bool {
 				err := json.NewEncoder(&buf).Encode(value.Value())
