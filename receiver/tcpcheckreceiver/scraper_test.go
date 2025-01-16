@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/config/confignet"
 	"net"
 	"path/filepath"
 	"testing"
@@ -123,16 +124,23 @@ func TestScraper(t *testing.T) {
 			expectedFile := filepath.Join("testdata", "expected_metrics", tc.filename)
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
-			f := NewFactory()
-			cfg := f.CreateDefaultConfig().(*Config)
-			cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
-			//cfg.Endpoint = tc.endpoint
+			//f := NewFactory()
+			cfg := &Config{
+				Targets: []*confignet.TCPAddrConfig{
+					{
+						Endpoint: "127.0.0.1:8080",
+						DialerConfig: confignet.DialerConfig{
+							Timeout: 3 * time.Second,
+						},
+					},
+				},
+			}
+			//cfg := f.CreateDefaultConfig().(*Config)
 
+			cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
 			settings := receivertest.NewNopSettings()
 
 			scraper := newScraper(cfg, settings)
-			//require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()), "failed starting scraper")
-
 			actualMetrics, err := scraper.scrape(context.Background())
 			require.NoError(t, err, "failed scrape")
 			require.NoError(
@@ -148,123 +156,3 @@ func TestScraper(t *testing.T) {
 		})
 	}
 }
-
-/*
-
-//nolint:revive
-func mockGetConnectionStateExpired(endpoint string) (tls.ConnectionState, error) {
-	cert := &x509.Certificate{
-		NotBefore: time.Now().Add(-48 * time.Hour),
-		NotAfter:  time.Now().Add(-24 * time.Hour),
-		Subject:   pkix.Name{CommonName: "expired.com"},
-		Issuer:    pkix.Name{CommonName: "ExpiredIssuer"},
-	}
-	return tls.ConnectionState{
-		PeerCertificates: []*x509.Certificate{cert},
-	}, nil
-}
-
-//nolint:revive
-func mockGetConnectionStateNotYetValid(endpoint string) (tls.ConnectionState, error) {
-	cert := &x509.Certificate{
-		NotBefore: time.Now().Add(48 * time.Hour),
-		NotAfter:  time.Now().Add(24 * time.Hour),
-		Subject:   pkix.Name{CommonName: "notyetvalid.com"},
-		Issuer:    pkix.Name{CommonName: "NotYetValidIssuer"},
-	}
-	return tls.ConnectionState{
-		PeerCertificates: []*x509.Certificate{cert},
-	}, nil
-}
-
-func TestScrape_ValidCertificate(t *testing.T) {
-	cfg := &Config{
-		Targets: []*confignet.TCPAddrConfig{
-			{Endpoint: "example.com:443"},
-		},
-	}
-	settings := receivertest.NewNopSettings()
-	s := newScraper(cfg, settings, mockGetConnectionStateValid)
-
-	metrics, err := s.scrape(context.Background())
-	require.NoError(t, err)
-
-	assert.Equal(t, 1, metrics.DataPointCount())
-
-	rm := metrics.ResourceMetrics().At(0)
-	ilms := rm.ScopeMetrics().At(0)
-	metric := ilms.Metrics().At(0)
-	dp := metric.Gauge().DataPoints().At(0)
-
-	attributes := dp.Attributes()
-	issuer, _ := attributes.Get("tlscheck.x509.issuer")
-	commonName, _ := attributes.Get("tlscheck.x509.cn")
-
-	assert.Equal(t, "CN=ValidIssuer", issuer.AsString())
-	assert.Equal(t, "valid.com", commonName.AsString())
-}
-
-func TestScrape_ExpiredCertificate(t *testing.T) {
-	cfg := &Config{
-		Targets: []*confignet.TCPAddrConfig{
-			{Endpoint: "expired.com:443"},
-		},
-	}
-	settings := receivertest.NewNopSettings()
-	s := newScraper(cfg, settings, mockGetConnectionStateExpired)
-
-	metrics, err := s.scrape(context.Background())
-	require.NoError(t, err)
-
-	assert.Equal(t, 1, metrics.DataPointCount())
-
-	rm := metrics.ResourceMetrics().At(0)
-	ilms := rm.ScopeMetrics().At(0)
-	metric := ilms.Metrics().At(0)
-	dp := metric.Gauge().DataPoints().At(0)
-
-	attributes := dp.Attributes()
-	issuer, _ := attributes.Get("tlscheck.x509.issuer")
-	commonName, _ := attributes.Get("tlscheck.x509.cn")
-
-	assert.Equal(t, "CN=ExpiredIssuer", issuer.AsString())
-	assert.Equal(t, "expired.com", commonName.AsString())
-
-	// Ensure that timeLeft is negative for an expired cert
-	timeLeft := dp.IntValue()
-	assert.Negative(t, timeLeft, int64(0), "Time left should be negative for an expired certificate")
-}
-
-func TestScrape_NotYetValidCertificate(t *testing.T) {
-	cfg := &Config{
-		Targets: []*confignet.TCPAddrConfig{
-			{Endpoint: "expired.com:443"},
-		},
-	}
-	settings := receivertest.NewNopSettings()
-	s := newScraper(cfg, settings, mockGetConnectionStateNotYetValid)
-
-	metrics, err := s.scrape(context.Background())
-	require.NoError(t, err)
-
-	assert.Equal(t, 1, metrics.DataPointCount())
-
-	rm := metrics.ResourceMetrics().At(0)
-	ilms := rm.ScopeMetrics().At(0)
-	metric := ilms.Metrics().At(0)
-	dp := metric.Gauge().DataPoints().At(0)
-
-	attributes := dp.Attributes()
-	issuer, _ := attributes.Get("tlscheck.x509.issuer")
-	commonName, _ := attributes.Get("tlscheck.x509.cn")
-
-	assert.Equal(t, "CN=NotYetValidIssuer", issuer.AsString())
-	assert.Equal(t, "notyetvalid.com", commonName.AsString())
-
-	// Ensure that timeLeft is positive for a not-yet-valid cert
-	timeLeft := dp.IntValue()
-	assert.Positive(t, timeLeft, "Time left should be positive for a not-yet-valid cert")
-}
-
-
-*/

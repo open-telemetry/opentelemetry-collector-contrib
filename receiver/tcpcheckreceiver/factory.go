@@ -59,7 +59,7 @@ func newReceiver(
 	)
 }
 
-// timeout ??
+// timeout
 //func createDefaultConfig() component.Config {
 //	cfg := scraperhelper.NewDefaultControllerConfig()
 //	cfg.CollectionInterval = 10 * time.Second
