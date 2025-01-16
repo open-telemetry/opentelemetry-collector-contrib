@@ -153,7 +153,6 @@ behaviours, which may be configured through the following settings:
     - `none`: Use original fields and event structure from the OTLP event.
     - `ecs`: Try to map fields to [Elastic Common Schema (ECS)][ECS]
     - `otel`: Elastic's preferred "OTel-native" mapping mode. Uses original fields and event structure from the OTLP event.
-      - :warning: This mode's behavior is unstable, it is currently experimental and undergoing changes.
       - There's a special treatment for the following attributes: `data_stream.type`, `data_stream.dataset`, `data_stream.namespace`. Instead of serializing these values under the `*attributes.*` namespace, they're put at the root of the document, to conform with the conventions of the data stream naming scheme that maps these as `constant_keyword` fields.
       - `data_stream.dataset` will always be appended with `.otel`. It is recommended to use with `*_dynamic_index.enabled: true` to route documents to data stream `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`.
       - Span events are stored in separate documents. They will be routed with `data_stream.type` set to `logs` if `traces_dynamic_index::enabled` is `true`.
