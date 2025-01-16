@@ -38,14 +38,6 @@ type Config struct {
 	// NumWorkers configures the number of workers publishing bulk requests.
 	NumWorkers int `mapstructure:"num_workers"`
 
-	// Index configures the index, index alias, or data stream name events should be indexed in.
-	//
-	// https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html
-	// https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html
-	//
-	// Deprecated: `index` is deprecated and replaced with `logs_index`.
-	Index string `mapstructure:"index"`
-
 	// This setting is required when logging pipelines used.
 	LogsIndex string `mapstructure:"logs_index"`
 	// fall back to pure LogsIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)

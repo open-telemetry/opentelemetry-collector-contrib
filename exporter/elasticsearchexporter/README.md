@@ -115,9 +115,6 @@ Telemetry data will be written to signal specific data streams by default:
 logs to `logs-generic-default`, metrics to `metrics-generic-default`, and traces to `traces-generic-default`.
 This can be customised through the following settings:
 
-- `index` (DEPRECATED, please use `logs_index` for logs, `metrics_index` for metrics, `traces_index` for traces): The [index] or [data stream] name to publish events to.
-   The default value is `logs-generic-default`.
-
 - `logs_index`: The [index] or [data stream] name to publish events to.  The default value is `logs-generic-default`
 
 - `logs_dynamic_index` (optional): uses resource, scope, or log record attributes to dynamically construct index name.
@@ -164,7 +161,7 @@ behaviours, which may be configured through the following settings:
       - `data_stream.dataset` will always be appended with `.otel`. It is recommended to use with `*_dynamic_index.enabled: true` to route documents to data stream `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`.
       - Span events are stored in separate documents. They will be routed with `data_stream.type` set to `logs` if `traces_dynamic_index::enabled` is `true`.
 
-    - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
+    - `raw`: Omit the `Attributes.` string prefixed to field names for log and
              span attributes as well as omit the `Events.` string prefixed to
              field names for span events.
     - `bodymap`: Provides fine-grained control over the final documents to be ingested.

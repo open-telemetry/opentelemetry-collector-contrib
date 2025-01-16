@@ -192,6 +192,67 @@ func TestContainerTags(t *testing.T) {
 	assert.ElementsMatch(t, []string{"region:my-region", "zone:my-zone", "az:my-az"}, tags)
 }
 
+func TestReceiveResourceSpansV2(t *testing.T) {
+	t.Run("ReceiveResourceSpansV1", func(t *testing.T) {
+		testReceiveResourceSpansV2(t, false)
+	})
+	t.Run("ReceiveResourceSpansV2", func(t *testing.T) {
+		testReceiveResourceSpansV2(t, true)
+	})
+}
+
+func testReceiveResourceSpansV2(t *testing.T, enableReceiveResourceSpansV2 bool) {
+	if enableReceiveResourceSpansV2 {
+		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
+			t.Fatal(err)
+		}
+	}
+	connector, metricsSink := creteConnector(t)
+	err := connector.Start(context.Background(), componenttest.NewNopHost())
+	if err != nil {
+		t.Errorf("Error starting connector: %v", err)
+		return
+	}
+	defer func() {
+		_ = connector.Shutdown(context.Background())
+	}()
+
+	trace := generateTrace()
+	sattr := trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+
+	sattr.PutStr("deployment.environment.name", "do-not-use")
+
+	err = connector.ConsumeTraces(context.Background(), trace)
+	assert.NoError(t, err)
+
+	for {
+		if len(metricsSink.AllMetrics()) > 0 {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	// check if the container tags are added to the metrics
+	metrics := metricsSink.AllMetrics()
+	assert.Len(t, metrics, 1)
+
+	ch := make(chan []byte, 100)
+	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
+	_, err = tr.MapMetrics(context.Background(), metrics[0], nil)
+	require.NoError(t, err)
+	msg := <-ch
+	sp := &pb.StatsPayload{}
+
+	err = proto.Unmarshal(msg, sp)
+	require.NoError(t, err)
+
+	if enableReceiveResourceSpansV2 {
+		assert.Equal(t, "none", sp.Stats[0].Env)
+	} else {
+		assert.Equal(t, "do-not-use", sp.Stats[0].Env)
+	}
+}
+
 func newTranslatorWithStatsChannel(t *testing.T, logger *zap.Logger, ch chan []byte) *otlpmetrics.Translator {
 	options := []otlpmetrics.TranslatorOption{
 		otlpmetrics.WithHistogramMode(otlpmetrics.HistogramModeDistributions),

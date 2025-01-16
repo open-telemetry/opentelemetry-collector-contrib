@@ -164,6 +164,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver v0.117.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver v0.117.0  
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.117.0
@@ -508,3 +509,5 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status => ../../pkg/status
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver => ../../receiver/awss3receiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter => ../../exporter/dorisexporter
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension => ../../extension/storage/redisstorageextension
+  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver => ../../receiver/huaweicloudcesreceiver

@@ -694,6 +694,22 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	}
 }
 
+func Test_newPathGetSetter_WithCache(t *testing.T) {
+	cacheValue := pcommon.NewMap()
+	cacheValue.PutStr("test", "pass")
+
+	ctx := NewTransformContext(
+		plog.NewLogRecord(),
+		pcommon.NewInstrumentationScope(),
+		pcommon.NewResource(),
+		plog.NewScopeLogs(),
+		plog.NewResourceLogs(),
+		WithCache(&cacheValue),
+	)
+
+	assert.Equal(t, cacheValue, ctx.getCache())
+}
+
 func createTelemetry(bodyType string) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
 	log := plog.NewLogRecord()
 	log.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
