@@ -182,10 +182,16 @@ func (r *Reader) readContents(ctx context.Context) {
 
 	tokens := make([]emit.Token, 0, r.maxBatchSize)
 
-	// Initialize space in memory for r.maxBatchSize token buffers, to avoid allocations inside the loop.
+	// Pre-allocate space in memory for r.maxBatchSize token buffers, to avoid allocations inside the loop.
 	tokenBodies := make([][]byte, r.maxBatchSize)
 	for i := range tokenBodies {
 		tokenBodies[i] = make([]byte, 1<<12)
+	}
+
+	// Pre-allocate space in memory for r.maxBatchSize attribute maps, to avoid allocations inside the loop.
+	tokenAttributes := make([]map[string]any, r.maxBatchSize)
+	for i := range tokenAttributes {
+		tokenAttributes[i] = copyAttributes(r.FileAttributes)
 	}
 
 	// Iterate over the contents of the file.
@@ -224,10 +230,10 @@ func (r *Reader) readContents(ctx context.Context) {
 
 		if r.includeFileRecordNum {
 			r.RecordNum++
-			r.FileAttributes[attrs.LogFileRecordNumber] = r.RecordNum
+			tokenAttributes[len(tokens)][attrs.LogFileRecordNumber] = r.RecordNum
 		}
 
-		tokens = append(tokens, emit.NewToken(tokenBodies[len(tokens)], copyAttributes(r.FileAttributes)))
+		tokens = append(tokens, emit.NewToken(tokenBodies[len(tokens)], tokenAttributes[len(tokens)]))
 
 		if r.maxBatchSize > 0 && len(tokens) >= r.maxBatchSize {
 			err := r.emitFunc(ctx, tokens)
