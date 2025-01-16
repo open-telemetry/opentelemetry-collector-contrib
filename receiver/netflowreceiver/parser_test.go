@@ -53,8 +53,8 @@ func TestConvertToOtel(t *testing.T) {
 			Bytes:           100,
 			Packets:         1,
 			TimeReceivedNs:  1000000000,
-			TimeFlowStartNs: 1000000000,
-			TimeFlowEndNs:   1000000100,
+			TimeFlowStartNs: 1000000100,
+			TimeFlowEndNs:   1000000200,
 			SequenceNum:     1,
 			SamplingRate:    1,
 		},
@@ -66,6 +66,9 @@ func TestConvertToOtel(t *testing.T) {
 		t.Errorf("TestConvertToOtel() error = %v", err)
 		return
 	}
+
+	assert.Equal(t, int64(1000000100), record.Timestamp().AsTime().UnixNano())
+	assert.Equal(t, int64(1000000000), record.ObservedTimestamp().AsTime().UnixNano())
 
 	expectedAttributes := pcommon.NewMap()
 	expectedAttributes.PutStr(semconv.AttributeSourceAddress, "192.168.1.1")
@@ -79,8 +82,8 @@ func TestConvertToOtel(t *testing.T) {
 	expectedAttributes.PutStr("flow.type", getFlowTypeName(3))
 	expectedAttributes.PutInt("flow.sequence_num", 1)
 	expectedAttributes.PutInt("flow.time_received", 1000000000)
-	expectedAttributes.PutInt("flow.start", 1000000000)
-	expectedAttributes.PutInt("flow.end", 1000000100)
+	expectedAttributes.PutInt("flow.start", 1000000100)
+	expectedAttributes.PutInt("flow.end", 1000000200)
 	expectedAttributes.PutInt("flow.sampling_rate", 1)
 	expectedAttributes.PutStr("flow.sampler_address", "192.168.1.100")
 
@@ -96,6 +99,9 @@ func TestEmptyConvertToOtel(t *testing.T) {
 		t.Errorf("TestConvertToOtel() error = %v", err)
 		return
 	}
+
+	assert.Equal(t, int64(0), record.Timestamp().AsTime().UnixNano())
+	assert.Equal(t, int64(0), record.ObservedTimestamp().AsTime().UnixNano())
 
 	expectedAttributes := pcommon.NewMap()
 	expectedAttributes.PutStr(semconv.AttributeSourceAddress, "invalid IP")

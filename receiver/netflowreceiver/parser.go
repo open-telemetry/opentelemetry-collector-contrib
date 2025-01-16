@@ -221,8 +221,8 @@ func addMessageAttributes(m producer.ProducerMessage, r *plog.LogRecord) error {
 	receivedTime := time.Unix(0, int64(pm.TimeReceivedNs))
 	startTime := time.Unix(0, int64(pm.TimeFlowStartNs))
 
-	r.SetObservedTimestamp(pcommon.NewTimestampFromTime(startTime))
-	r.SetTimestamp(pcommon.NewTimestampFromTime(receivedTime))
+	r.SetObservedTimestamp(pcommon.NewTimestampFromTime(receivedTime))
+	r.SetTimestamp(pcommon.NewTimestampFromTime(startTime))
 
 	// Source and destination attributes
 	r.Attributes().PutStr(semconv.AttributeSourceAddress, srcAddr.String())
