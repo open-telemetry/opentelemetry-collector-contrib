@@ -75,6 +75,11 @@ func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 	}
 	s.client = c
 
+	// Skip secondary host discovery if direct connection is enabled
+	if s.config.DirectConnection {
+		return nil
+	}
+
 	secondaries, err := s.findSecondaryHosts(ctx)
 	if err != nil {
 		s.logger.Warn("failed to find secondary hosts", zap.Error(err))
