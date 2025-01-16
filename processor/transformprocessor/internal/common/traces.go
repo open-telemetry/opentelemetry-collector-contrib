@@ -123,7 +123,6 @@ func WithTraceErrorMode(errorMode ottl.ErrorMode) TraceParserCollectionOption {
 func NewTraceParserCollection(settings component.TelemetrySettings, options ...TraceParserCollectionOption) (*TraceParserCollection, error) {
 	pcOptions := []ottl.ParserCollectionOption[TracesConsumer]{
 		withCommonContextParsers[TracesConsumer](),
-		ottl.EnableParserCollectionModifiedStatementLogging[TracesConsumer](true),
 	}
 
 	for _, option := range options {

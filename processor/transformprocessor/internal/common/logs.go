@@ -75,7 +75,6 @@ func WithLogErrorMode(errorMode ottl.ErrorMode) LogParserCollectionOption {
 func NewLogParserCollection(settings component.TelemetrySettings, options ...LogParserCollectionOption) (*LogParserCollection, error) {
 	pcOptions := []ottl.ParserCollectionOption[LogsConsumer]{
 		withCommonContextParsers[LogsConsumer](),
-		ottl.EnableParserCollectionModifiedStatementLogging[LogsConsumer](true),
 	}
 
 	for _, option := range options {
