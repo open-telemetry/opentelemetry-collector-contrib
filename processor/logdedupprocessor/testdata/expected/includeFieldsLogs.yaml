@@ -7,12 +7,15 @@ resourceLogs:
     scopeLogs:
       - logRecords:
           - attributes:
-              - key: bool
+              - key: unique_id
                 value:
-                  boolValue: true
-              - key: str
+                  intValue: "1"
+              - key: dedup_key
                 value:
-                  stringValue: attr str
+                  stringValue: abc
+              - key: dedup_key1
+                value:
+                  stringValue: def
               - key: log_count
                 value:
                   intValue: "2"
@@ -22,11 +25,15 @@ resourceLogs:
               - key: last_observed_timestamp
                 value:
                   stringValue: "2024-10-04T19:21:47Z"
-              - key: dedup_key
-                value:
-                  stringValue: abc123
             body:
-              stringValue: Deduplicated log record
+              kvlistValue:
+                values:
+                  - key: dedup_key
+                    value:
+                      stringValue: abc
+                  - key: dedup_key1
+                    value:
+                      stringValue: def
             observedTimeUnixNano: "1728069707998122000"
             severityText: info
             spanId: ""

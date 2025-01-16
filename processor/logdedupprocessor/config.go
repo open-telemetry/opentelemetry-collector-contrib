@@ -36,6 +36,7 @@ var (
 	errInvalidLogCountAttribute = errors.New("log_count_attribute must be set")
 	errInvalidInterval          = errors.New("interval must be greater than 0")
 	errCannotExcludeBody        = errors.New("cannot exclude the entire body")
+	errCannotIncludeBody        = errors.New("cannot include the entire body")
 )
 
 // Config is the config of the processor.
@@ -44,8 +45,8 @@ type Config struct {
 	Interval          time.Duration `mapstructure:"interval"`
 	Timezone          string        `mapstructure:"timezone"`
 	ExcludeFields     []string      `mapstructure:"exclude_fields"`
+	IncludeFields     []string      `mapstructure:"include_fields"`
 	Conditions        []string      `mapstructure:"conditions"`
-	Key               string        `mapstructure:"key"`
 }
 
 // createDefaultConfig returns the default config for the processor.
@@ -55,8 +56,8 @@ func createDefaultConfig() component.Config {
 		Interval:          defaultInterval,
 		Timezone:          defaultTimezone,
 		ExcludeFields:     []string{},
+		IncludeFields:     []string{},
 		Conditions:        []string{},
-		Key:               "",
 	}
 }
 
@@ -79,8 +80,12 @@ func (c Config) Validate() error {
 		return err
 	}
 
-	if err = c.validateKey(); err != nil {
+	if err = c.validateIncludeFields(); err != nil {
 		return err
+	}
+
+	if len(c.ExcludeFields) > 0 && len(c.IncludeFields) > 0 {
+		return errors.New("cannot define both exclude_fields and include_fields")
 	}
 
 	return nil
@@ -113,23 +118,28 @@ func (c Config) validateExcludeFields() error {
 	return nil
 }
 
-// validateKey validates that key is a valid field.
-// Valid fields have the format of `body.field` or `attributes.field`.
-func (c Config) validateKey() error {
-	if c.Key == "" {
-		return nil
-	}
+// validateIncludeFields validates that all the exclude fields
+func (c Config) validateIncludeFields() error {
+	knownFields := make(map[string]struct{})
 
-	// Special check to make sure the entire body or attributes is not used as key
-	switch c.Key {
-	case bodyField, attributeField:
-		return fmt.Errorf("cannot use the entire %s as key", c.Key)
-	}
+	for _, field := range c.IncludeFields {
+		// Special check to make sure the entire body is not included
+		if field == bodyField {
+			return errCannotIncludeBody
+		}
 
-	// Split and ensure the field starts with `body` or `attributes`
-	parts := strings.Split(c.Key, fieldDelimiter)
-	if parts[0] != bodyField && parts[0] != attributeField {
-		return fmt.Errorf("a key must start with %s or %s", bodyField, attributeField)
+		// Split and ensure the field starts with `body` or `attributes`
+		parts := strings.Split(field, fieldDelimiter)
+		if parts[0] != bodyField && parts[0] != attributeField {
+			return fmt.Errorf("an include_fields must start with %s or %s", bodyField, attributeField)
+		}
+
+		// If a field is valid make sure we haven't already seen it
+		if _, ok := knownFields[field]; ok {
+			return fmt.Errorf("duplicate include_fields %s", field)
+		}
+
+		knownFields[field] = struct{}{}
 	}
 
 	return nil

@@ -54,10 +54,10 @@ func Test_logAggregatorAdd(t *testing.T) {
 
 	expectedResourceKey := getResourceKey(resource)
 	expectedScopeKey := getScopeKey(scope)
-	expectedLogKey := getLogKey(logRecord, "")
+	expectedLogKey := getLogKey(logRecord, nil)
 
 	// Add logRecord
-	aggregator.Add(resource, scope, logRecord, "")
+	aggregator.Add(resource, scope, logRecord, nil)
 
 	// Check resourceCounter was set
 	resourceCounter, ok := aggregator.resources[expectedResourceKey]
@@ -85,7 +85,7 @@ func Test_logAggregatorAdd(t *testing.T) {
 		return secondExpectedTimestamp
 	}
 
-	aggregator.Add(resource, scope, logRecord, "")
+	aggregator.Add(resource, scope, logRecord, nil)
 	require.Equal(t, int64(2), lc.count)
 	require.Equal(t, secondExpectedTimestamp, lc.lastObservedTimestamp)
 }
@@ -139,7 +139,7 @@ func Test_logAggregatorExport(t *testing.T) {
 	logRecord := generateTestLogRecord(t, "body string")
 
 	// Add logRecord
-	aggregator.Add(resource, scope, logRecord, "")
+	aggregator.Add(resource, scope, logRecord, nil)
 
 	exportedLogs := aggregator.Export(context.Background())
 	require.Equal(t, 1, exportedLogs.LogRecordCount())
@@ -254,8 +254,8 @@ func Test_getLogKey(t *testing.T) {
 
 				logRecord2 := generateTestLogRecord(t, "Body of the log")
 
-				key1 := getLogKey(logRecord1, "")
-				key2 := getLogKey(logRecord2, "")
+				key1 := getLogKey(logRecord1, nil)
+				key2 := getLogKey(logRecord2, nil)
 
 				require.Equal(t, key1, key2)
 			},
@@ -267,8 +267,8 @@ func Test_getLogKey(t *testing.T) {
 
 				logRecord2 := generateTestLogRecord(t, "A different Body of the log")
 
-				key1 := getLogKey(logRecord1, "")
-				key2 := getLogKey(logRecord2, "")
+				key1 := getLogKey(logRecord1, nil)
+				key2 := getLogKey(logRecord2, nil)
 
 				require.NotEqual(t, key1, key2)
 			},
@@ -284,9 +284,14 @@ func Test_getLogKey(t *testing.T) {
 				expected := pdatautil.Hash64(
 					pdatautil.WithString(dedupValue),
 				)
+				expectedMulti := pdatautil.Hash64(
+					pdatautil.WithString(dedupValue),
+					pdatautil.WithString(dedupValue),
+				)
 
-				require.Equal(t, expected, getLogKey(logRecord, "body.dedup_key"))
-				require.Equal(t, expected, getLogKey(logRecord, "attributes.dedup_key"))
+				require.Equal(t, expected, getLogKey(logRecord, []string{"body.dedup_key"}))
+				require.Equal(t, expected, getLogKey(logRecord, []string{"attributes.dedup_key"}))
+				require.Equal(t, expectedMulti, getLogKey(logRecord, []string{"body.dedup_key", "attributes.dedup_key"}))
 			},
 		},
 	}

@@ -85,42 +85,32 @@ func TestValidateConfig(t *testing.T) {
 			expectedErr: errors.New("duplicate exclude_field"),
 		},
 		{
-			desc: "invalid key using entire body",
+			desc: "invalid include_fields using entire body",
 			cfg: &Config{
 				LogCountAttribute: defaultLogCountAttribute,
 				Interval:          defaultInterval,
 				Timezone:          defaultTimezone,
-				Key:               bodyField,
+				IncludeFields:     []string{bodyField},
 			},
-			expectedErr: errors.New("cannot use the entire body as key"),
+			expectedErr: errors.New("cannot include the entire body"),
 		},
 		{
-			desc: "invalid key using entire attributes",
+			desc: "invalid include_fields not starting with body or attributes",
 			cfg: &Config{
 				LogCountAttribute: defaultLogCountAttribute,
 				Interval:          defaultInterval,
 				Timezone:          defaultTimezone,
-				Key:               attributeField,
+				IncludeFields:     []string{"not.valid"},
 			},
-			expectedErr: errors.New("cannot use the entire attributes as key"),
+			expectedErr: errors.New("an include_fields must start with body or attributes"),
 		},
 		{
-			desc: "invalid key not starting with body or attributes",
+			desc: "empty include_fields is the default behavior",
 			cfg: &Config{
 				LogCountAttribute: defaultLogCountAttribute,
 				Interval:          defaultInterval,
 				Timezone:          defaultTimezone,
-				Key:               "not.valid",
-			},
-			expectedErr: errors.New("a key must start with body or attributes"),
-		},
-		{
-			desc: "empty key is the default behavior",
-			cfg: &Config{
-				LogCountAttribute: defaultLogCountAttribute,
-				Interval:          defaultInterval,
-				Timezone:          defaultTimezone,
-				Key:               "",
+				IncludeFields:     []string{},
 			},
 			expectedErr: nil,
 		},
@@ -132,9 +122,31 @@ func TestValidateConfig(t *testing.T) {
 				Timezone:          defaultTimezone,
 				Conditions:        []string{},
 				ExcludeFields:     []string{"body.thing", "attributes.otherthing"},
-				Key:               "body.thing",
 			},
 			expectedErr: nil,
+		},
+		{
+			desc: "valid config include_fields",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				Conditions:        []string{},
+				IncludeFields:     []string{"body.thing", "attributes.otherthing"},
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "invalid config defines both exclude_fields and include_fields",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				Conditions:        []string{},
+				ExcludeFields:     []string{"body.thing", "attributes.otherthing"},
+				IncludeFields:     []string{"body.thing", "attributes.otherthing"},
+			},
+			expectedErr: errors.New("cannot define both exclude_fields and include_fields"),
 		},
 	}
 
