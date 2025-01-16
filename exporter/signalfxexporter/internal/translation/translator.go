@@ -46,7 +46,7 @@ const (
 
 	// ActionCopyMetrics copies metrics using Rule.Mapping.
 	// Rule.DimensionKey and Rule.DimensionValues can be used to filter datapoints that must be copied,
-	// if these fields are set, only metics having a dimension with key == Rule.DimensionKey and
+	// if these fields are set, only metrics having a dimension with key == Rule.DimensionKey and
 	// value in Rule.DimensionValues will be copied.
 	ActionCopyMetrics Action = "copy_metrics"
 
