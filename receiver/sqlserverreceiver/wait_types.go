@@ -26,6 +26,7 @@ var waitTypes = []string{
 	"Replication",
 	"Log Rate Governor",
 }
+
 var detailedWaitTypes = map[string]uint{
 	"Unknown":                           0,
 	"SOS_SCHEDULER_YIELD":               1,

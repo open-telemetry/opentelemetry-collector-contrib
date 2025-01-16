@@ -1993,12 +1993,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.SqlserverQueryHash.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["sqlserver.query.hash"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverQueryHash.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.SqlserverQueryPlanHandle.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["sqlserver.query_plan.handle"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverQueryPlanHandle.MetricsInclude)
-	}
-	if mbc.ResourceAttributes.SqlserverQueryPlanHandle.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["sqlserver.query_plan.handle"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverQueryPlanHandle.MetricsExclude)
-	}
 	if mbc.ResourceAttributes.SqlserverQueryPlanHash.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["sqlserver.query_plan.hash"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverQueryPlanHash.MetricsInclude)
 	}

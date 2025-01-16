@@ -206,7 +206,6 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
 			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
 			rb.SetSqlserverQueryHash("sqlserver.query.hash-val")
-			rb.SetSqlserverQueryPlanHandle("sqlserver.query_plan.handle-val")
 			rb.SetSqlserverQueryPlanHash("sqlserver.query_plan.hash-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))

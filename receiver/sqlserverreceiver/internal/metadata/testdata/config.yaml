@@ -80,8 +80,6 @@ all_set:
       enabled: true
     sqlserver.query.hash:
       enabled: true
-    sqlserver.query_plan.handle:
-      enabled: true
     sqlserver.query_plan.hash:
       enabled: true
 none_set:
@@ -165,8 +163,6 @@ none_set:
       enabled: false
     sqlserver.query.hash:
       enabled: false
-    sqlserver.query_plan.handle:
-      enabled: false
     sqlserver.query_plan.hash:
       enabled: false
 filter_set_include:
@@ -184,10 +180,6 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     sqlserver.query.hash:
-      enabled: true
-      metrics_include:
-        - regexp: ".*"
-    sqlserver.query_plan.handle:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -213,10 +205,6 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "sqlserver.query.hash-val"
-    sqlserver.query_plan.handle:
-      enabled: true
-      metrics_exclude:
-        - strict: "sqlserver.query_plan.handle-val"
     sqlserver.query_plan.hash:
       enabled: true
       metrics_exclude:

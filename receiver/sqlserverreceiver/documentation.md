@@ -407,5 +407,4 @@ This metric is only available when the receiver is configured to directly connec
 | sqlserver.database.name | The name of the SQL Server database. | Any Str | true |
 | sqlserver.instance.name | The name of the SQL Server instance being monitored. | Any Str | false |
 | sqlserver.query.hash | Hash of the query | Any Str | false |
-| sqlserver.query_plan.handle | Query Plan Handle | Any Str | false |
 | sqlserver.query_plan.hash | Hash of the query plan | Any Str | false |

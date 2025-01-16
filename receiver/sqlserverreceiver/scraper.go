@@ -346,7 +346,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryMetrics(ctx context.Context,
 	const physicalReads = "total_physical_reads"
 	const executionCount = "execution_count"
 	const totalGrant = "total_grant_kb"
-	const queryPlanHandle = "query_plan_handle"
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
 		if errors.Is(err, sqlquery.ErrNullValueWarning) {
@@ -361,7 +360,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryMetrics(ctx context.Context,
 
 	for i, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
-		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHandle]))
+		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
 		elapsedTime, err := strconv.ParseFloat(row[totalElapsedTime], 64)
 		if err != nil {
@@ -397,7 +396,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryMetrics(ctx context.Context,
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 		rb.SetSqlserverQueryHash(queryHashVal)
 		rb.SetSqlserverQueryPlanHash(queryPlanHashVal)
-		rb.SetSqlserverQueryPlanHandle(hex.EncodeToString([]byte(row[queryPlanHandle])))
 		s.logger.Debug(fmt.Sprintf("DataRow: %v, PlanHash: %v, Hash: %v", row, queryPlanHashVal, queryHashVal))
 
 		timeStamp := pcommon.NewTimestampFromTime(time.Now())

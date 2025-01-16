@@ -342,7 +342,6 @@ const sqlServerQueryMetrics = `
 SELECT TOP(@topNValue)
 REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
 HOST_NAME() AS [computer_name],
-MAX(qs.plan_handle) AS query_plan_handle,
 qs.query_hash AS query_hash,
 qs.query_plan_hash AS query_plan_hash,
 SUM(qs.execution_count) AS execution_count,

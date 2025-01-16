@@ -203,12 +203,11 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for sqlserver resource attributes.
 type ResourceAttributesConfig struct {
-	SqlserverComputerName    ResourceAttributeConfig `mapstructure:"sqlserver.computer.name"`
-	SqlserverDatabaseName    ResourceAttributeConfig `mapstructure:"sqlserver.database.name"`
-	SqlserverInstanceName    ResourceAttributeConfig `mapstructure:"sqlserver.instance.name"`
-	SqlserverQueryHash       ResourceAttributeConfig `mapstructure:"sqlserver.query.hash"`
-	SqlserverQueryPlanHandle ResourceAttributeConfig `mapstructure:"sqlserver.query_plan.handle"`
-	SqlserverQueryPlanHash   ResourceAttributeConfig `mapstructure:"sqlserver.query_plan.hash"`
+	SqlserverComputerName  ResourceAttributeConfig `mapstructure:"sqlserver.computer.name"`
+	SqlserverDatabaseName  ResourceAttributeConfig `mapstructure:"sqlserver.database.name"`
+	SqlserverInstanceName  ResourceAttributeConfig `mapstructure:"sqlserver.instance.name"`
+	SqlserverQueryHash     ResourceAttributeConfig `mapstructure:"sqlserver.query.hash"`
+	SqlserverQueryPlanHash ResourceAttributeConfig `mapstructure:"sqlserver.query_plan.hash"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -223,9 +222,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		SqlserverQueryHash: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		SqlserverQueryPlanHandle: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		SqlserverQueryPlanHash: ResourceAttributeConfig{
