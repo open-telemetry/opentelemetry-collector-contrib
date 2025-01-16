@@ -127,10 +127,7 @@ type syncBulkIndexerSession struct {
 
 // Add adds an item to the sync bulk indexer session.
 func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string) error {
-	doc := docappender.BulkIndexerItem{Index: index, Body: document, DynamicTemplates: dynamicTemplates}
-	if docID != "" {
-		doc.DocumentID = docID
-	}
+	doc := docappender.BulkIndexerItem{Index: index, Body: document, DocumentID: docID, DynamicTemplates: dynamicTemplates}
 	err := s.bi.Add(doc)
 	if err != nil {
 		return err
@@ -256,10 +253,8 @@ func (s asyncBulkIndexerSession) Add(ctx context.Context, index string, docID st
 	item := docappender.BulkIndexerItem{
 		Index:            index,
 		Body:             document,
+		DocumentID:       docID,
 		DynamicTemplates: dynamicTemplates,
-	}
-	if docID != "" {
-		item.DocumentID = docID
 	}
 	select {
 	case <-ctx.Done():
