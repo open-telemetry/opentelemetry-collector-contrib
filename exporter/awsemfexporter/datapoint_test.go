@@ -1940,6 +1940,7 @@ func TestCreateLabels(t *testing.T) {
 		"a": "A",
 		"b": "B",
 		"c": "C",
+		"com.amazonaws.cloudwatch.entity.internal.A": "A",
 	}))
 
 	labels := createLabels(labelsMap)
