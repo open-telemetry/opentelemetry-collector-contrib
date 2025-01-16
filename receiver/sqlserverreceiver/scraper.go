@@ -104,7 +104,7 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 
 	switch s.sqlQuery {
 	case getSQLServerQueryMetricsQuery(s.instanceName, s.maxQuerySampleCount, s.granularity):
-		err = s.recordQueryMetrics(ctx, s.topQueryCount)
+		err = s.recordDatabaseQueryMetrics(ctx, s.topQueryCount)
 	case getSQLServerDatabaseIOQuery(s.instanceName):
 		err = s.recordDatabaseIOMetrics(ctx)
 	case getSQLServerPerformanceCounterQuery(s.instanceName):
@@ -124,9 +124,9 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 
 func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, error) {
 	switch s.sqlQuery {
-	case getQueryTextQuery(s.instanceName, s.maxQuerySampleCount, s.granularity):
+	case getSQLServerQueryTextAndPlanQuery(s.instanceName, s.maxQuerySampleCount, s.granularity):
 		// TODO: Add a logs builder for that
-		return s.recordDatabaseQueryText(ctx, s.topQueryCount)
+		return s.recordDatabaseQueryTextAndPlan(ctx, s.topQueryCount)
 	case getSQLServerQuerySamplesQuery():
 		return s.recordDatabaseSampleQuery(ctx)
 	default:
@@ -334,7 +334,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	return errors.Join(errs...)
 }
 
-func (s *sqlServerScraperHelper) recordQueryMetrics(ctx context.Context, topQueryCount uint) error {
+func (s *sqlServerScraperHelper) recordDatabaseQueryMetrics(ctx context.Context, topQueryCount uint) error {
 	// Constants are the column names of the database status
 	const totalElapsedTime = "total_elapsed_time"
 	const rowsReturned = "total_rows"
@@ -475,7 +475,7 @@ func (s *sqlServerScraperHelper) recordQueryMetrics(ctx context.Context, topQuer
 	return errors.Join(errs...)
 }
 
-func (s *sqlServerScraperHelper) recordDatabaseQueryText(ctx context.Context, topQueryCount uint) (plog.Logs, error) {
+func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context, topQueryCount uint) (plog.Logs, error) {
 	// Constants are the column names of the database status
 	const totalElapsedTime = "total_elapsed_time"
 	const rowsReturned = "total_rows"

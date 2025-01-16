@@ -336,7 +336,7 @@ func getSQLServerPropertiesQuery(instanceName string) string {
 	return fmt.Sprintf(sqlServerProperties, "")
 }
 
-const sqlQueryMetrics = `
+const sqlServerQueryMetrics = `
 %s
 %s
 SELECT TOP(@topNValue)
@@ -380,10 +380,10 @@ func getSQLServerQueryMetricsQuery(instanceName string, maxQuerySampleCount uint
 		instanceNameClause = ""
 	}
 
-	return fmt.Sprintf(sqlQueryMetrics, granularityStatement, topQueryCountStatement, instanceNameClause)
+	return fmt.Sprintf(sqlServerQueryMetrics, granularityStatement, topQueryCountStatement, instanceNameClause)
 }
 
-const getQueryText = `
+const sqlServerQueryTextAndPlan = `
 %s
 %s
 with qstats as (
@@ -418,7 +418,7 @@ CROSS APPLY sys.dm_exec_query_plan(qs.query_plan_handle) AS qp
 CROSS APPLY sys.dm_exec_sql_text(qs.query_plan_handle) AS st;
 `
 
-func getQueryTextQuery(instanceName string, maxQuerySampleCount uint, granularity uint) string {
+func getSQLServerQueryTextAndPlanQuery(instanceName string, maxQuerySampleCount uint, granularity uint) string {
 	var topQueryCountStatement string
 	var granularityStatement string
 	var instanceNameClause string
@@ -433,7 +433,7 @@ func getQueryTextQuery(instanceName string, maxQuerySampleCount uint, granularit
 		instanceNameClause = ""
 	}
 
-	return fmt.Sprintf(getQueryText, granularityStatement, topQueryCountStatement, instanceNameClause)
+	return fmt.Sprintf(sqlServerQueryTextAndPlan, granularityStatement, topQueryCountStatement, instanceNameClause)
 }
 
 const sqlServerQuerySamples = `
