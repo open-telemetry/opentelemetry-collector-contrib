@@ -412,7 +412,7 @@ SUBSTRING(st.text, (stats.statement_start_offset / 2) + 1,
 		 ((CASE statement_end_offset
 			   WHEN -1 THEN DATALENGTH(st.text)
 			   ELSE stats.statement_end_offset END - stats.statement_start_offset) / 2) + 1) AS text,
-qp.query_plan FROM qstats AS qs
+ISNULL(qp.query_plan, '') FROM qstats AS qs
 INNER JOIN sys.dm_exec_query_stats AS stats on qs.query_plan_handle = stats.plan_handle
 CROSS APPLY sys.dm_exec_query_plan(qs.query_plan_handle) AS qp
 CROSS APPLY sys.dm_exec_sql_text(qs.query_plan_handle) AS st;
@@ -446,11 +446,11 @@ DB_NAME(r.database_id) AS db_name,
 
 r.query_hash,
 r.query_plan_hash,
-r.wait_type,
+ISNULL(r.wait_type, ''),
  
 CASE
 WHEN o.objectid IS NULL
-THEN NULL
+THEN ''
 ELSE CONCAT(DB_NAME(o.dbid), '.', OBJECT_NAME(o.objectid, o.dbid))
 END
 AS object_name
