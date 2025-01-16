@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -56,8 +55,7 @@ func (p *Processor) ProcessLogs(ctx context.Context, ld plog.Logs) (plog.Logs, e
 		defer pdatautil.GroupByResourceLogs(ld.ResourceLogs())
 	}
 	for _, c := range p.contexts {
-		cache := pcommon.NewMap()
-		err := c.ConsumeLogs(ctx, ld, &cache)
+		err := c.ConsumeLogs(ctx, ld, nil)
 		if err != nil {
 			p.logger.Error("failed processing logs", zap.Error(err))
 			return ld, err
