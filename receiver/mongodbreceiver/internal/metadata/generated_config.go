@@ -82,25 +82,25 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		MongodbActiveReads: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbActiveWrites: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbCacheDirtyPercent: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbCacheOperations: MetricConfig{
 			Enabled: true,
 		},
 		MongodbCacheUsedPercent: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbCollectionCount: MetricConfig{
 			Enabled: true,
 		},
 		MongodbCommandsPerSec: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbConnectionCount: MetricConfig{
 			Enabled: true,
@@ -118,7 +118,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		MongodbDeletesPerSec: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbDocumentOperationCount: MetricConfig{
 			Enabled: true,
@@ -127,10 +127,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		MongodbFlushesPerSec: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbGetmoresPerSec: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbGlobalLockTime: MetricConfig{
 			Enabled: true,
@@ -148,7 +148,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		MongodbInsertsPerSec: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbLockAcquireCount: MetricConfig{
 			Enabled: false,
@@ -184,34 +184,34 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		MongodbOperationReplCount: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbOperationTime: MetricConfig{
 			Enabled: true,
 		},
 		MongodbPageFaults: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbQueriesPerSec: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbReplCommandsPerSec: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbReplDeletesPerSec: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbReplGetmoresPerSec: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbReplInsertsPerSec: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbReplQueriesPerSec: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbReplUpdatesPerSec: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbSessionCount: MetricConfig{
 			Enabled: true,
@@ -220,13 +220,13 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		MongodbUpdatesPerSec: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MongodbUptime: MetricConfig{
 			Enabled: false,
 		},
 		MongodbWtcacheBytesRead: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }

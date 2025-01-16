@@ -12,30 +12,6 @@ metrics:
     enabled: false
 ```
 
-### mongodb.active.reads
-
-The number of read operations currently being processed.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {reads} | Sum | Int | Cumulative | false |
-
-### mongodb.active.writes
-
-The number of write operations currently being processed.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {writes} | Sum | Int | Cumulative | false |
-
-### mongodb.cache.dirty.percent
-
-The percentage of WiredTiger cache that is dirty.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
 ### mongodb.cache.operations
 
 The number of cache operations of the instance.
@@ -50,14 +26,6 @@ The number of cache operations of the instance.
 | ---- | ----------- | ------ |
 | type | The result of a cache request. | Str: ``hit``, ``miss`` |
 
-### mongodb.cache.used.percent
-
-The percentage of WiredTiger cache in use.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
 ### mongodb.collection.count
 
 The number of collections.
@@ -65,14 +33,6 @@ The number of collections.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {collections} | Sum | Int | Cumulative | false |
-
-### mongodb.commands_per_sec
-
-The number of commands executed per second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {command}/s | Gauge | Double |
 
 ### mongodb.connection.count
 
@@ -120,14 +80,6 @@ The number of existing databases.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {databases} | Sum | Int | Cumulative | false |
 
-### mongodb.deletes_per_sec
-
-The number of deletes executed per second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {delete}/s | Gauge | Double |
-
 ### mongodb.document.operation.count
 
 The number of document operations executed.
@@ -149,22 +101,6 @@ The number of extents.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {extents} | Sum | Int | Cumulative | false |
-
-### mongodb.flushes_per_sec
-
-The number of flushes executed per second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {flush}/s | Gauge | Double |
-
-### mongodb.getmores_per_sec
-
-The number of getmores executed per second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {getmore}/s | Gauge | Double |
 
 ### mongodb.global_lock.time
 
@@ -203,14 +139,6 @@ Sum of the space allocated to all indexes in the database, including free index 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
-
-### mongodb.inserts_per_sec
-
-The number of insertions executed per second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {insert}/s | Gauge | Double |
 
 ### mongodb.memory.usage
 
@@ -272,20 +200,6 @@ The number of operations executed.
 | ---- | ----------- | ------ |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
 
-### mongodb.operation.repl.count
-
-The number of replicated operations executed.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {operations} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
-
 ### mongodb.operation.time
 
 The total time spent performing operations.
@@ -299,70 +213,6 @@ The total time spent performing operations.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
-
-### mongodb.page_faults
-
-The number of page faults.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {faults} | Sum | Int | Cumulative | true |
-
-### mongodb.queries_per_sec
-
-The number of queries executed per second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {query}/s | Gauge | Double |
-
-### mongodb.repl_commands_per_sec
-
-The number of replicated commands executed per second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {command}/s | Gauge | Double |
-
-### mongodb.repl_deletes_per_sec
-
-The number of replicated deletes executed per second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {delete}/s | Gauge | Double |
-
-### mongodb.repl_getmores_per_sec
-
-The number of replicated getmores executed per second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {getmore}/s | Gauge | Double |
-
-### mongodb.repl_inserts_per_sec
-
-The number of replicated insertions executed per second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {insert}/s | Gauge | Double |
-
-### mongodb.repl_queries_per_sec
-
-The number of replicated queries executed per second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {query}/s | Gauge | Double |
-
-### mongodb.repl_updates_per_sec
-
-The number of replicated updates executed per second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {update}/s | Gauge | Double |
 
 ### mongodb.session.count
 
@@ -382,22 +232,6 @@ If collection data is compressed it reflects the compressed size.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | true |
 
-### mongodb.updates_per_sec
-
-The number of updates executed per second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {update}/s | Gauge | Double |
-
-### mongodb.wtcache.bytes.read
-
-The number of bytes read into the WiredTiger cache.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | true |
-
 ## Optional Metrics
 
 The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
@@ -408,6 +242,70 @@ metrics:
     enabled: true
 ```
 
+### mongodb.active.reads
+
+The number of read operations currently being processed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {reads} | Sum | Int | Cumulative | false |
+
+### mongodb.active.writes
+
+The number of write operations currently being processed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {writes} | Sum | Int | Cumulative | false |
+
+### mongodb.cache.dirty.percent
+
+The percentage of WiredTiger cache that is dirty.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### mongodb.cache.used.percent
+
+The percentage of WiredTiger cache in use.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### mongodb.commands_per_sec
+
+The number of commands executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Double |
+
+### mongodb.deletes_per_sec
+
+The number of deletes executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {delete}/s | Gauge | Double |
+
+### mongodb.flushes_per_sec
+
+The number of flushes executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {flush}/s | Gauge | Double |
+
+### mongodb.getmores_per_sec
+
+The number of getmores executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {getmore}/s | Gauge | Double |
+
 ### mongodb.health
 
 The health status of the server.
@@ -417,6 +315,14 @@ A value of '1' indicates healthy. A value of '0' indicates unhealthy.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
+
+### mongodb.inserts_per_sec
+
+The number of insertions executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {insert}/s | Gauge | Double |
 
 ### mongodb.lock.acquire.count
 
@@ -492,6 +398,92 @@ The latency of operations.
 | ---- | ----------- | ------ |
 | operation | The MongoDB operation with regards to latency | Str: ``read``, ``write``, ``command`` |
 
+### mongodb.operation.repl.count
+
+The number of replicated operations executed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
+
+### mongodb.page_faults
+
+The number of page faults.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {faults} | Sum | Int | Cumulative | true |
+
+### mongodb.queries_per_sec
+
+The number of queries executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Double |
+
+### mongodb.repl_commands_per_sec
+
+The number of replicated commands executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Double |
+
+### mongodb.repl_deletes_per_sec
+
+The number of replicated deletes executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {delete}/s | Gauge | Double |
+
+### mongodb.repl_getmores_per_sec
+
+The number of replicated getmores executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {getmore}/s | Gauge | Double |
+
+### mongodb.repl_inserts_per_sec
+
+The number of replicated insertions executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {insert}/s | Gauge | Double |
+
+### mongodb.repl_queries_per_sec
+
+The number of replicated queries executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Double |
+
+### mongodb.repl_updates_per_sec
+
+The number of replicated updates executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {update}/s | Gauge | Double |
+
+### mongodb.updates_per_sec
+
+The number of updates executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {update}/s | Gauge | Double |
+
 ### mongodb.uptime
 
 The amount of time that the server has been running.
@@ -499,6 +491,14 @@ The amount of time that the server has been running.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ms | Sum | Int | Cumulative | true |
+
+### mongodb.wtcache.bytes.read
+
+The number of bytes read into the WiredTiger cache.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
 
 ## Resource Attributes
 

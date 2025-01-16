@@ -148,45 +148,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operations}'
-
-          - name: mongodb.active.reads
-            description: The number of read operations currently being processed.
-            sum:
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              aggregationTemporality: 2
-            unit: '{reads}'
-          - name: mongodb.active.writes
-            description: The number of write operations currently being processed.
-            sum:
-              dataPoints:
-                - asInt: "2"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              aggregationTemporality: 2
-            unit: '{writes}' 
-          - description: The number of bytes read into the WiredTiger cache.
-            name: mongodb.wtcache.bytes.read
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "10"  # Value from test fixture
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: 'By'    
-          - description: The number of page faults.
-            name: mongodb.page_faults
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"  # Value from test fixture (extra_info.page_faults)
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: '{faults}'                          
           - description: The latency of operations.
             gauge:
               dataPoints:

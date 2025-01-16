@@ -68,15 +68,12 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbActiveReadsDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbActiveWritesDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbCacheDirtyPercentDataPoint(ts, 1)
 
@@ -84,7 +81,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbCacheOperationsDataPoint(ts, 1, AttributeTypeHit)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbCacheUsedPercentDataPoint(ts, 1)
 
@@ -92,7 +88,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbCollectionCountDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbCommandsPerSecDataPoint(ts, 1)
 
@@ -116,7 +111,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbDatabaseCountDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbDeletesPerSecDataPoint(ts, 1)
 
@@ -128,11 +122,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbExtentCountDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbFlushesPerSecDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbGetmoresPerSecDataPoint(ts, 1)
 
@@ -155,7 +147,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbIndexSizeDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbInsertsPerSecDataPoint(ts, 1)
 
@@ -198,7 +189,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 1, AttributeOperationLatencyRead)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbOperationReplCountDataPoint(ts, 1, AttributeOperationInsert)
 
@@ -206,35 +196,27 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbOperationTimeDataPoint(ts, 1, AttributeOperationInsert)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbPageFaultsDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbQueriesPerSecDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbReplCommandsPerSecDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbReplDeletesPerSecDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbReplGetmoresPerSecDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbReplInsertsPerSecDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbReplQueriesPerSecDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbReplUpdatesPerSecDataPoint(ts, 1)
 
@@ -246,14 +228,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbStorageSizeDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbUpdatesPerSecDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordMongodbUptimeDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbWtcacheBytesReadDataPoint(ts, 1)
 

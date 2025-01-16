@@ -197,7 +197,7 @@ metrics:
   mongodb.operation.repl.count:
     description: The number of replicated operations executed.
     unit: "{operations}"
-    enabled: true
+    enabled: false
     sum:
       aggregation_temporality: cumulative
       value_type: int
@@ -361,7 +361,7 @@ metrics:
   mongodb.queries_per_sec:
     description: The number of queries executed per second.
     unit: "{query}/s"
-    enabled: true
+    enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
@@ -369,7 +369,7 @@ metrics:
   mongodb.inserts_per_sec:
     description: The number of insertions executed per second.
     unit: "{insert}/s"
-    enabled: true
+    enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
@@ -377,7 +377,7 @@ metrics:
   mongodb.commands_per_sec:
     description: The number of commands executed per second.
     unit: "{command}/s"
-    enabled: true
+    enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
@@ -385,7 +385,7 @@ metrics:
   mongodb.getmores_per_sec:
     description: The number of getmores executed per second.
     unit: "{getmore}/s"
-    enabled: true
+    enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
@@ -393,7 +393,7 @@ metrics:
   mongodb.deletes_per_sec:
     description: The number of deletes executed per second.
     unit: "{delete}/s"
-    enabled: true
+    enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
@@ -401,7 +401,7 @@ metrics:
   mongodb.updates_per_sec:
     description: The number of updates executed per second.
     unit: "{update}/s"
-    enabled: true
+    enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
@@ -409,7 +409,7 @@ metrics:
   mongodb.flushes_per_sec:
     description: The number of flushes executed per second.
     unit: "{flush}/s"
-    enabled: true
+    enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
@@ -417,7 +417,7 @@ metrics:
   mongodb.repl_queries_per_sec:
     description: The number of replicated queries executed per second.
     unit: "{query}/s"
-    enabled: true
+    enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
@@ -425,7 +425,7 @@ metrics:
   mongodb.repl_inserts_per_sec:
     description: The number of replicated insertions executed per second.
     unit: "{insert}/s"
-    enabled: true
+    enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
@@ -433,7 +433,7 @@ metrics:
   mongodb.repl_commands_per_sec:
     description: The number of replicated commands executed per second.
     unit: "{command}/s"
-    enabled: true
+    enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
@@ -441,7 +441,7 @@ metrics:
   mongodb.repl_getmores_per_sec:
     description: The number of replicated getmores executed per second.
     unit: "{getmore}/s"
-    enabled: true
+    enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
@@ -449,7 +449,7 @@ metrics:
   mongodb.repl_deletes_per_sec:
     description: The number of replicated deletes executed per second.
     unit: "{delete}/s"
-    enabled: true
+    enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
@@ -457,7 +457,7 @@ metrics:
   mongodb.repl_updates_per_sec:
     description: The number of replicated updates executed per second.
     unit: "{update}/s"
-    enabled: true
+    enabled: false
     gauge:
       value_type: double
       aggregation_temporality: delta
@@ -465,7 +465,7 @@ metrics:
   mongodb.active.writes:
     description: The number of write operations currently being processed.
     unit: "{writes}"
-    enabled: true
+    enabled: false
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -474,7 +474,7 @@ metrics:
   mongodb.active.reads:
     description: The number of read operations currently being processed.
     unit: "{reads}"
-    enabled: true
+    enabled: false
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -483,7 +483,7 @@ metrics:
   mongodb.wtcache.bytes.read:
     description: The number of bytes read into the WiredTiger cache.
     unit: "By"
-    enabled: true
+    enabled: false
     sum:
       value_type: int
       aggregation_temporality: cumulative
@@ -492,21 +492,21 @@ metrics:
   mongodb.cache.dirty.percent:
     description: The percentage of WiredTiger cache that is dirty.
     unit: "1"
-    enabled: true
+    enabled: false
     gauge:
       value_type: double
     attributes: []
   mongodb.cache.used.percent:
     description: The percentage of WiredTiger cache in use.
     unit: "1"
-    enabled: true
+    enabled: false
     gauge:
       value_type: double
     attributes: []
   mongodb.page_faults:
     description: The number of page faults.
     unit: "{faults}"
-    enabled: true
+    enabled: false
     sum:
       value_type: int
       aggregation_temporality: cumulative
