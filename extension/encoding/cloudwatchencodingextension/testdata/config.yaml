@@ -1,12 +1,4 @@
 cloudwatch_encoding:
 
-cloudwatch_encoding/invalid_encoding:
-  content_encoding:
-    - invalid
-  format: otel
-
 cloudwatch_encoding/invalid_format:
-  content_encoding:
-    - base64
-    - gzip
   format: invalid
