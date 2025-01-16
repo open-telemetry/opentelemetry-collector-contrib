@@ -252,6 +252,7 @@ These common functions can be used for any Signal.
 In addition to the common OTTL functions, the processor defines its own functions to help with transformations specific to this processor:
 
 **Metrics only functions**
+
 - [convert_sum_to_gauge](#convert_sum_to_gauge)
 - [convert_gauge_to_sum](#convert_gauge_to_sum)
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
@@ -380,7 +381,21 @@ Examples:
 
 ### convert_summary_quantile_val_to_gauge
 
-TODO
+`convert_summary_quantile_val_to_gauge(Optional[suffix])`
+
+The `convert_summary_quantile_val_to_gauge` function creates a new Gauge metric from each of the Summary's quantiles.
+
+`suffix` is an optional string representing the suffix of the Gauge metric name. The default value is `.quantile_%s`, where `%s` represents the quantile value.
+
+The name for the new metric will be `<summary metric name>.quantile_<quantile value>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `unit` and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
+
+**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
+
+Examples:
+
+- `convert_summary_quantile_val_to_gauge(".custom_quantile_suffix")`
+
+- `convert_summary_quantile_val_to_gauge()`
 
 ### copy_metric
 

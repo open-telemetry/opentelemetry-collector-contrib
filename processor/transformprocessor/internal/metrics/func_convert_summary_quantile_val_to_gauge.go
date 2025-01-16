@@ -6,6 +6,8 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -42,22 +44,31 @@ func convertSummaryQuantileValToGauge(suffix ottl.Optional[string]) (ottl.ExprFu
 			return nil, nil
 		}
 
-		gaugeMetric := tCtx.GetMetrics().AppendEmpty()
-		gaugeMetric.SetDescription(metric.Description())
-		gaugeMetric.SetName(metric.Name() + metricNameSuffix)
-		gaugeMetric.SetUnit(metric.Unit())
-
-		gaugeDps := gaugeMetric.Gauge().DataPoints()
 		dps := metric.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			dp := dps.At(i)
-			gaugeDp := gaugeDps.AppendEmpty()
-			dp.Attributes().CopyTo(gaugeDp.Attributes())
-			gaugeDp.SetDoubleValue(2)
-			gaugeDp.SetIntValue(1)
-			gaugeDp.SetStartTimestamp(dp.StartTimestamp())
-			gaugeDp.SetTimestamp(dp.Timestamp())
+			for j := 0; j < dp.QuantileValues().Len(); j++ {
+				q := dp.QuantileValues().At(j)
+				gaugeMetric := tCtx.GetMetrics().AppendEmpty()
+				gaugeMetric.SetDescription(metric.Description())
+				gaugeMetric.SetName(metric.Name() + metricNameSuffix + "_" + quantileToStringSuffix(q.Quantile()))
+				gaugeMetric.SetUnit(metric.Unit())
+				gaugeDp := gaugeMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.Attributes().CopyTo(gaugeDp.Attributes())
+				gaugeDp.SetDoubleValue(q.Value())
+				gaugeDp.SetStartTimestamp(dp.StartTimestamp())
+				gaugeDp.SetTimestamp(dp.Timestamp())
+			}
 		}
 		return nil, nil
 	}, nil
+}
+
+func quantileToStringSuffix(q float64) string {
+	str := strconv.FormatFloat(q, 'f', -1, 64)
+	result := strings.TrimPrefix(str, "0.")
+	if len(result) < 2 && result != "0" && result != "1" {
+		result = result + "0"
+	}
+	return result
 }
