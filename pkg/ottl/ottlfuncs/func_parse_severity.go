@@ -44,7 +44,7 @@ func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) (ot
 			return nil, fmt.Errorf("could not get log level: %w", err)
 		}
 
-		logLevel, err := sev.evaluate(value)
+		logLevel, err := evaluateSeverity(value, sev)
 		if err != nil {
 			return nil, fmt.Errorf("could not map log level: %w", err)
 		}
@@ -53,9 +53,9 @@ func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) (ot
 	}, nil
 }
 
-func validateSeverity(raw map[string]any) (*severities, error) {
-	s := &severities{}
-	if err := mapstructure.Decode(raw, s); err != nil {
+func validateSeverity(raw map[string]any) (map[string][]any, error) {
+	s := map[string][]any{}
+	if err := mapstructure.Decode(raw, &s); err != nil {
 		return nil, fmt.Errorf("cannot decode severity mapping: %w", err)
 	}
 
@@ -63,85 +63,69 @@ func validateSeverity(raw map[string]any) (*severities, error) {
 
 }
 
-type severities struct {
-	Debug *severity `mapstructure:"debug,omitempty"`
-	Fatal *severity `mapstructure:"fatal,omitempty"`
-	Error *severity `mapstructure:"error,omitempty"`
-	Warn  *severity `mapstructure:"warn,omitempty"`
-	Info  *severity `mapstructure:"info,omitempty"`
-}
+func evaluateSeverity(value any, severities map[string][]any) (string, error) {
 
-func (s severities) evaluate(value any) (string, error) {
-	if s.Debug != nil {
-		match, err := s.Debug.matches(value)
+	for level, criteria := range severities {
+		match, err := evaluateSeverityMapping(value, criteria)
 		if err != nil {
 			return "", fmt.Errorf("could not evaluate log level of value '%v': %w", value, err)
 		}
 		if match {
-			return "debug", nil
-		}
-	}
-	if s.Fatal != nil {
-		match, err := s.Fatal.matches(value)
-		if err != nil {
-			return "", fmt.Errorf("could not evaluate log level of value '%v': %w", value, err)
-		}
-		if match {
-			return "fatal", nil
-		}
-	}
-	if s.Error != nil {
-		match, err := s.Error.matches(value)
-		if err != nil {
-			return "", fmt.Errorf("could not evaluate log level of value '%v': %w", value, err)
-		}
-		if match {
-			return "error", nil
-		}
-	}
-	if s.Warn != nil {
-		match, err := s.Warn.matches(value)
-		if err != nil {
-			return "", fmt.Errorf("could not evaluate log level of value '%v': %w", value, err)
-		}
-		if match {
-			return "warn", nil
-		}
-	}
-	if s.Info != nil {
-		match, err := s.Info.matches(value)
-		if err != nil {
-			return "", fmt.Errorf("could not evaluate log level of value '%v': %w", value, err)
-		}
-		if match {
-			return "info", nil
+			return level, nil
 		}
 	}
 	return "", fmt.Errorf("no matching log level found for value '%v'", value)
 }
 
-type severity struct {
-	Range   *severityRange `mapstructure:"range,omitempty"`
-	MapFrom []string       `mapstructure:"mapFrom,omitempty"`
-}
-
-func (s severity) matches(value any) (bool, error) {
+func evaluateSeverityMapping(value any, criteria []any) (bool, error) {
 	switch v := value.(type) {
 	case string:
-		for _, mappedLevel := range s.MapFrom {
-			if mappedLevel == v {
-				return true, nil
-			}
-		}
+		return evaluateSeverityStringMapping(v, criteria), nil
 	case int64:
-		return s.Range.Min <= v && s.Range.Max >= v, nil
+		return evaluateSeverityNumberMapping(v, criteria), nil
 	default:
-		return false, fmt.Errorf("log level must be either string or int")
+		return false, fmt.Errorf("log level must be either string or int64, but got %T", v)
 	}
-	return false, nil
 }
 
-type severityRange struct {
-	Min int64 `mapstructure:"min"`
-	Max int64 `mapstructure:"max"`
+func evaluateSeverityNumberMapping(value int64, criteria []any) bool {
+	for _, crit := range criteria {
+		// if we have a numeric severity number, we need to match with number ranges
+		rangeMap, ok := crit.(map[string]any)
+		if !ok {
+			continue
+		}
+		rangeMin, gotMin := rangeMap["min"]
+		rangeMax, gotMax := rangeMap["max"]
+		if !gotMin || !gotMax {
+			continue
+		}
+		rangeMinInt, ok := rangeMin.(int64)
+		if !ok {
+			continue
+		}
+		rangeMaxInt, ok := rangeMax.(int64)
+		if !ok {
+			continue
+		}
+		// TODO should we error if the range object does not contain the expected keys/types, or just proceed with checking the other criteria?
+		if rangeMinInt <= value && rangeMaxInt >= value {
+			return true
+		}
+	}
+	return false
+}
+
+func evaluateSeverityStringMapping(value string, criteria []any) bool {
+	for _, crit := range criteria {
+		// if we have a severity string, we need to match with string mappings
+		criteriaString, ok := crit.(string)
+		if !ok {
+			continue
+		}
+		if criteriaString == value {
+			return true
+		}
+	}
+	return false
 }

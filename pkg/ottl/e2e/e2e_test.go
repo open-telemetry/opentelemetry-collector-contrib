@@ -1040,15 +1040,13 @@ func Test_e2e_converters(t *testing.T) {
 	attributes["test"], 
 	ParseSeverity(severity_number, 
 		{
-			"error":{
-				"mapFrom": [
-					"err"
-				],
-                "range": { "min": 3, "max": 4 }
-			},
-			"info":{
-                "range": { "min": 1, "max": 2 }
-			},
+			"error":[
+				"err",
+                { "min": 3, "max": 4 }
+			],
+			"info":[
+                { "min": 1, "max": 2 }
+			],
 		}
 	))`,
 			want: func(tCtx ottllog.TransformContext) {
