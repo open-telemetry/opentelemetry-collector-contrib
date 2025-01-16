@@ -236,13 +236,14 @@ func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2
 
 	scopeName := ls.Get("otel_scope_name")
 	scopeVersion := ls.Get("otel_scope_version")
+	// TODO: If the scope version or scope name is empty, get the information from the collector build tags.
+	// More: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#:~:text=Metrics%20which%20do%20not%20have%20an%20otel_scope_name%20or%20otel_scope_version%20label%20MUST%20be%20assigned%20an%20instrumentation%20scope%20identifying%20the%20entity%20performing%20the%20translation%20from%20Prometheus%20to%20OpenTelemetry%20(e.g.%20the%20collector%E2%80%99s%20prometheus%20receiver)
+	
 	// Check if the name and version present in the labels are already present in the ResourceMetrics.
 	// If it is not present, we should create a new ScopeMetrics.
 	// Otherwise, we should append to the existing ScopeMetrics.
 	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 		scope := rm.ScopeMetrics().At(j)
-		// TODO: use the collector build information as the scope.
-		// More: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#:~:text=Metrics%20which%20do%20not%20have%20an%20otel_scope_name%20or%20otel_scope_version%20label%20MUST%20be%20assigned%20an%20instrumentation%20scope%20identifying%20the%20entity%20performing%20the%20translation%20from%20Prometheus%20to%20OpenTelemetry%20(e.g.%20the%20collector%E2%80%99s%20prometheus%20receiver)
 		if scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
 			addDatapoints(scope.Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
 			return
