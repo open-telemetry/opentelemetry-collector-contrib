@@ -23,8 +23,6 @@ type Config struct {
 	makeClient          func(apiConf k8sconfig.APIConfig) (kubernetes.Interface, error)
 }
 
-type LeaderElector struct{}
-
 func (cfg *Config) getK8sClient() (kubernetes.Interface, error) {
 	if cfg.makeClient == nil {
 		cfg.makeClient = k8sconfig.MakeClient

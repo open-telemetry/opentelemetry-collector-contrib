@@ -58,7 +58,7 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "creates a new factory and CreateExtension returns no error",
+			desc: "creates a new factory and createExtension returns no error",
 			testFunc: func(t *testing.T) {
 				t.Helper()
 				fakeClient := fake.NewClientset()
