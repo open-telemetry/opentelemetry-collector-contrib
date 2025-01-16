@@ -165,9 +165,6 @@ behaviours, which may be configured through the following settings:
             It works only for logs where the log record body is a map. Each LogRecord
             body is serialized to JSON as-is and becomes a separate document for ingestion.
             If the log record body is not a map, the exporter will log a warning and drop the log record.
-  - `dedup` (DEPRECATED). This configuration is deprecated and non-operational,
-    and will be removed in the future. Object keys are always deduplicated to
-    avoid Elasticsearch rejecting documents.
   - `dedot` (default=true; DEPRECATED, in future dedotting will always be enabled
     for ECS mode, and never for other modes): When enabled attributes with `.`
     will be split into proper json objects.
