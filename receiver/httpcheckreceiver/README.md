@@ -76,7 +76,6 @@ service:
       receivers: [httpcheck]
       processors: [batch]
       exporters: [debug]
-
 ```
 
 ## Metrics
