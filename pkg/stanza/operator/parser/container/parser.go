@@ -347,9 +347,7 @@ func parseTime(e *entry.Entry, layout string) error {
 	// timeutils.ParseGotime calls timeutils.SetTimestampYear before returning the timeValue
 	e.Timestamp = timeValue
 
-	if removeOriginalTimeField.IsEnabled() {
-		e.Delete(entry.NewAttributeField(parseFrom))
-	}
+	e.Delete(entry.NewAttributeField(parseFrom))
 
 	return nil
 }
