@@ -54,14 +54,14 @@ receivers:
           - "https://opentelemetry.io"
       - method: "GET"
         endpoints: 
-          - "http://localhost:8080/hello"
-          - "http://localhost:8080/hello"
+          - "http://localhost:8080/hello1"
+          - "http://localhost:8080/hello2"
         headers:
-          Authorization: "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJqYXZhaW51c2UiLCJleHAiOjE3MzcwMzMzMTcsImlhdCI6MTczNzAxNTMxN30.qNb_hckvlqfWmnnaw2xP9ie2AKGO6ljzGxcMotoFZg3CwcYSTGu7VE6ERsvX_nHlcZOYZHgPc7_9WSBlCZ9M_w"
+          Authorization: "Bearer <your_bearer_token>"
       - method: "GET"
         endpoint: "http://localhost:8080/hello"
         headers:
-          Authorization: "Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJqYXZhaW51c2UiLCJleHAiOjE3MzcwMzMzMTcsImlhdCI6MTczNzAxNTMxN30.qNb_hckvlqfWmnnaw2xP9ie2AKGO6ljzGxcMotoFZg3CwcYSTGu7VE6ERsvX_nHlcZOYZHgPc7_9WSBlCZ9M_w"
+          Authorization: "Bearer <your_bearer_token>"
 processors:
   batch:
     send_batch_max_size: 1000
