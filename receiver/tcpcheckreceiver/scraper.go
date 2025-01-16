@@ -83,6 +83,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	var mux sync.Mutex
 
 	for _, tcpConfig := range s.cfg.Targets {
+		// endpoint and dialer
 		go s.scrapeEndpoint(tcpConfig, &wg, &mux)
 	}
 
