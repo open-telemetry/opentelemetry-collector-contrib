@@ -82,6 +82,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/cloudwatchencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension
@@ -164,6 +165,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/cloudwatch
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor

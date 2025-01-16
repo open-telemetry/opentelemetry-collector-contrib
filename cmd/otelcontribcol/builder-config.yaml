@@ -45,6 +45,7 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension v0.117.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/cloudwatchencodingextension v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension v0.117.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension v0.117.0
@@ -378,6 +379,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter => ../../exporter/zipkinexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver => ../../receiver/hostmetricsreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ../../pkg/translator/signalfx
+  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/cloudwatch => ../../pkg/translator/cloudwatch
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver => ../../receiver/signalfxreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver => ../../receiver/windowsperfcountersreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver => ../../receiver/simpleprometheusreceiver
@@ -481,6 +483,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension => ../../extension/encoding/otlpencodingextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension => ../../extension/encoding/zipkinencodingextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension => ../../extension/encoding/avrologencodingextension
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/cloudwatchencodingextension => ../../extension/encoding/cloudwatchencodingextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension => ../../extension/encoding/jsonlogencodingextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension => ../../extension/encoding/textencodingextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension => ../../extension/encoding/jaegerencodingextension
