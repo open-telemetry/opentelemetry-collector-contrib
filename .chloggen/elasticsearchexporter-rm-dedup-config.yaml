@@ -10,7 +10,7 @@ component: elasticsearchexporter
 note: Remove `dedup` config setting that was deprecated in v0.104.0
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [33772]
+issues: [33773]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
