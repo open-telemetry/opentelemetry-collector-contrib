@@ -17,10 +17,12 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
 
 // All the data we need to test the Span filter
@@ -282,7 +284,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 }
 
 func TestFilterTraceProcessorTelemetry(t *testing.T) {
-	tel := setupTestTelemetry()
+	tel := metadatatest.SetupTelemetry()
 	processor, err := newFilterSpansProcessor(tel.NewSettings(), &Config{
 		Traces: TraceFilters{
 			SpanConditions: []string{
@@ -313,7 +315,7 @@ func TestFilterTraceProcessorTelemetry(t *testing.T) {
 		},
 	}
 
-	tel.assertMetrics(t, want)
+	tel.AssertMetrics(t, want, metricdatatest.IgnoreTimestamp())
 	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
