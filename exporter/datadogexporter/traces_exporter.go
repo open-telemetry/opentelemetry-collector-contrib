@@ -32,6 +32,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 
 var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -249,6 +250,9 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 	}
 	if cfg.Traces.ComputeTopLevelBySpanKind {
 		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
+	}
+	if datadog.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
+		acfg.Features["enable_receive_resource_spans_v2"] = struct{}{}
 	}
 	tracelog.SetLogger(&zaplogger{params.Logger}) // TODO: This shouldn't be a singleton
 	return acfg, nil
