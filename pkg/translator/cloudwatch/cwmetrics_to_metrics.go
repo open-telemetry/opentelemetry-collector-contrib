@@ -139,9 +139,9 @@ func setDataPointAttributes(m cloudwatchMetric, dp pmetric.SummaryDataPoint) {
 	}
 }
 
-// addMetric transforms the cloudwatch metric to pmetric.Metric
+// addJSONMetric transforms the cloudwatch metric to pmetric.Metric
 // and appends it to pmetric.Metrics
-func addMetric(cwMetric cloudwatchMetric, metrics pmetric.Metrics) {
+func addJSONMetric(cwMetric cloudwatchMetric, metrics pmetric.Metrics) {
 	rm := metrics.ResourceMetrics().AppendEmpty()
 	setResourceAttributes(cwMetric, rm.Resource())
 
@@ -174,23 +174,40 @@ func addMetric(cwMetric cloudwatchMetric, metrics pmetric.Metrics) {
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(cwMetric.Timestamp)))
 }
 
-func UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
-	decoder := json.NewDecoder(bytes.NewReader(record))
-	metrics := pmetric.NewMetrics()
-	for datumIndex := 0; ; datumIndex++ {
-		var cwMetric cloudwatchMetric
+func addMetric(format Format, record []byte, metrics pmetric.Metrics) error {
+	var cwMetric cloudwatchMetric
+	switch format {
+	case JSONFormat:
+		decoder := json.NewDecoder(bytes.NewReader(record))
 		if err := decoder.Decode(&cwMetric); err != nil {
 			if errors.Is(err, io.EOF) {
-				break
+				return nil
 			}
+			return err
+		}
+		if valid, err := isMetricValid(cwMetric); !valid {
+			return err
+		}
+		addJSONMetric(cwMetric, metrics)
+		return nil
+	case OTelFormat:
+		// TODO Still needs to be implemented
+		return errors.New("implement me")
+	default:
+		return fmt.Errorf("error decoding cloudwatch metric using format %s", format)
+	}
+}
+
+func UnmarshalMetrics(format Format, record []byte) (pmetric.Metrics, error) {
+	metrics := pmetric.NewMetrics()
+	// Split metrics by delimiter
+	cwMetrics := bytes.Split(record, []byte("\n"))
+	for datumIndex, datum := range cwMetrics {
+		err := addMetric(format, datum, metrics)
+		if err != nil {
 			return pmetric.Metrics{},
 				fmt.Errorf("unable to unmarshal datum [%d] into cloudwatch metric: %w", datumIndex, err)
 		}
-		if valid, err := isMetricValid(cwMetric); !valid {
-			return pmetric.Metrics{},
-				fmt.Errorf("cloudwatch metric from datum [%d] is invalid: %w", datumIndex, err)
-		}
-		addMetric(cwMetric, metrics)
 	}
 
 	if metrics.MetricCount() == 0 {

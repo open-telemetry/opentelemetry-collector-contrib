@@ -36,14 +36,14 @@ func TestUnmarshalMetrics(t *testing.T) {
 		"InvalidRecord": {
 			filename: "invalid_record",
 			err: fmt.Errorf(
-				"cloudwatch metric from datum [0] is invalid: %w",
+				"unable to unmarshal datum [0] into cloudwatch metric: %w",
 				errors.New("cloudwatch metric is missing metric name field"),
 			),
 		},
 		"SomeInvalidRecord": {
 			filename: "some_invalid_record",
 			err: fmt.Errorf(
-				"cloudwatch metric from datum [1] is invalid: %w",
+				"unable to unmarshal datum [1] into cloudwatch metric: %w",
 				errors.New("cloudwatch metric is missing metric name field"),
 			),
 		},
@@ -67,7 +67,7 @@ func TestUnmarshalMetrics(t *testing.T) {
 				require.NoError(t, err)
 				return true
 			})
-			result, err := UnmarshalMetrics(buf.Bytes())
+			result, err := UnmarshalMetrics(JSONFormat, buf.Bytes())
 			require.Equal(t, testCase.err, err)
 			if err != nil {
 				return

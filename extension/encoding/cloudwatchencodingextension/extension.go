@@ -7,14 +7,15 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/base64"
+	"errors"
 	"fmt"
-	"io"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	"io"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/cloudwatch"
@@ -45,21 +46,32 @@ func (c *cloudwatchExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func decompress(buf []byte, encoding contentEncoding) ([]byte, error) {
-	switch encoding {
-	case NoEncoding:
-		return buf, nil
-	case GZipEncoded:
-		reader, err := gzip.NewReader(bytes.NewReader(buf))
-		if err != nil {
-			return nil, fmt.Errorf("failed to create gzip reader: %w", err)
+func decompress(buf []byte, encodings []contentEncoding) ([]byte, error) {
+	result := buf
+	for _, e := range encodings {
+		switch e {
+		case noEncoding:
+			return buf, nil
+		case gzipEncoding:
+			reader, err := gzip.NewReader(bytes.NewReader(result))
+			if err != nil {
+				return nil, fmt.Errorf("failed to create gzip reader: %w", err)
+			}
+			defer reader.Close()
+			if result, err = io.ReadAll(reader); err != nil {
+				return nil, err
+			}
+		case base64Encoding:
+			var err error
+			if result, err = base64.StdEncoding.DecodeString(string(result)); err != nil {
+				return nil, err
+			}
+		default:
+			// not possible, prevented by config.Validate
+			return nil, errors.New("invalid content encoding")
 		}
-		defer reader.Close()
-		return io.ReadAll(reader)
-	default:
-		// not possible, prevented by config.Validate
-		return nil, nil
 	}
+	return result, nil
 }
 
 func (c *cloudwatchExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
@@ -75,5 +87,5 @@ func (c *cloudwatchExtension) UnmarshalMetrics(buf []byte) (pmetric.Metrics, err
 	if err != nil {
 		return pmetric.Metrics{}, err
 	}
-	return cloudwatch.UnmarshalMetrics(data)
+	return cloudwatch.UnmarshalMetrics(c.config.Format, data)
 }

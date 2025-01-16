@@ -3,7 +3,7 @@ type: cloudwatch_encoding
 status:
   class: extension
   stability:
-    alpha: [extension]
-  distributions: [contrib]
+    development: [extension]
+  distributions: []
   codeowners:
     active: [constanca-m, axw]

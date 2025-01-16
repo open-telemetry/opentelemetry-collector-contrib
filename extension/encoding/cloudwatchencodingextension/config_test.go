@@ -5,14 +5,14 @@ package cloudwatchencodingextension
 
 import (
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/cloudwatchencodingextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/cloudwatch"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/cloudwatchencodingextension/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -32,6 +32,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:          component.NewIDWithName(metadata.Type, "invalid_encoding"),
 			expectedErr: errors.New("unknown content encoding \"invalid\""),
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "invalid_format"),
+			expectedErr: cloudwatch.GetErrorInvalidFormat("invalid"),
 		},
 	}
 
