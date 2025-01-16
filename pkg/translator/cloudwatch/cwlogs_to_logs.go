@@ -44,9 +44,13 @@ func addRecord(log cloudwatchLog, logs plog.Logs) {
 
 func UnmarshalLogs(record []byte) (plog.Logs, error) {
 	logs := plog.NewLogs()
-	decoder := json.NewDecoder(bytes.NewReader(record))
-	for datumIndex := 0; ; datumIndex++ {
+
+	// TODO Check if format (otel or json) matters
+	// for cloudwatch logs
+	cwLogs := bytes.Split(record, []byte("\n"))
+	for datumIndex, datum := range cwLogs {
 		var log cloudwatchLog
+		decoder := json.NewDecoder(bytes.NewReader(datum))
 		if err := decoder.Decode(&log); err != nil {
 			if errors.Is(err, io.EOF) {
 				break
