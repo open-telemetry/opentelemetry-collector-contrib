@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -17,7 +17,7 @@ import (
 )
 
 type Processor struct {
-	contexts []consumer.Traces
+	contexts []common.TracesConsumer
 	logger   *zap.Logger
 }
 
@@ -27,7 +27,7 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 		return nil, err
 	}
 
-	contexts := make([]consumer.Traces, len(contextStatements))
+	contexts := make([]common.TracesConsumer, len(contextStatements))
 	var errors error
 	for i, cs := range contextStatements {
 		context, err := pc.ParseContextStatements(cs)
@@ -49,7 +49,8 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 
 func (p *Processor) ProcessTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	for _, c := range p.contexts {
-		err := c.ConsumeTraces(ctx, td)
+		cache := pcommon.NewMap()
+		err := c.ConsumeTraces(ctx, td, &cache)
 		if err != nil {
 			p.logger.Error("failed processing traces", zap.Error(err))
 			return td, err
