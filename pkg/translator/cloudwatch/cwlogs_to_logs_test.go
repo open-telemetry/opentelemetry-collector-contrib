@@ -74,9 +74,6 @@ func TestUnmarshalLogs(t *testing.T) {
 			require.NoError(t, err)
 			expected, err := unmarshaller.UnmarshalLogs(content)
 			require.NoError(t, err)
-
-			// get log records
-			// expectedLogs := expected.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 			require.Equal(t, expected, result)
 		})
 	}
