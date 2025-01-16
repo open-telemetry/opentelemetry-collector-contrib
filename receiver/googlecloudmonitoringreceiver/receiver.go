@@ -89,16 +89,9 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 	metrics := pmetric.NewMetrics()
 
 	// Iterate over each metric in the configuration to calculate start/end times and construct the filter query.
-	for _, metric := range mr.config.MetricsList {
-		// Acquire read lock to safely read metricDescriptors
-		mr.mutex.RLock()
-		metricDesc, exists := mr.metricDescriptors[metric.MetricName]
-		mr.mutex.RUnlock()
-		if !exists {
-			mr.logger.Warn("Metric descriptor not found", zap.String("metric_name", metric.MetricName))
-			continue
-		}
-
+	mr.mutex.RLock()
+	defer mr.mutex.RUnlock()
+	for metricType, metricDesc := range mr.metricDescriptors {
 		// Set interval and delay times, using defaults if not provided
 		gInternal = mr.config.CollectionInterval
 		if gInternal <= 0 {
@@ -114,7 +107,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 		calStartTime, calEndTime = calculateStartEndTime(gInternal, gDelay)
 
 		// Get the filter query for the metric
-		filterQuery = getFilterQuery(metric)
+		filterQuery = fmt.Sprintf(`metric.type = "%s"`, metricType)
 
 		// Define the request to list time series data
 		tsReq := &monitoringpb.ListTimeSeriesRequest{
@@ -243,8 +236,13 @@ func getFilterQuery(metric MetricConfig) string {
 	var filterQuery string
 	const baseQuery = `metric.type =`
 
-	// If a specific metric name is provided, use it in the filter query
-	filterQuery = fmt.Sprintf(`%s "%s"`, baseQuery, metric.MetricName)
+	// see https://cloud.google.com/monitoring/api/v3/filters
+	if metric.MetricName != "" {
+		filterQuery = fmt.Sprintf(`%s "%s"`, baseQuery, metric.MetricName)
+	} else {
+		filterQuery = fmt.Sprintf(`%s monitoring.regex.full_match("%s")`, baseQuery, metric.MetricName)
+	}
+
 	return filterQuery
 }
 
@@ -322,7 +320,7 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 	// TODO: Add support for EXPONENTIAL_HISTOGRAM
 	default:
 		metricError := fmt.Sprintf("\n Unsupported metric kind: %v\n", timeSeries.GetMetricKind())
-		mr.logger.Info(metricError)
+		mr.logger.Warn(metricError)
 	}
 }
 
