@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
@@ -25,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
 
 type metricNameTest struct {
@@ -368,7 +370,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 }
 
 func TestFilterMetricProcessorTelemetry(t *testing.T) {
-	tel := setupTestTelemetry()
+	tel := metadatatest.SetupTelemetry()
 	cfg := &Config{
 		Metrics: MetricFilters{
 			MetricConditions: []string{
@@ -410,7 +412,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 			},
 		},
 	}
-	tel.assertMetrics(t, want)
+	tel.AssertMetrics(t, want, metricdatatest.IgnoreTimestamp())
 	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
