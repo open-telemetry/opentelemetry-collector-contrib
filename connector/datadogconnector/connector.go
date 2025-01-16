@@ -122,6 +122,9 @@ func getTraceAgentCfg(logger *zap.Logger, cfg TracesConfig, attributesTranslator
 	if datadog.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["enable_receive_resource_spans_v2"] = struct{}{}
 	}
+	if datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
+		acfg.Features["enable_operation_and_resource_name_logic_v2"] = struct{}{}
+	}
 	if v := cfg.BucketInterval; v > 0 {
 		acfg.BucketInterval = v
 	}

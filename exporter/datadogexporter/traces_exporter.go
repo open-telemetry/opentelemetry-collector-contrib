@@ -42,13 +42,6 @@ var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterFromVersion("v0.105.0"),
 )
 
-var operationAndResourceNameV2FeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.EnableOperationAndResourceNameV2",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, datadogexporter uses improved logic to compute operation name and resource name."),
-	featuregate.WithRegisterFromVersion("v0.118.0"),
-)
-
 type traceExporter struct {
 	params           exporter.Settings
 	cfg              *Config
@@ -234,7 +227,7 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 			return clientutil.NewHTTPClient(cfg.ClientConfig)
 		}
 	}
-	if operationAndResourceNameV2FeatureGate.IsEnabled() {
+	if datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
 		acfg.Features["enable_operation_and_resource_name_logic_v2"] = struct{}{}
 	} else {
 		params.Logger.Warn("Please enable feature gate exporter.datadogexporter.EnableOperationAndResourceNameV2 for improved operation and resource name logic. This feature will be enabled by default in the future - if you have Datadog monitors or alerts set on operation/resource names, you may need to migrate them to the new convention. Please refer to this guide: ")

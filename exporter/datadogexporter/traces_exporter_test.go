@@ -229,7 +229,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	} {
 		t.Run("", func(t *testing.T) {
 			ctx := context.Background()
-			err = exporter.ConsumeTraces(ctx, simpleTracesWithResAttributes(tt.attrs))
+			err = exporter.ConsumeTraces(ctx, simpleTraces(tt.attrs, nil, ptrace.SpanKindInternal))
 			assert.NoError(err)
 			timeout := time.After(time.Second)
 			select {
@@ -307,7 +307,7 @@ func testTraceExporter(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	assert.NoError(t, err)
 
 	ctx := context.Background()
-	err = exporter.ConsumeTraces(ctx, simpleTraces())
+	err = exporter.ConsumeTraces(ctx, simpleTraces(nil, nil, ptrace.SpanKindInternal))
 	assert.NoError(t, err)
 	timeout := time.After(2 * time.Second)
 	select {
@@ -428,7 +428,7 @@ func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
-	err = exp.ConsumeTraces(context.Background(), simpleTracesWithResAttributes(map[string]any{conventions127.AttributeDeploymentEnvironmentName: "new_env"}))
+	err = exp.ConsumeTraces(context.Background(), simpleTraces(map[string]any{conventions127.AttributeDeploymentEnvironmentName: "new_env"}, nil, ptrace.SpanKindInternal))
 	assert.NoError(t, err)
 
 	reqBytes := <-tracesRec.ReqChan
@@ -444,7 +444,7 @@ func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV
 }
 
 func TestPushTraceData_OperationAndResourceNameV2(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.EnableOperationAndResourceNameV2", true)
+	err := featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -472,7 +472,7 @@ func TestPushTraceData_OperationAndResourceNameV2(t *testing.T) {
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
-	err = exp.ConsumeTraces(context.Background(), simpleTracesWithAttributesAndKind(map[string]any{conventions127.AttributeDeploymentEnvironmentName: "new_env"}, ptrace.SpanKindServer))
+	err = exp.ConsumeTraces(context.Background(), simpleTraces(map[string]any{conventions127.AttributeDeploymentEnvironmentName: "new_env"}, nil, ptrace.SpanKindServer))
 	assert.NoError(t, err)
 
 	reqBytes := <-tracesRec.ReqChan
@@ -525,7 +525,7 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 		"service.name":                "do-not-use",
 		"service.version":             "do-not-use",
 	}
-	err = exp.ConsumeTraces(context.Background(), simpleTracesWithResAndSpanAttributes(nil, sattr))
+	err = exp.ConsumeTraces(context.Background(), simpleTraces(nil, sattr, ptrace.SpanKindInternal))
 	assert.NoError(t, err)
 
 	reqBytes := <-tracesRec.ReqChan
@@ -546,16 +546,8 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 	assert.Empty(t, span.Meta["version"])
 }
 
-func simpleTraces() ptrace.Traces {
-	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, nil, nil, ptrace.SpanKindInternal)
-}
-
-func simpleTracesWithResAttributes(rattrs map[string]any) ptrace.Traces {
-	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, rattrs, nil, ptrace.SpanKindInternal)
-}
-
-func simpleTracesWithResAndSpanAttributes(rattrs map[string]any, sattrs map[string]any) ptrace.Traces {
-	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, rattrs, sattrs, ptrace.SpanKindInternal)
+func simpleTraces(rattrs map[string]any, sattrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {
+	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, rattrs, sattrs, kind)
 }
 
 func genTraces(traceID pcommon.TraceID, rattrs map[string]any, sattrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {

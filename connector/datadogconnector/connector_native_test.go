@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/collector/featuregate"
+
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
@@ -130,6 +132,18 @@ var (
 )
 
 func TestMeasuredAndClientKindNative(t *testing.T) {
+	t.Run("OperationAndResourceNameV1", func(t *testing.T) {
+		testMeasuredAndClientKindNative(t, false)
+	})
+	t.Run("OperationAndResourceNameV2", func(t *testing.T) {
+		testMeasuredAndClientKindNative(t, true)
+	})
+}
+
+func testMeasuredAndClientKindNative(t *testing.T, enableOperationAndResourceNameV2 bool) {
+	if err := featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", enableOperationAndResourceNameV2); err != nil {
+		t.Fatal(err)
+	}
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.Traces.ComputeTopLevelBySpanKind = true
 	connector, metricsSink := creteConnectorNativeWithCfg(t, cfg)
@@ -240,6 +254,13 @@ func TestMeasuredAndClientKindNative(t *testing.T) {
 			IsTraceRoot:  pb.Trilean_TRUE,
 		},
 	}
+
+	if enableOperationAndResourceNameV2 {
+		expected[0].Name = "Internal"
+		expected[1].Name = "client.request"
+		expected[2].Name = "server.request"
+	}
+
 	if diff := cmp.Diff(
 		cgss,
 		expected,
