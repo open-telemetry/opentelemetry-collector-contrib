@@ -7,7 +7,7 @@ change_type: enhancement
 component: datadogexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add a feature gate exporter.datadogexporter.EnableOperationAndResourceNameV2. Enabling this gate modifies the logic for computing operation and resource names from OTLP spans to produce shorter, more readable names and improve alignment with OpenTelemetry specifications."
+note: "Add a feature gate datadog.EnableOperationAndResourceNameV2. Enabling this gate modifies the logic for computing operation and resource names from OTLP spans to produce shorter, more readable names and improve alignment with OpenTelemetry specifications."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36419]
