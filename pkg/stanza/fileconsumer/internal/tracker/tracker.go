@@ -184,7 +184,7 @@ func (t *fileTracker) restoreArchiveIndex(ctx context.Context) {
 			t.archiveIndex++
 		}
 	} else if previousPollsToArchive > t.pollsToArchive {
-		// we will only attempt to rewrite archive if the archive size has shrinked
+		// we will only attempt to rewrite archive if the archive size has shrunk
 		t.set.Logger.Warn("polls_to_archive has changed. Will attempt to rewrite archive")
 		t.rewriteArchive(ctx, previousPollsToArchive)
 	}
@@ -428,9 +428,9 @@ func encodeIndex(val int) []byte {
 
 	// Encode the index
 	if err := enc.Encode(val); err != nil {
-		return buf.Bytes()
+		return nil
 	}
-	return nil
+	return buf.Bytes()
 }
 
 func decodeIndex(buf []byte) (int, error) {
