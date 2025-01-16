@@ -10,14 +10,14 @@ import (
 	"path"
 	"strings"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 // sfxEventClient sends the data to the SignalFx backend.
@@ -33,7 +33,7 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld plog.Logs) (int, e
 		return 0, nil
 	}
 
-	accessToken := s.retrieveAccessToken(rls.At(0))
+	accessToken := s.retrieveAccessToken(ctx, rls.At(0))
 
 	var sfxEvents []*sfxpb.Event
 	numDroppedLogRecords := 0
@@ -104,10 +104,16 @@ func (s *sfxEventClient) encodeBody(events []*sfxpb.Event) (bodyReader io.Reader
 	return s.getReader(body)
 }
 
-func (s *sfxEventClient) retrieveAccessToken(rl plog.ResourceLogs) string {
+func (s *sfxEventClient) retrieveAccessToken(ctx context.Context, rl plog.ResourceLogs) string {
 	if !s.accessTokenPassthrough {
 		// Nothing to do if token is pass through not configured or resource is nil.
 		return ""
+	}
+
+	cl := client.FromContext(ctx)
+	ss := cl.Metadata.Get(splunk.SFxAccessTokenHeader)
+	if len(ss) > 0 {
+		return ss[0]
 	}
 
 	attrs := rl.Resource().Attributes()
