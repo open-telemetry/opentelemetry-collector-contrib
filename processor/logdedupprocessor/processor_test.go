@@ -308,3 +308,24 @@ func TestProcessorConsumeMultipleConditions(t *testing.T) {
 	err = p.Shutdown(context.Background())
 	require.NoError(t, err)
 }
+
+func TestProcessorConfigValidate(t *testing.T) {
+	t.Parallel()
+	invalidCfg := &Config{
+		LogCountAttribute: defaultLogCountAttribute,
+		Interval:          -1,
+		Timezone:          "",
+	}
+
+	_, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(), invalidCfg, consumertest.NewNop())
+	require.Error(t, err)
+
+	validCfg := &Config{
+		LogCountAttribute: defaultLogCountAttribute,
+		Interval:          defaultInterval,
+		Timezone:          defaultTimezone,
+	}
+
+	_, err = createLogsProcessor(context.Background(), processortest.NewNopSettings(), validCfg, consumertest.NewNop())
+	require.NoError(t, err)
+}

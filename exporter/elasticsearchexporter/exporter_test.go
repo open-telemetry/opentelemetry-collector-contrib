@@ -240,7 +240,7 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "raw"
-			// dedup is the default
+			// deduplication is always performed - there is no configuration that controls it
 		})
 		logs := newLogsWithAttributes(
 			// Scope collides with the top-level "Scope" field,

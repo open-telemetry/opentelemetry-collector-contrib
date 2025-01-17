@@ -96,6 +96,7 @@ extension/encoding/avrologencodingextension/      @open-telemetry/collector-cont
 extension/encoding/jaegerencodingextension/       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/jsonlogencodingextension/      @open-telemetry/collector-contrib-approvers @VihasMakwana @atoulme
 extension/encoding/otlpencodingextension/         @open-telemetry/collector-contrib-approvers @dao-jun @VihasMakwana
+extension/encoding/skywalkingencodingextension/   @open-telemetry/collector-contrib-approvers @JaredTan95
 extension/encoding/textencodingextension/         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/zipkinencodingextension/       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
 extension/googleclientauthextension/              @open-telemetry/collector-contrib-approvers @dashpole @aabmass @jsuereth @punya @psx95
@@ -120,7 +121,6 @@ extension/sigv4authextension/                     @open-telemetry/collector-cont
 extension/solarwindsapmsettingsextension/         @open-telemetry/collector-contrib-approvers @jerrytfleung @cheempz
 extension/storage/                                @open-telemetry/collector-contrib-approvers @dmitryax @atoulme @djaglowski
 extension/storage/dbstorage/                      @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
-extension/storage/filestorage/                    @open-telemetry/collector-contrib-approvers @djaglowski
 extension/storage/redisstorageextension/          @open-telemetry/collector-contrib-approvers @atoulme
 extension/sumologicextension/                     @open-telemetry/collector-contrib-approvers @rnishtala-sumo @chan-tim-sumo
 
@@ -317,4 +317,5 @@ reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers
 exporter/kineticaexporter/                        @open-telemetry/collector-contrib-approvers 
 exporter/opensearchexporter/                      @open-telemetry/collector-contrib-approvers 
 extension/observer/ecstaskobserver/               @open-telemetry/collector-contrib-approvers 
+extension/storage/filestorage/                    @open-telemetry/collector-contrib-approvers 
 receiver/jmxreceiver/                             @open-telemetry/collector-contrib-approvers 
