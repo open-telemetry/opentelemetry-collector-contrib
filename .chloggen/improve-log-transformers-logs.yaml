@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `log.record.original` to errors logs from log transformers processors
+note: Add log file path and original record to errors logs from log transformers processors
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: []
@@ -16,7 +16,7 @@ issues: []
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  When a log transformer processor fails to process an log entry it will include the entry's body in its own logs.
+  When a log transformer processor fails to process an log entry it will include the log file path and the entry's body in its own logs.
   This makes it easier to debug why certain log entries are causing issues in the processors. 
 
 # If your change doesn't affect end users or the exported elements of any package,
