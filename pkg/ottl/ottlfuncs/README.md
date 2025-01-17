@@ -450,6 +450,7 @@ Available Converters:
 - [ParseCSV](#parsecsv)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
+- [ParseSeverity](#parseseverity)
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
 - [RemoveXML](#removexml)
@@ -1364,6 +1365,25 @@ Examples:
 - `ParseKeyValue("k1=v1 k2=v2 k3=v3")`
 - `ParseKeyValue("k1!v1_k2!v2_k3!v3", "!", "_")`
 - `ParseKeyValue(attributes["pairs"])`
+
+### ParseSeverity
+
+`ParseSeverity(target, severityMapping)`
+
+The `ParseSeverity` converter returns a `string` that represents one of the log levels defined by `severityMapping`.
+
+`target` is a Getter that returns a string or an integer.
+`severityMapping` is a map containing the log levels, and a list of values they are mapped from. These values can be either
+strings, or map items containing a numeric range, defined by a `min` and `max` key, for the given log level.
+For example, the following mapping will map to the `info` level, if the `target` is either a string with the value `inf`,
+or an integer in the range `[200,299]`:
+
+`{"info":["inf", {"min":200, "max":299}]}`
+
+Examples:
+
+- `ParseSeverity(attributes["log-level"] {"info":["inf", {"min":200, "max":299}]})`
+- `ParseSeverity(severity_number {"info":["inf", {"min":200, "max":299}], "error":[{"min":400, "max":499}]})`
 
 ### ParseSimplifiedXML
 
