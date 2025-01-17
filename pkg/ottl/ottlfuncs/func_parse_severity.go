@@ -3,7 +3,9 @@ package ottlfuncs
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-viper/mapstructure/v2"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
