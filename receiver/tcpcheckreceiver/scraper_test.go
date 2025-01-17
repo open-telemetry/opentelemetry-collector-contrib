@@ -46,15 +46,13 @@ func (server *Server) runTCPServer(t *testing.T) string {
 func (server *Server) runTCPServerError(t *testing.T) (string, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", server.host, server.port))
 	if err != nil {
-		return "", err // Return the error if Listen fails
+		return "", err
 	}
 	server.listener = listener
 	go func() {
-		// Simulate a TCP error condition
-		time.Sleep(time.Millisecond * 100) // Simulate some delay before closing
+		time.Sleep(time.Millisecond * 100)
 		err := listener.Close()
 		if err != nil {
-			// Log the error safely without using the test logger
 			fmt.Printf("Error closing listener: %v\n", err)
 		}
 	}()
@@ -172,7 +170,6 @@ func TestScraper(t *testing.T) {
 }
 
 func TestScraper_TCPErrorMetrics(t *testing.T) {
-	// Start a TCP server on port 8080
 	s := newTCPServer("127.0.0.1", "8081")
 	endpoint, _ := s.runTCPServerError(t)
 	defer s.shutdown()
@@ -184,8 +181,8 @@ func TestScraper_TCPErrorMetrics(t *testing.T) {
 	}{
 		{
 			name:     "tcp_error_metrics",
-			filename: "expected_error.yaml", // Expected metrics file containing tcp.error
-			endpoint: endpoint,              // Correct endpoint
+			filename: "expected_error.yaml",
+			endpoint: endpoint,
 		},
 	}
 	for _, tc := range testCases {
@@ -197,7 +194,7 @@ func TestScraper_TCPErrorMetrics(t *testing.T) {
 			cfg := &Config{
 				Targets: []*confignet.TCPAddrConfig{
 					{
-						Endpoint: "127.0.0.1:9999", // Correct endpoint
+						Endpoint: "127.0.0.1:9999",
 						DialerConfig: confignet.DialerConfig{
 							Timeout: 3 * time.Second,
 						},
@@ -212,7 +209,6 @@ func TestScraper_TCPErrorMetrics(t *testing.T) {
 			actualMetrics, err := scraper.scrape(context.Background())
 			require.NoError(t, err, "failed scrape")
 
-			// Compare the actual metrics to the expected metrics, including tcp.error
 			require.NoError(
 				t,
 				pmetrictest.CompareMetrics(
