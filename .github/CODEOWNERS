@@ -26,7 +26,7 @@ confmap/provider/s3provider/                      @open-telemetry/collector-cont
 confmap/provider/secretsmanagerprovider/          @open-telemetry/collector-contrib-approvers @driverpt @atoulme
 
 connector/countconnector/                         @open-telemetry/collector-contrib-approvers @djaglowski @jpkrohling
-connector/datadogconnector/                       @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @ankitpatel96 @jade-guiton-dd
+connector/datadogconnector/                       @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @ankitpatel96 @jade-guiton-dd @IbraheemA
 connector/exceptionsconnector/                    @open-telemetry/collector-contrib-approvers @marctc
 connector/failoverconnector/                      @open-telemetry/collector-contrib-approvers @akats7 @fatsheep9146
 connector/grafanacloudconnector/                  @open-telemetry/collector-contrib-approvers @rlankfo @jcreixell
@@ -54,7 +54,7 @@ exporter/carbonexporter/                          @open-telemetry/collector-cont
 exporter/cassandraexporter/                       @open-telemetry/collector-contrib-approvers @atoulme @emreyalvac
 exporter/clickhouseexporter/                      @open-telemetry/collector-contrib-approvers @hanjm @dmitryax @Frapschen @SpencerTorres
 exporter/coralogixexporter/                       @open-telemetry/collector-contrib-approvers @povilasv
-exporter/datadogexporter/                         @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96 @jade-guiton-dd
+exporter/datadogexporter/                         @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96 @jade-guiton-dd @IbraheemA
 exporter/datasetexporter/                         @open-telemetry/collector-contrib-approvers @atoulme @martin-majlis-s1 @zdaratom-s1 @tomaz-s1
 exporter/dorisexporter/                           @open-telemetry/collector-contrib-approvers @atoulme @joker-star-l
 exporter/elasticsearchexporter/                   @open-telemetry/collector-contrib-approvers @JaredTan95 @carsonip @lahsivjar
@@ -96,6 +96,7 @@ extension/encoding/avrologencodingextension/      @open-telemetry/collector-cont
 extension/encoding/jaegerencodingextension/       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/jsonlogencodingextension/      @open-telemetry/collector-contrib-approvers @VihasMakwana @atoulme
 extension/encoding/otlpencodingextension/         @open-telemetry/collector-contrib-approvers @dao-jun @VihasMakwana
+extension/encoding/skywalkingencodingextension/   @open-telemetry/collector-contrib-approvers @JaredTan95
 extension/encoding/textencodingextension/         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/zipkinencodingextension/       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
 extension/googleclientauthextension/              @open-telemetry/collector-contrib-approvers @dashpole @aabmass @jsuereth @punya @psx95
@@ -120,7 +121,6 @@ extension/sigv4authextension/                     @open-telemetry/collector-cont
 extension/solarwindsapmsettingsextension/         @open-telemetry/collector-contrib-approvers @jerrytfleung @cheempz
 extension/storage/                                @open-telemetry/collector-contrib-approvers @dmitryax @atoulme @djaglowski
 extension/storage/dbstorage/                      @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
-extension/storage/filestorage/                    @open-telemetry/collector-contrib-approvers @djaglowski
 extension/storage/redisstorageextension/          @open-telemetry/collector-contrib-approvers @atoulme
 extension/sumologicextension/                     @open-telemetry/collector-contrib-approvers @rnishtala-sumo @chan-tim-sumo
 
@@ -146,7 +146,7 @@ internal/tools/                                   @open-telemetry/collector-cont
 
 pkg/batchperresourceattr/                         @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 pkg/batchpersignal/                               @open-telemetry/collector-contrib-approvers @jpkrohling
-pkg/datadog/                                      @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96 @jade-guiton-dd
+pkg/datadog/                                      @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96 @jade-guiton-dd @IbraheemA
 pkg/experimentalmetricmetadata/                   @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/golden/                                       @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
 pkg/kafka/topic/                                  @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
@@ -317,4 +317,5 @@ reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers
 exporter/kineticaexporter/                        @open-telemetry/collector-contrib-approvers 
 exporter/opensearchexporter/                      @open-telemetry/collector-contrib-approvers 
 extension/observer/ecstaskobserver/               @open-telemetry/collector-contrib-approvers 
+extension/storage/filestorage/                    @open-telemetry/collector-contrib-approvers 
 receiver/jmxreceiver/                             @open-telemetry/collector-contrib-approvers 
