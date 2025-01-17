@@ -36,19 +36,27 @@ const (
 
 // This file implements Factory for HostMetrics receiver.
 var (
-	scraperFactories = map[component.Type]internal.ScraperFactory{
-		cpuscraper.Type:        &cpuscraper.Factory{},
-		diskscraper.Type:       &diskscraper.Factory{},
-		filesystemscraper.Type: &filesystemscraper.Factory{},
-		loadscraper.Type:       &loadscraper.Factory{},
-		memoryscraper.Type:     &memoryscraper.Factory{},
-		networkscraper.Type:    &networkscraper.Factory{},
-		pagingscraper.Type:     &pagingscraper.Factory{},
-		processesscraper.Type:  &processesscraper.Factory{},
-		processscraper.Type:    &processscraper.Factory{},
-		systemscraper.Type:     &systemscraper.Factory{},
-	}
+	scraperFactories = mustMakeFactories(
+		cpuscraper.NewFactory(),
+		diskscraper.NewFactory(),
+		filesystemscraper.NewFactory(),
+		loadscraper.NewFactory(),
+		memoryscraper.NewFactory(),
+		networkscraper.NewFactory(),
+		pagingscraper.NewFactory(),
+		processesscraper.NewFactory(),
+		processscraper.NewFactory(),
+		systemscraper.NewFactory(),
+	)
 )
+
+func mustMakeFactories(factories ...scraper.Factory) map[component.Type]scraper.Factory {
+	factoriesMap, err := scraper.MakeFactoryMap(factories...)
+	if err != nil {
+		panic(err)
+	}
+	return factoriesMap
+}
 
 // NewFactory creates a new factory for host metrics receiver.
 func NewFactory() receiver.Factory {
@@ -76,7 +84,7 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	oCfg := cfg.(*Config)
 
-	addScraperOptions, err := createAddScraperOptions(ctx, set, oCfg, scraperFactories)
+	addScraperOptions, err := createAddScraperOptions(ctx, oCfg, scraperFactories)
 	if err != nil {
 		return nil, err
 	}
@@ -103,41 +111,31 @@ func createLogsReceiver(
 }
 
 func createAddScraperOptions(
-	ctx context.Context,
-	set receiver.Settings,
+	_ context.Context,
 	cfg *Config,
-	factories map[component.Type]internal.ScraperFactory,
+	factories map[component.Type]scraper.Factory,
 ) ([]scraperhelper.ControllerOption, error) {
 	scraperControllerOptions := make([]scraperhelper.ControllerOption, 0, len(cfg.Scrapers))
 
 	envMap := setGoPsutilEnvVars(cfg.RootPath)
 
 	for key, cfg := range cfg.Scrapers {
-		scrp, ok, err := createHostMetricsScraper(ctx, set, key, cfg, factories)
+		factory, err := getFactory(key, factories)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create scraper for key %q: %w", key, err)
+			return nil, err
 		}
-
-		if ok {
-			scrp = internal.NewEnvVarScraper(scrp, envMap)
-			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(metadata.Type, scrp))
-			continue
-		}
-
-		return nil, fmt.Errorf("host metrics scraper factory not found for key: %q", key)
+		factory = internal.NewEnvVarFactory(factory, envMap)
+		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddFactoryWithConfig(factory, cfg))
 	}
 
 	return scraperControllerOptions, nil
 }
 
-func createHostMetricsScraper(ctx context.Context, set receiver.Settings, key component.Type, cfg component.Config, factories map[component.Type]internal.ScraperFactory) (s scraper.Metrics, ok bool, err error) {
-	factory := factories[key]
-	if factory == nil {
-		ok = false
-		return
+func getFactory(key component.Type, factories map[component.Type]scraper.Factory) (s scraper.Factory, err error) {
+	factory, ok := factories[key]
+	if !ok {
+		return nil, fmt.Errorf("host metrics scraper factory not found for key: %q", key)
 	}
 
-	ok = true
-	s, err = factory.CreateMetricsScraper(ctx, set, cfg)
-	return
+	return factory, nil
 }

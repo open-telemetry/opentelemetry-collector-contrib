@@ -18,8 +18,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -393,7 +393,7 @@ func TestScrape(t *testing.T) {
 			}
 			ctx := context.WithValue(context.Background(), common.EnvKey, envMap)
 			test.config.SetRootPath(test.rootPath)
-			scraper, err := newFileSystemScraper(ctx, receivertest.NewNopSettings(), &test.config)
+			scraper, err := newFileSystemScraper(ctx, scrapertest.NewNopSettings(), &test.config)
 			if test.newErrRegex != "" {
 				require.Error(t, err)
 				require.Regexp(t, test.newErrRegex, err)

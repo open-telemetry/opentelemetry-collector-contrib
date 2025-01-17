@@ -26,6 +26,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.117.1-0.20250117002813-e970f8bb1258
 	go.opentelemetry.io/collector/scraper v0.117.1-0.20250117002813-e970f8bb1258
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.117.1-0.20250117002813-e970f8bb1258
+	go.opentelemetry.io/collector/scraper/scrapertest v0.117.1-0.20250117002813-e970f8bb1258
 	go.opentelemetry.io/collector/semconv v0.117.1-0.20250117002813-e970f8bb1258
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -119,8 +120,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
-
 retract (
 	v0.76.2
 	v0.76.1
@@ -134,3 +133,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../pkg/experimentalmetricmetadata
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl

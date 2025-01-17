@@ -1167,6 +1167,8 @@ go.opentelemetry.io/collector/scraper v0.117.1-0.20250117002813-e970f8bb1258 h1:
 go.opentelemetry.io/collector/scraper v0.117.1-0.20250117002813-e970f8bb1258/go.mod h1:EPk7kbf8/222ni0zQJ/a9qBSx2Tjay6yzAg1BNDt8hU=
 go.opentelemetry.io/collector/scraper/scraperhelper v0.117.1-0.20250117002813-e970f8bb1258 h1:U75514CnVBKDex+gFQR5TA//xljH/EDAIqizx2S/pQE=
 go.opentelemetry.io/collector/scraper/scraperhelper v0.117.1-0.20250117002813-e970f8bb1258/go.mod h1:uF/wyxA3QvJlrE737LSOo8hn+R/A46myrRRK4DbO9D4=
+go.opentelemetry.io/collector/scraper/scrapertest v0.117.1-0.20250117002813-e970f8bb1258 h1:0XWmHjWg6aSoAEF+GE2zVN0/Mh6GnW+eOxuRNwGs8aw=
+go.opentelemetry.io/collector/scraper/scrapertest v0.117.1-0.20250117002813-e970f8bb1258/go.mod h1:j3UGla2TWFouzLhSRcEVD3XWckugfRavIy/6NolFx8I=
 go.opentelemetry.io/collector/semconv v0.117.1-0.20250117002813-e970f8bb1258 h1:yh64aXnG0AbDdrUOVzcoIJyqU6FSODV35oQ/G9cWfck=
 go.opentelemetry.io/collector/semconv v0.117.1-0.20250117002813-e970f8bb1258/go.mod h1:N6XE8Q0JKgBN2fAhkUQtqK9LT7rEGR6+Wu/Rtbal1iI=
 go.opentelemetry.io/collector/service v0.117.1-0.20250117002813-e970f8bb1258 h1:/yUkCiNw2kerELO6u8nmZI6a2O3pXsjMamxgyahzK3g=
