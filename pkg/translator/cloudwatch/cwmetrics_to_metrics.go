@@ -8,15 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
-
-	expmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 )
 
 // The cloudwatchMetric is the format for the CloudWatch metric stream records.
@@ -177,25 +174,14 @@ func addMetric(cwMetric cloudwatchMetric, metrics pmetric.Metrics) {
 func UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 	decoder := json.NewDecoder(bytes.NewReader(record))
 	metrics := pmetric.NewMetrics()
-	for datumIndex := 0; ; datumIndex++ {
-		var cwMetric cloudwatchMetric
-		if err := decoder.Decode(&cwMetric); err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return pmetric.Metrics{},
-				fmt.Errorf("unable to unmarshal datum [%d] into cloudwatch metric: %w", datumIndex, err)
-		}
-		if valid, err := isMetricValid(cwMetric); !valid {
-			return pmetric.Metrics{}, fmt.Errorf("cloudwatch metric from datum [%d] is not valid: %w", datumIndex, err)
-		}
-		addMetric(cwMetric, metrics)
+	var cwMetric cloudwatchMetric
+	if err := decoder.Decode(&cwMetric); err != nil {
+		return pmetric.Metrics{},
+			fmt.Errorf("unable to unmarshal data into cloudwatch metric: %w", err)
 	}
-
-	if metrics.MetricCount() == 0 {
-		return metrics, errors.New("no resource metrics could be obtained from the record")
+	if valid, err := isMetricValid(cwMetric); !valid {
+		return pmetric.Metrics{}, fmt.Errorf("cloudwatch metric is invalid: %w", err)
 	}
-
-	metrics = expmetrics.Merge(pmetric.NewMetrics(), metrics)
+	addMetric(cwMetric, metrics)
 	return metrics, nil
 }
