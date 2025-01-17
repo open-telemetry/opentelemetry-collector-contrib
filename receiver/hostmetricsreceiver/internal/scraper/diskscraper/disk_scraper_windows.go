@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build windows
+
 package diskscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 
 import (
@@ -12,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
@@ -42,7 +44,7 @@ const (
 
 // diskScraper for Disk Metrics
 type diskScraper struct {
-	settings  receiver.Settings
+	settings  scraper.Settings
 	config    *Config
 	startTime pcommon.Timestamp
 	mb        *metadata.MetricsBuilder
@@ -57,7 +59,7 @@ type diskScraper struct {
 }
 
 // newDiskScraper creates a Disk Scraper
-func newDiskScraper(_ context.Context, settings receiver.Settings, cfg *Config) (*diskScraper, error) {
+func newDiskScraper(_ context.Context, settings scraper.Settings, cfg *Config) (*diskScraper, error) {
 	scraper := &diskScraper{settings: settings, config: cfg, perfCounterScraper: &perfcounters.PerfLibScraper{}, bootTime: host.BootTimeWithContext}
 
 	var err error
