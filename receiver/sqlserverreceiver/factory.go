@@ -11,8 +11,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
@@ -115,10 +115,10 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 // Note: This method will fail silently if there is no work to do. This is an acceptable use case
 // as this receiver can still get information on Windows from performance counters without a direct
 // connection. Messages will be logged at the INFO level in such cases.
-func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.ScraperControllerOption, error) {
+func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.ControllerOption, error) {
 	sqlServerScrapers := setupSQLServerScrapers(params, cfg)
 
-	var opts []scraperhelper.ScraperControllerOption
+	var opts []scraperhelper.ControllerOption
 	for _, sqlScraper := range sqlServerScrapers {
 		s, err := scraper.NewMetrics(sqlScraper.ScrapeMetrics,
 			scraper.WithStart(sqlScraper.Start),

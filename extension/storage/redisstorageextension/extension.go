@@ -12,7 +12,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 )
 
@@ -77,7 +77,7 @@ func (rc redisClient) Delete(ctx context.Context, key string) error {
 	return err
 }
 
-func (rc redisClient) Batch(ctx context.Context, ops ...storage.Operation) error {
+func (rc redisClient) Batch(ctx context.Context, ops ...*storage.Operation) error {
 	p := rc.client.Pipeline()
 	for _, op := range ops {
 		switch op.Type {

@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/internal/metadata"
@@ -26,7 +26,7 @@ var ErrInvalidTotalMem = errors.New("invalid total memory")
 
 // scraper for Memory Metrics
 type memoryScraper struct {
-	settings receiver.Settings
+	settings scraper.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
 
@@ -36,7 +36,7 @@ type memoryScraper struct {
 }
 
 // newMemoryScraper creates a Memory Scraper
-func newMemoryScraper(_ context.Context, settings receiver.Settings, cfg *Config) *memoryScraper {
+func newMemoryScraper(_ context.Context, settings scraper.Settings, cfg *Config) *memoryScraper {
 	return &memoryScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, virtualMemory: mem.VirtualMemoryWithContext}
 }
 

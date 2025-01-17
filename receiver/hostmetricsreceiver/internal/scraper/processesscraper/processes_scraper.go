@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
@@ -32,7 +32,7 @@ var metricsLength = func() int {
 
 // scraper for Processes Metrics
 type processesScraper struct {
-	settings receiver.Settings
+	settings scraper.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
 
@@ -53,7 +53,7 @@ type processesMetadata struct {
 }
 
 // newProcessesScraper creates a set of Processes related metrics
-func newProcessesScraper(_ context.Context, settings receiver.Settings, cfg *Config) *processesScraper {
+func newProcessesScraper(_ context.Context, settings scraper.Settings, cfg *Config) *processesScraper {
 	return &processesScraper{
 		settings:     settings,
 		config:       cfg,
