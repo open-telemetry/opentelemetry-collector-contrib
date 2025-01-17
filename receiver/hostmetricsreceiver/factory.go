@@ -84,7 +84,7 @@ func createMetricsReceiver(
 	host.EnableBootTimeCache(true)
 	process.EnableBootTimeCache(true)
 
-	return scraperhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewMetricsController(
 		&oCfg.ControllerConfig,
 		set,
 		consumer,
@@ -107,8 +107,8 @@ func createAddScraperOptions(
 	set receiver.Settings,
 	cfg *Config,
 	factories map[component.Type]internal.ScraperFactory,
-) ([]scraperhelper.ScraperControllerOption, error) {
-	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(cfg.Scrapers))
+) ([]scraperhelper.ControllerOption, error) {
+	scraperControllerOptions := make([]scraperhelper.ControllerOption, 0, len(cfg.Scrapers))
 
 	envMap := setGoPsutilEnvVars(cfg.RootPath)
 

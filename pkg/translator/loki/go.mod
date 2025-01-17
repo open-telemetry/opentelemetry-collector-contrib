@@ -6,13 +6,13 @@ require (
 	github.com/go-logfmt/logfmt v0.6.0
 	github.com/grafana/loki/pkg/push v0.0.0-20240514112848-a1b1eeb09583
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.117.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.117.1-0.20250117002813-e970f8bb1258
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.117.0
 	github.com/prometheus/common v0.61.0
 	github.com/prometheus/prometheus v0.54.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/pdata v1.23.1-0.20250117002813-e970f8bb1258
-	go.opentelemetry.io/collector/semconv v0.117.1-0.20250114172347-71aae791d7f8
+	go.opentelemetry.io/collector/semconv v0.117.1-0.20250117002813-e970f8bb1258
 	go.uber.org/goleak v1.3.0
 )
 
