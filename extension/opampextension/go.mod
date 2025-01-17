@@ -13,9 +13,9 @@ require (
 	go.opentelemetry.io/collector/component v0.117.1-0.20250114172347-71aae791d7f8
 	go.opentelemetry.io/collector/component/componentstatus v0.117.1-0.20250114172347-71aae791d7f8
 	go.opentelemetry.io/collector/component/componenttest v0.117.1-0.20250114172347-71aae791d7f8
-	go.opentelemetry.io/collector/config/configopaque v1.23.1-0.20250114172347-71aae791d7f8
-	go.opentelemetry.io/collector/config/configtls v1.23.1-0.20250114172347-71aae791d7f8
-	go.opentelemetry.io/collector/confmap v1.23.1-0.20250114172347-71aae791d7f8
+	go.opentelemetry.io/collector/config/configopaque v1.23.1-0.20250117002813-e970f8bb1258
+	go.opentelemetry.io/collector/config/configtls v1.23.1-0.20250117002813-e970f8bb1258
+	go.opentelemetry.io/collector/confmap v1.23.1-0.20250117002813-e970f8bb1258
 	go.opentelemetry.io/collector/extension v0.117.1-0.20250114172347-71aae791d7f8
 	go.opentelemetry.io/collector/extension/auth v0.117.1-0.20250114172347-71aae791d7f8
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.117.1-0.20250114172347-71aae791d7f8
@@ -52,7 +52,7 @@ require (
 	github.com/tklauser/numcpus v0.8.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.117.1-0.20250114172347-71aae791d7f8 // indirect
-	go.opentelemetry.io/collector/pdata v1.23.1-0.20250114172347-71aae791d7f8 // indirect
+	go.opentelemetry.io/collector/pdata v1.23.1-0.20250117002813-e970f8bb1258 // indirect
 	go.opentelemetry.io/collector/pipeline v0.117.1-0.20250114172347-71aae791d7f8 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect

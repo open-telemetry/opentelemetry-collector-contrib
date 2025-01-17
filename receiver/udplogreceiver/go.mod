@@ -6,8 +6,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.117.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.117.1-0.20250114172347-71aae791d7f8
-	go.opentelemetry.io/collector/confmap v1.23.1-0.20250114172347-71aae791d7f8
-	go.opentelemetry.io/collector/consumer v1.23.1-0.20250114172347-71aae791d7f8 // indirect
+	go.opentelemetry.io/collector/confmap v1.23.1-0.20250117002813-e970f8bb1258
+	go.opentelemetry.io/collector/consumer v1.23.1-0.20250117002813-e970f8bb1258 // indirect
 	go.opentelemetry.io/collector/receiver v0.117.1-0.20250114172347-71aae791d7f8
 	go.opentelemetry.io/collector/semconv v0.117.1-0.20250114172347-71aae791d7f8 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
@@ -53,8 +53,8 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.117.1-0.20250114172347-71aae791d7f8 // indirect
 	go.opentelemetry.io/collector/extension v0.117.1-0.20250114172347-71aae791d7f8 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.117.1-0.20250114172347-71aae791d7f8 // indirect
-	go.opentelemetry.io/collector/featuregate v1.23.1-0.20250114172347-71aae791d7f8 // indirect
-	go.opentelemetry.io/collector/pdata v1.23.1-0.20250114172347-71aae791d7f8 // indirect
+	go.opentelemetry.io/collector/featuregate v1.23.1-0.20250117002813-e970f8bb1258 // indirect
+	go.opentelemetry.io/collector/pdata v1.23.1-0.20250117002813-e970f8bb1258 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.117.1-0.20250114172347-71aae791d7f8 // indirect
 	go.opentelemetry.io/collector/pipeline v0.117.1-0.20250114172347-71aae791d7f8 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.117.1-0.20250114172347-71aae791d7f8 // indirect

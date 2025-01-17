@@ -7,12 +7,12 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.117.1-0.20250114172347-71aae791d7f8
 	go.opentelemetry.io/collector/component/componenttest v0.117.1-0.20250114172347-71aae791d7f8
-	go.opentelemetry.io/collector/confmap v1.23.1-0.20250114172347-71aae791d7f8
-	go.opentelemetry.io/collector/consumer v1.23.1-0.20250114172347-71aae791d7f8
+	go.opentelemetry.io/collector/confmap v1.23.1-0.20250117002813-e970f8bb1258
+	go.opentelemetry.io/collector/consumer v1.23.1-0.20250117002813-e970f8bb1258
 	go.opentelemetry.io/collector/exporter v0.117.1-0.20250114172347-71aae791d7f8
 	go.opentelemetry.io/collector/exporter/exportertest v0.117.1-0.20250114172347-71aae791d7f8
-	go.opentelemetry.io/collector/featuregate v1.23.1-0.20250114172347-71aae791d7f8
-	go.opentelemetry.io/collector/pdata v1.23.1-0.20250114172347-71aae791d7f8
+	go.opentelemetry.io/collector/featuregate v1.23.1-0.20250117002813-e970f8bb1258
+	go.opentelemetry.io/collector/pdata v1.23.1-0.20250117002813-e970f8bb1258
 	go.uber.org/goleak v1.3.0
 )
 
@@ -57,7 +57,7 @@ require (
 	github.com/tidwall/tinylru v1.2.1 // indirect
 	github.com/tidwall/wal v1.1.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.23.1-0.20250114172347-71aae791d7f8 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.23.1-0.20250117002813-e970f8bb1258 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.117.1-0.20250114172347-71aae791d7f8 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.117.1-0.20250114172347-71aae791d7f8 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.117.1-0.20250114172347-71aae791d7f8 // indirect
