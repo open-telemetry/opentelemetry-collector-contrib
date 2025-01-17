@@ -22,7 +22,6 @@ func NewFactory() receiver.Factory {
 		receiver.WithMetrics(newReceiver, metadata.MetricsStability))
 }
 
-// to do where to set timeout
 func newDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
 

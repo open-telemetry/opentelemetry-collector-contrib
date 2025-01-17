@@ -18,10 +18,9 @@ import (
 )
 
 type scraper struct {
-	cfg      *Config
-	settings component.TelemetrySettings
-	mb       *metadata.MetricsBuilder
-	// dial sth
+	cfg                *Config
+	settings           component.TelemetrySettings
+	mb                 *metadata.MetricsBuilder
 	getConnectionState func(tcpConfig *confignet.TCPAddrConfig) (TCPConnectionState, error)
 }
 
@@ -40,25 +39,22 @@ func getConnectionState(tcpConfig *confignet.TCPAddrConfig) (TCPConnectionState,
 	}
 	defer conn.Close()
 	state := TCPConnectionState{
-		LocalAddr:  conn.LocalAddr().String(),  // Local endpoint (IP:port)
-		RemoteAddr: conn.RemoteAddr().String(), // Remote endpoint (IP:port)
-		Network:    conn.LocalAddr().Network(), // Connection network type
+		LocalAddr:  conn.LocalAddr().String(),
+		RemoteAddr: conn.RemoteAddr().String(),
+		Network:    conn.LocalAddr().Network(),
 	}
 	return state, nil
 }
 
 func (s *scraper) scrapeEndpoint(tcpConfig *confignet.TCPAddrConfig, wg *sync.WaitGroup, mux *sync.Mutex) {
 	defer wg.Done()
-	const pointValue int64 = 1 // Use a constant for clarity and immutability
+	const pointValue int64 = 1
 	const fail int64 = 0
 
 	start := time.Now()
-	// Attempt to get the connection state
-	//tcpClient, err := tcpConfig.ToClient()
 	_, err := s.getConnectionState(tcpConfig)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	// Record success metrics
 	duration := time.Since(start).Milliseconds()
 
 	mux.Lock()
@@ -66,8 +62,8 @@ func (s *scraper) scrapeEndpoint(tcpConfig *confignet.TCPAddrConfig, wg *sync.Wa
 
 	if err != nil {
 		// Record error data point and log the error
-		s.mb.RecordTcpcheckDurationDataPoint(now, duration, tcpConfig.Endpoint)
-		s.mb.RecordTcpcheckStatusDataPoint(now, fail, tcpConfig.Endpoint)
+		//s.mb.RecordTcpcheckDurationDataPoint(now, duration, tcpConfig.Endpoint)
+		//s.mb.RecordTcpcheckStatusDataPoint(now, fail, tcpConfig.Endpoint)
 		s.mb.RecordTcpcheckErrorDataPoint(now, pointValue, tcpConfig.Endpoint, err.Error())
 		s.settings.Logger.Error("TCP connection error encountered", zap.String("endpoint", tcpConfig.Endpoint), zap.Error(err))
 		return
@@ -89,7 +85,6 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	var mux sync.Mutex
 
 	for _, tcpConfig := range s.cfg.Targets {
-		// endpoint and dialer
 		go s.scrapeEndpoint(tcpConfig, &wg, &mux)
 	}
 

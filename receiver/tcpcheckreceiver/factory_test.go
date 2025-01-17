@@ -40,9 +40,6 @@ func TestNewFactory(t *testing.T) {
 						CollectionInterval: 60 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					//TCPClientSettings: configtcp.TCPClientSettings{
-					//	Timeout: 10 * time.Second,
-					//},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 					Targets:              []*confignet.TCPAddrConfig{},
 				}
