@@ -4,10 +4,10 @@ go 1.22.0
 
 require (
 	github.com/Microsoft/go-winio v0.6.2
-	github.com/docker/docker v27.4.0+incompatible
+	github.com/docker/docker v27.5.0+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/confmap v1.22.1-0.20241220212031-7c2639723f67
+	go.opentelemetry.io/collector/confmap v1.23.1-0.20250117002813-e970f8bb1258
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )

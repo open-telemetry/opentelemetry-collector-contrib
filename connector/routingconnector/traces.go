@@ -35,9 +35,8 @@ func newTracesConnector(
 ) (*tracesConnector, error) {
 	cfg := config.(*Config)
 
-	// TODO update log from warning to error in v0.116.0
-	if !cfg.MatchOnce {
-		set.Logger.Warn("The 'match_once' field has been deprecated. Set to 'true' to suppress this warning.")
+	if cfg.MatchOnce != nil {
+		set.Logger.Error("The 'match_once' field has been deprecated and no longer has any effect. It will be removed in v0.120.0.")
 	}
 
 	tr, ok := traces.(connector.TracesRouterAndConsumer)
@@ -66,13 +65,6 @@ func (*tracesConnector) Capabilities() consumer.Capabilities {
 }
 
 func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	if c.config.MatchOnce {
-		return c.switchTraces(ctx, td)
-	}
-	return c.matchAllTraces(ctx, td)
-}
-
-func (c *tracesConnector) switchTraces(ctx context.Context, td ptrace.Traces) error {
 	groups := make(map[consumer.Traces]ptrace.Traces)
 	var errs error
 	for i := 0; i < len(c.router.routeSlice) && td.ResourceSpans().Len() > 0; i++ {
@@ -113,42 +105,6 @@ func (c *tracesConnector) switchTraces(ctx context.Context, td ptrace.Traces) er
 	}
 	// anything left wasn't matched by any route. Send to default consumer
 	groupAllTraces(groups, c.router.defaultConsumer, td)
-	for consumer, group := range groups {
-		errs = errors.Join(errs, consumer.ConsumeTraces(ctx, group))
-	}
-	return errs
-}
-
-func (c *tracesConnector) matchAllTraces(ctx context.Context, td ptrace.Traces) error {
-	// groups is used to group ptrace.ResourceSpans that are routed to
-	// the same set of pipelines. This way we're not ending up with all the
-	// spans split up which would cause higher CPU usage.
-	groups := make(map[consumer.Traces]ptrace.Traces)
-
-	var errs error
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		rspans := td.ResourceSpans().At(i)
-		rtx := ottlresource.NewTransformContext(rspans.Resource(), rspans)
-		noRoutesMatch := true
-		for _, route := range c.router.routeSlice {
-			_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
-			if err != nil {
-				if c.config.ErrorMode == ottl.PropagateError {
-					return err
-				}
-				groupTraces(groups, c.router.defaultConsumer, rspans)
-				continue
-			}
-			if isMatch {
-				noRoutesMatch = false
-				groupTraces(groups, route.consumer, rspans)
-			}
-		}
-		if noRoutesMatch {
-			// no route conditions are matched, add resource spans to default pipelines group
-			groupTraces(groups, c.router.defaultConsumer, rspans)
-		}
-	}
 	for consumer, group := range groups {
 		errs = errors.Join(errs, consumer.ConsumeTraces(ctx, group))
 	}

@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeCPUReservationType specifies the a value cpu_reservation_type attribute.
+// AttributeCPUReservationType specifies the value cpu_reservation_type attribute.
 type AttributeCPUReservationType int
 
 const (
@@ -38,7 +38,7 @@ var MapAttributeCPUReservationType = map[string]AttributeCPUReservationType{
 	"used":  AttributeCPUReservationTypeUsed,
 }
 
-// AttributeDiskDirection specifies the a value disk_direction attribute.
+// AttributeDiskDirection specifies the value disk_direction attribute.
 type AttributeDiskDirection int
 
 const (
@@ -64,7 +64,7 @@ var MapAttributeDiskDirection = map[string]AttributeDiskDirection{
 	"write": AttributeDiskDirectionWrite,
 }
 
-// AttributeDiskState specifies the a value disk_state attribute.
+// AttributeDiskState specifies the value disk_state attribute.
 type AttributeDiskState int
 
 const (
@@ -90,7 +90,7 @@ var MapAttributeDiskState = map[string]AttributeDiskState{
 	"used":      AttributeDiskStateUsed,
 }
 
-// AttributeDiskType specifies the a value disk_type attribute.
+// AttributeDiskType specifies the value disk_type attribute.
 type AttributeDiskType int
 
 const (
@@ -116,7 +116,7 @@ var MapAttributeDiskType = map[string]AttributeDiskType{
 	"physical": AttributeDiskTypePhysical,
 }
 
-// AttributeEntityStatus specifies the a value entity_status attribute.
+// AttributeEntityStatus specifies the value entity_status attribute.
 type AttributeEntityStatus int
 
 const (
@@ -150,7 +150,7 @@ var MapAttributeEntityStatus = map[string]AttributeEntityStatus{
 	"gray":   AttributeEntityStatusGray,
 }
 
-// AttributeHostPowerState specifies the a value host_power_state attribute.
+// AttributeHostPowerState specifies the value host_power_state attribute.
 type AttributeHostPowerState int
 
 const (
@@ -184,7 +184,7 @@ var MapAttributeHostPowerState = map[string]AttributeHostPowerState{
 	"unknown": AttributeHostPowerStateUnknown,
 }
 
-// AttributeMemoryGrantedType specifies the a value memory_granted_type attribute.
+// AttributeMemoryGrantedType specifies the value memory_granted_type attribute.
 type AttributeMemoryGrantedType int
 
 const (
@@ -210,7 +210,7 @@ var MapAttributeMemoryGrantedType = map[string]AttributeMemoryGrantedType{
 	"shared":  AttributeMemoryGrantedTypeShared,
 }
 
-// AttributeMemoryUsageType specifies the a value memory_usage_type attribute.
+// AttributeMemoryUsageType specifies the value memory_usage_type attribute.
 type AttributeMemoryUsageType int
 
 const (
@@ -240,7 +240,7 @@ var MapAttributeMemoryUsageType = map[string]AttributeMemoryUsageType{
 	"overhead": AttributeMemoryUsageTypeOverhead,
 }
 
-// AttributeThroughputDirection specifies the a value throughput_direction attribute.
+// AttributeThroughputDirection specifies the value throughput_direction attribute.
 type AttributeThroughputDirection int
 
 const (
@@ -266,7 +266,7 @@ var MapAttributeThroughputDirection = map[string]AttributeThroughputDirection{
 	"received":    AttributeThroughputDirectionReceived,
 }
 
-// AttributeVMCountPowerState specifies the a value vm_count_power_state attribute.
+// AttributeVMCountPowerState specifies the value vm_count_power_state attribute.
 type AttributeVMCountPowerState int
 
 const (
@@ -300,7 +300,7 @@ var MapAttributeVMCountPowerState = map[string]AttributeVMCountPowerState{
 	"unknown":   AttributeVMCountPowerStateUnknown,
 }
 
-// AttributeVsanLatencyType specifies the a value vsan_latency_type attribute.
+// AttributeVsanLatencyType specifies the value vsan_latency_type attribute.
 type AttributeVsanLatencyType int
 
 const (
@@ -326,7 +326,7 @@ var MapAttributeVsanLatencyType = map[string]AttributeVsanLatencyType{
 	"write": AttributeVsanLatencyTypeWrite,
 }
 
-// AttributeVsanOperationType specifies the a value vsan_operation_type attribute.
+// AttributeVsanOperationType specifies the value vsan_operation_type attribute.
 type AttributeVsanOperationType int
 
 const (
@@ -356,7 +356,7 @@ var MapAttributeVsanOperationType = map[string]AttributeVsanOperationType{
 	"unmap": AttributeVsanOperationTypeUnmap,
 }
 
-// AttributeVsanThroughputDirection specifies the a value vsan_throughput_direction attribute.
+// AttributeVsanThroughputDirection specifies the value vsan_throughput_direction attribute.
 type AttributeVsanThroughputDirection int
 
 const (
@@ -3869,7 +3869,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                   mbc,

@@ -38,7 +38,7 @@ var SpanSymbolTable = map[ottl.EnumSymbol]ottl.Enum{
 	"STATUS_CODE_ERROR":     ottl.Enum(ptrace.StatusCodeError),
 }
 
-func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func SpanPathGetSetter[K SpanContext](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
 		return nil, FormatDefaultErrorMessage(SpanContextName, SpanContextName, SpanContextNameDescription, SpanRef)
 	}
@@ -128,6 +128,8 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			}
 		}
 		return accessStatus[K](), nil
+	case "cache":
+		return nil, FormatCacheErrorMessage(lowerContext, path.Context(), path.String())
 	default:
 		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), SpanContextNameDescription, SpanRef)
 	}
