@@ -182,7 +182,7 @@ LOOP:
 			distribution += fmt.Sprintf(" %s", strings.Join(maintainers, " "))
 		}
 
-		codeowners += fmt.Sprintf("%s", distribution)
+		codeowners += distribution
 	}
 
 	err = os.WriteFile(filepath.Join(".github", "CODEOWNERS"), []byte(codeowners+unmaintainedCodeowners), 0o600)
