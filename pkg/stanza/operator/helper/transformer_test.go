@@ -93,6 +93,7 @@ func TestTransformerDropOnError(t *testing.T) {
 	ctx := context.Background()
 	testEntry := entry.New()
 	testEntry.Body = "test"
+	testEntry.AddAttribute(attrs.LogFilePath, "/test/file")
 	transform := func(_ *entry.Entry) error {
 		return fmt.Errorf("Failure")
 	}
@@ -106,6 +107,7 @@ func TestTransformerDropOnError(t *testing.T) {
 		{
 			Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to process entry"},
 			Context: []zapcore.Field{
+				zap.Any(attrs.LogFilePath, "/test/file"),
 				zap.Any(attrs.LogRecordOriginal, "test"),
 				{Key: "error", Type: zapcore.ErrorType, Interface: fmt.Errorf("Failure")},
 				zap.Any("action", "drop"),
@@ -140,6 +142,7 @@ func TestTransformerDropOnErrorQuiet(t *testing.T) {
 	ctx := context.Background()
 	testEntry := entry.New()
 	testEntry.Body = "test"
+	testEntry.AddAttribute(attrs.LogFilePath, "/test/file")
 	transform := func(_ *entry.Entry) error {
 		return fmt.Errorf("Failure")
 	}
@@ -153,6 +156,7 @@ func TestTransformerDropOnErrorQuiet(t *testing.T) {
 		{
 			Entry: zapcore.Entry{Level: zap.DebugLevel, Message: "Failed to process entry"},
 			Context: []zapcore.Field{
+				zap.Any(attrs.LogFilePath, "/test/file"),
 				zap.Any(attrs.LogRecordOriginal, "test"),
 				{Key: "error", Type: 26, Interface: fmt.Errorf("Failure")},
 				zap.Any("action", "drop_quiet"),
@@ -187,6 +191,7 @@ func TestTransformerSendOnError(t *testing.T) {
 	ctx := context.Background()
 	testEntry := entry.New()
 	testEntry.Body = "test"
+	testEntry.AddAttribute(attrs.LogFilePath, "/test/file")
 	transform := func(_ *entry.Entry) error {
 		return fmt.Errorf("Failure")
 	}
@@ -200,6 +205,7 @@ func TestTransformerSendOnError(t *testing.T) {
 		{
 			Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to process entry"},
 			Context: []zapcore.Field{
+				zap.Any(attrs.LogFilePath, "/test/file"),
 				zap.Any(attrs.LogRecordOriginal, "test"),
 				{Key: "error", Type: 26, Interface: fmt.Errorf("Failure")},
 				zap.Any("action", "send"),
@@ -234,6 +240,7 @@ func TestTransformerSendOnErrorQuiet(t *testing.T) {
 	ctx := context.Background()
 	testEntry := entry.New()
 	testEntry.Body = "test"
+	testEntry.AddAttribute(attrs.LogFilePath, "/test/file")
 	transform := func(_ *entry.Entry) error {
 		return fmt.Errorf("Failure")
 	}
@@ -247,6 +254,7 @@ func TestTransformerSendOnErrorQuiet(t *testing.T) {
 		{
 			Entry: zapcore.Entry{Level: zap.DebugLevel, Message: "Failed to process entry"},
 			Context: []zapcore.Field{
+				zap.Any(attrs.LogFilePath, "/test/file"),
 				zap.Any(attrs.LogRecordOriginal, "test"),
 				{Key: "error", Type: 26, Interface: fmt.Errorf("Failure")},
 				zap.Any("action", "send_quiet"),
