@@ -318,14 +318,14 @@ testbed/mockdatasenders/mockdatadogagentexporter/                @open-telemetry
 # List of distribution maintainers for OpenTelemetry Collector Contrib
 #
 #####################################################
-reports/distributions/core.yaml    @open-telemetry/collector-contrib-approvers 
-reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers 
-reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers 
 
+reports/distributions/core.yaml    @open-telemetry/collector-contrib-approvers
+reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers
+reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers
 
 ## UNMAINTAINED components
 
-exporter/kineticaexporter/                                       @open-telemetry/collector-contrib-approvers 
-exporter/opensearchexporter/                                     @open-telemetry/collector-contrib-approvers 
-extension/observer/ecstaskobserver/                              @open-telemetry/collector-contrib-approvers 
-extension/storage/filestorage/                                   @open-telemetry/collector-contrib-approvers 
+exporter/kineticaexporter/                                       @open-telemetry/collector-contrib-approvers
+exporter/opensearchexporter/                                     @open-telemetry/collector-contrib-approvers
+extension/observer/ecstaskobserver/                              @open-telemetry/collector-contrib-approvers
+extension/storage/filestorage/                                   @open-telemetry/collector-contrib-approvers
