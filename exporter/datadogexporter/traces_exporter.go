@@ -46,8 +46,8 @@ type traceExporter struct {
 	params           exporter.Settings
 	cfg              *Config
 	ctx              context.Context         // ctx triggers shutdown upon cancellation
-	client           *zorkian.Client         // client sends runnimg metrics to backend & performs API validation
-	metricsAPI       *datadogV2.MetricsApi   // client sends runnimg metrics to backend
+	client           *zorkian.Client         // client sends running metrics to backend & performs API validation
+	metricsAPI       *datadogV2.MetricsApi   // client sends running metrics to backend
 	scrubber         scrub.Scrubber          // scrubber scrubs sensitive information from error messages
 	onceMetadata     *sync.Once              // onceMetadata ensures that metadata is sent only once across all exporters
 	agent            *agent.Agent            // agent processes incoming traces

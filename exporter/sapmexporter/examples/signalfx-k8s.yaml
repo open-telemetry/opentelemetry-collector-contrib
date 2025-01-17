@@ -44,7 +44,7 @@ data:
       #attributes/copyfromexistingkey:
         #actions:
         #- key: environment
-          #from_attribute: YOUR_EXISTING_TAG_NAMEE
+          #from_attribute: YOUR_EXISTING_TAG_NAME
           #action: upsert
       # Optional: If you want to add an environment tag
       # If this option is enabled it must be added to the pipeline section below
