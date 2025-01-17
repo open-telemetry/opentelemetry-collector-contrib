@@ -1,3 +1,4 @@
+// Deprecated: use https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/githubgen
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
 
 go 1.22.0
