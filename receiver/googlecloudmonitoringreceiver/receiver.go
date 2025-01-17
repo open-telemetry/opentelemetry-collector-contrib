@@ -30,7 +30,7 @@ type monitoringReceiver struct {
 	client            *monitoring.MetricClient
 	metricsBuilder    *internal.MetricsBuilder
 	mutex             sync.RWMutex
-	metricDescriptors map[string]*metric.MetricDescriptor
+	metricDescriptors map[string]*metric.MetricDescriptor // key is the Type of MetricDescriptor
 }
 
 func newGoogleCloudMonitoringReceiver(cfg *Config, logger *zap.Logger) *monitoringReceiver {
@@ -78,7 +78,7 @@ func (mr *monitoringReceiver) Shutdown(context.Context) error {
 
 func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var (
-		gInternal    time.Duration
+		gInterval    time.Duration
 		gDelay       time.Duration
 		calStartTime time.Time
 		calEndTime   time.Time
@@ -93,9 +93,9 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 	defer mr.mutex.RUnlock()
 	for metricType, metricDesc := range mr.metricDescriptors {
 		// Set interval and delay times, using defaults if not provided
-		gInternal = mr.config.CollectionInterval
-		if gInternal <= 0 {
-			gInternal = defaultCollectionInterval
+		gInterval = mr.config.CollectionInterval
+		if gInterval <= 0 {
+			gInterval = defaultCollectionInterval
 		}
 
 		gDelay = metricDesc.GetMetadata().GetIngestDelay().AsDuration()
@@ -104,7 +104,7 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 		}
 
 		// Calculate the start and end times
-		calStartTime, calEndTime = calculateStartEndTime(gInternal, gDelay)
+		calStartTime, calEndTime = calculateStartEndTime(gInterval, gDelay)
 
 		// Get the filter query for the metric
 		filterQuery = fmt.Sprintf(`metric.type = "%s"`, metricType)
@@ -234,13 +234,12 @@ func calculateStartEndTime(interval, delay time.Duration) (time.Time, time.Time)
 // getFilterQuery constructs a filter query string based on the provided metric.
 func getFilterQuery(metric MetricConfig) string {
 	var filterQuery string
-	const baseQuery = `metric.type =`
 
 	// see https://cloud.google.com/monitoring/api/v3/filters
 	if metric.MetricName != "" {
-		filterQuery = fmt.Sprintf(`%s "%s"`, baseQuery, metric.MetricName)
+		filterQuery = fmt.Sprintf(`metric.type = "%s"`, metric.MetricName)
 	} else {
-		filterQuery = fmt.Sprintf(`%s monitoring.regex.full_match("%s")`, baseQuery, metric.MetricName)
+		filterQuery = metric.MetricDescriptorFilter
 	}
 
 	return filterQuery
