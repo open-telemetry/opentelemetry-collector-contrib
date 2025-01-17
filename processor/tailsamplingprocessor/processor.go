@@ -572,23 +572,21 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 // additionally adds the trace ID to the cache of sampled trace IDs. If the
 // trace ID is cached, it deletes the spans from the internal map.
 func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, id pcommon.TraceID, td ptrace.Traces) {
-	tsp.sampledIDCache.Put(id, true)
+	ok := tsp.sampledIDCache.Put(id, true)
+	if ok {
+		tsp.dropTrace(id, time.Now())
+	}
 	if err := tsp.nextConsumer.ConsumeTraces(ctx, td); err != nil {
 		tsp.logger.Warn(
 			"Error sending spans to destination",
 			zap.Error(err))
-	}
-	_, ok := tsp.sampledIDCache.Get(id)
-	if ok {
-		tsp.dropTrace(id, time.Now())
 	}
 }
 
 // releaseNotSampledTrace adds the trace ID to the cache of not sampled trace
 // IDs. If the trace ID is cached, it deletes the spans from the internal map.
 func (tsp *tailSamplingSpanProcessor) releaseNotSampledTrace(id pcommon.TraceID) {
-	tsp.nonSampledIDCache.Put(id, true)
-	_, ok := tsp.nonSampledIDCache.Get(id)
+	ok := tsp.nonSampledIDCache.Put(id, true)
 	if ok {
 		tsp.dropTrace(id, time.Now())
 	}
