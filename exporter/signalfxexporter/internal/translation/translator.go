@@ -46,7 +46,7 @@ const (
 
 	// ActionCopyMetrics copies metrics using Rule.Mapping.
 	// Rule.DimensionKey and Rule.DimensionValues can be used to filter datapoints that must be copied,
-	// if these fields are set, only metics having a dimension with key == Rule.DimensionKey and
+	// if these fields are set, only metrics having a dimension with key == Rule.DimensionKey and
 	// value in Rule.DimensionValues will be copied.
 	ActionCopyMetrics Action = "copy_metrics"
 
@@ -177,7 +177,7 @@ type Rule struct {
 	// DimensionKey is used by "split_metric" translation rule action to specify dimension key
 	// that will be used to translate the metric datapoints. Datapoints that don't have
 	// the specified dimension key will not be translated.
-	// DimensionKey is also used by "copy_metrics" for filterring.
+	// DimensionKey is also used by "copy_metrics" for filtering.
 	DimensionKey string `mapstructure:"dimension_key"`
 
 	// DimensionValues is used by "copy_metrics" to filter out datapoints with dimensions values

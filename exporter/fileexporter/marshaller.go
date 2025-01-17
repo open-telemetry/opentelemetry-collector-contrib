@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// Marshaler configuration used for marhsaling Protobuf
+// Marshaler configuration used for marshaling Protobuf
 var tracesMarshalers = map[string]ptrace.Marshaler{
 	formatTypeJSON:  &ptrace.JSONMarshaler{},
 	formatTypeProto: &ptrace.ProtoMarshaler{},
