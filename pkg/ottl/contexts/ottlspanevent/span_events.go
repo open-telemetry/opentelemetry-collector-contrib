@@ -57,14 +57,6 @@ type Option func(*ottl.Parser[TransformContext])
 type TransformContextOption func(*TransformContext)
 
 func NewTransformContext(spanEvent ptrace.SpanEvent, span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSpans ptrace.ScopeSpans, resourceSpans ptrace.ResourceSpans, options ...TransformContextOption) TransformContext {
-	// calculate the event index
-	index := -1
-	for i := 0; i < span.Events().Len(); i++ {
-		if span.Events().At(i) == spanEvent {
-			index = i
-			break
-		}
-	}
 	tc := TransformContext{
 		spanEvent:            spanEvent,
 		span:                 span,
@@ -73,7 +65,6 @@ func NewTransformContext(spanEvent ptrace.SpanEvent, span ptrace.Span, instrumen
 		cache:                pcommon.NewMap(),
 		scopeSpans:           scopeSpans,
 		resouceSpans:         resourceSpans,
-		eventIndex:           int64(index),
 	}
 	for _, opt := range options {
 		opt(&tc)
@@ -86,6 +77,14 @@ func WithCache(cache *pcommon.Map) TransformContextOption {
 	return func(p *TransformContext) {
 		if cache != nil {
 			p.cache = *cache
+		}
+	}
+}
+
+func WithEventIndex(eventIndex int64) TransformContextOption {
+	return func(p *TransformContext) {
+		if eventIndex >= 0 {
+			p.eventIndex = eventIndex
 		}
 	}
 }

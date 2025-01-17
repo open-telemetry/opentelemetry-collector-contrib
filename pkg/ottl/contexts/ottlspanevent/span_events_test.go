@@ -413,7 +413,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: &internal.TestPath[TransformContext]{
 				N: "event_index",
 			},
-			orig:              int64(0),
+			orig:              int64(1),
 			newVal:            int64(1),
 			expectSetterError: true,
 		},
@@ -436,7 +436,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			spanEvent, span, il, resource := createTelemetry()
 
-			tCtx := NewTransformContext(spanEvent, span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+			tCtx := NewTransformContext(spanEvent, span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans(), WithEventIndex(1))
 
 			got, err := accessor.Get(context.Background(), tCtx)
 			assert.NoError(t, err)
