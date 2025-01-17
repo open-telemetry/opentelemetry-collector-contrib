@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -39,24 +40,29 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	env := helper.GetExprEnv(entry)
 	defer helper.PutExprEnv(env)
 
+	logger := t.Logger()
+	if entry != nil {
+		logger = logger.With(zap.Any(attrs.LogRecordOriginal, entry.Body))
+	}
+
 	for _, route := range t.routes {
 		matches, err := vm.Run(route.Expression, env)
 		if err != nil {
-			t.Logger().Warn("Running expression returned an error", zap.Error(err))
+			logger.Warn("Running expression returned an error", zap.Error(err))
 			continue
 		}
 
 		// we compile the expression with "AsBool", so this should be safe
 		if matches.(bool) {
 			if err = route.Attribute(entry); err != nil {
-				t.Logger().Error("Failed to label entry", zap.Error(err))
+				logger.Error("Failed to label entry", zap.Error(err))
 				return err
 			}
 
 			for _, output := range route.OutputOperators {
 				err = output.Process(ctx, entry)
 				if err != nil {
-					t.Logger().Error("Failed to process entry", zap.Error(err))
+					logger.Error("Failed to process entry", zap.Error(err))
 				}
 			}
 			break
