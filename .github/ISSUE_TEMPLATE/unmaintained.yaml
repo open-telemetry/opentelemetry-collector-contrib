@@ -230,6 +230,16 @@ body:
       - receiver/googlecloudspanner
       - receiver/haproxy
       - receiver/hostmetrics
+      - receiver/hostmetrics/internal/scraper/cpuscraper
+      - receiver/hostmetrics/internal/scraper/diskscraper
+      - receiver/hostmetrics/internal/scraper/filesystemscraper
+      - receiver/hostmetrics/internal/scraper/loadscraper
+      - receiver/hostmetrics/internal/scraper/memoryscraper
+      - receiver/hostmetrics/internal/scraper/networkscraper
+      - receiver/hostmetrics/internal/scraper/pagingscraper
+      - receiver/hostmetrics/internal/scraper/processesscraper
+      - receiver/hostmetrics/internal/scraper/processscraper
+      - receiver/hostmetrics/internal/scraper/systemscraper
       - receiver/httpcheck
       - receiver/huaweicloudces
       - receiver/iis
