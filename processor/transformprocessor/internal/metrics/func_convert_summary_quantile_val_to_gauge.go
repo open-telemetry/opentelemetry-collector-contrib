@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -16,7 +15,7 @@ import (
 )
 
 type convertSummaryQuantileValToGaugeArguments struct {
-	Suffix ottl.Optional[string]
+	AttributeKey ottl.Optional[string]
 }
 
 func newConvertSummaryQuantileValToGaugeFactory() ottl.Factory[ottldatapoint.TransformContext] {
@@ -30,13 +29,13 @@ func createConvertSummaryQuantileValToGaugeFunction(_ ottl.FunctionContext, oArg
 		return nil, fmt.Errorf("convertSummaryQuantileValToGaugeFactory args must be of type *convertSummaryQuantileValToGaugeArguments")
 	}
 
-	return convertSummaryQuantileValToGauge(args.Suffix)
+	return convertSummaryQuantileValToGauge(args.AttributeKey)
 }
 
-func convertSummaryQuantileValToGauge(suffix ottl.Optional[string]) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
-	metricNameSuffix := ".quantile"
-	if !suffix.IsEmpty() {
-		metricNameSuffix = suffix.Get()
+func convertSummaryQuantileValToGauge(attrKey ottl.Optional[string]) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+	attributeKey := "quantile"
+	if !attrKey.IsEmpty() {
+		attributeKey = attrKey.Get()
 	}
 	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
@@ -44,17 +43,20 @@ func convertSummaryQuantileValToGauge(suffix ottl.Optional[string]) (ottl.ExprFu
 			return nil, nil
 		}
 
+		gaugeMetric := tCtx.GetMetrics().AppendEmpty()
+		gaugeMetric.SetDescription(metric.Description())
+		gaugeMetric.SetName(metric.Name())
+		gaugeMetric.SetUnit(metric.Unit())
+		gauge := gaugeMetric.SetEmptyGauge()
+
 		dps := metric.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
 			dp := dps.At(i)
 			for j := 0; j < dp.QuantileValues().Len(); j++ {
 				q := dp.QuantileValues().At(j)
-				gaugeMetric := tCtx.GetMetrics().AppendEmpty()
-				gaugeMetric.SetDescription(metric.Description())
-				gaugeMetric.SetName(metric.Name() + metricNameSuffix + "_" + quantileToStringSuffix(q.Quantile()))
-				gaugeMetric.SetUnit(metric.Unit())
-				gaugeDp := gaugeMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+				gaugeDp := gauge.DataPoints().AppendEmpty()
 				dp.Attributes().CopyTo(gaugeDp.Attributes())
+				gaugeDp.Attributes().PutStr(attributeKey, quantileToStringValue(q.Quantile()))
 				gaugeDp.SetDoubleValue(q.Value())
 				gaugeDp.SetStartTimestamp(dp.StartTimestamp())
 				gaugeDp.SetTimestamp(dp.Timestamp())
@@ -64,10 +66,9 @@ func convertSummaryQuantileValToGauge(suffix ottl.Optional[string]) (ottl.ExprFu
 	}, nil
 }
 
-func quantileToStringSuffix(q float64) string {
-	str := strconv.FormatFloat(q, 'f', -1, 64)
-	result := strings.TrimPrefix(str, "0.")
-	if len(result) < 2 && result != "0" && result != "1" {
+func quantileToStringValue(q float64) string {
+	result := strconv.FormatFloat(q, 'f', -1, 64)
+	if len(result) < 4 && result != "0" && result != "1" {
 		result += "0"
 	}
 	return result

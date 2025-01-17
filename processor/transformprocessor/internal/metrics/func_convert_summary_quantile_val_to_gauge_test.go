@@ -26,61 +26,57 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 
 				gaugeMetric := metrics.AppendEmpty()
 				gaugeMetric.SetDescription(summaryMetric.Description())
-				gaugeMetric.SetName(summaryMetric.Name() + ".quantile_99")
+				gaugeMetric.SetName(summaryMetric.Name())
 				gaugeMetric.SetUnit(summaryMetric.Unit())
-				gaugeDp := gaugeMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+				gauge := gaugeMetric.SetEmptyGauge()
+
 				attrs := getTestAttributes()
+
+				gaugeDp := gauge.DataPoints().AppendEmpty()
 				attrs.CopyTo(gaugeDp.Attributes())
+				gaugeDp.Attributes().PutStr("quantile", "0.99")
 				gaugeDp.SetDoubleValue(1)
 
-				gaugeMetric1 := metrics.AppendEmpty()
-				gaugeMetric1.SetDescription(summaryMetric.Description())
-				gaugeMetric1.SetName(summaryMetric.Name() + ".quantile_95")
-				gaugeMetric1.SetUnit(summaryMetric.Unit())
-				gaugeDp1 := gaugeMetric1.SetEmptyGauge().DataPoints().AppendEmpty()
+				gaugeDp1 := gauge.DataPoints().AppendEmpty()
 				attrs.CopyTo(gaugeDp1.Attributes())
+				gaugeDp1.Attributes().PutStr("quantile", "0.95")
 				gaugeDp1.SetDoubleValue(2)
 
-				gaugeMetric2 := metrics.AppendEmpty()
-				gaugeMetric2.SetDescription(summaryMetric.Description())
-				gaugeMetric2.SetName(summaryMetric.Name() + ".quantile_50")
-				gaugeMetric2.SetUnit(summaryMetric.Unit())
-				gaugeDp2 := gaugeMetric2.SetEmptyGauge().DataPoints().AppendEmpty()
+				gaugeDp2 := gauge.DataPoints().AppendEmpty()
 				attrs.CopyTo(gaugeDp2.Attributes())
+				gaugeDp2.Attributes().PutStr("quantile", "0.50")
 				gaugeDp2.SetDoubleValue(3)
 			},
 		},
 		{
-			name:   "convert_summary_quantile_val_to_gauge custom suffix",
-			input:  getTestSummaryMetric(),
-			suffix: ottl.NewTestingOptional[string](".custom_quantile"),
+			name:  "convert_summary_quantile_val_to_gauge custom attribute key",
+			input: getTestSummaryMetric(),
+			key:   ottl.NewTestingOptional[string]("custom_quantile"),
 			want: func(metrics pmetric.MetricSlice) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 
 				gaugeMetric := metrics.AppendEmpty()
 				gaugeMetric.SetDescription(summaryMetric.Description())
-				gaugeMetric.SetName(summaryMetric.Name() + ".custom_quantile_99")
+				gaugeMetric.SetName(summaryMetric.Name())
 				gaugeMetric.SetUnit(summaryMetric.Unit())
-				gaugeDp := gaugeMetric.SetEmptyGauge().DataPoints().AppendEmpty()
+				gauge := gaugeMetric.SetEmptyGauge()
+
 				attrs := getTestAttributes()
+
+				gaugeDp := gauge.DataPoints().AppendEmpty()
 				attrs.CopyTo(gaugeDp.Attributes())
+				gaugeDp.Attributes().PutStr("custom_quantile", "0.99")
 				gaugeDp.SetDoubleValue(1)
 
-				gaugeMetric1 := metrics.AppendEmpty()
-				gaugeMetric1.SetDescription(summaryMetric.Description())
-				gaugeMetric1.SetName(summaryMetric.Name() + ".custom_quantile_95")
-				gaugeMetric1.SetUnit(summaryMetric.Unit())
-				gaugeDp1 := gaugeMetric1.SetEmptyGauge().DataPoints().AppendEmpty()
+				gaugeDp1 := gauge.DataPoints().AppendEmpty()
 				attrs.CopyTo(gaugeDp1.Attributes())
+				gaugeDp1.Attributes().PutStr("custom_quantile", "0.95")
 				gaugeDp1.SetDoubleValue(2)
 
-				gaugeMetric2 := metrics.AppendEmpty()
-				gaugeMetric2.SetDescription(summaryMetric.Description())
-				gaugeMetric2.SetName(summaryMetric.Name() + ".custom_quantile_50")
-				gaugeMetric2.SetUnit(summaryMetric.Unit())
-				gaugeDp2 := gaugeMetric2.SetEmptyGauge().DataPoints().AppendEmpty()
+				gaugeDp2 := gauge.DataPoints().AppendEmpty()
 				attrs.CopyTo(gaugeDp2.Attributes())
+				gaugeDp2.Attributes().PutStr("custom_quantile", "0.50")
 				gaugeDp2.SetDoubleValue(3)
 			},
 		},
@@ -98,7 +94,7 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 			actualMetric := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetric.AppendEmpty())
 
-			evaluate, err := convertSummaryQuantileValToGauge(tt.suffix)
+			evaluate, err := convertSummaryQuantileValToGauge(tt.key)
 			assert.NoError(t, err)
 
 			_, err = evaluate(nil, ottldatapoint.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetric, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
@@ -121,12 +117,14 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 }
 
 func TestQuantileToStringSuffix(t *testing.T) {
-	assert.Equal(t, "0", quantileToStringSuffix(0))
-	assert.Equal(t, "0", quantileToStringSuffix(0.0))
-	assert.Equal(t, "1", quantileToStringSuffix(1))
-	assert.Equal(t, "1", quantileToStringSuffix(1.0))
-	assert.Equal(t, "55", quantileToStringSuffix(0.55))
-	assert.Equal(t, "99999", quantileToStringSuffix(0.99999))
-	assert.Equal(t, "01", quantileToStringSuffix(0.01))
-	assert.Equal(t, "50", quantileToStringSuffix(0.5))
+	assert.Equal(t, "0", quantileToStringValue(0))
+	assert.Equal(t, "0", quantileToStringValue(0.0))
+	assert.Equal(t, "1", quantileToStringValue(1))
+	assert.Equal(t, "1", quantileToStringValue(1.0))
+	assert.Equal(t, "0.55", quantileToStringValue(0.55))
+	assert.Equal(t, "0.99999", quantileToStringValue(0.99999))
+	assert.Equal(t, "0.01", quantileToStringValue(0.01))
+	assert.Equal(t, "0.00000001", quantileToStringValue(0.00000001))
+	assert.Equal(t, "0.50", quantileToStringValue(0.5))
+	assert.Equal(t, "0.50", quantileToStringValue(0.50))
 }
