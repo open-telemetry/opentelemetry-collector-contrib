@@ -48,7 +48,6 @@ components:
         - tail_sampling
         - transform
     receiver:
-        - envoyals
         - filelog
         - fluentforward
         - hostmetrics
