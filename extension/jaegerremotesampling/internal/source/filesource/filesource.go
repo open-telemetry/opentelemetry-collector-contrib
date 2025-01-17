@@ -80,6 +80,7 @@ func NewFileSource(options Options, logger *zap.Logger) (source.Source, error) {
 	}
 
 	if options.ReloadInterval > 0 {
+		h.wg.Add(1)
 		go h.autoUpdateStrategies(ctx, options.ReloadInterval, loadFn)
 	}
 	return h, nil
@@ -160,9 +161,7 @@ func (h *samplingProvider) samplingStrategyLoader(strategiesFile string) strateg
 }
 
 func (h *samplingProvider) autoUpdateStrategies(ctx context.Context, interval time.Duration, loader strategyLoader) {
-	h.wg.Add(1)
 	defer h.wg.Done()
-
 	lastValue := string(nullJSON)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
