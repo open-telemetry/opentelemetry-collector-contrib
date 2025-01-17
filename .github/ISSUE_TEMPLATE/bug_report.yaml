@@ -48,6 +48,7 @@ body:
       - exporter/awsxray
       - exporter/azuredataexplorer
       - exporter/azuremonitor
+      - exporter/bmchelix
       - exporter/carbon
       - exporter/cassandra
       - exporter/clickhouse
@@ -95,6 +96,7 @@ body:
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
       - extension/encoding/otlpencoding
+      - extension/encoding/skywalkingencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
       - extension/googleclientauth
@@ -223,6 +225,7 @@ body:
       - receiver/flinkmetrics
       - receiver/fluentforward
       - receiver/github
+      - receiver/gitlab
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner

@@ -129,14 +129,14 @@ type limiter interface {
 }
 
 // newStartedAtomicLimiter returns a started atomicLimiter
-func newStartedAtomicLimiter(max uint64, interval uint64) *atomicLimiter {
+func newStartedAtomicLimiter(maxVal uint64, interval uint64) *atomicLimiter {
 	if interval == 0 {
 		interval = 5
 	}
 
 	a := &atomicLimiter{
 		count:    &atomic.Uint64{},
-		max:      max,
+		max:      maxVal,
 		interval: time.Second * time.Duration(interval),
 		done:     make(chan struct{}),
 	}

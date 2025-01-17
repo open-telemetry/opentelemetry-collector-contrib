@@ -410,7 +410,7 @@ If accurate parsing cannot be performed, the infrastructure resource group value
 
 ### Consul
 
-Queries a [consul agent](https://www.consul.io/docs/agent) and reads its' [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve related resource attributes:
+Queries a [consul agent](https://www.consul.io/docs/agent) and reads its [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve related resource attributes:
 
 The list of the populated resource attributes can be found at [Consul Detector Resource Attributes](./internal/consul/documentation.md).
 
@@ -425,6 +425,43 @@ processors:
     timeout: 2s
     override: false
 ```
+
+### Kubeadm Metadata
+
+Queries the K8S API server to retrieve kubeadm resource attributes:
+
+The list of the populated resource attributes can be found at [kubeadm Detector Resource Attributes](./internal/kubeadm/documentation.md).
+
+The following permissions are required:
+```yaml
+kind: Role
+metadata:
+  name: otel-collector
+  namespace: kube-system
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["kubeadm-config"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: otel-collector-rolebinding
+  namespace: kube-system
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default
+roleRef:
+  kind: Role
+  name: otel-collector
+  apiGroup: rbac.authorization.k8s.io
+```
+
+| Name | Type | Required | Default         | Docs                                                                                                                                                                                                                                   |
+| ---- | ---- |----------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| auth_type | string | No       | `serviceAccount` | How to authenticate to the K8s API server.  This can be one of `none` (for no auth), `serviceAccount` (to use the standard service account token provided to the agent pod), or `kubeConfig` to use credentials from `~/.kube/config`. |
 
 ### K8S Node Metadata
 
@@ -481,11 +518,11 @@ and add this to your workload:
                 fieldPath: spec.nodeName
 ```
 
-### Openshift
+### OpenShift
 
 Queries the OpenShift and Kubernetes API to retrieve related resource attributes.
 
-The list of the populated resource attributes can be found at [Openshift Detector Resource Attributes](./internal/openshift/documentation.md).
+The list of the populated resource attributes can be found at [OpenShift Detector Resource Attributes](./internal/openshift/documentation.md).
 
 The following permissions are required:
 ```yaml
@@ -588,5 +625,5 @@ Note that if multiple detectors are inserting the same attribute name, the first
 * ecs
 * ec2
 
-The full list of settings exposed for this extension are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this extension are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
