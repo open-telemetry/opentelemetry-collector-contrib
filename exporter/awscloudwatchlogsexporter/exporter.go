@@ -179,8 +179,8 @@ type cwLogBody struct {
 func logToCWLog(resourceAttrs map[string]any, scope pcommon.InstrumentationScope, log plog.LogRecord, config *Config) (*cwlogs.Event, error) {
 	// TODO(jbd): Benchmark and improve the allocations.
 	// Evaluate go.elastic.co/fastjson as a replacement for encoding/json.
-	logGroupName := config.LogGroupName
-	logStreamName := config.LogStreamName
+	// Replace loggroup and logstream with resource attribute
+	logGroupName, logStreamName, _ := getLogInfo(resourceAttrs, config)
 
 	var bodyJSON []byte
 	var err error
