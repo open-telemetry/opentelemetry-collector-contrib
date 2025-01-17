@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	defaultGRPCEndpoint = ":19001"
+	defaultGRPCEndpoint = "localhost:19001"
 )
 
 // NewFactory creates a new HAProxy receiver factory.

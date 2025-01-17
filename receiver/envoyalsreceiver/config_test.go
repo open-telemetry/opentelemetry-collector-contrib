@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
-						Endpoint:  ":19001",
+						Endpoint:  "localhost:19001",
 						Transport: confignet.TransportTypeTCP,
 					},
 				},

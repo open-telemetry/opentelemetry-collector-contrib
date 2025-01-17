@@ -3,7 +3,7 @@ type: envoyals
 status:
   class: receiver
   stability:
-    alpha: [logs]
-  distributions: [contrib, k8s]
+    development: [logs]
+  distributions: []
   codeowners:
     active: [evan-bradley]
