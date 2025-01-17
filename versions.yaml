@@ -86,6 +86,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/skywalkingencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension
