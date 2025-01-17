@@ -144,7 +144,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 			SendMetadata:        cfg.SendMetadata,
 		},
 		telemetry:      prwTelemetry,
-		batchStatePool: sync.Pool{New: func() any { return newBatchTimeSericesState() }},
+		batchStatePool: sync.Pool{New: func() any { return newBatchTimeServicesState() }},
 	}
 
 	if prwe.exporterSettings.ExportCreatedMetric {
