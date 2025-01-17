@@ -381,19 +381,19 @@ Examples:
 
 ### convert_summary_quantile_val_to_gauge
 
-`convert_summary_quantile_val_to_gauge(Optional[suffix])`
+`convert_summary_quantile_val_to_gauge(Optional[attributeKey])`
 
-The `convert_summary_quantile_val_to_gauge` function creates a new Gauge metric from each of the Summary's quantiles.
+The `convert_summary_quantile_val_to_gauge` function creates a new Gauge metric and injects each of the Summary's quantiles into a single Gauge datapoint.
 
-`suffix` is an optional string representing the suffix of the Gauge metric name. The default value is `.quantile_%s`, where `%s` represents the quantile value.
+`attributeKey` is an optional string representing the key of the Gauge datapoint attribute, which value represents the quantile value. The default value is `quantile`.
 
-The name for the new metric will be `<summary metric name>.quantile_<quantile value>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `unit` and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
+The name for the new metric will be `<summary metric name>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `unit` and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 
 **NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
 
 Examples:
 
-- `convert_summary_quantile_val_to_gauge(".custom_quantile_suffix")`
+- `convert_summary_quantile_val_to_gauge("custom_quantile")`
 
 - `convert_summary_quantile_val_to_gauge()`
 
