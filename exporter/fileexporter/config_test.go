@@ -175,7 +175,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "group_by_invalid_path"),
-			errorMessage: "path must contain exatcly one * when group_by is enabled",
+			errorMessage: "path must contain exactly one * when group_by is enabled",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "group_by_invalid_path2"),
