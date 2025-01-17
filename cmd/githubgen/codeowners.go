@@ -176,8 +176,8 @@ LOOP:
 		for _, m := range dist.Maintainers {
 			maintainers = append(maintainers, fmt.Sprintf("@%s", m))
 		}
-		distribution := fmt.Sprintf("reports/distributions/%s.yaml%s @open-telemetry/collector-contrib-approvers", dist.Name, strings.Repeat(" ", longestName-len(dist.Name)))
 
+		distribution := fmt.Sprintf("reports/distributions/%s.yaml%s @open-telemetry/collector-contrib-approvers", dist.Name, strings.Repeat(" ", longestName-len(dist.Name)))
 		if len(maintainers) > 0 {
 			distribution += fmt.Sprintf(" %s", strings.Join(maintainers, " "))
 		}
