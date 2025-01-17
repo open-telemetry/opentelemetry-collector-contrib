@@ -32,7 +32,7 @@ func NewMappingHintGetter(attr pcommon.Map) (g MappingHintGetter) {
 	}
 	slice := v.Slice()
 	g.hints = slices.Grow(g.hints, slice.Len())
-	for i := 0; i < slice.Len(); i++ {
+	for i := range slice.Len() {
 		g.hints = append(g.hints, MappingHint(slice.At(i).Str()))
 	}
 	return
