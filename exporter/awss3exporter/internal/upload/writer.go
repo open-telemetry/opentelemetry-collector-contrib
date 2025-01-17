@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/config/configcompression"
 )
@@ -20,18 +21,20 @@ type Manager interface {
 }
 
 type s3manager struct {
-	bucket   string
-	builder  *PartitionKeyBuilder
-	uploader *manager.Uploader
+	bucket       string
+	builder      *PartitionKeyBuilder
+	uploader     *manager.Uploader
+	storageClass string
 }
 
 var _ Manager = (*s3manager)(nil)
 
-func NewS3Manager(bucket string, builder *PartitionKeyBuilder, service *s3.Client) Manager {
+func NewS3Manager(bucket string, builder *PartitionKeyBuilder, service *s3.Client, storageClass string) Manager {
 	return &s3manager{
-		bucket:   bucket,
-		builder:  builder,
-		uploader: manager.NewUploader(service),
+		bucket:       bucket,
+		builder:      builder,
+		uploader:     manager.NewUploader(service),
+		storageClass: storageClass,
 	}
 }
 
@@ -57,6 +60,7 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte) error {
 		Key:             aws.String(sw.builder.Build(now)),
 		Body:            content,
 		ContentEncoding: aws.String(encoding),
+		StorageClass:    s3types.StorageClass(sw.storageClass),
 	})
 
 	return err

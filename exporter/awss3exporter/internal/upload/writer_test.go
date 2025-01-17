@@ -26,6 +26,7 @@ func TestNewS3Manager(t *testing.T) {
 		"my-bucket",
 		&PartitionKeyBuilder{},
 		s3.New(s3.Options{}),
+		"STANDARD", // <-- Add the new argument here
 	)
 
 	assert.NotNil(t, sm, "Must have a valid client returned")
@@ -35,11 +36,12 @@ func TestS3ManagerUpload(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name        string
-		handler     func(t *testing.T) http.Handler
-		compression configcompression.Type
-		data        []byte
-		errVal      string
+		name         string
+		handler      func(t *testing.T) http.Handler
+		compression  configcompression.Type
+		data         []byte
+		errVal       string
+		storageClass string
 	}{
 		{
 			name: "successful upload",
@@ -115,6 +117,28 @@ func TestS3ManagerUpload(t *testing.T) {
 			data:   []byte("good payload"),
 			errVal: "operation error S3: PutObject, https response error StatusCode: 401, RequestID: , HostID: , api error Unauthorized: Unauthorized",
 		},
+		{
+			name: "STANDARD_IA storage class",
+			handler: func(t *testing.T) http.Handler {
+				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+					// ...
+				})
+			},
+			storageClass: "STANDARD_IA",
+			data:         []byte("some data"),
+			errVal:       "",
+		},
+		{
+			name: "ONEZONE_IA storage class",
+			handler: func(t *testing.T) http.Handler {
+				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+					// ...
+				})
+			},
+			storageClass: "ONEZONE_IA",
+			data:         []byte("some data"),
+			errVal:       "",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -139,6 +163,7 @@ func TestS3ManagerUpload(t *testing.T) {
 					BaseEndpoint: aws.String(s.URL),
 					Region:       "local",
 				}),
+				"STANDARD", // <-- Pass your desired storage class here
 			)
 
 			// Using a mocked virtual clock to fix the timestamp used

@@ -70,5 +70,6 @@ func newUploadManager(
 			Compression:         conf.S3Uploader.Compression,
 		},
 		s3.NewFromConfig(cfg, s3Opts...),
+		conf.S3Uploader.StorageClass,
 	), nil
 }
