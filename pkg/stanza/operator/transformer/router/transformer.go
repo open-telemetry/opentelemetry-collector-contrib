@@ -6,6 +6,7 @@ package router // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/expr-lang/expr/vm"
 	"go.uber.org/zap"
@@ -42,7 +43,11 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 
 	logger := t.Logger()
 	if entry != nil {
-		logger = logger.With(zap.Any(attrs.LogRecordOriginal, entry.Body))
+		toAddFields := []zap.Field{zap.Any(attrs.LogRecordOriginal, entry.Body)}
+		if logFilePath, ok := entry.Attributes[attrs.LogFilePath]; ok {
+			toAddFields = slices.Insert(toAddFields, 0, zap.Any(attrs.LogFilePath, logFilePath))
+		}
+		logger = logger.With(toAddFields...)
 	}
 
 	for _, route := range t.routes {
