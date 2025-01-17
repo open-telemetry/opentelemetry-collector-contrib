@@ -17,6 +17,7 @@ require (
 	github.com/shirou/gopsutil/v4 v4.24.12
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.10.0
+	go.opentelemetry.io/collector/client v1.23.1-0.20250114172347-71aae791d7f8
 	go.opentelemetry.io/collector/component v0.117.1-0.20250114172347-71aae791d7f8
 	go.opentelemetry.io/collector/component/componenttest v0.117.1-0.20250114172347-71aae791d7f8
 	go.opentelemetry.io/collector/config/confighttp v0.117.1-0.20250114172347-71aae791d7f8
@@ -71,7 +72,6 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/collector/client v1.23.1-0.20250114172347-71aae791d7f8 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.117.1-0.20250114172347-71aae791d7f8 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.23.1-0.20250114172347-71aae791d7f8 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.117.1-0.20250114172347-71aae791d7f8 // indirect
