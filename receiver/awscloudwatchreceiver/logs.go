@@ -326,7 +326,7 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			}
 
 			numGroups++
-			// l.logger.Debug("discovered log group", zap.String("log group", lg.GoString()))
+
 			// default behavior is to collect all if not stream filtered
 			if len(auto.Streams.Names) == 0 && len(auto.Streams.Prefixes) == 0 {
 				groups = append(groups, &streamNames{group: *lg.LogGroupName})
