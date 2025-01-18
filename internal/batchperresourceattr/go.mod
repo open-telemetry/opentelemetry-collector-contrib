@@ -1,5 +1,4 @@
-// Deprecated: use github.com/open-telemetry/opentelemetry-collector-contrib/internal/batchperresourceattr instead.
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr
+module github.com/open-telemetry/opentelemetry-collector-contrib/internal/batchperresourceattr
 
 go 1.22.0
 

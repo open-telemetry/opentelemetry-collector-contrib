@@ -5,9 +5,9 @@ go 1.22.0
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/goccy/go-json v0.10.4
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/batchperresourceattr v0.117.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.117.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.117.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.117.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.117.1-0.20250117002813-e970f8bb1258
 	github.com/stretchr/testify v1.10.0
@@ -123,7 +123,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/corei
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ../../pkg/batchperresourceattr
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/batchperresourceattr => ../../internal/batchperresourceattr
 
 retract (
 	v0.76.2

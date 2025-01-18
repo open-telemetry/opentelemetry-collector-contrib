@@ -124,6 +124,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/testdata/sampleapp
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/testdata/sampleserver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/batchperresourceattr
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal

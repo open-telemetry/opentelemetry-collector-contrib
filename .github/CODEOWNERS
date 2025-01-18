@@ -125,6 +125,7 @@ extension/storage/redisstorageextension/                         @open-telemetry
 extension/sumologicextension/                                    @open-telemetry/collector-contrib-approvers @rnishtala-sumo @chan-tim-sumo
 
 internal/aws/                                                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
+internal/batchperresourceattr/                                   @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 internal/collectd/                                               @open-telemetry/collector-contrib-approvers @atoulme
 internal/coreinternal/                                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/docker/                                                 @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy

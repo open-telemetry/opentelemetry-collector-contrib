@@ -6,8 +6,8 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/jaegertracing/jaeger v1.65.0
 	github.com/klauspost/compress v1.17.11
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/batchperresourceattr v0.117.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.117.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.117.0
 	github.com/signalfx/sapm-proto v0.17.0
 	github.com/stretchr/testify v1.10.0
@@ -79,7 +79,7 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr => ../../pkg/batchperresourceattr
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/batchperresourceattr => ../../internal/batchperresourceattr
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../pkg/translator/jaeger
 

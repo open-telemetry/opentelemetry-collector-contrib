@@ -125,6 +125,7 @@ body:
       - extension/storage/redisstorage
       - extension/sumologic
       - internal/aws
+      - internal/batchperresourceattr
       - internal/collectd
       - internal/core
       - internal/docker
