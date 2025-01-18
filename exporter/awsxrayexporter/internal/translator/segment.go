@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventionsv112 "go.opentelemetry.io/collector/semconv/v1.12.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -306,7 +306,7 @@ func MakeDocumentFromSegment(segment *awsxray.Segment) (string, error) {
 
 func isAwsSdkSpan(span ptrace.Span) bool {
 	attributes := span.Attributes()
-	if rpcSystem, ok := attributes.Get(conventions.AttributeRPCSystem); ok {
+	if rpcSystem, ok := attributes.Get(conventionsv112.AttributeRPCSystem); ok {
 		return rpcSystem.Str() == awsAPIRPCSystem
 	}
 	return false
@@ -379,14 +379,14 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	// peer.service should always be prioritized for segment names when it set by users and
 	// the new x-ray specific service name attributes are not found
 	if name == "" {
-		if peerService, ok := attributes.Get(conventions.AttributePeerService); ok {
+		if peerService, ok := attributes.Get(conventionsv112.AttributePeerService); ok {
 			name = peerService.Str()
 		}
 	}
 
 	if namespace == "" {
 		if isAwsSdkSpan(span) {
-			namespace = conventions.AttributeCloudProviderAWS
+			namespace = conventionsv112.AttributeCloudProviderAWS
 		}
 	}
 
@@ -397,16 +397,16 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 			name = awsService.Str()
 
 			if namespace == "" {
-				namespace = conventions.AttributeCloudProviderAWS
+				namespace = conventionsv112.AttributeCloudProviderAWS
 			}
 		}
 	}
 
 	if name == "" {
-		if dbInstance, ok := attributes.Get(conventions.AttributeDBName); ok {
+		if dbInstance, ok := attributes.Get(conventionsv112.AttributeDBName); ok {
 			// For database queries, the segment name convention is <db name>@<db host>
 			name = dbInstance.Str()
-			if dbURL, ok := attributes.Get(conventions.AttributeDBConnectionString); ok {
+			if dbURL, ok := attributes.Get(conventionsv112.AttributeDBConnectionString); ok {
 				// Trim JDBC connection string if starts with "jdbc:", otherwise no change
 				// jdbc:mysql://db.dev.example.com:3306
 				dbURLStr := strings.TrimPrefix(dbURL.Str(), "jdbc:")
@@ -421,25 +421,25 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 
 	if name == "" && span.Kind() == ptrace.SpanKindServer {
 		// Only for a server span, we can use the resource.
-		if service, ok := resource.Attributes().Get(conventions.AttributeServiceName); ok {
+		if service, ok := resource.Attributes().Get(conventionsv112.AttributeServiceName); ok {
 			name = service.Str()
 		}
 	}
 
 	if name == "" {
-		if rpcservice, ok := attributes.Get(conventions.AttributeRPCService); ok {
+		if rpcservice, ok := attributes.Get(conventionsv112.AttributeRPCService); ok {
 			name = rpcservice.Str()
 		}
 	}
 
 	if name == "" {
-		if host, ok := attributes.Get(conventions.AttributeHTTPHost); ok {
+		if host, ok := attributes.Get(conventionsv112.AttributeHTTPHost); ok {
 			name = host.Str()
 		}
 	}
 
 	if name == "" {
-		if peer, ok := attributes.Get(conventions.AttributeNetPeerName); ok {
+		if peer, ok := attributes.Get(conventionsv112.AttributeNetPeerName); ok {
 			name = peer.Str()
 		}
 	}
@@ -492,34 +492,34 @@ func determineAwsOrigin(resource pcommon.Resource) string {
 		return ""
 	}
 
-	if provider, ok := resource.Attributes().Get(conventions.AttributeCloudProvider); ok {
-		if provider.Str() != conventions.AttributeCloudProviderAWS {
+	if provider, ok := resource.Attributes().Get(conventionsv112.AttributeCloudProvider); ok {
+		if provider.Str() != conventionsv112.AttributeCloudProviderAWS {
 			return ""
 		}
 	}
 
-	if is, present := resource.Attributes().Get(conventions.AttributeCloudPlatform); present {
+	if is, present := resource.Attributes().Get(conventionsv112.AttributeCloudPlatform); present {
 		switch is.Str() {
-		case conventions.AttributeCloudPlatformAWSAppRunner:
+		case conventionsv112.AttributeCloudPlatformAWSAppRunner:
 			return OriginAppRunner
-		case conventions.AttributeCloudPlatformAWSEKS:
+		case conventionsv112.AttributeCloudPlatformAWSEKS:
 			return OriginEKS
-		case conventions.AttributeCloudPlatformAWSElasticBeanstalk:
+		case conventionsv112.AttributeCloudPlatformAWSElasticBeanstalk:
 			return OriginEB
-		case conventions.AttributeCloudPlatformAWSECS:
-			lt, present := resource.Attributes().Get(conventions.AttributeAWSECSLaunchtype)
+		case conventionsv112.AttributeCloudPlatformAWSECS:
+			lt, present := resource.Attributes().Get(conventionsv112.AttributeAWSECSLaunchtype)
 			if !present {
 				return OriginECS
 			}
 			switch lt.Str() {
-			case conventions.AttributeAWSECSLaunchtypeEC2:
+			case conventionsv112.AttributeAWSECSLaunchtypeEC2:
 				return OriginECSEC2
-			case conventions.AttributeAWSECSLaunchtypeFargate:
+			case conventionsv112.AttributeAWSECSLaunchtypeFargate:
 				return OriginECSFargate
 			default:
 				return OriginECS
 			}
-		case conventions.AttributeCloudPlatformAWSEC2:
+		case conventionsv112.AttributeCloudPlatformAWSEC2:
 			return OriginEC2
 
 		// If cloud_platform is defined with a non-AWS value, we should not assign it an AWS origin
@@ -608,10 +608,10 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 		metadata    = map[string]map[string]any{}
 		user        string
 	)
-	userid, ok := attributes[conventions.AttributeEnduserID]
+	userid, ok := attributes[conventionsv112.AttributeEnduserID]
 	if ok {
 		user = userid.Str()
-		delete(attributes, conventions.AttributeEnduserID)
+		delete(attributes, conventionsv112.AttributeEnduserID)
 	}
 
 	if len(attributes) == 0 && (!storeResource || resource.Attributes().Len() == 0) {
@@ -739,7 +739,7 @@ func fixSegmentName(name string) string {
 	return name
 }
 
-// fixAnnotationKey removes any invalid characters from the annotaiton key.  AWS X-Ray defines
+// fixAnnotationKey removes any invalid characters from the annotation key.  AWS X-Ray defines
 // the list of valid characters here:
 // https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
 func fixAnnotationKey(key string) string {

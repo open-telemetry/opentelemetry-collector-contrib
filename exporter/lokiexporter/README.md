@@ -27,7 +27,7 @@ The new format for OpenTelemetry logs introduced in Loki V3 brings the following
 
 ### Loki log message format changes for OpenTelemetry logs
 
-See OpenTelemetry Logs Data Model specification [here](https://opentelemetry.io/docs/specs/otel/logs/data-model/).
+See [OpenTelemetry Logs Data Model specification](https://opentelemetry.io/docs/specs/otel/logs/data-model/).
 
 | OpenTelemetry log field | Pre Loki V3 | Loki V3 through the Loki OTLP Endpoint |
 | ----- | ----- | ----- |
@@ -41,7 +41,7 @@ See OpenTelemetry Logs Data Model specification [here](https://opentelemetry.io/
 | [`Body`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-body) | `body`  field of the Loki JSON log message | The Loki log message. `__line__`in LogQL functions (e.g. `line_format`)|
 | [`InstrumentationScope`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-instrumentationscope) | `instrumentation_scope_name` field of the JSON log message | `metadata[scope_name]` |
 | [`Attributes`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-attributes) | JSON fields of the Loki log message | `metadata[xyz]` Where `xyz` is the `_` version of the OTel attribute name (e.g. `thread_name` Loki metadata for the `thread.name` OpenTelemetry attribute)|
-| [`Resource`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-resource) | `service.name`, `service.namespace`, and `service.instance.id` are promoted as the following labels: `job=[${service.namespace}/]${service.name}`, instance=${service.instance.id}, exporter="OTLP"`.  Other resource attributes are stored as JSON fields of the Loki log message with the prefix `resources_` (e.g. `resources_k8s_namespace_name`) | Default list of resource attributes promoted as Loki labels: `cloud.availability_zone`, `cloud.region`, `container.name`, `deployment.environment`, `k8s.cluster.name`, `k8s.container.name`, `k8s.cronjob.name`, `k8s.daemonset.name`, `k8s.deployment.name`, `k8s.job.name`, `k8s.namespace.name`, `k8s.pod.name`, `k8s.replicaset.name` `k8s.statefulset.name`, `service.instance.id`, `service.name`, `service.namespace`. <br/>Other resource attributes are by default promoted as Loki message metadata.<br/> ℹ️ The list of promoted resource attributes is configurable using Loki’s distributor config parameter `default_resource_attributes_as_index_labels` when using self managed Loki ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) or opening a support request when using Grafana Cloud |
+| [`Resource`](https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-resource) | `service.name`, `service.namespace`, and `service.instance.id` are promoted as the following labels: `job=[${service.namespace}/]${service.name}`, instance=${service.instance.id}, exporter="OTLP"`.  Other resource attributes are stored as JSON fields of the Loki log message with the prefix `resources_` (e.g. `resources_k8s_namespace_name`) | Default list of resource attributes promoted as Loki labels: `cloud.availability_zone`, `cloud.region`, `container.name`, `deployment.environment`, `k8s.cluster.name`, `k8s.container.name`, `k8s.cronjob.name`, `k8s.daemonset.name`, `k8s.deployment.name`, `k8s.job.name`, `k8s.namespace.name`, `k8s.pod.name`, `k8s.replicaset.name` `k8s.statefulset.name`, `service.instance.id`, `service.name`, `service.namespace`. <br/>Other resource attributes are by default promoted as Loki message metadata.<br/> ℹ️ The list of promoted resource attributes is configurable using Loki’s [distributor config parameter](https://grafana.com/docs/loki/latest/configure/\#distributor) `default_resource_attributes_as_index_labels` when using self managed Loki or opening a support request when using Grafana Cloud |
 
 ℹ️ Additional conversion rules from OpenTelemetry Logs to Loki 
 
@@ -115,7 +115,7 @@ service:
 * When using Grafana Cloud, the [Grafana Cloud OTLP endpoint](https://grafana.com/docs/grafana-cloud/send-data/otlp/send-data-otlp/) should be used instead of the Loki OTLP endpoint. The connection details of the Grafana Cloud OTLP endpoint, OTLP HTTP URL and credentials are available using the Grafana Cloud "OpenTelemetry Collector" connection tile.
 * The promotion of OpenTelemetry attributes and resource attributes to Loki labels using the `loki.attribute.labels` and `loki.resource.labels` hints is replaced by the list of promoted attributes managed centrally in Loki. 
 * The default list of resource attributes promoted as labels (see above) should be sufficient for most use cases.  
-* ℹ️ Changes can be made to this list using the Loki distributor configuration parameter `default_resource_attributes_as_index_labels` ([here](https://grafana.com/docs/loki/latest/configure/\#distributor)) for self managed instances and opening a support ticket for Grafana Cloud.
+* ℹ️ Changes can be made to this list using the Loki [distributor config parameter](https://grafana.com/docs/loki/latest/configure/\#distributor) `default_resource_attributes_as_index_labels` for self managed instances and opening a support ticket for Grafana Cloud.
 
 #### LogQL queries migration
 
@@ -209,7 +209,7 @@ Configuration screenshot:
 
 To enable the "logs to trace" navigation from Loki to Tempo, navigate to the Grafana Loki data source configuration screen, in the "Derived fields" section, update or create a derived field with:
 * Name: `Trace ID`
-* Type: `Label` (note that this `Label` name may be missleading because it also supports Loki message metadata)
+* Type: `Label` (note that this `Label` name may be misleading because it also supports Loki message metadata)
 * Label: `trace_id`
 * Internal link: activated
 * Select the Tempo data source on which "trace to logs" is configured as described above
@@ -271,8 +271,7 @@ processors:
 ```
 
 Currently, Loki does not support label names with dots. 
-That's why lokiexporter normalizes label names to follow Prometheus label names standard before sending requests to Loki.
-More information on label normalization could be found [here](../../pkg/translator/prometheus/README.md#Labels)
+That's why lokiexporter normalizes label names to follow [Prometheus label names standard](../../pkg/translator/prometheus/README.md#Labels) before sending requests to Loki.
 
 The promotion of multiple resource and log attributes to labels is done with single action with comma-separated desired labels:
 ```yaml
@@ -306,10 +305,10 @@ If `service.instance.id` is present then `instance=service.instance.id` is set
 
 If `service.instance.id` is not present then `instance` label is not set
 
-The full list of settings exposed for this exporter are documented [here](./config.go) with detailed sample
-configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this exporter are documented in [config.go](./config.go) with detailed sample
+configurations in [testdata/config.yaml](./testdata/config.yaml).
 
-More information on how to send logs to Grafana Loki using the OpenTelemetry Collector could be found [here](https://grafana.com/docs/opentelemetry/collector/send-logs-to-loki/)
+For more information, see [how to send logs to Grafana Loki using the OpenTelemetry Collector](https://grafana.com/docs/opentelemetry/collector/send-logs-to-loki/)
 
 ### Tenant information
 

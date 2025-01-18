@@ -101,7 +101,7 @@ func (b *Batch) AddRecord(raw []byte, key string) error {
 	return nil
 }
 
-// Chunk breaks up the iternal queue into blocks that can be used
+// Chunk breaks up the internal queue into blocks that can be used
 // to be written to he kinesis.PutRecords endpoint
 func (b *Batch) Chunk() (chunks [][]types.PutRecordsRequestEntry) {
 	// Using local copies to avoid mutating internal data
