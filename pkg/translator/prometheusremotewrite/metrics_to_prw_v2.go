@@ -115,12 +115,7 @@ func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
 	return allTS
 }
 
-func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label) *writev2.TimeSeries {
-	if sample == nil || len(lbls) == 0 {
-		// This shouldn't happen
-		return nil
-	}
-
+func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label) {
 	buf := make([]uint32, 0, len(lbls)*2)
 	var off uint32
 	for _, l := range lbls {
@@ -134,8 +129,6 @@ func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.
 		Samples:    []writev2.Sample{*sample},
 	}
 	c.unique[timeSeriesSignature(lbls)] = &ts
-
-	return &ts
 }
 
 // TODO: implement this function.
