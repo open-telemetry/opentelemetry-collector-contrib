@@ -1,0 +1,52 @@
+[
+    {
+        "name": "rabbit@66a063ecff83",
+        "disk_free": 50000000,
+        "fd_used": 120,
+        "mem_limit": 1024000000,
+        "mem_used": 512000000,
+        "uptime": 86400000,
+        "run_queue": 2,
+        "processors": 4,
+        "io_read_count": 10530,
+        "io_read_bytes": 128003200,
+        "io_write_count": 7234,
+        "io_write_bytes": 243320200,
+        "io_sync_count": 580,
+        "io_seek_count": 342,
+        "io_reopen_count": 120,
+        "metrics": {
+            "channel_closed": 100,
+            "channel_open": 8,
+            "connection_closed": 50,
+            "connection_open": 4,
+            "queue_index_read": 5021,
+            "queue_index_write": 3512
+        }
+    },
+    {
+        "name": "rabbit@another_node",
+        "disk_free": 70000000,
+        "fd_used": 100,
+        "mem_limit": 2048000000,
+        "mem_used": 1024000000,
+        "uptime": 172800000,
+        "run_queue": 1,
+        "processors": 8,
+        "io_read_count": 21030,
+        "io_read_bytes": 256003200,
+        "io_write_count": 14468,
+        "io_write_bytes": 486640400,
+        "io_sync_count": 1160,
+        "io_seek_count": 684,
+        "io_reopen_count": 240,
+        "metrics": {
+            "channel_closed": 200,
+            "channel_open": 16,
+            "connection_closed": 100,
+            "connection_open": 8,
+            "queue_index_read": 10042,
+            "queue_index_write": 7024
+        }
+    }
+]

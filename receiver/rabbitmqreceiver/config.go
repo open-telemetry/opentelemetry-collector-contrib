@@ -19,7 +19,6 @@ import (
 var (
 	errMissingUsername = errors.New(`"username" not specified in config`)
 	errMissingPassword = errors.New(`"password" not specified in config`)
-
 	errInvalidEndpoint = errors.New(`"endpoint" must be in the form of <scheme>://<hostname>:<port>`)
 )
 
@@ -31,20 +30,25 @@ type Config struct {
 	confighttp.ClientConfig        `mapstructure:",squash"`
 	Username                       string              `mapstructure:"username"`
 	Password                       configopaque.String `mapstructure:"password"`
+	EnableNodeMetrics              bool                `mapstructure:"enable_node_metrics"` // Added flag for node metrics
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 }
 
-// Validate validates the configuration by checking for missing or invalid fields
+// Validate validates the configuration by checking for missing or invalid fields.
 func (cfg *Config) Validate() error {
 	var err []error
+
+	// Validate username
 	if cfg.Username == "" {
 		err = append(err, errMissingUsername)
 	}
 
+	// Validate password
 	if cfg.Password == "" {
 		err = append(err, errMissingPassword)
 	}
 
+	// Validate endpoint
 	_, parseErr := url.Parse(cfg.Endpoint)
 	if parseErr != nil {
 		wrappedErr := fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr)

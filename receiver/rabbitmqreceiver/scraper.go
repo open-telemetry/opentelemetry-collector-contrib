@@ -6,6 +6,8 @@ package rabbitmqreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -55,55 +57,87 @@ func newScraper(logger *zap.Logger, cfg *Config, settings receiver.Settings) *ra
 	}
 }
 
-// start starts the scraper by creating a new HTTP Client on the scraper
-func (r *rabbitmqScraper) start(ctx context.Context, host component.Host) (err error) {
-	r.client, err = newClient(ctx, r.cfg, host, r.settings, r.logger)
-	return
+// start starts the scraper by creating a new HTTP Client
+func (r *rabbitmqScraper) start(ctx context.Context, host component.Host) error {
+	if r.cfg.Endpoint == "" || r.cfg.Username == "" || r.cfg.Password == "" {
+		return fmt.Errorf("invalid configuration: missing endpoint, username, or password")
+	}
+
+	client, err := newClient(ctx, r.cfg, host, r.settings, r.logger)
+	if err != nil {
+		return fmt.Errorf("failed to initialize RabbitMQ client: %w", err)
+	}
+
+	r.client = client
+	return nil
 }
 
 // scrape collects metrics from the RabbitMQ API
 func (r *rabbitmqScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	// Validate we don't attempt to scrape without initializing the client
+	// Validate client initialization
 	if r.client == nil {
 		return pmetric.NewMetrics(), errClientNotInit
 	}
 
-	// Get queues for processing
-	queues, err := r.client.GetQueues(ctx)
-	if err != nil {
+	// Collect queue metrics
+	if err := r.collectQueueMetrics(ctx, now); err != nil {
+		r.logger.Error("failed to collect queue metrics", zap.Error(err))
 		return pmetric.NewMetrics(), err
 	}
 
-	// Collect metrics for each queue
-	for _, queue := range queues {
-		r.collectQueue(queue, now)
+	// Collect node metrics if enabled
+	if r.cfg.EnableNodeMetrics {
+		if err := r.collectNodeMetrics(ctx, now); err != nil {
+			r.logger.Error("failed to collect node metrics", zap.Error(err))
+			return pmetric.NewMetrics(), err
+		}
 	}
 
 	return r.mb.Emit(), nil
 }
 
-// collectQueue collects metrics
+func (r *rabbitmqScraper) collectQueueMetrics(ctx context.Context, now pcommon.Timestamp) error {
+	queues, err := r.client.GetQueues(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, queue := range queues {
+		r.collectQueue(queue, now)
+	}
+	return nil
+}
+
+func (r *rabbitmqScraper) collectNodeMetrics(ctx context.Context, now pcommon.Timestamp) error {
+	nodes, err := r.client.GetNodes(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, node := range nodes {
+		r.collectNode(node, now)
+	}
+	return nil
+}
+
+// collectQueue collects metrics for a specific queue
 func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestamp) {
 	r.mb.RecordRabbitmqConsumerCountDataPoint(now, queue.Consumers)
 	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.UnacknowledgedMessages, metadata.AttributeMessageStateUnacknowledged)
 	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.ReadyMessages, metadata.AttributeMessageStateReady)
 
 	for _, messageStatMetric := range messageStatMetrics {
-		// Get metric value
 		val, ok := queue.MessageStats[messageStatMetric]
-		// A metric may not exist if the actions that increment it do not occur
 		if !ok {
-			r.logger.Debug("metric not found", zap.String("Metric", messageStatMetric), zap.String("Queue", queue.Name))
+			r.logger.Debug("metric not found", zap.String("metric", messageStatMetric), zap.String("queue", queue.Name))
 			continue
 		}
 
-		// Convert to int64
 		val64, ok := convertValToInt64(val)
 		if !ok {
-			// Log warning if the metric is not in the format we expect
-			r.logger.Warn("metric not int64", zap.String("Metric", messageStatMetric), zap.String("Queue", queue.Name))
+			r.logger.Warn("metric not int64", zap.String("metric", messageStatMetric), zap.String("queue", queue.Name))
 			continue
 		}
 
@@ -118,6 +152,7 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestam
 			r.mb.RecordRabbitmqMessageDroppedDataPoint(now, val64)
 		}
 	}
+
 	rb := r.mb.NewResourceBuilder()
 	rb.SetRabbitmqQueueName(queue.Name)
 	rb.SetRabbitmqNodeName(queue.Node)
@@ -125,14 +160,41 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestam
 	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
-// convertValToInt64 values from message state unmarshal as float64s but should be int64.
-// Need to do a double cast to get an int64.
-// This should never fail but worth checking just in case.
+func (r *rabbitmqScraper) collectNode(node *models.Node, now pcommon.Timestamp) {
+	// Record node-specific metrics
+	r.mb.RecordRabbitmqNodeDiskFreeDataPoint(now, node.DiskFree)
+	r.mb.RecordRabbitmqNodeFdUsedDataPoint(now, node.FDUsed)
+	r.mb.RecordRabbitmqNodeMemLimitDataPoint(now, node.MemLimit)
+	r.mb.RecordRabbitmqNodeMemUsedDataPoint(now, node.MemUsed)
+
+	// Build resource attributes for the node
+	rb := r.mb.NewResourceBuilder()
+	rb.SetRabbitmqNodeName(node.Name)
+
+	// Emit resource and log attributes for debugging
+	resource := rb.Emit()
+	r.logger.Debug("Emitting resource for node", zap.String("attributes", formatResourceAttributes(resource)))
+
+	// Emit metrics for the node
+	r.mb.EmitForResource(metadata.WithResource(resource))
+}
+
+// formatResourceAttributes converts resource attributes to a string for logging
+func formatResourceAttributes(resource pcommon.Resource) string {
+	attrs := resource.Attributes()
+	var attributes []string
+	attrs.Range(func(k string, v pcommon.Value) bool {
+		attributes = append(attributes, k+"="+v.AsString())
+		return true
+	})
+	return "{" + strings.Join(attributes, ", ") + "}"
+}
+
+// convertValToInt64 converts a value to int64
 func convertValToInt64(val any) (int64, bool) {
 	f64Val, ok := val.(float64)
 	if !ok {
-		return 0, ok
+		return 0, false
 	}
-
 	return int64(f64Val), true
 }

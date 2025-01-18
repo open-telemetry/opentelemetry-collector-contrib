@@ -26,12 +26,13 @@ import (
 
 const (
 	queuesAPIResponseFile = "get_queues_response.json"
+	nodesAPIResponseFile  = "get_nodes_response.json"
 )
 
 func TestNewClient(t *testing.T) {
-	clientConfigNonExistandCA := confighttp.NewDefaultClientConfig()
-	clientConfigNonExistandCA.Endpoint = defaultEndpoint
-	clientConfigNonExistandCA.TLSSetting = configtls.ClientConfig{
+	clientConfigInvalid := confighttp.NewDefaultClientConfig()
+	clientConfigInvalid.Endpoint = defaultEndpoint
+	clientConfigInvalid.TLSSetting = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: "/non/existent",
 		},
@@ -40,7 +41,7 @@ func TestNewClient(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = defaultEndpoint
 
-	testCase := []struct {
+	testCases := []struct {
 		desc        string
 		cfg         *Config
 		host        component.Host
@@ -51,17 +52,19 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Invalid HTTP config",
 			cfg: &Config{
-				ClientConfig: clientConfigNonExistandCA,
+				ClientConfig: clientConfigInvalid,
 			},
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
 			logger:      zap.NewNop(),
-			expectError: errors.New("failed to create HTTP Client"),
+			expectError: errors.New("failed to create HTTP client: failed to load TLS config"),
 		},
 		{
 			desc: "Valid Configuration",
 			cfg: &Config{
 				ClientConfig: clientConfig,
+				Username:     "valid_user",
+				Password:     "valid_password",
 			},
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
@@ -70,7 +73,7 @@ func TestNewClient(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCase {
+	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			ac, err := newClient(context.Background(), tc.cfg, tc.host, tc.settings, tc.logger)
 			if tc.expectError != nil {
@@ -108,9 +111,9 @@ func TestGetQueuesDetails(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				clusters, err := tc.GetQueues(context.Background())
-				require.Nil(t, clusters)
-				require.EqualError(t, err, "non 200 code returned 401")
+				queues, err := tc.GetQueues(context.Background())
+				require.Nil(t, queues)
+				require.EqualError(t, err, "non-200 response code: 401")
 			},
 		},
 		{
@@ -125,13 +128,13 @@ func TestGetQueuesDetails(t *testing.T) {
 
 				tc := createTestClient(t, ts.URL)
 
-				clusters, err := tc.GetQueues(context.Background())
-				require.Nil(t, clusters)
-				require.ErrorContains(t, err, "failed to decode response payload")
+				queues, err := tc.GetQueues(context.Background())
+				require.Nil(t, queues)
+				require.ErrorContains(t, err, "failed to decode response body: json: cannot unmarshal object into Go value of type []*models.Queue")
 			},
 		},
 		{
-			desc: "Successful call",
+			desc: "Successful Queue API call",
 			testFunc: func(t *testing.T) {
 				data := loadAPIResponseData(t, queuesAPIResponseFile)
 
@@ -149,9 +152,9 @@ func TestGetQueuesDetails(t *testing.T) {
 				err := json.Unmarshal(data, &expected)
 				require.NoError(t, err)
 
-				clusters, err := tc.GetQueues(context.Background())
+				queues, err := tc.GetQueues(context.Background())
 				require.NoError(t, err)
-				require.Equal(t, expected, clusters)
+				require.Equal(t, expected, queues)
 			},
 		},
 	}

@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -26,13 +25,8 @@ import (
 )
 
 func TestScraperStart(t *testing.T) {
-	clientConfigNonExistandCA := confighttp.NewDefaultClientConfig()
-	clientConfigNonExistandCA.Endpoint = defaultEndpoint
-	clientConfigNonExistandCA.TLSSetting = configtls.ClientConfig{
-		Config: configtls.Config{
-			CAFile: "/non/existent",
-		},
-	}
+	clientConfigInvalid := confighttp.NewDefaultClientConfig()
+	clientConfigInvalid.Endpoint = "invalid://endpoint"
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = defaultEndpoint
@@ -46,7 +40,11 @@ func TestScraperStart(t *testing.T) {
 			desc: "Bad Config",
 			scraper: &rabbitmqScraper{
 				cfg: &Config{
-					ClientConfig: clientConfigNonExistandCA,
+					ClientConfig: confighttp.ClientConfig{
+						Endpoint: "", // Invalid endpoint
+					},
+					Username: "", // Missing username
+					Password: "", // Missing password
 				},
 				settings: componenttest.NewNopTelemetrySettings(),
 			},
@@ -56,7 +54,11 @@ func TestScraperStart(t *testing.T) {
 			desc: "Valid Config",
 			scraper: &rabbitmqScraper{
 				cfg: &Config{
-					ClientConfig: clientConfig,
+					ClientConfig: confighttp.ClientConfig{
+						Endpoint: "http://localhost:15672",
+					},
+					Username: "valid_user",
+					Password: "valid_password",
 				},
 				settings: componenttest.NewNopTelemetrySettings(),
 			},
@@ -76,10 +78,11 @@ func TestScraperStart(t *testing.T) {
 	}
 }
 
-func TestScaperScrape(t *testing.T) {
+func TestScraperScrape(t *testing.T) {
 	testCases := []struct {
 		desc              string
 		setupMockClient   func(t *testing.T) client
+		enableNodeMetrics bool
 		expectedMetricGen func(t *testing.T) pmetric.Metrics
 		expectedErr       error
 	}{
@@ -88,6 +91,7 @@ func TestScaperScrape(t *testing.T) {
 			setupMockClient: func(*testing.T) client {
 				return nil
 			},
+			enableNodeMetrics: false,
 			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
@@ -100,22 +104,54 @@ func TestScaperScrape(t *testing.T) {
 				mockClient.On("GetQueues", mock.Anything).Return(nil, errors.New("some api error"))
 				return &mockClient
 			},
+			enableNodeMetrics: false,
 			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
 			expectedErr: errors.New("some api error"),
 		},
 		{
-			desc: "Successful Collection",
+			desc: "Successful Queue Collection",
 			setupMockClient: func(t *testing.T) client {
 				mockClient := mocks.MockClient{}
-				// use helper function from client tests
-				data := loadAPIResponseData(t, queuesAPIResponseFile)
+				data := loadAPIResponseData(t, "get_queues_response.json")
 				var queues []*models.Queue
 				err := json.Unmarshal(data, &queues)
 				require.NoError(t, err)
 
 				mockClient.On("GetQueues", mock.Anything).Return(queues, nil)
+				return &mockClient
+			},
+			enableNodeMetrics: false,
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "Successful Node Metrics Collection",
+			setupMockClient: func(t *testing.T) client {
+				mockClient := mocks.MockClient{}
+
+				// Mock data for nodes
+				nodeData := loadAPIResponseData(t, "get_nodes_response.json")
+				var nodes []*models.Node
+				err := json.Unmarshal(nodeData, &nodes)
+				require.NoError(t, err)
+
+				// Mock data for queues
+				queueData := loadAPIResponseData(t, "get_queues_response.json")
+				var queues []*models.Queue
+				err = json.Unmarshal(queueData, &queues)
+				require.NoError(t, err)
+
+				// Mock client methods
+				mockClient.On("GetNodes", mock.Anything).Return(nodes, nil)
+				mockClient.On("GetQueues", mock.Anything).Return(queues, nil)
+
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
@@ -132,6 +168,7 @@ func TestScaperScrape(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config), receivertest.NewNopSettings())
 			scraper.client = tc.setupMockClient(t)
+			scraper.cfg.EnableNodeMetrics = tc.enableNodeMetrics
 
 			actualMetrics, err := scraper.scrape(context.Background())
 			if tc.expectedErr == nil {
@@ -141,7 +178,6 @@ func TestScaperScrape(t *testing.T) {
 			}
 
 			expectedMetrics := tc.expectedMetricGen(t)
-
 			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 				pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreResourceMetricsOrder(),

@@ -1,5 +1,12 @@
 type: rabbitmq
 
+tests:
+  config:
+    endpoint: "http://localhost:15672"
+    username: "testuser"
+    password: "testpassword"
+    collection_interval: 10s
+
 status:
   class: receiver
   stability:
@@ -31,6 +38,7 @@ attributes:
     enum:
       - ready
       - unacknowledged
+
 metrics:
   rabbitmq.consumer.count:
     description: The number of consumers currently reading from the queue.
@@ -80,4 +88,36 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     attributes: [message.state]
+    enabled: true
+  rabbitmq.node.disk_free:
+    description: Free disk space on the node.
+    unit: "{bytes}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+  rabbitmq.node.fd_used:
+    description: The number of file descriptors used on the node.
+    unit: "{fd}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+  rabbitmq.node.mem_limit:
+    description: The memory limit on the node.
+    unit: "{bytes}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: true
+  rabbitmq.node.mem_used:
+    description: The memory used on the node.
+    unit: "{bytes}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
     enabled: true
