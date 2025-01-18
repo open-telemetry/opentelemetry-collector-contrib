@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "usev2"),
+			id: component.NewIDWithName(metadata.Type, "custom"),
 			expected: &Config{
 				ServerConfig: configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
