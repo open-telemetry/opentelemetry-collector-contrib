@@ -17,7 +17,6 @@ import (
 
 // Predefined error responses for configuration validation failures
 var (
-	// errMissingEndpoint = errors.New(`"endpoint" must be specified`)
 	errInvalidEndpoint = errors.New(`"endpoint" must be in the form of <scheme>://<hostname>[:<port>]`)
 	errMissingEndpoint = errors.New("at least one of 'endpoint' or 'endpoints' must be specified")
 )
