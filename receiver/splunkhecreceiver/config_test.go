@@ -25,8 +25,8 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id       component.ID
 		expected component.Config
+		id       component.ID
 	}{
 		{
 			id:       component.NewID(metadata.Type),

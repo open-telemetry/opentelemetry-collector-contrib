@@ -42,11 +42,11 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                  string
-		splunkDataPoint       *splunk.Event
 		wantMetricsData       pmetric.Metrics
-		wantDroppedTimeseries int
+		splunkDataPoint       *splunk.Event
 		hecConfig             *Config
+		name                  string
+		wantDroppedTimeseries int
 	}{
 		{
 			name:            "int_gauge",
