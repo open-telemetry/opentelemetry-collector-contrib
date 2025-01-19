@@ -31,8 +31,8 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg.(*Config).Port = defaultPort
 
 	tests := []struct {
-		id       component.ID
 		expected component.Config
+		id       component.ID
 	}{
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
