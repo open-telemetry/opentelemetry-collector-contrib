@@ -223,9 +223,6 @@ issues:
     - text: "G404:"
       linters:
         - gosec
-    - text: "G402:"
-      linters:
-        - gosec
     - text: "G115:"
       linters:
         - gosec
