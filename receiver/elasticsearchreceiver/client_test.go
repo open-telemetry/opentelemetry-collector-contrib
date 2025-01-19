@@ -595,7 +595,7 @@ type mockServer struct {
 
 type mockServerOption func(*mockServer)
 
-func withBasicAuth(username, password string) mockServerOption { // nolint:unparam
+func withBasicAuth(username, password string) mockServerOption { //nolint:unparam
 	return func(m *mockServer) {
 		m.auth = func(u, p string) bool {
 			return u == username && p == password
