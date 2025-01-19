@@ -23,13 +23,13 @@ import (
 // for the Agent process to finish.
 type Commander struct {
 	logger  *zap.Logger
-	cfg     config.Agent
-	logsDir string
-	args    []string
 	cmd     *exec.Cmd
 	doneCh  chan struct{}
 	exitCh  chan struct{}
 	running *atomic.Int64
+	logsDir string
+	args    []string
+	cfg     config.Agent
 }
 
 func NewCommander(logger *zap.Logger, logsDir string, cfg config.Agent, args ...string) (*Commander, error) {
