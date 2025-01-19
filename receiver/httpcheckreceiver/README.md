@@ -25,7 +25,6 @@ httpcheck.status{http.status_class:4xx, http.status_code:200,...} = 0
 httpcheck.status{http.status_class:5xx, http.status_code:200,...} = 0
 ```
 
-
 ## Configuration
 
 The following configuration settings are available:
