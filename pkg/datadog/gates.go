@@ -12,3 +12,10 @@ var ReceiveResourceSpansV2FeatureGate = featuregate.GlobalRegistry().MustRegiste
 	featuregate.WithRegisterFromVersion("v0.118.0"),
 	featuregate.WithRegisterToVersion("v0.124.0"),
 )
+
+var OperationAndResourceNameV2FeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"datadog.EnableOperationAndResourceNameV2",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, datadogexporter and datadogconnector use improved logic to compute operation name and resource name."),
+	featuregate.WithRegisterFromVersion("v0.118.0"),
+)
