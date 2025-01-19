@@ -58,12 +58,6 @@ var (
 func (cfg *Config) Validate() error {
 	var errs error
 
-	// For now, scrapers are required to be defined in the config. As tracing
-	// and other signals are added, this requirement will change.
-	if len(cfg.Scrapers) == 0 {
-		errs = multierr.Append(errs, errRequireOneScraper)
-	}
-
 	maxReadWriteTimeout, _ := time.ParseDuration("10s")
 
 	if cfg.WebHook.ServerConfig.Endpoint == "" {
