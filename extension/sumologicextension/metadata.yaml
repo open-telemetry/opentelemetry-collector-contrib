@@ -1,0 +1,17 @@
+type: sumologic
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: []
+  codeowners:
+    active: [rnishtala-sumo, chan-tim-sumo]
+    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek]
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
+  goleak:
+    setup: "setupTestMain(m)"

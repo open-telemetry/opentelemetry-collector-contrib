@@ -1,0 +1,25 @@
+type: ntp
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme]
+
+resource_attributes:
+  ntp.host:
+    description: NTP server used. Corresponds to configured `host`.
+    enabled: true
+    type: string
+
+metrics:
+  ntp.offset:
+    description: Time difference between local and NTP server clocks
+    unit: "ns"
+    gauge:
+      value_type: int
+    enabled: true
+
+tests:

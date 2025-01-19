@@ -1,0 +1,18 @@
+type: sqlquery
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+    development: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [dmitryax, crobert-1]
+    emeritus: [pmcollins]
+
+tests:
+  goleak:
+    ignore:
+      any:
+        # Regarding the godbus/dbus ignore: see https://github.com/99designs/keyring/issues/103
+        - "github.com/godbus/dbus.(*Conn).inWorker"

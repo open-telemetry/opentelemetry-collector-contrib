@@ -1,0 +1,165 @@
+default:
+all_set:
+  metrics:
+    splunk.aggregation.queue.ratio:
+      enabled: true
+    splunk.buckets.searchable.status:
+      enabled: true
+    splunk.data.indexes.extended.bucket.count:
+      enabled: true
+    splunk.data.indexes.extended.bucket.event.count:
+      enabled: true
+    splunk.data.indexes.extended.bucket.hot.count:
+      enabled: true
+    splunk.data.indexes.extended.bucket.warm.count:
+      enabled: true
+    splunk.data.indexes.extended.event.count:
+      enabled: true
+    splunk.data.indexes.extended.raw.size:
+      enabled: true
+    splunk.data.indexes.extended.total.size:
+      enabled: true
+    splunk.indexer.avg.rate:
+      enabled: true
+    splunk.indexer.cpu.time:
+      enabled: true
+    splunk.indexer.queue.ratio:
+      enabled: true
+    splunk.indexer.raw.write.time:
+      enabled: true
+    splunk.indexer.throughput:
+      enabled: true
+    splunk.indexes.avg.size:
+      enabled: true
+    splunk.indexes.avg.usage:
+      enabled: true
+    splunk.indexes.bucket.count:
+      enabled: true
+    splunk.indexes.median.data.age:
+      enabled: true
+    splunk.indexes.size:
+      enabled: true
+    splunk.io.avg.iops:
+      enabled: true
+    splunk.kvstore.backup.status:
+      enabled: true
+    splunk.kvstore.replication.status:
+      enabled: true
+    splunk.kvstore.status:
+      enabled: true
+    splunk.license.index.usage:
+      enabled: true
+    splunk.parse.queue.ratio:
+      enabled: true
+    splunk.pipeline.set.count:
+      enabled: true
+    splunk.scheduler.avg.execution.latency:
+      enabled: true
+    splunk.scheduler.avg.run.time:
+      enabled: true
+    splunk.scheduler.completion.ratio:
+      enabled: true
+    splunk.server.introspection.queues.current:
+      enabled: true
+    splunk.server.introspection.queues.current.bytes:
+      enabled: true
+    splunk.server.searchartifacts.adhoc:
+      enabled: true
+    splunk.server.searchartifacts.completed:
+      enabled: true
+    splunk.server.searchartifacts.incomplete:
+      enabled: true
+    splunk.server.searchartifacts.invalid:
+      enabled: true
+    splunk.server.searchartifacts.job.cache.count:
+      enabled: true
+    splunk.server.searchartifacts.job.cache.size:
+      enabled: true
+    splunk.server.searchartifacts.savedsearches:
+      enabled: true
+    splunk.server.searchartifacts.scheduled:
+      enabled: true
+    splunk.typing.queue.ratio:
+      enabled: true
+none_set:
+  metrics:
+    splunk.aggregation.queue.ratio:
+      enabled: false
+    splunk.buckets.searchable.status:
+      enabled: false
+    splunk.data.indexes.extended.bucket.count:
+      enabled: false
+    splunk.data.indexes.extended.bucket.event.count:
+      enabled: false
+    splunk.data.indexes.extended.bucket.hot.count:
+      enabled: false
+    splunk.data.indexes.extended.bucket.warm.count:
+      enabled: false
+    splunk.data.indexes.extended.event.count:
+      enabled: false
+    splunk.data.indexes.extended.raw.size:
+      enabled: false
+    splunk.data.indexes.extended.total.size:
+      enabled: false
+    splunk.indexer.avg.rate:
+      enabled: false
+    splunk.indexer.cpu.time:
+      enabled: false
+    splunk.indexer.queue.ratio:
+      enabled: false
+    splunk.indexer.raw.write.time:
+      enabled: false
+    splunk.indexer.throughput:
+      enabled: false
+    splunk.indexes.avg.size:
+      enabled: false
+    splunk.indexes.avg.usage:
+      enabled: false
+    splunk.indexes.bucket.count:
+      enabled: false
+    splunk.indexes.median.data.age:
+      enabled: false
+    splunk.indexes.size:
+      enabled: false
+    splunk.io.avg.iops:
+      enabled: false
+    splunk.kvstore.backup.status:
+      enabled: false
+    splunk.kvstore.replication.status:
+      enabled: false
+    splunk.kvstore.status:
+      enabled: false
+    splunk.license.index.usage:
+      enabled: false
+    splunk.parse.queue.ratio:
+      enabled: false
+    splunk.pipeline.set.count:
+      enabled: false
+    splunk.scheduler.avg.execution.latency:
+      enabled: false
+    splunk.scheduler.avg.run.time:
+      enabled: false
+    splunk.scheduler.completion.ratio:
+      enabled: false
+    splunk.server.introspection.queues.current:
+      enabled: false
+    splunk.server.introspection.queues.current.bytes:
+      enabled: false
+    splunk.server.searchartifacts.adhoc:
+      enabled: false
+    splunk.server.searchartifacts.completed:
+      enabled: false
+    splunk.server.searchartifacts.incomplete:
+      enabled: false
+    splunk.server.searchartifacts.invalid:
+      enabled: false
+    splunk.server.searchartifacts.job.cache.count:
+      enabled: false
+    splunk.server.searchartifacts.job.cache.size:
+      enabled: false
+    splunk.server.searchartifacts.savedsearches:
+      enabled: false
+    splunk.server.searchartifacts.scheduled:
+      enabled: false
+    splunk.typing.queue.ratio:
+      enabled: false

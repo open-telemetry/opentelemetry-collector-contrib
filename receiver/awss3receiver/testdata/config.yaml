@@ -1,0 +1,29 @@
+awss3:
+awss3/1:
+  s3downloader:
+    s3_bucket: abucket
+    s3_partition: notapartition
+  starttime: "a date"
+  endtime: "2024-02-03a"
+awss3/2:
+  s3downloader:
+    s3_bucket: abucket
+  starttime: "2024-01-31 15:00"
+  endtime: "2024-02-03"
+awss3/3:
+  s3downloader:
+      s3_bucket: abucket
+  starttime: "2024-01-31 15:00"
+  endtime: "2024-02-03"
+  encodings:
+    - extension: "foo/bar"
+      suffix: "baz"
+    - extension: "nop/nop"
+      suffix: "nop"
+  notifications:
+    opampextension: "opamp/bar"
+awss3/4:
+  s3downloader:
+    s3_bucket: abucket
+  starttime: "2024-01-31T15:00:00Z"
+  endtime: "2024-02-03T00:00:00Z"

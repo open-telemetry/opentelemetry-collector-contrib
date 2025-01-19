@@ -1,0 +1,13 @@
+type: sumologic
+
+status:
+  class: processor
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [rnishtala-sumo, chan-tim-sumo]
+    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek]
+
+tests:
+  config:

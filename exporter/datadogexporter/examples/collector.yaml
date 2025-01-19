@@ -1,0 +1,535 @@
+# Read more about receivers here:
+# https://opentelemetry.io/docs/collector/configuration/#receivers
+receivers:
+  # The OTLP receiver is the most common receiver. It is the default way to send data from
+  # OpenTelemetry instrumentation libraries. Documentation on this receiver is available here:
+  # https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver/otlpreceiver#readme
+  otlp:
+    # Protocols defines the protocols enabled for this receiver. At least one protocol of choice must
+    # be enabled.
+    protocols:
+      # The presence of the http section enables the HTTP server on the default port (4318)
+      http:
+      # The presence of the gRPC section enables the gRPC server on the default port (4317)
+      grpc:
+
+  # The hostmetrics receiver is required to get correct infrastructure metrics in Datadog.
+  hostmetrics:
+    collection_interval: 10s
+    scrapers:
+      paging:
+        metrics:
+          system.paging.utilization:
+            enabled: true
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      disk:
+      filesystem:
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+      load:
+      memory:
+      network:
+      processes:
+  # # Comment out this block below to get access to system metrics regarding
+  # # the OpenTelemetry Collector and its environment, such as spans or metrics
+  # # processed, running and sent, queue sizes, uptime, k8s information
+  # # and much more.
+  #
+  # # The prometheus receiver scrapes essential metrics regarding the OpenTelemetry Collector.
+  # prometheus:
+  #   config:
+  #     scrape_configs:
+  #     - job_name: 'otelcol'
+  #       scrape_interval: 10s
+  #       static_configs:
+  #       - targets: ['0.0.0.0:8888']
+
+  # The Docker Stats receiver will add support for Container Metrics, making the "Containers Overview" dashboard available.
+  # Container Metrics has support in the Datadog Exporter starting v0.78.0.
+  docker_stats:
+    metrics:
+      container.network.io.usage.rx_packets:
+        enabled: true
+      container.network.io.usage.tx_packets:
+        enabled: true
+      container.cpu.usage.system:
+        enabled: true
+      container.memory.rss:
+        enabled: true
+      container.blockio.io_serviced_recursive:
+        enabled: true
+
+  # Read more about the filelog receiver here https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/filelogreceiver.
+  filelog:
+    include_file_path: true
+    poll_interval: 500ms
+    include:
+      # Logs will be collected from the below file path. Please ensure it is correct or edit as needed.
+      - /var/log/**/*example*/*.log
+     # # It is essential to extract the trace_id and span_id from the logs in order to ensure that logs / traces correlation works.
+     # # For JSON logs, json_parser will parse the body into attributes, while trace_parser will extract the trace_id and span_id.
+     # operators:
+     #  - id : parse_body
+     #    type: json_parser
+     #  - id: trace
+     #    type: trace_parser
+     #    trace_id:
+     #      parse_from: attributes.trace_id
+     #    span_id:
+     #      parse_from: attributes.span_id
+
+# Read more about processors here: https://opentelemetry.io/docs/collector/configuration/#processors
+#
+# Some processors are recommended in all pipelines:
+# https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor#recommended-processors
+processors:
+  # The batch processor batches telemetry data into larger payloads.
+  # It is necessary for the Datadog traces exporter to work optimally,
+  # and is recommended for any production pipeline.
+  batch:
+    # Datadog APM Intake limit is 3.2MB. Let's make sure the batches do not
+    # go over that.
+    send_batch_max_size: 1000
+    send_batch_size: 100
+    timeout: 10s
+
+  # k8sattributes processor adds the necessary attributes to enable trace/metrics
+  # correlation by means of container tags.
+  k8sattributes:
+    passthrough: false
+    auth_type: "serviceAccount"
+
+    pod_association:
+    - sources:
+      - from: resource_attribute
+        name: k8s.pod.ip
+
+    extract:
+      metadata:
+        - k8s.pod.name
+        - k8s.pod.uid
+        - k8s.deployment.name
+        - k8s.node.name
+        - k8s.namespace.name
+        - k8s.pod.start_time
+        - k8s.replicaset.name
+        - k8s.replicaset.uid
+        - k8s.daemonset.name
+        - k8s.daemonset.uid
+        - k8s.job.name
+        - k8s.job.uid
+        - k8s.cronjob.name
+        - k8s.statefulset.name
+        - k8s.statefulset.uid
+        - container.image.name
+        - container.image.tag
+        - container.id
+        - k8s.container.name
+        - container.image.name
+        - container.image.tag
+        - container.id
+
+      labels:
+      - tag_name: kube_app_name
+        key: app.kubernetes.io/name
+        from: pod
+      - tag_name: kube_app_instance
+        key: app.kubernetes.io/instance
+        from: pod
+      - tag_name: kube_app_version
+        key: app.kubernetes.io/version
+        from: pod
+      - tag_name: kube_app_component
+        key: app.kubernetes.io/component
+        from: pod
+      - tag_name: kube_app_part_of
+        key: app.kubernetes.io/part-of
+        from: pod
+      - tag_name: kube_app_managed_by
+        key: app.kubernetes.io/managed-by
+        from: pod
+
+  # The resource detection processor adds context related to the cloud provider the Collector is running on.
+  # It is necessary **only** on gateway deployment mode, to correctly identify the host that telemetry data comes from.
+  resourcedetection:
+    detectors: [gcp, ecs, ec2, azure, system]
+
+# Read more about exporters here:
+# https://opentelemetry.io/docs/collector/configuration/#connectors
+connectors:
+  # The Datadog connector is necessary for APM Trace metrics.
+  datadog/connector:
+
+# Read more about exporters here:
+# https://opentelemetry.io/docs/collector/configuration/#exporters
+exporters:
+  # The OTLP exporter is necessary **only** on gateway deployment mode, to relay telemetry data to the gateway.
+  ## otlp:
+    ## @param endpoint - string - required
+    ## Endpoint where to send telemetry. On gateway mode, we set it to the gateway host IP.
+    #
+    # endpoint: ${env:GATEWAY_HOST_IP}:4317
+
+  # The Datadog exporter is necessary for exporting telemetry signals to Datadog.
+  datadog:
+    ## @param hostname - string - optional
+    ## The fallback hostname used for payloads without hostname-identifying attributes.
+    ## This option will NOT change the hostname applied to your metrics, traces and logs if they already have hostname-identifying attributes.
+    ## If unset, the hostname will be determined automatically. See https://docs.datadoghq.com/opentelemetry/schema_semantics/hostname/?tab=datadogexporter#fallback-hostname-logic for details.
+    ## 
+    ## Prefer using the `datadog.host.name` resource attribute over using this setting.
+    ## See https://docs.datadoghq.com/opentelemetry/schema_semantics/hostname/?tab=datadogexporter#general-hostname-semantic-conventions for details.
+    #
+    # hostname: customhostname
+
+    ## @param only_metadata - boolean - optional - default: false
+    ## Whether to send only metadata. This is useful for agent-collector
+    ## setups, so that metadata about a host is sent to the backend even
+    ## when telemetry data is reported via a different host.
+    #
+    # only_metadata: false
+
+    ## @param api - custom object - required.
+    ## Specific API configuration.
+    #
+    api:
+      ## @ param key - string - required
+      ## The Datadog API key to associate your Agent's data with your organization.
+      ## Create a new API key here: https://app.datadoghq.com/account/settings
+      #
+      key: ${env:DD_API_KEY}
+
+      ## @param site - string - optional - default: datadoghq.com
+      ## The site of the Datadog intake to send Agent data to.
+      ## Set to 'datadoghq.eu' to send data to the EU site.
+      #
+      # site: datadoghq.com
+
+      ## @param fail_on_invalid_key - boolean - optional - default: false
+      ## Whether to exit at startup on invalid API key.
+      #
+      # fail_on_invalid_key: false
+
+    ## @param tls - custom object - optional
+    # TLS settings for HTTPS communications.
+    # tls:
+      ## @param tls - boolean - optional - default: false
+      # insecure_skip_verify: false
+
+    ## @param read_buffer_size - integer - optional
+    ## @param write_buffer_size - integer - optional
+    ## @param timeout - duration - optional
+    ## @param max_idle_conns - integer - optional
+    ## @param max_idle_conns_per_host - integer - optional
+    ## @param max_conns_per_host - integer - optional
+    ## @param idle_conn_timeout - duration - optional
+    ## @param disable_keep_alives - boolean - optional
+    ##
+    ## Below are a subset of configs in confighttp that are respected by Datadog exporter.
+    ## See https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp for details on these configs.
+    ##
+    # read_buffer_size: 0
+    # write_buffer_size: 0
+    # timeout: 15s
+    # max_idle_conns: 100
+    # max_idle_conns_per_host: 0
+    # max_conns_per_host: 0
+    # idle_conn_timeout: 0s
+    # disable_keep_alives: false
+
+    ## @param metrics - custom object - optional
+    ## Metric exporter specific configuration.
+    #
+    # metrics:
+      ## @param - delta_ttl - integer - optional - default: 3600
+      ## The amount of time (in seconds) that values are kept in memory for
+      ## calculating deltas for cumulative monotonic metrics.
+      #
+      # delta_ttl: 3600
+
+      ## @param endpoint - string - optional
+      ## The host of the Datadog intake server to send metrics to.
+      ## If unset, the value is obtained through the `site` parameter in the `api` section.
+      #
+      # endpoint: https://api.datadoghq.com
+
+      ## @param resource_attributes_as_tags - string - optional - default: false
+      ## Set to true to add resource attributes of a metric to its metric tags.
+      ## Please note that any of the subset of resource attributes in this
+      ## list https://docs.datadoghq.com/opentelemetry/guide/semantic_mapping/ are 
+      ## converted to datadog conventions and set to to metric tags whether this option
+      ## is enabled or not.
+      #
+      # resource_attributes_as_tags: false
+
+      ## @param instrumentation_scope_metadata_as_tags - string - optional - default: false
+      ## Set to true to add metadata about the instrumentation scope that created a metric.
+      #
+      # instrumentation_scope_metadata_as_tags: false
+
+      ## @param histograms - custom object - optional
+      ## Histograms specific configuration.
+      # histograms:
+        ## @param mode - string - optional - default: distributions
+        ## How to report histograms. Valid values are:
+        ##
+        ## - `distributions` to report metrics as Datadog distributions (recommended).
+        ## - `nobuckets` to not report bucket metrics,
+        ## - `counters` to report one metric per histogram bucket.
+        #
+        # mode: distributions
+
+        ## Deprecated [v0.75.0]: use `send_aggregations` instead.
+        ## @param send_count_sum_metrics - boolean - optional - default: false
+        ## Whether to report sum, count, min and max as separate histogram metrics.
+        #
+        # send_count_sum_metrics: false
+
+        ## @param send_aggregation_metrics - boolean - optional - default: false
+        ## Whether to report sum, count, min and max as separate histogram metrics.
+        #
+        # send_aggregation_metrics: false
+
+
+      ## @param sums - custom object - optional
+      ## Sums specific configuration.
+        ## @param cumulative_monotonic_mode - string - optional - default: to_delta
+        ## How to report cumulative monotonic sums. Valid values are:
+        ##
+        ## - `to_delta` to calculate delta for sum in the client side and report as Datadog counts.
+        ## - `raw_value` to report the raw value as a Datadog gauge.
+        #
+        # cumulative_monotonic_mode: to_delta
+
+        ## @param initial_cumulative_monotonic_value - string - optional - default: auto
+        ## How to report the initial value for cumulative monotonic sums. Valid values are:
+        ##
+        ## - `auto` reports the initial value if its start timestamp is set and it happens after the process was started.
+        ## - `drop` always drops the initial value.
+        ## - `keep` always reports the initial value.
+        #
+        # initial_cumulative_monotonic_value: auto        
+
+      ## @param summaries - custom object - optional
+      ## Summaries specific configuration.
+        ## @param mode - string - optional - default: gauges
+        ## How to report summaries. Valid values are:
+        ##
+        ## - `noquantiles` to not report quantile metrics
+        ## - `gauges` to report one gauge metric per quantile.
+        #
+        # mode: gauges
+
+    ## @param traces - custom object - optional
+    ## Trace exporter specific configuration.
+    #
+    # traces:
+      ## @param endpoint - string - optional
+      ## The host of the Datadog intake server to send traces to.
+      ## If unset, the value is obtained through the `site` parameter in the `api` section.
+      #
+      # endpoint: https://trace.agent.datadoghq.com
+
+      ## @param ignore_resources - list of strings - optional
+      ## A blocklist of regular expressions can be provided to disable certain traces based on their resource name
+      ## all entries must be surrounded by double quotes and separated by commas.
+      #
+      # ignore_resources: ["(GET|POST) /healthcheck"]
+
+      ## @param span_name_remappings - map of key/value pairs - optional
+      ## A map of Datadog span operation name keys and preferred name valuues to update those names to. This can be used to
+      ## automatically map Datadog Span Operation Names to an updated value, and is useful when a user wants to
+      ## shorten or modify span names to something more user friendly in the case of instrumentation libraries with
+      ## particularly verbose names.
+      #
+      # span_name_remappings:
+      #   io.opentelemetry.javaagent.spring.client: spring.client
+      #   instrumentation:express.server: express
+      #   go.opentelemetry.io_contrib_instrumentation_net_http_otelhttp.client: http.client
+
+      ## @param span_name_as_resource_name - use OpenTelemetry semantic convention for span naming - optional
+      ## Option created to maintain similarity with the OpenTelemetry semantic conventions as discussed in the issue below.
+      ## https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/trace/semantic_conventions
+      ## https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1909
+      #
+      # span_name_as_resource_name: true
+
+      ## @param compute_stats_by_span_kind - enables APM stats computation based on `span.kind` - optional
+      ## If set to true, enables an additional stats computation check on spans to see they have an eligible `span.kind` (server, consumer, client, producer).
+      ## If enabled, a span with an eligible `span.kind` will have stats computed. If disabled, only top-level and measured spans will have stats computed.
+      ## NOTE: For stats computed from OTel traces, only top-level spans are considered when this option is off.
+      #
+      ## If you are sending OTel traces and want stats on non-top-level spans, this flag will need to be enabled.
+      ## If you are sending OTel traces and do not want stats computed by span kind, you need to disable this flag and disable `compute_top_level_by_span_kind`.
+      #
+      # compute_stats_by_span_kind: true
+
+      ## @param compute_top_level_by_span_kind - enables top-level span identification based on `span.kind` - optional
+      ## If set to true, root spans and spans with a server or consumer `span.kind` will be marked as top-level.
+      ## Additionally, spans with a client or producer `span.kind` will have stats computed.
+      ## Enabling this config option may increase the number of spans that generate trace metrics, and may change which spans appear as top-level in Datadog.
+      #
+      # compute_top_level_by_span_kind: false
+  
+      ## @param peer_service_aggregation - enables `peer.service` aggregation on trace stats in Datadog exporter - optional
+      ## If set to true, enables `peer.service` aggregation in the exporter. If disabled, aggregated trace stats will not include `peer.service` as a dimension.
+      ## For the best experience with `peer.service`, it is recommended to also enable `compute_stats_by_span_kind`.
+      ## If enabling both causes the datadog exporter to consume too many resources, try disabling `compute_stats_by_span_kind` first.
+      ## If the overhead remains high, it will be due to a high cardinality of `peer.service` values from the traces. You may need to check your instrumentation.
+      ## Deprecated: Please use peer_tags_aggregation instead
+      #
+      # peer_service_aggregation: true
+
+      ## @param peer_tags_aggregation - enables aggregation of peer related tags in Datadog exporter - optional
+      ## If set to true, enables aggregation of peer related tags (e.g., `peer.service`, `db.instance`, etc.) in Datadog exporter.
+      ## If disabled, aggregated trace stats will not include these tags as dimensions on trace metrics.
+      ## For the best experience with peer tags, Datadog also recommends enabling `compute_stats_by_span_kind`.
+      ## If you are using an OTel tracer, it's best to have both enabled because client/producer spans with relevant peer tags
+      ## may not be marked by Datadog exporter as top-level spans.
+      ## If enabling both causes Datadog exporter to consume too many resources, try disabling `compute_stats_by_span_kind` first.
+      ## A high cardinality of peer tags or APM resources can also contribute to higher CPU and memory consumption.
+      ## You can check for the cardinality of these fields by making trace search queries in the Datadog UI.
+      ## The default list of peer tags can be found in https://github.com/DataDog/datadog-agent/blob/main/pkg/trace/stats/concentrator.go.
+      #
+      # peer_tags_aggregation: false
+
+      ## @param peer_tags - [BETA] Optional list of supplementary peer tags that go beyond the defaults. The Datadog backend validates all tags
+      ## and will drop ones that are unapproved. The default set of peer tags can be found at
+      ## https://github.com/DataDog/datadog-agent/blob/505170c4ac8c3cbff1a61cf5f84b28d835c91058/pkg/trace/stats/concentrator.go#L55.
+      #
+      # peer_tags: ["tag"]
+
+      ## @param trace_buffer - specifies the number of outgoing trace payloads to buffer before dropping - optional
+      ## If unset, the default value is 0, meaning the outgoing trace payloads are unbuffered.
+      ## If you start seeing log messages like `Payload in channel full. Dropped 1 payload.` in the datadog exporter, consider
+      ## setting a higher `trace_buffer` to avoid traces being dropped.
+      #
+      # trace_buffer: 10
+
+    ## @param host_metadata - custom object - optional
+    ## Host metadata specific configuration.
+    ## Host metadata is the information used for populating the infrastructure list, the host map and providing host tags functionality within the Datadog app.
+    ##
+    ## By default, the exporter will only send host metadata for a single host, whose name is chosen
+    ## according to `host_metadata::hostname_source`.
+    ## See https://docs.datadoghq.com/opentelemetry/schema_semantics/host_metadata/ to send host metadata about more hosts.
+    #
+    # host_metadata:
+      ## @param enabled - boolean - optional - default: true
+      ## Enable the host metadata functionality
+      #
+      # enabled: true
+
+      ## @param hostname_source - enum - optional - default: config_or_system
+      ## Source for the hostname of host metadata.
+      ## This hostname is used for identifying the infrastructure list, host map and host tag information related to the host where the Datadog exporter is running.
+      ## Changing this setting will not change the host used to tag your metrics, traces and logs in any way.
+      ## For remote hosts, see https://docs.datadoghq.com/opentelemetry/schema_semantics/host_metadata/.
+      ##
+      ## Valid values are 'first_resource' and 'config_or_system':
+      ## - 'first_resource' picks the host metadata hostname from the resource attributes on the first OTLP payload that gets to the exporter.
+      ##    If the first payload lacks hostname-like attributes, it will fallback to 'config_or_system' behavior.
+      ##    **Do not use this hostname source if receiving data from multiple hosts**.
+      ##
+      ## - 'config_or_system' picks the host metadata hostname from the 'hostname' setting, falling back to system and cloud provider APIs.
+      ##
+      ##  The default is 'config_or_system'.
+      #
+      # hostname_source: config_or_system
+
+      ## @param tags - list of strings - optional - default: empty list
+      ## List of host tags to be sent as part of the host metadata.
+      ## These tags will be attached to telemetry signals that have the host metadata hostname.
+      ##
+      ## To attach tags to telemetry signals regardless of the host, use a processor instead.
+      #
+      # tags: ["team:infra", "<TAG_KEY>:<TAG_VALUE>"]
+
+      ## @param reporter_period - duration - optional - default: 30m
+      ## The period at which the host metadata reporter sends host metadata to Datadog.
+      ## The default is 30 minutes.
+      # reporter_period: 30m
+
+    ## @param logs - custom object - optional
+    ## Logs exporter specific configuration.
+    #
+    # logs:
+      ## @param dump_payloads - bool - optional
+      ## If set to true, payloads will be dumped when logging level is set to debug. Please note that
+      ## This may result in an escaping loop if a filelog receiver is watching the collector log output.
+      ## See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16380
+      ## Note: this config option does not apply when the `exporter.datadogexporter.UseLogsAgentExporter` feature flag is enabled (now enabled by default).
+      ## Deprecated since v0.107.0: This config option is not supported in the Datadog Agent logs pipeline.
+      #
+      # dump_payloads: false
+
+      ## @param use_compression - boolean - optional - default: true
+      ## This parameter is available when sending logs with HTTPS. If enabled, the logs agent
+      ## compresses logs before sending them.
+      ## Note: this config option does not apply when the `exporter.datadogexporter.UseLogsAgentExporter` feature flag is disabled.
+      #
+      # use_compression: true
+
+      ## @param compression_level - integer - optional - default: 6
+      ## The compression_level parameter accepts values from 0 (no compression)
+      ## to 9 (maximum compression but higher resource usage). Only takes effect if
+      ## `use_compression` is set to `true`.
+      ## Note: this config option does not apply when the `exporter.datadogexporter.UseLogsAgentExporter` feature flag is disabled.
+      #
+      # compression_level: 6
+
+      ## @param batch_wait - integer - optional - default: 5
+      ## The maximum time the logs agent waits to fill each batch of logs before sending.
+      ## Note: this config option does not apply when the `exporter.datadogexporter.UseLogsAgentExporter` feature flag is disabled.
+      #
+      # batch_wait: 5
+
+# `service` defines the Collector pipelines, observability settings and extensions.
+service:
+  # `pipelines` defines the data pipelines. Multiple data pipelines for a type may be defined.
+  pipelines:
+    # Pipelines starting with `metrics` or `metrics/` define a metrics pipeline.
+    metrics:
+      # This pipeline has an OTLP receiver, a batch processor and a Datadog exporter.
+      # It also has additional receivers which generate valuable metrics and the Datadog connector for trace metrics.
+      receivers: [hostmetrics, docker_stats, otlp, datadog/connector]
+      processors: [k8sattributes, batch]
+      exporters: [datadog]
+    # Pipelines starting with `traces` or `traces/` define a traces pipeline.
+    traces:
+      # This pipeline has an OTLP receiver, a batch processor and a Datadog connector.
+      # It sends all the traces to the Datadog connector for generating trace metrics.
+      receivers: [otlp]
+      processors: [k8sattributes, batch]
+      exporters: [datadog/connector]
+    traces/sampling:
+      # This pipeline has a Datadog connector, a batch processor and a Datadog exporter.
+      # It receivers all traces from the Datadog connector and sends them to Datadog.
+      # Add any sampling here, so that the generated trace metrics account for all traces.
+      receivers: [datadog/connector]
+      # Add any sampling here
+      processors: []
+      exporters: [datadog]
+
+    # Pipelines starting with `logs` or `logs/` define a logs pipeline.
+    logs:
+      # This pipeline has an OTLP receiver, filelog receiver, a batch processor and a Datadog exporter.
+      receivers: [otlp, filelog]
+      processors: [k8sattributes, batch]
+      exporters: [datadog]
+
+      # # To send data to the gateway on gateway deployment mode, define these pipelines instead.
+      #
+      # metrics/gateway:
+      #   receivers: [otlp]
+      #   processors: [batch, resourcedetection]
+      #   exporters: [otlp]
+      #
+      # traces/gateway:
+      #   receivers: [otlp]
+      #   processors: [batch, resourcedetection]
+      #   exporters: [otlp]

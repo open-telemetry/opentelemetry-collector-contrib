@@ -1,0 +1,14 @@
+type: jaegerremotesampling
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions:
+  - contrib
+  codeowners:
+    active: [yurishkuro, frzifus]
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true

@@ -1,0 +1,15 @@
+type: ecs_task_observer
+
+status:
+  class: extension
+  stability:
+    unmaintained: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: []
+    emeritus: [rmfitzpatrick]
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

@@ -1,0 +1,28 @@
+extensions:
+  sumologic:
+    collector_name: my_custom_collector
+    collector_description: "My custom OTC description"
+    collector_category: collector_category
+    installation_token: <token>
+    heartbeat_interval: 15s
+
+# Data pipeline is required to load the config.
+receivers:
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      load:
+
+processors:
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  extensions: [sumologic]
+  pipelines:
+    metrics:
+      receivers: [hostmetrics]
+      processors: []
+      exporters: [debug]

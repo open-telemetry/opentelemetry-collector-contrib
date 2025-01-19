@@ -1,0 +1,37 @@
+type: routing
+
+status:
+  class: processor
+  stability:
+    deprecated: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [jpkrohling]
+
+tests:
+  config:
+  host: "&mockHost{}"
+
+telemetry:
+  metrics:
+    routing_processor_non_routed_spans:
+      enabled: true
+      description: Number of spans that were not routed to some or all exporters.
+      unit: "{spans}"
+      sum:
+        value_type: int
+        monotonic: true
+    routing_processor_non_routed_log_records:
+      enabled: true
+      description: Number of log records that were not routed to some or all exporters.
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+    routing_processor_non_routed_metric_points:
+      enabled: true
+      description: Number of metric points that were not routed to some or all exporters.
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true

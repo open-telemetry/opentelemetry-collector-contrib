@@ -1,0 +1,6 @@
+metricstransform:
+  transforms:
+    - include: old_name
+      action: combine
+      new_name: new_name
+      submatch_case: invalid

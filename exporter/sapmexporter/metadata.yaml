@@ -1,0 +1,13 @@
+type: sapm
+
+status:
+  class: exporter
+  stability:
+    deprecated: [traces]
+  distributions: [contrib]
+  codeowners:
+    active: [dmitryax, atoulme]
+
+
+tests:
+  expect_consumer_error: true

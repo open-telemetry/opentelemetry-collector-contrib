@@ -1,0 +1,9 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asDouble: 654.321
+            name: gauge.one
+        scope: {}

@@ -1,0 +1,24 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: original
+          value:
+            stringValue: label
+    scopeMetrics:
+      - metrics:
+          - gauge: {}
+            name: bar/metric
+        scope: {}
+  - resource:
+      attributes:
+        - key: original
+          value:
+            stringValue: label
+        - key: resource.type
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - metrics:
+          - gauge: {}
+            name: foo/metric
+        scope: {}

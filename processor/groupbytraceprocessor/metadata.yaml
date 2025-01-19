@@ -1,0 +1,72 @@
+type: groupbytrace
+
+status:
+  class: processor
+  stability:
+    beta: [traces]
+  distributions: [contrib, k8s]
+  warnings: [Statefulness]
+  codeowners:
+    active: [jpkrohling]
+tests:
+  config:
+  goleak:
+    skip: true
+
+telemetry:
+  metrics:
+    processor_groupbytrace_conf_num_traces:
+      enabled: true
+      description: Maximum number of traces to hold in the internal storage
+      unit: "1"
+      gauge:
+        value_type: int
+    processor_groupbytrace_num_events_in_queue:
+      enabled: true
+      description: Number of events currently in the queue
+      unit: "1"
+      gauge:
+        value_type: int
+    processor_groupbytrace_num_traces_in_memory:
+      enabled: true
+      description: Number of traces currently in the in-memory storage
+      unit: "1"
+      gauge:
+        value_type: int
+    processor_groupbytrace_traces_evicted:
+      enabled: true
+      description: Traces evicted from the internal buffer
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_groupbytrace_spans_released:
+      enabled: true
+      description: Spans released to the next consumer
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_groupbytrace_traces_released:
+      enabled: true
+      description: Traces released to the next consumer
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_groupbytrace_incomplete_releases:
+      enabled: true
+      description: Releases that are suspected to have been incomplete
+      unit: "{releases}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_groupbytrace_event_latency:
+      enabled: true
+      description: How long the queue events are taking to be processed
+      unit: ms
+      histogram:
+        value_type: int
+        bucket_boundaries: [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
+
+

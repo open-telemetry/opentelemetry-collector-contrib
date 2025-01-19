@@ -1,0 +1,13 @@
+type: resourcedetectionprocessor/k8snode
+
+parent: resourcedetection
+
+resource_attributes:
+  k8s.node.uid:
+    description: The Kubernetes node UID
+    type: string
+    enabled: true
+  k8s.node.name:
+    description: The Kubernetes node name
+    type: string
+    enabled: true

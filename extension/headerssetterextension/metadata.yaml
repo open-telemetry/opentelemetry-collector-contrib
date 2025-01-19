@@ -1,0 +1,12 @@
+type: headers_setter
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: []
+    seeking_new: true
+tests:
+  config:

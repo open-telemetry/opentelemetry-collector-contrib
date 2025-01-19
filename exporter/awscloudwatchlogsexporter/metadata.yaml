@@ -1,0 +1,26 @@
+type: awscloudwatchlogs
+
+status:
+  class: exporter
+  stability:
+    beta: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [boostchicken, bryan-aguilar, rapphil]
+
+tests:
+  config:
+    endpoint: http://localhost:0
+    region: local
+    sending_queue:
+      enabled: false
+    retry_on_failure:
+      enabled: false
+  expect_consumer_error: true
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"
+        - "net/http.(*persistConn).writeLoop"
+        - "internal/poll.runtime_pollWait"

@@ -1,0 +1,24 @@
+type: googlecloudpubsub
+
+status:
+  class: receiver
+  stability:
+    beta: [traces, logs, metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [alexvanboxel]
+
+tests:
+  config:
+    project: my-project
+    user_agent: user-agent
+    timeout: 20s
+    subscription: projects/my-project/subscriptions/otlp-subscription
+  skip_lifecycle: true
+  skip_shutdown: true
+  goleak:
+    skip: false
+    ignore:
+      # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+      top: go.opencensus.io/stats/view.(*worker).start
+

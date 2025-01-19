@@ -1,0 +1,13 @@
+type: basicauth
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [jpkrohling, frzifus]
+    emeritus: [svrakitin]
+
+tests:
+  config:

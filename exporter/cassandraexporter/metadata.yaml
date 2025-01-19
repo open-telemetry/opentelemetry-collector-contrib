@@ -1,0 +1,13 @@
+type: cassandra
+
+status:
+  class: exporter
+  stability:
+    alpha: [traces, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme, emreyalvac]
+
+# TODO: Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true

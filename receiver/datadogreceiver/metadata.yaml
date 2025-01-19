@@ -1,0 +1,14 @@
+type: datadog
+
+status:
+  class: receiver
+  stability:
+    alpha: [traces, metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [boostchicken, gouthamve, MovieStoreGuy]
+
+tests:
+  skip_lifecycle: true # Skip lifecycle tests since there are multiple receivers that run on the same port
+  goleak:
+    skip: true # see https://github.com/cihub/seelog/issues/182

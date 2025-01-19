@@ -1,0 +1,91 @@
+elasticsearch:
+  endpoints: [https://elastic.example.com:9200]
+elasticsearch/trace:
+  tls:
+    insecure: false
+  endpoints: [https://elastic.example.com:9200]
+  timeout: 2m
+  headers:
+    myheader: test
+  traces_index: trace_index
+  pipeline: mypipeline
+  user: elastic
+  password: search
+  api_key: AvFsEiPs==
+  discover:
+    on_start: true
+  flush:
+    bytes: 10485760
+  retry:
+    max_retries: 5
+    retry_on_status:
+      - 429
+      - 500
+elasticsearch/metric:
+  tls:
+    insecure: false
+  endpoints: [http://localhost:9200]
+  metrics_index: my_metric_index
+  timeout: 2m
+  headers:
+    myheader: test
+  pipeline: mypipeline
+  user: elastic
+  password: search
+  api_key: AvFsEiPs==
+  discover:
+    on_start: true
+  flush:
+    bytes: 10485760
+  retry:
+    max_retries: 5
+    retry_on_status:
+      - 429
+      - 500
+  sending_queue:
+    enabled: true
+elasticsearch/log:
+  tls:
+    insecure: false
+  endpoints: [http://localhost:9200]
+  logs_index: my_log_index
+  timeout: 2m
+  headers:
+    myheader: test
+  pipeline: mypipeline
+  user: elastic
+  password: search
+  api_key: AvFsEiPs==
+  discover:
+    on_start: true
+  flush:
+    bytes: 10485760
+  retry:
+    max_retries: 5
+    retry_on_status:
+      - 429
+      - 500
+  sending_queue:
+    enabled: true
+elasticsearch/logstash_format:
+  endpoints: [http://localhost:9200]
+  logstash_format:
+    enabled: true
+elasticsearch/raw:
+  endpoints: [http://localhost:9200]
+  mapping:
+    mode: raw
+elasticsearch/cloudid:
+  cloudid: foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY=
+elasticsearch/confighttp_endpoint:
+  endpoint: https://elastic.example.com:9200
+elasticsearch/batcher_disabled:
+  endpoint: https://elastic.example.com:9200
+  batcher:
+    enabled: false
+elasticsearch/compression_none:
+  endpoint: https://elastic.example.com:9200
+  compression: none
+elasticsearch/compression_gzip:
+  endpoint: https://elastic.example.com:9200
+  compression: gzip

@@ -1,0 +1,202 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
+
+import (
+	"reflect"
+	"sync"
+
+	"go.uber.org/zap"
+	v1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+)
+
+var (
+	_ cache.ResourceEventHandler = (*handler)(nil)
+	_ observer.EndpointsLister   = (*handler)(nil)
+)
+
+// handler handles k8s cache informer callbacks.
+type handler struct {
+	// idNamespace should be some unique token to distinguish multiple handler instances.
+	idNamespace string
+	// endpoints is a map[observer.EndpointID]observer.Endpoint all existing endpoints at any given moment
+	endpoints *sync.Map
+
+	logger *zap.Logger
+}
+
+func (h *handler) ListEndpoints() []observer.Endpoint {
+	var endpoints []observer.Endpoint
+	h.endpoints.Range(func(endpointID, endpoint any) bool {
+		if e, ok := endpoint.(observer.Endpoint); ok {
+			endpoints = append(endpoints, e)
+		} else {
+			h.logger.Info("failed listing endpoint", zap.Any("endpointID", endpointID), zap.Any("endpoint", endpoint))
+		}
+		return true
+	})
+	return endpoints
+}
+
+// OnAdd is called in response to a new pod or node being detected.
+func (h *handler) OnAdd(objectInterface any, _ bool) {
+	var endpoints []observer.Endpoint
+
+	switch object := objectInterface.(type) {
+	case *v1.Pod:
+		endpoints = convertPodToEndpoints(h.idNamespace, object)
+	case *v1.Service:
+		endpoints = convertServiceToEndpoints(h.idNamespace, object)
+	case *networkingv1.Ingress:
+		endpoints = convertIngressToEndpoints(h.idNamespace, object)
+	case *v1.Node:
+		endpoints = append(endpoints, convertNodeToEndpoint(h.idNamespace, object))
+	default: // unsupported
+		return
+	}
+
+	for _, endpoint := range endpoints {
+		h.endpoints.Store(endpoint.ID, endpoint)
+	}
+}
+
+// OnUpdate is called in response to an existing pod or node changing.
+func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
+	oldEndpoints := map[observer.EndpointID]observer.Endpoint{}
+	newEndpoints := map[observer.EndpointID]observer.Endpoint{}
+
+	switch oldObject := oldObjectInterface.(type) {
+	case *v1.Pod:
+		newPod, ok := newObjectInterface.(*v1.Pod)
+		if !ok {
+			h.logger.Warn("skip updating endpoint for pod as the update is of different type", zap.Any("oldPod", oldObjectInterface), zap.Any("newObject", newObjectInterface))
+			return
+		}
+		for _, e := range convertPodToEndpoints(h.idNamespace, oldObject) {
+			oldEndpoints[e.ID] = e
+		}
+		for _, e := range convertPodToEndpoints(h.idNamespace, newPod) {
+			newEndpoints[e.ID] = e
+		}
+
+	case *v1.Service:
+		newService, ok := newObjectInterface.(*v1.Service)
+		if !ok {
+			h.logger.Warn("skip updating endpoint for service as the update is of different type", zap.Any("oldService", oldObjectInterface), zap.Any("newObject", newObjectInterface))
+			return
+		}
+		for _, e := range convertServiceToEndpoints(h.idNamespace, oldObject) {
+			oldEndpoints[e.ID] = e
+		}
+		for _, e := range convertServiceToEndpoints(h.idNamespace, newService) {
+			newEndpoints[e.ID] = e
+		}
+
+	case *networkingv1.Ingress:
+		newIngress, ok := newObjectInterface.(*networkingv1.Ingress)
+		if !ok {
+			h.logger.Warn("skip updating endpoint for ingress as the update is of different type", zap.Any("oldIngress", oldObjectInterface), zap.Any("newObject", newObjectInterface))
+			return
+		}
+		for _, e := range convertIngressToEndpoints(h.idNamespace, oldObject) {
+			oldEndpoints[e.ID] = e
+		}
+		for _, e := range convertIngressToEndpoints(h.idNamespace, newIngress) {
+			newEndpoints[e.ID] = e
+		}
+
+	case *v1.Node:
+		newNode, ok := newObjectInterface.(*v1.Node)
+		if !ok {
+			h.logger.Warn("skip updating endpoint for node as the update is of different type", zap.Any("oldNode", oldObjectInterface), zap.Any("newObject", newObjectInterface))
+			return
+		}
+		oldEndpoint := convertNodeToEndpoint(h.idNamespace, oldObject)
+		oldEndpoints[oldEndpoint.ID] = oldEndpoint
+		newEndpoint := convertNodeToEndpoint(h.idNamespace, newNode)
+		newEndpoints[newEndpoint.ID] = newEndpoint
+	default: // unsupported
+		return
+	}
+
+	var removedEndpoints, updatedEndpoints, addedEndpoints []observer.Endpoint
+
+	// Find endpoints that are present in oldPod and newPod and see if they've
+	// changed. Otherwise if it wasn't in oldPod it's a new endpoint.
+	for _, e := range newEndpoints {
+		if existing, ok := oldEndpoints[e.ID]; ok {
+			if !reflect.DeepEqual(existing, e) {
+				updatedEndpoints = append(updatedEndpoints, e)
+			}
+		} else {
+			addedEndpoints = append(addedEndpoints, e)
+		}
+	}
+
+	// If an endpoint is present in the oldPod but not in the newPod then
+	// send as removed.
+	for _, e := range oldEndpoints {
+		if _, ok := newEndpoints[e.ID]; !ok {
+			removedEndpoints = append(removedEndpoints, e)
+		}
+	}
+
+	if len(removedEndpoints) > 0 {
+		for _, endpoint := range removedEndpoints {
+			h.endpoints.Delete(endpoint.ID)
+		}
+	}
+
+	if len(updatedEndpoints) > 0 {
+		for _, endpoint := range updatedEndpoints {
+			h.endpoints.Store(endpoint.ID, endpoint)
+		}
+	}
+
+	if len(addedEndpoints) > 0 {
+		for _, endpoint := range addedEndpoints {
+			h.endpoints.Store(endpoint.ID, endpoint)
+		}
+	}
+}
+
+// OnDelete is called in response to a pod or node being deleted.
+func (h *handler) OnDelete(objectInterface any) {
+	var endpoints []observer.Endpoint
+
+	switch object := objectInterface.(type) {
+	case *cache.DeletedFinalStateUnknown:
+		// Assuming we never saw the pod state where new endpoints would have been created
+		// to begin with it seems that we can't leak endpoints here.
+		h.OnDelete(object.Obj)
+		return
+	case *v1.Pod:
+		if object != nil {
+			endpoints = convertPodToEndpoints(h.idNamespace, object)
+		}
+	case *v1.Service:
+		if object != nil {
+			endpoints = convertServiceToEndpoints(h.idNamespace, object)
+		}
+	case *networkingv1.Ingress:
+		if object != nil {
+			endpoints = convertIngressToEndpoints(h.idNamespace, object)
+		}
+	case *v1.Node:
+		if object != nil {
+			endpoints = append(endpoints, convertNodeToEndpoint(h.idNamespace, object))
+		}
+	default: // unsupported
+		return
+	}
+	if len(endpoints) != 0 {
+		for _, endpoint := range endpoints {
+			h.endpoints.Delete(endpoint.ID)
+		}
+	}
+}

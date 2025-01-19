@@ -1,0 +1,23 @@
+type: loki
+
+status:
+  class: exporter
+  stability:
+    deprecated: [logs]
+  distributions:
+  - contrib
+  codeowners:
+    active: [gramidt, mar4uk]
+
+tests:
+  expect_consumer_error: true
+
+telemetry:
+  metrics:
+    lokiexporter_send_failed_due_to_missing_labels:
+      enabled: true
+      description: Number of log records failed to send because labels were missing
+      unit: "1"
+      sum:
+        monotonic: true
+        value_type: int

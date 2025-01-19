@@ -1,0 +1,32 @@
+resourceMetrics:
+  - resource: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: foo
+            name: sum
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: bar
+            gauge:
+              dataPoints:
+                - asDouble: 50
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: gauge
+            unit: "1"
+          - name: new_metric
+            sum:
+              dataPoints:
+                - asDouble: 50000
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: percent
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper
+          version: latest

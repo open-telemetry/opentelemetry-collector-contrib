@@ -1,0 +1,14 @@
+type: windowsperfcounters
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [dashpole, alxbl, pjanotti]
+    seeking_new: true
+  unsupported_platforms: [darwin, linux]
+
+tests:
+  config:

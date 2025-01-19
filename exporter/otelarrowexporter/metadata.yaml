@@ -1,0 +1,13 @@
+type: otelarrow
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [jmacd, moh-osman3, lquerel]
+
+tests:
+  config:
+    endpoint: http://127.0.0.1:4317

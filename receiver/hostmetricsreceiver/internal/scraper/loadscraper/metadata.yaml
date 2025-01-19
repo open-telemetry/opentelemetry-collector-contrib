@@ -1,0 +1,33 @@
+type: load
+
+status:
+  class: scraper
+  stability:
+    beta: [metrics]
+  distributions: [core, contrib, k8s]
+  codeowners:
+    active: [dmitryax, braydonk]
+
+sem_conv_version: 1.9.0
+
+metrics:
+  system.cpu.load_average.1m:
+    enabled: true
+    description: Average CPU Load over 1 minute.
+    unit: "{thread}"
+    gauge:
+      value_type: double
+
+  system.cpu.load_average.5m:
+    enabled: true
+    description: Average CPU Load over 5 minutes.
+    unit: "{thread}"
+    gauge:
+      value_type: double
+
+  system.cpu.load_average.15m:
+    enabled: true
+    description: Average CPU Load over 15 minutes.
+    unit: "{thread}"
+    gauge:
+      value_type: double

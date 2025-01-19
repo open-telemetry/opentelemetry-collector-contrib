@@ -1,0 +1,37 @@
+default:
+all_set:
+  resource_attributes:
+    cloud.provider:
+      enabled: true
+    heroku.app.id:
+      enabled: true
+    heroku.dyno.id:
+      enabled: true
+    heroku.release.commit:
+      enabled: true
+    heroku.release.creation_timestamp:
+      enabled: true
+    service.instance.id:
+      enabled: true
+    service.name:
+      enabled: true
+    service.version:
+      enabled: true
+none_set:
+  resource_attributes:
+    cloud.provider:
+      enabled: false
+    heroku.app.id:
+      enabled: false
+    heroku.dyno.id:
+      enabled: false
+    heroku.release.commit:
+      enabled: false
+    heroku.release.creation_timestamp:
+      enabled: false
+    service.instance.id:
+      enabled: false
+    service.name:
+      enabled: false
+    service.version:
+      enabled: false

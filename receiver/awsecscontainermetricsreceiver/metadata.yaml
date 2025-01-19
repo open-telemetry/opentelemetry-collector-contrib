@@ -1,0 +1,14 @@
+type: awsecscontainermetrics
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [Aneurysm9]
+
+# TODO: Update the receiver to pass the tests
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

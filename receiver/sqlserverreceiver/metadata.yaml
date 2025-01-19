@@ -1,0 +1,263 @@
+type: sqlserver
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [StefanKurek]
+    seeking_new: true
+
+resource_attributes:
+  sqlserver.database.name:
+    description: The name of the SQL Server database.
+    enabled: true
+    type: string
+  sqlserver.instance.name:
+    description: The name of the SQL Server instance being monitored.
+    enabled: false
+    type: string
+  sqlserver.computer.name:
+    description: The name of the SQL Server instance being monitored.
+    enabled: false
+    type: string
+
+attributes:
+  page.operations:
+    name_override: type
+    description: The page operation types.
+    type: string
+    enum: [read, write]
+  physical_filename:
+    description: The physical filename of the file being monitored.
+    type: string
+  logical_filename:
+    description: The logical filename of the file being monitored.
+    type: string
+  file_type:
+    description: The type of file being monitored.
+    type: string
+  database.status:
+    description: The current status of a database
+    type: string
+    enum: [online, restoring, recovering, pending_recovery, suspect, offline]
+  direction:
+    description: The direction of flow of bytes or operations.
+    type: string
+    enum: [read, write]
+
+metrics:
+  sqlserver.user.connection.count:
+    enabled: true
+    description: Number of users connected to the SQL Server.
+    unit: "{connections}"
+    gauge:
+      value_type: int
+  sqlserver.lock.wait_time.avg:
+    enabled: true
+    description: Average wait time for all lock requests that had to wait.
+    unit: ms
+    gauge:
+      value_type: double
+    extended_documentation: This metric is only available when running on Windows.
+  sqlserver.lock.wait.rate:
+    enabled: true
+    description: Number of lock requests resulting in a wait.
+    unit: "{requests}/s"
+    gauge:
+      value_type: double
+  sqlserver.batch.request.rate:
+    enabled: true
+    description: Number of batch requests received by SQL Server.
+    unit: "{requests}/s"
+    gauge:
+      value_type: double
+  sqlserver.batch.sql_compilation.rate:
+    enabled: true
+    description: Number of SQL compilations needed.
+    unit: "{compilations}/s"
+    gauge:
+      value_type: double
+  sqlserver.batch.sql_recompilation.rate:
+    enabled: true
+    description: Number of SQL recompilations needed.
+    unit: "{compilations}/s"
+    gauge:
+      value_type: double
+  sqlserver.page.buffer_cache.hit_ratio:
+    enabled: true
+    description: Pages found in the buffer pool without having to read from disk.
+    unit: "%"
+    gauge:
+      value_type: double
+  sqlserver.page.life_expectancy:
+    enabled: true
+    description: Time a page will stay in the buffer pool.
+    unit: s
+    gauge:
+      value_type: int
+    extended_documentation: This metric is only available when running on Windows.
+  sqlserver.page.split.rate:
+    enabled: true
+    description: Number of pages split as a result of overflowing index pages.
+    unit: "{pages}/s"
+    gauge:
+      value_type: double
+    extended_documentation: This metric is only available when running on Windows.
+  sqlserver.page.lazy_write.rate:
+    enabled: true
+    description: Number of lazy writes moving dirty pages to disk.
+    unit: "{writes}/s"
+    gauge:
+      value_type: double
+    extended_documentation: This metric is only available when running on Windows.
+  sqlserver.page.checkpoint.flush.rate:
+    enabled: true
+    description: Number of pages flushed by operations requiring dirty pages to be flushed.
+    unit: "{pages}/s"
+    gauge:
+      value_type: double
+    extended_documentation: This metric is only available when running on Windows.
+  sqlserver.page.operation.rate:
+    enabled: true
+    description: Number of physical database page operations issued.
+    unit: "{operations}/s"
+    gauge:
+      value_type: double
+    attributes: [page.operations]
+    extended_documentation: This metric is only available when running on Windows.
+  sqlserver.transaction_log.growth.count:
+    enabled: true
+    description: Total number of transaction log expansions for a database.
+    unit: "{growths}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    extended_documentation: This metric is only available when running on Windows.
+  sqlserver.transaction_log.shrink.count:
+    enabled: true
+    description: Total number of transaction log shrinks for a database.
+    unit: "{shrinks}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    extended_documentation: This metric is only available when running on Windows.
+  sqlserver.transaction_log.usage:
+    enabled: true
+    description: Percent of transaction log space used.
+    unit: "%"
+    gauge:
+      value_type: int
+    extended_documentation: This metric is only available when running on Windows.
+  sqlserver.transaction_log.flush.wait.rate:
+    enabled: true
+    description: Number of commits waiting for a transaction log flush.
+    unit: "{commits}/s"
+    gauge:
+      value_type: double
+    extended_documentation: This metric is only available when running on Windows.
+  sqlserver.transaction_log.flush.rate:
+    enabled: true
+    description: Number of log flushes.
+    unit: "{flushes}/s"
+    gauge:
+      value_type: double
+    extended_documentation: This metric is only available when running on Windows.
+  sqlserver.transaction_log.flush.data.rate:
+    enabled: true
+    description: Total number of log bytes flushed.
+    unit: By/s
+    gauge:
+      value_type: double
+    extended_documentation: This metric is only available when running on Windows.
+  sqlserver.transaction.rate:
+    enabled: true
+    description: Number of transactions started for the database (not including XTP-only transactions).
+    unit: "{transactions}/s"
+    gauge:
+      value_type: double
+    extended_documentation: This metric is only available when running on Windows.
+  sqlserver.transaction.write.rate:
+    enabled: true
+    description: Number of transactions that wrote to the database and committed.
+    unit: "{transactions}/s"
+    gauge:
+      value_type: double
+    extended_documentation: This metric is only available when running on Windows.
+  sqlserver.database.latency:
+    enabled: false
+    description: Total time that the users waited for I/O issued on this file.
+    unit: "s"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: double
+    attributes: [physical_filename, logical_filename, file_type, direction]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.database.operations:
+    enabled: false
+    description: The number of operations issued on the file.
+    unit: "{operations}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ physical_filename, logical_filename, file_type, direction ]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.database.io:
+    enabled: false
+    description: The number of bytes of I/O on this file.
+    unit: "By"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ physical_filename, logical_filename, file_type, direction ]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.resource_pool.disk.throttled.read.rate:
+    enabled: false
+    description: The number of read operations that were throttled in the last second
+    unit: "{reads}/s"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.resource_pool.disk.throttled.write.rate:
+    enabled: false
+    description: The number of write operations that were throttled in the last second
+    unit: "{writes}/s"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.processes.blocked:
+    enabled: false
+    description: The number of processes that are currently blocked
+    unit: "{processes}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.database.count:
+    enabled: false
+    description: The number of databases
+    unit: "{databases}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [database.status]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+tests:
+  config:
+  goleak:
+    ignore:
+      any: "github.com/godbus/dbus.(*Conn).inWorker"

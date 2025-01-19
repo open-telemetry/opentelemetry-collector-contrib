@@ -1,0 +1,161 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: mongodbatlas.group.id
+          value:
+            stringValue: REDACTED-group
+        - key: mongodbatlas.alert.config.id
+          value:
+            stringValue: REDACTED-alert
+        - key: mongodbatlas.cluster.name
+          value:
+            stringValue: Cluster0
+        - key: mongodbatlas.org.id
+          value:
+            stringValue: test-org-id
+        - key: mongodbatlas.project.name
+          value:
+            stringValue: test-project
+        - key: mongodbatlas.replica_set.name
+          value:
+            stringValue: REDACTED-shard-0
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: event.domain
+                value:
+                  stringValue: mongodbatlas
+              - key: event.name
+                value:
+                  stringValue: OUTSIDE_METRIC_THRESHOLD
+              - key: status
+                value:
+                  stringValue: CLOSED
+              - key: created
+                value:
+                  stringValue: "2022-06-03T19:43:40Z"
+              - key: updated
+                value:
+                  stringValue: "2022-06-03T20:38:34Z"
+              - key: id
+                value:
+                  stringValue: 629a646c75d64f1902578ff7
+              - key: metric.name
+                value:
+                  stringValue: CONNECTIONS
+              - key: type_name
+                value:
+                  stringValue: OUTSIDE_METRIC_THRESHOLD
+              - key: last_notified
+                value:
+                  stringValue: "2022-06-03T19:45:57Z"
+              - key: resolved
+                value:
+                  stringValue: "2022-06-03T20:38:34Z"
+              - key: acknowledgement.comment
+                value:
+                  stringValue: Test
+              - key: acknowledgement.username
+                value:
+                  stringValue: REDACTED@gmail.com
+              - key: acknowledgement.until
+                value:
+                  stringValue: "2022-06-03T20:45:56Z"
+              - key: metric.value
+                value:
+                  doubleValue: 0
+              - key: metric.units
+                value:
+                  stringValue: RAW
+              - key: net.peer.name
+                value:
+                  stringValue: REDACTED-shard-00-02.f1eir.mongodb.net
+              - key: net.peer.port
+                value:
+                  intValue: "27017"
+            body:
+              stringValue: '{"id":"629a646c75d64f1902578ff7","groupId":"REDACTED-group","alertConfigId":"REDACTED-alert","eventTypeName":"OUTSIDE_METRIC_THRESHOLD","created":"2022-06-03T19:43:40Z","updated":"2022-06-03T20:38:34Z","resolved":"2022-06-03T20:38:34Z","status":"CLOSED","lastNotified":"2022-06-03T19:45:57Z","acknowledgedUntil":"2022-06-03T20:45:56Z","acknowledgementComment":"Test","acknowledgingUsername":"REDACTED@gmail.com","hostnameAndPort":"REDACTED-shard-00-02.f1eir.mongodb.net:27017","metricName":"CONNECTIONS","currentValue":{"number":0,"units":"RAW"},"replicaSetName":"REDACTED-shard-0","clusterName":"Cluster0"}'
+            observedTimeUnixNano: "1664476673977855000"
+            severityNumber: 9
+            severityText: CLOSED
+            spanId: ""
+            timeUnixNano: "1654288714000000000"
+            traceId: ""
+        scope: {}
+  - resource:
+      attributes:
+        - key: mongodbatlas.group.id
+          value:
+            stringValue: REDACTED-group
+        - key: mongodbatlas.alert.config.id
+          value:
+            stringValue: REDACTED-alert
+        - key: mongodbatlas.cluster.name
+          value:
+            stringValue: Cluster0
+        - key: mongodbatlas.org.id
+          value:
+            stringValue: test-org-id
+        - key: mongodbatlas.project.name
+          value:
+            stringValue: test-project
+        - key: mongodbatlas.replica_set.name
+          value:
+            stringValue: REDACTED-shard-0
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: event.domain
+                value:
+                  stringValue: mongodbatlas
+              - key: event.name
+                value:
+                  stringValue: PRIMARY_ELECTED
+              - key: status
+                value:
+                  stringValue: INFORMATIONAL
+              - key: created
+                value:
+                  stringValue: "2022-06-03T22:30:31Z"
+              - key: updated
+                value:
+                  stringValue: "2022-06-03T22:30:31Z"
+              - key: id
+                value:
+                  stringValue: 629a8b871dfc48492150a766
+              - key: metric.name
+                value:
+                  stringValue: ""
+              - key: type_name
+                value:
+                  stringValue: PRIMARY_ELECTED
+              - key: last_notified
+                value:
+                  stringValue: ""
+              - key: resolved
+                value:
+                  stringValue: ""
+              - key: acknowledgement.comment
+                value:
+                  stringValue: ""
+              - key: acknowledgement.username
+                value:
+                  stringValue: ""
+              - key: acknowledgement.until
+                value:
+                  stringValue: ""
+              - key: net.peer.name
+                value:
+                  stringValue: REDACTED-shard-00-02.f1eir.mongodb.net
+              - key: net.peer.port
+                value:
+                  intValue: "27017"
+            body:
+              stringValue: '{"id":"629a8b871dfc48492150a766","groupId":"REDACTED-group","alertConfigId":"REDACTED-alert","eventTypeName":"PRIMARY_ELECTED","created":"2022-06-03T22:30:31Z","updated":"2022-06-03T22:30:31Z","status":"INFORMATIONAL","hostnameAndPort":"REDACTED-shard-00-02.f1eir.mongodb.net:27017","replicaSetName":"REDACTED-shard-0","clusterName":"Cluster0"}'
+            observedTimeUnixNano: "1664476673977855000"
+            severityNumber: 9
+            severityText: INFORMATIONAL
+            spanId: ""
+            timeUnixNano: "1654295431000000000"
+            traceId: ""
+        scope: {}

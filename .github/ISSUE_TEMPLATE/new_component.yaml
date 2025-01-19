@@ -1,0 +1,40 @@
+name: New component proposal
+description: Suggest a new component for the project
+title: "New component: "
+labels: ["Sponsor Needed", "needs triage"]
+body:
+  - type: textarea
+    attributes:
+      label: The purpose and use-cases of the new component
+      description: This information can be used later on to populate the README for the component. See an example overview [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awsecscontainermetricsreceiver#overview).
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Example configuration for the component
+      description: This will be used later on when creating `config.go` and added to README as well. See this receiver as an [example](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/jaegerreceiver#getting-started).
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Telemetry data types supported
+      description: Any combination of traces, metrics and/or logs is valid here.
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Code Owner(s)
+      description: A code owner is responsible for supporting the component, including triaging issues, reviewing PRs, and submitting bug fixes.
+        Please list one or more members or aspiring members of the OpenTelemetry project who will serve as code owners.
+        Having a code owner is strongly recommended. However, you may use the issue to try to find a code owner for your component.
+  - type: input
+    attributes:
+      label: Sponsor (optional)
+      description: "A sponsor is an approver who will be in charge of being the official reviewer of the code.
+        Having a sponsor means that your use-case has been validated. If there are no sponsors yet for the component,
+        it's fine: use the issue as a means to try to find a sponsor for your component. If you are unable to find a sponsor, the component can still live in your own source repository and can be included in Collector distributions using the Collector builder."
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: Any additional information you think may be relevant.
+

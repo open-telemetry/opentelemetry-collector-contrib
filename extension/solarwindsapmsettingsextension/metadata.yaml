@@ -1,0 +1,14 @@
+type: solarwindsapmsettings
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [jerrytfleung, cheempz]
+
+tests:
+  config:
+    endpoint: "apm.collector.na-01.cloud.solarwinds.com:443"
+

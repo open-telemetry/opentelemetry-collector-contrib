@@ -1,0 +1,17 @@
+type: kinetica
+
+status:
+  class: exporter
+  stability:
+    unmaintained: [metrics, traces, logs]
+  distributions: []
+  codeowners:
+    active: [TylerHelmuth]
+    emeritus: [am-kinetica]
+
+
+# TODO: Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true
+  goleak:
+    setup: "setupTestMain(m)"

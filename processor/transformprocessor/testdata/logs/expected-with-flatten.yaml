@@ -1,0 +1,27 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: HOST.ONE
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: "hello one"
+            attributes:
+              - key: log.file.name
+                value:
+                  stringValue: one.log
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: HOST.TWO
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: "hello two"
+            attributes:
+              - key: log.file.name
+                value:
+                  stringValue: two.log

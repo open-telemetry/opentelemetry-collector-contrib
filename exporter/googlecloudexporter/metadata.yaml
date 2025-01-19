@@ -1,0 +1,17 @@
+type: googlecloud
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [aabmass, dashpole, jsuereth, punya, psx95]
+
+tests:
+  skip_lifecycle: true
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"

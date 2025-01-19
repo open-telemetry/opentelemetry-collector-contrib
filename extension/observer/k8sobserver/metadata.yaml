@@ -1,0 +1,19 @@
+type: k8s_observer
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [dmitryax, ChrsMark]
+    emeritus: [rmfitzpatrick]
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
+  goleak:
+    ignore:
+      top:
+        - "k8s.io/apimachinery/pkg/watch.(*Broadcaster).loop"

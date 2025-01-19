@@ -1,0 +1,12 @@
+type: hostmetrics
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+    development: [logs]
+  distributions: [core, contrib, k8s]
+  codeowners:
+    active: [dmitryax, braydonk]
+tests:
+  config:

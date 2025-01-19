@@ -1,0 +1,25 @@
+default:
+all_set:
+  metrics:
+    system.cpu.frequency:
+      enabled: true
+    system.cpu.logical.count:
+      enabled: true
+    system.cpu.physical.count:
+      enabled: true
+    system.cpu.time:
+      enabled: true
+    system.cpu.utilization:
+      enabled: true
+none_set:
+  metrics:
+    system.cpu.frequency:
+      enabled: false
+    system.cpu.logical.count:
+      enabled: false
+    system.cpu.physical.count:
+      enabled: false
+    system.cpu.time:
+      enabled: false
+    system.cpu.utilization:
+      enabled: false

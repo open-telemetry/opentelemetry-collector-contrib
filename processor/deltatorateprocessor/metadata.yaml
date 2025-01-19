@@ -1,0 +1,11 @@
+type: deltatorate
+
+status:
+  class: processor
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [Aneurysm9]
+tests:
+  config:

@@ -1,0 +1,19 @@
+type: receiver_creator
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+    alpha: [logs, traces]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [dmitryax]
+    emeritus: [rmfitzpatrick]
+
+tests:
+  config:
+    endpoint: myendpoint:12345
+  goleak:
+    ignore:
+      top:
+        - "github.com/SAP/go-hdb/driver.(*metrics).collect"

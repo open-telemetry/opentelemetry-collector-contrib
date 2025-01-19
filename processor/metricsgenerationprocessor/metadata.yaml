@@ -1,0 +1,12 @@
+type: metricsgeneration
+
+status:
+  class: processor
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [Aneurysm9]
+
+tests:
+  config:

@@ -1,0 +1,655 @@
+name: build-and-test
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+  merge_group:
+  pull_request:
+env:
+  TEST_RESULTS: testbed/tests/results/junit/results.xml
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  setup-environment:
+    timeout-minutes: 30
+    runs-on: ubuntu-24.04
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.8"
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+            ./.tools
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+  check-collector-module-version:
+    runs-on: ubuntu-24.04
+    needs: [setup-environment]
+    steps:
+      - uses: actions/checkout@v4
+      - run: make genotelcontribcol
+      - name: Check Collector Module Version
+        run: ./.github/workflows/scripts/check-collector-module-version.sh
+  check-codeowners:
+    runs-on: ubuntu-24.04
+    needs: [setup-environment]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Code Owner Existence
+        run: ./.github/workflows/scripts/check-codeowners.sh check_code_owner_existence
+      - name: Check Component Existence
+        run: ./.github/workflows/scripts/check-codeowners.sh check_component_existence
+      - name: Validate Allowlist entries
+        run: ./.github/workflows/scripts/check-codeowners.sh check_entries_in_allowlist
+  lint-matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        goos:
+          - windows
+          - linux
+        group:
+          - receiver-0
+          - receiver-1
+          - receiver-2
+          - receiver-3
+          - processor-0
+          - processor-1
+          - exporter-0
+          - exporter-1
+          - exporter-2
+          - exporter-3
+          - extension
+          - connector
+          - internal
+          - pkg
+          - cmd-0
+          - cmd-1
+          - other
+    runs-on: ubuntu-24.04
+    needs: [setup-environment]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.8"
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+            ./.tools
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Cache Lint Build
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: go-lint-build-${{ matrix.group }}-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Lint
+        run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
+  lint:
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    runs-on: ubuntu-24.04
+    needs: [setup-environment, lint-matrix]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.lint-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.lint-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi
+  govulncheck:
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+          - receiver-0
+          - receiver-1
+          - receiver-2
+          - receiver-3
+          - processor-0
+          - processor-1
+          - exporter-0
+          - exporter-1
+          - exporter-2
+          - exporter-3
+          - extension
+          - connector
+          - internal
+          - pkg
+          - cmd-0
+          - cmd-1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.8"
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+            ./.tools
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Run `govulncheck`
+        run: make -j2 gogovulncheck GROUP=${{ matrix.group }}
+  checks:
+    runs-on: ubuntu-24.04
+    needs: [setup-environment]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.8"
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+            ./.tools
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - run: make genotelcontribcol
+      - name: CheckDoc
+        run: make checkdoc
+      - name: CheckMetadata
+        run: make checkmetadata
+      - name: CheckApi
+        run: make checkapi
+      - name: Porto
+        run: |
+          make -j2 goporto
+          git diff --exit-code || (echo 'Porto links are out of date, please run "make goporto" and commit the changes in this PR.' && exit 1)
+      - name: crosslink
+        run: |
+          make crosslink
+          git diff --exit-code || (echo 'Replace statements are out of date, please run "make crosslink" and commit the changes in this PR.' && exit 1)
+      - name: Check for go mod dependency changes
+        run: |
+          make gotidy
+          git diff --exit-code || (echo 'go.mod/go.sum deps changes detected, please run "make gotidy" and commit the changes in this PR.' && exit 1)
+      - name: Gen distributions
+        run: |
+          make gendistributions
+          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gendistributions" and commit the changes in this PR.' && exit 1)
+      - name: CodeGen
+        run: |
+          make -j2 generate
+          if [[ -n $(git status -s) ]]; then
+            echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.'
+            exit 1
+          fi
+      - name: MultimodVerify
+        run: make multimod-verify
+      - name: Components dropdown in issue templates
+        run: |
+          make generate-gh-issue-templates
+          git diff --exit-code '.github/ISSUE_TEMPLATE' || (echo 'Dropdowns in issue templates are out of date, please run "make generate-gh-issue-templates" and commit the changes in this PR.' && exit 1)
+  unittest-matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ["1.23.0", "1.22.8"] # 1.20 is interpreted as 1.2 without quotes
+        runner: [ubuntu-24.04]
+        group:
+          - receiver-0
+          - receiver-1
+          - receiver-2
+          - receiver-3
+          - processor-0
+          - processor-1
+          - exporter-0
+          - exporter-1
+          - exporter-2
+          - exporter-3
+          - extension
+          - connector
+          - internal
+          - pkg
+          - cmd-0
+          - cmd-1
+          - other
+    runs-on: ${{ matrix.runner }}
+    needs: [setup-environment]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+            ./.tools
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Cache Test Build
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
+      - name: Run Unit Tests
+        if: startsWith( matrix.go-version, '1.22' ) != true
+        run: make gotest GROUP=${{ matrix.group }}
+      - name: Run Unit Tests With Coverage
+        if: startsWith( matrix.go-version, '1.22' ) # only run coverage on one version
+        run: make gotest-with-cover GROUP=${{ matrix.group }}
+      - uses: actions/upload-artifact@v4
+        if: startsWith( matrix.go-version, '1.22' ) # only upload artifact for one version
+        with:
+          name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
+          path: ${{ matrix.group }}-coverage.txt
+  unittest:
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    runs-on: ubuntu-24.04
+    needs: [setup-environment, unittest-matrix]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.unittest-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.unittest-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi
+  coverage:
+    runs-on: ubuntu-24.04
+    needs: [unittest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          pattern: coverage-artifacts-*
+      - name: Upload coverage report
+        uses: codecov/codecov-action@1e68e06f1dbfde0e4cefc87efeba9e4643565303 # 5.1.2
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  integration-tests-matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+          - receiver-0
+          - receiver-1
+          - receiver-2
+          - receiver-3
+          - processor-0
+          - processor-1
+          - exporter-0
+          - exporter-1
+          - exporter-2
+          - exporter-3
+          - extension
+          - connector
+          - internal
+          - pkg
+          - cmd-0
+          - cmd-1
+    runs-on: ubuntu-24.04
+    needs: [setup-environment]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.8"
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+            ./.tools
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Run Integration Tests
+        run: make gointegration-test GROUP=${{ matrix.group }}
+
+  integration-tests:
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    runs-on: ubuntu-24.04
+    needs: [setup-environment, integration-tests-matrix]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.integration-tests-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.integration-tests-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi
+
+  correctness-traces:
+    runs-on: ubuntu-24.04
+    needs: [setup-environment]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.8"
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+            ./.tools
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Correctness
+        run: make -C testbed run-correctness-traces-tests
+  correctness-metrics:
+    runs-on: ubuntu-24.04
+    needs: [setup-environment]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.8"
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+            ./.tools
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Correctness
+        run: make -C testbed run-correctness-metrics-tests
+
+  build-examples:
+    runs-on: ubuntu-24.04
+    needs: [setup-environment]
+    steps:
+      - uses: actions/checkout@v4
+      - run: make genotelcontribcol
+      - name: Build Examples
+        run: make build-examples
+
+  cross-compile:
+    runs-on: ubuntu-24.04
+    needs: [setup-environment]
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - darwin
+          - linux
+          - windows
+        arch:
+          - 386
+          - amd64
+          - arm
+          - arm64
+          - ppc64le
+          - s390x
+        include:
+          - os: linux
+            arch: arm
+            arm: 7
+        exclude:
+          - os: darwin
+            arch: 386
+          - os: darwin
+            arch: arm
+          - os: darwin
+            arch: ppc64le
+          - os: darwin
+            arch: s390x
+          - os: windows
+            arch: arm
+          - os: windows
+            arch: arm64
+          - os: windows
+            arch: ppc64le
+          - os: windows
+            arch: s390x
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.8"
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+            ./.tools
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Generate collector files
+        run: make genotelcontribcol
+      - name: Build Collector ${{ matrix.binary }}
+        run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
+      - name: Upload Collector Binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: collector-binaries-${{ matrix.os }}-${{ matrix.arch }}
+          path: ./bin/*
+
+  publish-check:
+    runs-on: ubuntu-24.04
+    needs: [lint, unittest, integration-tests]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Binaries
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: ./bin/
+          pattern: collector-binaries-*
+      - name: Verify Distribution Files Exist
+        id: check
+        run: ./.github/workflows/scripts/verify-dist-files-exist.sh
+  publish-dev:
+    runs-on: ubuntu-24.04
+    needs: [lint, unittest, integration-tests]
+    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.8"
+          cache: false
+      - name: Mkdir bin and dist
+        run: |
+          mkdir bin/ dist/
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+            ./.tools
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Download Binaries
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: ./bin/
+          pattern: collector-binaries-*
+      - run: chmod +x bin/*
+      - name: Add Permissions to Tool Binaries
+        run: chmod -R +x ./dist
+      - name: Verify Distribution Files Exist
+        id: check
+        run: ./.github/workflows/scripts/verify-dist-files-exist.sh
+      - name: Build Docker Image
+        if: steps.check.outputs.passed == 'true'
+        run: |
+          make genotelcontribcol
+          make docker-otelcontribcol
+          docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
+          docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:latest
+      - name: Validate Docker Image
+        if: steps.check.outputs.passed == 'true'
+        run: |
+          docker run otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA --version
+          docker run otel/opentelemetry-collector-contrib-dev:latest --version
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Push Docker Image
+        if: steps.check.outputs.passed == 'true'
+        run: |
+          docker push otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
+          docker push otel/opentelemetry-collector-contrib-dev:latest
+  publish-stable:
+    runs-on: ubuntu-24.04
+    needs: [lint, unittest, integration-tests]
+    if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set Release Tag
+        id: github_tag
+        run: ./.github/workflows/scripts/set_release_tag.sh
+      - name: Create Github Release
+        run: |
+          gh release create $RELEASE_TAG -t $RELEASE_TAG -n "The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/$RELEASE_TAG), be sure to check the release notes there as well."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
+  rotate-milestone:
+    # This job updates the "next release" milestone
+    # to the latest released version and creates a new milestone
+    # named "next release" in its place
+    runs-on: ubuntu-24.04
+    needs: [publish-stable]
+    if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const milestones = await github.rest.issues.listMilestones({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open"
+            })
+            for (const milestone of milestones.data) {
+              if (milestone.title == "next release") {
+                await github.rest.issues.updateMilestone({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  milestone_number: milestone.number,
+                  title: "${{ github.ref_name }}"
+                });
+                await github.rest.issues.createMilestone({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: "next release"
+                });
+                return
+              }
+            }

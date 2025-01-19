@@ -1,0 +1,21 @@
+default:
+all_set:
+  metrics:
+    system.linux.memory.available:
+      enabled: true
+    system.memory.limit:
+      enabled: true
+    system.memory.usage:
+      enabled: true
+    system.memory.utilization:
+      enabled: true
+none_set:
+  metrics:
+    system.linux.memory.available:
+      enabled: false
+    system.memory.limit:
+      enabled: false
+    system.memory.usage:
+      enabled: false
+    system.memory.utilization:
+      enabled: false

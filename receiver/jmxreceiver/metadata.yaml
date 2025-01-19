@@ -1,0 +1,18 @@
+type: jmx
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme]
+    emeritus: [rmfitzpatrick]
+
+tests:
+  config:
+    endpoint: myendpoint:12345
+  goleak:
+    ignore:
+      top:
+        - "internal/poll.runtime_pollWait"

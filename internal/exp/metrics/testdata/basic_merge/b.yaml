@@ -1,0 +1,177 @@
+resourceMetrics:
+  # The first entry is an identical resource metrics ID
+  # But different scope metrics ID
+  # And identical metric ID / stream data
+  # We should end up with a new scope metric entry
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: resource_key
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: bar
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+  # The next entry has a difference resource_key, but identical scope and metric ID / data
+  # We should end up with a new resource metric entry
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: resource_key
+          value:
+            stringValue: bar
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: foo
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+  # The next entry has identical resource and scope IDs
+  # But a different metric name / type
+  # We should get a new metric entry added to the original scope metric entry
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: resource_key
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: foo
+        metrics:
+          - name: delta.monotonic.sum
+            sum:
+              aggregationTemporality: 1
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+  # The next entry has identical resource, scope, and metric IDs
+  # The metric datapoint should be added to the existing metric
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: resource_key
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: foo
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 80
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+          # Merge in some different metric types
+          # Which are identical metric IDs. So the datapoints should be merged
+          - name: gauge
+            gauge:
+              aggregationTemporality: 2
+              dataPoints:
+                - timeUnixNano: 120
+                  asDouble: 255
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+          - name: cumulative.histogram
+            histogram:
+              aggregationTemporality: 2
+              dataPoints:
+                - timeUnixNano: 60
+                  explicitBounds: [0.01, 0.1, 1, 10, 100]
+                  bucketCounts: [5, 8, 10, 7, 30]
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+          - name: cumulative.exphistogram
+            histogram:
+              aggregationTemporality: 2
+              dataPoints:
+                - timeUnixNano: 60
+                  scale: 4
+                  zeroCount: 5
+                  positive:
+                    offset: 2
+                    bucketCounts: [5, 8, 10, 7, 30]
+                  negative:
+                    offset: 6
+                    bucketCounts: [3, 14, 8, 13, 5]
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+          - name: summary
+            summary:
+              dataPoints:
+                - timeUnixNano: 60
+                  quantileValues:
+                    - quantile: 0.25
+                      value: 60
+                    - quantile: 0.5
+                      value: 30
+                    - quantile: 0.75
+                      value: 80
+                    - quantile: 0.95
+                      value: 15
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb

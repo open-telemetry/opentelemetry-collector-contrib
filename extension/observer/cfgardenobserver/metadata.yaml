@@ -1,0 +1,14 @@
+type: cfgarden_observer
+scope_name: otelcol/cfgardenobserver
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  codeowners:
+    active: [crobert-1, cemdk, m1rp, jriguera]
+
+# We don't want to make actual connections to CloudFoundry api in our tests
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

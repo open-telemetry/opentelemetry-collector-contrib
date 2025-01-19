@@ -1,0 +1,12 @@
+type: interval
+
+status:
+  class: processor
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, k8s]
+  warnings: [Statefulness]
+  codeowners:
+    active: [RichieSams, sh0rez]
+tests:
+  config:

@@ -1,0 +1,11 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - exponentialHistogram:
+              dataPoints:
+                - count: "654"
+                  negative: {}
+                  positive: {}
+            name: exponential_histogram.one
+        scope: {}

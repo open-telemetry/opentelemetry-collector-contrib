@@ -1,0 +1,45 @@
+type: sumologic
+
+status:
+  class: exporter
+  stability:
+    beta: [metrics, logs, traces]
+  distributions: [contrib]
+  codeowners:
+    active: [rnishtala-sumo, chan-tim-sumo]
+    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek]
+
+# TODO: Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true
+
+telemetry:
+  metrics:
+    exporter_requests_sent:
+      enabled: true
+      description: Number of requests
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_requests_duration:
+      enabled: true
+      description: Duration of HTTP requests (in milliseconds)
+      unit: ms
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_requests_bytes:
+      enabled: true
+      description: Total size of requests (in bytes)
+      unit: By
+      sum:
+        value_type: int
+        monotonic: true
+    exporter_requests_records:
+      enabled: true
+      description: Total size of requests (in number of records)
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true

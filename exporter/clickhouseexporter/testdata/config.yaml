@@ -1,0 +1,48 @@
+clickhouse:
+  endpoint: clickhouse://127.0.0.1:9000
+clickhouse/full:
+  endpoint: clickhouse://127.0.0.1:9000
+  username: foo
+  password: bar
+  database: otel
+  ttl: 72h
+  logs_table_name: otel_logs
+  traces_table_name: otel_traces
+  timeout: 5s
+  retry_on_failure:
+    enabled: true
+    initial_interval: 5s
+    max_interval: 30s
+    max_elapsed_time: 300s
+  sending_queue:
+    queue_size: 100
+    storage: file_storage/clickhouse
+  metrics_tables:
+    gauge: 
+      name: "otel_metrics_custom_gauge"
+    sum: 
+      name: "otel_metrics_custom_sum"
+    summary: 
+      name: "otel_metrics_custom_summary"
+    histogram: 
+      name: "otel_metrics_custom_histogram"
+    exponential_histogram: 
+      name: "otel_metrics_custom_exp_histogram"
+clickhouse/invalid-endpoint:
+  endpoint: 127.0.0.1:9000
+
+clickhouse/table-engine-empty:
+  endpoint: clickhouse://127.0.0.1:9000
+clickhouse/table-engine-name-only:
+  endpoint: clickhouse://127.0.0.1:9000
+  table_engine:
+    name: ReplicatedReplacingMergeTree
+clickhouse/table-engine-full:
+  endpoint: clickhouse://127.0.0.1:9000
+  table_engine:
+    name: ReplicatedReplacingMergeTree
+    params: "'/clickhouse/tables/{shard}/table_name', '{replica}', ver"
+clickhouse/table-engine-params-only:
+  endpoint: clickhouse://127.0.0.1:9000
+  table_engine:
+    params: "whatever"

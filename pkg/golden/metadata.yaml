@@ -1,0 +1,8 @@
+type: golden
+
+status:
+  class: pkg
+  stability:
+    alpha: [ traces, metrics, logs ]
+  codeowners:
+    active: [djaglowski, atoulme]

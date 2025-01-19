@@ -1,0 +1,17 @@
+type: http_forwarder
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [contrib, k8s]
+  codeowners:
+    active: [atoulme]
+    emeritus: [rmfitzpatrick]
+
+tests:
+  config:
+    ingress:
+      endpoint: localhost:7070
+    egress:
+      endpoint: http://target/

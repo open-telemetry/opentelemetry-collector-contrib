@@ -1,0 +1,56 @@
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "localhost:4318"
+      grpc:
+        endpoint: "localhost:4317"
+
+processors:
+  tail_sampling:
+    decision_wait: 1s
+    policies: [
+        {
+          name: sample_flag,
+          type: boolean_attribute,
+          boolean_attribute: { key: sampled, value: true },
+        }
+      ]
+
+connectors:
+  datadog/connector:
+    traces:
+      peer_tags: ["extra_peer_tag"]
+
+exporters:
+  debug:
+    verbosity: detailed
+  datadog:
+    api:
+      key: "aaa"
+    tls:
+      insecure_skip_verify: true
+    host_metadata:
+      enabled: false
+    traces:
+      endpoint: ${env:SERVER_URL}
+      trace_buffer: 10
+    metrics:
+      endpoint: ${env:SERVER_URL}
+
+service:
+  telemetry:
+    metrics:
+      level: none
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [datadog/connector]
+    traces/2: # this pipeline uses sampling
+      receivers: [datadog/connector]
+      processors: [tail_sampling]
+      exporters: [datadog, debug]
+    metrics:
+      receivers: [datadog/connector]
+      exporters: [datadog, debug]

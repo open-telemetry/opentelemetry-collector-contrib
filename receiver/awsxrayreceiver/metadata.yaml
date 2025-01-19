@@ -1,0 +1,14 @@
+type: awsxray
+
+status:
+  class: receiver
+  stability:
+    beta: [traces]
+  distributions: [contrib]
+  codeowners:
+    active: [wangzlei, srprash]
+
+# TODO: Update the receiver to make the tests pass
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

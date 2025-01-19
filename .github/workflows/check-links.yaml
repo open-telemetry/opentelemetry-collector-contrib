@@ -1,0 +1,47 @@
+name: check-links
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  changedfiles:
+    name: changed files
+    runs-on: ubuntu-24.04
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    outputs:
+      md_files: ${{ steps.changed-files.outputs.md_all_changed_files }}
+      yaml_files: ${{ steps.changed-files.outputs.yaml_all_changed_files }} # used to catch MD_LINK_CHECK_VERSION updates and runs check-links to confirm functionality
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files_yaml: |
+            md:
+              - '**.md'
+            yaml:
+              - .github/workflows/check-links.yaml
+
+  check-links:
+    runs-on: ubuntu-24.04
+    needs: changedfiles
+    if: needs.changedfiles.outputs.md_files || needs.changedfiles.outputs.yaml_files
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@f796c8b7d468feb9b8c0a46da3fac0af6874d374
+        with:
+          args: "--verbose --no-progress ${{needs.changedfiles.outputs.md_files}} ${{needs.changedfiles.outputs.yaml_files}} --config .github/lychee.toml"

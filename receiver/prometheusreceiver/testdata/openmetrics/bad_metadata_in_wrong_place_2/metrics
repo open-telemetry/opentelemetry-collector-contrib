@@ -1,0 +1,4 @@
+# TYPE a_s gauge
+a_s 1
+# UNIT a_s s
+# EOF

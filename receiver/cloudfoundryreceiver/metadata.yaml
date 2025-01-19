@@ -1,0 +1,16 @@
+type: cloudfoundry
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+    development: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [crobert-1]
+    emeritus: [agoallikmaa, pellared]
+    seeking_new: true
+
+tests:
+  config:
+  skip_lifecycle: true

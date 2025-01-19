@@ -1,0 +1,14 @@
+type: awskinesis
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [Aneurysm9, MovieStoreGuy]
+
+# TODO: Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true
+

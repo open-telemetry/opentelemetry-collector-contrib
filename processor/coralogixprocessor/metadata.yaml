@@ -1,0 +1,10 @@
+type: coralogix
+
+status:
+  class: processor
+  stability:
+    development: [traces]
+  distributions: []
+  warnings: [Statefulness]
+  codeowners:
+    active: [crobert-1, povilasv]

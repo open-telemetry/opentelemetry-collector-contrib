@@ -1,0 +1,15 @@
+type: coralogix
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [povilasv]
+
+tests:
+  config:
+    domain: "coralogix.com"
+    private_key: "xxx"
+  expect_consumer_error: true

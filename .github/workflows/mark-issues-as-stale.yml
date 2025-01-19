@@ -1,0 +1,21 @@
+name: 'Mark issues as stale'
+on:
+  schedule:
+    - cron: "27 3 * * 1-5" # Run at an arbitrary time on weekdays.
+
+jobs:
+  mark-issues-as-stale:
+    runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'open-telemetry' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run mark-issues-as-stale.sh
+        run: ./.github/workflows/scripts/mark-issues-as-stale.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DAYS_BEFORE_STALE: 60
+          DAYS_BEFORE_CLOSE: 60 # Only used for the stale message.
+          STALE_LABEL: 'Stale'
+          EXEMPT_LABEL: 'never stale'
+

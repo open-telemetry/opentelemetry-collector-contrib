@@ -1,0 +1,9 @@
+type: collectd
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme]

@@ -1,0 +1,21 @@
+type: resourcedetectionprocessor/openshift
+
+parent: resourcedetection
+
+resource_attributes:
+  cloud.provider:
+    description: The cloud.provider
+    type: string
+    enabled: true
+  cloud.platform:
+    description: The cloud.platform
+    type: string
+    enabled: true
+  cloud.region:
+    description: The cloud.region
+    type: string
+    enabled: true
+  k8s.cluster.name:
+    description: The k8s.cluster.name
+    type: string
+    enabled: true

@@ -1,0 +1,155 @@
+default:
+all_set:
+  metrics:
+    sqlserver.batch.request.rate:
+      enabled: true
+    sqlserver.batch.sql_compilation.rate:
+      enabled: true
+    sqlserver.batch.sql_recompilation.rate:
+      enabled: true
+    sqlserver.database.count:
+      enabled: true
+    sqlserver.database.io:
+      enabled: true
+    sqlserver.database.latency:
+      enabled: true
+    sqlserver.database.operations:
+      enabled: true
+    sqlserver.lock.wait.rate:
+      enabled: true
+    sqlserver.lock.wait_time.avg:
+      enabled: true
+    sqlserver.page.buffer_cache.hit_ratio:
+      enabled: true
+    sqlserver.page.checkpoint.flush.rate:
+      enabled: true
+    sqlserver.page.lazy_write.rate:
+      enabled: true
+    sqlserver.page.life_expectancy:
+      enabled: true
+    sqlserver.page.operation.rate:
+      enabled: true
+    sqlserver.page.split.rate:
+      enabled: true
+    sqlserver.processes.blocked:
+      enabled: true
+    sqlserver.resource_pool.disk.throttled.read.rate:
+      enabled: true
+    sqlserver.resource_pool.disk.throttled.write.rate:
+      enabled: true
+    sqlserver.transaction.rate:
+      enabled: true
+    sqlserver.transaction.write.rate:
+      enabled: true
+    sqlserver.transaction_log.flush.data.rate:
+      enabled: true
+    sqlserver.transaction_log.flush.rate:
+      enabled: true
+    sqlserver.transaction_log.flush.wait.rate:
+      enabled: true
+    sqlserver.transaction_log.growth.count:
+      enabled: true
+    sqlserver.transaction_log.shrink.count:
+      enabled: true
+    sqlserver.transaction_log.usage:
+      enabled: true
+    sqlserver.user.connection.count:
+      enabled: true
+  resource_attributes:
+    sqlserver.computer.name:
+      enabled: true
+    sqlserver.database.name:
+      enabled: true
+    sqlserver.instance.name:
+      enabled: true
+none_set:
+  metrics:
+    sqlserver.batch.request.rate:
+      enabled: false
+    sqlserver.batch.sql_compilation.rate:
+      enabled: false
+    sqlserver.batch.sql_recompilation.rate:
+      enabled: false
+    sqlserver.database.count:
+      enabled: false
+    sqlserver.database.io:
+      enabled: false
+    sqlserver.database.latency:
+      enabled: false
+    sqlserver.database.operations:
+      enabled: false
+    sqlserver.lock.wait.rate:
+      enabled: false
+    sqlserver.lock.wait_time.avg:
+      enabled: false
+    sqlserver.page.buffer_cache.hit_ratio:
+      enabled: false
+    sqlserver.page.checkpoint.flush.rate:
+      enabled: false
+    sqlserver.page.lazy_write.rate:
+      enabled: false
+    sqlserver.page.life_expectancy:
+      enabled: false
+    sqlserver.page.operation.rate:
+      enabled: false
+    sqlserver.page.split.rate:
+      enabled: false
+    sqlserver.processes.blocked:
+      enabled: false
+    sqlserver.resource_pool.disk.throttled.read.rate:
+      enabled: false
+    sqlserver.resource_pool.disk.throttled.write.rate:
+      enabled: false
+    sqlserver.transaction.rate:
+      enabled: false
+    sqlserver.transaction.write.rate:
+      enabled: false
+    sqlserver.transaction_log.flush.data.rate:
+      enabled: false
+    sqlserver.transaction_log.flush.rate:
+      enabled: false
+    sqlserver.transaction_log.flush.wait.rate:
+      enabled: false
+    sqlserver.transaction_log.growth.count:
+      enabled: false
+    sqlserver.transaction_log.shrink.count:
+      enabled: false
+    sqlserver.transaction_log.usage:
+      enabled: false
+    sqlserver.user.connection.count:
+      enabled: false
+  resource_attributes:
+    sqlserver.computer.name:
+      enabled: false
+    sqlserver.database.name:
+      enabled: false
+    sqlserver.instance.name:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    sqlserver.computer.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    sqlserver.database.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    sqlserver.instance.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    sqlserver.computer.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "sqlserver.computer.name-val"
+    sqlserver.database.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "sqlserver.database.name-val"
+    sqlserver.instance.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "sqlserver.instance.name-val"

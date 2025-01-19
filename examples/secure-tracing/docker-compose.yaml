@@ -1,0 +1,26 @@
+version: '3'
+services:
+  envoy:
+    image: envoyproxy/envoy-alpine:v1.21-latest
+    command: ["/usr/local/bin/envoy", "-c", "/etc/envoy-config.yaml", "-l", "debug"]
+    ports:
+      - "10000:10000"
+      - "9901:9901"
+    volumes:
+      - ./certs/envoy.crt:/etc/envoy.crt
+      - ./certs/envoy.key:/etc/envoy.key
+      - ./certs/ca.crt:/etc/ca.crt
+      - ./envoy-config.yaml:/etc/envoy-config.yaml
+  otel-collector:
+    image: otel/opentelemetry-collector:0.117.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./certs/otel-collector.crt:/etc/otel-collector.crt
+      - ./certs/otel-collector.key:/etc/otel-collector.key
+      - ./certs/ca.crt:/etc/ca.crt
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "13133:13133" # health_check extension
+      - "55690"       # OTLP gRPC receiver
+    depends_on:
+      - envoy

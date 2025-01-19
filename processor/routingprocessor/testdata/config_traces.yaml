@@ -1,0 +1,13 @@
+routing:
+  default_exporters:
+  - otlp
+  attribute_source: context
+  from_attribute: X-Tenant
+  table:
+  - value: acme
+    exporters:
+    - jaeger/acme
+    - otlp/acme
+  - value: globex
+    exporters:
+    - otlp/globex

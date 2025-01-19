@@ -1,0 +1,37 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.deployment.name
+          value:
+            stringValue: frontend
+        - key: k8s.namespace.name
+          value:
+            stringValue: default
+        - key: k8s.cluster.name
+          value:
+            stringValue: ""
+        - key: k8s.deployment.uid
+          value:
+            stringValue: 2d61452e-f21c-4743-bedf-cd6183d660cf
+        - key: opencensus.resourcetype
+          value:
+            stringValue: k8s
+    scopeMetrics:
+      - metrics:
+          - description: Number of desired pods in this deployment
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1612819530934424200"
+                  timeUnixNano: "1612819531934424200"
+            name: k8s.deployment.desired
+            unit: "1"
+          - description: Total number of available pods (ready for at least minReadySeconds) targeted by this deployment
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1612819530934424200"
+                  timeUnixNano: "1612819531934424200"
+            name: k8s.deployment.available
+            unit: "1"
+        scope: {}

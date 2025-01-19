@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: e2ek8sattribute-mixrbac
+data:
+  relay: |
+    exporters:
+      otlp:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+    processors:
+      k8sattributes:
+        filter:
+          namespace: e2ek8sattribute-workloadns
+        extract:
+          annotations:
+          - from: pod
+            key: workload
+            tag_name: k8s.annotations.workload
+          labels:
+          - from: pod
+            key: app
+            tag_name: k8s.labels.app
+          - from: node
+            key: foo
+          - from: namespace
+            key: foons
+          metadata:
+          - k8s.pod.name
+          - k8s.pod.start_time
+          - k8s.pod.uid
+          - k8s.namespace.name
+          - k8s.deployment.name
+          - k8s.deployment.uid
+          - k8s.replicaset.name
+          - k8s.replicaset.uid
+          - k8s.node.name
+          - container.id
+          - container.image.name
+          - container.image.tag
+          - container.image.repo_digests
+          - k8s.cluster.uid
+        pod_association:
+        - sources:
+          - from: connection
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: ${env:MY_POD_IP}:4317
+    service:
+      extensions:
+      - health_check
+      pipelines:
+        metrics:
+          exporters:
+          - otlp
+          processors:
+          - k8sattributes
+          receivers:
+          - otlp
+        traces:
+          exporters:
+          - otlp
+          processors:
+          - k8sattributes
+          receivers:
+          - otlp
+        logs:
+          exporters:
+          - otlp
+          processors:
+          - k8sattributes
+          receivers:
+          - otlp

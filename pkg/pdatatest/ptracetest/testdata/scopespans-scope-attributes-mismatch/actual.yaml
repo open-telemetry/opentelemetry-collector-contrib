@@ -1,0 +1,17 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: host.name
+          value:
+            stringValue: host1
+    scopeSpans:
+      - scope:
+          name: scope1
+          version: v0.1.0
+          attributes:
+            - key: key1
+              value:
+                stringValue: value1
+      - scope:
+          name: scope2
+          version: v0.1.0
