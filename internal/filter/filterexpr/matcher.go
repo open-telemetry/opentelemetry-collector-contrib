@@ -24,9 +24,9 @@ type Matcher struct {
 }
 
 type env struct {
+	attributes pcommon.Map
 	MetricName string
 	MetricType string
-	attributes pcommon.Map
 }
 
 func (e *env) HasLabel(key string) bool {

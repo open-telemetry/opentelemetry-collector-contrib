@@ -54,16 +54,13 @@ func NewSkipExpr(mp *filterconfig.MatchConfig) (expr.BoolExpr[ottlspan.Transform
 
 // propertiesMatcher allows matching a span against various span properties.
 type propertiesMatcher struct {
-	filtermatcher.PropertiesMatcher
-
 	// Service names to compare to.
 	serviceFilters filterset.FilterSet
-
 	// Span names to compare to.
 	nameFilters filterset.FilterSet
-
 	// Span kinds to compare to
 	kindFilters filterset.FilterSet
+	filtermatcher.PropertiesMatcher
 }
 
 // newExpr creates a BoolExpr that matches based on the given MatchProperties.

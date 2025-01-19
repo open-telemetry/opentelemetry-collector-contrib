@@ -44,8 +44,8 @@ func TestConfig(t *testing.T) {
 	require.NoErrorf(t, v.Unmarshal(&testYamls), "unable to unmarshal yaml from file %v", testFile)
 
 	tests := []struct {
-		name   string
 		expCfg *filterconfig.MetricMatchProperties
+		name   string
 	}{
 		{
 			name:   "config/regexp",

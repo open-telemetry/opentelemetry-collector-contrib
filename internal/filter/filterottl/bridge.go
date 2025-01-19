@@ -211,6 +211,7 @@ func createStatement(mp filterconfig.MatchProperties) (string, error) {
 }
 
 type conditionStatements struct {
+	severityNumberCondition     *string
 	serviceNameConditions       []string
 	spanNameConditions          []string
 	spanKindConditions          []string
@@ -220,7 +221,6 @@ type conditionStatements struct {
 	resourceAttributeConditions []string
 	bodyConditions              []string
 	severityTextConditions      []string
-	severityNumberCondition     *string
 }
 
 func createConditions(mp filterconfig.MatchProperties) (conditionStatements, error) {

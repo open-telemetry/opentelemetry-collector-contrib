@@ -46,9 +46,9 @@ func createMetric(name string) pmetric.Metric {
 
 func TestMatcherMatches(t *testing.T) {
 	tests := []struct {
-		name        string
-		cfg         *filterconfig.MetricMatchProperties
 		metric      pmetric.Metric
+		cfg         *filterconfig.MetricMatchProperties
+		name        string
 		shouldMatch bool
 	}{
 		{
@@ -92,10 +92,10 @@ func TestMatcherMatches(t *testing.T) {
 
 func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 	tests := []struct {
-		name    string
+		err     error
 		include *filterconfig.MetricMatchProperties
 		exclude *filterconfig.MetricMatchProperties
-		err     error
+		name    string
 	}{
 		// Metric Name
 		{
