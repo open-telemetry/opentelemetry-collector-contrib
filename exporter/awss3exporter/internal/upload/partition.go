@@ -17,6 +17,12 @@ var compressionFileExtensions = map[configcompression.Type]string{
 }
 
 type PartitionKeyBuilder struct {
+	// UniqueKeyFunc allows for overwritting the default behavior of
+	// generating a new unique string to avoid collisions on file upload
+	// across many different instances.
+	//
+	// TODO: Expose the ability to config additional UniqueKeyField via config
+	UniqueKeyFunc func() string
 	// PartitionPrefix defines the S3 directory (key)
 	// prefix used to write the file
 	PartitionPrefix string
@@ -36,12 +42,6 @@ type PartitionKeyBuilder struct {
 	// Compression defines algorithm used on the
 	// body before uploaded.
 	Compression configcompression.Type
-	// UniqueKeyFunc allows for overwritting the default behavior of
-	// generating a new unique string to avoid collisions on file upload
-	// across many different instances.
-	//
-	// TODO: Expose the ability to config additional UniqueKeyField via config
-	UniqueKeyFunc func() string
 }
 
 func (pki *PartitionKeyBuilder) Build(ts time.Time) string {

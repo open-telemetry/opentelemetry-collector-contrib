@@ -29,14 +29,14 @@ type S3UploaderConfig struct {
 	Endpoint string `mapstructure:"endpoint"`
 	// RoleArn is the role policy to use when interacting with S3
 	RoleArn string `mapstructure:"role_arn"`
-	// S3ForcePathStyle sets the value for force path style.
-	S3ForcePathStyle bool `mapstructure:"s3_force_path_style"`
-	// DisableSLL forces communication to happen via HTTP instead of HTTPS.
-	DisableSSL bool `mapstructure:"disable_ssl"`
 	// Compression sets the algorithm used to process the payload
 	// before uploading to S3.
 	// Valid values are: `gzip` or no value set.
 	Compression configcompression.Type `mapstructure:"compression"`
+	// S3ForcePathStyle sets the value for force path style.
+	S3ForcePathStyle bool `mapstructure:"s3_force_path_style"`
+	// DisableSLL forces communication to happen via HTTP instead of HTTPS.
+	DisableSSL bool `mapstructure:"disable_ssl"`
 }
 
 type MarshalerType string
@@ -51,13 +51,11 @@ const (
 // Config contains the main configuration options for the s3 exporter
 type Config struct {
 	QueueSettings exporterhelper.QueueConfig `mapstructure:"sending_queue"`
-
-	S3Uploader    S3UploaderConfig `mapstructure:"s3uploader"`
-	MarshalerName MarshalerType    `mapstructure:"marshaler"`
-
 	// Encoding to apply. If present, overrides the marshaler configuration option.
-	Encoding              *component.ID `mapstructure:"encoding"`
-	EncodingFileExtension string        `mapstructure:"encoding_file_extension"`
+	Encoding              *component.ID    `mapstructure:"encoding"`
+	MarshalerName         MarshalerType    `mapstructure:"marshaler"`
+	EncodingFileExtension string           `mapstructure:"encoding_file_extension"`
+	S3Uploader            S3UploaderConfig `mapstructure:"s3uploader"`
 }
 
 func (c *Config) Validate() error {

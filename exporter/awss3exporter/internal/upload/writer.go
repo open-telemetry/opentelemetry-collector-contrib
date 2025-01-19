@@ -20,9 +20,9 @@ type Manager interface {
 }
 
 type s3manager struct {
-	bucket   string
 	builder  *PartitionKeyBuilder
 	uploader *manager.Uploader
+	bucket   string
 }
 
 var _ Manager = (*s3manager)(nil)
