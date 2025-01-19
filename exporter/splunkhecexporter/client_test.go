@@ -533,7 +533,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 						z.Close()
 						require.NoError(t, err)
 					}
-					timeStr := fmt.Sprintf(`"time":%d,`, i+1)
+					timeStr := fmt.Sprintf(`"time":%d}`, i+1)
 					if strings.Contains(string(batchBody), timeStr) {
 						assert.False(t, eventFound, "span event %d found in multiple batches", i)
 						eventFound = true
