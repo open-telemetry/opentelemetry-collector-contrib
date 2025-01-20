@@ -230,12 +230,14 @@ The Elasticsearch Exporter's own telemetry settings for testing and debugging pu
 
 ### Elasticsearch version compatibility
 
-- `version` (default=8): Version of target Elasticsearch
-
 The Elasticsearch Exporter uses the [go-elasticsearch](https://github.com/elastic/go-elasticsearch)
 client for communicating with Elasticsearch, and has forward compatibility with Elasticsearch 8+ by
-default. It is possible to enable best-effort support for older Elasticsearch 7.x versions by
-setting the Elasticsearch exporter config `version` to `7`.
+default. Settings related to Elasticsearch version compatibility are:
+
+- `version` (default=8): Version of target Elasticsearch
+
+It is possible to enable best-effort support for older Elasticsearch 7.x versions by setting the
+Elasticsearch exporter config `version` to `7`.
 
 Certain features of the exporter, such as the `otel` mapping mode, may require newer versions of
 Elasticsearch. In general it is recommended to use the exporter with the most recent supported,
