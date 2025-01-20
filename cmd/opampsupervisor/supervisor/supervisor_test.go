@@ -40,6 +40,8 @@ server:
 capabilities:
   reports_effective_config: true
   reports_own_metrics: true
+  reports_own_logs: true
+  reports_own_traces: true
   reports_health: true
   accepts_remote_config: true
   reports_remote_config: true
@@ -1328,15 +1330,28 @@ service:
     telemetry:
         logs:
             encoding: json
+            processors:
+                - batch:
+                    exporter:
+                        otlp:
+                            endpoint: localhost-logs
+                            protocol: http/protobuf
         metrics:
             readers:
                 - periodic:
                     exporter:
                         otlp:
-                            endpoint: localhost
+                            endpoint: localhost-metrics
                             protocol: http/protobuf
         resource:
             service.name: otelcol
+        traces:
+            processors:
+                - batch:
+                    exporter:
+                        otlp:
+                            endpoint: localhost-traces
+                            protocol: http/protobuf
 `
 
 		remoteCfg := &protobufs.AgentRemoteConfig{
@@ -1371,6 +1386,8 @@ service:
 				Capabilities: config.Capabilities{
 					AcceptsRemoteConfig: true,
 					ReportsOwnMetrics:   true,
+					ReportsOwnLogs:      true,
+					ReportsOwnTraces:    true,
 				},
 				Storage: config.Storage{
 					Directory: configDir,
