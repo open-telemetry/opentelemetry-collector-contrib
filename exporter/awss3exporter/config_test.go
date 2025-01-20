@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.uber.org/multierr"
 
@@ -32,7 +33,12 @@ func TestLoadConfig(t *testing.T) {
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 	encoding := component.MustNewIDWithName("foo", "bar")
+
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.Enabled = false
+
 	assert.Equal(t, &Config{
+		QueueSettings:         queueCfg,
 		Encoding:              &encoding,
 		EncodingFileExtension: "baz",
 		S3Uploader: S3UploaderConfig{
@@ -59,9 +65,16 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
+	queueCfg := exporterhelper.QueueConfig{
+		Enabled:      true,
+		NumConsumers: 23,
+		QueueSize:    42,
+	}
+
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
 	assert.Equal(t, &Config{
+		QueueSettings: queueCfg,
 		S3Uploader: S3UploaderConfig{
 			Region:      "us-east-1",
 			S3Bucket:    "foo",
@@ -88,9 +101,13 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.Enabled = false
+
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
 	assert.Equal(t, &Config{
+		QueueSettings: queueCfg,
 		S3Uploader: S3UploaderConfig{
 			Region:           "us-east-1",
 			S3Bucket:         "foo",
@@ -200,9 +217,13 @@ func TestMarshallerName(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.Enabled = false
+
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
 	assert.Equal(t, &Config{
+		QueueSettings: queueCfg,
 		S3Uploader: S3UploaderConfig{
 			Region:      "us-east-1",
 			S3Bucket:    "foo",
@@ -215,6 +236,7 @@ func TestMarshallerName(t *testing.T) {
 	e = cfg.Exporters[component.MustNewIDWithName("awss3", "proto")].(*Config)
 
 	assert.Equal(t, &Config{
+		QueueSettings: queueCfg,
 		S3Uploader: S3UploaderConfig{
 			Region:      "us-east-1",
 			S3Bucket:    "bar",
@@ -239,9 +261,13 @@ func TestCompressionName(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.Enabled = false
+
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
 	assert.Equal(t, &Config{
+		QueueSettings: queueCfg,
 		S3Uploader: S3UploaderConfig{
 			Region:      "us-east-1",
 			S3Bucket:    "foo",
@@ -255,6 +281,7 @@ func TestCompressionName(t *testing.T) {
 	e = cfg.Exporters[component.MustNewIDWithName("awss3", "proto")].(*Config)
 
 	assert.Equal(t, &Config{
+		QueueSettings: queueCfg,
 		S3Uploader: S3UploaderConfig{
 			Region:      "us-east-1",
 			S3Bucket:    "bar",
