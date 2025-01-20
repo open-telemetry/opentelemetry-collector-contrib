@@ -74,7 +74,7 @@ type Config struct {
 	// value takes precedence over the value of Realm
 	APIURL string `mapstructure:"api_url"`
 
-	// api_tls needs to be set if the exporter's APIURL is pointing to a httforwarder extension
+	// api_tls needs to be set if the exporter's APIURL is pointing to a httpforwarder extension
 	// with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
 	APITLSSettings configtls.ClientConfig `mapstructure:"api_tls,omitempty"`
 

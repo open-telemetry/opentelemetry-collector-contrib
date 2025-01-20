@@ -156,7 +156,6 @@ behaviours, which may be configured through the following settings:
     - `none`: Use original fields and event structure from the OTLP event.
     - `ecs`: Try to map fields to [Elastic Common Schema (ECS)][ECS]
     - `otel`: Elastic's preferred "OTel-native" mapping mode. Uses original fields and event structure from the OTLP event.
-      - :warning: This mode's behavior is unstable, it is currently experimental and undergoing changes.
       - There's a special treatment for the following attributes: `data_stream.type`, `data_stream.dataset`, `data_stream.namespace`. Instead of serializing these values under the `*attributes.*` namespace, they're put at the root of the document, to conform with the conventions of the data stream naming scheme that maps these as `constant_keyword` fields.
       - `data_stream.dataset` will always be appended with `.otel`. It is recommended to use with `*_dynamic_index.enabled: true` to route documents to data stream `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`.
       - Span events are stored in separate documents. They will be routed with `data_stream.type` set to `logs` if `traces_dynamic_index::enabled` is `true`.
@@ -169,9 +168,6 @@ behaviours, which may be configured through the following settings:
             It works only for logs where the log record body is a map. Each LogRecord
             body is serialized to JSON as-is and becomes a separate document for ingestion.
             If the log record body is not a map, the exporter will log a warning and drop the log record.
-  - `dedup` (DEPRECATED). This configuration is deprecated and non-operational,
-    and will be removed in the future. Object keys are always deduplicated to
-    avoid Elasticsearch rejecting documents.
   - `dedot` (default=true; DEPRECATED, in future dedotting will always be enabled
     for ECS mode, and never for other modes): When enabled attributes with `.`
     will be split into proper json objects.
@@ -357,8 +353,23 @@ In case the record contains `timestamp`, this value is used. Otherwise, the `obs
 
 ### version_conflict_engine_exception
 
-When sending high traffic of metrics to a TSDB metrics data stream, e.g. using OTel mapping mode to a 8.16 Elasticsearch, it is possible to get error logs "failed to index document" with `error.type` "version_conflict_engine_exception" and `error.reason` containing "version conflict, document already exists". It is due to Elasticsearch grouping metrics with the same dimensions, whether it is the same or different metric name, using `@timestamp` in milliseconds precision as opposed to nanoseconds in elasticsearchexporter.
+Symptom: elasticsearchexporter logs an error "failed to index document" with `error.type` "version_conflict_engine_exception" and `error.reason` containing "version conflict, document already exists".
 
-This will be fixed in a future version of Elasticsearch. A possible workaround would be to use a transform processor to truncate the timestamp, but this will cause duplicate data to be dropped silently.
+This happens when the target data stream is a TSDB metrics data stream (e.g. using OTel mapping mode sending to a 8.16+ Elasticsearch). See the following scenarios.
 
-However, if `@timestamp` precision is not the problem, check your metrics pipeline setup for misconfiguration that causes an actual violation of the [single writer principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer).
+1. When sending different metrics with the same dimension (mostly made up of resource attributes, scope attributes, attributes),
+`version_conflict_engine_exception` is returned by Elasticsearch when these metrics are not grouped into the same document.
+It also means that they have to be in the same batch in the exporter, as metric grouping is done per-batch in elasticsearchexporter.
+To work around the issue, use a [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md) to ensure different metrics to never share the same set of dimensions. This is done at the expense of storage efficiency.
+This workaround will no longer be necessary once the limitation is lifted in Elasticsearch (see [issue](https://github.com/elastic/elasticsearch/issues/99123)).
+
+```yaml
+processors:
+  transform/unique_dimensions:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(attributes["metric_name"], metric.name)
+```
+
+2. Otherwise, check your metrics pipeline setup for misconfiguration that causes an actual violation of the [single writer principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer).

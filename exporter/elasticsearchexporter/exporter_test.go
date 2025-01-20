@@ -240,7 +240,7 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "raw"
-			// dedup is the default
+			// deduplication is always performed - there is no configuration that controls it
 		})
 		logs := newLogsWithAttributes(
 			// Scope collides with the top-level "Scope" field,
@@ -546,7 +546,7 @@ func TestExporterLogs(t *testing.T) {
 			},
 		}
 
-		handlers := map[string]func(attempts *atomic.Int64) bulkHandler{
+		handlers := map[string]func(*atomic.Int64) bulkHandler{
 			"fail http request": func(attempts *atomic.Int64) bulkHandler {
 				return func([]itemRequest) ([]itemResponse, error) {
 					attempts.Add(1)
@@ -573,8 +573,9 @@ func TestExporterLogs(t *testing.T) {
 						exporter := newTestLogsExporter(t, server.URL, configurer)
 						mustSendLogRecords(t, exporter, plog.NewLogRecord())
 
-						time.Sleep(200 * time.Millisecond)
-						assert.Equal(t, int64(1), attempts.Load())
+						assert.Eventually(t, func() bool {
+							return attempts.Load() == 1
+						}, 5*time.Second, 20*time.Millisecond)
 					})
 				}
 			})
