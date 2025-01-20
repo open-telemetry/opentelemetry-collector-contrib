@@ -138,9 +138,10 @@ agent:
   # Optional user name to drop the privileges to when running the
   # Collector process.
   run_as: myuser
-  # Path to optional local Collector config file to be merged with the
+  # Path to optional local Collector config files to be merged with the
   # config provided by the OpAMP server.
-  config_file: /etc/otelcol/config.yaml
+  config_files: 
+    - /etc/otelcol/config.yaml
   # Optional directories that are allowed to be read/written by the
   # Collector.
   # If unspecified then NO access to the filesystem is allowed.

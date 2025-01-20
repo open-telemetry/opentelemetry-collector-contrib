@@ -162,14 +162,17 @@ func (o OpAMPServer) Validate() error {
 }
 
 type Agent struct {
-	Executable              string           `mapstructure:"executable"`
-	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
-	Description             AgentDescription `mapstructure:"description"`
-	ConfigApplyTimeout      time.Duration    `mapstructure:"config_apply_timeout"`
-	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
-	HealthCheckPort         int              `mapstructure:"health_check_port"`
-	OpAMPServerPort         int              `mapstructure:"opamp_server_port"`
-	PassthroughLogs         bool             `mapstructure:"passthrough_logs"`
+	Executable              string            `mapstructure:"executable"`
+	OrphanDetectionInterval time.Duration     `mapstructure:"orphan_detection_interval"`
+	Description             AgentDescription  `mapstructure:"description"`
+	ConfigApplyTimeout      time.Duration     `mapstructure:"config_apply_timeout"`
+	BootstrapTimeout        time.Duration     `mapstructure:"bootstrap_timeout"`
+	HealthCheckPort         int               `mapstructure:"health_check_port"`
+	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
+	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
+	ConfigFiles             []string          `mapstructure:"config_files"`
+	Arguments               []string          `mapstructure:"args"`
+	Env                     map[string]string `mapstructure:"env"`
 }
 
 func (a Agent) Validate() error {

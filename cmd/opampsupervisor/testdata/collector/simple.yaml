@@ -1,0 +1,14 @@
+receivers:
+  filelog:
+    include: [in.yaml]
+    start_at: "beginning"
+
+exporters:
+  file:
+    path: out.yaml
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      exporters: [file]

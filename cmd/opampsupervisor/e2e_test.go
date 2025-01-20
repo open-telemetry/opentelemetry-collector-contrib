@@ -1,8 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build e2e
-
 package main
 
 import (
@@ -295,6 +293,64 @@ func TestSupervisorStartsCollectorWithNoOpAMPServer(t *testing.T) {
 	defer server.shutdown()
 
 	s := newSupervisor(t, "basic", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+	})
+
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	// Verify the collector runs eventually by pinging the healthcheck extension
+	require.Eventually(t, func() bool {
+		resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
+		if err != nil {
+			t.Logf("Failed healthcheck: %s", err)
+			return false
+		}
+		require.NoError(t, resp.Body.Close())
+		if resp.StatusCode >= 300 || resp.StatusCode < 200 {
+			t.Logf("Got non-2xx status code: %d", resp.StatusCode)
+			return false
+		}
+		return true
+	}, 3*time.Second, 100*time.Millisecond)
+
+	// Start the server and wait for the supervisor to connect
+	server.start()
+
+	// Verify supervisor connects to server
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	require.True(t, connected.Load(), "Supervisor failed to connect")
+}
+
+func TestSupervisorStartsCollectorWithNoOpAMPServerExecParams(t *testing.T) {
+	storageDir := t.TempDir()
+	remoteConfigFilePath := filepath.Join(storageDir, "last_recv_remote_config.dat")
+
+	cfg, hash, healthcheckPort := createHealthCheckCollectorConf(t)
+	remoteConfigProto := &protobufs.AgentRemoteConfig{
+		Config: &protobufs.AgentConfigMap{
+			ConfigMap: map[string]*protobufs.AgentConfigFile{
+				"": {Body: cfg.Bytes()},
+			},
+		},
+		ConfigHash: hash,
+	}
+	marshalledRemoteConfig, err := proto.Marshal(remoteConfigProto)
+	require.NoError(t, err)
+
+	require.NoError(t, os.WriteFile(remoteConfigFilePath, marshalledRemoteConfig, 0o600))
+
+	connected := atomic.Bool{}
+	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
+		OnConnected: func(ctx context.Context, conn types.Connection) {
+			connected.Store(true)
+		},
+	})
+	defer server.shutdown()
+
+	s := newSupervisor(t, "exec_config", map[string]string{
 		"url":         server.addr,
 		"storage_dir": storageDir,
 	})
