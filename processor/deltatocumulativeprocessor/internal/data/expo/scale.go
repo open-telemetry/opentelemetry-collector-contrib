@@ -6,6 +6,8 @@ package expo // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"fmt"
 	"math"
+
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type Scale int32
@@ -112,4 +114,30 @@ func Collapse(bs Buckets) {
 	for i := size; i < counts.Len(); i++ {
 		counts.SetAt(i, 0)
 	}
+}
+
+// Limit returns a target Scale that when be downscaled to,
+// the total bucket count after [Merge] never exceeds maxBuckets.
+func Limit(maxBuckets int, scale Scale, arel, brel pmetric.ExponentialHistogramDataPointBuckets) Scale {
+	a, b := Abs(arel), Abs(brel)
+
+	lo := min(a.Lower(), b.Lower())
+	up := max(a.Upper(), b.Upper())
+
+	// Skip leading and trailing zeros.
+	for lo < up && a.Abs(lo) == 0 && b.Abs(lo) == 0 {
+		lo++
+	}
+	for lo < up-1 && a.Abs(up-1) == 0 && b.Abs(up-1) == 0 {
+		up--
+	}
+
+	// Keep downscaling until the number of buckets is within the limit.
+	for up-lo > maxBuckets {
+		lo /= 2
+		up /= 2
+		scale--
+	}
+
+	return scale
 }
