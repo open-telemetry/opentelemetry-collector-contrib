@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -51,6 +52,8 @@ func ensureExporter(params exporter.Settings, pCfg *Config) *pubsubExporter {
 		tracesMarshaler:  &ptrace.ProtoMarshaler{},
 		metricsMarshaler: &pmetric.ProtoMarshaler{},
 		logsMarshaler:    &plog.ProtoMarshaler{},
+		makeUUID:         uuid.NewRandom,
+		makeClient:       newPublisherClient,
 	}
 	// we ignore the error here as the config is already validated with the same method
 	receiver.ceCompression, _ = pCfg.parseCompression()
