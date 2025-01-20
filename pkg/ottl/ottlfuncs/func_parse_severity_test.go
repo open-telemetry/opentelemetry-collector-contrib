@@ -244,8 +244,7 @@ func Test_parseSeverity(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := parseSeverity[any](tt.target, tt.mapping)
-			assert.NoError(t, err)
+			exprFunc := parseSeverity[any](tt.target, tt.mapping)
 
 			result, err := exprFunc(context.Background(), nil)
 			if tt.expectErrorMsg != "" {

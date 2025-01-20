@@ -28,10 +28,10 @@ func createParseSeverityFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argum
 		return nil, fmt.Errorf("ParseSeverityFactory args must be of type *ParseSeverityArguments[K")
 	}
 
-	return parseSeverity[K](args.Target, args.Mapping)
+	return parseSeverity[K](args.Target, args.Mapping), nil
 }
 
-func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) (ottl.ExprFunc[K], error) {
+func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		severityMap, err := mapping.Get(ctx, tCtx)
 		if err != nil {
@@ -54,7 +54,7 @@ func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) (ot
 		}
 
 		return logLevel, nil
-	}, nil
+	}
 }
 
 func validateSeverity(raw map[string]any) (map[string][]any, error) {
