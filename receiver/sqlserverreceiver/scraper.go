@@ -625,38 +625,14 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 }
 
 func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (plog.Logs, error) {
-	const username = "user_name"
-	const DBName = "db_name"
-	const clientPort = "client_port"
-	const queryStart = "query_start"
-	const sessionId = "session_id"
-	const sessionStatus = "session_status"
 	const hostname = "host_name"
-	const command = "command"
-	const statementText = "statement_text"
-	const blockingSessionId = "blocking_session_id"
-	const waitType = "wait_type"
-	const waitTime = "wait_time"
-	const waitResource = "wait_resource"
-	const openTransactionCount = "open_transaction_count"
-	const transactionId = "transaction_id"
-	const percentComplete = "percent_complete"
-	const estimatedCompletionTime = "estimated_completion_time"
-	const cpuTime = "cpu_time"
-	const totalElapsedTime = "total_elapsed_time"
-	const reads = "reads"
-	const writes = "writes"
-	const logicalReads = "logical_reads"
-	const transactionIsolationLevel = "transaction_isolation_level"
-	const lockTimeout = "lock_timeout"
-	const deadlockPriority = "deadlock_priority"
-	const rowCount = "row_count"
-	const queryHash = "query_hash"
-	const queryPlanHash = "query_plan_hash"
-	const contextInfo = "context_info"
-
+	const username = "user_name"
 	const loginName = "login_name"
 	const originalLoginName = "original_login_name"
+	const DBName = "db_name"
+	const queryHash = "query_hash"
+	const queryPlanHash = "query_plan_hash"
+	const waitType = "wait_type"
 	const objectName = "object_name"
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -674,117 +650,20 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	for _, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
-		contextInfoVal := hex.EncodeToString([]byte(row[contextInfo]))
-		// clientPort could be null, and it will be converted to empty string with ISNULL in our query. when it is
-		// an empty string, clientPortNumber would be 0.
-		clientPortNumber, err := strconv.Atoi(row[clientPort])
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing client port number. original value: %s, err: %s", row[clientPort], err))
-		}
-		sessionIdNumber, err := strconv.Atoi(row[sessionId])
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing session id number. original value: %s, err: %s", row[sessionId], err))
-		}
-		blockingSessionIdNumber, err := strconv.Atoi(row[blockingSessionId])
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing blocking session id number. value: %s, err: %s", row[blockingSessionId], err))
-		}
-		waitTimeVal, err := strconv.Atoi(row[waitTime])
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing wait time number. original value: %s, err: %s", row[waitTime], err))
-		}
-		openTransactionCountVal, err := strconv.Atoi(row[openTransactionCount])
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing open transaction count. original value: %s, err: %s", row[openTransactionCount], err))
-		}
-		transactionIdVal, err := strconv.Atoi(row[transactionId])
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing transaction id number. original value: %s, err: %s", row[transactionId], err))
-		}
-		// percent complete and estimated completion time is a real value in mssql
-		percentCompleteVal, err := strconv.ParseFloat(row[percentComplete], 32)
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing percent complete. original value: %s, err: %s", row[percentComplete], err))
-		}
-		estimatedCompletionTimeVal, err := strconv.ParseFloat(row[estimatedCompletionTime], 32)
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing estimated completion time number. original value: %s, err: %s", row[estimatedCompletionTime], err))
-		}
-		cpuTimeVal, err := strconv.Atoi(row[cpuTime])
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing cpu time number. original value: %s, err: %s", row[cpuTime], err))
-		}
-		totalElapsedTimeVal, err := strconv.Atoi(row[totalElapsedTime])
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing total elapsed time. original value: %s, err: %s", row[totalElapsedTime], err))
-		}
-		readsVal, err := strconv.Atoi(row[reads])
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing read count. original value: %s, err: %s", row[reads], err))
-		}
-		writesVal, err := strconv.Atoi(row[writes])
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing write count. original value: %s, err: %s", row[writes], err))
-		}
-		logicalReadsVal, err := strconv.Atoi(row[logicalReads])
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing logical read count. original value: %s, err: %s", row[logicalReads], err))
-		}
-		transactionIsolationLevelVal, err := strconv.Atoi(row[transactionIsolationLevel])
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing transaction isolation level. original value: %s, err: %s", row[transactionIsolationLevel], err))
-		}
-		lockTimeoutVal, err := strconv.Atoi(row[lockTimeout])
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing lock timeout. original value: %s, err: %s", row[lockTimeout], err))
-		}
-		deadlockPriorityVal, err := strconv.Atoi(row[deadlockPriority])
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing deadlock priority. original value: %s, err: %s", row[deadlockPriority], err))
-		}
-		rowCountVal, err := strconv.Atoi(rowCount)
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing row count. original value: %s, err: %s", row[rowCount], err))
-		}
+
 		cacheKey := queryHashVal + "-" + queryPlanHashVal
 
 		if _, ok := s.cache.Get(cacheKey); !ok {
 			// TODO: report this value
 			record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 			record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-			record.Attributes().PutStr(username, row[username])
-			record.Attributes().PutStr(DBName, row[DBName])
-			record.Attributes().PutInt(clientPort, int64(clientPortNumber))
-			record.Attributes().PutStr(queryStart, row[queryStart])
-			record.Attributes().PutInt(sessionId, int64(sessionIdNumber))
-			record.Attributes().PutStr(sessionStatus, row[sessionStatus])
+			record.Attributes().PutStr(queryHash, queryHashVal)
+			record.Attributes().PutStr(queryPlanHash, queryPlanHashVal)
 			record.Attributes().PutStr(hostname, row[hostname])
-			record.Attributes().PutStr(command, row[command])
-			record.Attributes().PutStr(statementText, row[statementText])
-			record.Attributes().PutInt(blockingSessionId, int64(blockingSessionIdNumber))
-			record.Attributes().PutStr(waitType, row[waitType])
-			record.Attributes().PutInt(waitTime, int64(waitTimeVal))
-			record.Attributes().PutStr(waitResource, row[waitResource])
-			record.Attributes().PutInt(openTransactionCount, int64(openTransactionCountVal))
-			record.Attributes().PutInt(transactionId, int64(transactionIdVal))
-			record.Attributes().PutDouble(percentComplete, percentCompleteVal)
-			record.Attributes().PutDouble(estimatedCompletionTime, estimatedCompletionTimeVal)
-			record.Attributes().PutInt(cpuTime, int64(cpuTimeVal))
-			record.Attributes().PutInt(totalElapsedTime, int64(totalElapsedTimeVal))
-			record.Attributes().PutInt(reads, int64(readsVal))
-			record.Attributes().PutInt(writes, int64(writesVal))
-			record.Attributes().PutInt(logicalReads, int64(logicalReadsVal))
-			record.Attributes().PutInt(transactionIsolationLevel, int64(transactionIsolationLevelVal))
-			record.Attributes().PutInt(lockTimeout, int64(lockTimeoutVal))
-			record.Attributes().PutInt(deadlockPriority, int64(deadlockPriorityVal))
-			record.Attributes().PutInt(rowCount, int64(rowCountVal))
-			record.Attributes().PutStr(queryHash, row[queryHash])
-			record.Attributes().PutStr(queryPlanHash, row[queryPlanHash])
-			record.Attributes().PutStr(contextInfo, contextInfoVal)
-
+			record.Attributes().PutStr(username, row[username])
 			record.Attributes().PutStr(loginName, row[loginName])
 			record.Attributes().PutStr(originalLoginName, row[originalLoginName])
-			record.Attributes().PutStr(objectName, row[objectName])
+			record.Attributes().PutStr(DBName, row[DBName])
 
 			waitCode, waitCategory := getWaitCategory(row[waitType])
 			record.Attributes().PutInt("wait_code", int64(waitCode))
