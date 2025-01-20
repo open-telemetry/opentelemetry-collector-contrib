@@ -62,8 +62,6 @@ func (s *scraper) scrapeEndpoint(tcpConfig *confignet.TCPAddrConfig, wg *sync.Wa
 
 	if err != nil {
 		// Record error data point and log the error
-		//s.mb.RecordTcpcheckDurationDataPoint(now, duration, tcpConfig.Endpoint)
-		//s.mb.RecordTcpcheckStatusDataPoint(now, fail, tcpConfig.Endpoint)
 		s.mb.RecordTcpcheckErrorDataPoint(now, pointValue, tcpConfig.Endpoint, err.Error())
 		s.settings.Logger.Error("TCP connection error encountered", zap.String("endpoint", tcpConfig.Endpoint), zap.Error(err))
 		return

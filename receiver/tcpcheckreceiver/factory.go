@@ -57,32 +57,3 @@ func newReceiver(
 		opt,
 	)
 }
-
-// timeout
-//func createDefaultConfig() component.Config {
-//	cfg := scraperhelper.NewDefaultControllerConfig()
-//	cfg.CollectionInterval = 10 * time.Second
-//
-//	return &Config{
-//		ControllerConfig: cfg,
-//		TCPClientSettings: configtcp.TCPClientSettings{
-//			Timeout: 10 * time.Second,
-//		},
-//		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-//	}
-//}
-
-//func createMetricsReceiver(_ context.Context, params receiver.Settings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
-//	cfg, ok := rConf.(*Config)
-//	if !ok {
-//		return nil, errConfigNotTCPCheck
-//	}
-//
-//	tcpCheckScraper := newScraper(cfg, params)
-//	scraper, err := scraperhelper.NewScraper(metadata.Type, tcpCheckScraper.scrape, scraperhelper.WithStart(tcpCheckScraper.start))
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(scraper))
-//}
