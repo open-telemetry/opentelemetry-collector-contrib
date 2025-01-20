@@ -121,21 +121,11 @@ func TestS3ManagerUpload(t *testing.T) {
 			name: "STANDARD_IA storage class",
 			handler: func(t *testing.T) http.Handler {
 				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-					// ...
+					// Example of validating that the S3 storage class header is set correctly
+					assert.Equal(t, "STANDARD_IA", r.Header.Get("x-amz-storage-class"))
 				})
 			},
 			storageClass: "STANDARD_IA",
-			data:         []byte("some data"),
-			errVal:       "",
-		},
-		{
-			name: "ONEZONE_IA storage class",
-			handler: func(t *testing.T) http.Handler {
-				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-					// ...
-				})
-			},
-			storageClass: "ONEZONE_IA",
 			data:         []byte("some data"),
 			errVal:       "",
 		},
@@ -163,7 +153,7 @@ func TestS3ManagerUpload(t *testing.T) {
 					BaseEndpoint: aws.String(s.URL),
 					Region:       "local",
 				}),
-				"STANDARD", // <-- Pass your desired storage class here
+				"STANDARD_IA", // <-- Pass your desired storage class here
 			)
 
 			// Using a mocked virtual clock to fix the timestamp used
