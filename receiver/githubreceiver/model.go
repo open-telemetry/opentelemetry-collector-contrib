@@ -120,6 +120,11 @@ const (
 // }
 
 func (gtr *githubTracesReceiver) getServiceName(e interface{}) (string, error) {
+    switch {
+    case gr.config.CustomServiceName != "":
+        return gr.config.CustomServiceName, nil
+    case e.(type) == *github.WebhookEvent:
+    }
     // uses e.(type)
     if e.(type) == *github.WorkflowRunEvent  || e.(type) == *github.WorkflowJobEvent {
     }
