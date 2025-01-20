@@ -7,4 +7,6 @@ service:
             exporter:
               otlp:
                 protocol: http/protobuf
-                endpoint: {{.MetricsEndpoint}}
+                endpoint: {{.MetricsEndpoint}}{{if .MetricsHeaders}}
+                headers:{{range $k := .MetricsHeaders}}
+                  "{{$k.Key}}": "{{$k.Value}}"{{end}}{{end}}
