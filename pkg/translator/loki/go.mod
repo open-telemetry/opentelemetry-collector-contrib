@@ -11,8 +11,8 @@ require (
 	github.com/prometheus/common v0.61.0
 	github.com/prometheus/prometheus v0.54.1
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.23.1-0.20250117002813-e970f8bb1258
-	go.opentelemetry.io/collector/semconv v0.117.1-0.20250117002813-e970f8bb1258
+	go.opentelemetry.io/collector/pdata v1.23.1-0.20250119231113-f07ebc3afb51
+	go.opentelemetry.io/collector/semconv v0.117.1-0.20250119231113-f07ebc3afb51
 	go.uber.org/goleak v1.3.0
 )
 
@@ -34,7 +34,7 @@ require (
 	github.com/prometheus/client_golang v1.20.4 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.23.1-0.20250117002813-e970f8bb1258 // indirect
+	go.opentelemetry.io/collector/featuregate v1.23.1-0.20250119231113-f07ebc3afb51 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
