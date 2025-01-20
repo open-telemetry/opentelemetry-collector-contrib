@@ -1129,27 +1129,16 @@ func TestSupervisor_setupOwnMetrics(t *testing.T) {
 			DestinationEndpoint: "localhost",
 		})
 
-		expectedOwnMetricsSection := `receivers:
-  # Collect own metrics
-  prometheus/own_metrics:
-    config:
-      scrape_configs:
-        - job_name: 'otel-collector'
-          scrape_interval: 10s
-          static_configs:
-            - targets: ['0.0.0.0:55555']  
-exporters:
-  otlphttp/own_metrics:
-    metrics_endpoint: "localhost"
-
+		expectedOwnMetricsSection := `
 service:
   telemetry:
     metrics:
-      address: ":55555"
-  pipelines:
-    metrics/own_metrics:
-      receivers: [prometheus/own_metrics]
-      exporters: [otlphttp/own_metrics]
+      readers:
+        - periodic:
+            exporter:
+              otlp:
+			    protocol: http/protobuf
+				endpoint: "localhost"
 `
 
 		assert.True(t, configChanged)
