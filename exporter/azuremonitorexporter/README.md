@@ -103,7 +103,7 @@ The exporter follows the semantic conventions to fill the Application Insights s
 | Dependency.ResultCode         | `http.status_code` or `status_code`                   | `"0"`     |
 | Dependency.Success            | `http.status_code` or `status_code`                   | `true`    |
 
-The exact mapping can be found [here](trace_to_envelope.go).
+The exact mapping can be found in [trace_to_envelope.go](trace_to_envelope.go).
 
 All attributes are also mapped to custom properties if they are booleans or strings and to custom measurements if they are ints or doubles.
 

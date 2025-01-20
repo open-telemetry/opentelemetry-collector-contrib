@@ -47,11 +47,11 @@ func (m *metricModelSum) add(pm pmetric.Metric, dm *dMetric, e *metricsExporter)
 		dp := dataPoints.At(i)
 
 		exemplars := dp.Exemplars()
-		newExeplars := make([]*dExemplar, 0, exemplars.Len())
+		newExemplars := make([]*dExemplar, 0, exemplars.Len())
 		for j := 0; j < exemplars.Len(); j++ {
 			exemplar := exemplars.At(j)
 
-			newExeplar := &dExemplar{
+			newExemplar := &dExemplar{
 				FilteredAttributes: exemplar.FilteredAttributes().AsRaw(),
 				Timestamp:          e.formatTime(exemplar.Timestamp().AsTime()),
 				Value:              e.getExemplarValue(exemplar),
@@ -59,7 +59,7 @@ func (m *metricModelSum) add(pm pmetric.Metric, dm *dMetric, e *metricsExporter)
 				TraceID:            exemplar.TraceID().String(),
 			}
 
-			newExeplars = append(newExeplars, newExeplar)
+			newExemplars = append(newExemplars, newExemplar)
 		}
 
 		metric := &dMetricSum{
@@ -68,7 +68,7 @@ func (m *metricModelSum) add(pm pmetric.Metric, dm *dMetric, e *metricsExporter)
 			Attributes:             dp.Attributes().AsRaw(),
 			StartTime:              e.formatTime(dp.StartTimestamp().AsTime()),
 			Value:                  e.getNumberDataPointValue(dp),
-			Exemplars:              newExeplars,
+			Exemplars:              newExemplars,
 			AggregationTemporality: pm.Sum().AggregationTemporality().String(),
 			IsMonotonic:            pm.Sum().IsMonotonic(),
 		}
