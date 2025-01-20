@@ -364,7 +364,6 @@ func Test_onMessage(t *testing.T) {
 		require.Equal(t, newID, s.persistentState.InstanceID)
 		t.Log(s.cfgState.Load())
 		mergedCfg := s.cfgState.Load().(*configState).mergedConfig
-		require.Contains(t, mergedCfg, "prometheus/own_metrics")
 		require.Contains(t, mergedCfg, newID.String())
 		require.Contains(t, mergedCfg, "runtime.type: test")
 	})
@@ -1137,8 +1136,8 @@ service:
         - periodic:
             exporter:
               otlp:
-			    protocol: http/protobuf
-				endpoint: "localhost"
+                protocol: http/protobuf
+                endpoint: localhost
 `
 
 		assert.True(t, configChanged)
@@ -1198,10 +1197,7 @@ func TestSupervisor_loadAndWriteInitialMergedConfig(t *testing.T) {
   debug/remote:
 `
 
-		const expectedMergedConfig = `exporters:
-    otlphttp/own_metrics:
-        metrics_endpoint: localhost
-extensions:
+		const expectedMergedConfig = `extensions:
     health_check:
         endpoint: ""
     opamp:
@@ -1215,30 +1211,20 @@ extensions:
                     insecure: true
 receiver:
     debug/remote: null
-receivers:
-    prometheus/own_metrics:
-        config:
-            scrape_configs:
-                - job_name: otel-collector
-                  scrape_interval: 10s
-                  static_configs:
-                    - targets:
-                        - 0.0.0.0:55555
 service:
     extensions:
         - health_check
         - opamp
-    pipelines:
-        metrics/own_metrics:
-            exporters:
-                - otlphttp/own_metrics
-            receivers:
-                - prometheus/own_metrics
     telemetry:
         logs:
             encoding: json
         metrics:
-            address: :55555
+            readers:
+                - periodic:
+                    exporter:
+                        otlp:
+                            endpoint: localhost
+                            protocol: http/protobuf
         resource:
             service.name: otelcol
 `
