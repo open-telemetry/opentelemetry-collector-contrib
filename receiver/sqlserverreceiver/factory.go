@@ -37,9 +37,13 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		Granularity:          10,
-		MaxQuerySampleCount:  10000,
-		TopQueryCount:        200,
+		LogsConfig: LogsConfig{
+			EnableQueryTextAndPlan: true,
+			EnableQuerySample:      true,
+		},
+		Granularity:         10,
+		MaxQuerySampleCount: 10000,
+		TopQueryCount:       200,
 	}
 }
 
@@ -82,8 +86,12 @@ func setupQueries(cfg *Config) []string {
 func setupLogQueries(cfg *Config) []string {
 	var queries []string
 
-	queries = append(queries, getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.Granularity))
-	queries = append(queries, getSQLServerQuerySamplesQuery())
+	if cfg.EnableQueryTextAndPlan {
+		queries = append(queries, getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.Granularity))
+	}
+	if cfg.EnableQuerySample {
+		queries = append(queries, getSQLServerQuerySamplesQuery())
+	}
 	return queries
 }
 

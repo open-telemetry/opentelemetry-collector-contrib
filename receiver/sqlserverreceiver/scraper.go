@@ -611,7 +611,12 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			}
 		}
 
-		record.Attributes().PutStr("query_text", row["text"])
+		obfuscatedSQL, err := ObfuscateSQL(row["text"], "")
+		if err != nil {
+			s.logger.Error("failed to obfuscate query text", zap.Error(err))
+			errs = append(errs, err)
+		}
+		record.Attributes().PutStr("query_text", obfuscatedSQL)
 		record.Attributes().PutStr("query_plan", row["query_plan"])
 		record.Body().SetStr("text")
 	}

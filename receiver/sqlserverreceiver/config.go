@@ -12,10 +12,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
+type LogsConfig struct {
+	EnableQueryTextAndPlan bool `mapstructure:"enable_query_text_and_plan"`
+	EnableQuerySample      bool `mapstructure:"enable_query_sample"`
+}
+
 // Config defines configuration for a sqlserver receiver.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	LogsConfig                     `mapstructure:"logs"`
 
 	InstanceName string `mapstructure:"instance_name"`
 	ComputerName string `mapstructure:"computer_name"`
