@@ -100,6 +100,8 @@ func TestConfigS3StorageClaas(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.Enabled = false
 
 	assert.Equal(t, &Config{
 		S3Uploader: S3UploaderConfig{
@@ -110,6 +112,7 @@ func TestConfigS3StorageClaas(t *testing.T) {
 			Endpoint:     "http://endpoint.com",
 			StorageClass: "STANDARD_IA",
 		},
+		QueueSettings: queueCfg,
 		MarshalerName: "otlp_json",
 	}, e,
 	)
