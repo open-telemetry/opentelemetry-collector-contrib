@@ -52,11 +52,9 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 
 	cms := new(consumertest.MetricsSink)
 	receiver := newPrometheusReceiver(receivertest.NewNopSettings(), &Config{
-		PrometheusConfig: cfg,
-		AdjustOpts: MetricAdjusterOpts{
-			UseStartTimeMetric:   false,
-			StartTimeMetricRegex: "",
-		},
+		PrometheusConfig:         cfg,
+		UseStartTimeMetric:       false,
+		StartTimeMetricRegex:     "",
 		ReportExtraScrapeMetrics: reportExtraScrapeMetrics,
 	}, cms)
 

@@ -24,17 +24,6 @@ type Config struct {
 	PrometheusConfig   *PromConfig `mapstructure:"config"`
 	TrimMetricSuffixes bool        `mapstructure:"trim_metric_suffixes"`
 
-	// Settings for adjusting metrics. Will default to using an InitialPointAdjuster
-	// which will use the first scraped point to define the start time for the timeseries.
-	AdjustOpts MetricAdjusterOpts `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-
-	// ReportExtraScrapeMetrics - enables reporting of additional metrics for Prometheus client like scrape_body_size_bytes
-	ReportExtraScrapeMetrics bool `mapstructure:"report_extra_scrape_metrics"`
-
-	TargetAllocator *targetallocator.Config `mapstructure:"target_allocator"`
-}
-
-type MetricAdjusterOpts struct {
 	// UseStartTimeMetric enables retrieving the start time of all counter
 	// metrics from the process_start_time_seconds metric. This is only correct
 	// if all counters on that endpoint started after the process start time,
@@ -45,19 +34,10 @@ type MetricAdjusterOpts struct {
 	UseStartTimeMetric   bool   `mapstructure:"use_start_time_metric"`
 	StartTimeMetricRegex string `mapstructure:"start_time_metric_regex"`
 
-	// UseCollectorStartTimeFallback enables using a fallback start time if a
-	// start time is otherwise unavailable when adjusting metrics. This would
-	// happen if the UseStartTimeMetric is used but the application doesn't emit
-	// a process_start_time_seconds metric or a metric that matches the
-	// StartTimeMetricRegex provided.
-	//
-	// If enabled, the fallback start time used for adjusted metrics is an
-	// approximation of the collector start time.
-	//
-	// This option should be used when the collector start time is a good
-	// approximation of the process start time - for example in serverless
-	// workloads when the collector is deployed as a sidecar.
-	UseCollectorStartTimeFallback bool `mapstructure:"use_collector_start_time_fallback"`
+	// ReportExtraScrapeMetrics - enables reporting of additional metrics for Prometheus client like scrape_body_size_bytes
+	ReportExtraScrapeMetrics bool `mapstructure:"report_extra_scrape_metrics"`
+
+	TargetAllocator *targetallocator.Config `mapstructure:"target_allocator"`
 }
 
 // Validate checks the receiver configuration is valid.

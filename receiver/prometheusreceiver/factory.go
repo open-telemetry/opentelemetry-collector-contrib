@@ -33,6 +33,14 @@ var enableNativeHistogramsGate = featuregate.GlobalRegistry().MustRegister(
 		" those Prometheus classic histograms that have a native histogram alternative"),
 )
 
+var useCollectorStartTimeFallbackGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheusreceiver.UseCollectorStartTimeFallback",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver's"+
+		" start time metric adjuster will fallback to using the collector start time"+
+		" when a start time is not available"),
+)
+
 // NewFactory creates a new Prometheus receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(

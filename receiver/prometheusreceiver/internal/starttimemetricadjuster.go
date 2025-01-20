@@ -65,7 +65,7 @@ func (stma *startTimeMetricAdjuster) AdjustMetrics(metrics pmetric.Metrics) erro
 		if stma.fallbackStartTime == nil {
 			return err
 		}
-		stma.logger.Info("Couldn't get start time for metrics. Using fallback start time.", zap.Error(err))
+		stma.logger.Info("Couldn't get start time for metrics. Using fallback start time.", zap.Error(err), zap.Time("fallback_start_time", *stma.fallbackStartTime))
 		startTime = float64(stma.fallbackStartTime.Unix())
 	}
 

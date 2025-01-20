@@ -123,8 +123,8 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 	}()
 
 	var startTimeMetricRegex *regexp.Regexp
-	if r.cfg.AdjustOpts.StartTimeMetricRegex != "" {
-		startTimeMetricRegex, err = regexp.Compile(r.cfg.AdjustOpts.StartTimeMetricRegex)
+	if r.cfg.StartTimeMetricRegex != "" {
+		startTimeMetricRegex, err = regexp.Compile(r.cfg.StartTimeMetricRegex)
 		if err != nil {
 			return err
 		}
@@ -134,10 +134,10 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		r.consumer,
 		r.settings,
 		gcInterval(r.cfg.PrometheusConfig),
-		r.cfg.AdjustOpts.UseStartTimeMetric,
+		r.cfg.UseStartTimeMetric,
 		startTimeMetricRegex,
 		useCreatedMetricGate.IsEnabled(),
-		r.cfg.AdjustOpts.UseCollectorStartTimeFallback,
+		useCollectorStartTimeFallbackGate.IsEnabled(),
 		enableNativeHistogramsGate.IsEnabled(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.cfg.TrimMetricSuffixes,

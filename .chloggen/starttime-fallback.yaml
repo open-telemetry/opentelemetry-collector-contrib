@@ -7,7 +7,7 @@ change_type: enhancement
 component: prometheusreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `UseCollectorStartTimeFallback` option for the start time metric adjuster to use the collector start time as an approximation of process start time as a fallback.
+note: Add `UseCollectorStartTimeFallback` featuregate for the start time metric adjuster to use the collector start time as an approximation of process start time as a fallback.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36364]
