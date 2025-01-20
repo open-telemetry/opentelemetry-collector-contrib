@@ -1,6 +1,17 @@
 
 service:
   telemetry:
+{{if .TracesEndpoint}}
+    traces:
+      processors:
+        - batch:
+            exporter:
+              otlp:
+                protocol: http/protobuf
+                endpoint: {{.TracesEndpoint}}{{if .TracesHeaders}}
+                headers:{{range $k := .TracesHeaders}}
+                  "{{$k.Key}}": "{{$k.Value}}"{{end}}{{end}}
+{{end}}
     metrics:
       readers:
         - periodic:
@@ -10,3 +21,14 @@ service:
                 endpoint: {{.MetricsEndpoint}}{{if .MetricsHeaders}}
                 headers:{{range $k := .MetricsHeaders}}
                   "{{$k.Key}}": "{{$k.Value}}"{{end}}{{end}}
+{{if .LogsEndpoint}}
+    logs:
+      processors:
+        - batch:
+            exporter:
+              otlp:
+                protocol: http/protobuf
+                endpoint: {{.LogsEndpoint}}{{if .LogsHeaders}}
+                headers:{{range $k := .LogsHeaders}}
+                  "{{$k.Key}}": "{{$k.Value}}"{{end}}{{end}}
+{{end}}

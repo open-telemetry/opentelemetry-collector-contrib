@@ -463,6 +463,8 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 			capabilities: DefaultSupervisor().Capabilities,
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnLogs |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnTraces |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth,
 		},
@@ -479,6 +481,8 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				AcceptsOpAMPConnectionSettings: true,
 				ReportsEffectiveConfig:         true,
 				ReportsOwnMetrics:              true,
+				ReportsOwnLogs:                 true,
+				ReportsOwnTraces:               true,
 				ReportsHealth:                  true,
 				ReportsRemoteConfig:            true,
 			},
@@ -486,6 +490,8 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnLogs |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnTraces |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand |
@@ -600,6 +606,8 @@ telemetry:
 					Capabilities: Capabilities{
 						ReportsEffectiveConfig:         false,
 						ReportsOwnMetrics:              false,
+						ReportsOwnLogs:                 false,
+						ReportsOwnTraces:               false,
 						ReportsHealth:                  false,
 						AcceptsRemoteConfig:            true,
 						ReportsRemoteConfig:            true,
