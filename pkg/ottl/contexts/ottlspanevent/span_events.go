@@ -81,6 +81,8 @@ func WithCache(cache *pcommon.Map) TransformContextOption {
 	}
 }
 
+// WithEventIndex sets the index of the SpanEvent within the span, to make it accessible via the event_index property of its context.
+// The index must be greater than or equal to zero, otherwise the given val will not be applied.
 func WithEventIndex(eventIndex int64) TransformContextOption {
 	return func(p *TransformContext) {
 		if eventIndex >= 0 {
