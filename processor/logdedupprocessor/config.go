@@ -76,16 +76,16 @@ func (c Config) Validate() error {
 		return fmt.Errorf("timezone is invalid: %w", err)
 	}
 
+	if len(c.ExcludeFields) > 0 && len(c.IncludeFields) > 0 {
+		return errors.New("cannot define both exclude_fields and include_fields")
+	}
+
 	if err = c.validateExcludeFields(); err != nil {
 		return err
 	}
 
 	if err = c.validateIncludeFields(); err != nil {
 		return err
-	}
-
-	if len(c.ExcludeFields) > 0 && len(c.IncludeFields) > 0 {
-		return errors.New("cannot define both exclude_fields and include_fields")
 	}
 
 	return nil
