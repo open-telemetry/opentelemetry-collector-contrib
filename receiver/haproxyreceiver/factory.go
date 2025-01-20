@@ -43,7 +43,7 @@ func newReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewMetricsController(
 		&haProxyCfg.ControllerConfig,
 		settings,
 		consumer,
