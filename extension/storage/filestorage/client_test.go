@@ -13,7 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.etcd.io/bbolt"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -66,12 +66,12 @@ func TestClientBatchOperations(t *testing.T) {
 	})
 
 	ctx := context.Background()
-	testSetEntries := []storage.Operation{
+	testSetEntries := []*storage.Operation{
 		storage.SetOperation("testKey1", []byte("testValue1")),
 		storage.SetOperation("testKey2", []byte("testValue2")),
 	}
 
-	testGetEntries := []storage.Operation{
+	testGetEntries := []*storage.Operation{
 		storage.GetOperation("testKey1"),
 		storage.GetOperation("testKey2"),
 	}
@@ -93,7 +93,7 @@ func TestClientBatchOperations(t *testing.T) {
 	}
 
 	// Update it (the first entry should be empty and the second one removed)
-	testEntriesUpdate := []storage.Operation{
+	testEntriesUpdate := []*storage.Operation{
 		storage.SetOperation("testKey1", []byte{}),
 		storage.DeleteOperation("testKey2"),
 	}
@@ -109,7 +109,7 @@ func TestClientBatchOperations(t *testing.T) {
 	}
 
 	// Delete it all
-	testEntriesDelete := []storage.Operation{
+	testEntriesDelete := []*storage.Operation{
 		storage.DeleteOperation("testKey1"),
 		storage.DeleteOperation("testKey2"),
 	}
@@ -269,7 +269,7 @@ func TestClientReboundCompaction(t *testing.T) {
 
 			numEntries := int64(0)
 			for ; ; numEntries++ {
-				batchWrite := []storage.Operation{
+				batchWrite := []*storage.Operation{
 					storage.SetOperation(fmt.Sprintf("foo-%d", numEntries), make([]byte, entrySize)),
 					storage.SetOperation(fmt.Sprintf("bar-%d", numEntries), []byte("testValueBar")),
 				}
@@ -357,7 +357,7 @@ func TestClientConcurrentCompaction(t *testing.T) {
 	ctx := context.Background()
 
 	// Make sure the compaction conditions will be met by putting and deleting large chunk of data
-	batchWrite := []storage.Operation{
+	batchWrite := []*storage.Operation{
 		storage.SetOperation("large-payload", make([]byte, 10000000)),
 	}
 	err = client.Batch(ctx, batchWrite...)
@@ -369,7 +369,7 @@ func TestClientConcurrentCompaction(t *testing.T) {
 	clientOperationsThread := func(t *testing.T, id int) {
 		repeats := 10
 		for i := 0; i < repeats; i++ {
-			batchWrite := []storage.Operation{
+			batchWrite := []*storage.Operation{
 				storage.SetOperation(fmt.Sprintf("foo-%d-%d", id, i), make([]byte, 1000)),
 				storage.SetOperation(fmt.Sprintf("bar-%d-%d", id, i), []byte("testValueBar")),
 			}
@@ -393,7 +393,6 @@ func TestClientConcurrentCompaction(t *testing.T) {
 	}
 
 	for i := 0; i < 10; i++ {
-		i := i
 		t.Run(fmt.Sprintf("client-operations-thread-%d", i), func(t *testing.T) {
 			t.Parallel()
 			clientOperationsThread(t, i)
@@ -433,7 +432,7 @@ func BenchmarkClientGet100(b *testing.B) {
 
 	ctx := context.Background()
 
-	testEntries := make([]storage.Operation, 100)
+	testEntries := make([]*storage.Operation, 100)
 	for i := 0; i < 100; i++ {
 		testEntries[i] = storage.GetOperation(fmt.Sprintf("testKey-%d", i))
 	}
@@ -475,7 +474,7 @@ func BenchmarkClientSet100(b *testing.B) {
 	})
 	ctx := context.Background()
 
-	testEntries := make([]storage.Operation, 100)
+	testEntries := make([]*storage.Operation, 100)
 	for i := 0; i < 100; i++ {
 		testEntries[i] = storage.SetOperation(fmt.Sprintf("testKey-%d", i), []byte("testValue"))
 	}

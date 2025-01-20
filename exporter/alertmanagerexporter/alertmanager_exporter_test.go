@@ -278,7 +278,7 @@ func TestAlertManagerTracesExporterNoErrors(t *testing.T) {
 
 type (
 	MockServer struct {
-		mockserver            *httptest.Server // this means MockServer aggreagates 'httptest.Server', but can it's more like inheritance in C++
+		mockserver            *httptest.Server // this means MockServer aggregates 'httptest.Server', but can it's more like inheritance in C++
 		fooCalledSuccessfully bool             // this is false by default
 	}
 )

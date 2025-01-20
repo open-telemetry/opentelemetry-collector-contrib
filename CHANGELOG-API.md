@@ -7,6 +7,27 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.117.0
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Change OTTL contexts to properly handle `ottl.Path` with context (#29017)
+  The OTTL contexts have a new option `EnablePathContextNames` to enable support for expressing a statement's context via path names in the statement
+
+## v0.116.0
+
+### 🚩 Deprecations 🚩
+
+- `routingprocessor`: Deprecated in favor of the routing connector. (#36616)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add the `ottl.ParserCollection` utility to help handling parsers for multiple OTTL contexts (#29017)
+  The `ottl.ParserCollection` groups contexts' `ottl.Parser`s, choosing the suitable one 
+  to parse a given statement. It supports context inference using the given statements, 
+  and allows prepending the context name to the statements' paths.
+  
+
 ## v0.115.0
 
 ### 🛑 Breaking changes 🛑

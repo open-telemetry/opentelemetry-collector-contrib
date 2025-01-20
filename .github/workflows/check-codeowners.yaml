@@ -23,8 +23,8 @@ concurrency:
 jobs:
   setup-environment:
     timeout-minutes: 30
-    runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    runs-on: ubuntu-24.04
+    if: ${{ github.actor != 'dependabot[bot]' && github.repository == 'open-telemetry/opentelemetry-collector-contrib' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -42,12 +42,11 @@ jobs:
             ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
   check-codeowners:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
       - name: Gen githubgen tool
-        if: github.repository == 'open-telemetry/opentelemetry-collector-contrib'
         run: |
           make githubgen-install
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
