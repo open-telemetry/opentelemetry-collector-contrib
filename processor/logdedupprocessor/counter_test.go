@@ -22,7 +22,7 @@ func Test_newLogAggregator(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
-	aggregator := newLogAggregator(cfg.LogCountAttribute, time.UTC, telemetryBuilder)
+	aggregator := newLogAggregator(cfg.LogCountAttribute, time.UTC, telemetryBuilder, cfg.IncludeFields)
 	require.Equal(t, cfg.LogCountAttribute, aggregator.logCountAttribute)
 	require.Equal(t, time.UTC, aggregator.timezone)
 	require.NotNil(t, aggregator.resources)
@@ -44,7 +44,7 @@ func Test_logAggregatorAdd(t *testing.T) {
 	require.NoError(t, err)
 
 	// Setup aggregator
-	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder)
+	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder, nil)
 	logRecord := plog.NewLogRecord()
 
 	resource := pcommon.NewResource()
@@ -57,7 +57,7 @@ func Test_logAggregatorAdd(t *testing.T) {
 	expectedLogKey := getLogKey(logRecord, nil)
 
 	// Add logRecord
-	aggregator.Add(resource, scope, logRecord, nil)
+	aggregator.Add(resource, scope, logRecord)
 
 	// Check resourceCounter was set
 	resourceCounter, ok := aggregator.resources[expectedResourceKey]
@@ -85,7 +85,7 @@ func Test_logAggregatorAdd(t *testing.T) {
 		return secondExpectedTimestamp
 	}
 
-	aggregator.Add(resource, scope, logRecord, nil)
+	aggregator.Add(resource, scope, logRecord)
 	require.Equal(t, int64(2), lc.count)
 	require.Equal(t, secondExpectedTimestamp, lc.lastObservedTimestamp)
 }
@@ -94,12 +94,12 @@ func Test_logAggregatorReset(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
-	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder)
+	aggregator := newLogAggregator("log_count", time.UTC, telemetryBuilder, nil)
 	for i := 0; i < 2; i++ {
 		resource := pcommon.NewResource()
 		resource.Attributes().PutInt("i", int64(i))
 		key := getResourceKey(resource)
-		aggregator.resources[key] = newResourceAggregator(resource)
+		aggregator.resources[key] = newResourceAggregator(resource, nil)
 	}
 
 	require.Len(t, aggregator.resources, 2)
@@ -129,7 +129,7 @@ func Test_logAggregatorExport(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
-	aggregator := newLogAggregator(defaultLogCountAttribute, location, telemetryBuilder)
+	aggregator := newLogAggregator(defaultLogCountAttribute, location, telemetryBuilder, nil)
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr("one", "two")
 	expectedHash := pdatautil.MapHash(resource.Attributes())
@@ -139,7 +139,7 @@ func Test_logAggregatorExport(t *testing.T) {
 	logRecord := generateTestLogRecord(t, "body string")
 
 	// Add logRecord
-	aggregator.Add(resource, scope, logRecord, nil)
+	aggregator.Add(resource, scope, logRecord)
 
 	exportedLogs := aggregator.Export(context.Background())
 	require.Equal(t, 1, exportedLogs.LogRecordCount())
@@ -188,7 +188,7 @@ func Test_logAggregatorExport(t *testing.T) {
 func Test_newResourceAggregator(t *testing.T) {
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr("one", "two")
-	aggregator := newResourceAggregator(resource)
+	aggregator := newResourceAggregator(resource, nil)
 	require.NotNil(t, aggregator.scopeCounters)
 	require.Equal(t, resource, aggregator.resource)
 }
@@ -196,7 +196,7 @@ func Test_newResourceAggregator(t *testing.T) {
 func Test_newScopeCounter(t *testing.T) {
 	scope := pcommon.NewInstrumentationScope()
 	scope.Attributes().PutStr("one", "two")
-	sc := newScopeAggregator(scope)
+	sc := newScopeAggregator(scope, nil)
 	require.Equal(t, scope, sc.scope)
 	require.NotNil(t, sc.logCounters)
 }

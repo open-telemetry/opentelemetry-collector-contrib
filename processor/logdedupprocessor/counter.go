@@ -29,15 +29,17 @@ type logAggregator struct {
 	logCountAttribute string
 	timezone          *time.Location
 	telemetryBuilder  *metadata.TelemetryBuilder
+	dedupFields       []string
 }
 
 // newLogAggregator creates a new LogCounter.
-func newLogAggregator(logCountAttribute string, timezone *time.Location, telemetryBuilder *metadata.TelemetryBuilder) *logAggregator {
+func newLogAggregator(logCountAttribute string, timezone *time.Location, telemetryBuilder *metadata.TelemetryBuilder, dedupFields []string) *logAggregator {
 	return &logAggregator{
 		resources:         make(map[uint64]*resourceAggregator),
 		logCountAttribute: logCountAttribute,
 		timezone:          timezone,
 		telemetryBuilder:  telemetryBuilder,
+		dedupFields:       dedupFields,
 	}
 }
 
@@ -79,14 +81,14 @@ func (l *logAggregator) Export(ctx context.Context) plog.Logs {
 }
 
 // Add adds the logRecord to the resource aggregator that is identified by the resource attributes
-func (l *logAggregator) Add(resource pcommon.Resource, scope pcommon.InstrumentationScope, logRecord plog.LogRecord, dedupFields []string) {
+func (l *logAggregator) Add(resource pcommon.Resource, scope pcommon.InstrumentationScope, logRecord plog.LogRecord) {
 	key := getResourceKey(resource)
 	resourceAggregator, ok := l.resources[key]
 	if !ok {
-		resourceAggregator = newResourceAggregator(resource)
+		resourceAggregator = newResourceAggregator(resource, l.dedupFields)
 		l.resources[key] = resourceAggregator
 	}
-	resourceAggregator.Add(scope, logRecord, dedupFields)
+	resourceAggregator.Add(scope, logRecord)
 }
 
 // Reset resets the counter.
@@ -98,44 +100,48 @@ func (l *logAggregator) Reset() {
 type resourceAggregator struct {
 	resource      pcommon.Resource
 	scopeCounters map[uint64]*scopeAggregator
+	dedupFields   []string
 }
 
 // newResourceAggregator creates a new ResourceCounter.
-func newResourceAggregator(resource pcommon.Resource) *resourceAggregator {
+func newResourceAggregator(resource pcommon.Resource, dedupFields []string) *resourceAggregator {
 	return &resourceAggregator{
 		resource:      resource,
 		scopeCounters: make(map[uint64]*scopeAggregator),
+		dedupFields:   dedupFields,
 	}
 }
 
 // Add increments the counter that the logRecord matches.
-func (r *resourceAggregator) Add(scope pcommon.InstrumentationScope, logRecord plog.LogRecord, dedupFields []string) {
+func (r *resourceAggregator) Add(scope pcommon.InstrumentationScope, logRecord plog.LogRecord) {
 	key := getScopeKey(scope)
 	scopeAggregator, ok := r.scopeCounters[key]
 	if !ok {
-		scopeAggregator = newScopeAggregator(scope)
+		scopeAggregator = newScopeAggregator(scope, r.dedupFields)
 		r.scopeCounters[key] = scopeAggregator
 	}
-	scopeAggregator.Add(logRecord, dedupFields)
+	scopeAggregator.Add(logRecord)
 }
 
 // scopeAggregator dimensions the counter by scope.
 type scopeAggregator struct {
 	scope       pcommon.InstrumentationScope
 	logCounters map[uint64]*logCounter
+	dedupFields []string
 }
 
 // newScopeAggregator creates a new ScopeCounter.
-func newScopeAggregator(scope pcommon.InstrumentationScope) *scopeAggregator {
+func newScopeAggregator(scope pcommon.InstrumentationScope, dedupFields []string) *scopeAggregator {
 	return &scopeAggregator{
 		scope:       scope,
 		logCounters: make(map[uint64]*logCounter),
+		dedupFields: dedupFields,
 	}
 }
 
 // Add increments the counter that the logRecord matches.
-func (s *scopeAggregator) Add(logRecord plog.LogRecord, dedupFields []string) {
-	key := getLogKey(logRecord, dedupFields)
+func (s *scopeAggregator) Add(logRecord plog.LogRecord) {
+	key := getLogKey(logRecord, s.dedupFields)
 	lc, ok := s.logCounters[key]
 	if !ok {
 		lc = newLogCounter(logRecord)

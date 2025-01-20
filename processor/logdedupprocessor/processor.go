@@ -49,11 +49,10 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 
 	return &logDedupProcessor{
 		emitInterval: cfg.Interval,
-		aggregator:   newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder),
+		aggregator:   newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder, cfg.IncludeFields),
 		remover:      newFieldRemover(cfg.ExcludeFields),
 		nextConsumer: nextConsumer,
 		logger:       settings.Logger,
-		dedupFields:  cfg.IncludeFields,
 	}, nil
 }
 
@@ -130,7 +129,7 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 
 func (p *logDedupProcessor) aggregateLog(logRecord plog.LogRecord, scope pcommon.InstrumentationScope, resource pcommon.Resource) {
 	p.remover.RemoveFields(logRecord)
-	p.aggregator.Add(resource, scope, logRecord, p.dedupFields)
+	p.aggregator.Add(resource, scope, logRecord)
 }
 
 // handleExportInterval sends metrics at the configured interval.
