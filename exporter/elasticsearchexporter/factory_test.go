@@ -61,56 +61,6 @@ func TestFactory_CreateTraces(t *testing.T) {
 	require.NoError(t, exporter.Shutdown(context.Background()))
 }
 
-func TestFactory_CreateLogsAndTracesExporterWithDeprecatedIndexOption(t *testing.T) {
-	factory := NewFactory()
-	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoints = []string{"http://test:9200"}
-		cfg.Index = "test_index"
-	})
-	params := exportertest.NewNopSettings()
-	logsExporter, err := factory.CreateLogs(context.Background(), params, cfg)
-	require.NoError(t, err)
-	require.NotNil(t, logsExporter)
-	require.NoError(t, logsExporter.Shutdown(context.Background()))
-
-	tracesExporter, err := factory.CreateTraces(context.Background(), params, cfg)
-	require.NoError(t, err)
-	require.NotNil(t, tracesExporter)
-	require.NoError(t, tracesExporter.Shutdown(context.Background()))
-}
-
-func TestFactory_DedupDeprecated(t *testing.T) {
-	factory := NewFactory()
-	cfg := withDefaultConfig(func(cfg *Config) {
-		dedup := false
-		cfg.Endpoint = "http://testing.invalid:9200"
-		cfg.Mapping.Dedup = &dedup
-		cfg.Mapping.Dedot = false // avoid dedot warnings
-	})
-
-	loggerCore, logObserver := observer.New(zap.WarnLevel)
-	set := exportertest.NewNopSettings()
-	set.Logger = zap.New(loggerCore)
-
-	logsExporter, err := factory.CreateLogs(context.Background(), set, cfg)
-	require.NoError(t, err)
-	require.NoError(t, logsExporter.Shutdown(context.Background()))
-
-	tracesExporter, err := factory.CreateTraces(context.Background(), set, cfg)
-	require.NoError(t, err)
-	require.NoError(t, tracesExporter.Shutdown(context.Background()))
-
-	metricsExporter, err := factory.CreateMetrics(context.Background(), set, cfg)
-	require.NoError(t, err)
-	require.NoError(t, metricsExporter.Shutdown(context.Background()))
-
-	records := logObserver.AllUntimed()
-	assert.Len(t, records, 3)
-	assert.Equal(t, "dedup is deprecated, and is always enabled", records[0].Message)
-	assert.Equal(t, "dedup is deprecated, and is always enabled", records[1].Message)
-	assert.Equal(t, "dedup is deprecated, and is always enabled", records[2].Message)
-}
-
 func TestFactory_DedotDeprecated(t *testing.T) {
 	loggerCore, logObserver := observer.New(zap.WarnLevel)
 	set := exportertest.NewNopSettings()
