@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/logging v1.13.0
 	cloud.google.com/go/pubsub v1.45.3
 	github.com/google/go-cmp v0.6.0
+	github.com/googleapis/gax-go/v2 v2.14.1
 	github.com/iancoleman/strcase v0.3.0
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.10.0
@@ -46,7 +47,6 @@ require (
 	github.com/google/s2a-go v0.1.8 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
-	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
