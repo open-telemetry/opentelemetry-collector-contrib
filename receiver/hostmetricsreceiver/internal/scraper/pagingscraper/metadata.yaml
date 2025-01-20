@@ -1,6 +1,12 @@
-type: hostmetricsreceiver/paging
+type: paging
 
-parent: hostmetrics
+status:
+  class: scraper
+  stability:
+    beta: [metrics]
+  distributions: [core, contrib, k8s]
+  codeowners:
+    active: [dmitryax, braydonk]
 
 sem_conv_version: 1.9.0
 
