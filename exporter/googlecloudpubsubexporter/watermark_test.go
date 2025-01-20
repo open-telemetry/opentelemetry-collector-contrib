@@ -95,7 +95,7 @@ func TestEarliestLogsWatermarkOutDrift(t *testing.T) {
 	assert.Equal(t, tsBefore1m, out)
 }
 
-func TestEarliestTracessWatermarkInDrift(t *testing.T) {
+func TestEarliestTracesWatermarkInDrift(t *testing.T) {
 	out := earliestTracesWatermark(tracesData, tsRef, time.Hour)
 	assert.Equal(t, tsBefore5m, out)
 }

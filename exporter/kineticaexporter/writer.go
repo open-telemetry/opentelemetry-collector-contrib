@@ -632,7 +632,7 @@ func (kiwriter *KiWriter) persistHistogramRecord(histogramRecords []kineticaHist
 			datapoints = append(datapoints, dp)
 		}
 
-		for _, dpattr := range histogramrecord.histogramDatapointAtribute {
+		for _, dpattr := range histogramrecord.histogramDatapointAttribute {
 			datapointAttributes = append(datapointAttributes, dpattr)
 		}
 

@@ -802,6 +802,32 @@ The vSAN throughput of a virtual machine.
 | ---- | ----------- | ------ |
 | direction | The type of vSAN throughput. | Str: ``read``, ``write`` |
 
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### vcenter.host.memory.capacity
+
+Total memory  capacity of the host system.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Double | Cumulative | false |
+
+### vcenter.vm.memory.granted
+
+The amount of memory that is granted to a VM.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
