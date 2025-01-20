@@ -19,8 +19,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const name = "googlecloudpubsub"
-
 type pubsubExporter struct {
 	logger               *zap.Logger
 	client               publisherClient
@@ -35,10 +33,6 @@ type pubsubExporter struct {
 	metricsWatermarkFunc metricsWatermarkFunc
 	logsMarshaler        plog.Marshaler
 	logsWatermarkFunc    logsWatermarkFunc
-}
-
-func (*pubsubExporter) Name() string {
-	return name
 }
 
 type encoding int

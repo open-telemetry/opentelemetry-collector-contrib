@@ -18,11 +18,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func TestName(t *testing.T) {
-	exporter := &pubsubExporter{}
-	assert.Equal(t, "googlecloudpubsub", exporter.Name())
-}
-
 func TestExporterDefaultSettings(t *testing.T) {
 	ctx := context.Background()
 	// Start a fake server running locally.

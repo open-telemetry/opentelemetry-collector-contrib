@@ -46,7 +46,7 @@ func ensureExporter(params exporter.Settings, pCfg *Config) *pubsubExporter {
 	receiver = &pubsubExporter{
 		logger:           params.Logger,
 		userAgent:        strings.ReplaceAll(pCfg.UserAgent, "{{version}}", params.BuildInfo.Version),
-		ceSource:         fmt.Sprintf("/opentelemetry/collector/%s/%s", name, params.BuildInfo.Version),
+		ceSource:         fmt.Sprintf("/opentelemetry/collector/%s/%s", metadata.Type.String(), params.BuildInfo.Version),
 		config:           pCfg,
 		tracesMarshaler:  &ptrace.ProtoMarshaler{},
 		metricsMarshaler: &pmetric.ProtoMarshaler{},
