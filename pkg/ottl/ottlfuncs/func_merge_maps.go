@@ -19,7 +19,7 @@ const (
 
 type MergeMapsArguments[K any] struct {
 	Target   ottl.PMapGetter[K]
-	Source   ottl.PMapGetter[K]
+	Source   ottl.PMapSliceLikeGetter[K]
 	Strategy string
 }
 
@@ -43,7 +43,7 @@ func createMergeMapsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 //	insert: Insert the value from `source` into `target` where the key does not already exist.
 //	update: Update the entry in `target` with the value from `source` where the key does exist
 //	upsert: Performs insert or update. Insert the value from `source` into `target` where the key does not already exist and update the entry in `target` with the value from `source` where the key does exist.
-func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.PMapGetter[K], strategy string) (ottl.ExprFunc[K], error) {
+func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.PMapSliceLikeGetter[K], strategy string) (ottl.ExprFunc[K], error) {
 	if strategy != INSERT && strategy != UPDATE && strategy != UPSERT {
 		return nil, fmt.Errorf("invalid value for strategy, %v, must be 'insert', 'update' or 'upsert'", strategy)
 	}
@@ -53,10 +53,11 @@ func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.PMapGetter[K], stra
 		if err != nil {
 			return nil, err
 		}
-		valueMap, err := source.Get(ctx, tCtx)
+		valueMapSlice, err := source.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
+<<<<<<< HEAD
 		switch strategy {
 		case INSERT:
 			for k, v := range valueMap.All() {
@@ -78,7 +79,36 @@ func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.PMapGetter[K], stra
 			}
 		default:
 			return nil, fmt.Errorf("unknown strategy, %v", strategy)
+=======
+		for _, valueMap := range valueMapSlice {
+			switch strategy {
+			case INSERT:
+				valueMap.Range(func(k string, v pcommon.Value) bool {
+					if _, ok := targetMap.Get(k); !ok {
+						tv := targetMap.PutEmpty(k)
+						v.CopyTo(tv)
+					}
+					return true
+				})
+			case UPDATE:
+				valueMap.Range(func(k string, v pcommon.Value) bool {
+					if tv, ok := targetMap.Get(k); ok {
+						v.CopyTo(tv)
+					}
+					return true
+				})
+			case UPSERT:
+				valueMap.Range(func(k string, v pcommon.Value) bool {
+					tv := targetMap.PutEmpty(k)
+					v.CopyTo(tv)
+					return true
+				})
+			default:
+				return nil, fmt.Errorf("unknown strategy, %v", strategy)
+			}
+>>>>>>> bf4f61282b ([pkg/ottl] support merging multiple maps via merge_maps() function)
 		}
+
 		return nil, nil
 	}, nil
 }
