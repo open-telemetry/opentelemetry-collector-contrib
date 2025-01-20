@@ -455,10 +455,10 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 		PolicyCfgs: []PolicyCfg{
 			{
 				sharedPolicyCfg: sharedPolicyCfg{
-					Name: "never-sample",
+					Name: "sample-half",
 					Type: Probabilistic,
 					ProbabilisticCfg: ProbabilisticCfg{
-						SamplingPercentage: 0,
+						SamplingPercentage: 50,
 					},
 				},
 			},
@@ -476,22 +476,24 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 	err = proc.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	traces := simpleTraces()
-	traceID := traces.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans().AppendEmpty().TraceID()
-
-	lateSpan := ptrace.NewTraces()
-	lateSpan.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
-
 	// test
-	err = proc.ConsumeTraces(context.Background(), traces)
-	require.NoError(t, err)
+	traceIDs, batches := generateIDsAndBatches(10)
+	for _, batch := range batches {
+		err = proc.ConsumeTraces(context.Background(), batch)
+		require.NoError(t, err)
+	}
 
 	tsp := proc.(*tailSamplingSpanProcessor)
 	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
 	tsp.policyTicker.OnTick()
 
-	err = proc.ConsumeTraces(context.Background(), lateSpan)
-	require.NoError(t, err)
+	for _, traceID := range traceIDs {
+		lateSpan := ptrace.NewTraces()
+		lateSpan.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
+
+		err = proc.ConsumeTraces(context.Background(), lateSpan)
+		require.NoError(t, err)
+	}
 
 	// verify
 	var md metricdata.ResourceMetrics
@@ -503,11 +505,22 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 		Unit:        "s",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
-			DataPoints:  []metricdata.HistogramDataPoint[int64]{{}},
+			DataPoints: []metricdata.HistogramDataPoint[int64]{
+				{
+					Count:        10,
+					Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+					BucketCounts: []uint64{10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+					Min:          metricdata.NewExtrema[int64](0),
+					Max:          metricdata.NewExtrema[int64](0),
+					Sum:          0,
+				},
+			},
 		},
 	}
+
 	got := s.getMetric(m.Name, md)
-	metricdatatest.AssertEqual(t, m, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	metricdatatest.AssertEqual(t, m, got, metricdatatest.IgnoreTimestamp())
 }
 
 type testTelemetry struct {
