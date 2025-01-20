@@ -195,14 +195,13 @@ processor/routingprocessor/                                      @open-telemetry
 processor/schemaprocessor/                                       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @ankitpatel96
 processor/spanprocessor/                                         @open-telemetry/collector-contrib-approvers @boostchicken
 processor/sumologicprocessor/                                    @open-telemetry/collector-contrib-approvers @rnishtala-sumo @chan-tim-sumo
-processor/tailsamplingprocessor/                                 @open-telemetry/collector-contrib-approvers @jpkrohling
+processor/tailsamplingprocessor/                                 @open-telemetry/collector-contrib-approvers @jpkrohling @portertech
 processor/transformprocessor/                                    @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley @edmocosta
 
 receiver/activedirectorydsreceiver/                              @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/aerospikereceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock
 receiver/apachereceiver/                                         @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/apachesparkreceiver/                                    @open-telemetry/collector-contrib-approvers @Caleb-Hurshman @mrsillydog
-receiver/awscloudwatchmetricsreceiver/                           @open-telemetry/collector-contrib-approvers
 receiver/awscloudwatchreceiver/                                  @open-telemetry/collector-contrib-approvers @schmikei
 receiver/awscontainerinsightreceiver/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
 receiver/awsecscontainermetricsreceiver/                         @open-telemetry/collector-contrib-approvers @Aneurysm9
@@ -249,6 +248,7 @@ receiver/huaweicloudcesreceiver/                                 @open-telemetry
 receiver/iisreceiver/                                            @open-telemetry/collector-contrib-approvers @Mrod1598 @pjanotti
 receiver/influxdbreceiver/                                       @open-telemetry/collector-contrib-approvers @jacobmarble
 receiver/jaegerreceiver/                                         @open-telemetry/collector-contrib-approvers @yurishkuro
+receiver/jmxreceiver/                                            @open-telemetry/collector-contrib-approvers @atoulme
 receiver/journaldreceiver/                                       @open-telemetry/collector-contrib-approvers @sumo-drosiek @djaglowski
 receiver/k8sclusterreceiver/                                     @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @povilasv @ChrsMark
 receiver/k8seventsreceiver/                                      @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @ChrsMark
@@ -318,14 +318,14 @@ testbed/mockdatasenders/mockdatadogagentexporter/                @open-telemetry
 # List of distribution maintainers for OpenTelemetry Collector Contrib
 #
 #####################################################
-reports/distributions/core.yaml    @open-telemetry/collector-contrib-approvers 
-reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers 
-reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers 
 
+reports/distributions/core.yaml    @open-telemetry/collector-contrib-approvers
+reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers
+reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers
 
 ## UNMAINTAINED components
 
 exporter/kineticaexporter/                                       @open-telemetry/collector-contrib-approvers 
 exporter/opensearchexporter/                                     @open-telemetry/collector-contrib-approvers 
 extension/observer/ecstaskobserver/                              @open-telemetry/collector-contrib-approvers 
-receiver/jmxreceiver/                                            @open-telemetry/collector-contrib-approvers 
+receiver/awscloudwatchmetricsreceiver/                           @open-telemetry/collector-contrib-approvers
