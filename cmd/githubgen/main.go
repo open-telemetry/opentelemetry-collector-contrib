@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Deprecated: use https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/githubgen
 package main
 
 import (

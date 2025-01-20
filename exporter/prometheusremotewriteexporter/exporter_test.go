@@ -166,7 +166,7 @@ func Test_Start(t *testing.T) {
 	clientConfigTLS.Endpoint = "https://some.url:9411/api/prom/push"
 	clientConfigTLS.TLSSetting = configtls.ClientConfig{
 		Config: configtls.Config{
-			CAFile:   "non-existent file",
+			CAFile:   "nonexistent file",
 			CertFile: "",
 			KeyFile:  "",
 		},
@@ -999,7 +999,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	errs := prwe.handleExport(ctx, tsMap, nil)
 	assert.NoError(t, errs)
 	// Shutdown after we've written to the WAL. This ensures that our
-	// exported data in-flight will flushed flushed to the WAL before exiting.
+	// exported data in-flight will be flushed to the WAL before exiting.
 	require.NoError(t, prwe.Shutdown(ctx))
 
 	// 3. Let's now read back all of the WAL records and ensure
