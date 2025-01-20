@@ -26,12 +26,12 @@ func Test_parseSeverity(t *testing.T) {
 		{
 			name: "map from status code - error level",
 			target: ottl.StandardGetSetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return int64(400), nil
 				},
 			},
 			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return getTestSeverityMapping(), nil
 				},
 			},
@@ -40,12 +40,12 @@ func Test_parseSeverity(t *testing.T) {
 		{
 			name: "map from status code - debug level",
 			target: ottl.StandardGetSetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return int64(100), nil
 				},
 			},
 			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return getTestSeverityMapping(), nil
 				},
 			},
@@ -54,12 +54,12 @@ func Test_parseSeverity(t *testing.T) {
 		{
 			name: "map from log level string",
 			target: ottl.StandardGetSetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "inf", nil
 				},
 			},
 			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return getTestSeverityMapping(), nil
 				},
 			},
@@ -68,12 +68,12 @@ func Test_parseSeverity(t *testing.T) {
 		{
 			name: "map from log level string, multiple criteria of mixed types defined",
 			target: ottl.StandardGetSetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "inf", nil
 				},
 			},
 			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s1 := m.PutEmptySlice("error")
 					rangeMap := s1.AppendEmpty().SetEmptyMap()
@@ -92,12 +92,12 @@ func Test_parseSeverity(t *testing.T) {
 		{
 			name: "no match",
 			target: ottl.StandardGetSetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "foo", nil
 				},
 			},
 			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s := m.PutEmptySlice("info")
 					s.AppendEmpty().SetStr("info")
@@ -111,12 +111,12 @@ func Test_parseSeverity(t *testing.T) {
 		{
 			name: "unexpected type in range criteria (min), no match",
 			target: ottl.StandardGetSetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return int64(400), nil
 				},
 			},
 			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s := m.PutEmptySlice("error")
 					rangeMap := s.AppendEmpty().SetEmptyMap()
@@ -131,12 +131,12 @@ func Test_parseSeverity(t *testing.T) {
 		{
 			name: "unexpected type in target, no match",
 			target: ottl.StandardGetSetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return map[string]any{"foo": "bar"}, nil
 				},
 			},
 			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s := m.PutEmptySlice("warn")
 					rangeMap := s.AppendEmpty().SetEmptyMap()
@@ -151,12 +151,12 @@ func Test_parseSeverity(t *testing.T) {
 		{
 			name: "error in acquiring target, no match",
 			target: ottl.StandardGetSetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return nil, fmt.Errorf("oops")
 				},
 			},
 			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s := m.PutEmptySlice("warn")
 					rangeMap := s.AppendEmpty().SetEmptyMap()
@@ -171,12 +171,12 @@ func Test_parseSeverity(t *testing.T) {
 		{
 			name: "unexpected type in range criteria (max), no match",
 			target: ottl.StandardGetSetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return int64(400), nil
 				},
 			},
 			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s := m.PutEmptySlice("error")
 					rangeMap := s.AppendEmpty().SetEmptyMap()
@@ -191,12 +191,12 @@ func Test_parseSeverity(t *testing.T) {
 		{
 			name: "missing min in range, no match",
 			target: ottl.StandardGetSetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return int64(400), nil
 				},
 			},
 			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s := m.PutEmptySlice("error")
 					rangeMap := s.AppendEmpty().SetEmptyMap()
@@ -210,12 +210,12 @@ func Test_parseSeverity(t *testing.T) {
 		{
 			name: "missing max in range, no match",
 			target: ottl.StandardGetSetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return int64(400), nil
 				},
 			},
 			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					m := pcommon.NewMap()
 					s := m.PutEmptySlice("error")
 					rangeMap := s.AppendEmpty().SetEmptyMap()
@@ -229,12 +229,12 @@ func Test_parseSeverity(t *testing.T) {
 		{
 			name: "incorrect format of severity mapping, no match",
 			target: ottl.StandardGetSetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return int64(400), nil
 				},
 			},
 			mapping: ottl.StandardPMapGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "invalid", nil
 				},
 			},

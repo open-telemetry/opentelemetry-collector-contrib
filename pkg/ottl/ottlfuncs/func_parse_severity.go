@@ -32,7 +32,6 @@ func createParseSeverityFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argum
 }
 
 func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) (ottl.ExprFunc[K], error) {
-
 	return func(ctx context.Context, tCtx K) (any, error) {
 		severityMap, err := mapping.Get(ctx, tCtx)
 		if err != nil {
@@ -65,11 +64,9 @@ func validateSeverity(raw map[string]any) (map[string][]any, error) {
 	}
 
 	return s, nil
-
 }
 
 func evaluateSeverity(value any, severities map[string][]any) (string, error) {
-
 	for level, criteria := range severities {
 		match, err := evaluateSeverityMapping(value, criteria)
 		if err != nil {
