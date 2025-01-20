@@ -86,6 +86,10 @@ func (ex *pubsubExporter) shutdown(_ context.Context) error {
 }
 
 func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding encoding, data []byte, watermark time.Time) error {
+	if len(data) == 0 {
+		return nil
+	}
+
 	id, err := ex.makeUUID()
 	if err != nil {
 		return err
