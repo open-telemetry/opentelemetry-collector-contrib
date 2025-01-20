@@ -6,6 +6,7 @@ package oauth2clientauthextension
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -14,7 +15,9 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	// prepare and test
-	expected := &Config{}
+	expected := &Config{
+		ExpiryBuffer: 5 * time.Minute,
+	}
 
 	// test
 	cfg := createDefaultConfig()
