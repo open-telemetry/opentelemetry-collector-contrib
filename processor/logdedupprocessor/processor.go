@@ -32,7 +32,6 @@ type logDedupProcessor struct {
 	cancel       context.CancelFunc
 	wg           sync.WaitGroup
 	mux          sync.Mutex
-	dedupFields  []string
 }
 
 func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Settings) (*logDedupProcessor, error) {
