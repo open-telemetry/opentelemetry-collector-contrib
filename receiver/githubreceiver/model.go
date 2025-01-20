@@ -105,11 +105,23 @@ const (
 	AttributeGitHubWorkflowTriggerActorUsername = "github.workflow.trigger.actor.username" // GitHub's Triggering Actor Username
 )
 
-func (gtr *githubTracesReceiver) genServiceName() (string, error) {
-	// if config.CustomServiceName != "" {
-	// 	return config.CustomServiceName
-	// }
-	// formattedName := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(fullName, "/", "-"), "_", "-"))
-	// return fmt.Sprintf("%s%s%s", config.ServiceNamePrefix, formattedName, config.ServiceNameSuffix)
-    return "", nil
+// func (gtr *githubTracesReceiver) genServiceName(event interface{}) (string, error) {
+//     switch {
+//     case gtr.config.CustomServiceName != "":
+//         return gtr.config.CustomServiceName, nil
+//     case e.(type) == *github.WebhookEvent:
+//     }
+// 	// if config.CustomServiceName != "" {
+// 	// 	return config.CustomServiceName
+// 	// }
+// 	// formattedName := strings.ToLower(strings.ReplaceAll(strings.ReplaceAll(fullName, "/", "-"), "_", "-"))
+// 	// return fmt.Sprintf("%s%s%s", config.ServiceNamePrefix, formattedName, config.ServiceNameSuffix)
+//     return "", nil
+// }
+
+func (gtr *githubTracesReceiver) getServiceName(e interface{}) (string, error) {
+    // uses e.(type)
+    if e.(type) == *github.WorkflowRunEvent  || e.(type) == *github.WorkflowJobEvent {
+    }
+    return nil, nil
 }

@@ -5,6 +5,7 @@ package githubreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -17,8 +18,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+
 	// "go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
+	// "go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -149,13 +151,18 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
         return
     }
 
+    var rawEvent interface{}
+
+    if err :=  json.Unmarshal(p, &rawEvent); err != nil {
+        gtr.logger.Sugar().Errorf("failed to unmarshal event", zap.Error(err))
+    }
     // payload, err := github.Parse
 
     switch e := event.(type) {
     case *github.WorkflowRunEvent:
         if e.GetWorkflowRun().GetStatus() == "completed" {
-            var rawEvent []interface{}
-            event := append(rawEvent, e.GetWorkflowRun(), e.GetInstallation(), e.GetSender(), e.GetOrg(), e.GetRepo(), e.GetWorkflow())
+            // var rawEvent []interface{}
+            // event := append(rawEvent, e.GetWorkflowRun(), e.GetInstallation(), e.GetSender(), e.GetOrg(), e.GetRepo(), e.GetWorkflow())
             gtr.logger.Debug("event", zap.Any("event", event))
         }
 		// if e.GetWorkflowRun().GetStatus() != "completed" {
@@ -187,13 +194,6 @@ func (gtr *githubTracesReceiver) handleHealthCheck(w http.ResponseWriter, _ *htt
 	w.WriteHeader(http.StatusOK)
 
 	_, _ = w.Write([]byte(healthyResponse))
-}
-
-func (gtr *githubTracesReceiver) genSvcName(e interface{}) (string, error) {
-    // uses e.(type)
-    if e.(type) == *github.WorkflowRunEvent  || e.(type) == *github.WorkflowJobEvent {
-    }
-    return nil, nil
 }
 
 // maybe accept event.type here directly.
