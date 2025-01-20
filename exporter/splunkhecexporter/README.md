@@ -74,11 +74,10 @@ The following configuration options can also be configured:
 - `telemetry/enabled` (default: false): Specifies whether to enable telemetry inside splunk hec exporter.
 - `telemetry/override_metrics_names` (default: empty map): Specifies the metrics name to overrides in splunk hec exporter.
 - `telemetry/extra_attributes` (default: empty map): Specifies the extra metrics attributes in splunk hec exporter.
-- `batcher`(Experimental, disabled by default): Specifies batching configuration on the exporter. Information about the configuration can be found [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
+- `batcher`(Experimental, disabled by default): Specifies [batching configuration on the exporter](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 
 In addition, this exporter offers queued retry which is enabled by default.
-Information about queued retry configuration parameters can be found
-[here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
+For more information, see the queued retry options in the [exporter documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 <br />
 If you are getting throttled due to high volume of events the collector might experience memory issues, in those cases it is recommended to change the queued retry [configuration](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration) to drop events more frequently, for example you can reduce the maximum amount of time spent trying to send a batch from 120s (default) to 60s:
 ```yaml
@@ -145,11 +144,10 @@ exporters:
         custom_key: custom_value
 ```
 
-The full list of settings exposed for this exporter are documented [here](config.go)
-with detailed sample configurations [here](testdata/config.yaml).
+The full list of settings exposed for this exporter are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
-This exporter also offers proxy support as documented
-[here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
+This exporter also offers [proxy support](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
 
 ## Advanced Configuration
 

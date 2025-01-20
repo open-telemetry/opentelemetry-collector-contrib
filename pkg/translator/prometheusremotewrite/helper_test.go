@@ -350,6 +350,14 @@ func Test_createLabelSet(t *testing.T) {
 			getPromLabels(collidingSanitized, value11+";"+value12, label31, value31, label32, value32),
 		},
 		{
+			"existing_attribute_value_is_the_same_as_the_new_label_value",
+			pcommon.NewResource(),
+			lbsCollidingSameValue,
+			nil,
+			[]string{label31, value31, label32, value32},
+			getPromLabels(collidingSanitized, value11, label31, value31, label32, value32),
+		},
+		{
 			"sanitize_labels_starts_with_underscore",
 			pcommon.NewResource(),
 			lbs3,
