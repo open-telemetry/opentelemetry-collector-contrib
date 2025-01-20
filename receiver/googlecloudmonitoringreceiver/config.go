@@ -13,6 +13,7 @@ import (
 
 const (
 	defaultCollectionInterval = 300 * time.Second // Default value for collection interval
+	minCollectionInterval     = 60 * time.Second  // Minimum value for collection interval
 	defaultFetchDelay         = 60 * time.Second  // Default value for fetch delay
 )
 
@@ -28,8 +29,8 @@ type MetricConfig struct {
 }
 
 func (config *Config) Validate() error {
-	if config.CollectionInterval < defaultCollectionInterval {
-		return fmt.Errorf("\"collection_interval\" must be not lower than the collection interval: %v, current value is %v", defaultCollectionInterval, config.CollectionInterval)
+	if config.CollectionInterval < minCollectionInterval {
+		return fmt.Errorf("\"collection_interval\" must be not lower than the collection interval: %v, current value is %v", minCollectionInterval, config.CollectionInterval)
 	}
 
 	if len(config.MetricsList) == 0 {
