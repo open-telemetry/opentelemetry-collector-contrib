@@ -230,6 +230,8 @@ The Elasticsearch Exporter's own telemetry settings for testing and debugging pu
 
 ### Elasticsearch version compatibility
 
+- `version` (default=8): Version of target Elasticsearch
+
 The Elasticsearch Exporter uses the [go-elasticsearch](https://github.com/elastic/go-elasticsearch)
 client for communicating with Elasticsearch, and has forward compatibility with Elasticsearch 8+ by
 default. It is possible to enable best-effort support for older Elasticsearch 7.x versions by
