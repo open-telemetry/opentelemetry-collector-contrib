@@ -14,7 +14,6 @@ import (
 	"sync"
 	"time"
 
-	pubsub "cloud.google.com/go/pubsub/apiv1"
 	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -24,11 +23,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
-	"google.golang.org/api/option"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal"
 )
@@ -42,7 +36,7 @@ type pubsubReceiver struct {
 	logsConsumer       consumer.Logs
 	userAgent          string
 	config             *Config
-	client             *pubsub.SubscriberClient
+	client             internal.SubscriberClient
 	tracesUnmarshaler  ptrace.Unmarshaler
 	metricsUnmarshaler pmetric.Unmarshaler
 	logsUnmarshaler    plog.Unmarshaler
@@ -68,25 +62,6 @@ const (
 	gZip                     = iota
 )
 
-func (receiver *pubsubReceiver) generateClientOptions() (copts []option.ClientOption) {
-	if receiver.userAgent != "" {
-		copts = append(copts, option.WithUserAgent(receiver.userAgent))
-	}
-	if receiver.config.Endpoint != "" {
-		if receiver.config.Insecure {
-			var dialOpts []grpc.DialOption
-			if receiver.userAgent != "" {
-				dialOpts = append(dialOpts, grpc.WithUserAgent(receiver.userAgent))
-			}
-			conn, _ := grpc.NewClient(receiver.config.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
-			copts = append(copts, option.WithGRPCConn(conn))
-		} else {
-			copts = append(copts, option.WithEndpoint(receiver.config.Endpoint))
-		}
-	}
-	return copts
-}
-
 func (receiver *pubsubReceiver) Start(ctx context.Context, _ component.Host) error {
 	if receiver.tracesConsumer == nil && receiver.metricsConsumer == nil && receiver.logsConsumer == nil {
 		return errors.New("cannot start receiver: no consumers were specified")
@@ -94,8 +69,7 @@ func (receiver *pubsubReceiver) Start(ctx context.Context, _ component.Host) err
 
 	var startErr error
 	receiver.startOnce.Do(func() {
-		copts := receiver.generateClientOptions()
-		client, err := pubsub.NewSubscriberClient(ctx, copts...)
+		client, err := newSubscriberClient(ctx, receiver.config, receiver.userAgent)
 		if err != nil {
 			startErr = fmt.Errorf("failed creating the gRPC client to Pubsub: %w", err)
 			return
@@ -115,21 +89,18 @@ func (receiver *pubsubReceiver) Start(ctx context.Context, _ component.Host) err
 }
 
 func (receiver *pubsubReceiver) Shutdown(_ context.Context) error {
-	var err error
-	if receiver.client != nil {
-		// A canceled code means the client connection is already closed,
-		// Shutdown shouldn't return an error in that case.
-		if closeErr := receiver.client.Close(); status.Code(closeErr) != codes.Canceled {
-			err = closeErr
-		}
+	if receiver.handler != nil {
+		receiver.logger.Info("Stopping Google Pubsub receiver")
+		receiver.handler.CancelNow()
+		receiver.logger.Info("Stopped Google Pubsub receiver")
+		receiver.handler = nil
 	}
-	if receiver.handler == nil {
-		return err
+	if receiver.client == nil {
+		return nil
 	}
-	receiver.logger.Info("Stopping Google Pubsub receiver")
-	receiver.handler.CancelNow()
-	receiver.logger.Info("Stopped Google Pubsub receiver")
-	return err
+	client := receiver.client
+	receiver.client = nil
+	return client.Close()
 }
 
 func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *pubsubpb.ReceivedMessage) error {

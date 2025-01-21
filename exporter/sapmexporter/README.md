@@ -27,7 +27,7 @@ exporters:
 ```
 The SAPM exporter builds on the Jaeger proto and adds additional batching on top. This allows
 the collector to export traces from multiples nodes/services in a single batch. The SAPM proto
-and some useful related utilities can be found [here](https://github.com/signalfx/sapm-proto/).
+and some useful related utilities is in [signalfx/sapm-proto](https://github.com/signalfx/sapm-proto/).
 
 > Please review the Collector's [security
 > documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md),
@@ -38,9 +38,9 @@ and some useful related utilities can be found [here](https://github.com/signalf
 
 The following configuration options are required:
 
-- `access_token` (no default): AccessToken is the authentication token provided by Splunk Observability Cloud or
+- `access_token` (no default): AccessToken is the [authentication token provided by Splunk Observability Cloud](https://docs.splunk.com/observability/en/admin/authentication/authentication-tokens/manage-usage.html) or
 another backend that supports the SAPM proto. The access token can be obtained from the
-web app. For details on how to do so please refer the documentation [here](https://docs.splunk.com/observability/en/admin/authentication/authentication-tokens/manage-usage.html).
+web app.
 - `endpoint` (no default): This is the destination to where traces will be sent to in SAPM
 format. It must be a full URL and include the scheme, port and path e.g,
 <!-- markdown-link-check-disable-line -->https://ingest.us0.signalfx.com/v2/trace. This can be pointed to the SignalFx 
@@ -67,8 +67,7 @@ In addition to setting this option to `true`, debug logging at the Collector lev
   compressed and `compression` option is ignored.
 
 In addition, this exporter offers queued retry which is enabled by default.
-Information about queued retry configuration parameters can be found
-[here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
+For more info, see the [exporterhelper configuration parameters](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 
 Example:
 
@@ -83,8 +82,7 @@ exporters:
     log_detailed_response: true
 ```
 
-The full list of settings exposed for this exporter are documented [here](config.go)
-with detailed sample configurations [here](testdata/config.yaml).
+The full list of settings exposed for this exporter are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
-This exporter also offers proxy support as documented
-[here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
+This exporter also offers [proxy support](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
