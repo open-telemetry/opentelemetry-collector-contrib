@@ -12,6 +12,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+const (
+	// hTTP2xx is a special key that is represents a range from 200 to 299
+	hTTP2xx = "2xx"
+
+	// hTTP3xx is a special key that is represents a range from 300 to 399
+	hTTP3xx = "3xx"
+
+	// hTTP4xx is a special key that is represents a range from 400 to 499
+	hTTP4xx = "4xx"
+
+	// hTTP5xx is a special key that is represents a range from 500 to 599
+	hTTP5xx = "5xx"
+)
+
 type ParseSeverityArguments[K any] struct {
 	Target  ottl.Getter[K]
 	Mapping ottl.PMapGetter[K]
@@ -95,7 +109,10 @@ func evaluateSeverityNumberMapping(value int64, criteria []any) bool {
 		// if we have a numeric severity number, we need to match with number ranges
 		rangeMap, ok := crit.(map[string]any)
 		if !ok {
-			continue
+			rangeMap, ok = parseValueRangePlaceholder(crit)
+			if !ok {
+				continue
+			}
 		}
 		rangeMin, gotMin := rangeMap["min"]
 		rangeMax, gotMax := rangeMap["max"]
@@ -116,6 +133,38 @@ func evaluateSeverityNumberMapping(value int64, criteria []any) bool {
 		}
 	}
 	return false
+}
+
+func parseValueRangePlaceholder(crit any) (map[string]any, bool) {
+	placeholder, ok := crit.(string)
+	if !ok {
+		return nil, false
+	}
+
+	switch placeholder {
+	case hTTP2xx:
+		return map[string]any{
+			"min": int64(200),
+			"max": int64(299),
+		}, true
+	case hTTP3xx:
+		return map[string]any{
+			"min": int64(300),
+			"max": int64(399),
+		}, true
+	case hTTP4xx:
+		return map[string]any{
+			"min": int64(400),
+			"max": int64(499),
+		}, true
+	case hTTP5xx:
+		return map[string]any{
+			"min": int64(500),
+			"max": int64(599),
+		}, true
+	default:
+		return nil, false
+	}
 }
 
 func evaluateSeverityStringMapping(value string, criteria []any) bool {

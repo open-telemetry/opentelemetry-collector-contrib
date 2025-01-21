@@ -52,6 +52,23 @@ func Test_parseSeverity(t *testing.T) {
 			expected: "debug",
 		},
 		{
+			name: "map from status code based on value range",
+			target: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return int64(200), nil
+				},
+			},
+			mapping: ottl.StandardPMapGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					m := pcommon.NewMap()
+					mapping := m.PutEmptySlice("info")
+					mapping.AppendEmpty().SetStr("2xx")
+					return m, nil
+				},
+			},
+			expected: "info",
+		},
+		{
 			name: "map from log level string",
 			target: ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
@@ -292,4 +309,84 @@ func getTestSeverityMapping() pcommon.Map {
 	rangeMap5.PutInt("max", 599)
 
 	return m
+}
+
+func Test_parseValueRangePlaceholder(t *testing.T) {
+	type args struct {
+		crit any
+	}
+	tests := []struct {
+		name        string
+		args        args
+		wantMapping map[string]any
+		wantOk      bool
+	}{
+		{
+			name: "2xx",
+			args: args{
+				crit: hTTP2xx,
+			},
+			wantMapping: map[string]any{
+				"min": int64(200),
+				"max": int64(299),
+			},
+			wantOk: true,
+		},
+		{
+			name: "3xx",
+			args: args{
+				crit: hTTP3xx,
+			},
+			wantMapping: map[string]any{
+				"min": int64(300),
+				"max": int64(399),
+			},
+			wantOk: true,
+		},
+		{
+			name: "4xx",
+			args: args{
+				crit: hTTP4xx,
+			},
+			wantMapping: map[string]any{
+				"min": int64(400),
+				"max": int64(499),
+			},
+			wantOk: true,
+		},
+		{
+			name: "5xx",
+			args: args{
+				crit: hTTP5xx,
+			},
+			wantMapping: map[string]any{
+				"min": int64(500),
+				"max": int64(599),
+			},
+			wantOk: true,
+		},
+		{
+			name: "unknown",
+			args: args{
+				crit: "unknown",
+			},
+			wantMapping: nil,
+			wantOk:      false,
+		},
+		{
+			name: "not a string",
+			args: args{
+				crit: 1,
+			},
+			wantMapping: nil,
+			wantOk:      false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := parseValueRangePlaceholder(tt.args.crit)
+			assert.Equalf(t, tt.wantMapping, got, "parseValueRangePlaceholder(%v)", tt.args.crit)
+			assert.Equalf(t, tt.wantOk, got1, "parseValueRangePlaceholder(%v)", tt.args.crit)
+		})
+	}
 }
