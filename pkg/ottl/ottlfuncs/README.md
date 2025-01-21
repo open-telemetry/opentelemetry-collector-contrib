@@ -1437,9 +1437,17 @@ or an integer in the range `[200,299]`:
 
 `{"info":["inf", {"min":200, "max":299}]}`
 
+There is also support for expressing certain status code ranges via a placeholder string. The supported placeholders are the following:
+
+- `"2xx"`: This string matches integer values between `[200,299]`
+- `"3xx"`: This string matches integer values between `[300,399]`
+- `"4xx"`: This string matches integer values between `[400,499]`
+- `"5xx"`: This string matches integer values between `[500,599]`
+
 Examples:
 
 - `ParseSeverity(attributes["log-level"] {"info":["inf", {"min":200, "max":299}]})`
+- `ParseSeverity(attributes["log-level"] {"info":["2xx"]})`
 - `ParseSeverity(severity_number {"info":["inf", {"min":200, "max":299}], "error":[{"min":400, "max":499}]})`
 
 ### ParseSimplifiedXML
