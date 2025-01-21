@@ -74,6 +74,7 @@ CHECKFILE           := $(TOOLS_BIN_DIR)/checkfile
 CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
 GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report
 BUILDER             := $(TOOLS_BIN_DIR)/builder
+GITHUBGEN           := $(TOOLS_BIN_DIR)/githubgen
 GOFUMPT             := $(TOOLS_BIN_DIR)/gofumpt
 GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 GCI                 := $(TOOLS_BIN_DIR)/gci
