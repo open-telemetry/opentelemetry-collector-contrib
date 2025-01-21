@@ -10,10 +10,10 @@ require (
 	go.opentelemetry.io/collector/component v0.117.1-0.20250119231113-f07ebc3afb51
 	go.opentelemetry.io/collector/component/componenttest v0.117.1-0.20250119231113-f07ebc3afb51
 	go.opentelemetry.io/collector/config/configtelemetry v0.117.1-0.20250119231113-f07ebc3afb51
-	go.opentelemetry.io/collector/confmap v1.23.1-0.20250119231113-f07ebc3afb51
-	go.opentelemetry.io/collector/consumer v1.23.1-0.20250119231113-f07ebc3afb51
+	go.opentelemetry.io/collector/confmap v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/consumer v1.24.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/consumer/consumertest v0.117.1-0.20250119231113-f07ebc3afb51
-	go.opentelemetry.io/collector/pdata v1.23.1-0.20250119231113-f07ebc3afb51
+	go.opentelemetry.io/collector/pdata v1.24.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/processor v0.117.1-0.20250119231113-f07ebc3afb51
 	go.opentelemetry.io/collector/processor/processortest v0.117.1-0.20250119231113-f07ebc3afb51
 	go.opentelemetry.io/otel v1.32.0

@@ -14,13 +14,13 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.117.1-0.20250119231113-f07ebc3afb51
 	go.opentelemetry.io/collector/config/configgrpc v0.117.1-0.20250119231113-f07ebc3afb51
 	go.opentelemetry.io/collector/config/confighttp v0.117.1-0.20250119231113-f07ebc3afb51
-	go.opentelemetry.io/collector/config/confignet v1.23.1-0.20250119231113-f07ebc3afb51
-	go.opentelemetry.io/collector/config/configtls v1.23.1-0.20250119231113-f07ebc3afb51
-	go.opentelemetry.io/collector/confmap v1.23.1-0.20250119231113-f07ebc3afb51
-	go.opentelemetry.io/collector/consumer v1.23.1-0.20250119231113-f07ebc3afb51
+	go.opentelemetry.io/collector/config/confignet v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/config/configtls v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/confmap v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/consumer v1.24.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/consumer/consumertest v0.117.1-0.20250119231113-f07ebc3afb51
-	go.opentelemetry.io/collector/featuregate v1.23.1-0.20250119231113-f07ebc3afb51
-	go.opentelemetry.io/collector/pdata v1.23.1-0.20250119231113-f07ebc3afb51
+	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/pdata v1.24.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/pipeline v0.117.1-0.20250119231113-f07ebc3afb51
 	go.opentelemetry.io/collector/receiver v0.117.1-0.20250119231113-f07ebc3afb51
 	go.opentelemetry.io/collector/receiver/receivertest v0.117.1-0.20250119231113-f07ebc3afb51
@@ -57,10 +57,10 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/client v1.23.1-0.20250119231113-f07ebc3afb51 // indirect
+	go.opentelemetry.io/collector/client v1.24.1-0.20250121144026-bc76c3284db9 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.117.1-0.20250119231113-f07ebc3afb51 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.23.1-0.20250119231113-f07ebc3afb51 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.23.1-0.20250119231113-f07ebc3afb51 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.24.1-0.20250121144026-bc76c3284db9 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.24.1-0.20250121144026-bc76c3284db9 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.117.1-0.20250119231113-f07ebc3afb51 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.117.1-0.20250119231113-f07ebc3afb51 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.117.1-0.20250119231113-f07ebc3afb51 // indirect
