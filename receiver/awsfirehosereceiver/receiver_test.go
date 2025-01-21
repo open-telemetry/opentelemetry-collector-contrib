@@ -238,6 +238,15 @@ func testFirehoseReceiver(config *Config, consumer firehoseConsumer) *firehoseRe
 	}
 }
 
+func newTestRequest(requestBody []byte) *http.Request {
+	request := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(requestBody))
+	request.Header.Set(headerContentType, "application/json")
+	request.Header.Set(headerContentLength, strconv.Itoa(len(requestBody)))
+	request.Header.Set(headerFirehoseRequestID, testFirehoseRequestID)
+	request.Header.Set(headerFirehoseAccessKey, testFirehoseAccessKey)
+	return request
+}
+
 func testFirehoseRequest(requestID string, records []firehoseRecord) firehoseRequest {
 	return firehoseRequest{
 		RequestID: requestID,
