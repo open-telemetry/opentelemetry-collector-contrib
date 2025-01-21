@@ -18,7 +18,7 @@ jobs:
         with:
           path: opentelemetry-collector
           repository: open-telemetry/opentelemetry-collector
-      - name: Update to latest opentelemetry-collector release and push
+      - name: Update to latest opentelemetry-collector release and create a PR
         run: |
           cd opentelemetry-collector-contrib
           git config user.name opentelemetrybot
