@@ -32,8 +32,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
-type contextKey string
-
 const (
 	defaultServerTimeout = 20 * time.Second
 
@@ -60,8 +58,6 @@ const (
 	httpContentEncodingHeader = "Content-Encoding"
 	httpContentTypeHeader     = "Content-Type"
 	httpJSONTypeHeader        = "application/json"
-
-	accessTokenKey contextKey = contextKey(splunk.HecTokenLabel)
 )
 
 var (
@@ -503,7 +499,7 @@ func (r *splunkReceiver) contextWithAccessToken(parent context.Context, req *htt
 		accessToken := req.Header.Get("Authorization")
 		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
 			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
-			return context.WithValue(parent, accessTokenKey, accessTokenValue)
+			return context.WithValue(parent, splunk.HecTokenLabel, accessTokenValue)
 		}
 	}
 
