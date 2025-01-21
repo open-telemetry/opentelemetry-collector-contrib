@@ -24,11 +24,11 @@ type valueIdentifier struct {
 
 // AttributeMatcher is a attribute key/value pair to match to.
 type AttributeMatcher struct {
-	Key string
 	// If both AttributeValue and StringFilter are nil only check for key existence.
-	AttributeValue *valueIdentifier
 	// StringFilter is needed to match against a regular expression
-	StringFilter filterset.FilterSet
+	StringFilter   filterset.FilterSet
+	AttributeValue *valueIdentifier
+	Key            string
 }
 
 var errUnexpectedAttributeType = errors.New("unexpected attribute type")

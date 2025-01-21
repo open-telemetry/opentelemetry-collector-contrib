@@ -16,9 +16,9 @@ import (
 
 func Test_HasAttrKeyOnDatapoint(t *testing.T) {
 	tests := []struct {
+		input    func() pmetric.Metric
 		name     string
 		key      string
-		input    func() pmetric.Metric
 		expected bool
 	}{
 		{
@@ -135,10 +135,10 @@ func Test_HasAttrKeyOnDatapoint(t *testing.T) {
 
 func Test_HasAttrOnDatapoint(t *testing.T) {
 	tests := []struct {
+		input       func() pmetric.Metric
 		name        string
 		key         string
 		expectedVal string
-		input       func() pmetric.Metric
 		expected    bool
 	}{
 		{

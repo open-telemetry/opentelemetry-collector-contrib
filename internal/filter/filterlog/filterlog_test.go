@@ -90,8 +90,8 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 
 func TestLogRecord_Matching_False(t *testing.T) {
 	testcases := []struct {
-		name       string
 		properties *filterconfig.MatchProperties
+		name       string
 	}{
 		{
 			name: "attributes_dont_match",
@@ -164,8 +164,8 @@ func TestLogRecord_Matching_False(t *testing.T) {
 
 func TestLogRecord_Matching_True(t *testing.T) {
 	testcases := []struct {
-		name       string
 		properties *filterconfig.MatchProperties
+		name       string
 	}{
 		{
 			name: "attribute_strict_match",
@@ -242,8 +242,8 @@ func TestLogRecord_Matching_True(t *testing.T) {
 
 func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 	tests := []struct {
-		name        string
 		condition   *filterconfig.MatchConfig
+		name        string
 		logSeverity plog.SeverityNumber
 	}{
 		// Body
@@ -1323,8 +1323,8 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 
 func BenchmarkFilterlog_NewSkipExpr(b *testing.B) {
 	testCases := []struct {
-		name string
 		mc   *filterconfig.MatchConfig
+		name string
 		skip bool
 	}{
 		{

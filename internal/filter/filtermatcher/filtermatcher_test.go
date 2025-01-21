@@ -106,8 +106,8 @@ func Test_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 func Test_Matching_False(t *testing.T) {
 	version := "wrong"
 	testcases := []struct {
-		name       string
 		properties *filterconfig.MatchProperties
+		name       string
 	}{
 		{
 			name: "wrong_library_name",
@@ -236,8 +236,8 @@ func Test_Matching_True(t *testing.T) {
 	ver := "v.*"
 
 	testcases := []struct {
-		name       string
 		properties *filterconfig.MatchProperties
+		name       string
 	}{
 		{
 			name: "library_match",

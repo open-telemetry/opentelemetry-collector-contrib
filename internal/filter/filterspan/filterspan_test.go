@@ -108,8 +108,8 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 
 func TestSpan_Matching_False(t *testing.T) {
 	testcases := []struct {
-		name       string
 		properties *filterconfig.MatchProperties
+		name       string
 	}{
 		{
 			name: "service_name_doesnt_match_regexp",
@@ -204,8 +204,8 @@ func TestSpan_MissingServiceName(t *testing.T) {
 
 func TestSpan_Matching_True(t *testing.T) {
 	testcases := []struct {
-		name       string
 		properties *filterconfig.MatchProperties
+		name       string
 	}{
 		{
 			name: "service_name_match_regexp",
@@ -308,8 +308,8 @@ func TestServiceNameForResource(t *testing.T) {
 
 func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 	tests := []struct {
-		name      string
 		condition *filterconfig.MatchConfig
+		name      string
 	}{
 		// Service name
 		{
@@ -1229,8 +1229,8 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 
 func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 	testCases := []struct {
-		name string
 		mc   *filterconfig.MatchConfig
+		name string
 		skip bool
 	}{
 		{

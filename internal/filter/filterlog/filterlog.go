@@ -51,16 +51,13 @@ func NewSkipExpr(mp *filterconfig.MatchConfig) (expr.BoolExpr[ottllog.TransformC
 
 // propertiesMatcher allows matching a log record against various log record properties.
 type propertiesMatcher struct {
-	filtermatcher.PropertiesMatcher
-
 	// log bodies to compare to.
 	bodyFilters filterset.FilterSet
-
 	// log severity texts to compare to
 	severityTextFilters filterset.FilterSet
-
 	// matcher for severity number
 	severityNumberMatcher *severityNumberMatcher
+	filtermatcher.PropertiesMatcher
 }
 
 // NewMatcher creates a LogRecord Matcher that matches based on the given MatchProperties.
