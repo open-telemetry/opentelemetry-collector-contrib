@@ -35,8 +35,8 @@ require (
 	go.opentelemetry.io/collector/semconv v0.118.1-0.20250121185328-fbefb22cc2b3
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/protobuf v1.36.3
 	go.uber.org/zap/exp v0.3.0
+	google.golang.org/protobuf v1.36.3
 	gopkg.in/yaml.v2 v2.4.0
 )
 
