@@ -25,9 +25,9 @@ const (
 )
 
 type client interface {
-	// GetQueues retrieves a list of queues from the RabbitMQ API.
+	// GetQueues calls "/api/queues" endpoint to get list of queues for the target node
 	GetQueues(ctx context.Context) ([]*models.Queue, error)
-	// GetNodes retrieves a list of nodes from the RabbitMQ API.
+	// GetQueues calls "/api/nodes" endpoint to get list of nodes for the target node
 	GetNodes(ctx context.Context) ([]*models.Node, error)
 }
 
@@ -46,7 +46,7 @@ type rabbitmqCredentials struct {
 func newClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings, logger *zap.Logger) (client, error) {
 	httpClient, err := cfg.ToClient(ctx, host, settings)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP client: %w", err)
+		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
 
 	return &rabbitmqClient{
@@ -62,27 +62,32 @@ func newClient(ctx context.Context, cfg *Config, host component.Host, settings c
 
 func (c *rabbitmqClient) GetQueues(ctx context.Context) ([]*models.Queue, error) {
 	var queues []*models.Queue
+
 	if err := c.get(ctx, queuePath, &queues); err != nil {
 		c.logger.Error("Failed to retrieve queues", zap.Error(err))
 		return nil, err
 	}
+
 	return queues, nil
 }
 
 func (c *rabbitmqClient) GetNodes(ctx context.Context) ([]*models.Node, error) {
 	var nodes []*models.Node
+
 	if err := c.get(ctx, nodePath, &nodes); err != nil {
 		c.logger.Error("Failed to retrieve nodes", zap.Error(err))
 		return nil, err
 	}
+
 	return nodes, nil
 }
 
 func (c *rabbitmqClient) get(ctx context.Context, path string, respObj any) error {
+	// Construct endpoint and create request
 	url := c.hostEndpoint + path
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
-		return fmt.Errorf("failed to create GET request for path %s: %w", path, err)
+		return fmt.Errorf("failed to create get request for path %s: %w", path, err)
 	}
 
 	req.SetBasicAuth(c.creds.username, c.creds.password)
@@ -91,9 +96,11 @@ func (c *rabbitmqClient) get(ctx context.Context, path string, respObj any) erro
 	if err != nil {
 		return fmt.Errorf("failed to make HTTP request: %w", err)
 	}
+
+	// Defer body close
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
-			c.logger.Warn("Failed to close response body", zap.Error(closeErr))
+			c.logger.Warn("failed to close response body", zap.Error(closeErr))
 		}
 	}()
 
@@ -107,8 +114,9 @@ func (c *rabbitmqClient) get(ctx context.Context, path string, respObj any) erro
 		return fmt.Errorf("non-200 response code: %d", resp.StatusCode)
 	}
 
+	// Decode the payload into the passed in response object
 	if err := json.NewDecoder(resp.Body).Decode(respObj); err != nil {
-		return fmt.Errorf("failed to decode response body: %w", err)
+		return fmt.Errorf("failed to decode response payload: %w", err)
 	}
 
 	return nil
