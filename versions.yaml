@@ -102,6 +102,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/kafkatopicsobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension
