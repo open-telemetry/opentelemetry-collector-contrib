@@ -6,14 +6,14 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.117.1-0.20250117002813-e970f8bb1258
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.117.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.118.0
 	github.com/shirou/gopsutil/v4 v4.24.12
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.10.0
@@ -64,7 +64,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.117.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.118.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect

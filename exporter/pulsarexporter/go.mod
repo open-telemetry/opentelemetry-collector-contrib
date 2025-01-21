@@ -7,8 +7,8 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.65.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.117.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.118.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.118.0
 	go.opentelemetry.io/collector/component/componenttest v0.118.0

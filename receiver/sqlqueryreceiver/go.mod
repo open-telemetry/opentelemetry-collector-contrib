@@ -4,11 +4,11 @@ go 1.22.0
 
 require (
 	github.com/docker/go-connections v0.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.117.1-0.20250117002813-e970f8bb1258
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.117.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.118.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.35.0
 	go.opentelemetry.io/collector/component v0.118.0
@@ -122,8 +122,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.117.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.118.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
