@@ -1,6 +1,6 @@
 type: rabbitmq
 
-tests:
+tests:              # generated_component_test.go looking for test.config from metadata.yaml
   config:
     endpoint: "http://localhost:15672"
     username: "testuser"
