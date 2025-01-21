@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.24
 	github.com/docker/docker v27.5.0+incompatible
 	github.com/hashicorp/consul/api v1.31.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.117.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.118.0
 	github.com/shirou/gopsutil/v4 v4.24.12
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/semconv v0.118.0
