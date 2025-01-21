@@ -9,12 +9,12 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.118.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250121144026-bc76c3284db9
-	go.opentelemetry.io/collector/config/configtls v1.24.1-0.20250121144026-bc76c3284db9
-	go.opentelemetry.io/collector/confmap v1.24.1-0.20250121144026-bc76c3284db9
-	go.opentelemetry.io/collector/consumer v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/config/configtls v1.24.0
+	go.opentelemetry.io/collector/confmap v1.24.0
+	go.opentelemetry.io/collector/consumer v1.24.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/filter v0.118.1-0.20250121144026-bc76c3284db9
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/pdata v1.24.0
 	go.opentelemetry.io/collector/receiver v0.118.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/scraper v0.118.1-0.20250121144026-bc76c3284db9
@@ -76,7 +76,7 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.24.1-0.20250121144026-bc76c3284db9 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.24.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250121144026-bc76c3284db9 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.118.1-0.20250121144026-bc76c3284db9 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.118.1-0.20250121144026-bc76c3284db9 // indirect

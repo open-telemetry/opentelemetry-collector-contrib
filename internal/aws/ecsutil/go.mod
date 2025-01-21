@@ -25,15 +25,15 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	go.opentelemetry.io/collector/client v1.24.1-0.20250121144026-bc76c3284db9 // indirect
+	go.opentelemetry.io/collector/client v1.24.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.118.1-0.20250121144026-bc76c3284db9 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.24.1-0.20250121144026-bc76c3284db9 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.24.1-0.20250121144026-bc76c3284db9 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.24.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.24.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250121144026-bc76c3284db9 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.24.1-0.20250121144026-bc76c3284db9 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.24.0 // indirect
 	go.opentelemetry.io/collector/extension v0.118.1-0.20250121144026-bc76c3284db9 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.118.1-0.20250121144026-bc76c3284db9 // indirect
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250121144026-bc76c3284db9 // indirect
+	go.opentelemetry.io/collector/pdata v1.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect

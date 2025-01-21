@@ -10,10 +10,10 @@ require (
 	go.opentelemetry.io/collector/component v0.118.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250121144026-bc76c3284db9
-	go.opentelemetry.io/collector/confmap v1.24.1-0.20250121144026-bc76c3284db9
-	go.opentelemetry.io/collector/consumer v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/confmap v1.24.0
+	go.opentelemetry.io/collector/consumer v1.24.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250121144026-bc76c3284db9
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/pdata v1.24.0
 	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/processor v0.118.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/processor/processortest v0.118.1-0.20250121144026-bc76c3284db9
@@ -63,7 +63,7 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.118.1-0.20250121144026-bc76c3284db9 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.118.1-0.20250121144026-bc76c3284db9 // indirect
-	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250121144026-bc76c3284db9 // indirect
+	go.opentelemetry.io/collector/featuregate v1.24.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.118.1-0.20250121144026-bc76c3284db9 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.118.1-0.20250121144026-bc76c3284db9 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.118.1-0.20250121144026-bc76c3284db9 // indirect

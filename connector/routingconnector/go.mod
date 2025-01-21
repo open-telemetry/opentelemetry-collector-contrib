@@ -6,15 +6,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.117.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.117.1-0.20250117002813-e970f8bb1258
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/client v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/client v1.24.0
 	go.opentelemetry.io/collector/component v0.118.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250121144026-bc76c3284db9
-	go.opentelemetry.io/collector/confmap v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/confmap v1.24.0
 	go.opentelemetry.io/collector/connector v0.118.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/connector/connectortest v0.118.1-0.20250121144026-bc76c3284db9
-	go.opentelemetry.io/collector/consumer v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/consumer v1.24.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250121144026-bc76c3284db9
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/pdata v1.24.0
 	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250121144026-bc76c3284db9
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0

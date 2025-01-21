@@ -10,13 +10,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.117.1-0.20250117002813-e970f8bb1258
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.35.0
-	go.opentelemetry.io/collector/client v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/client v1.24.0
 	go.opentelemetry.io/collector/component v0.118.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250121144026-bc76c3284db9
-	go.opentelemetry.io/collector/consumer v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/consumer v1.24.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.118.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250121144026-bc76c3284db9
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/pdata v1.24.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.118.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/receiver v0.118.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250121144026-bc76c3284db9
