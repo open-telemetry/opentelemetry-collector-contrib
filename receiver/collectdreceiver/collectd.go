@@ -17,25 +17,25 @@ import (
 )
 
 type collectDRecord struct {
-	Dsnames        []*string      `json:"dsnames"`
-	Dstypes        []*string      `json:"dstypes"`
+	Time           *float64       `json:"time"`
 	Host           *string        `json:"host"`
 	Interval       *float64       `json:"interval"`
 	Plugin         *string        `json:"plugin"`
 	PluginInstance *string        `json:"plugin_instance"`
-	Time           *float64       `json:"time"`
 	TypeS          *string        `json:"type"`
 	TypeInstance   *string        `json:"type_instance"`
-	Values         []*json.Number `json:"values"`
 	Message        *string        `json:"message"`
 	Meta           map[string]any `json:"meta"`
 	Severity       *string        `json:"severity"`
+	Dstypes        []*string      `json:"dstypes"`
+	Dsnames        []*string      `json:"dsnames"`
+	Values         []*json.Number `json:"values"`
 }
 
 type createMetricInfo struct {
-	Name   string
 	DsType *string
 	Val    *json.Number
+	Name   string
 }
 
 func (cdr *collectDRecord) isEvent() bool {

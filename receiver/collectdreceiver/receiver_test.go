@@ -25,22 +25,22 @@ import (
 )
 
 type wantedBody struct {
+	Attributes map[string]string
 	Name       string
 	Time       float64
-	Attributes map[string]string
 	Value      float64
 }
 
 func TestNewReceiver(t *testing.T) {
 	type args struct {
+		nextConsumer consumer.Metrics
 		config       *Config
 		attrsPrefix  string
-		nextConsumer consumer.Metrics
 	}
 	tests := []struct {
-		name    string
 		args    args
 		wantErr error
+		name    string
 	}{
 		{
 			name: "happy path",
@@ -71,8 +71,8 @@ func TestCollectDServer(t *testing.T) {
 		HTTPMethod   string
 		QueryParams  string
 		RequestBody  string
-		ResponseCode int
 		WantData     []pmetric.Metrics
+		ResponseCode int
 	}
 
 	config := &Config{

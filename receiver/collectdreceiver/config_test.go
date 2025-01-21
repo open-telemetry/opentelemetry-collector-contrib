@@ -22,9 +22,9 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id       component.ID
 		expected component.Config
 		wantErr  error
+		id       component.ID
 	}{
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
