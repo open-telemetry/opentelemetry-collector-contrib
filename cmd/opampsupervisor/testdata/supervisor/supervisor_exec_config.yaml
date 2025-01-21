@@ -14,10 +14,8 @@ storage:
 
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
-  # args:
-  #   - simple-arg
   config_files: 
-    - './testdata/collector/simple.yaml'
-  # env:
-  #   SOME: envi
-  #   HERE: same
+    - './testdata/collector/simple_pipeline_env.yaml'
+  env:
+    OUT_FILE: '{{.outputLogFile}}'
+    IN_FILE: '{{.inputLogFile}}'

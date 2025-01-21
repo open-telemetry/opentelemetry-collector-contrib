@@ -324,10 +324,9 @@ func TestSupervisorStartsCollectorWithNoOpAMPServer(t *testing.T) {
 	require.True(t, connected.Load(), "Supervisor failed to connect")
 }
 
-func TestSupervisorStartsCollectorWithNoOpAMPServerExecParams(t *testing.T) {
+func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 	storageDir := t.TempDir()
 	remoteConfigFilePath := filepath.Join(storageDir, "last_recv_remote_config.dat")
-
 	cfg, hash, healthcheckPort := createHealthCheckCollectorConf(t)
 	remoteConfigProto := &protobufs.AgentRemoteConfig{
 		Config: &protobufs.AgentConfigMap{
@@ -342,23 +341,43 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerExecParams(t *testing.T) {
 
 	require.NoError(t, os.WriteFile(remoteConfigFilePath, marshalledRemoteConfig, 0o600))
 
-	connected := atomic.Bool{}
-	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
-		OnConnected: func(ctx context.Context, conn types.Connection) {
-			connected.Store(true)
-		},
-	})
-	defer server.shutdown()
+	var agentConfig atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						agentConfig.Store(string(config.Body))
+					}
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	inputFile, err := os.CreateTemp(storageDir, "input.log")
+	require.NoError(t, err)
+	t.Cleanup(func() { inputFile.Close() })
+
+	outputFile, err := os.CreateTemp(storageDir, "output.log")
+	require.NoError(t, err)
+	t.Cleanup(func() { outputFile.Close() })
 
 	s := newSupervisor(t, "exec_config", map[string]string{
-		"url":         server.addr,
-		"storage_dir": storageDir,
+		"url":           server.addr,
+		"storage_dir":   storageDir,
+		"inputLogFile":  inputFile.Name(),
+		"outputLogFile": outputFile.Name(),
 	})
 
 	require.Nil(t, s.Start())
 	defer s.Shutdown()
 
-	// Verify the collector runs eventually by pinging the healthcheck extension
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
 	require.Eventually(t, func() bool {
 		resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
 		if err != nil {
@@ -373,13 +392,16 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerExecParams(t *testing.T) {
 		return true
 	}, 3*time.Second, 100*time.Millisecond)
 
-	// Start the server and wait for the supervisor to connect
-	server.start()
+	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
+	require.NotZero(t, n, "Could not write to input file")
+	require.NoError(t, err)
 
-	// Verify supervisor connects to server
-	waitForSupervisorConnection(server.supervisorConnected, true)
+	require.Eventually(t, func() bool {
+		logRecord := make([]byte, 1024)
+		n, _ := outputFile.Read(logRecord)
 
-	require.True(t, connected.Load(), "Supervisor failed to connect")
+		return n != 0
+	}, 20*time.Second, 500*time.Millisecond, "Log never appeared in output")
 }
 
 func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {

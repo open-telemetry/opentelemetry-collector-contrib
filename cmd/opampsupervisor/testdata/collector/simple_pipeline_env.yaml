@@ -1,11 +1,12 @@
 receivers:
   filelog:
-    include: [in.yaml]
+    include: 
+      - ${IN_FILE}
     start_at: "beginning"
 
 exporters:
   file:
-    path: out.yaml
+    path: ${OUT_FILE}
 
 service:
   pipelines:
