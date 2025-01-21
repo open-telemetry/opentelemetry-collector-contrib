@@ -120,7 +120,7 @@ resourceMetrics:
           - description: Response from zookeeper ruok command
             gauge:
               dataPoints:
-                - asInt: "0"
+                - asInt: "1"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: zookeeper.ruok
@@ -144,5 +144,5 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{znodes}'
         scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper
           version: latest

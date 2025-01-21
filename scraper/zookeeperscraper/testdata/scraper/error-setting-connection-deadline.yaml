@@ -117,6 +117,14 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{requests}'
+          - description: Response from zookeeper ruok command
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: zookeeper.ruok
+            unit: "1"
           - description: Number of watches placed on Z-Nodes on a ZooKeeper server.
             name: zookeeper.watch.count
             sum:
@@ -136,5 +144,5 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{znodes}'
         scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper
           version: latest
