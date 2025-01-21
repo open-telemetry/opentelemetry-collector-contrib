@@ -4,7 +4,7 @@ go 1.22.7
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.131
+	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.132
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.117.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.117.1-0.20250117002813-e970f8bb1258
 	github.com/stretchr/testify v1.10.0
