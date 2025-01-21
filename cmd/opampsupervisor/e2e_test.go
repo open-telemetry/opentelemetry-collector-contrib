@@ -1671,8 +1671,8 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 	server := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
-		server.ConnectionCallbacksStruct{
-			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				select {
 				case agentIDChan <- message.InstanceUid:
 				default:
