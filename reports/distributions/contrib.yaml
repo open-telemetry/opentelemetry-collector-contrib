@@ -213,3 +213,4 @@ components:
         - process
         - processes
         - system
+        - zookeeper

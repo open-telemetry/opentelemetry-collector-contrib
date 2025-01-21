@@ -311,6 +311,7 @@ body:
       - receiver/windowsperfcounters
       - receiver/zipkin
       - receiver/zookeeper
+      - scraper/zookeeperscraper
       - testbed
       - testbed/mockdatasenders/mockdatadogagentexporter
       # End Collector components list
