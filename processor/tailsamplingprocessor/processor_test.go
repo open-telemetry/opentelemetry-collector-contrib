@@ -398,10 +398,10 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 }
 
 func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
-	s := setupTestTelemetry()
-	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 	msp := new(consumertest.TracesSink)
+	s := metadatatest.SetupTelemetry()
+	ct := s.NewSettings()
 
 	cfg := Config{
 		DecisionWait: defaultTestDecisionWait,
@@ -418,11 +418,6 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 			withDecisionBatcher(idb),
 		},
 	}
-	s := metadatatest.SetupTelemetry()
-	ct := s.NewSettings()
-	idb := newSyncIDBatcher()
-	msp := new(consumertest.TracesSink)
-
 	p, err := newTracesProcessor(context.Background(), ct, msp, cfg)
 	require.NoError(t, err)
 
@@ -478,6 +473,11 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 }
 
 func TestSetSamplingPolicy(t *testing.T) {
+	s := metadatatest.SetupTelemetry()
+	ct := s.NewSettings()
+	idb := newSyncIDBatcher()
+	msp := new(consumertest.TracesSink)
+
 	cfg := Config{
 		DecisionWait: defaultTestDecisionWait,
 		NumTraces:    defaultNumTraces,
@@ -489,13 +489,11 @@ func TestSetSamplingPolicy(t *testing.T) {
 				},
 			},
 		},
+		Options: []Option{
+			withDecisionBatcher(idb),
+		},
 	}
-	s := metadatatest.SetupTelemetry()
-	ct := s.NewSettings()
-	idb := newSyncIDBatcher()
-	msp := new(consumertest.TracesSink)
-
-	p, err := newTracesProcessor(context.Background(), ct, msp, cfg, withDecisionBatcher(idb))
+	p, err := newTracesProcessor(context.Background(), ct, msp, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
