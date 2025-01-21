@@ -62,9 +62,9 @@ git add .
 git commit -m "make gotidy changes ${CANDIDATE_BETA}" || (echo "no gotidy changes to commit")
 make otelcontribcol
 
-git push origin "${BRANCH}"
+git push --set-upstream origin "${BRANCH}"
 
-gh pr create --title "[chore] Prepare release ${CANDIDATE_BETA}" --body "
+gh pr create --head "$(git branch --show-current)" --title "[chore] Prepare release ${CANDIDATE_BETA}" --body "
 The following commands were run to prepare this release:
 - make chlog-update VERSION=v${CANDIDATE_BETA}
 - sed -i.bak s/${CURRENT_BETA_ESCAPED}/${CANDIDATE_BETA}/g versions.yaml

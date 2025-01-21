@@ -12,7 +12,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	pubsub "cloud.google.com/go/pubsub/apiv1"
 	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
@@ -27,7 +26,7 @@ type StreamHandler struct {
 	pushMessage func(ctx context.Context, message *pubsubpb.ReceivedMessage) error
 	acks        []string
 	mutex       sync.Mutex
-	client      *pubsub.SubscriberClient
+	client      SubscriberClient
 
 	clientID     string
 	subscription string
@@ -53,7 +52,7 @@ func (handler *StreamHandler) ack(ackID string) {
 func NewHandler(
 	ctx context.Context,
 	logger *zap.Logger,
-	client *pubsub.SubscriberClient,
+	client SubscriberClient,
 	clientID string,
 	subscription string,
 	callback func(ctx context.Context, message *pubsubpb.ReceivedMessage) error,
