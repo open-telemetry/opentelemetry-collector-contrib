@@ -329,7 +329,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServer(t *testing.T) {
 func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 	storageDir := t.TempDir()
 
-	//create remote config to check agent's health
+	// create remote config to check agent's health
 	remoteConfigFilePath := filepath.Join(storageDir, "last_recv_remote_config.dat")
 	cfg, hash, healthcheckPort := createHealthCheckCollectorConf(t)
 	remoteConfigProto := &protobufs.AgentRemoteConfig{
