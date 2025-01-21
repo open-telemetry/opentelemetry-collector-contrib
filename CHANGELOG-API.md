@@ -7,6 +7,21 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.118.0
+
+### 🛑 Breaking changes 🛑
+
+- `routingconnector`: Change `match_once` parameter from `bool` to `*bool`. (#29882)
+  Boolean values should still unmarshal successfully, but direct instantiation in code will fail.
+  The change allows us to check for usage and warn of the upcoming removal in v0.120.0.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Enhanced error messages for invalid cache access and introduced options to configure their values within the OTTL contexts. (#29017)
+- `pkg/ottl`: Add value expression parser that enables components using ottl to retrieve values from the output of an expression (#35621)
+  the expression can be either a literal value, a path value within the context, or the result of a converter and/or a mathematical expression.
+
 ## v0.117.0
 
 ### 💡 Enhancements 💡

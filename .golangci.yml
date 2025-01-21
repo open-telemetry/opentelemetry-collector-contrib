@@ -75,7 +75,6 @@ linters-settings:
     # TODO: Enable this and fix the alignment issues.
     disable:
       - fieldalignment
-      - loopclosure
 
   revive:
     # minimal confidence for issues, default is 0.8
@@ -219,7 +218,6 @@ linters:
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
-    # Exclude some linters from running on tests files.
     - text: "G404:"
       linters:
         - gosec

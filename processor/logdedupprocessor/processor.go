@@ -48,7 +48,7 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 
 	return &logDedupProcessor{
 		emitInterval: cfg.Interval,
-		aggregator:   newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder),
+		aggregator:   newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder, cfg.IncludeFields),
 		remover:      newFieldRemover(cfg.ExcludeFields),
 		nextConsumer: nextConsumer,
 		logger:       settings.Logger,

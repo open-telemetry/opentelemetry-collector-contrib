@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/me
 go 1.22.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.117.1-0.20250117002813-e970f8bb1258
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.117.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.118.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.23.1-0.20250117002813-e970f8bb1258
-	go.opentelemetry.io/collector/semconv v0.117.1-0.20250117002813-e970f8bb1258
+	go.opentelemetry.io/collector/pdata v1.24.0
+	go.opentelemetry.io/collector/semconv v0.118.0
 )
 
 require (
@@ -25,7 +25,7 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 // indirect
 	google.golang.org/grpc v1.69.4 // indirect
-	google.golang.org/protobuf v1.36.2 // indirect
+	google.golang.org/protobuf v1.36.3 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

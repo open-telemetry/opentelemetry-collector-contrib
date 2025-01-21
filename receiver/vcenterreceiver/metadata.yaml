@@ -413,6 +413,15 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+  vcenter.host.memory.capacity:
+    enabled: false
+    description: Total memory  capacity of the host system.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: double
+      aggregation_temporality: cumulative
+    attributes: []
   vcenter.host.network.throughput:
     enabled: true
     description: The amount of data that was transmitted or received over the network by the host.
@@ -562,6 +571,15 @@ metrics:
   vcenter.vm.memory.ballooned:
     enabled: true
     description: The amount of memory that is ballooned due to virtualization.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.vm.memory.granted:
+    enabled: false
+    description: The amount of memory that is granted to a VM.
     unit: MiBy
     sum:
       monotonic: false
@@ -721,3 +739,4 @@ metrics:
     gauge:
       value_type: int
     attributes: [vsan_latency_type]
+ 
