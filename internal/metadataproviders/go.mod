@@ -4,8 +4,8 @@ go 1.22.0
 
 require (
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go-v2 v1.32.8
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.23
+	github.com/aws/aws-sdk-go-v2 v1.33.0
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.24
 	github.com/docker/docker v27.5.0+incompatible
 	github.com/hashicorp/consul/api v1.31.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.117.0

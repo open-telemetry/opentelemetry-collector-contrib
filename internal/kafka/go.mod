@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/IBM/sarama v1.45.0
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.0
-	github.com/aws/aws-sdk-go v1.55.5
+	github.com/aws/aws-sdk-go v1.55.6
 	github.com/stretchr/testify v1.10.0
 	github.com/xdg-go/scram v1.1.2
 	go.opentelemetry.io/collector/config/configtls v1.23.1-0.20250119231113-f07ebc3afb51
