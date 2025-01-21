@@ -4,9 +4,11 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/hex"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -617,7 +619,18 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			errs = append(errs, err)
 		}
 		record.Attributes().PutStr("query_text", obfuscatedSQL)
+
+		// TODO: remove this
 		record.Attributes().PutStr("query_plan", row["query_plan"])
+
+		// obfuscate query plan
+		obfuscatedQueryPlan, err := ObfuscateXMLPlan(row["query_plan"])
+		if err != nil {
+			s.logger.Error("failed to obfuscate query plan", zap.Error(err))
+			errs = append(errs, err)
+		}
+		record.Attributes().PutStr("normalized_query_plan", obfuscatedQueryPlan)
+
 		record.Body().SetStr("text")
 	}
 
@@ -809,6 +822,73 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	}
 
 	return logs, errors.Join(errs...)
+}
+
+var XMLPlanObfuscationAttrs = []string{
+	"StatementText",
+	"ConstValue",
+	"ScalarString",
+	"ParameterCompiledValue",
+}
+
+// ObfuscateXMLPlan obfuscates SQL text & parameters from the provided SQL Server XML Plan
+func ObfuscateXMLPlan(rawPlan string) (string, error) {
+	decoder := xml.NewDecoder(strings.NewReader(rawPlan))
+	var buffer bytes.Buffer
+	encoder := xml.NewEncoder(&buffer)
+
+	for {
+		token, err := decoder.Token()
+		if err != nil {
+			if err.Error() == "EOF" {
+				break
+			}
+			return "", err
+		}
+
+		switch elem := token.(type) {
+		case xml.StartElement:
+			// Process start element
+			for i := range elem.Attr {
+				for _, attrName := range XMLPlanObfuscationAttrs {
+					if elem.Attr[i].Name.Local == attrName {
+						val, err := ObfuscateSQL(elem.Attr[i].Value, "")
+						if err != nil {
+							return "", err
+						}
+						elem.Attr[i].Value = val
+					}
+				}
+			}
+			err := encoder.EncodeToken(elem)
+			if err != nil {
+				return "", err
+			}
+		case xml.CharData:
+			// Trim whitespace
+			elem = bytes.TrimSpace(elem)
+			err := encoder.EncodeToken(elem)
+			if err != nil {
+				return "", err
+			}
+		case xml.EndElement:
+			err := encoder.EncodeToken(elem)
+			if err != nil {
+				return "", err
+			}
+		default:
+			err := encoder.EncodeToken(token)
+			if err != nil {
+				return "", err
+			}
+		}
+	}
+
+	err := encoder.Flush()
+	if err != nil {
+		return "", err
+	}
+	return buffer.String(), nil
 }
 
 func (s *sqlServerScraperHelper) cacheAndDiff(queryHash string, queryPlanHash string, column string, val float64) (bool, float64) {
