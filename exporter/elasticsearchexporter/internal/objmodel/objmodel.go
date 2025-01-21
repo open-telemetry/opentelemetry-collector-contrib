@@ -5,8 +5,8 @@
 // JSON documents.
 //
 // The JSON parsing in Elasticsearch does not support parsing JSON documents
-// with duplicate fields. The fields in the docuemt can be sort and duplicate entries
-// can be removed before serializing. Deduplication ensures that ambigious
+// with duplicate fields. The fields in the document can be sort and duplicate entries
+// can be removed before serializing. Deduplication ensures that ambiguous
 // events can still be indexed.
 //
 // With attributes map encoded as a list of key value
@@ -218,12 +218,12 @@ func (doc *Document) sort() {
 // The filtering only keeps the last value for a key.
 //
 // Dedup ensure that keys are sorted.
-func (doc *Document) Dedup(appendValueOnConflict bool) {
+func (doc *Document) Dedup() {
 	// 1. Always ensure the fields are sorted, Dedup support requires
 	// Fields to be sorted.
 	doc.sort()
 
-	// 2. rename fields if a primitive value is overwritten by an object if appendValueOnConflict.
+	// 2. rename fields if a primitive value is overwritten by an object.
 	//    For example the pair (path.x=1, path.x.a="test") becomes:
 	//    (path.x.value=1, path.x.a="test").
 	//
@@ -236,18 +236,16 @@ func (doc *Document) Dedup(appendValueOnConflict bool) {
 	//    field in favor of the `value` field in the document.
 	//
 	//    This step removes potential conflicts when dedotting and serializing fields.
-	if appendValueOnConflict {
-		var renamed bool
-		for i := 0; i < len(doc.fields)-1; i++ {
-			key, nextKey := doc.fields[i].key, doc.fields[i+1].key
-			if len(key) < len(nextKey) && strings.HasPrefix(nextKey, key) && nextKey[len(key)] == '.' {
-				renamed = true
-				doc.fields[i].key = key + ".value"
-			}
+	var renamed bool
+	for i := 0; i < len(doc.fields)-1; i++ {
+		key, nextKey := doc.fields[i].key, doc.fields[i+1].key
+		if len(key) < len(nextKey) && strings.HasPrefix(nextKey, key) && nextKey[len(key)] == '.' {
+			renamed = true
+			doc.fields[i].key = key + ".value"
 		}
-		if renamed {
-			doc.sort()
-		}
+	}
+	if renamed {
+		doc.sort()
 	}
 
 	// 3. mark duplicates as 'ignore'
@@ -262,7 +260,7 @@ func (doc *Document) Dedup(appendValueOnConflict bool) {
 
 	// 4. fix objects that might be stored in arrays
 	for i := range doc.fields {
-		doc.fields[i].value.Dedup(appendValueOnConflict)
+		doc.fields[i].value.Dedup()
 	}
 }
 
@@ -277,19 +275,19 @@ func newJSONVisitor(w io.Writer) *json.Visitor {
 // Serialize writes the document to the given writer. The serializer will create nested objects if dedot is true.
 //
 // NOTE: The documented MUST be sorted if dedot is true.
-func (doc *Document) Serialize(w io.Writer, dedot bool, otel bool) error {
+func (doc *Document) Serialize(w io.Writer, dedot bool) error {
 	v := newJSONVisitor(w)
-	return doc.iterJSON(v, dedot, otel)
+	return doc.iterJSON(v, dedot)
 }
 
-func (doc *Document) iterJSON(v *json.Visitor, dedot bool, otel bool) error {
+func (doc *Document) iterJSON(v *json.Visitor, dedot bool) error {
 	if dedot {
-		return doc.iterJSONDedot(v, otel)
+		return doc.iterJSONDedot(v)
 	}
-	return doc.iterJSONFlat(v, otel)
+	return doc.iterJSONFlat(v)
 }
 
-func (doc *Document) iterJSONFlat(w *json.Visitor, otel bool) error {
+func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 	err := w.OnObjectStart(-1, structform.AnyType)
 	if err != nil {
 		return err
@@ -308,7 +306,7 @@ func (doc *Document) iterJSONFlat(w *json.Visitor, otel bool) error {
 			return err
 		}
 
-		if err := fld.value.iterJSON(w, true, otel); err != nil {
+		if err := fld.value.iterJSON(w, true); err != nil {
 			return err
 		}
 	}
@@ -316,20 +314,7 @@ func (doc *Document) iterJSONFlat(w *json.Visitor, otel bool) error {
 	return nil
 }
 
-// Under OTel mode, set of key prefixes where keys should be flattened from that level,
-// such that a document (root or not) with fields {"attributes.a.b": 1} will be serialized as {"attributes": {"a.b": 1}}
-// It is not aware of whether it is a root document or sub-document.
-// NOTE: This works very delicately with the implementation of OTel mode that
-// e.g. resource.attributes is a "resource" objmodel.Document under the root document that contains attributes
-// added using AddAttributes func as flattened keys.
-// Therefore, there will be correctness issues when attributes are added / used in other ways, but it is working
-// for current use cases and the proper fix will be slightly too complex. YAGNI.
-var otelPrefixSet = map[string]struct{}{
-	"attributes.": {},
-	"metrics.":    {},
-}
-
-func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
+func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 	objPrefix := ""
 	level := 0
 
@@ -381,15 +366,6 @@ func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
 
 		// increase object level up to current field
 		for {
-			// Otel mode serialization
-			if otel {
-				// Check the prefix
-				_, isOtelPrefix := otelPrefixSet[objPrefix]
-				if isOtelPrefix {
-					break
-				}
-			}
-
 			start := len(objPrefix)
 			idx := strings.IndexByte(key[start:], '.')
 			if idx < 0 {
@@ -412,7 +388,7 @@ func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
 		if err := w.OnKey(fieldName); err != nil {
 			return err
 		}
-		if err := fld.value.iterJSON(w, true, otel); err != nil {
+		if err := fld.value.iterJSON(w, true); err != nil {
 			return err
 		}
 	}
@@ -500,13 +476,13 @@ func (v *Value) sort() {
 // Dedup recursively dedups keys in stored documents.
 //
 // NOTE: The value MUST be sorted.
-func (v *Value) Dedup(appendValueOnConflict bool) {
+func (v *Value) Dedup() {
 	switch v.kind {
 	case KindObject:
-		v.doc.Dedup(appendValueOnConflict)
+		v.doc.Dedup()
 	case KindArr:
 		for i := range v.arr {
-			v.arr[i].Dedup(appendValueOnConflict)
+			v.arr[i].Dedup()
 		}
 	}
 }
@@ -524,7 +500,7 @@ func (v *Value) IsEmpty() bool {
 	}
 }
 
-func (v *Value) iterJSON(w *json.Visitor, dedot bool, otel bool) error {
+func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
 	switch v.kind {
 	case KindNil:
 		return w.OnNil()
@@ -549,18 +525,18 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool, otel bool) error {
 		if len(v.doc.fields) == 0 {
 			return w.OnNil()
 		}
-		return v.doc.iterJSON(w, dedot, otel)
+		return v.doc.iterJSON(w, dedot)
 	case KindUnflattenableObject:
 		if len(v.doc.fields) == 0 {
 			return w.OnNil()
 		}
-		return v.doc.iterJSON(w, true, otel)
+		return v.doc.iterJSON(w, true)
 	case KindArr:
 		if err := w.OnArrayStart(-1, structform.AnyType); err != nil {
 			return err
 		}
 		for i := range v.arr {
-			if err := v.arr[i].iterJSON(w, dedot, otel); err != nil {
+			if err := v.arr[i].iterJSON(w, dedot); err != nil {
 				return err
 			}
 		}

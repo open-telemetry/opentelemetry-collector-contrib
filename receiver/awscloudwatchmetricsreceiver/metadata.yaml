@@ -3,7 +3,7 @@ type: awscloudwatchmetrics
 status:
   class: receiver
   stability:
-    development: [metrics]
+    unmaintained: [metrics]
   distributions: []
   codeowners:
     active: []
