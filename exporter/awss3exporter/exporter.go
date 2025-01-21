@@ -19,11 +19,11 @@ import (
 )
 
 type s3Exporter struct {
-	config     *Config
-	signalType string
 	uploader   upload.Manager
-	logger     *zap.Logger
 	marshaler  marshaler
+	config     *Config
+	logger     *zap.Logger
+	signalType string
 }
 
 func newS3Exporter(

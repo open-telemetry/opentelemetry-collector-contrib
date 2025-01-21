@@ -124,9 +124,9 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 
 func TestConfig_Validate(t *testing.T) {
 	tests := []struct {
-		name        string
-		config      *Config
 		errExpected error
+		config      *Config
+		name        string
 	}{
 		{
 			// endpoint overrides region and bucket name.

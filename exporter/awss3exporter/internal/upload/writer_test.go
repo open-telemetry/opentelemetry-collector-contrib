@@ -35,11 +35,11 @@ func TestS3ManagerUpload(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name        string
 		handler     func(t *testing.T) http.Handler
+		name        string
 		compression configcompression.Type
-		data        []byte
 		errVal      string
+		data        []byte
 	}{
 		{
 			name: "successful upload",

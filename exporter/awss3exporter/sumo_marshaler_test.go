@@ -125,8 +125,8 @@ func TestMarshalerQuotes(t *testing.T) {
 func TestAttributeValueToString(t *testing.T) {
 	testCases := []struct {
 		value  pcommon.Value
-		result string
 		init   func(pcommon.Value)
+		result string
 	}{
 		{
 			value:  pcommon.NewValueBool(true),
