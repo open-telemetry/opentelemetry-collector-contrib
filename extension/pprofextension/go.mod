@@ -5,13 +5,13 @@ go 1.22.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.117.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.117.1-0.20250119231113-f07ebc3afb51
-	go.opentelemetry.io/collector/component/componentstatus v0.117.1-0.20250119231113-f07ebc3afb51
-	go.opentelemetry.io/collector/component/componenttest v0.117.1-0.20250119231113-f07ebc3afb51
+	go.opentelemetry.io/collector/component v0.118.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/component/componentstatus v0.118.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/config/confignet v1.24.1-0.20250121144026-bc76c3284db9
 	go.opentelemetry.io/collector/confmap v1.24.1-0.20250121144026-bc76c3284db9
-	go.opentelemetry.io/collector/extension v0.117.1-0.20250119231113-f07ebc3afb51
-	go.opentelemetry.io/collector/extension/extensiontest v0.117.1-0.20250119231113-f07ebc3afb51
+	go.opentelemetry.io/collector/extension v0.118.1-0.20250121144026-bc76c3284db9
+	go.opentelemetry.io/collector/extension/extensiontest v0.118.1-0.20250121144026-bc76c3284db9
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -30,10 +30,10 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.117.1-0.20250119231113-f07ebc3afb51 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250121144026-bc76c3284db9 // indirect
 	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250121144026-bc76c3284db9 // indirect
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250121144026-bc76c3284db9 // indirect
-	go.opentelemetry.io/collector/pipeline v0.117.1-0.20250119231113-f07ebc3afb51 // indirect
+	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250121144026-bc76c3284db9 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
