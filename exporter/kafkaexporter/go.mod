@@ -36,7 +36,7 @@ require (
 require (
 	github.com/apache/thrift v0.21.0 // indirect
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.0 // indirect
-	github.com/aws/aws-sdk-go v1.55.5 // indirect
+	github.com/aws/aws-sdk-go v1.55.6 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.19.0 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.28 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.27 // indirect
