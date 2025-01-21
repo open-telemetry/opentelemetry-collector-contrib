@@ -3,10 +3,10 @@ resourceMetrics:
       attributes:
         - key: server.state
           value:
-            stringValue: leader
+            stringValue: standalone
         - key: zk.version
           value:
-            stringValue: 3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653
+            stringValue: 3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf
     scopeMetrics:
       - metrics:
           - description: Number of active clients connected to a ZooKeeper server.
@@ -32,7 +32,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "107"
+                - asInt: "27"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -49,30 +49,20 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "54"
+                - asInt: "26"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{file_descriptors}'
-          - description: The number of followers. Only exposed by the leader.
-            name: zookeeper.follower.count
+          - description: Number of times fsync duration has exceeded warning threshold.
+            name: zookeeper.fsync.exceeded_threshold.count
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: synced
+                - asInt: "0"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: "1"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: unsynced
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: '{followers}'
+              isMonotonic: true
+            unit: '{events}'
           - description: Average time in milliseconds for requests to be processed.
             gauge:
               dataPoints:
@@ -135,15 +125,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: zookeeper.ruok
             unit: "1"
-          - description: The number of pending syncs from the followers. Only exposed by the leader.
-            name: zookeeper.sync.pending
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: '{syncs}'
           - description: Number of watches placed on Z-Nodes on a ZooKeeper server.
             name: zookeeper.watch.count
             sum:
@@ -158,10 +139,10 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "5"
+                - asInt: "4"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{znodes}'
         scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper
           version: latest
