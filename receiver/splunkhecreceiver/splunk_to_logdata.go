@@ -29,7 +29,7 @@ const (
 var errCannotConvertValue = errors.New("cannot convert field value to attribute")
 
 // splunkHecToLogData transforms splunk events into logs
-func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pcommon.Resource), config *Config) (plog.Logs, error) {
+func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, config *Config) (plog.Logs, error) {
 	ld := plog.NewLogs()
 	scopeLogsMap := make(map[[4]string]plog.ScopeLogs)
 	for _, event := range events {
@@ -41,9 +41,6 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 			sl = rl.ScopeLogs().AppendEmpty()
 			scopeLogsMap[key] = sl
 			appendSplunkMetadata(rl, config.HecToOtelAttrs, event.Host, event.Source, event.SourceType, event.Index)
-			if resourceCustomizer != nil {
-				resourceCustomizer(rl.Resource())
-			}
 		}
 
 		// The SourceType field is the most logical "name" of the event.
@@ -75,14 +72,11 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 }
 
 // splunkHecRawToLogData transforms raw splunk event into log
-func splunkHecRawToLogData(bodyReader io.Reader, query url.Values, resourceCustomizer func(pcommon.Resource), config *Config, timestamp pcommon.Timestamp) (plog.Logs, int, error) {
+func splunkHecRawToLogData(bodyReader io.Reader, query url.Values, config *Config, timestamp pcommon.Timestamp) (plog.Logs, int, error) {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 
 	appendSplunkMetadata(rl, config.HecToOtelAttrs, query.Get(host), query.Get(source), query.Get(sourcetype), query.Get(index))
-	if resourceCustomizer != nil {
-		resourceCustomizer(rl.Resource())
-	}
 	sl := rl.ScopeLogs().AppendEmpty()
 	if config.Splitting == SplittingStrategyNone {
 		b, err := io.ReadAll(bodyReader)

@@ -90,11 +90,8 @@ func (c *client) pushMetricsData(
 	defer c.wg.Done()
 
 	localHeaders := map[string]string{}
-	if md.ResourceMetrics().Len() != 0 {
-		accessToken, found := md.ResourceMetrics().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
-		if found {
-			localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
-		}
+	if accessToken, ok := ctx.Value(splunk.HecTokenLabel).(string); ok {
+		localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken
 	}
 
 	if c.config.UseMultiMetricFormat {
@@ -111,11 +108,8 @@ func (c *client) pushTraceData(
 	defer c.wg.Done()
 
 	localHeaders := map[string]string{}
-	if td.ResourceSpans().Len() != 0 {
-		accessToken, found := td.ResourceSpans().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
-		if found {
-			localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
-		}
+	if accessToken, ok := ctx.Value(splunk.HecTokenLabel).(string); ok {
+		localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken
 	}
 
 	return c.pushTracesDataInBatches(ctx, td, localHeaders)
@@ -130,11 +124,8 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 	}
 
 	localHeaders := map[string]string{}
-
-	// All logs in a batch have the same access token after batchperresourceattr, so we can just check the first one.
-	accessToken, found := ld.ResourceLogs().At(0).Resource().Attributes().Get(splunk.HecTokenLabel)
-	if found {
-		localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken.Str()
+	if accessToken, ok := ctx.Value(splunk.HecTokenLabel).(string); ok {
+		localHeaders["Authorization"] = splunk.HECTokenHeader + " " + accessToken
 	}
 
 	// All logs in a batch have only one type (regular or profiling logs) after perScopeBatcher,

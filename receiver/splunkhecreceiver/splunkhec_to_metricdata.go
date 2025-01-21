@@ -18,7 +18,7 @@ import (
 // splunkHecToMetricsData converts Splunk HEC metric points to
 // pmetric.Metrics. Returning the converted data and the number of
 // dropped time series.
-func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pcommon.Resource), config *Config) (pmetric.Metrics, int) {
+func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, config *Config) (pmetric.Metrics, int) {
 	numDroppedTimeSeries := 0
 	md := pmetric.NewMetrics()
 	scopeMetricsMap := make(map[[4]string]pmetric.ScopeMetrics)
@@ -77,9 +77,6 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 			}
 			if event.Index != "" {
 				attrs.PutStr(config.HecToOtelAttrs.Index, event.Index)
-			}
-			if resourceCustomizer != nil {
-				resourceCustomizer(resourceMetrics.Resource())
 			}
 		}
 		metrics.MoveAndAppendTo(sm.Metrics())

@@ -32,6 +32,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
+type contextKey string
+
 const (
 	defaultServerTimeout = 20 * time.Second
 
@@ -58,6 +60,8 @@ const (
 	httpContentEncodingHeader = "Content-Encoding"
 	httpContentTypeHeader     = "Content-Type"
 	httpJSONTypeHeader        = "application/json"
+
+	accessTokenKey contextKey = contextKey(splunk.HecTokenLabel)
 )
 
 var (
@@ -302,7 +306,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		defer r.gzipReaderPool.Put(reader)
 	}
 
-	resourceCustomizer := r.createResourceCustomizer(req)
+	ctx = r.contextWithAccessToken(ctx, req)
 	query := req.URL.Query()
 	var timestamp pcommon.Timestamp
 	if query.Has(queryTime) {
@@ -317,7 +321,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		timestamp = pcommon.NewTimestampFromTime(time.Unix(t, 0))
 	}
 
-	ld, slLen, err := splunkHecRawToLogData(bodyReader, query, resourceCustomizer, r.config, timestamp)
+	ld, slLen, err := splunkHecRawToLogData(bodyReader, query, r.config, timestamp)
 	if err != nil {
 		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, err)
 		return
@@ -457,9 +461,9 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			events = append(events, &msg)
 		}
 	}
-	resourceCustomizer := r.createResourceCustomizer(req)
+	ctx = r.contextWithAccessToken(ctx, req)
 	if r.logsConsumer != nil && len(events) > 0 {
-		ld, err := splunkHecToLogData(r.settings.Logger, events, resourceCustomizer, r.config)
+		ld, err := splunkHecToLogData(r.settings.Logger, events, r.config)
 		if err != nil {
 			r.failRequest(resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
 			return
@@ -473,7 +477,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		}
 	}
 	if r.metricsConsumer != nil && len(metricEvents) > 0 {
-		md, _ := splunkHecToMetricsData(r.settings.Logger, metricEvents, resourceCustomizer, r.config)
+		md, _ := splunkHecToMetricsData(r.settings.Logger, metricEvents, r.config)
 		ctx = r.obsrecv.StartMetricsOp(ctx)
 		decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
 		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(metricEvents), nil)
@@ -494,17 +498,16 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 }
 
-func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pcommon.Resource) {
+func (r *splunkReceiver) contextWithAccessToken(parent context.Context, req *http.Request) context.Context {
 	if r.config.AccessTokenPassthrough {
 		accessToken := req.Header.Get("Authorization")
 		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
 			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
-			return func(resource pcommon.Resource) {
-				resource.Attributes().PutStr(splunk.HecTokenLabel, accessTokenValue)
-			}
+			return context.WithValue(parent, accessTokenKey, accessTokenValue)
 		}
 	}
-	return nil
+
+	return parent
 }
 
 func (r *splunkReceiver) failRequest(

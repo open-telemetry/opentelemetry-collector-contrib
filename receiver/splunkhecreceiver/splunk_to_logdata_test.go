@@ -330,7 +330,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 	n := len(tests)
 	for _, tt := range tests[n-1:] {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := splunkHecToLogData(zap.NewNop(), tt.events, func(_ pcommon.Resource) {}, tt.hecConfig)
+			result, err := splunkHecToLogData(zap.NewNop(), tt.events, tt.hecConfig)
 			assert.Equal(t, tt.wantErr, err)
 			require.Equal(t, tt.output.Len(), result.ResourceLogs().Len())
 			for i := 0; i < result.ResourceLogs().Len(); i++ {
@@ -476,7 +476,7 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, slLen, err := splunkHecRawToLogData(tt.sc, tt.query, func(_ pcommon.Resource) {}, tt.config, tt.time)
+			result, slLen, err := splunkHecRawToLogData(tt.sc, tt.query, tt.config, tt.time)
 			require.NoError(t, err)
 			tt.assertResource(t, result, slLen)
 		})
