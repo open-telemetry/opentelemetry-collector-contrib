@@ -171,6 +171,29 @@ agent:
 
 ```
 
+**Note:**
+
+Please be aware, that with the usage of `.agent.config_files` parameter, the configuration
+files pased via this parameter are applied after the configuration passed from the OpAMP server.
+
+The following configuration
+
+```yaml
+agent:
+  executable: ./otel-binary
+  config_files: 
+    - './custom-config.yaml'
+    - './another-custom-config.yaml'
+```
+
+results to the following startup parameters of the collector process:
+
+```shell
+./otel-binary --config opamp-config.yaml --config custom-config.yaml --config another-custom-config.yaml
+```
+
+where in case of conflicts in the configuration files, the latest applied value takes precedence.
+
 ### Operation When OpAMP Server is Unavailable
 
 When the supervisor cannot connect to the OpAMP server, the collector will

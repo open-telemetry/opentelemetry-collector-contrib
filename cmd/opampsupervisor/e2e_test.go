@@ -328,6 +328,8 @@ func TestSupervisorStartsCollectorWithNoOpAMPServer(t *testing.T) {
 
 func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 	storageDir := t.TempDir()
+
+	//create remote config to check agent's health
 	remoteConfigFilePath := filepath.Join(storageDir, "last_recv_remote_config.dat")
 	cfg, hash, healthcheckPort := createHealthCheckCollectorConf(t)
 	remoteConfigProto := &protobufs.AgentRemoteConfig{
@@ -343,6 +345,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 
 	require.NoError(t, os.WriteFile(remoteConfigFilePath, marshalledRemoteConfig, 0o600))
 
+	// create server
 	var agentConfig atomic.Value
 	server := newOpAMPServer(
 		t,
@@ -360,6 +363,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 			},
 		})
 
+	// create input and output log files for checking the config passed via config_files param
 	inputFile, err := os.CreateTemp(storageDir, "input.log")
 	require.NoError(t, err)
 	t.Cleanup(func() { inputFile.Close() })
@@ -368,6 +372,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { outputFile.Close() })
 
+	// fill env variables passed via parameters which are used in the collector config passed via config_files param
 	s := newSupervisor(t, "exec_config", map[string]string{
 		"url":           server.addr,
 		"storage_dir":   storageDir,
@@ -380,6 +385,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
+	// check health
 	require.Eventually(t, func() bool {
 		resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
 		if err != nil {
@@ -394,6 +400,7 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 		return true
 	}, 3*time.Second, 100*time.Millisecond)
 
+	// check that collector uses filelog receiver and file exporter from config passed via config_files param
 	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
 	require.NotZero(t, n, "Could not write to input file")
 	require.NoError(t, err)

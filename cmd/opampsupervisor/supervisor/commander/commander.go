@@ -84,7 +84,7 @@ func (c *Commander) Start(ctx context.Context) error {
 	c.args = append(c.args, c.cfg.Arguments...)
 
 	c.cmd = exec.CommandContext(ctx, c.cfg.Executable, c.args...) // #nosec G204
-	c.cmd.Env = mapToStringSlice(c.cfg.Env)
+	c.cmd.Env = envVarMapToEnvMapSlice(c.cfg.Env)
 	c.cmd.SysProcAttr = sysProcAttrs()
 
 	// PassthroughLogging changes how collector start up happens
@@ -120,7 +120,7 @@ func (c *Commander) Restart(ctx context.Context) error {
 	return c.Start(ctx)
 }
 
-func mapToStringSlice(m map[string]string) []string {
+func envVarMapToEnvMapSlice(m map[string]string) []string {
 	var result []string
 	for key, value := range m {
 		result = append(result, key+"="+value)
