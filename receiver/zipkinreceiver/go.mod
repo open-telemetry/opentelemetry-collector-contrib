@@ -21,7 +21,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.117.1-0.20250119231113-f07ebc3afb51
 	go.opentelemetry.io/collector/semconv v0.117.1-0.20250119231113-f07ebc3afb51
 	go.uber.org/goleak v1.3.0
-	google.golang.org/protobuf v1.36.2
+	google.golang.org/protobuf v1.36.3
 )
 
 require (
