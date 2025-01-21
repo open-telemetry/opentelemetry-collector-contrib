@@ -5,11 +5,11 @@ go 1.22.7
 require (
 	github.com/elastic/go-docappender/v2 v2.3.3
 	github.com/gorilla/mux v1.8.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.117.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.118.0
 	github.com/shirou/gopsutil/v4 v4.24.12
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.118.0
@@ -94,24 +94,24 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.117.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.117.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.118.0 // indirect
 	github.com/openzipkin/zipkin-go v0.4.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
