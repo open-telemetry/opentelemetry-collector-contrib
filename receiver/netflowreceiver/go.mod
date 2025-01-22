@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/receiver v0.118.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250121185328-fbefb22cc2b3
-	go.opentelemetry.io/collector/semconv v0.118.0
+	go.opentelemetry.io/collector/semconv v0.118.1-0.20250121185328-fbefb22cc2b3
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
