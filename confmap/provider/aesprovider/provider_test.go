@@ -14,11 +14,11 @@ import (
 
 func TestAESCredentialProvider(t *testing.T) {
 	tests := []struct {
+		envVars       map[string]string
 		name          string
 		configValue   string
 		expectedValue string
 		expectedError string
-		envVars       map[string]string
 	}{
 		{
 			name:          "Valid type, key, JSON value",

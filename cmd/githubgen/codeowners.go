@@ -205,7 +205,7 @@ func (cg codeownersGenerator) getGithubMembers() (map[string]struct{}, error) {
 	if githubToken == "" {
 		return nil, fmt.Errorf("Set the environment variable `GITHUB_TOKEN` to a PAT token to authenticate")
 	}
-	client := github.NewTokenClient(context.Background(), githubToken)
+	client := github.NewClient(nil).WithAuthToken(githubToken)
 	var allUsers []*github.User
 	pageIndex := 0
 	for {
