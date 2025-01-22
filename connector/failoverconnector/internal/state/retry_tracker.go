@@ -43,7 +43,7 @@ func (r *RetryTracker) FailedRetry(idx int) {
 	(&r.trackers[idx]).modifyRetryCount(r.maxRetries, r.retryBackoff)
 }
 
-func (r *RetryTracker) SuccessfullRetry(idx int) {
+func (r *RetryTracker) SuccessfulRetry(idx int) {
 	(&r.trackers[idx]).resetCount()
 }
 
