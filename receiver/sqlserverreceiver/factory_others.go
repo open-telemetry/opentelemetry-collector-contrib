@@ -56,7 +56,7 @@ func createLogsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewLogsScraperControllerReceiver(
+	return scraperhelper.NewLogsController(
 		&cfg.ControllerConfig,
 		params,
 		logsConsumer,

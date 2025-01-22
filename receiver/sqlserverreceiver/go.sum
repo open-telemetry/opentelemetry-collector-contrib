@@ -186,6 +186,10 @@ github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjY
 github.com/mtibben/percent v0.2.1 h1:5gssi8Nqo8QU/r2pynCm+hBQHpkB/uNK7BJCFogWdzs=
 github.com/mtibben/percent v0.2.1/go.mod h1:KG9uO+SZkUp+VkRHsCdYQV3XSZrrSpR3O9ibNBTZrns=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
+github.com/open-telemetry/opentelemetry-collector/scraper v0.118.1-0.20250122041641-6740a28a8003 h1:TOjwS5r2mUxmB28mIIW0SLaF0pjKj8IOLqGNbaMXN2g=
+github.com/open-telemetry/opentelemetry-collector/scraper v0.118.1-0.20250122041641-6740a28a8003/go.mod h1:DCe7eXqtYYThhqak16SyvnIoQc3ctsJy7I+6G3OygjQ=
+github.com/open-telemetry/opentelemetry-collector/scraper/scraperhelper v0.118.1-0.20250122041641-6740a28a8003 h1:cN8mrh4IIUo5rMoozxpAIaD0GdF37hAX7+D4agkgbSw=
+github.com/open-telemetry/opentelemetry-collector/scraper/scraperhelper v0.118.1-0.20250122041641-6740a28a8003/go.mod h1:ebFOfIqci6dKt45yYN7wpqA1RWEw/Y9RfK2bbp3wYFY=
 github.com/outcaste-io/ristretto v0.2.1 h1:KCItuNIGJZcursqHr3ghO7fc5ddZLEHspL9UR0cQM64=
 github.com/outcaste-io/ristretto v0.2.1/go.mod h1:W8HywhmtlopSB1jeMg3JtdIhf+DYkLAr0VN/s4+MHac=
 github.com/pierrec/lz4/v4 v4.1.18 h1:xaKrnTkyoqfh1YItXl56+6KJNVYWlEEPuAQW9xsplYQ=
@@ -200,10 +204,6 @@ github.com/rogpeppe/go-internal v1.13.1 h1:KvO1DLK/DRN07sQ1LQKScxyZJuNnedQ5/wKSR
 github.com/rogpeppe/go-internal v1.13.1/go.mod h1:uMEvuHeurkdAXX61udpOXGD/AzZDWNMNyH2VO9fmH0o=
 github.com/sijms/go-ora/v2 v2.8.23 h1:9k4VOty9Nv/Uy8aUqqO90DdRY5pDjKb+QnQ6uimZLiM=
 github.com/sijms/go-ora/v2 v2.8.23/go.mod h1:QgFInVi3ZWyqAiJwzBQA+nbKYKH77tdp1PYoCqhR2dU=
-github.com/sincejune/opentelemetry-collector/scraper v0.0.0-20250110122906-d5e7f845f417 h1:Zn9s1ykaxIN/96u+39Aje0W2pCDn/A2cmBMh4GnHw/U=
-github.com/sincejune/opentelemetry-collector/scraper v0.0.0-20250110122906-d5e7f845f417/go.mod h1:6dM+85+aNPWfu63H+m8ZZutxDYCrWVXJ1yylR0jB9kA=
-github.com/sincejune/opentelemetry-collector/scraper/scraperhelper v0.0.0-20250110122906-d5e7f845f417 h1:79eDxYr2FlpZWtPqGhSNRxoiZqn2RMnZytNxcLv8qAM=
-github.com/sincejune/opentelemetry-collector/scraper/scraperhelper v0.0.0-20250110122906-d5e7f845f417/go.mod h1:zt7M+HIlYJHdnFC5smM8AaczZevVHYkaG1yjnq26/i8=
 github.com/sirupsen/logrus v1.7.0/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
 github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=

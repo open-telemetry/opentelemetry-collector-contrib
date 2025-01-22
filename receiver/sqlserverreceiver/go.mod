@@ -151,9 +151,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery => ../../internal/sqlquery
 
-replace go.opentelemetry.io/collector/scraper => github.com/sincejune/opentelemetry-collector/scraper v0.0.0-20250110122906-d5e7f845f417
+replace go.opentelemetry.io/collector/scraper => github.com/open-telemetry/opentelemetry-collector/scraper v0.118.1-0.20250122041641-6740a28a8003
 
-//
-//replace go.opentelemetry.io/collector/receiver/scraperhelper => github.com/sincejune/opentelemetry-collector/scraper/scraperhelper v0.0.0-20250110122906-d5e7f845f417
-//
-replace go.opentelemetry.io/collector/scraper/scraperhelper => github.com/sincejune/opentelemetry-collector/scraper/scraperhelper v0.0.0-20250110122906-d5e7f845f417
+replace go.opentelemetry.io/collector/scraper/scraperhelper => github.com/open-telemetry/opentelemetry-collector/scraper/scraperhelper v0.118.1-0.20250122041641-6740a28a8003

@@ -4,6 +4,7 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -244,10 +245,10 @@ func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.Contr
 // Note: This method will fail silently if there is no work to do. This is an acceptable use case
 // as this receiver can still get information on Windows from performance counters without a direct
 // connection. Messages will be logged at the INFO level in such cases.
-func setupLogsScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.ScraperControllerOption, error) {
+func setupLogsScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.ControllerOption, error) {
 	sqlServerScrapers := setupSQLServerLogsScrapers(params, cfg)
 
-	var opts []scraperhelper.ScraperControllerOption
+	var opts []scraperhelper.ControllerOption
 	for _, sqlScraper := range sqlServerScrapers {
 		s, err := scraper.NewLogs(sqlScraper.ScrapeLogs,
 			scraper.WithStart(sqlScraper.Start),
@@ -256,7 +257,11 @@ func setupLogsScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.S
 			return nil, err
 		}
 
-		opt := scraperhelper.AddLogsScraper(metadata.Type, s)
+		opt := scraperhelper.AddFactoryWithConfig(
+			scraper.NewFactory(metadata.Type, nil,
+				scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
+					return s, nil
+				}, component.StabilityLevelAlpha)), nil)
 		opts = append(opts, opt)
 	}
 

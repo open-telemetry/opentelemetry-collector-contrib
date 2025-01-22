@@ -514,5 +514,5 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension => ../../extension/storage/redisstorageextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver => ../../receiver/huaweicloudcesreceiver
 
-  - go.opentelemetry.io/collector/scraper => github.com/sincejune/opentelemetry-collector/scraper v0.0.0-20250110122906-d5e7f845f417
-  - go.opentelemetry.io/collector/scraper/scraperhelper => github.com/sincejune/opentelemetry-collector/scraper/scraperhelper v0.0.0-20250110122906-d5e7f845f417
+  - go.opentelemetry.io/collector/scraper => github.com/open-telemetry/opentelemetry-collector/scraper v0.118.1-0.20250122041641-6740a28a8003
+  - go.opentelemetry.io/collector/scraper/scraperhelper => github.com/open-telemetry/opentelemetry-collector/scraper/scraperhelper v0.118.1-0.20250122041641-6740a28a8003
