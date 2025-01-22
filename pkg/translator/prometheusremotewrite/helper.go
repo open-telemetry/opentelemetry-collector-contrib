@@ -47,6 +47,7 @@ var exportCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Feature gate used to control the deprecation of created metrics."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35003"),
+	featuregate.WithRegisterToVersion("v0.118.0"),
 )
 
 type bucketBoundsData struct {
