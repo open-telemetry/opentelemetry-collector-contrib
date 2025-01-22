@@ -319,7 +319,7 @@ gendistributions: $(GITHUBGEN)
 	$(GITHUBGEN) distributions
 
 .PHONY: update-codeowners
-update-codeowners: gengithub generate
+update-codeowners: generate gengithub
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
