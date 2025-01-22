@@ -311,11 +311,11 @@ generate: install-tools
 	$(MAKE) gofmt
 
 .PHONY: gengithub
-gengithub:
+gengithub: $(GITHUBGEN)
 	$(GITHUBGEN) --skipgithub
 
 .PHONY: gendistributions
-gendistributions:
+gendistributions: $(GITHUBGEN)
 	$(GITHUBGEN) distributions
 
 .PHONY: update-codeowners
