@@ -54,7 +54,6 @@ components:
         - sentry
         - signalfx
         - splunk_hec
-        - stef
         - sumologic
         - syslog
         - tencentcloud_logservice
