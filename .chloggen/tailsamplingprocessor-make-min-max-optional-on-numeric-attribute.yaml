@@ -10,7 +10,7 @@ component: tailsamplingprocessor
 note: makes the `numeric_attribute` more flexible and allows to set only `min_value` or `max_value`, without the need to set both
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [37328]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
