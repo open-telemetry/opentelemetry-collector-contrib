@@ -78,7 +78,7 @@ func TestOnAddForMetrics(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
-					signals:            receiverSignals{true, true, true},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true},
 				},
 			}
 

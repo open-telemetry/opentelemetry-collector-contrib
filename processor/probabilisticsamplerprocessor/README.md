@@ -60,7 +60,7 @@ instead of using the parent-based approach (e.g., using the
 `TraceIDRatioBased` sampler for a non-root span), incompleteness may
 result, and when spans and log records are independently sampled in a
 processor, as by this component, the same potential for completeness
-arises.  The consistency guarantee helps minimimize this issue.
+arises.  The consistency guarantee helps minimize this issue.
 
 Consistent probability samplers can be safely used with a mixture of
 probabilities and preserve sub-trace completeness, provided that child
@@ -158,7 +158,7 @@ implies collecting log records from an expected value of 10 pods.
 OpenTelemetry specifies a consistent sampling mechanism using 56 bits
 of randomness, which may be obtained from the Trace ID according to
 the W3C Trace Context Level 2 specification.  Randomness can also be
-explicly encoding in the OpenTelemetry `tracestate` field, where it is
+explicitly encoding in the OpenTelemetry `tracestate` field, where it is
 known as the R-value.
 
 This mode is named because it reduces the number of items transmitted
@@ -183,7 +183,7 @@ for every 4 items input.
 
 ### Equalizing
 
-This mode uses the same randomness mechanism as the propotional
+This mode uses the same randomness mechanism as the proportional
 sampling mode, in this case considering how much each item was already
 sampled by preceding samplers.  This mode can be used to lower
 sampling probability to a minimum value across a whole pipeline, 
@@ -241,7 +241,7 @@ tracestate: ot=th:0;rv:9b8233f7e3a151
 This component, using either proportional or equalizing modes, could
 apply 50% sampling the Span.  This span with randomness value
 `9b8233f7e3a151` is consistently sampled at 50% because the threshold,
-when zero padded (i.e., `80000000000000`), is less than the randomess
+when zero padded (i.e., `80000000000000`), is less than the randomness
 value.  The resulting span will have the following tracestate:
 
 ```

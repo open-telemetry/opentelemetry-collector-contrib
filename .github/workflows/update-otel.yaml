@@ -1,0 +1,33 @@
+name: 'Update contrib to the latest core source'
+on:
+  workflow_dispatch:
+  # TODO: Enable schedule once it's verified that the action works as expected.
+  #  schedule:
+  #    - cron: "27 21 * * *" # Run at an arbitrary time on weekdays.
+
+jobs:
+  update-otel:
+    runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'open-telemetry' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: opentelemetry-collector-contrib
+      - name: Pull the latest collector repo
+        uses: actions/checkout@v4
+        with:
+          path: opentelemetry-collector
+          repository: open-telemetry/opentelemetry-collector
+      - name: Update to latest opentelemetry-collector release and create a PR
+        run: |
+          cd opentelemetry-collector-contrib
+          git config user.name opentelemetrybot
+          git config user.email 107717825+opentelemetrybot@users.noreply.github.com
+          branch="opentelemetrybot/update-otel-$(date +%s)"
+          git checkout -b $branch
+          make genotelcontribcol
+          make update-otel
+          git push --set-upstream origin $branch  
+          gh pr create --base main --title "[chore] Update core dependencies ${CANDIDATE_BETA}" --body "This PR updates the opentelemetry-collector dependency to the latest release"
+        env:
+          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
