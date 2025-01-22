@@ -13,10 +13,11 @@ import (
 	"time"
 
 	"github.com/alecthomas/participle/v2/lexer"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 // This is not in ottltest because it depends on a type that's a member of OTTL.
