@@ -36,6 +36,7 @@ func newFailoverRouter[C any](provider consumerProvider[C], cfg *Config) *failov
 		RetryInterval: cfg.RetryInterval,
 		RetryGap:      cfg.RetryGap,
 		MaxRetries:    cfg.MaxRetries,
+		RetryBackoff:  cfg.RetryBackoff,
 	}
 
 	selector := state.NewPipelineSelector(len(cfg.PipelinePriority), pSConstants)
@@ -72,7 +73,7 @@ func (f *failoverRouter[C]) registerConsumers() error {
 }
 
 func (f *failoverRouter[C]) Shutdown() {
-	f.pS.RS.InvokeCancel()
+	f.pS.Shutdown()
 
 	close(f.done)
 	f.wg.Wait()

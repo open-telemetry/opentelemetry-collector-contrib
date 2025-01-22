@@ -282,6 +282,57 @@ func TestFailoverRecovery_MaxRetriesDisabled(t *testing.T) {
 	}, 3*time.Second, 5*time.Millisecond)
 }
 
+func TestFailoverRecovery_RetryBackoff(t *testing.T) {
+	var sinkFirst, sinkSecond, sinkThird, sinkFourth consumertest.TracesSink
+	tracesFirst := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/first")
+	tracesSecond := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/second")
+	tracesThird := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/third")
+	tracesFourth := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/fourth")
+
+	cfg := &Config{
+		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}, {tracesFourth}},
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
+		MaxRetries:       1,
+		RetryBackoff:     10 * time.Millisecond,
+	}
+
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+		tracesFirst:  &sinkFirst,
+		tracesSecond: &sinkSecond,
+		tracesThird:  &sinkThird,
+		tracesFourth: &sinkFourth,
+	})
+
+	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
+		connectortest.NewNopSettings(), cfg, router.(consumer.Traces))
+
+	require.NoError(t, err)
+
+	failoverConnector := conn.(*tracesFailover)
+
+	tr := sampleTrace()
+
+	defer func() {
+		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+	}()
+
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
+
+	require.Eventually(t, func() bool {
+		return consumeTracesAndCheckStable(failoverConnector, 1, tr)
+	}, 3*time.Second, 5*time.Millisecond)
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkFirst)
+	}()
+
+	require.Eventually(t, func() bool {
+		return consumeTracesAndCheckStable(failoverConnector, 0, tr)
+	}, 3*time.Second, 5*time.Millisecond)
+}
+
 func resetConsumers(conn *tracesFailover, consumers ...consumer.Traces) {
 	for i, sink := range consumers {
 		conn.failover.ModifyConsumerAtIndex(i, sink)

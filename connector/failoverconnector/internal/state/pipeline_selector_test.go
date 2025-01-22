@@ -4,7 +4,6 @@
 package state
 
 import (
-	"context"
 	"sync"
 	"testing"
 	"time"
@@ -61,13 +60,8 @@ func TestCurrentPipelineWithRetry(t *testing.T) {
 	}
 	pS := NewPipelineSelector(5, constants)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer func() {
-		cancel()
-	}()
-
 	pS.TestSetStableIndex(2)
-	pS.TestRetryPipelines(ctx, constants.RetryInterval, constants.RetryGap)
+	pS.TestRetryPipelines(constants.RetryInterval, constants.RetryGap)
 
 	require.Eventually(t, func() bool {
 		idx, _ := pS.SelectedPipeline()
