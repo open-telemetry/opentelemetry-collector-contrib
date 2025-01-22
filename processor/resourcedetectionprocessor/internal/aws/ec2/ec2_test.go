@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -30,10 +31,9 @@ type mockMetadata struct {
 	retIDDoc    imds.InstanceIdentityDocument
 	retErrIDDoc error
 
-	retHostname    string
-	retErrHostname error
-
-	isAvailable bool
+	retHostname       string
+	retErrHostname    error
+	retErrUnavailable error
 }
 
 var _ ec2provider.Provider = (*mockMetadata)(nil)
@@ -51,10 +51,7 @@ func (e *mockClientBuilderError) buildClient(_ context.Context, _ string, _ *htt
 }
 
 func (mm mockMetadata) InstanceID(_ context.Context) (string, error) {
-	if !mm.isAvailable {
-		return "", errUnavailable
-	}
-	return "", nil
+	return "", mm.retErrUnavailable
 }
 
 func (mm mockMetadata) Get(_ context.Context) (imds.InstanceIdentityDocument, error) {
@@ -173,7 +170,6 @@ func TestDetector_Detect(t *testing.T) {
 					InstanceType:     "c4.xlarge",
 				},
 				retHostname: "example-hostname",
-				isAvailable: true,
 			}},
 			args: args{ctx: context.Background()},
 			want: func() pcommon.Resource {
@@ -203,7 +199,6 @@ func TestDetector_Detect(t *testing.T) {
 					InstanceType:     "c4.xlarge",
 				},
 				retHostname: "example-hostname",
-				isAvailable: true,
 			}},
 			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile("^tag1$"), regexp.MustCompile("^tag2$")},
 			args:          args{ctx: context.Background()},
@@ -237,7 +232,6 @@ func TestDetector_Detect(t *testing.T) {
 					InstanceType:     "c4.xlarge",
 				},
 				retHostname: "example-hostname",
-				isAvailable: true,
 			}},
 			args: args{ctx: context.Background()},
 			want: func() pcommon.Resource {
@@ -259,20 +253,29 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "endpoint not available",
 			fields: fields{metadataProvider: &mockMetadata{
-				retIDDoc:    imds.InstanceIdentityDocument{},
-				retErrIDDoc: errors.New("should not be called"),
-				isAvailable: false,
+				retIDDoc:          imds.InstanceIdentityDocument{},
+				retErrIDDoc:       errors.New("should not be called"),
+				retErrUnavailable: errUnavailable,
 			}},
 			args:    args{ctx: context.Background()},
 			want:    pcommon.NewResource(),
 			wantErr: false,
 		},
 		{
+			name: "network not ready",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc:          imds.InstanceIdentityDocument{},
+				retErrUnavailable: &smithyhttp.RequestSendError{Err: errors.New("nope")},
+			}},
+			args:    args{ctx: context.Background()},
+			want:    pcommon.NewResource(),
+			wantErr: true,
+		},
+		{
 			name: "get fails",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc:    imds.InstanceIdentityDocument{},
 				retErrIDDoc: errors.New("get failed"),
-				isAvailable: true,
 			}},
 			args:    args{ctx: context.Background()},
 			want:    pcommon.NewResource(),
@@ -284,7 +287,6 @@ func TestDetector_Detect(t *testing.T) {
 				retIDDoc:       imds.InstanceIdentityDocument{},
 				retHostname:    "",
 				retErrHostname: errors.New("hostname failed"),
-				isAvailable:    true,
 			}},
 			args:    args{ctx: context.Background()},
 			want:    pcommon.NewResource(),

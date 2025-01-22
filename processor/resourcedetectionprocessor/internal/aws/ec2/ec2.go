@@ -5,6 +5,7 @@ package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -13,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -79,6 +81,11 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	if _, err = d.metadataProvider.InstanceID(ctx); err != nil {
+		var requestSendError *smithyhttp.RequestSendError
+		if errors.As(err, &requestSendError) {
+			d.logger.Warn("EC2 metadata endpoint unreachable", zap.Error(err))
+			return pcommon.NewResource(), "", err
+		}
 		d.logger.Debug("EC2 metadata unavailable", zap.Error(err))
 		return pcommon.NewResource(), "", nil
 	}
