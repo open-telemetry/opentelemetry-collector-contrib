@@ -22,6 +22,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.24.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/exporter/exportertest v0.118.1-0.20250121185328-fbefb22cc2b3
+	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/receiver v0.118.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250121185328-fbefb22cc2b3
@@ -72,7 +73,6 @@ require (
 	go.opentelemetry.io/collector/extension v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect
-	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250121185328-fbefb22cc2b3 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect
 	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect

@@ -484,11 +484,12 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 
 func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 	tests := []struct {
-		name          string
-		passthrough   bool
-		tokenProvided string
-		tokenExpected string
-		metric        bool
+		name             string
+		passthrough      bool
+		tokenProvided    string
+		tokenExpected    string
+		metric           bool
+		tokenContextGate bool
 	}{
 		{
 			name:          "Log, No token provided and passthrough false",
@@ -542,10 +543,18 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			tokenExpected: "passthroughToken",
 			metric:        true,
 		},
+		{
+			name:             "Pass token via context",
+			passthrough:      true,
+			tokenProvided:    "passthroughToken",
+			metric:           true,
+			tokenContextGate: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			testutil.SetFeatureGateForTest(t, tokenContextGate, tt.tokenContextGate)
 			config := createDefaultConfig().(*Config)
 			config.Endpoint = "localhost:0"
 			config.AccessTokenPassthrough = tt.passthrough
@@ -575,8 +584,10 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			}
 			msgBytes, _ := json.Marshal(splunkhecMsg)
 			req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
-			if tt.passthrough {
-				if tt.tokenProvided != "" {
+			if tt.passthrough && tt.tokenProvided != "" {
+				if tt.tokenContextGate {
+					req = req.WithContext(context.WithValue(req.Context(), splunk.LabelType(splunk.HecTokenLabel), tt.tokenProvided))
+				} else {
 					req.Header.Set("Authorization", "Splunk "+tt.tokenProvided)
 				}
 			}
@@ -584,7 +595,11 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			done := make(chan bool)
 			go func() {
 				tokenReceived := <-accessTokensChan
-				assert.Equal(t, "Splunk "+tt.tokenExpected, tokenReceived)
+				if tt.tokenContextGate {
+					assert.Equal(t, req.Context().Value(splunk.LabelType(splunk.HecTokenLabel)), tt.tokenProvided)
+				} else {
+					assert.Equal(t, "Splunk "+tt.tokenExpected, tokenReceived)
+				}
 				done <- true
 			}()
 

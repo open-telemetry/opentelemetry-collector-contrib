@@ -302,7 +302,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		defer r.gzipReaderPool.Put(reader)
 	}
 
-	resourceCustomizer := r.createResourceCustomizer(req)
+	ctx, resourceCustomizer := r.retrieveAccessToken(ctx, req)
 	query := req.URL.Query()
 	var timestamp pcommon.Timestamp
 	if query.Has(queryTime) {
@@ -457,7 +457,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			events = append(events, &msg)
 		}
 	}
-	resourceCustomizer := r.createResourceCustomizer(req)
+	ctx, resourceCustomizer := r.retrieveAccessToken(ctx, req)
 	if r.logsConsumer != nil && len(events) > 0 {
 		ld, err := splunkHecToLogData(r.settings.Logger, events, resourceCustomizer, r.config)
 		if err != nil {
@@ -494,17 +494,22 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 }
 
-func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resource pcommon.Resource) {
-	if r.config.AccessTokenPassthrough {
-		accessToken := req.Header.Get("Authorization")
-		if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
-			accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
-			return func(resource pcommon.Resource) {
-				resource.Attributes().PutStr(splunk.HecTokenLabel, accessTokenValue)
-			}
+func (r *splunkReceiver) retrieveAccessToken(origCtx context.Context, req *http.Request) (context.Context, func(resource pcommon.Resource)) {
+	if !r.config.AccessTokenPassthrough {
+		return origCtx, nil
+	}
+
+	accessToken := req.Header.Get("Authorization")
+	if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
+		accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
+		if tokenContextGate.IsEnabled() {
+			return context.WithValue(origCtx, splunk.LabelType(splunk.HecTokenLabel), accessTokenValue), nil
+		}
+		return origCtx, func(resource pcommon.Resource) {
+			resource.Attributes().PutStr(splunk.HecTokenLabel, accessTokenValue)
 		}
 	}
-	return nil
+	return origCtx, nil
 }
 
 func (r *splunkReceiver) failRequest(
