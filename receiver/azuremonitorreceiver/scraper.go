@@ -67,8 +67,9 @@ type azureResource struct {
 }
 
 type metricsCompositeKey struct {
-	dimensions string // comma separated sorted dimensions
-	timeGrain  string
+	dimensions   string // comma separated sorted dimensions
+	aggregations string // comma separated sorted aggregations
+	timeGrain    string
 }
 
 type azureResourceMetrics struct {
@@ -337,9 +338,16 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 		}
 
 		for _, v := range nextResult.Value {
-			timeGrain := *v.MetricAvailabilities[0].TimeGrain
 			name := *v.Name.Value
-			compositeKey := metricsCompositeKey{timeGrain: timeGrain}
+			if !isMetricMatchFilters(name, s.cfg.Metrics) {
+				continue
+			}
+
+			timeGrain := *v.MetricAvailabilities[0].TimeGrain
+			compositeKey := metricsCompositeKey{
+				timeGrain:    timeGrain,
+				aggregations: getMetricAggregations(name, s.cfg.Metrics),
+			}
 
 			if len(v.Dimensions) > 0 {
 				var dimensionsSlice []string
@@ -388,6 +396,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 				metricsByGrain.metrics,
 				compositeKey.dimensions,
 				compositeKey.timeGrain,
+				compositeKey.aggregations,
 				start,
 				end,
 				s.cfg.MaximumNumberOfRecordsPerResource,
@@ -435,6 +444,7 @@ func getResourceMetricsValuesRequestOptions(
 	metrics []string,
 	dimensionsStr string,
 	timeGrain string,
+	aggregations string,
 	start int,
 	end int,
 	top int32,
@@ -444,7 +454,7 @@ func getResourceMetricsValuesRequestOptions(
 		Metricnames: &resType,
 		Interval:    to.Ptr(timeGrain),
 		Timespan:    to.Ptr(timeGrain),
-		Aggregation: to.Ptr(strings.Join(aggregations, ",")),
+		Aggregation: to.Ptr(aggregations),
 		Top:         to.Ptr(top),
 	}
 
@@ -499,4 +509,33 @@ func (s *azureScraper) processTimeseriesData(
 			)
 		}
 	}
+}
+
+func isMetricMatchFilters(name string, filters []string) bool {
+	name = strings.ToLower(name)
+	for _, filter := range filters {
+		filter = strings.ToLower(filter)
+		if filter == name || strings.HasPrefix(filter, name+"/") {
+			return true
+		}
+	}
+
+	return len(filters) == 0
+}
+
+func getMetricAggregations(name string, filters []string) string {
+	out := []string{}
+	for _, filter := range filters {
+		for _, aggregation := range aggregations {
+			if strings.EqualFold(name+"/"+aggregation, filter) {
+				out = append(out, aggregation)
+			}
+		}
+	}
+
+	if len(out) == 0 {
+		out = aggregations
+	}
+
+	return strings.Join(out, ",")
 }

@@ -5,6 +5,7 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -244,12 +245,83 @@ func (mdcm *metricsDefinitionsClientMock) NewListPager(resourceURI string, _ *ar
 	})
 }
 
-type metricsValuesClientMock struct {
-	lists map[string]map[string]armmonitor.MetricsClientListResponse
+type metricsValuesClientMock struct{}
+
+func (mvcm metricsValuesClientMock) List(_ context.Context, _ string, options *armmonitor.MetricsClientListOptions) (armmonitor.MetricsClientListResponse, error) {
+	var unit1 armmonitor.Unit = "unit1"
+
+	amMetrics := []*armmonitor.Metric{}
+	for _, name := range strings.Split(*options.Metricnames, ",") {
+		amMetric := &armmonitor.Metric{
+			Name: &armmonitor.LocalizableString{
+				Value: &name,
+			},
+			Unit: &unit1,
+			Timeseries: []*armmonitor.TimeSeriesElement{
+				{
+					Data: []*armmonitor.MetricValue{
+						mvcm.getAMDataPoints(*options.Aggregation),
+					},
+				},
+			},
+		}
+		amMetrics = append(amMetrics, amMetric)
+
+		switch name {
+		case "metric5":
+			amMetric.Timeseries[0].Metadatavalues = mvcm.getAMMetadataValues(2)
+
+		case "metric6":
+			amMetric.Timeseries[0].Metadatavalues = mvcm.getAMMetadataValues(1)
+
+		case "metric7":
+			amMetric.Timeseries[0].Data[0] = mvcm.getAMDataPoints("Count")
+			amMetric.Timeseries[0].Metadatavalues = mvcm.getAMMetadataValues(1)
+		}
+	}
+
+	return armmonitor.MetricsClientListResponse{
+		Response: armmonitor.Response{Value: amMetrics},
+	}, nil
 }
 
-func (mvcm metricsValuesClientMock) List(_ context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (armmonitor.MetricsClientListResponse, error) {
-	return mvcm.lists[resourceURI][*options.Metricnames], nil
+func (mvcm metricsValuesClientMock) getAMDataPoints(aggregations string) *armmonitor.MetricValue {
+	var value1 float64 = 1
+
+	amPoints := &armmonitor.MetricValue{}
+	for _, aggregation := range strings.Split(aggregations, ",") {
+		switch aggregation {
+		case "Average":
+			amPoints.Average = &value1
+		case "Count":
+			amPoints.Count = &value1
+		case "Maximum":
+			amPoints.Maximum = &value1
+		case "Minimum":
+			amPoints.Minimum = &value1
+		case "Total":
+			amPoints.Total = &value1
+		}
+	}
+
+	return amPoints
+}
+
+func (mvcm metricsValuesClientMock) getAMMetadataValues(n int) []*armmonitor.MetadataValue {
+	dimensionValue := "dimension value"
+
+	out := make([]*armmonitor.MetadataValue, n)
+	for idx := range out {
+		dimension := fmt.Sprintf("dimension%d", idx+1)
+		out[idx] = &armmonitor.MetadataValue{
+			Name: &armmonitor.LocalizableString{
+				Value: &dimension,
+			},
+			Value: &dimensionValue,
+		}
+	}
+
+	return out
 }
 
 func TestAzureScraperScrape(t *testing.T) {
@@ -265,6 +337,10 @@ func TestAzureScraperScrape(t *testing.T) {
 	cfgTagsEnabled := createDefaultConfig().(*Config)
 	cfgTagsEnabled.AppendTagsAsAttributes = true
 	cfgTagsEnabled.MaximumNumberOfMetricsInACall = 2
+
+	cfgLimitedMertics := createDefaultConfig().(*Config)
+	cfgLimitedMertics.MaximumNumberOfMetricsInACall = 2
+	cfgLimitedMertics.Metrics = []string{"metric1", "metric3/total", "metric4/average", "metric4/minimum", "metric4/maximum"}
 
 	tests := []struct {
 		name    string
@@ -290,6 +366,15 @@ func TestAzureScraperScrape(t *testing.T) {
 				ctx: context.Background(),
 			},
 		},
+		{
+			name: "metrics_filtered",
+			fields: fields{
+				cfg: cfgLimitedMertics,
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -308,9 +393,7 @@ func TestAzureScraperScrape(t *testing.T) {
 				pages:   pages,
 			}
 
-			metricsValuesClientMock := &metricsValuesClientMock{
-				lists: getMetricsValuesMockData(),
-			}
+			metricsValuesClientMock := &metricsValuesClientMock{}
 
 			s := &azureScraper{
 				cfg:                      tt.fields.cfg,
@@ -512,217 +595,6 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 	return counters, pages
 }
 
-func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientListResponse {
-	name1, name2, name3, name4, name5, name6, name7, dimension1, dimension2, dimensionValue := "metric1", "metric2",
-		"metric3", "metric4", "metric5", "metric6", "metric7", "dimension1", "dimension2", "dimension value"
-	var unit1 armmonitor.Unit = "unit1"
-	var value1 float64 = 1
-
-	return map[string]map[string]armmonitor.MetricsClientListResponse{
-		"/resourceGroups/group1/resourceId1": {
-			strings.Join([]string{name1, name2}, ","): {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name1,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-								},
-							},
-						},
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name2,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			name3: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name3,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		"/resourceGroups/group1/resourceId2": {
-			name4: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name4,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			name5: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name5,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-									Metadatavalues: []*armmonitor.MetadataValue{
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension1,
-											},
-											Value: &dimensionValue,
-										},
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension2,
-											},
-											Value: &dimensionValue,
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			name6: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name6,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Average: &value1,
-											Count:   &value1,
-											Maximum: &value1,
-											Minimum: &value1,
-											Total:   &value1,
-										},
-									},
-									Metadatavalues: []*armmonitor.MetadataValue{
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension1,
-											},
-											Value: &dimensionValue,
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		"/resourceGroups/group1/resourceId3": {
-			name7: {
-				Response: armmonitor.Response{
-					Value: []*armmonitor.Metric{
-						{
-							Name: &armmonitor.LocalizableString{
-								Value: &name7,
-							},
-							Unit: &unit1,
-							Timeseries: []*armmonitor.TimeSeriesElement{
-								{
-									Data: []*armmonitor.MetricValue{
-										{
-											Count: &value1,
-										},
-									},
-									Metadatavalues: []*armmonitor.MetadataValue{
-										{
-											Name: &armmonitor.LocalizableString{
-												Value: &dimension1,
-											},
-											Value: &dimensionValue,
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 func TestAzureScraperClientOptions(t *testing.T) {
 	type fields struct {
 		cfg *Config
@@ -780,6 +652,95 @@ func TestAzureScraperClientOptions(t *testing.T) {
 			if got := s.getArmClientOptions(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("getArmClientOptions() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestIsMetricMatchFilters(t *testing.T) {
+	testMetricName := "MetricName1"
+	tests := []struct {
+		name    string
+		filters []string
+		want    bool
+	}{
+		{
+			"filters_empty",
+			[]string{},
+			true,
+		},
+		{
+			"filters_include_metric",
+			[]string{"foo", testMetricName, "bar"},
+			true,
+		},
+		{
+			"filters_include_metric_ignore_case",
+			[]string{"foo", strings.ToLower(testMetricName), "bar"},
+			true,
+		},
+		{
+			"filters_include_metric_aggregation",
+			[]string{"foo/count", testMetricName + "/total", "bar/total"},
+			true,
+		},
+		{
+			"filters_exclude_metric",
+			[]string{"foo", "bar"},
+			false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isMetricMatchFilters(testMetricName, tt.filters)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestGetMetricAggregations(t *testing.T) {
+	testMetricName := "MetricName"
+	tests := []struct {
+		name    string
+		filters []string
+		want    string
+	}{
+		{
+			"filters_empty",
+			[]string{},
+			strings.Join(aggregations, ","),
+		},
+		{
+			"filters_include_metric",
+			[]string{"foo", testMetricName, "bar"},
+			strings.Join(aggregations, ","),
+		},
+		{
+			"filters_include_metric_ignore_case",
+			[]string{"foo", strings.ToLower(testMetricName), "bar"},
+			strings.Join(aggregations, ","),
+		},
+		{
+			"filters_include_metric_aggregation",
+			[]string{"foo/count", testMetricName + "/" + aggregations[0], "bar/total"},
+			aggregations[0],
+		},
+		{
+			"filters_include_metric_aggregation_ignore_case",
+			[]string{"foo/count", testMetricName + "/" + strings.ToLower(aggregations[0]), "bar/total"},
+			aggregations[0],
+		},
+		{
+			"filters_include_metric_multiple_aggregations",
+			[]string{"foo/count", testMetricName + "/" + aggregations[0], testMetricName + "/" + aggregations[2]},
+			aggregations[0] + "," + aggregations[2],
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getMetricAggregations(testMetricName, tt.filters)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
