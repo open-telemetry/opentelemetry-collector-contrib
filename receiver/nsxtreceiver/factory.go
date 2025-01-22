@@ -49,7 +49,7 @@ func createMetricsReceiver(_ context.Context, params receiver.Settings, rConf co
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewMetricsController(
 		&cfg.ControllerConfig,
 		params,
 		consumer,

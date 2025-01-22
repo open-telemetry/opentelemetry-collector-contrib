@@ -37,7 +37,7 @@ type PartitionKeyBuilder struct {
 	// body before uploaded.
 	Compression configcompression.Type
 	// UniqueKeyFunc allows for overwritting the default behavior of
-	// generating a new unique string to avoid collosions on file upload
+	// generating a new unique string to avoid collisions on file upload
 	// across many different instances.
 	//
 	// TODO: Expose the ability to config additional UniqueKeyField via config
@@ -81,7 +81,7 @@ func (pki *PartitionKeyBuilder) uniqueKey() string {
 	}
 
 	// This follows the original "uniqueness" algorithm
-	// to avoid collosions on file uploads across different nodes.
+	// to avoid collisions on file uploads across different nodes.
 	const (
 		uniqueValues = 999999999
 		minOffset    = 100000000
