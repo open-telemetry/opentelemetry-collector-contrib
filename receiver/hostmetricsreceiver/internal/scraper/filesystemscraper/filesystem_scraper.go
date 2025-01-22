@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
@@ -30,7 +30,7 @@ const (
 
 // filesystemsScraper for FileSystem Metrics
 type filesystemsScraper struct {
-	settings receiver.Settings
+	settings scraper.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
 	fsFilter fsFilter
@@ -47,7 +47,7 @@ type deviceUsage struct {
 }
 
 // newFileSystemScraper creates a FileSystem Scraper
-func newFileSystemScraper(_ context.Context, settings receiver.Settings, cfg *Config) (*filesystemsScraper, error) {
+func newFileSystemScraper(_ context.Context, settings scraper.Settings, cfg *Config) (*filesystemsScraper, error) {
 	fsFilter, err := cfg.createFilter()
 	if err != nil {
 		return nil, err

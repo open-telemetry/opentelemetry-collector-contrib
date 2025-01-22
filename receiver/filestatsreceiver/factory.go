@@ -45,7 +45,7 @@ func newReceiver(
 	}
 	opt := scraperhelper.AddScraper(metadata.Type, s)
 
-	return scraperhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewMetricsController(
 		&fileStatsConfig.ControllerConfig,
 		settings,
 		consumer,
