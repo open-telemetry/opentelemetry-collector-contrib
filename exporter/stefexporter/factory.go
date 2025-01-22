@@ -5,14 +5,11 @@ package stefexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter/internal/metadata"
 )
@@ -37,8 +34,7 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings, config co
 	exporter.Metrics, error,
 ) {
 	cfg := config.(*Config)
-	exporterLogger := createLogger(set.TelemetrySettings.Logger)
-	stefexporter := newStefExporter(exporterLogger, cfg)
+	stefexporter := newStefExporter(set.TelemetrySettings.Logger, cfg)
 	return exporterhelper.NewMetrics(
 		ctx, set, config,
 		stefexporter.pushMetrics,
@@ -47,15 +43,4 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings, config co
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 	)
-}
-
-func createLogger(logger *zap.Logger) *zap.Logger {
-	core := zapcore.NewSamplerWithOptions(
-		logger.Core(),
-		1*time.Second,
-		10,
-		5,
-	)
-
-	return zap.New(core)
 }

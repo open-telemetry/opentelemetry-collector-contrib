@@ -4,7 +4,7 @@ status:
   class: exporter
   stability:
     development: [metrics]
-  distributions: [contrib]
+  distributions: []
   codeowners:
     active: [tigrannajaryan, dmitryax]
 tests:
