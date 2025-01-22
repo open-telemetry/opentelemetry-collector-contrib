@@ -60,3 +60,15 @@ func toContextStatements(statements any) (*ContextStatements, error) {
 	}
 	return &contextStatements, nil
 }
+
+func (c ContextStatements) GetStatements() []string {
+	return c.Statements
+}
+
+func toContextStatements(statements any) (*ContextStatements, error) {
+	contextStatements, ok := statements.(ContextStatements)
+	if !ok {
+		return nil, fmt.Errorf("invalid context statements type, expected: common.ContextStatements, got: %T", statements)
+	}
+	return &contextStatements, nil
+}

@@ -119,17 +119,6 @@ transform/unknown_context:
 transform/unknown_error_mode:
   error_mode: test
 
-transform/flat_configuration:
-  trace_statements:
-    - set(span.name, "bear") where span.attributes["http.path"] == "/animal"
-    - set(resource.attributes["name"], "bear")
-  metric_statements:
-    - set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"
-    - set(resource.attributes["name"], "bear")
-  log_statements:
-    - set(log.body, "bear") where log.attributes["http.path"] == "/animal"
-    - set(resource.attributes["name"], "bear")
-
 transform/structured_configuration_with_path_context:
   trace_statements:
     - context: span
@@ -157,6 +146,17 @@ transform/structured_configuration_with_inferred_context:
     - statements:
       - set(log.body, "bear") where log.attributes["http.path"] == "/animal"
       - set(resource.attributes["name"], "bear")
+
+transform/flat_configuration:
+  trace_statements:
+    - set(span.name, "bear") where span.attributes["http.path"] == "/animal"
+    - set(resource.attributes["name"], "bear")
+  metric_statements:
+    - set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"
+    - set(resource.attributes["name"], "bear")
+  log_statements:
+    - set(log.body, "bear") where log.attributes["http.path"] == "/animal"
+    - set(resource.attributes["name"], "bear")
 
 transform/mixed_configuration_styles:
   trace_statements:

@@ -148,6 +148,60 @@ func TestLoadConfig(t *testing.T) {
 			errorLen: 3,
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "structured_configuration_with_path_context"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Context:    "span",
+						Statements: []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						Context:    "metric",
+						Statements: []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						Context:    "log",
+						Statements: []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "structured_configuration_with_inferred_context"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Statements: []string{
+							`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						Statements: []string{
+							`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						Statements: []string{
+							`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
+					},
+				},
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "flat_configuration"),
 			expected: &Config{
 				ErrorMode: ottl.PropagateError,
@@ -179,63 +233,6 @@ func TestLoadConfig(t *testing.T) {
 					{
 						SharedCache: true,
 						Statements:  []string{`set(resource.attributes["name"], "bear")`},
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "structured_configuration_with_path_context"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				TraceStatements: []common.ContextStatements{
-					{
-						Context:    "span",
-						Statements: []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
-					},
-				},
-				MetricStatements: []common.ContextStatements{
-					{
-						Context:    "metric",
-						Statements: []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
-					},
-				},
-				LogStatements: []common.ContextStatements{
-					{
-						Context:    "log",
-						Statements: []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "structured_configuration_with_inferred_context"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				TraceStatements: []common.ContextStatements{
-					{
-						SharedCache: false,
-						Statements: []string{
-							`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`,
-							`set(resource.attributes["name"], "bear")`,
-						},
-					},
-				},
-				MetricStatements: []common.ContextStatements{
-					{
-						SharedCache: false,
-						Statements: []string{
-							`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`,
-							`set(resource.attributes["name"], "bear")`,
-						},
-					},
-				},
-				LogStatements: []common.ContextStatements{
-					{
-						SharedCache: false,
-						Statements: []string{
-							`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`,
-							`set(resource.attributes["name"], "bear")`,
-						},
 					},
 				},
 			},
