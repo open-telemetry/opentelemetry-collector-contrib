@@ -101,7 +101,7 @@ func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry
 		zap.Any("action", t.OnError),
 	}
 	if entry != nil {
-		toAddFields := []zap.Field{zap.Any(attrs.LogRecordOriginal, entry.Body)}
+		toAddFields := []zap.Field{zap.Any("entry.timestamp", entry.Timestamp)}
 		if logFilePath, ok := entry.Attributes[attrs.LogFilePath]; ok {
 			toAddFields = slices.Insert(toAddFields, 0, zap.Any(attrs.LogFilePath, logFilePath))
 		}
