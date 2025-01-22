@@ -1,4 +1,4 @@
-package state
+package state // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/state"
 
 import (
 	"context"

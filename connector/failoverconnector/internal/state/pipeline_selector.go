@@ -55,7 +55,7 @@ func (p *PipelineSelector) enableRetry(retryInterval time.Duration, retryGap tim
 				return
 			}
 		}
-		p.RS.cancelManager.Cancel()
+		p.RS.Cancel()
 	}()
 }
 
