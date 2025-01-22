@@ -704,7 +704,7 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 	}{
 		{
 			name:          "summary with start time",
-			isGateEnabled: false,
+			isGateEnabled: true,
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_summary")
@@ -719,9 +719,6 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 			want: func() map[uint64]*prompb.TimeSeries {
 				labels := []prompb.Label{
 					{Name: model.MetricNameLabel, Value: "test_summary" + countStr},
-				}
-				createdLabels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_summary" + createdSuffix},
 				}
 				sumLabels := []prompb.Label{
 					{Name: model.MetricNameLabel, Value: "test_summary" + sumStr},
@@ -739,18 +736,12 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 							{Value: 0, Timestamp: convertTimeStamp(ts)},
 						},
 					},
-					timeSeriesSignature(createdLabels): {
-						Labels: createdLabels,
-						Samples: []prompb.Sample{
-							{Value: float64(convertTimeStamp(ts)), Timestamp: convertTimeStamp(ts)},
-						},
-					},
 				}
 			},
 		},
 		{
 			name:          "summary without start time",
-			isGateEnabled: false,
+			isGateEnabled: true,
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_summary")
@@ -856,7 +847,7 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 	}{
 		{
 			name:          "histogram with start time",
-			isGateEnabled: false,
+			isGateEnabled: true,
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_hist")
@@ -871,9 +862,6 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 			want: func() map[uint64]*prompb.TimeSeries {
 				labels := []prompb.Label{
 					{Name: model.MetricNameLabel, Value: "test_hist" + countStr},
-				}
-				createdLabels := []prompb.Label{
-					{Name: model.MetricNameLabel, Value: "test_hist" + createdSuffix},
 				}
 				infLabels := []prompb.Label{
 					{Name: model.MetricNameLabel, Value: "test_hist_bucket"},
@@ -892,18 +880,12 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 							{Value: 0, Timestamp: convertTimeStamp(ts)},
 						},
 					},
-					timeSeriesSignature(createdLabels): {
-						Labels: createdLabels,
-						Samples: []prompb.Sample{
-							{Value: float64(convertTimeStamp(ts)), Timestamp: convertTimeStamp(ts)},
-						},
-					},
 				}
 			},
 		},
 		{
 			name:          "histogram without start time",
-			isGateEnabled: false,
+			isGateEnabled: true,
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_hist")
