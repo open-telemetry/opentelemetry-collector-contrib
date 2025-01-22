@@ -5,8 +5,6 @@ package unmarshalertest // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 )
 
 // NopLogsUnmarshaler is a LogsUnmarshaler that doesn't do anything
@@ -16,12 +14,12 @@ type NopLogsUnmarshaler struct {
 	err  error
 }
 
-var _ unmarshaler.LogsUnmarshaler = (*NopLogsUnmarshaler)(nil)
+var _ plog.Unmarshaler = (*NopLogsUnmarshaler)(nil)
 
 // NewNopLogs provides a nop logs unmarshaler with the default
 // plog.Logs and no error.
 func NewNopLogs() *NopLogsUnmarshaler {
-	return &NopLogsUnmarshaler{}
+	return &NopLogsUnmarshaler{logs: plog.NewLogs()}
 }
 
 // NewWithLogs provides a nop logs unmarshaler with the passed
@@ -33,11 +31,11 @@ func NewWithLogs(logs plog.Logs) *NopLogsUnmarshaler {
 // NewErrLogs provides a nop logs unmarshaler with the passed
 // in error as the Unmarshal error.
 func NewErrLogs(err error) *NopLogsUnmarshaler {
-	return &NopLogsUnmarshaler{err: err}
+	return &NopLogsUnmarshaler{logs: plog.NewLogs(), err: err}
 }
 
 // Unmarshal deserializes the records into logs.
-func (u *NopLogsUnmarshaler) Unmarshal([][]byte) (plog.Logs, error) {
+func (u *NopLogsUnmarshaler) UnmarshalLogs([]byte) (plog.Logs, error) {
 	return u.logs, u.err
 }
 
