@@ -790,7 +790,7 @@ func TestExporterLogs(t *testing.T) {
 						}
 
 						// Ensure the document id attribute is removed from the final document.
-						assert.NotContains(t, docs[0].Document, documentIDAttributeName, "expected document id attribute to be removed")
+						assert.NotContains(t, string(docs[0].Document), documentIDAttributeName, "expected document id attribute to be removed")
 						return itemsAllOK(docs)
 					})
 
