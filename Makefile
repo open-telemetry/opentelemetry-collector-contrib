@@ -310,13 +310,17 @@ generate: install-tools
 	PATH="$$PWD/.tools:$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
 
+.PHONY: githubgen-install
+githubgen-install:
+	cd cmd/githubgen && $(GOCMD) install .
+
 .PHONY: gengithub
-gengithub: $(GITHUBGEN)
-	$(GITHUBGEN)
+gengithub: githubgen-install
+	githubgen
 
 .PHONY: gendistributions
-gendistributions: $(GITHUBGEN)
-	$(GITHUBGEN) distributions
+gendistributions: githubgen-install
+	githubgen distributions
 
 .PHONY: update-codeowners
 update-codeowners: gengithub generate
@@ -552,8 +556,9 @@ clean:
 	find . -type f -name 'builtunitetest.test' -delete
 
 .PHONY: generate-gh-issue-templates
-generate-gh-issue-templates: $(GITHUBGEN)
-	$(GITHUBGEN) issue-templates
+generate-gh-issue-templates:
+	cd cmd/githubgen && $(GOCMD) install .
+	githubgen issue-templates
 
 .PHONY: checks
 checks:
