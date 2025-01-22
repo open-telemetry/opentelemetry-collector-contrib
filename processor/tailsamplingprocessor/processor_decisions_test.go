@@ -6,7 +6,6 @@ package tailsamplingprocessor
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -386,8 +385,7 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	// The final decision SHOULD be Sampled.
 	require.EqualValues(t, 1, nextConsumer.SpanCount())
 
-	// Drop the trace to force cache to make decision
-	tsp.dropTrace(traceID, time.Now())
+	// The trace should have been dropped after its id was added to the decision cache
 	_, ok := tsp.idToTrace.Load(traceID)
 	require.False(t, ok)
 
@@ -461,8 +459,7 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 	// The final decision SHOULD be NOT Sampled.
 	require.EqualValues(t, 0, nextConsumer.SpanCount())
 
-	// Drop the trace to force cache to make decision
-	tsp.dropTrace(traceID, time.Now())
+	// The trace should have been dropped after its id was added to the decision cache
 	_, ok := tsp.idToTrace.Load(traceID)
 	require.False(t, ok)
 

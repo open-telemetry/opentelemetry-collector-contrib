@@ -98,7 +98,7 @@ func newLogsExporter(
 
 var _ consumer.ConsumeLogsFunc = (*logsExporter)(nil).consumeLogs
 
-// consumeLogs is implementation of cosumer.ConsumeLogsFunc
+// consumeLogs is implementation of consumer.ConsumeLogsFunc
 func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err error) {
 	defer func() { err = exp.scrubber.Scrub(err) }()
 	if exp.cfg.HostMetadata.Enabled {
