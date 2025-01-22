@@ -13,12 +13,10 @@ import (
 	"time"
 
 	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 // This is not in ottltest because it depends on a type that's a member of OTTL.
@@ -2151,15 +2149,11 @@ func Test_parseValueExpression_full(t *testing.T) {
 			name:            "resolve context value",
 			valueExpression: `attributes`,
 			expected: func() any {
-				raw := map[string]any{
+				return map[string]any{
 					"attributes": map[string]any{
 						"foo": "bar",
 					},
 				}
-
-				m := pcommon.NewMap()
-				_ = m.FromRaw(raw)
-				return m
 			},
 			tCtx: map[string]any{
 				"attributes": map[string]any{
@@ -2196,14 +2190,10 @@ func Test_parseValueExpression_full(t *testing.T) {
 			name:            "hex values",
 			valueExpression: `[0x0000000000000000, 0x0000000000000000]`,
 			expected: func() any {
-				raw := []any{
+				return []any{
 					[]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 					[]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 				}
-
-				s := pcommon.NewSlice()
-				_ = s.FromRaw(raw)
-				return s
 			},
 		},
 		{
@@ -2217,22 +2207,16 @@ func Test_parseValueExpression_full(t *testing.T) {
 			name:            "map",
 			valueExpression: `{"map": 1}`,
 			expected: func() any {
-				m := pcommon.NewMap()
-				_ = m.FromRaw(map[string]any{
-					"map": 1,
-				})
-				return m
+				return map[string]any{
+					"map": int64(1),
+				}
 			},
 		},
 		{
 			name:            "string list",
 			valueExpression: `["list", "of", "strings"]`,
 			expected: func() any {
-				raw := []any{"list", "of", "strings"}
-
-				s := pcommon.NewSlice()
-				_ = s.FromRaw(raw)
-				return s
+				return []any{"list", "of", "strings"}
 			},
 		},
 	}
