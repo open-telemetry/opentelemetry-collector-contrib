@@ -11,10 +11,10 @@
 
 * @open-telemetry/collector-contrib-approvers
 
-cmd/opampsupervisor/                              @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan
-cmd/otelcontribcol/                               @open-telemetry/collector-contrib-approvers
-cmd/oteltestbedcol/                               @open-telemetry/collector-contrib-approvers
-cmd/telemetrygen/                                 @open-telemetry/collector-contrib-approvers @mx-psi @codeboten@Erog38
+cmd/opampsupervisor/                                             @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan
+cmd/otelcontribcol/                                              @open-telemetry/collector-contrib-approvers
+cmd/oteltestbedcol/                                              @open-telemetry/collector-contrib-approvers
+cmd/telemetrygen/                                                @open-telemetry/collector-contrib-approvers @mx-psi @codeboten @Erog38
 
 confmap/provider/aesprovider/                                    @open-telemetry/collector-contrib-approvers @djaglowski @shazlehu
 confmap/provider/s3provider/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9
