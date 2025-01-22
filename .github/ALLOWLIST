@@ -27,4 +27,4 @@ internal/common
 exporter/kineticaexporter/
 exporter/opensearchexporter/
 extension/observer/ecstaskobserver/
-extension/storage/filestorage/
+receiver/awscloudwatchmetricsreceiver/
