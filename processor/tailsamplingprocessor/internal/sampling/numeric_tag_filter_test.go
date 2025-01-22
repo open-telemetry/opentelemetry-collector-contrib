@@ -246,15 +246,15 @@ func TestNumericTagFilterNilBounds(t *testing.T) {
 	assert.Nil(t, filter, "filter should be nil when both bounds are nil")
 
 	// Test that the filter is created successfully when at least one bound is set
-	min := int64(100)
-	filter = NewNumericAttributeFilter(settings, "example", &min, nil, false)
+	minBound := int64(100)
+	filter = NewNumericAttributeFilter(settings, "example", &minBound, nil, false)
 	assert.NotNil(t, filter, "filter should not be nil when min is set")
 
-	max := int64(200)
-	filter = NewNumericAttributeFilter(settings, "example", nil, &max, false)
+	maxBound := int64(200)
+	filter = NewNumericAttributeFilter(settings, "example", nil, &maxBound, false)
 	assert.NotNil(t, filter, "filter should not be nil when max is set")
 
-	filter = NewNumericAttributeFilter(settings, "example", &min, &max, false)
+	filter = NewNumericAttributeFilter(settings, "example", &minBound, &maxBound, false)
 	assert.NotNil(t, filter, "filter should not be nil when both bounds are set")
 }
 
