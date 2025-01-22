@@ -1,0 +1,111 @@
+{
+  "resourceMetrics": [
+    {
+      "scopeMetrics": [
+        {
+          "metrics": [
+            {
+              "name": "testMetricOne",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "timeUnixNano": "1725146753842860000",
+                    "asInt": "100",
+                    "attributes": [
+                      {
+                        "key": "kubernetes.cluster.name",
+                        "value": {
+                          "stringValue": "value"
+                        }
+                      },
+                      {
+                        "key": "d4r.image.name",
+                        "value": {
+                          "doubleValue": 1.1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "timeUnixNano": "1725146753842860000",
+                    "asInt": "120",
+                    "attributes": [
+                      {
+                        "key": "kubernetes.cluster.name",
+                        "value": {
+                          "stringValue": "value"
+                        }
+                      },
+                      {
+                        "key": "d4r.image.name",
+                        "value": {
+                          "doubleValue": 1.1
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "testMetricTwo",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "timeUnixNano": "1725146753842860000",
+                    "asInt": "100",
+                    "attributes": [
+                      {
+                        "key": "kubernetes.cluster.name",
+                        "value": {
+                          "stringValue": "value"
+                        }
+                      },
+                      {
+                        "key": "docker.image.name",
+                        "value": {
+                          "doubleValue": 1.1
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "timeUnixNano": "1725146753842860000",
+                    "asInt": "120",
+                    "attributes": [
+                      {
+                        "key": "kubernetes.cluster.name",
+                        "value": {
+                          "stringValue": "value"
+                        }
+                      },
+                      {
+                        "key": "docker.image.name",
+                        "value": {
+                          "doubleValue": 1.1
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "name": "testMetricThree",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "timeUnixNano": "1725146753842860000",
+                    "asInt": "100"
+                  }
+                ]
+              }
+            }
+          ],
+          "schemaUrl": "https://example.com/testdata/schema_sections/metrics_rename_attributes/1.0.0"
+        }
+      ],
+      "schemaUrl": "https://example.com/testdata/schema_sections/metrics_rename_attributes/1.0.0"
+    }
+  ]
+}
