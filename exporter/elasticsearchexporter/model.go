@@ -76,12 +76,12 @@ var resourceAttrsToPreserve = map[string]bool{
 var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
 
 type mappingModel interface {
-	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string, *bytes.Buffer) error
-	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string, *bytes.Buffer) error
-	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string, buf *bytes.Buffer)
+	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string, esIndex, *bytes.Buffer) error
+	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string, esIndex, *bytes.Buffer) error
+	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string, idx esIndex, buf *bytes.Buffer)
 	hashDataPoint(dataPoint) uint32
 	encodeDocument(objmodel.Document, *bytes.Buffer) error
-	encodeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []dataPoint, validationErrors *[]error, buf *bytes.Buffer) (map[string]string, error)
+	encodeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []dataPoint, validationErrors *[]error, idx esIndex, buf *bytes.Buffer) (map[string]string, error)
 }
 
 // encodeModel tries to keep the event as close to the original open telemetry semantics as is.
@@ -112,24 +112,24 @@ const (
 	attributeField = "attribute"
 )
 
-func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string, buf *bytes.Buffer) error {
+func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string, idx esIndex, buf *bytes.Buffer) error {
 	var document objmodel.Document
 	switch m.mode {
 	case MappingECS:
-		document = m.encodeLogECSMode(resource, record, scope)
+		document = m.encodeLogECSMode(resource, record, scope, idx)
 	case MappingOTel:
-		return serializeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, record, buf)
+		return serializeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, record, idx, buf)
 	case MappingBodyMap:
 		return m.encodeLogBodyMapMode(record, buf)
 	default:
-		document = m.encodeLogDefaultMode(resource, record, scope)
+		document = m.encodeLogDefaultMode(resource, record, scope, idx)
 	}
 	document.Dedup()
 
 	return document.Serialize(buf, m.dedot)
 }
 
-func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
+func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope, idx esIndex) objmodel.Document {
 	var document objmodel.Document
 
 	docTimeStamp := record.Timestamp()
@@ -143,7 +143,7 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 	document.AddString("SeverityText", record.SeverityText())
 	document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
 	document.AddAttribute("Body", record.Body())
-	m.encodeAttributes(&document, record.Attributes())
+	m.encodeAttributes(&document, record.Attributes(), idx)
 	document.AddAttributes("Resource", resource.Attributes())
 	document.AddAttributes("Scope", scopeToAttributes(scope))
 
@@ -160,7 +160,7 @@ func (m *encodeModel) encodeLogBodyMapMode(record plog.LogRecord, buf *bytes.Buf
 	return nil
 }
 
-func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
+func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope, idx esIndex) objmodel.Document {
 	var document objmodel.Document
 
 	// First, try to map resource-level attributes to ECS fields.
@@ -181,6 +181,7 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 		semconv.AttributeExceptionEscaped:    "event.error.exception.handled",
 	}
 	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, resourceAttrsToPreserve)
+	addDataStreamAttributes(&document, "", idx)
 
 	// Handle special cases.
 	encodeLogAgentNameECSMode(&document, resource)
@@ -223,12 +224,13 @@ func (m *encodeModel) hashDataPoint(dp dataPoint) uint32 {
 	}
 }
 
-func (m *encodeModel) encodeDataPointsECSMode(resource pcommon.Resource, dataPoints []dataPoint, validationErrors *[]error, buf *bytes.Buffer) (map[string]string, error) {
+func (m *encodeModel) encodeDataPointsECSMode(resource pcommon.Resource, dataPoints []dataPoint, validationErrors *[]error, idx esIndex, buf *bytes.Buffer) (map[string]string, error) {
 	dp0 := dataPoints[0]
 	var document objmodel.Document
 	encodeAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
 	document.AddTimestamp("@timestamp", dp0.Timestamp())
 	document.AddAttributes("", dp0.Attributes())
+	addDataStreamAttributes(&document, "", idx)
 
 	for _, dp := range dataPoints {
 		value, err := dp.Value()
@@ -243,12 +245,20 @@ func (m *encodeModel) encodeDataPointsECSMode(resource pcommon.Resource, dataPoi
 	return document.DynamicTemplates(), err
 }
 
-func (m *encodeModel) encodeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []dataPoint, validationErrors *[]error, buf *bytes.Buffer) (map[string]string, error) {
+func addDataStreamAttributes(document *objmodel.Document, key string, idx esIndex) {
+	if idx.isDataStream() {
+		document.AddString(key+"data_stream.type", idx.Type)
+		document.AddString(key+"data_stream.dataset", idx.Dataset)
+		document.AddString(key+"data_stream.namespace", idx.Namespace)
+	}
+}
+
+func (m *encodeModel) encodeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []dataPoint, validationErrors *[]error, idx esIndex, buf *bytes.Buffer) (map[string]string, error) {
 	switch m.mode {
 	case MappingOTel:
-		return serializeMetrics(resource, resourceSchemaURL, scope, scopeSchemaURL, dataPoints, validationErrors, buf)
+		return serializeMetrics(resource, resourceSchemaURL, scope, scopeSchemaURL, dataPoints, validationErrors, idx, buf)
 	default:
-		return m.encodeDataPointsECSMode(resource, dataPoints, validationErrors, buf)
+		return m.encodeDataPointsECSMode(resource, dataPoints, validationErrors, idx, buf)
 	}
 }
 
@@ -484,20 +494,20 @@ func (dp numberDataPoint) Metric() pmetric.Metric {
 
 var errInvalidNumberDataPoint = errors.New("invalid number data point")
 
-func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string, buf *bytes.Buffer) error {
+func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string, idx esIndex, buf *bytes.Buffer) error {
 	var document objmodel.Document
 	switch m.mode {
 	case MappingOTel:
-		return serializeSpan(resource, resourceSchemaURL, scope, scopeSchemaURL, span, buf)
+		return serializeSpan(resource, resourceSchemaURL, scope, scopeSchemaURL, span, idx, buf)
 	default:
-		document = m.encodeSpanDefaultMode(resource, span, scope)
+		document = m.encodeSpanDefaultMode(resource, span, scope, idx)
 	}
 	document.Dedup()
 	err := document.Serialize(buf, m.dedot)
 	return err
 }
 
-func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) objmodel.Document {
+func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope, idx esIndex) objmodel.Document {
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", span.StartTimestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
 	document.AddTimestamp("EndTimestamp", span.EndTimestamp())
@@ -509,7 +519,7 @@ func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptra
 	document.AddInt("TraceStatus", int64(span.Status().Code()))
 	document.AddString("TraceStatusDescription", span.Status().Message())
 	document.AddString("Link", spanLinksToString(span.Links()))
-	m.encodeAttributes(&document, span.Attributes())
+	m.encodeAttributes(&document, span.Attributes(), idx)
 	document.AddAttributes("Resource", resource.Attributes())
 	m.encodeEvents(&document, span.Events())
 	document.AddInt("Duration", durationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
@@ -517,21 +527,22 @@ func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptra
 	return document
 }
 
-func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string, buf *bytes.Buffer) {
+func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string, idx esIndex, buf *bytes.Buffer) {
 	if m.mode != MappingOTel {
 		// Currently span events are stored separately only in OTel mapping mode.
 		// In other modes, they are stored within the span document.
 		return
 	}
-	serializeSpanEvent(resource, resourceSchemaURL, scope, scopeSchemaURL, span, spanEvent, buf)
+	serializeSpanEvent(resource, resourceSchemaURL, scope, scopeSchemaURL, span, spanEvent, idx, buf)
 }
 
-func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map) {
+func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map, idx esIndex) {
 	key := "Attributes"
 	if m.mode == MappingRaw {
 		key = ""
 	}
 	document.AddAttributes(key, attributes)
+	addDataStreamAttributes(document, key, idx)
 }
 
 func (m *encodeModel) encodeEvents(document *objmodel.Document, events ptrace.SpanEventSlice) {
