@@ -216,7 +216,7 @@ func (jr *jReceiver) startAgent() error {
 		}
 		jr.agentProcessors = append(jr.agentProcessors, processor)
 
-		jr.settings.Logger.Info("Starting UDP server for Binary Thrift", zap.String("endpoint", jr.config.AgentBinaryThrift.Endpoint))
+		jr.settings.Logger.Info("Starting UDP server for Binary Thrift", zap.String("endpoint", jr.config.ThriftBinaryUDP.Endpoint))
 	}
 
 	if jr.config.ThriftCompactUDP != nil {
@@ -238,7 +238,7 @@ func (jr *jReceiver) startAgent() error {
 		}
 		jr.agentProcessors = append(jr.agentProcessors, processor)
 
-		jr.settings.Logger.Info("Starting UDP server for Compact Thrift", zap.String("endpoint", jr.config.AgentCompactThrift.Endpoint))
+		jr.settings.Logger.Info("Starting UDP server for Compact Thrift", zap.String("endpoint", jr.config.ThriftCompactUDP.Endpoint))
 	}
 
 	jr.goroutines.Add(len(jr.agentProcessors))
@@ -344,7 +344,7 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 			return err
 		}
 
-		jr.settings.Logger.Info("Starting HTTP server for Jaeger Thrift", zap.String("endpoint", jr.config.HTTPServerConfig.Endpoint))
+		jr.settings.Logger.Info("Starting HTTP server for Jaeger Thrift", zap.String("endpoint", jr.config.ThriftHTTP.Endpoint))
 
 		jr.goroutines.Add(1)
 		go func() {
@@ -369,7 +369,7 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 
 		api_v2.RegisterCollectorServiceServer(jr.grpc, jr)
 
-		jr.settings.Logger.Info("Starting gRPC server for Jaeger Protobuf", zap.String("endpoint", jr.config.GRPCServerConfig.NetAddr.Endpoint))
+		jr.settings.Logger.Info("Starting gRPC server for Jaeger Protobuf", zap.String("endpoint", jr.config.GRPC.NetAddr.Endpoint))
 
 		jr.goroutines.Add(1)
 		go func() {
