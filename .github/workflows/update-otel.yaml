@@ -28,6 +28,6 @@ jobs:
           make genotelcontribcol
           make update-otel
           git push --set-upstream origin $branch  
-          gh pr create --base main --title "[chore] Update core dependencies ${CANDIDATE_BETA}" --body "This PR updates the opentelemetry-collector dependency to the latest release"
+          gh pr create --base main --title "[chore] Update core dependencies" --body "This PR updates the opentelemetry-collector dependency to the latest release"
         env:
           GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
