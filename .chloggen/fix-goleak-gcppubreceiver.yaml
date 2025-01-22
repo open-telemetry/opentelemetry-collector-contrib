@@ -1,8 +1,0 @@
-change_type: bug_fix
-component: googlecloudpubsubreceiver
-note: Fix a goroutine leak during shutdown.
-issues: [30438]
-subtext: |
-  A goroutine leak was found in the googlecloudpubsubreceiver. 
-  The goroutine leak was caused by the receiver not closing the underlying created gRPC client when using an insecure custom endpoint.
-change_logs: []
