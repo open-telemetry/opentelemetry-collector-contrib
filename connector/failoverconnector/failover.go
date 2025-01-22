@@ -33,13 +33,14 @@ func newFailoverRouter[C any](provider consumerProvider[C], cfg *Config) *failov
 	var wg sync.WaitGroup
 	done := make(chan struct{})
 	pSConstants := state.PSConstants{
-		RetryInterval: cfg.RetryInterval,
-		RetryGap:      cfg.RetryGap,
-		MaxRetries:    cfg.MaxRetries,
-		RetryBackoff:  cfg.RetryBackoff,
+		RetryInterval:   cfg.RetryInterval,
+		RetryGap:        cfg.RetryGap,
+		MaxRetries:      cfg.MaxRetries,
+		RetryBackoff:    cfg.RetryBackoff,
+		PriorityListLen: len(cfg.PipelinePriority),
 	}
 
-	selector := state.NewPipelineSelector(len(cfg.PipelinePriority), pSConstants)
+	selector := state.NewPipelineSelector(pSConstants)
 	selector.Start(done, &wg)
 	return &failoverRouter[C]{
 		consumerProvider: provider,

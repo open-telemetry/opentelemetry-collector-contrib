@@ -13,11 +13,12 @@ import (
 
 func TestSelectPipeline(t *testing.T) {
 	constants := PSConstants{
-		RetryInterval: 50 * time.Millisecond,
-		RetryGap:      10 * time.Millisecond,
-		MaxRetries:    1000,
+		RetryInterval:   50 * time.Millisecond,
+		RetryGap:        10 * time.Millisecond,
+		MaxRetries:      1000,
+		PriorityListLen: 5,
 	}
-	pS := NewPipelineSelector(5, constants)
+	pS := NewPipelineSelector(constants)
 
 	idx, ch := pS.SelectedPipeline()
 
@@ -33,7 +34,7 @@ func TestHandlePipelineError(t *testing.T) {
 		RetryGap:      10 * time.Millisecond,
 		MaxRetries:    1000,
 	}
-	pS := NewPipelineSelector(5, constants)
+	pS := NewPipelineSelector(constants)
 
 	wg.Add(1)
 	go pS.ListenToChannels(done, &wg)
@@ -58,7 +59,7 @@ func TestCurrentPipelineWithRetry(t *testing.T) {
 		RetryGap:      10 * time.Millisecond,
 		MaxRetries:    1000,
 	}
-	pS := NewPipelineSelector(5, constants)
+	pS := NewPipelineSelector(constants)
 
 	pS.TestSetStableIndex(2)
 	pS.TestRetryPipelines(constants.RetryInterval, constants.RetryGap)

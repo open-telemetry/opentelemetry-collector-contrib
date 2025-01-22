@@ -10,10 +10,11 @@ import (
 )
 
 type PSConstants struct {
-	RetryInterval time.Duration
-	RetryGap      time.Duration
-	MaxRetries    int
-	RetryBackoff  time.Duration
+	RetryInterval   time.Duration
+	RetryGap        time.Duration
+	MaxRetries      int
+	RetryBackoff    time.Duration
+	PriorityListLen int
 }
 
 type TryLock struct {

@@ -185,7 +185,7 @@ func TestFailoverRecovery_MaxRetries(t *testing.T) {
 	defer func() {
 		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
 	}()
-
+	
 	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
 	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
 
