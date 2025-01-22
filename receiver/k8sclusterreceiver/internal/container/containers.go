@@ -4,6 +4,8 @@
 package container // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/container"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -18,8 +20,9 @@ import (
 
 const (
 	// Keys for container metadata.
-	containerKeyStatus       = "container.status"
-	containerKeyStatusReason = "container.status.reason"
+	containerKeyStatus          = "container.status"
+	containerKeyStatusReason    = "container.status.reason"
+	containerContainerTimestamp = "container.creation_timestamp"
 
 	// Values for container metadata
 	containerStatusRunning    = "running"
@@ -98,11 +101,17 @@ func GetMetadata(cs corev1.ContainerStatus) *metadata.KubernetesMetadata {
 
 	if cs.State.Running != nil {
 		mdata[containerKeyStatus] = containerStatusRunning
+		if !cs.State.Running.StartedAt.IsZero() {
+			mdata[containerContainerTimestamp] = cs.State.Running.StartedAt.Format(time.RFC3339)
+		}
 	}
 
 	if cs.State.Terminated != nil {
 		mdata[containerKeyStatus] = containerStatusTerminated
 		mdata[containerKeyStatusReason] = cs.State.Terminated.Reason
+		if !cs.State.Terminated.StartedAt.IsZero() {
+			mdata[containerContainerTimestamp] = cs.State.Terminated.StartedAt.Format(time.RFC3339)
+		}
 	}
 
 	if cs.State.Waiting != nil {
