@@ -312,7 +312,7 @@ generate: install-tools
 
 .PHONY: gengithub
 gengithub: $(GITHUBGEN)
-	$(GITHUBGEN) --skipgithub
+	$(GITHUBGEN)
 
 .PHONY: gendistributions
 gendistributions: $(GITHUBGEN)
