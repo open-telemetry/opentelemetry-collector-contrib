@@ -12,7 +12,7 @@ receivers:
         - job_name: 'otelcol'
           scrape_interval: 1s
           static_configs:
-            - targets: [ 'localhost:8888' ]
+            - targets: [ '${env:PROM_SERVER}' ]
 
 exporters:
   datadog:
@@ -33,7 +33,7 @@ service:
   telemetry:
     metrics:
       level: basic
-      address: "localhost:8888"
+      address: ${env:PROM_SERVER}
   pipelines:
     traces:
       receivers: [otlp]
