@@ -111,4 +111,9 @@ var (
 	// routeSpanEvent returns the name of the index to send the span event to according to data stream routing related attributes.
 	// This function may mutate record attributes.
 	routeSpanEvent = routeWithDefaults(defaultDataStreamTypeLogs)
+
+	// routeProfile returns the name of the index to send the profile to
+	// according to data stream routing related attributes.
+	// This function may mutate record attributes.
+	routeProfile = routeWithDefaults(defaultDataStreamTypeProfiles)
 )

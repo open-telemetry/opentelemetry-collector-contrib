@@ -53,6 +53,11 @@ type Config struct {
 	// fall back to pure TracesIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
 	TracesDynamicIndex DynamicIndexSetting `mapstructure:"traces_dynamic_index"`
 
+	// This setting is required when profiles pipelines used.
+	ProfilesIndex string `mapstructure:"profiles_index"`
+	// fall back to pure ProfilesIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
+	ProfilesDynamicIndex DynamicIndexSetting `mapstructure:"profiles_dynamic_index"`
+
 	// LogsDynamicID configures whether log record attribute `elasticsearch.document_id` is set as the document ID in ES.
 	LogsDynamicID DynamicIDSettings `mapstructure:"logs_dynamic_id"`
 

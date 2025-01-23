@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
@@ -476,4 +477,91 @@ func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string
 		return ""
 	}
 	return v.AsString()
+}
+
+func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofile.Profiles) error {
+	e.wg.Add(1)
+	defer e.wg.Done()
+
+	session, err := e.bulkIndexer.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer session.End()
+
+	var errs []error
+	rps := pd.ResourceProfiles()
+	for i := 0; i < rps.Len(); i++ {
+		rp := rps.At(i)
+		resource := rp.Resource()
+		sps := rp.ScopeProfiles()
+		for j := 0; j < sps.Len(); j++ {
+			sp := sps.At(j)
+			scope := sp.Scope()
+			p := sp.Profiles()
+			for k := 0; k < p.Len(); k++ {
+				if err := e.pushProfileRecord(ctx, resource, rp.SchemaUrl(), p.At(k), scope, sp.SchemaUrl(), session); err != nil {
+					if cerr := ctx.Err(); cerr != nil {
+						return cerr
+					}
+
+					if errors.Is(err, ErrInvalidTypeForBodyMapMode) {
+						e.Logger.Warn("dropping log record", zap.Error(err))
+						continue
+					}
+
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+
+	if err := session.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
+	return errors.Join(errs...)
+}
+
+func (e *elasticsearchExporter) pushProfileRecord(
+	ctx context.Context,
+	resource pcommon.Resource,
+	resourceSchemaURL string,
+	record pprofile.Profile,
+	scope pcommon.InstrumentationScope,
+	scopeSchemaURL string,
+	bulkIndexerSession bulkIndexerSession,
+) error {
+	fIndex := elasticsearch.Index{Index: e.index}
+	attrs, err := buildProfileAttributes(record)
+	if err != nil {
+		return fmt.Errorf("failed to build profile attributes: %w", err)
+	}
+	if e.dynamicIndex {
+		fIndex = routeProfile(attrs, scope.Attributes(), resource.Attributes(), e.index, e.otel, scope.Name())
+	}
+
+	docID := e.extractDocumentIDAttribute(attrs)
+	buf := e.bufferPool.NewPooledBuffer()
+	err = e.model.encodeProfile(resource, resourceSchemaURL, record, scope, scopeSchemaURL, fIndex, buf.Buffer)
+	if err != nil {
+		buf.Recycle()
+		return fmt.Errorf("failed to encode profile: %w", err)
+	}
+	// not recycling after Add returns an error as we don't know if it's already recycled
+	return bulkIndexerSession.Add(ctx, fIndex.Index, docID, buf, nil)
+}
+
+func buildProfileAttributes(profile pprofile.Profile) (pcommon.Map, error) {
+	attrs := map[string]any{}
+	for i := range profile.AttributeIndices().AsRaw() {
+		a := profile.AttributeTable().At(i)
+		attrs[a.Key()] = a.Value().AsRaw()
+	}
+
+	m := pcommon.NewMap()
+	err := m.FromRaw(attrs)
+	return m, err
 }
