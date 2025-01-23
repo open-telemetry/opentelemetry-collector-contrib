@@ -11,9 +11,11 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/gogo/protobuf/proto"
@@ -84,6 +86,9 @@ type prwExporter struct {
 	wal               *prweWAL
 	exporterSettings  prometheusremotewrite.Settings
 	telemetry         prwTelemetry
+
+	connNotReused atomic.Int32
+	connReused    atomic.Int32
 
 	// When concurrency is enabled, concurrent goroutines would potentially
 	// fight over the same batchState object. To avoid this, we use a pool
@@ -189,6 +194,7 @@ func (prwe *prwExporter) Shutdown(context.Context) error {
 	}
 	err := prwe.shutdownWALIfEnabled()
 	prwe.wg.Wait()
+	prwe.settings.Logger.Debug("HTTP client connections", zap.Int32("reused", prwe.connReused.Load()), zap.Int32("not_reused", prwe.connNotReused.Load()))
 	return err
 }
 
@@ -337,6 +343,16 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		}
 
 		// Create the HTTP POST request to send to the endpoint
+		clientTrace := &httptrace.ClientTrace{
+			GotConn: func(info httptrace.GotConnInfo) {
+				if !info.Reused {
+					prwe.connNotReused.Add(1)
+				} else {
+					prwe.connReused.Add(1)
+				}
+			},
+		}
+		ctx = httptrace.WithClientTrace(ctx, clientTrace)
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, prwe.endpointURL.String(), bytes.NewReader(compressedData))
 		if err != nil {
 			return backoff.Permanent(consumererror.NewPermanent(err))
@@ -353,7 +369,10 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		defer func() {
+			_, _ = io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
+		}()
 
 		// 2xx status code is considered a success
 		// 5xx errors are recoverable and the exporter should retry
