@@ -11,7 +11,7 @@
 
 * @open-telemetry/collector-contrib-approvers
 
-cmd/githubgen/                                                   @open-telemetry/collector-contrib-approvers @atoulme @mowies
+cmd/githubgen/                                                   @open-telemetry/collector-contrib-approvers @atoulme
 cmd/opampsupervisor/                                             @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan
 cmd/otelcontribcol/                                              @open-telemetry/collector-contrib-approvers
 cmd/oteltestbedcol/                                              @open-telemetry/collector-contrib-approvers

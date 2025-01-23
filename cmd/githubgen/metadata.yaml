@@ -5,4 +5,4 @@ status:
     deprecated: []
   class: cmd
   codeowners:
-    active: [atoulme, mowies]
+    active: [atoulme]
