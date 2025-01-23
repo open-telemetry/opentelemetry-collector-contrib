@@ -697,14 +697,12 @@ func TestMostRecentTimestampInMetric(t *testing.T) {
 func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	tests := []struct {
-		name          string
-		isGateEnabled bool
-		metric        func() pmetric.Metric
-		want          func() map[uint64]*prompb.TimeSeries
+		name   string
+		metric func() pmetric.Metric
+		want   func() map[uint64]*prompb.TimeSeries
 	}{
 		{
-			name:          "summary with start time",
-			isGateEnabled: true,
+			name: "summary with start time",
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_summary")
@@ -740,8 +738,7 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 			},
 		},
 		{
-			name:          "summary without start time",
-			isGateEnabled: true,
+			name: "summary without start time",
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_summary")
@@ -776,8 +773,7 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 			},
 		},
 		{
-			name:          "summary with exportCreatedMetricGate enabled",
-			isGateEnabled: true,
+			name: "summary with exportCreatedMetricGate enabled",
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_summary")
@@ -816,7 +812,7 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			oldValue := exportCreatedMetricGate.IsEnabled()
-			testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, tt.isGateEnabled)
+			testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, true)
 			defer testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, oldValue)
 
 			metric := tt.metric()
@@ -840,14 +836,12 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	tests := []struct {
-		name          string
-		isGateEnabled bool
-		metric        func() pmetric.Metric
-		want          func() map[uint64]*prompb.TimeSeries
+		name   string
+		metric func() pmetric.Metric
+		want   func() map[uint64]*prompb.TimeSeries
 	}{
 		{
-			name:          "histogram with start time",
-			isGateEnabled: true,
+			name: "histogram with start time",
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_hist")
@@ -884,8 +878,7 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 			},
 		},
 		{
-			name:          "histogram without start time",
-			isGateEnabled: true,
+			name: "histogram without start time",
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_hist")
@@ -921,8 +914,7 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 			},
 		},
 		{
-			name:          "histogram with exportCreatedMetricGate enabled",
-			isGateEnabled: true,
+			name: "histogram with exportCreatedMetricGate enabled",
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_hist")
@@ -962,7 +954,7 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			oldValue := exportCreatedMetricGate.IsEnabled()
-			testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, tt.isGateEnabled)
+			testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, true)
 			defer testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, oldValue)
 
 			metric := tt.metric()
