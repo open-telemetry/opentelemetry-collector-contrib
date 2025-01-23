@@ -2069,6 +2069,18 @@ Examples:
 
 - `ToSnakeCase(metric.name)`
 
+### ToUpperCase
+
+`ToUpperCase(target)`
+
+The `ToUpperCase` Converter converts the `target` string into upper case (e.g. `MyMetricName` to `MYMETRICNAME`).
+
+`target` is a string.
+
+Examples:
+
+- `ToUpperCase(metric.name)`
+
 ### TraceID
 
 `TraceID(bytes)`
