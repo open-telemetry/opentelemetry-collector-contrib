@@ -353,7 +353,10 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		defer func() {
+			_, _ = io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
+		}()
 
 		// 2xx status code is considered a success
 		// 5xx errors are recoverable and the exporter should retry
