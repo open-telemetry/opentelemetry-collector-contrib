@@ -27,6 +27,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.8"
+          cache: false
+
       - name: Cache Go Tools
         id: go-tools-cache
         timeout-minutes: 5
