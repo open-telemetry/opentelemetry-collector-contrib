@@ -31,7 +31,7 @@ Required settings (no defaults):
     - `consumers`
     - `brokers`
     
-Metrics collected by the associated scraper are listed [here](metadata.yaml)
+Metrics collected by the associated scraper are listed in [metadata.yaml](metadata.yaml)
 
 Optional Settings (with defaults):
 

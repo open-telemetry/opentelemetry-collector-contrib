@@ -124,7 +124,7 @@ func TestInfo(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
 
-	// befoe ebsVolume and ec2Tags are initialized
+	// before ebsVolume and ec2Tags are initialized
 	assert.Equal(t, "", m.GetEBSVolumeID("dev"))
 	assert.Equal(t, "", m.GetClusterName())
 	assert.Equal(t, "", m.GetAutoScalingGroupName())
@@ -201,7 +201,7 @@ func TestInfoForECS(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, m)
 
-	// befoe ebsVolume and ec2Tags are initialized
+	// before ebsVolume and ec2Tags are initialized
 	assert.Equal(t, "", m.GetEBSVolumeID("dev"))
 	assert.Equal(t, "", m.GetAutoScalingGroupName())
 

@@ -3,7 +3,7 @@
 
 // Package awsfirehosereceiver implements a receiver that can be used to
 // receive requests from the AWS Kinesis Data Firehose and transform them
-// into formats usable by the Opentelemetry collector. The configuration
+// into formats usable by the OpenTelemetry collector. The configuration
 // determines which unmarshaler to use. Each unmarshaler is responsible for
 // processing a Firehose record format that can be sent through the delivery
 // stream.

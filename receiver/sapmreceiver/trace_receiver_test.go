@@ -370,12 +370,12 @@ func TestStatusCode(t *testing.T) {
 	}{
 		{
 			name:           "non-permanent error",
-			err:            errors.New("non-permanenet error"),
+			err:            errors.New("non-permanent error"),
 			expectedStatus: http.StatusServiceUnavailable,
 		},
 		{
 			name:           "permanent error",
-			err:            consumererror.NewPermanent(errors.New("non-permanenet error")),
+			err:            consumererror.NewPermanent(errors.New("non-permanent error")),
 			expectedStatus: http.StatusBadRequest,
 		},
 	}

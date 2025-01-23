@@ -72,7 +72,7 @@ func TestScrape(t *testing.T) {
 	resultsMapLock := sync.Mutex{}
 
 	testFn := func(t *testing.T, test testCase) {
-		// wait for messurement to start
+		// wait for measurement to start
 		<-startChan
 
 		scraper := newLoadScraper(context.Background(), scrapertest.NewNopSettings(), test.config)
@@ -179,7 +179,7 @@ func assertCompareAveragePerCPU(t *testing.T, average pmetric.Metric, standard p
 		// For hardware with only 1 cpu, results must be very close
 		assert.InDelta(t, valAverage, valStandard, 0.1)
 	} else {
-		// For hardward with multiple CPU, average per cpu is fatally less than standard
+		// For hardware with multiple CPU, average per cpu is fatally less than standard
 		assert.Less(t, valAverage, valStandard)
 	}
 }

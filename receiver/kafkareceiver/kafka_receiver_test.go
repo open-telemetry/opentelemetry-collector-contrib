@@ -65,7 +65,7 @@ func TestNewTracesReceiver_err_auth_type(t *testing.T) {
 		Authentication: kafka.Authentication{
 			TLS: &configtls.ClientConfig{
 				Config: configtls.Config{
-					CAFile: "/doesnotexist",
+					CAFile: "/nonexistent",
 				},
 			},
 		},
@@ -424,7 +424,7 @@ func TestNewMetricsExporter_err_auth_type(t *testing.T) {
 		Authentication: kafka.Authentication{
 			TLS: &configtls.ClientConfig{
 				Config: configtls.Config{
-					CAFile: "/doesnotexist",
+					CAFile: "/nonexistent",
 				},
 			},
 		},
@@ -769,7 +769,7 @@ func TestNewLogsExporter_err_auth_type(t *testing.T) {
 		Authentication: kafka.Authentication{
 			TLS: &configtls.ClientConfig{
 				Config: configtls.Config{
-					CAFile: "/doesnotexist",
+					CAFile: "/nonexistent",
 				},
 			},
 		},
@@ -1083,7 +1083,7 @@ func TestLogsConsumerGroupHandler_unmarshal_text(t *testing.T) {
 		enc  string
 	}{
 		{
-			name: "unmarshal test for Englist (ASCII characters) with text_utf8",
+			name: "unmarshal test for English (ASCII characters) with text_utf8",
 			text: "ASCII characters test",
 			enc:  "utf8",
 		},

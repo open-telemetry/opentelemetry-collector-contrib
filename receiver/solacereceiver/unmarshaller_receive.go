@@ -175,7 +175,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *rec
 	attrMap.PutInt(droppedEnqueueEventsSuccessAttrKey, int64(spanData.DroppedEnqueueEventsSuccess))
 	attrMap.PutInt(droppedEnqueueEventsFailedAttrKey, int64(spanData.DroppedEnqueueEventsFailed))
 
-	// The IPs are now optional meaning we will not incluude them if they are zero length
+	// The IPs are now optional meaning we will not include them if they are zero length
 	hostIPLen := len(spanData.HostIp)
 	if hostIPLen == 4 || hostIPLen == 16 {
 		attrMap.PutStr(hostIPAttrKey, net.IP(spanData.HostIp).String())
@@ -372,7 +372,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) unmarshalBaggage(toMap pcommon.Map, b
 	return nil
 }
 
-// insertUserProperty will instert a user property value with the given key to an attribute if possible.
+// insertUserProperty will insert a user property value with the given key to an attribute if possible.
 // Since AttributeMap only supports int64 integer types, uint64 data may be misrepresented.
 func (u *brokerTraceReceiveUnmarshallerV1) insertUserProperty(toMap pcommon.Map, key string, value any) {
 	const (

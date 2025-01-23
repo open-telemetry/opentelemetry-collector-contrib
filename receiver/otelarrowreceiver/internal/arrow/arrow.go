@@ -354,7 +354,7 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 	pendingCh := make(chan batchResp, runtime.NumCPU())
 
 	// wg is used to ensure this thread returns after both
-	// sender and recevier threads return.
+	// sender and receiver threads return.
 	var sendWG sync.WaitGroup
 	var recvWG sync.WaitGroup
 	sendWG.Add(1)
@@ -524,7 +524,7 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 // data.
 //
 // This handles constructing an inFlightData object, which itself
-// tracks everything that needs to be used by instrumention when the
+// tracks everything that needs to be used by instrumentation when the
 // batch finishes.
 func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStreamServer, hrcv *headerReceiver, pendingCh chan<- batchResp, method string, ac arrowRecord.ConsumerAPI) (retErr error) {
 	// Receive a batch corresponding with one ptrace.Traces, pmetric.Metrics,

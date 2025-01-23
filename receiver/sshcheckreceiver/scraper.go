@@ -63,7 +63,7 @@ func (s *sshcheckScraper) scrapeSFTP(now pcommon.Timestamp) error {
 	return err
 }
 
-// timeout chooses the shorter between between a given deadline and timeout
+// timeout chooses the shorter duration between a given deadline and timeout
 func timeout(deadline time.Time, timeout time.Duration) time.Duration {
 	timeToDeadline := time.Until(deadline)
 	if timeToDeadline < timeout {

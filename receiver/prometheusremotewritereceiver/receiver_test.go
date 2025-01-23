@@ -77,32 +77,32 @@ func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 	for _, tc := range []struct {
 		name         string
 		contentType  string
-		extectedCode int
+		expectedCode int
 	}{
 		{
 			name:         "no content type",
 			contentType:  "",
-			extectedCode: http.StatusUnsupportedMediaType,
+			expectedCode: http.StatusUnsupportedMediaType,
 		},
 		{
 			name:         "unsupported content type",
 			contentType:  "application/json",
-			extectedCode: http.StatusUnsupportedMediaType,
+			expectedCode: http.StatusUnsupportedMediaType,
 		},
 		{
 			name:         "x-protobuf/no proto parameter",
 			contentType:  "application/x-protobuf",
-			extectedCode: http.StatusUnsupportedMediaType,
+			expectedCode: http.StatusUnsupportedMediaType,
 		},
 		{
 			name:         "x-protobuf/v1 proto parameter",
 			contentType:  fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV1),
-			extectedCode: http.StatusUnsupportedMediaType,
+			expectedCode: http.StatusUnsupportedMediaType,
 		},
 		{
 			name:         "x-protobuf/v2 proto parameter",
 			contentType:  fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2),
-			extectedCode: http.StatusNoContent,
+			expectedCode: http.StatusNoContent,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -121,8 +121,8 @@ func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 			resp, err := http.DefaultClient.Do(req)
 			assert.NoError(t, err)
 
-			assert.Equal(t, tc.extectedCode, resp.StatusCode)
-			if tc.extectedCode == http.StatusNoContent { // We went until the end
+			assert.Equal(t, tc.expectedCode, resp.StatusCode)
+			if tc.expectedCode == http.StatusNoContent { // We went until the end
 				assert.NotEmpty(t, resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
 				assert.NotEmpty(t, resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
 				assert.NotEmpty(t, resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))

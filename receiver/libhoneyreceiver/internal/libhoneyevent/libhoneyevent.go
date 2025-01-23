@@ -332,8 +332,8 @@ func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]
 	if spanName, ok := l.Data[cfg.Attributes.Name]; ok {
 		newSpan.SetName(spanName.(string))
 	}
-	if spanStatusMessge, ok := l.Data["status_message"]; ok {
-		newSpan.Status().SetMessage(spanStatusMessge.(string))
+	if spanStatusMessage, ok := l.Data["status_message"]; ok {
+		newSpan.Status().SetMessage(spanStatusMessage.(string))
 	}
 	newSpan.Status().SetCode(ptrace.StatusCodeUnset)
 

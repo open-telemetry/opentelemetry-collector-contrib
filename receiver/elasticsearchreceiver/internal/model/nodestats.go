@@ -273,13 +273,13 @@ type JVMInfo struct {
 }
 
 type JVMMemoryInfo struct {
-	HeapUsedInBy        int64          `json:"heap_used_in_bytes"`
-	NonHeapUsedInBy     int64          `json:"non_heap_used_in_bytes"`
-	MaxHeapInBy         int64          `json:"heap_max_in_bytes"`
-	HeapCommittedInBy   int64          `json:"heap_committed_in_bytes"`
-	HeapUsedPercent     int64          `json:"heap_used_percent"`
-	NonHeapComittedInBy int64          `json:"non_heap_committed_in_bytes"`
-	MemoryPools         JVMMemoryPools `json:"pools"`
+	HeapUsedInBy         int64          `json:"heap_used_in_bytes"`
+	NonHeapUsedInBy      int64          `json:"non_heap_used_in_bytes"`
+	MaxHeapInBy          int64          `json:"heap_max_in_bytes"`
+	HeapCommittedInBy    int64          `json:"heap_committed_in_bytes"`
+	HeapUsedPercent      int64          `json:"heap_used_percent"`
+	NonHeapCommittedInBy int64          `json:"non_heap_committed_in_bytes"`
+	MemoryPools          JVMMemoryPools `json:"pools"`
 }
 
 type JVMMemoryPools struct {

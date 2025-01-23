@@ -125,7 +125,7 @@ func clientWithCert(path string) (*http.Client, error) {
 	roots := x509.NewCertPool()
 	ok := roots.AppendCertsFromPEM(b)
 	if !ok {
-		return nil, errors.New("failed to append certficate as root certificate")
+		return nil, errors.New("failed to append certificate as root certificate")
 	}
 
 	return &http.Client{

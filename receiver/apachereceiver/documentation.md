@@ -87,7 +87,7 @@ The number of requests serviced by the HTTP server per second.
 
 The number of workers in each state.
 
-The apache scoreboard is an encoded representation of the state of all the server's workers. This metric decodes the scoreboard and presents a count of workers in each state. Additional details can be found [here](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION).
+The [apache scoreboard](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION) is an encoded representation of the state of all the server's workers. This metric decodes the scoreboard and presents a count of workers in each state.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

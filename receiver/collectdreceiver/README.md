@@ -26,7 +26,7 @@ value `field[a=b, k=v]`, this receiver will extract `a` and `b` as label keys
 and, `k` and `v` as the respective label values.
 
 ## Configuration
-The configuration includes the Opentelemetry collector's server [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#server-configuration),
+The configuration includes the OpenTelemetry collector's server [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#server-configuration),
 which allows for a variety of settings. Only the most relevant ones will be discussed here, but all are available.
 
 The following settings are required:
@@ -49,6 +49,6 @@ receivers:
     timeout: "50s"
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
