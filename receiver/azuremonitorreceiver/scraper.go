@@ -352,7 +352,8 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 
 		for _, v := range nextResult.Value {
 			metricName := *v.Name.Value
-			if !isMetricMatchFilters(metricName, s.cfg.Metrics) {
+			metricAggregations := getMetricAggregations(metricName, s.cfg.Metrics)
+			if len(metricAggregations) == 0 {
 				continue
 			}
 
@@ -361,7 +362,7 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 			compositeKey := metricsCompositeKey{
 				timeGrain:    timeGrain,
 				dimensions:   serializeDimensions(dimensions),
-				aggregations: getMetricAggregations(metricName, s.cfg.Metrics),
+				aggregations: strings.Join(metricAggregations, ","),
 			}
 			s.storeMetricsDefinition(resourceID, metricName, compositeKey)
 		}
@@ -500,21 +501,17 @@ func (s *azureScraper) processTimeseriesData(
 	}
 }
 
-func isMetricMatchFilters(name string, filters []string) bool {
-	name = strings.ToLower(name)
-	for _, filter := range filters {
-		filter = strings.ToLower(filter)
-		if filter == name || strings.HasPrefix(filter, name+"/") {
-			return true
-		}
+func getMetricAggregations(name string, filters []string) []string {
+	if len(filters) == 0 {
+		return aggregations
 	}
 
-	return len(filters) == 0
-}
-
-func getMetricAggregations(name string, filters []string) string {
 	out := []string{}
 	for _, filter := range filters {
+		if strings.EqualFold(name, filter) {
+			return aggregations
+		}
+
 		for _, aggregation := range aggregations {
 			if strings.EqualFold(name+"/"+aggregation, filter) {
 				out = append(out, aggregation)
@@ -522,9 +519,5 @@ func getMetricAggregations(name string, filters []string) string {
 		}
 	}
 
-	if len(out) == 0 {
-		out = aggregations
-	}
-
-	return strings.Join(out, ",")
+	return out
 }
