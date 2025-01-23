@@ -162,7 +162,7 @@ func TestSamplingMultiplePolicies_WithRecordPolicy(t *testing.T) {
 	}
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
-	ct := s.NewSettings()
+	ct := s.newSettings()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -257,7 +257,7 @@ func TestSamplingPolicyDecisionNotSampled_WithRecordPolicy(t *testing.T) {
 	}
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
-	ct := s.NewSettings()
+	ct := s.newSettings()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -347,7 +347,7 @@ func TestSamplingPolicyDecisionInvertNotSampled_WithRecordPolicy(t *testing.T) {
 	}
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
-	ct := s.NewSettings()
+	ct := s.newSettings()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}

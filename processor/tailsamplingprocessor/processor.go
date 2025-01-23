@@ -60,9 +60,9 @@ type tailSamplingSpanProcessor struct {
 	nonSampledIDCache cache.Cache[bool]
 	deleteChan        chan pcommon.TraceID
 	numTracesOnMap    *atomic.Uint64
-	recordPolicy    bool
-	setPolicyMux  sync.Mutex
-	pendingPolicy []PolicyCfg
+	recordPolicy      bool
+	setPolicyMux      sync.Mutex
+	pendingPolicy     []PolicyCfg
 }
 
 // spanAndScope a structure for holding information about span and its instrumentation scope.
