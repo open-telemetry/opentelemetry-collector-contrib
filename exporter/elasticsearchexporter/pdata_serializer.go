@@ -298,7 +298,7 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 	_ = v.OnObjectStart(-1, structform.AnyType)
 	attributes.Range(func(k string, val pcommon.Value) bool {
 		switch k {
-		case dataStreamType, dataStreamDataset, dataStreamNamespace, elasticsearch.MappingHintsAttrKey:
+		case dataStreamType, dataStreamDataset, dataStreamNamespace, elasticsearch.MappingHintsAttrKey, documentIDAttributeName:
 			return true
 		}
 		if isGeoAttribute(k, val) {
