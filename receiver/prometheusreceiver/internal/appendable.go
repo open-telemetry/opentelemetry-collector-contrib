@@ -37,7 +37,6 @@ func NewAppendable(
 	useStartTimeMetric bool,
 	startTimeMetricRegex *regexp.Regexp,
 	useCreatedMetric bool,
-	useCollectorStartTimeFallback bool,
 	enableNativeHistograms bool,
 	externalLabels labels.Labels,
 	trimSuffixes bool,
@@ -46,7 +45,7 @@ func NewAppendable(
 	if !useStartTimeMetric {
 		metricAdjuster = NewInitialPointAdjuster(set.Logger, gcInterval, useCreatedMetric)
 	} else {
-		metricAdjuster = NewStartTimeMetricAdjuster(set.Logger, startTimeMetricRegex, useCollectorStartTimeFallback)
+		metricAdjuster = NewStartTimeMetricAdjuster(set.Logger, startTimeMetricRegex)
 	}
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverID: set.ID, Transport: transport, ReceiverCreateSettings: set})

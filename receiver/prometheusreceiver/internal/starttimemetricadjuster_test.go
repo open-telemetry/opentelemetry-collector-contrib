@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestStartTimeMetricMatch(t *testing.T) {
@@ -114,7 +116,7 @@ func TestStartTimeMetricMatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			stma := NewStartTimeMetricAdjuster(zap.NewNop(), tt.startTimeMetricRegex, false)
+			stma := NewStartTimeMetricAdjuster(zap.NewNop(), tt.startTimeMetricRegex)
 			if tt.expectedErr != nil {
 				assert.ErrorIs(t, stma.AdjustMetrics(tt.inputs), tt.expectedErr)
 				return
@@ -172,7 +174,7 @@ func TestStartTimeMetricFallback(t *testing.T) {
 		expectedErr          error
 	}{
 		{
-			name: "regexp_match_sum_metric_no_fallback",
+			name: "regexp_match_metric_no_fallback",
 			inputs: metrics(
 				sumMetric("test_sum_metric", doublePoint(nil, startTime, currentTime, 16)),
 				histogramMetric("test_histogram_metric", histogramPoint(nil, startTime, currentTime, []float64{1, 2}, []uint64{2, 3, 4})),
@@ -185,7 +187,7 @@ func TestStartTimeMetricFallback(t *testing.T) {
 			expectedStartTime:    timestampFromFloat64(processStartTimeSeconds),
 		},
 		{
-			name: "regexp_match_sum_metric_fallback",
+			name: "regexp_no_regex_match_metric_fallback",
 			inputs: metrics(
 				sumMetric("test_sum_metric", doublePoint(nil, startTime, currentTime, 16)),
 				histogramMetric("test_histogram_metric", histogramPoint(nil, startTime, currentTime, []float64{1, 2}, []uint64{2, 3, 4})),
@@ -195,7 +197,7 @@ func TestStartTimeMetricFallback(t *testing.T) {
 			expectedStartTime:    timestampFromFloat64(mockStartTimeSeconds),
 		},
 		{
-			name: "match_default_sum_start_time_metric_fallback",
+			name: "match_no_match_metric_fallback",
 			inputs: metrics(
 				sumMetric("test_sum_metric", doublePoint(nil, startTime, currentTime, 16)),
 				histogramMetric("test_histogram_metric", histogramPoint(nil, startTime, currentTime, []float64{1, 2}, []uint64{2, 3, 4})),
@@ -207,20 +209,16 @@ func TestStartTimeMetricFallback(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			stma := NewStartTimeMetricAdjuster(zap.NewNop(), tt.startTimeMetricRegex, true)
+			testutil.SetFeatureGateForTest(t, useCollectorStartTimeFallbackGate, true)
+			stma := NewStartTimeMetricAdjuster(zap.NewNop(), tt.startTimeMetricRegex)
 			if tt.expectedErr != nil {
 				assert.ErrorIs(t, stma.AdjustMetrics(tt.inputs), tt.expectedErr)
 				return
 			}
 
-			// Make sure the right adjuster is used and one that has the fallback time set.
-			metricAdjuster, ok := stma.(*startTimeMetricAdjuster)
-			assert.True(t, ok)
-			assert.NotNil(t, metricAdjuster.fallbackStartTime)
-
 			// To test that the adjuster is using the fallback correctly, override the fallback time to use
 			// directly.
-			metricAdjuster.fallbackStartTime = &mockStartTime
+			approximateCollectorStartTime = mockStartTime
 
 			assert.NoError(t, stma.AdjustMetrics(tt.inputs))
 			for i := 0; i < tt.inputs.ResourceMetrics().Len(); i++ {

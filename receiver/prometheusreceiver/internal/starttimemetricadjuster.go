@@ -5,11 +5,10 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"errors"
-	"os"
 	"regexp"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/process"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
@@ -19,42 +18,35 @@ var (
 	errNoDataPointsStartTimeMetric    = errors.New("start time metric with no data points")
 	errUnsupportedTypeStartTimeMetric = errors.New("unsupported data type for start time metric")
 
-	// collectorStartTime is the approximate start time of the collector. Used
-	// as a fallback start time for metrics that don't have a start time set.
-	// Set when the component is initialized.
-	collectorStartTime *time.Time
+	// approximateCollectorStartTime is the approximate start time of the
+	// collector. Used as a fallback start time for metrics that don't have a
+	// start time set (when the
+	// receiver.prometheusreceiver.UseCollectorStartTimeFallback feature gate is
+	// enabled).  Set when the component is initialized.
+	approximateCollectorStartTime time.Time
+)
+
+var useCollectorStartTimeFallbackGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheusreceiver.UseCollectorStartTimeFallback",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver's"+
+		" start time metric adjuster will fallback to using the collector start time"+
+		" when a start time is not available"),
 )
 
 func init() {
-	p, err := process.NewProcess(int32(os.Getpid()))
-	if err != nil {
-		panic("Unable to find current process" + err.Error())
-	}
-
-	ct, err := p.CreateTime()
-	if err != nil {
-		panic("Unable to find process start time" + err.Error())
-	}
-
-	startTime := time.Unix(ct/1000, 0) // Convert milliseconds to seconds
-	collectorStartTime = &startTime
+	approximateCollectorStartTime = time.Now()
 }
 
 type startTimeMetricAdjuster struct {
 	startTimeMetricRegex *regexp.Regexp
-	fallbackStartTime    *time.Time
 	logger               *zap.Logger
 }
 
 // NewStartTimeMetricAdjuster returns a new MetricsAdjuster that adjust metrics' start times based on a start time metric.
-func NewStartTimeMetricAdjuster(logger *zap.Logger, startTimeMetricRegex *regexp.Regexp, useCollectorStartTimeFallback bool) MetricsAdjuster {
-	var fallbackStartTime *time.Time
-	if useCollectorStartTimeFallback {
-		fallbackStartTime = collectorStartTime
-	}
+func NewStartTimeMetricAdjuster(logger *zap.Logger, startTimeMetricRegex *regexp.Regexp) MetricsAdjuster {
 	return &startTimeMetricAdjuster{
 		startTimeMetricRegex: startTimeMetricRegex,
-		fallbackStartTime:    fallbackStartTime,
 		logger:               logger,
 	}
 }
@@ -62,11 +54,11 @@ func NewStartTimeMetricAdjuster(logger *zap.Logger, startTimeMetricRegex *regexp
 func (stma *startTimeMetricAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 	startTime, err := stma.getStartTime(metrics)
 	if err != nil {
-		if stma.fallbackStartTime == nil {
+		if !useCollectorStartTimeFallbackGate.IsEnabled() {
 			return err
 		}
-		stma.logger.Info("Couldn't get start time for metrics. Using fallback start time.", zap.Error(err), zap.Time("fallback_start_time", *stma.fallbackStartTime))
-		startTime = float64(stma.fallbackStartTime.Unix())
+		stma.logger.Info("Couldn't get start time for metrics. Using fallback start time.", zap.Error(err), zap.Time("fallback_start_time", approximateCollectorStartTime))
+		startTime = float64(approximateCollectorStartTime.Unix())
 	}
 
 	startTimeTs := timestampFromFloat64(startTime)
