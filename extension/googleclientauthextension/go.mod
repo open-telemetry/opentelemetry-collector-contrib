@@ -7,11 +7,11 @@ exclude github.com/knadh/koanf v1.5.0
 require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.49.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.118.1-0.20250121185328-fbefb22cc2b3
-	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250121185328-fbefb22cc2b3
+	go.opentelemetry.io/collector/component v0.118.1-0.20250123110230-50de4a2f61f7
+	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250123110230-50de4a2f61f7
 	go.opentelemetry.io/collector/confmap v1.24.1-0.20250123110230-50de4a2f61f7
-	go.opentelemetry.io/collector/extension v0.118.1-0.20250121185328-fbefb22cc2b3
-	go.opentelemetry.io/collector/extension/extensiontest v0.118.1-0.20250121185328-fbefb22cc2b3
+	go.opentelemetry.io/collector/extension v0.118.1-0.20250123110230-50de4a2f61f7
+	go.opentelemetry.io/collector/extension/extensiontest v0.118.1-0.20250123110230-50de4a2f61f7
 	go.uber.org/goleak v1.3.0
 )
 
@@ -37,7 +37,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250123110230-50de4a2f61f7 // indirect
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250123110230-50de4a2f61f7 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect

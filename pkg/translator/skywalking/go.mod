@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250123110230-50de4a2f61f7
-	go.opentelemetry.io/collector/semconv v0.118.1-0.20250121185328-fbefb22cc2b3
+	go.opentelemetry.io/collector/semconv v0.118.1-0.20250123110230-50de4a2f61f7
 	go.uber.org/goleak v1.3.0
 	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
 )
