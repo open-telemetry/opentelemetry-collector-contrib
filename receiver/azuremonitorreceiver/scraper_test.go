@@ -656,84 +656,42 @@ func TestAzureScraperClientOptions(t *testing.T) {
 	}
 }
 
-func TestIsMetricMatchFilters(t *testing.T) {
-	testMetricName := "MetricName1"
-	tests := []struct {
-		name    string
-		filters []string
-		want    bool
-	}{
-		{
-			"filters_empty",
-			[]string{},
-			true,
-		},
-		{
-			"filters_include_metric",
-			[]string{"foo", testMetricName, "bar"},
-			true,
-		},
-		{
-			"filters_include_metric_ignore_case",
-			[]string{"foo", strings.ToLower(testMetricName), "bar"},
-			true,
-		},
-		{
-			"filters_include_metric_aggregation",
-			[]string{"foo/count", testMetricName + "/total", "bar/total"},
-			true,
-		},
-		{
-			"filters_exclude_metric",
-			[]string{"foo", "bar"},
-			false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := isMetricMatchFilters(testMetricName, tt.filters)
-			require.Equal(t, tt.want, got)
-		})
-	}
-}
-
 func TestGetMetricAggregations(t *testing.T) {
 	testMetricName := "MetricName"
 	tests := []struct {
 		name    string
 		filters []string
-		want    string
+		want    []string
 	}{
 		{
 			"filters_empty",
 			[]string{},
-			strings.Join(aggregations, ","),
+			aggregations,
 		},
 		{
 			"filters_include_metric",
 			[]string{"foo", testMetricName, "bar"},
-			strings.Join(aggregations, ","),
+			aggregations,
 		},
 		{
 			"filters_include_metric_ignore_case",
 			[]string{"foo", strings.ToLower(testMetricName), "bar"},
-			strings.Join(aggregations, ","),
+			aggregations,
 		},
 		{
 			"filters_include_metric_aggregation",
 			[]string{"foo/count", testMetricName + "/" + aggregations[0], "bar/total"},
-			aggregations[0],
+			[]string{aggregations[0]},
 		},
 		{
 			"filters_include_metric_aggregation_ignore_case",
 			[]string{"foo/count", testMetricName + "/" + strings.ToLower(aggregations[0]), "bar/total"},
-			aggregations[0],
+			[]string{aggregations[0]},
 		},
 		{
 			"filters_include_metric_multiple_aggregations",
 			[]string{"foo/count", testMetricName + "/" + aggregations[0], testMetricName + "/" + aggregations[2]},
-			aggregations[0] + "," + aggregations[2],
+			[]string{aggregations[0], aggregations[2]},
 		},
 	}
 
