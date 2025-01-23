@@ -83,7 +83,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250123110230-50de4a2f61f7 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.118.1-0.20250123110230-50de4a2f61f7 // indirect
 	go.opentelemetry.io/collector/semconv v0.118.1-0.20250123110230-50de4a2f61f7 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
