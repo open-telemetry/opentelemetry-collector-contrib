@@ -39,7 +39,7 @@ type TransformContext struct {
 	cache                pcommon.Map
 	scopeSpans           ptrace.ScopeSpans
 	resouceSpans         ptrace.ResourceSpans
-	eventIndex           int64
+	eventIndex           *int64
 }
 
 func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
@@ -48,7 +48,9 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 	err = errors.Join(err, encoder.AddObject("span", logging.Span(tCtx.span)))
 	err = errors.Join(err, encoder.AddObject("spanevent", logging.SpanEvent(tCtx.spanEvent)))
 	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
-	encoder.AddInt64("eventindex", tCtx.eventIndex)
+	if tCtx.eventIndex != nil {
+		encoder.AddInt64("eventindex", *tCtx.eventIndex)
+	}
 	return err
 }
 
@@ -85,9 +87,7 @@ func WithCache(cache *pcommon.Map) TransformContextOption {
 // The index must be greater than or equal to zero, otherwise the given val will not be applied.
 func WithEventIndex(eventIndex int64) TransformContextOption {
 	return func(p *TransformContext) {
-		if eventIndex >= 0 {
-			p.eventIndex = eventIndex
-		}
+		p.eventIndex = &eventIndex
 	}
 }
 
@@ -119,8 +119,14 @@ func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
 	return tCtx.resouceSpans
 }
 
-func (tCtx TransformContext) GetEventIndex() int64 {
-	return tCtx.eventIndex
+func (tCtx TransformContext) GetEventIndex() (int64, error) {
+	if tCtx.eventIndex != nil {
+		if *tCtx.eventIndex < 0 {
+			return 0, errors.New("found invalid value for 'event_index'")
+		}
+		return *tCtx.eventIndex, nil
+	}
+	return 0, errors.New("no 'event_index' property has been set")
 }
 
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
@@ -370,7 +376,7 @@ func accessSpanEventDroppedAttributeCount() ottl.StandardGetSetter[TransformCont
 func accessSpanEventIndex() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
-			return tCtx.eventIndex, nil
+			return tCtx.GetEventIndex()
 		},
 		Setter: func(_ context.Context, _ TransformContext, _ any) error {
 			return errors.New("the 'event_index' path cannot be modified")

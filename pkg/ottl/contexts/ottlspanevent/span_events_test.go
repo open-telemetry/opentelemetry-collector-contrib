@@ -534,6 +534,63 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	}
 }
 
+func Test_setAndGetEventIndex(t *testing.T) {
+
+	tests := []struct {
+		name             string
+		setEventIndex    bool
+		eventIndexValue  int64
+		expected         any
+		expectedErrorMsg string
+	}{
+		{
+			name:            "event index set",
+			setEventIndex:   true,
+			eventIndexValue: 1,
+			expected:        int64(1),
+		},
+		{
+			name:             "invalid value for event index",
+			setEventIndex:    true,
+			eventIndexValue:  -1,
+			expectedErrorMsg: "found invalid value for 'event_index'",
+		},
+		{
+			name:             "no value for event index",
+			setEventIndex:    false,
+			expectedErrorMsg: "no 'event_index' property has been set",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spanEvent, span, il, resource := createTelemetry()
+
+			var tCtx TransformContext
+			if tt.setEventIndex {
+				tCtx = NewTransformContext(spanEvent, span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans(), WithEventIndex(tt.eventIndexValue))
+			} else {
+				tCtx = NewTransformContext(spanEvent, span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+			}
+
+			pep := pathExpressionParser{}
+			accessor, err := pep.parsePath(&internal.TestPath[TransformContext]{
+				N: "event_index",
+			})
+			assert.NoError(t, err)
+
+			got, err := accessor.Get(context.Background(), tCtx)
+			if tt.expectedErrorMsg != "" {
+				assert.Error(t, err)
+				assert.ErrorContains(t, err, tt.expectedErrorMsg)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
+
 func createTelemetry() (ptrace.SpanEvent, ptrace.Span, pcommon.InstrumentationScope, pcommon.Resource) {
 	span := ptrace.NewSpan()
 	span.SetName("test")

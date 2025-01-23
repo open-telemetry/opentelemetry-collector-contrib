@@ -1428,7 +1428,7 @@ func constructSpanEventTransformContext() ottlspanevent.TransformContext {
 	ev1 := span.Events().AppendEmpty()
 	ev1.SetName("event-1")
 
-	return ottlspanevent.NewTransformContext(ev1, span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+	return ottlspanevent.NewTransformContext(ev1, span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans(), ottlspanevent.WithEventIndex(0))
 }
 
 func newResourceLogs(tCtx ottllog.TransformContext) plog.ResourceLogs {
