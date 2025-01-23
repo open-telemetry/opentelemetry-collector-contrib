@@ -8,6 +8,7 @@ dist:
   name: oteltestbedcol
   description: OpenTelemetry Collector binary for testbed only tests.
   version: 0.118.0-dev
+  output_path: ./cmd/oteltestbedcol
 
 extensions:
   - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.118.1-0.20250121185328-fbefb22cc2b3
