@@ -54,7 +54,7 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 
 	rtConn := conn.(*logsConnector)
 	require.NoError(t, err)
@@ -413,7 +413,7 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 }
 
 func TestLogsConnectorDetailed(t *testing.T) {

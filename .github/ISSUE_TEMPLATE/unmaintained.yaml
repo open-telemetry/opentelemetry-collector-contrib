@@ -80,6 +80,7 @@ body:
       - exporter/sentry
       - exporter/signalfx
       - exporter/splunkhec
+      - exporter/stef
       - exporter/sumologic
       - exporter/syslog
       - exporter/tencentcloudlogservice
