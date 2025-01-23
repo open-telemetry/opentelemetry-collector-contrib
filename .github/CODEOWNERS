@@ -222,6 +222,7 @@ receiver/couchdbreceiver/                                        @open-telemetry
 receiver/datadogreceiver/                                        @open-telemetry/collector-contrib-approvers @boostchicken @gouthamve @MovieStoreGuy
 receiver/dockerstatsreceiver/                                    @open-telemetry/collector-contrib-approvers @jamesmoessis
 receiver/elasticsearchreceiver/                                  @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/envoyalsreceiver/                                       @open-telemetry/collector-contrib-approvers @evan-bradley
 receiver/expvarreceiver/                                         @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 receiver/filelogreceiver/                                        @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/filestatsreceiver/                                      @open-telemetry/collector-contrib-approvers @atoulme
