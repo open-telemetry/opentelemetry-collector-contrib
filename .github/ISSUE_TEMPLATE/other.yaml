@@ -75,6 +75,7 @@ body:
       - exporter/sentry
       - exporter/signalfx
       - exporter/splunkhec
+      - exporter/stef
       - exporter/sumologic
       - exporter/syslog
       - exporter/tencentcloudlogservice
@@ -213,6 +214,7 @@ body:
       - receiver/datadog
       - receiver/dockerstats
       - receiver/elasticsearch
+      - receiver/envoyals
       - receiver/expvar
       - receiver/filelog
       - receiver/filestats
