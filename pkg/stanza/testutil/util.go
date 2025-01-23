@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
@@ -48,7 +48,7 @@ func (p *mockPersister) Delete(_ context.Context, k string) error {
 	return nil
 }
 
-func (p *mockPersister) Batch(_ context.Context, ops ...storage.Operation) error {
+func (p *mockPersister) Batch(_ context.Context, ops ...*storage.Operation) error {
 	var err error
 	for _, op := range ops {
 		switch op.Type {

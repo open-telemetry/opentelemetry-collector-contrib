@@ -25,7 +25,6 @@ require (
 	go.opentelemetry.io/collector/confmap v1.24.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/consumer v1.24.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250121185328-fbefb22cc2b3
-	go.opentelemetry.io/collector/extension/experimental/storage v0.118.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/extension/xextension v0.118.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250121185328-fbefb22cc2b3
