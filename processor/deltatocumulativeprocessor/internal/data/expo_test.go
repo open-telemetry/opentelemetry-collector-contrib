@@ -27,10 +27,11 @@ func TestExpoAdd(t *testing.T) {
 	defer func() { maxBuckets = prevMaxBuckets }()
 
 	cases := []struct {
-		name   string
-		dp, in expdp
-		want   expdp
-		flip   bool
+		name            string
+		dp, in          expdp
+		want            expdp
+		flip            bool
+		alsoTryEachSign bool
 	}{{
 		name: "noop",
 		dp:   expdp{PosNeg: bins{0, 0, 0, 0, 0, 0, 0, 0}.Into(), Count: 0},
@@ -108,6 +109,7 @@ func TestExpoAdd(t *testing.T) {
 			PosNeg: bins{3, 3, 3, 3, 3, 3, 3, 3}.Into(),
 			Count:  24,
 		},
+		alsoTryEachSign: true,
 	}, {
 		name: "scale/downscale_once_exceeds_limit",
 		dp: expdp{
@@ -125,6 +127,7 @@ func TestExpoAdd(t *testing.T) {
 			PosNeg: rawbs([]uint64{2, 2, 2, 6, 4, 4, 4}, 0),
 			Count:  24,
 		},
+		alsoTryEachSign: true,
 	}, {
 		name: "scale/downscale_multiple_times_until_within_limit",
 		dp: expdp{
@@ -142,6 +145,7 @@ func TestExpoAdd(t *testing.T) {
 			PosNeg: rawbs([]uint64{2, 4, 2, 4, 8, 4}, -2),
 			Count:  24,
 		},
+		alsoTryEachSign: true,
 	}, {
 		name: "scale/ignore_leading_trailing_zeros_in_bucket_count",
 		dp: expdp{
@@ -159,6 +163,7 @@ func TestExpoAdd(t *testing.T) {
 			PosNeg: rawbs([]uint64{1, 7, 7, 4, 3, 2, 2}, 0),
 			Count:  26,
 		},
+		alsoTryEachSign: true,
 	}, {
 		name: "scale/downscale_with_leading_trailing_zeros",
 		dp: expdp{
@@ -176,17 +181,18 @@ func TestExpoAdd(t *testing.T) {
 			PosNeg: rawbs([]uint64{11, 11, 0, 0, 12, 12}, -1),
 			Count:  46,
 		},
+		alsoTryEachSign: true,
 	}}
 
 	for _, cs := range cases {
-		run := func(dp, in expdp) func(t *testing.T) {
+		run := func(dp, in, want expdp) func(t *testing.T) {
 			return func(t *testing.T) {
 				is := datatest.New(t)
 
 				var (
 					dp   = ExpHistogram{dp.Into()}
 					in   = ExpHistogram{in.Into()}
-					want = ExpHistogram{cs.want.Into()}
+					want = ExpHistogram{want.Into()}
 				)
 
 				dp.SetTimestamp(0)
@@ -199,12 +205,30 @@ func TestExpoAdd(t *testing.T) {
 		}
 
 		if cs.flip {
-			t.Run(cs.name+"-dp", run(cs.dp, cs.in))
-			t.Run(cs.name+"-in", run(cs.in, cs.dp))
+			t.Run(cs.name+"-dp", run(cs.dp, cs.in, cs.want))
+			t.Run(cs.name+"-in", run(cs.in, cs.dp, cs.want))
 			continue
 		}
-		t.Run(cs.name, run(cs.dp, cs.in))
+		if cs.alsoTryEachSign {
+			t.Run(cs.name+"-pos", run(clonePosExpdp(cs.dp), clonePosExpdp(cs.in), clonePosExpdp(cs.want)))
+			t.Run(cs.name+"-neg", run(cloneNegExpdp(cs.dp), cloneNegExpdp(cs.in), cloneNegExpdp(cs.want)))
+		}
+		t.Run(cs.name, run(cs.dp, cs.in, cs.want))
 	}
+}
+
+func cloneNegExpdp(dp expotest.Histogram) expotest.Histogram {
+	dp.Neg = pmetric.NewExponentialHistogramDataPointBuckets()
+	dp.PosNeg.CopyTo(dp.Neg)
+	dp.PosNeg = expo.Buckets{}
+	return dp
+}
+
+func clonePosExpdp(dp expotest.Histogram) expotest.Histogram {
+	dp.Pos = pmetric.NewExponentialHistogramDataPointBuckets()
+	dp.PosNeg.CopyTo(dp.Pos)
+	dp.PosNeg = expo.Buckets{}
+	return dp
 }
 
 func rawbs(data []uint64, offset int32) expo.Buckets {
