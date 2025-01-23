@@ -228,7 +228,7 @@ func zTagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
 		if err := json.Unmarshal([]byte(jsonStr), &attrs); err != nil {
 			return err
 		}
-		if err := JsonMapToAttributeMap(attrs, link.Attributes()); err != nil {
+		if err := JSONMapToAttributeMap(attrs, link.Attributes()); err != nil {
 			return err
 		}
 
@@ -265,7 +265,7 @@ func populateSpanEvents(zspan *zipkinmodel.SpanModel, events ptrace.SpanEventSli
 		if err := json.Unmarshal([]byte(jsonStr), &attrs); err != nil {
 			return err
 		}
-		if err := JsonMapToAttributeMap(attrs, event.Attributes()); err != nil {
+		if err := JSONMapToAttributeMap(attrs, event.Attributes()); err != nil {
 			return err
 		}
 
@@ -278,7 +278,7 @@ func populateSpanEvents(zspan *zipkinmodel.SpanModel, events ptrace.SpanEventSli
 	return nil
 }
 
-func JsonMapToAttributeMap(attrs map[string]any, dest pcommon.Map) error {
+func JSONMapToAttributeMap(attrs map[string]any, dest pcommon.Map) error {
 	for key, val := range attrs {
 		if s, ok := val.(string); ok {
 			dest.PutStr(key, s)

@@ -212,7 +212,7 @@ func tagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
 
 		link.TraceState().FromRaw(span.Tracestate)
 
-		_ = zipkinv2.JsonMapToAttributeMap(span.Attributes, link.Attributes())
+		_ = zipkinv2.JSONMapToAttributeMap(span.Attributes, link.Attributes())
 	}
 
 	return nil
