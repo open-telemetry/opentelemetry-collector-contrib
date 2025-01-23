@@ -169,15 +169,8 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		switch t := val.(type) {
-		case pcommon.Map:
-			// convert pcommon.Map items within the list to map[string]any to avoid
-			// errors due to pcommon.Map not being handled in the pcommon.Value.FromRaw()
-			// method. This can happen if we have a map containing a list containing a map, e.g. {"list":[{"foo":"bar"}]}
-			evaluated[i] = t.AsRaw()
-		default:
-			evaluated[i] = val
-		}
+
+		evaluated[i] = val
 	}
 
 	return evaluated, nil
@@ -188,25 +181,38 @@ type mapGetter[K any] struct {
 }
 
 func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
-	evaluated := map[string]any{}
+	result := pcommon.NewMap()
 	for k, v := range m.mapValues {
 		val, err := v.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		switch t := val.(type) {
+		switch val.(type) {
 		case pcommon.Map:
-			evaluated[k] = t.AsRaw()
+			target := result.PutEmpty(k).SetEmptyMap()
+			val.(pcommon.Map).CopyTo(target)
+		case []any:
+			target := result.PutEmpty(k).SetEmptySlice()
+			for _, el := range val.([]any) {
+				switch el.(type) {
+				case pcommon.Map:
+					m := target.AppendEmpty().SetEmptyMap()
+					el.(pcommon.Map).CopyTo(m)
+				default:
+					err := target.AppendEmpty().FromRaw(el)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
 		default:
-			evaluated[k] = t
+			err := result.PutEmpty(k).FromRaw(val)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
-
-	newMap := pcommon.NewMap()
-	if err := newMap.FromRaw(evaluated); err != nil {
-		return nil, err
-	}
-	return newMap, nil
+	return result, nil
 }
 
 // TypeError represents that a value was not an expected type.
