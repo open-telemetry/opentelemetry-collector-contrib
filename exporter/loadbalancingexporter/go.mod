@@ -15,7 +15,6 @@ require (
 	go.opentelemetry.io/collector/component v0.118.1-0.20250123110230-50de4a2f61f7
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250123110230-50de4a2f61f7
 	go.opentelemetry.io/collector/config/configretry v1.24.1-0.20250123110230-50de4a2f61f7
-	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250123110230-50de4a2f61f7
 	go.opentelemetry.io/collector/confmap v1.24.1-0.20250123110230-50de4a2f61f7
 	go.opentelemetry.io/collector/consumer v1.24.1-0.20250123110230-50de4a2f61f7
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250123110230-50de4a2f61f7
@@ -27,7 +26,6 @@ require (
 	go.opentelemetry.io/collector/semconv v0.118.1-0.20250123110230-50de4a2f61f7
 	go.opentelemetry.io/otel v1.34.0
 	go.opentelemetry.io/otel/metric v1.34.0
-	go.opentelemetry.io/otel/sdk v1.34.0
 	go.opentelemetry.io/otel/sdk/metric v1.34.0
 	go.opentelemetry.io/otel/trace v1.34.0
 	go.uber.org/goleak v1.3.0
@@ -117,6 +115,7 @@ require (
 	go.opentelemetry.io/collector/config/configgrpc v0.118.1-0.20250123110230-50de4a2f61f7 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.24.1-0.20250123110230-50de4a2f61f7 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.24.1-0.20250123110230-50de4a2f61f7 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250123110230-50de4a2f61f7 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.24.1-0.20250123110230-50de4a2f61f7 // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.24.1-0.20250123110230-50de4a2f61f7 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.24.1-0.20250123110230-50de4a2f61f7 // indirect
@@ -165,6 +164,7 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.34.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.31.0 // indirect
 	go.opentelemetry.io/otel/log v0.10.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk/log v0.7.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.5.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
