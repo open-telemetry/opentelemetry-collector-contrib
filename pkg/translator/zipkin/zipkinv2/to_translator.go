@@ -201,7 +201,7 @@ func zTagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
 
 		// Convert trace id.
 		rawTrace := [16]byte{}
-		errTrace := unmarshalJSON(rawTrace[:], []byte(parts[0]))
+		errTrace := UnmarshalJSON(rawTrace[:], []byte(parts[0]))
 		if errTrace != nil {
 			return errTrace
 		}
@@ -209,7 +209,7 @@ func zTagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
 
 		// Convert span id.
 		rawSpan := [8]byte{}
-		errSpan := unmarshalJSON(rawSpan[:], []byte(parts[1]))
+		errSpan := UnmarshalJSON(rawSpan[:], []byte(parts[1]))
 		if errSpan != nil {
 			return errSpan
 		}
@@ -228,7 +228,7 @@ func zTagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
 		if err := json.Unmarshal([]byte(jsonStr), &attrs); err != nil {
 			return err
 		}
-		if err := jsonMapToAttributeMap(attrs, link.Attributes()); err != nil {
+		if err := JsonMapToAttributeMap(attrs, link.Attributes()); err != nil {
 			return err
 		}
 
@@ -265,7 +265,7 @@ func populateSpanEvents(zspan *zipkinmodel.SpanModel, events ptrace.SpanEventSli
 		if err := json.Unmarshal([]byte(jsonStr), &attrs); err != nil {
 			return err
 		}
-		if err := jsonMapToAttributeMap(attrs, event.Attributes()); err != nil {
+		if err := JsonMapToAttributeMap(attrs, event.Attributes()); err != nil {
 			return err
 		}
 
@@ -278,7 +278,7 @@ func populateSpanEvents(zspan *zipkinmodel.SpanModel, events ptrace.SpanEventSli
 	return nil
 }
 
-func jsonMapToAttributeMap(attrs map[string]any, dest pcommon.Map) error {
+func JsonMapToAttributeMap(attrs map[string]any, dest pcommon.Map) error {
 	for key, val := range attrs {
 		if s, ok := val.(string); ok {
 			dest.PutStr(key, s)
@@ -437,9 +437,9 @@ func setTimestampsV2(zspan *zipkinmodel.SpanModel, dest ptrace.Span, destAttrs p
 	}
 }
 
-// unmarshalJSON inflates trace id from hex string, possibly enclosed in quotes.
+// UnmarshalJSON inflates trace id from hex string, possibly enclosed in quotes.
 // TODO: Find a way to avoid this duplicate code. Consider to expose this in pdata.
-func unmarshalJSON(dst []byte, src []byte) error {
+func UnmarshalJSON(dst []byte, src []byte) error {
 	if l := len(src); l >= 2 && src[0] == '"' && src[l-1] == '"' {
 		src = src[1 : l-1]
 	}

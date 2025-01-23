@@ -22,6 +22,7 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
@@ -98,6 +99,8 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 			}
 			newSpan := slice.AppendEmpty()
 
+			_ = tagsToSpanLinks(span.GetMeta(), newSpan.Links())
+
 			newSpan.SetTraceID(uInt64ToTraceID(0, span.TraceID))
 			newSpan.SetSpanID(uInt64ToSpanID(span.SpanID))
 			newSpan.SetStartTimestamp(pcommon.Timestamp(span.Start))
@@ -163,6 +166,56 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	}
 
 	return results
+}
+
+// DDSpanLink represents the structure of each JSON object
+type DDSpanLink struct {
+	TraceID    string         `json:"trace_id"`
+	SpanID     string         `json:"span_id"`
+	Tracestate string         `json:"tracestate"`
+	Attributes map[string]any `json:"attributes"`
+}
+
+func tagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
+	key := "_dd.span_links"
+	val, ok := tags[key]
+	if !ok {
+		return nil
+	}
+	delete(tags, key)
+
+	var spans []DDSpanLink
+	err := json.Unmarshal([]byte(val), &spans)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(spans); i++ {
+		span := spans[i]
+		link := dest.AppendEmpty()
+
+		// Convert trace id.
+		rawTrace := [16]byte{}
+		errTrace := zipkinv2.UnmarshalJSON(rawTrace[:], []byte(span.TraceID))
+		if errTrace != nil {
+			return errTrace
+		}
+		link.SetTraceID(rawTrace)
+
+		// Convert span id.
+		rawSpan := [8]byte{}
+		errSpan := zipkinv2.UnmarshalJSON(rawSpan[:], []byte(span.SpanID))
+		if errSpan != nil {
+			return errSpan
+		}
+		link.SetSpanID(rawSpan)
+
+		link.TraceState().FromRaw(span.Tracestate)
+
+		_ = zipkinv2.JsonMapToAttributeMap(span.Attributes, link.Attributes())
+	}
+
+	return nil
 }
 
 var bufferPool = sync.Pool{
