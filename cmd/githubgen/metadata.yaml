@@ -1,6 +1,8 @@
 type: githubgen
 
 status:
+  stability:
+    deprecated: []
   class: cmd
   codeowners:
-    active: [atoulme]
+    active: [atoulme, mowies]
