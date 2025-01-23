@@ -113,7 +113,7 @@ func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive 
 			require.NoError(t, err)
 			require.NotNil(t, val)
 		}
-		// also, make sure we have not writen "extra" stuff (for partially filled archive)
+		// also, make sure we have not written "extra" stuff (for partially filled archive)
 		count := 0
 		for i := 0; i < pollsToArchive; i++ {
 			val, err := persister.Get(context.Background(), archiveKey(i))
