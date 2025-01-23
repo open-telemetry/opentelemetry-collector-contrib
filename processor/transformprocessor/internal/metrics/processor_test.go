@@ -1607,6 +1607,169 @@ func Test_ProcessMetrics_ErrorMode(t *testing.T) {
 	}
 }
 
+func Test_ProcessMetrics_CacheAccess(t *testing.T) {
+	tests := []struct {
+		name       string
+		statements []common.ContextStatements
+		want       func(td pmetric.Metrics)
+	}{
+		{
+			name: "resource:resource.cache",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["test"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(resource.attributes["test"], resource.cache["test"])`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).Resource().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "resource:cache",
+			statements: []common.ContextStatements{
+				{
+					Context: common.Resource,
+					Statements: []string{
+						`set(cache["test"], "pass")`,
+						`set(attributes["test"], cache["test"])`,
+					},
+				},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).Resource().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "scope:scope.cache",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.cache["test"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(scope.attributes["test"], scope.cache["test"])`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "scope:cache",
+			statements: []common.ContextStatements{{
+				Context: common.Scope,
+				Statements: []string{
+					`set(cache["test"], "pass")`,
+					`set(attributes["test"], cache["test"])`,
+				},
+			}},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "metric:metric.cache",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(metric.cache["test"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(metric.name, metric.cache["test"]) where metric.name == "operationB"`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetName("pass")
+			},
+		},
+		{
+			name: "metric:cache",
+			statements: []common.ContextStatements{{
+				Context: common.Metric,
+				Statements: []string{
+					`set(cache["test"], "pass")`,
+					`set(name, cache["test"]) where name == "operationB"`,
+				},
+			}},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetName("pass")
+			},
+		},
+		{
+			name: "datapoint:datapoint.cache",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(datapoint.cache["test"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(datapoint.attributes["test"], datapoint.cache["test"]) where metric.name == "operationA"`}, SharedCache: true},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "datapoint:cache",
+			statements: []common.ContextStatements{{
+				Context: common.DataPoint,
+				Statements: []string{
+					`set(cache["test"], "pass")`,
+					`set(attributes["test"], cache["test"]) where metric.name == "operationA"`,
+				},
+			}},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "cache isolation",
+			statements: []common.ContextStatements{
+				{
+					Statements:  []string{`set(datapoint.cache["shared"], "fail")`},
+					SharedCache: true,
+				},
+				{
+					Statements: []string{
+						`set(datapoint.cache["test"], "pass")`,
+						`set(datapoint.attributes["test"], datapoint.cache["test"])`,
+						`set(datapoint.attributes["test"], datapoint.cache["shared"])`,
+					},
+					Conditions: []string{
+						`metric.name == "operationA"`,
+					},
+				},
+				{
+					Context: common.DataPoint,
+					Statements: []string{
+						`set(cache["test"], "pass")`,
+						`set(attributes["test"], cache["test"])`,
+						`set(attributes["test"], cache["shared"])`,
+						`set(attributes["test"], datapoint.cache["shared"])`,
+					},
+					Conditions: []string{
+						`metric.name == "operationA"`,
+					},
+				},
+				{
+					Statements:  []string{`set(datapoint.attributes["test"], "pass") where datapoint.cache["shared"] == "fail"`},
+					SharedCache: true,
+					Conditions: []string{
+						`metric.name == "operationA"`,
+					},
+				},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructMetrics()
+			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessMetrics(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructMetrics()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func constructMetrics() pmetric.Metrics {
 	td := pmetric.NewMetrics()
 	rm0 := td.ResourceMetrics().AppendEmpty()
