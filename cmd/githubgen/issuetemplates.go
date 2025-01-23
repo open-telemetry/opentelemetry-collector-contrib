@@ -33,8 +33,6 @@ func folderToShortName(folder string) string {
 
 type issueTemplatesGenerator struct{}
 
-// Deprecated: generate is deprecated. Please use the new githubgen tool
-// from https://github.com/open-telemetry/opentelemetry-go-build-tools/
 func (itg issueTemplatesGenerator) generate(data *githubData) error {
 	keys := map[string]struct{}{}
 	for _, f := range data.folders {

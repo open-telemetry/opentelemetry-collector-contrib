@@ -25,14 +25,11 @@ type generator interface {
 	generate(data *githubData) error
 }
 
-// main generates files specific to Github according to status metadata:
+// Generates files specific to Github according to status metadata:
 // .github/CODEOWNERS
 // .github/ALLOWLIST
 // .github/ISSUE_TEMPLATES/*.yaml (list of components)
 // reports/distributions/*
-//
-// Deprecated: generate is deprecated. Please use the new githubgen tool
-// from https://github.com/open-telemetry/opentelemetry-go-build-tools/
 func main() {
 	fmt.Println("[DEPRECATED] this tool is now deprecated. Please make sure to install go.opentelemetry.io/build-tools/githubgen instead")
 	folder := flag.String("folder", ".", "folder investigated for codeowners")

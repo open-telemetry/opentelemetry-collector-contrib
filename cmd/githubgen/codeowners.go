@@ -74,8 +74,6 @@ type codeownersGenerator struct {
 	skipGithub bool
 }
 
-// Deprecated: generate is deprecated. Please use the new githubgen tool
-// from https://github.com/open-telemetry/opentelemetry-go-build-tools/
 func (cg codeownersGenerator) generate(data *githubData) error {
 	allowlistData, err := os.ReadFile(data.allowlistFilePath)
 	if err != nil {

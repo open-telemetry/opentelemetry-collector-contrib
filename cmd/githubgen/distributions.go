@@ -21,8 +21,6 @@ type distOutput struct {
 	Components  map[string][]string `yaml:"components"`
 }
 
-// Deprecated: generate is deprecated. Please use the new githubgen tool
-// from https://github.com/open-telemetry/opentelemetry-go-build-tools/
 func (cg distributionsGenerator) generate(data *githubData) error {
 	for _, dist := range data.distributions {
 		components := map[string][]string{}
