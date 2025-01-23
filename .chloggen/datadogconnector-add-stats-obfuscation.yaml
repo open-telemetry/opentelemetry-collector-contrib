@@ -16,11 +16,11 @@ issues: [35401]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-Ensure that feature flags "enable_receive_resource_spans_v2" and "enable_operation_and_resource_name_logic_v2"
-are both enabled on Datadog Exporter and Datadog Connector so that span attributes are properly
-mapped to span type and span resource in Datadog APM; otherwise spans and apm stats may not be 
-obfuscated and attributes on stats payloads may not match traces.
-see https://docs.datadoghq.com/opentelemetry/schema_semantics/semantic_mapping/?tab=datadogexporter#mapping-opentelemetry-database-system-type-to-datadog-span-type
+  Ensure that feature flags "enable_receive_resource_spans_v2" and "enable_operation_and_resource_name_logic_v2"
+  are both enabled on Datadog Exporter and Datadog Connector so that span attributes are properly
+  mapped to span type and span resource in Datadog APM; otherwise spans and apm stats may not be 
+  obfuscated and attributes on stats payloads may not match traces.
+  See https://docs.datadoghq.com/opentelemetry/schema_semantics/semantic_mapping/?tab=datadogexporter#mapping-opentelemetry-database-system-type-to-datadog-span-type
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
