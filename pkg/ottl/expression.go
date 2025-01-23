@@ -187,17 +187,17 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		switch val.(type) {
+		switch typedVal := val.(type) {
 		case pcommon.Map:
 			target := result.PutEmpty(k).SetEmptyMap()
-			val.(pcommon.Map).CopyTo(target)
+			typedVal.CopyTo(target)
 		case []any:
 			target := result.PutEmpty(k).SetEmptySlice()
-			for _, el := range val.([]any) {
-				switch el.(type) {
+			for _, el := range typedVal {
+				switch typedEl := el.(type) {
 				case pcommon.Map:
 					m := target.AppendEmpty().SetEmptyMap()
-					el.(pcommon.Map).CopyTo(m)
+					typedEl.CopyTo(m)
 				default:
 					err := target.AppendEmpty().FromRaw(el)
 					if err != nil {
