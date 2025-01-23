@@ -26,7 +26,7 @@ func TestNewS3Manager(t *testing.T) {
 		"my-bucket",
 		&PartitionKeyBuilder{},
 		s3.New(s3.Options{}),
-		"STANDARD", // <-- Add the new argument here
+		"STANDARD",
 	)
 
 	assert.NotNil(t, sm, "Must have a valid client returned")
@@ -153,7 +153,7 @@ func TestS3ManagerUpload(t *testing.T) {
 					BaseEndpoint: aws.String(s.URL),
 					Region:       "local",
 				}),
-				"STANDARD_IA", // <-- Pass your desired storage class here
+				"STANDARD_IA",
 			)
 
 			// Using a mocked virtual clock to fix the timestamp used
