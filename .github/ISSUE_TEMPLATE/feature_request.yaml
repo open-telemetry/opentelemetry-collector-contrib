@@ -122,6 +122,7 @@ body:
       - extension/sumologic
       - internal/aws
       - internal/collectd
+      - internal/common
       - internal/core
       - internal/docker
       - internal/exp/metrics
