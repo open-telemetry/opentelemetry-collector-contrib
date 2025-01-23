@@ -14,19 +14,21 @@ import (
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	"github.com/stretchr/testify/assert"
+
+	commonTestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestIntegrationInternalMetrics(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("flaky test on windows https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34836")
 	}
-
 	// 1. Set up mock Datadog server
 	seriesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.MetricV2Endpoint, ReqChan: make(chan []byte, 100)}
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte, 100)}
 	server := testutil.DatadogServerMock(seriesRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
+	t.Setenv("PROM_SERVER", commonTestutil.GetAvailableLocalAddress(t))
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
