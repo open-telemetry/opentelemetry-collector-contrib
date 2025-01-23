@@ -15,11 +15,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
 
-func serializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []dataPoint, validationErrors *[]error, buf *bytes.Buffer) (map[string]string, error) {
+func serializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []dataPoint, validationErrors *[]error, idx esIndex, buf *bytes.Buffer) (map[string]string, error) {
 	if len(dataPoints) == 0 {
 		return nil, nil
 	}
@@ -35,7 +37,7 @@ func serializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope
 		writeTimestampField(v, "start_timestamp", dp0.StartTimestamp())
 	}
 	writeStringFieldSkipDefault(v, "unit", dp0.Metric().Unit())
-	writeDataStream(v, dp0.Attributes())
+	writeDataStream(v, idx)
 	writeAttributes(v, dp0.Attributes(), true)
 	writeResource(v, resource, resourceSchemaURL, true)
 	writeScope(v, scope, scopeSchemaURL, true)
@@ -68,7 +70,7 @@ func serializeDataPoints(v *json.Visitor, dataPoints []dataPoint, validationErro
 		// TODO here's potential for more optimization by directly serializing the value instead of allocating a pcommon.Value
 		//  the tradeoff is that this would imply a duplicated logic for the ECS mode
 		value, err := dp.Value()
-		if dp.HasMappingHint(hintDocCount) {
+		if dp.HasMappingHint(elasticsearch.HintDocCount) {
 			docCount = dp.DocCount()
 		}
 		if err != nil {
@@ -92,14 +94,14 @@ func serializeDataPoints(v *json.Visitor, dataPoints []dataPoint, validationErro
 	return dynamicTemplates
 }
 
-func serializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, buf *bytes.Buffer) {
+func serializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, idx esIndex, buf *bytes.Buffer) {
 	v := json.NewVisitor(buf)
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
 	v.SetExplicitRadixPoint(true)
 	_ = v.OnObjectStart(-1, structform.AnyType)
 	writeTimestampField(v, "@timestamp", spanEvent.Timestamp())
-	writeDataStream(v, spanEvent.Attributes())
+	writeDataStream(v, idx)
 	writeTraceIDField(v, span.TraceID())
 	writeSpanIDField(v, "span_id", span.SpanID())
 	writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(spanEvent.DroppedAttributesCount()))
@@ -119,14 +121,14 @@ func serializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, sco
 	_ = v.OnObjectFinished()
 }
 
-func serializeSpan(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, buf *bytes.Buffer) error {
+func serializeSpan(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, idx esIndex, buf *bytes.Buffer) error {
 	v := json.NewVisitor(buf)
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
 	v.SetExplicitRadixPoint(true)
 	_ = v.OnObjectStart(-1, structform.AnyType)
 	writeTimestampField(v, "@timestamp", span.StartTimestamp())
-	writeDataStream(v, span.Attributes())
+	writeDataStream(v, idx)
 	writeTraceIDField(v, span.TraceID())
 	writeSpanIDField(v, "span_id", span.SpanID())
 	writeStringFieldSkipDefault(v, "trace_state", span.TraceState().AsRaw())
@@ -179,7 +181,7 @@ func serializeMap(m pcommon.Map, buf *bytes.Buffer) {
 	writeMap(v, m, false)
 }
 
-func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, record plog.LogRecord, buf *bytes.Buffer) error {
+func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, record plog.LogRecord, idx esIndex, buf *bytes.Buffer) error {
 	v := json.NewVisitor(buf)
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
@@ -191,7 +193,7 @@ func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pco
 	}
 	writeTimestampField(v, "@timestamp", docTimeStamp)
 	writeTimestampField(v, "observed_timestamp", record.ObservedTimestamp())
-	writeDataStream(v, record.Attributes())
+	writeDataStream(v, idx)
 	writeStringFieldSkipDefault(v, "severity_text", record.SeverityText())
 	writeIntFieldSkipDefault(v, "severity_number", int64(record.SeverityNumber()))
 	writeTraceIDField(v, record.TraceID())
@@ -213,16 +215,15 @@ func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pco
 	return nil
 }
 
-func writeDataStream(v *json.Visitor, attributes pcommon.Map) {
+func writeDataStream(v *json.Visitor, idx esIndex) {
+	if !idx.isDataStream() {
+		return
+	}
 	_ = v.OnKey("data_stream")
 	_ = v.OnObjectStart(-1, structform.AnyType)
-	attributes.Range(func(k string, val pcommon.Value) bool {
-		if strings.HasPrefix(k, "data_stream.") && val.Type() == pcommon.ValueTypeStr {
-			writeStringFieldSkipDefault(v, k[12:], val.Str())
-		}
-		return true
-	})
-
+	writeStringFieldSkipDefault(v, "type", idx.Type)
+	writeStringFieldSkipDefault(v, "dataset", idx.Dataset)
+	writeStringFieldSkipDefault(v, "namespace", idx.Namespace)
 	_ = v.OnObjectFinished()
 }
 
@@ -297,7 +298,7 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 	_ = v.OnObjectStart(-1, structform.AnyType)
 	attributes.Range(func(k string, val pcommon.Value) bool {
 		switch k {
-		case dataStreamType, dataStreamDataset, dataStreamNamespace, mappingHintsAttrKey:
+		case dataStreamType, dataStreamDataset, dataStreamNamespace, elasticsearch.MappingHintsAttrKey, documentIDAttributeName:
 			return true
 		}
 		if isGeoAttribute(k, val) {
