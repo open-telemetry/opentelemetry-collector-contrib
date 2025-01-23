@@ -468,6 +468,7 @@ Available Converters:
 - [Time](#time)
 - [ToKeyValueString](#tokeyvaluestring)
 - [ToSnakeCase](#tosnakecase)
+- [ToUpperCase](#touppercase)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
