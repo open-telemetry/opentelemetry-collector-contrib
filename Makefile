@@ -423,6 +423,8 @@ update-otel:$(MULTIMOD)
 	$(MAKE) genoteltestbedcol
 	$(MAKE) generate
 	$(MAKE) crosslink
+	# Tidy again after generating code
+	$(MAKE) gotidy
 	$(MAKE) remove-toolchain
 	git add . && git commit -s -m "[chore] mod and toolchain tidy" ; \
 
