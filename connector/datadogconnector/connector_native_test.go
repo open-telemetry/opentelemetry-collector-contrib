@@ -269,6 +269,7 @@ func testMeasuredAndClientKindNative(t *testing.T, enableOperationAndResourceNam
 		t.Errorf("Diff between APM stats -want +got:\n%v", diff)
 	}
 }
+
 func TestObfuscate(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.Traces.BucketInterval = time.Second
