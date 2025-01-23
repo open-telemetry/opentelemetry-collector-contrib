@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"sort"
 	"strings"
 
@@ -480,6 +481,19 @@ func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error
 	}
 
 	return &ValueExpression[K]{
-		getter: getter,
+		getter: &StandardGetSetter[K]{
+			Getter: func(ctx context.Context, tCtx K) (any, error) {
+				val, err := getter.Get(ctx, tCtx)
+				if err != nil {
+					return nil, err
+				}
+				switch v := val.(type) {
+				case pcommon.Map:
+					return v.AsRaw(), nil
+				default:
+					return v, nil
+				}
+			},
+		},
 	}, nil
 }

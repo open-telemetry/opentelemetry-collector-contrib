@@ -169,7 +169,15 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		evaluated[i] = val
+		switch t := val.(type) {
+		case pcommon.Map:
+			// convert pcommon.Map items within the list to map[string]any to avoid
+			// errors due to pcommon.Map not being handled in the pcommon.Value.FromRaw()
+			// method. This can happen if we have a map containing a list containing a map, e.g. {"list":[{"foo":"bar"}]}
+			evaluated[i] = t.AsRaw()
+		default:
+			evaluated[i] = val
+		}
 	}
 
 	return evaluated, nil
@@ -193,10 +201,12 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 			evaluated[k] = t
 		}
 	}
-	// return the raw mao instead of creating a pcommon.Map,
-	// otherwise map structures cannot be used within slices, as the Slice.FromRaw() method
-	// only supports raw types for its items
-	return evaluated, nil
+
+	newMap := pcommon.NewMap()
+	if err := newMap.FromRaw(evaluated); err != nil {
+		return nil, err
+	}
+	return newMap, nil
 }
 
 // TypeError represents that a value was not an expected type.
