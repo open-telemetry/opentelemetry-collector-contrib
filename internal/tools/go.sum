@@ -574,10 +574,6 @@ go.opentelemetry.io/build-tools/chloggen v0.16.0 h1:iuotHxlcK46JJtQLdwQPsC5dcAyg
 go.opentelemetry.io/build-tools/chloggen v0.16.0/go.mod h1:Wk92v9Wsv36sXYi7hOg3ndeeLKmKBu0/kgB7wcaeqJg=
 go.opentelemetry.io/build-tools/crosslink v0.16.0 h1:7Y5QPt5TR3qpiW5bwIOnsCJdt1yjZSFDPKtjt2g2zHw=
 go.opentelemetry.io/build-tools/crosslink v0.16.0/go.mod h1:xogE6iWmt53bsDazb81dQrZw9TQ30+9hc4D8QfVG9aA=
-go.opentelemetry.io/build-tools/githubgen v0.0.0-20241218132723-1bce46ed9c3c h1:D3vHROzeEemAZq5AN4JNaZ0C4R9fWxE8QEzvxUY3PNM=
-go.opentelemetry.io/build-tools/githubgen v0.0.0-20241218132723-1bce46ed9c3c/go.mod h1:FeVTqakS+NEkj0oBOYVRd9mn5/qLcttSf2nRR5JLqAM=
-go.opentelemetry.io/build-tools/githubgen v0.0.0-20250122093902-e1e131479515 h1:JGN6JEce93lzmzNOG3I1N8k3pF7kOZHgrYKYGwRhiXs=
-go.opentelemetry.io/build-tools/githubgen v0.0.0-20250122093902-e1e131479515/go.mod h1:UBpPXtso7exy3VU5EH1ZFfSkYQANJWO/u1lO50qdKkE=
 go.opentelemetry.io/build-tools/githubgen v0.17.0 h1:2DFeHglGmrtTMoRDfJoR+iJd/I/3eCm8FtQJpZAb3W8=
 go.opentelemetry.io/build-tools/githubgen v0.17.0/go.mod h1:UBpPXtso7exy3VU5EH1ZFfSkYQANJWO/u1lO50qdKkE=
 go.opentelemetry.io/build-tools/issuegenerator v0.16.0 h1:Ka14LdI0suh63HR25gy0deuspgBThl/z95e/LIIaiRw=
