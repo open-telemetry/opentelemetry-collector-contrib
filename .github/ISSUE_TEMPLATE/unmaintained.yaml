@@ -47,6 +47,7 @@ body:
       - exporter/awsxray
       - exporter/azuredataexplorer
       - exporter/azuremonitor
+      - exporter/bmchelix
       - exporter/carbon
       - exporter/cassandra
       - exporter/clickhouse
@@ -79,6 +80,7 @@ body:
       - exporter/sentry
       - exporter/signalfx
       - exporter/splunkhec
+      - exporter/stef
       - exporter/sumologic
       - exporter/syslog
       - exporter/tencentcloudlogservice
@@ -94,6 +96,7 @@ body:
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
       - extension/encoding/otlpencoding
+      - extension/encoding/skywalkingencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
       - extension/googleclientauth
@@ -222,11 +225,22 @@ body:
       - receiver/flinkmetrics
       - receiver/fluentforward
       - receiver/github
+      - receiver/gitlab
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
       - receiver/haproxy
       - receiver/hostmetrics
+      - receiver/hostmetrics/internal/scraper/cpuscraper
+      - receiver/hostmetrics/internal/scraper/diskscraper
+      - receiver/hostmetrics/internal/scraper/filesystemscraper
+      - receiver/hostmetrics/internal/scraper/loadscraper
+      - receiver/hostmetrics/internal/scraper/memoryscraper
+      - receiver/hostmetrics/internal/scraper/networkscraper
+      - receiver/hostmetrics/internal/scraper/pagingscraper
+      - receiver/hostmetrics/internal/scraper/processesscraper
+      - receiver/hostmetrics/internal/scraper/processscraper
+      - receiver/hostmetrics/internal/scraper/systemscraper
       - receiver/httpcheck
       - receiver/huaweicloudces
       - receiver/iis

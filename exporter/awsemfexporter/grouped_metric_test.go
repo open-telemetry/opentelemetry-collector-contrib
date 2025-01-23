@@ -454,7 +454,7 @@ func TestAddKubernetesWrapper(t *testing.T) {
 		dockerObj := struct {
 			ContainerID string `json:"container_id"`
 		}{
-			ContainerID: "Container mccontainter the third",
+			ContainerID: "Container mccontainer the third",
 		}
 		expectedCreatedObj := struct {
 			ContainerName string `json:"container_name"`
@@ -469,7 +469,7 @@ func TestAddKubernetesWrapper(t *testing.T) {
 		}
 
 		inputs := make(map[string]string)
-		inputs["container_id"] = "Container mccontainter the third"
+		inputs["container_id"] = "Container mccontainer the third"
 		inputs["container"] = "container mccontainer"
 		inputs["NodeName"] = "hosty de la host"
 		inputs["PodId"] = "Le id de Pod"

@@ -54,7 +54,7 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 
 	rtConn := conn.(*metricsConnector)
 	require.NoError(t, err)
@@ -165,65 +165,6 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		assert.Empty(t, sink1.AllMetrics())
 	})
 
-	t.Run("metric matched by two expressions", func(t *testing.T) {
-		resetSinks()
-
-		m := pmetric.NewMetrics()
-
-		rm := m.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().PutDouble("value", 5.0)
-		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-		metric.SetEmptyGauge()
-		metric.SetName("cpu")
-
-		rm = m.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().PutDouble("value", 3.1)
-		metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-		metric.SetEmptyGauge()
-		metric.SetName("cpu1")
-
-		require.NoError(t, conn.ConsumeMetrics(context.Background(), m))
-
-		assert.Empty(t, defaultSink.AllMetrics())
-		assert.Len(t, sink0.AllMetrics(), 1)
-		assert.Len(t, sink1.AllMetrics(), 1)
-
-		assert.Equal(t, 2, sink0.AllMetrics()[0].MetricCount())
-		assert.Equal(t, 2, sink1.AllMetrics()[0].MetricCount())
-		assert.Equal(t, sink0.AllMetrics(), sink1.AllMetrics())
-	})
-
-	t.Run("one metric matched by 2 expressions, others matched by none", func(t *testing.T) {
-		resetSinks()
-
-		m := pmetric.NewMetrics()
-
-		rm := m.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().PutDouble("value", 5.0)
-		metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-		metric.SetEmptyGauge()
-		metric.SetName("cpu")
-
-		rm = m.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().PutDouble("value", -1.0)
-		metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-		metric.SetEmptyGauge()
-		metric.SetName("cpu1")
-
-		require.NoError(t, conn.ConsumeMetrics(context.Background(), m))
-
-		assert.Len(t, defaultSink.AllMetrics(), 1)
-		assert.Len(t, sink0.AllMetrics(), 1)
-		assert.Len(t, sink1.AllMetrics(), 1)
-
-		assert.Equal(t, sink0.AllMetrics(), sink1.AllMetrics())
-
-		rmetric := defaultSink.AllMetrics()[0].ResourceMetrics().At(0)
-		attr, ok := rmetric.Resource().Attributes().Get("value")
-		assert.True(t, ok, "routing attribute must exist")
-		assert.Equal(t, attr.Double(), float64(-1.0))
-	})
-
 	t.Run("metric matched by one expression, multiple pipelines", func(t *testing.T) {
 		resetSinks()
 
@@ -268,7 +209,6 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 				Pipelines: []pipeline.ID{metricsDefault, metrics0},
 			},
 		},
-		MatchOnce: true,
 	}
 
 	var defaultSink, sink0, sink1 consumertest.MetricsSink
@@ -495,7 +435,7 @@ func TestMetricsConnectorCapabilities(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 }
 
 func TestMetricsConnectorDetailed(t *testing.T) {
