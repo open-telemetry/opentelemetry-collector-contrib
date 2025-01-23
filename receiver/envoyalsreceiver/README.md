@@ -20,7 +20,7 @@ Instead of writing access logs to local files, Envoy can be configured to send t
 
 This is particularly useful in distributed systems where centralized logging is required for monitoring, auditing, and debugging purposes.
 
-[Istio](https://istio.io) and [Envoy Gateway](https://gateway.envoyproxy.io) support this feature with first class API.
+[Istio](https://istio.io) and [Envoy Gateway](https://gateway.envoyproxy.io) support OTLP and gRPC ALS with first class API.
 
 ## Getting Started
 
@@ -37,7 +37,7 @@ receivers:
 
 ## Advanced Configuration
 
-Several helper files are leveraged to provide additional capabilities automatically:
+Other options can be configured to support more advanced use cases:
 
 - [gRPC settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configgrpc/README.md) including CORS
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)

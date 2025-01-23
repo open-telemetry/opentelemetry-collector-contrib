@@ -15,6 +15,14 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
+const (
+	apiVersionAttr = "api_version"
+	apiVersionVal  = "v3"
+	logTypeAttr    = "log_type"
+	httpTypeVal    = "http"
+	tcpTypeVal     = "tcp"
+)
+
 type Server struct {
 	nextConsumer consumer.Logs
 	obsrep       *receiverhelper.ObsReport
@@ -37,7 +45,7 @@ func (s *Server) StreamAccessLogs(logStream alsv3.AccessLogService_StreamAccessL
 			return err
 		}
 
-		ctx := s.obsrep.StartLogsOp(context.TODO())
+		ctx := s.obsrep.StartLogsOp(context.Background())
 		logs := toLogs(data)
 		logRecordCount := logs.LogRecordCount()
 		err = s.nextConsumer.ConsumeLogs(ctx, logs)
@@ -49,14 +57,6 @@ func (s *Server) StreamAccessLogs(logStream alsv3.AccessLogService_StreamAccessL
 
 	return nil
 }
-
-const (
-	apiVersionAttr = "api_version"
-	apiVersionVal  = "v3"
-	logTypeAttr    = "log_type"
-	httpTypeVal    = "http"
-	tcpTypeVal     = "tcp"
-)
 
 func toLogs(data *alsv3.StreamAccessLogsMessage) plog.Logs {
 	logs := plog.NewLogs()

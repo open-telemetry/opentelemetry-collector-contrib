@@ -19,7 +19,7 @@ const (
 	defaultGRPCEndpoint = "localhost:19001"
 )
 
-// NewFactory creates a new HAProxy receiver factory.
+// NewFactory creates a new ALS receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
