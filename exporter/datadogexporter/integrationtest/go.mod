@@ -7,6 +7,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.63.0-devel
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.118.0
 	github.com/stretchr/testify v1.10.0
@@ -254,7 +255,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.118.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.118.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.118.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.118.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.118.0 // indirect
