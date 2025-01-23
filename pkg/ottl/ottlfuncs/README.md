@@ -467,6 +467,7 @@ Available Converters:
 - [Substring](#substring)
 - [Time](#time)
 - [ToKeyValueString](#tokeyvaluestring)
+- [ToSnakeCase](#tosnakecase)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
@@ -2055,6 +2056,18 @@ Examples:
 
 - `ToKeyValueString(body)`
 - `ToKeyValueString(body, ":", ",", true)`
+
+### ToSnakeCase
+
+`ToSnakeCase(target)`
+
+The `ToSnakeCase` Converter converts the `target` string into snake case.
+
+`target` is a string.
+
+Examples:
+
+- `ToSnakeCase(metric.name)`
 
 ### TraceID
 
