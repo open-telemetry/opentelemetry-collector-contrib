@@ -36,6 +36,7 @@ type WebHook struct {
 	HealthPath              string                   `mapstructure:"health_path"`     // path for health check api. Default is /health_check
 	RequiredHeader          RequiredHeader           `mapstructure:"required_header"` // optional setting to set a required header for all requests to have
 	Secret                  string                   `mapstructure:"secret"`          // secret for webhook
+	ServiceName             string                   `mapstructure:"service_name"`    // optional name of service to use for spans
 }
 
 type RequiredHeader struct {

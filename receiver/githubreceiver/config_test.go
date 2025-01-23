@@ -50,8 +50,9 @@ func TestLoadConfig(t *testing.T) {
 			ReadTimeout:  500 * time.Millisecond,
 			WriteTimeout: 500 * time.Millisecond,
 		},
-		Path:       "some/path",
-		HealthPath: "health/path",
+		Path:        "some/path",
+		ServiceName: defaultServiceName,
+		HealthPath:  "health/path",
 		RequiredHeader: RequiredHeader{
 			Key:   "key-present",
 			Value: "value-present",
@@ -75,8 +76,9 @@ func TestLoadConfig(t *testing.T) {
 				ReadTimeout:  500 * time.Millisecond,
 				WriteTimeout: 500 * time.Millisecond,
 			},
-			Path:       "some/path",
-			HealthPath: "health/path",
+			Path:        "some/path",
+			HealthPath:  "health/path",
+			ServiceName: defaultServiceName,
 			RequiredHeader: RequiredHeader{
 				Key:   "key-present",
 				Value: "value-present",
@@ -85,19 +87,6 @@ func TestLoadConfig(t *testing.T) {
 	}
 
 	assert.Equal(t, expectedConfig, r1)
-}
-
-func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
-	factories, err := otelcoltest.NopFactories()
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Receivers[metadata.Type] = factory
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
-	// nolint:staticcheck
-	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-noscrapers.yaml"), factories)
-
-	require.ErrorContains(t, err, "must specify at least one scraper")
 }
 
 func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {

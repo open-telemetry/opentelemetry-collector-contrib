@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -198,8 +199,17 @@ func (gtr *githubTracesReceiver) handleWorkflowJobEvent(ctx context.Context, eve
 
 	var err error
 	job := event.WorkflowJob
+
+	workflowName := "unknown"
+	if job.WorkflowName != nil {
+		workflowName = *job.WorkflowName
+	}
 	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	resourceSpans.SetSchemaUrl(semconv.SchemaURL)
+	attributes := resourceSpans.Resource().Attributes()
+	attributes.PutStr(semconv.AttributeServiceName, gtr.cfg.WebHook.ServiceName)
+	attributes.PutStr("github.workflow.name", workflowName)
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 
 	var traceID pcommon.TraceID

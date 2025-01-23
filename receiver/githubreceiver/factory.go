@@ -29,6 +29,7 @@ const (
 	defaultPath         = "/events"
 	defaultHealthPath   = "/health"
 	defaultEndpoint     = "localhost:8080"
+	defaultServiceName  = "github-actions"
 )
 
 var (
@@ -68,8 +69,9 @@ func createDefaultConfig() component.Config {
 				ReadTimeout:  defaultReadTimeout,
 				WriteTimeout: defaultWriteTimeout,
 			},
-			Path:       defaultPath,
-			HealthPath: defaultHealthPath,
+			Path:        defaultPath,
+			HealthPath:  defaultHealthPath,
+			ServiceName: defaultServiceName,
 		},
 	}
 }
