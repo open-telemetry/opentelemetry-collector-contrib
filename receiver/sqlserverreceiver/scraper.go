@@ -771,6 +771,11 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing row count. original value: %s, err: %s", row[rowCount], err))
 		}
+
+		obfuscatedStatement, err := ObfuscateSQL(row[statementText], "")
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement value: %s err: %s", row[statementText], err))
+		}
 		cacheKey := queryHashVal + "-" + queryPlanHashVal
 
 		if _, ok := s.cache.Get(cacheKey); !ok {
@@ -785,7 +790,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			record.Attributes().PutStr(sessionStatus, row[sessionStatus])
 			record.Attributes().PutStr(hostname, row[hostname])
 			record.Attributes().PutStr(command, row[command])
-			record.Attributes().PutStr(statementText, row[statementText])
+			record.Attributes().PutStr(statementText, obfuscatedStatement)
 			record.Attributes().PutInt(blockingSessionId, int64(blockingSessionIdNumber))
 			record.Attributes().PutStr(waitType, row[waitType])
 			record.Attributes().PutInt(waitTime, int64(waitTimeVal))
@@ -803,8 +808,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			record.Attributes().PutInt(lockTimeout, int64(lockTimeoutVal))
 			record.Attributes().PutInt(deadlockPriority, int64(deadlockPriorityVal))
 			record.Attributes().PutInt(rowCount, int64(rowCountVal))
-			record.Attributes().PutStr(queryHash, row[queryHash])
-			record.Attributes().PutStr(queryPlanHash, row[queryPlanHash])
+			record.Attributes().PutStr(queryHash, queryHashVal)
+			record.Attributes().PutStr(queryPlanHash, queryPlanHashVal)
 			record.Attributes().PutStr(contextInfo, contextInfoVal)
 
 			record.Attributes().PutStr(loginName, row[loginName])
