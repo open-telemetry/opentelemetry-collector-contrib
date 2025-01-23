@@ -859,7 +859,9 @@ func ObfuscateXMLPlan(rawPlan string) (string, error) {
 					if elem.Attr[i].Name.Local == attrName {
 						val, err := ObfuscateSQL(elem.Attr[i].Value, "")
 						if err != nil {
-							return "", err
+							// TODO: fix this, sometimes statement cannot be obfuscated.
+							fmt.Println("Unable to obfuscated sql statement: " + elem.Attr[i].Value)
+							//return "", err
 						}
 						elem.Attr[i].Value = val
 					}
