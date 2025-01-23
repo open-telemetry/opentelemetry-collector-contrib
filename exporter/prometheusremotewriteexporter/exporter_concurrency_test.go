@@ -5,11 +5,9 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"runtime"
 	"strconv"
 	"sync"
@@ -27,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -35,13 +32,7 @@ import (
 // Test everything works when there is more than one goroutine calling PushMetrics.
 // Today we only use 1 worker per exporter, but the intention of this test is to future-proof in case it changes.
 func Test_PushMetricsConcurrent(t *testing.T) {
-	if os.Getenv("ImageOs") == "win25" && os.Getenv("GITHUB_ACTIONS") == "true" {
-		t.Skip("Skipping test on Windows 2025 GH runners, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37104")
-	}
 	n := 1000
-	if runtime.GOOS == "windows" {
-		n = 1000
-	}
 	ms := make([]pmetric.Metrics, n)
 	testIDKey := "test_id"
 	for i := 0; i < n; i++ {
@@ -108,7 +99,6 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 	}
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
-	fmt.Printf(" ****** server.URL: %s\n", server.URL)
 	clientConfig.ReadBufferSize = 0
 	clientConfig.WriteBufferSize = 512 * 1024
 	cfg := &Config{
@@ -127,7 +117,6 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 
 	assert.NotNil(t, cfg)
 	set := exportertest.NewNopSettings()
-	set.Logger, _ = zap.NewDevelopment(zap.AddStacktrace(zap.PanicLevel))
 	set.MetricsLevel = configtelemetry.LevelBasic
 
 	prwe, nErr := newPRWExporter(cfg, set)
@@ -155,21 +144,12 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 		semaphore <- struct{}{}
 		go func() {
 			defer func() {
-				// if r := recover(); r != nil {
-				// 	buf := make([]byte, 1<<16)
-				// 	stackSize := runtime.Stack(buf, true)
-				// 	fmt.Printf("Panic: %v\n%s\n", r, buf[:stackSize])
-				// }
 				<-semaphore
 				wg.Done()
 			}()
 
 			err := prwe.PushMetrics(ctx, m)
-			if err != nil {
-				prwe.Shutdown(ctx)
-				panic(err)
-			}
-			// wg.Done()
+			assert.NoError(t, err)
 		}()
 	}
 	wg.Wait()
