@@ -5,7 +5,6 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -252,6 +251,11 @@ func (mvcm metricsValuesClientMock) List(_ context.Context, _ string, options *a
 
 	amMetrics := []*armmonitor.Metric{}
 	for _, name := range strings.Split(*options.Metricnames, ",") {
+		var metaValues []*armmonitor.MetadataValue
+		if options.Filter != nil {
+			metaValues = mvcm.getAMMetadataValues(*options.Filter)
+		}
+
 		amMetric := &armmonitor.Metric{
 			Name: &armmonitor.LocalizableString{
 				Value: &name,
@@ -262,21 +266,14 @@ func (mvcm metricsValuesClientMock) List(_ context.Context, _ string, options *a
 					Data: []*armmonitor.MetricValue{
 						mvcm.getAMDataPoints(*options.Aggregation),
 					},
+					Metadatavalues: metaValues,
 				},
 			},
 		}
 		amMetrics = append(amMetrics, amMetric)
 
-		switch name {
-		case "metric5":
-			amMetric.Timeseries[0].Metadatavalues = mvcm.getAMMetadataValues(2)
-
-		case "metric6":
-			amMetric.Timeseries[0].Metadatavalues = mvcm.getAMMetadataValues(1)
-
-		case "metric7":
+		if name == "metric7" {
 			amMetric.Timeseries[0].Data[0] = mvcm.getAMDataPoints("Count")
-			amMetric.Timeseries[0].Metadatavalues = mvcm.getAMMetadataValues(1)
 		}
 	}
 
@@ -307,17 +304,19 @@ func (mvcm metricsValuesClientMock) getAMDataPoints(aggregations string) *armmon
 	return amPoints
 }
 
-func (mvcm metricsValuesClientMock) getAMMetadataValues(n int) []*armmonitor.MetadataValue {
+func (mvcm metricsValuesClientMock) getAMMetadataValues(filter string) []*armmonitor.MetadataValue {
+	var out []*armmonitor.MetadataValue
+	knownDimensions := []string{"dimension1", "dimension2"}
 	dimensionValue := "dimension value"
 
-	out := make([]*armmonitor.MetadataValue, n)
-	for idx := range out {
-		dimension := fmt.Sprintf("dimension%d", idx+1)
-		out[idx] = &armmonitor.MetadataValue{
-			Name: &armmonitor.LocalizableString{
-				Value: &dimension,
-			},
-			Value: &dimensionValue,
+	for _, dimension := range knownDimensions {
+		if strings.Contains(filter, dimension) {
+			out = append(out, &armmonitor.MetadataValue{
+				Name: &armmonitor.LocalizableString{
+					Value: &dimension,
+				},
+				Value: &dimensionValue,
+			})
 		}
 	}
 
