@@ -33,7 +33,7 @@ func TestFromMetricsV2(t *testing.T) {
 				},
 			},
 			"1": {
-				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 9},
+				LabelsRefs: []uint32{1, 9, 3, 4, 5, 6, 7, 8},
 				Samples: []writev2.Sample{
 					{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1.23},
 				},

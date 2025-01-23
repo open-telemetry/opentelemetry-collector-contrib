@@ -6,6 +6,7 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/prometheus/prometheus/prompb"
@@ -117,6 +118,11 @@ func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
 
 func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label) {
 	buf := make([]uint32, 0, len(lbls)*2)
+
+	sort.Slice(lbls, func(i, j int) bool {
+		return lbls[i].Name < lbls[j].Name
+	})
+
 	var off uint32
 	for _, l := range lbls {
 		off = c.symbolTable.Symbolize(l.Name)
