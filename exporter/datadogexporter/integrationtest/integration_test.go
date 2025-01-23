@@ -47,6 +47,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
+	commonTestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
@@ -92,6 +93,7 @@ func testIntegration(t *testing.T) {
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
+	t.Setenv("PROM_SERVER", commonTestutil.GetAvailableLocalAddress(t))
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
@@ -284,6 +286,7 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
+	t.Setenv("PROM_SERVER", commonTestutil.GetAvailableLocalAddress(t))
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
@@ -463,7 +466,9 @@ func TestIntegrationLogs(t *testing.T) {
 		}
 	})
 	defer server.Close()
+	thing := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("SERVER_URL", server.URL)
+	t.Setenv("PROM_SERVER", thing)
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)

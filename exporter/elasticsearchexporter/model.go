@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/exphistogram"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -101,7 +102,7 @@ type dataPoint interface {
 	Value() (pcommon.Value, error)
 	DynamicTemplate(pmetric.Metric) string
 	DocCount() uint64
-	HasMappingHint(mappingHint) bool
+	HasMappingHint(elasticsearch.MappingHint) bool
 	Metric() pmetric.Metric
 }
 
@@ -263,12 +264,12 @@ func (m *encodeModel) encodeMetrics(resource pcommon.Resource, resourceSchemaURL
 
 type summaryDataPoint struct {
 	pmetric.SummaryDataPoint
-	mappingHintGetter
+	elasticsearch.MappingHintGetter
 	metric pmetric.Metric
 }
 
 func newSummaryDataPoint(metric pmetric.Metric, dp pmetric.SummaryDataPoint) summaryDataPoint {
-	return summaryDataPoint{SummaryDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes()), metric: metric}
+	return summaryDataPoint{SummaryDataPoint: dp, MappingHintGetter: elasticsearch.NewMappingHintGetter(dp.Attributes()), metric: metric}
 }
 
 func (dp summaryDataPoint) Value() (pcommon.Value, error) {
@@ -295,16 +296,16 @@ func (dp summaryDataPoint) Metric() pmetric.Metric {
 
 type exponentialHistogramDataPoint struct {
 	pmetric.ExponentialHistogramDataPoint
-	mappingHintGetter
+	elasticsearch.MappingHintGetter
 	metric pmetric.Metric
 }
 
 func newExponentialHistogramDataPoint(metric pmetric.Metric, dp pmetric.ExponentialHistogramDataPoint) exponentialHistogramDataPoint {
-	return exponentialHistogramDataPoint{ExponentialHistogramDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes()), metric: metric}
+	return exponentialHistogramDataPoint{ExponentialHistogramDataPoint: dp, MappingHintGetter: elasticsearch.NewMappingHintGetter(dp.Attributes()), metric: metric}
 }
 
 func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
-	if dp.HasMappingHint(hintAggregateMetricDouble) {
+	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
 		vm := pcommon.NewValueMap()
 		m := vm.Map()
 		m.PutDouble("sum", dp.Sum())
@@ -331,7 +332,7 @@ func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
 }
 
 func (dp exponentialHistogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
-	if dp.HasMappingHint(hintAggregateMetricDouble) {
+	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
 		return "summary"
 	}
 	return "histogram"
@@ -347,16 +348,16 @@ func (dp exponentialHistogramDataPoint) Metric() pmetric.Metric {
 
 type histogramDataPoint struct {
 	pmetric.HistogramDataPoint
-	mappingHintGetter
+	elasticsearch.MappingHintGetter
 	metric pmetric.Metric
 }
 
 func newHistogramDataPoint(metric pmetric.Metric, dp pmetric.HistogramDataPoint) histogramDataPoint {
-	return histogramDataPoint{HistogramDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes()), metric: metric}
+	return histogramDataPoint{HistogramDataPoint: dp, MappingHintGetter: elasticsearch.NewMappingHintGetter(dp.Attributes()), metric: metric}
 }
 
 func (dp histogramDataPoint) Value() (pcommon.Value, error) {
-	if dp.HasMappingHint(hintAggregateMetricDouble) {
+	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
 		vm := pcommon.NewValueMap()
 		m := vm.Map()
 		m.PutDouble("sum", dp.Sum())
@@ -367,7 +368,7 @@ func (dp histogramDataPoint) Value() (pcommon.Value, error) {
 }
 
 func (dp histogramDataPoint) DynamicTemplate(_ pmetric.Metric) string {
-	if dp.HasMappingHint(hintAggregateMetricDouble) {
+	if dp.HasMappingHint(elasticsearch.HintAggregateMetricDouble) {
 		return "summary"
 	}
 	return "histogram"
@@ -431,12 +432,12 @@ func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
 
 type numberDataPoint struct {
 	pmetric.NumberDataPoint
-	mappingHintGetter
+	elasticsearch.MappingHintGetter
 	metric pmetric.Metric
 }
 
 func newNumberDataPoint(metric pmetric.Metric, dp pmetric.NumberDataPoint) numberDataPoint {
-	return numberDataPoint{NumberDataPoint: dp, mappingHintGetter: newMappingHintGetter(dp.Attributes()), metric: metric}
+	return numberDataPoint{NumberDataPoint: dp, MappingHintGetter: elasticsearch.NewMappingHintGetter(dp.Attributes()), metric: metric}
 }
 
 func (dp numberDataPoint) Value() (pcommon.Value, error) {
@@ -724,7 +725,7 @@ func metricOTelHash(dp dataPoint, unit string) uint32 {
 
 	hasher.Write([]byte(unit))
 
-	mapHashExcludeReservedAttrs(hasher, dp.Attributes(), mappingHintsAttrKey)
+	mapHashExcludeReservedAttrs(hasher, dp.Attributes(), elasticsearch.MappingHintsAttrKey)
 
 	return hasher.Sum32()
 }
