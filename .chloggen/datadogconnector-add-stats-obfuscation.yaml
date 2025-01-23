@@ -17,10 +17,13 @@ issues: [35401]
 # Use pipe (|) for multiline entries.
 subtext: |
   Ensure that feature flags "enable_receive_resource_spans_v2" and "enable_operation_and_resource_name_logic_v2"
-  are both enabled on Datadog Exporter and Datadog Connector so that span attributes are properly
+  are also enabled on both Datadog Exporter and Datadog Connector so that span attributes are properly
   mapped to span type and span resource in Datadog APM; otherwise spans and apm stats may not be 
   obfuscated and attributes on stats payloads may not match traces.
   See https://docs.datadoghq.com/opentelemetry/schema_semantics/semantic_mapping/?tab=datadogexporter#mapping-opentelemetry-database-system-type-to-datadog-span-type
+  
+  NOTE: Long/complex SQL queries may cause a performance impact on APM Stats calculation in Datadog Connector.
+  Consider implementing sampling in your pipeline prior to sending traces to Datadog Connector if you experience this.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
