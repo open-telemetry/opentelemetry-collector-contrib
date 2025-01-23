@@ -15,12 +15,12 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4
 	go.opentelemetry.io/collector/component v0.118.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250121185328-fbefb22cc2b3
-	go.opentelemetry.io/collector/confmap v1.24.1-0.20250121185328-fbefb22cc2b3
-	go.opentelemetry.io/collector/consumer v1.24.1-0.20250121185328-fbefb22cc2b3
+	go.opentelemetry.io/collector/confmap v1.24.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/consumer v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250121185328-fbefb22cc2b3
-	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250121185328-fbefb22cc2b3
+	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/filter v0.118.1-0.20250121185328-fbefb22cc2b3
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250121185328-fbefb22cc2b3
+	go.opentelemetry.io/collector/pdata v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/receiver v0.118.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250121185328-fbefb22cc2b3
