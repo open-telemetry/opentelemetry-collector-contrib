@@ -119,7 +119,7 @@ receivers:
     auth: "default_credentials"
     metrics:
       - metric1 # This will scrape all known aggregations for "metric1"
-      - metric2/total # This will restrict scraping to "metric2" with the "Total" aggregation
+      - metric2/total # This will include "metric2" with the "Total" aggregation in the scraping
       - metric3/average # This will include "metric3" with the "Average" aggregation in the scraping
 ```
 
