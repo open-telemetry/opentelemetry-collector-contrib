@@ -33,7 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 )
 
-var metricRemappingDisableddFeatureGate = featuregate.GlobalRegistry().MustRegister(
+var metricRemappingDisabledFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.metricremappingdisabled",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled the Datadog Exporter remaps OpenTelemetry semantic conventions to Datadog semantic conventions. This feature gate is only for internal use."),
@@ -42,7 +42,7 @@ var metricRemappingDisableddFeatureGate = featuregate.GlobalRegistry().MustRegis
 
 // isMetricRemappingDisabled returns true if the datadogexporter should generate Datadog-compliant metrics from OpenTelemetry metrics
 func isMetricRemappingDisabled() bool {
-	return metricRemappingDisableddFeatureGate.IsEnabled()
+	return metricRemappingDisabledFeatureGate.IsEnabled()
 }
 
 type metricsExporter struct {

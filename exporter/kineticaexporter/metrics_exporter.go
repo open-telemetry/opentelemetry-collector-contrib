@@ -40,15 +40,15 @@ type kineticaSumRecord struct {
 }
 
 type kineticaHistogramRecord struct {
-	histogram                  *Histogram
-	histogramResourceAttribute []HistogramResourceAttribute
-	histogramScopeAttribute    []HistogramScopeAttribute
-	histogramDatapoint         []HistogramDatapoint
-	histogramDatapointAtribute []HistogramDataPointAttribute
-	histogramBucketCount       []HistogramDatapointBucketCount
-	histogramExplicitBound     []HistogramDatapointExplicitBound
-	exemplars                  []HistogramDatapointExemplar
-	exemplarAttribute          []HistogramDataPointExemplarAttribute
+	histogram                   *Histogram
+	histogramResourceAttribute  []HistogramResourceAttribute
+	histogramScopeAttribute     []HistogramScopeAttribute
+	histogramDatapoint          []HistogramDatapoint
+	histogramDatapointAttribute []HistogramDataPointAttribute
+	histogramBucketCount        []HistogramDatapointBucketCount
+	histogramExplicitBound      []HistogramDatapointExplicitBound
+	exemplars                   []HistogramDatapointExemplar
+	exemplarAttribute           []HistogramDataPointExemplarAttribute
 }
 
 type kineticaExponentialHistogramRecord struct {
@@ -376,7 +376,7 @@ func (e *kineticaMetricsExporter) pushMetricsData(_ context.Context, md pmetric.
 
 // createSummaryRecord - creates a Summary type record
 //
-//	@receiver e - Method aplicable to [kineticaMetricsExporter]
+//	@receiver e - Method applicable to [kineticaMetricsExporter]
 //	@param resAttr - a map of key to value of resource attributes
 //	@param _ schemaURL - unused
 //	@param scopeInstr - the instrumentation scope
@@ -815,7 +815,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 				datapointAttribute = append(datapointAttribute, *sa)
 			}
 		}
-		kiHistogramRecord.histogramDatapointAtribute = append(kiHistogramRecord.histogramDatapointAtribute, datapointAttribute...)
+		kiHistogramRecord.histogramDatapointAttribute = append(kiHistogramRecord.histogramDatapointAttribute, datapointAttribute...)
 
 		for k := range datapointAttributes {
 			delete(datapointAttributes, k)

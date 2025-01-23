@@ -8,14 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
@@ -43,10 +41,10 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewID(metadata.Type),
 			expected: func() component.Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.Scrapers = map[component.Type]internal.Config{
-					cpuscraper.Type: func() internal.Config {
-						cfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
-						return cfg
+				cpu := cpuscraper.NewFactory()
+				cfg.Scrapers = map[component.Type]component.Config{
+					cpu.Type(): func() component.Config {
+						return cpu.CreateDefaultConfig()
 					}(),
 				}
 				return cfg
@@ -60,56 +58,35 @@ func TestLoadConfig(t *testing.T) {
 					CollectionInterval: 30 * time.Second,
 					InitialDelay:       time.Second,
 				},
-				Scrapers: map[component.Type]internal.Config{
-					cpuscraper.Type: func() internal.Config {
-						cfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
-						return cfg
-					}(),
-					diskscraper.Type: func() internal.Config {
-						cfg := (&diskscraper.Factory{}).CreateDefaultConfig()
-						return cfg
-					}(),
-					loadscraper.Type: (func() internal.Config {
-						cfg := (&loadscraper.Factory{}).CreateDefaultConfig()
+				Scrapers: map[component.Type]component.Config{
+					component.MustNewType("cpu"):  cpuscraper.NewFactory().CreateDefaultConfig(),
+					component.MustNewType("disk"): diskscraper.NewFactory().CreateDefaultConfig(),
+					component.MustNewType("load"): (func() component.Config {
+						cfg := loadscraper.NewFactory().CreateDefaultConfig()
 						cfg.(*loadscraper.Config).CPUAverage = true
 						return cfg
 					})(),
-					filesystemscraper.Type: func() internal.Config {
-						cfg := (&filesystemscraper.Factory{}).CreateDefaultConfig()
-						return cfg
-					}(),
-					memoryscraper.Type: func() internal.Config {
-						cfg := (&memoryscraper.Factory{}).CreateDefaultConfig()
-						return cfg
-					}(),
-					networkscraper.Type: (func() internal.Config {
-						cfg := (&networkscraper.Factory{}).CreateDefaultConfig()
+					component.MustNewType("filesystem"): filesystemscraper.NewFactory().CreateDefaultConfig(),
+					component.MustNewType("memory"):     memoryscraper.NewFactory().CreateDefaultConfig(),
+					component.MustNewType("network"): (func() component.Config {
+						cfg := networkscraper.NewFactory().CreateDefaultConfig()
 						cfg.(*networkscraper.Config).Include = networkscraper.MatchConfig{
 							Interfaces: []string{"test1"},
 							Config:     filterset.Config{MatchType: "strict"},
 						}
 						return cfg
 					})(),
-					processesscraper.Type: func() internal.Config {
-						cfg := (&processesscraper.Factory{}).CreateDefaultConfig()
-						return cfg
-					}(),
-					pagingscraper.Type: func() internal.Config {
-						cfg := (&pagingscraper.Factory{}).CreateDefaultConfig()
-						return cfg
-					}(),
-					processscraper.Type: (func() internal.Config {
-						cfg := (&processscraper.Factory{}).CreateDefaultConfig()
+					component.MustNewType("processes"): processesscraper.NewFactory().CreateDefaultConfig(),
+					component.MustNewType("paging"):    pagingscraper.NewFactory().CreateDefaultConfig(),
+					component.MustNewType("process"): (func() component.Config {
+						cfg := processscraper.NewFactory().CreateDefaultConfig()
 						cfg.(*processscraper.Config).Include = processscraper.MatchConfig{
 							Names:  []string{"test2", "test3"},
 							Config: filterset.Config{MatchType: "regexp"},
 						}
 						return cfg
 					})(),
-					systemscraper.Type: (func() internal.Config {
-						cfg := (&systemscraper.Factory{}).CreateDefaultConfig()
-						return cfg
-					})(),
+					component.MustNewType("system"): systemscraper.NewFactory().CreateDefaultConfig(),
 				},
 			},
 		},
@@ -124,8 +101,8 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			require.NoError(t, component.ValidateConfig(cfg))
+			require.Equal(t, tt.expected, cfg)
 		})
 	}
 }

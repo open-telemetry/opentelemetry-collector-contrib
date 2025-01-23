@@ -350,8 +350,11 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		trace.ReceivedBatches = ptrace.NewTraces()
 		trace.Unlock()
 
-		if decision == sampling.Sampled {
+		switch decision {
+		case sampling.Sampled:
 			tsp.releaseSampledTrace(context.Background(), id, allSpans)
+		case sampling.NotSampled:
+			tsp.releaseNotSampledTrace(id)
 		}
 	}
 
@@ -404,6 +407,13 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		finalDecision = sampling.Sampled
 	}
 
+	switch finalDecision {
+	case sampling.Sampled:
+		metrics.decisionSampled++
+	case sampling.NotSampled:
+		metrics.decisionNotSampled++
+	}
+
 	return finalDecision
 }
 
@@ -443,6 +453,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 	for id, spans := range idToSpansAndScope {
 		// If the trace ID is in the sampled cache, short circuit the decision
 		if _, ok := tsp.sampledIDCache.Get(id); ok {
+			tsp.logger.Debug("Trace ID is in the sampled cache", zap.Stringer("id", id))
 			traceTd := ptrace.NewTraces()
 			appendToTraces(traceTd, resourceSpans, spans)
 			tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
@@ -453,6 +464,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		}
 		// If the trace ID is in the non-sampled cache, short circuit the decision
 		if _, ok := tsp.nonSampledIDCache.Get(id); ok {
+			tsp.logger.Debug("Trace ID is in the non-sampled cache", zap.Stringer("id", id))
 			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
 				Add(tsp.ctx, int64(len(spans)), attrSampledFalse)
 			continue
@@ -508,11 +520,14 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 				appendToTraces(traceTd, resourceSpans, spans)
 				tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
 			case sampling.NotSampled:
-				tsp.nonSampledIDCache.Put(id, true)
-				tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second))
+				tsp.releaseNotSampledTrace(id)
 			default:
 				tsp.logger.Warn("Encountered unexpected sampling decision",
 					zap.Int("decision", int(finalDecision)))
+			}
+
+			if !actualData.DecisionTime.IsZero() {
+				tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second))
 			}
 		}
 	}
@@ -546,22 +561,36 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 		tsp.numTracesOnMap.Add(^uint64(0))
 	}
 	if trace == nil {
-		tsp.logger.Debug("Attempt to delete traceID not on table")
+		tsp.logger.Debug("Attempt to delete trace ID not on table", zap.Stringer("id", traceID))
 		return
 	}
 
 	tsp.telemetry.ProcessorTailSamplingSamplingTraceRemovalAge.Record(tsp.ctx, int64(deletionTime.Sub(trace.ArrivalTime)/time.Second))
 }
 
-// releaseSampledTrace sends the trace data to the next consumer.
-// It additionally adds the trace ID to the cache of sampled trace IDs.
-// It does not (yet) delete the spans from the internal map.
+// releaseSampledTrace sends the trace data to the next consumer. It
+// additionally adds the trace ID to the cache of sampled trace IDs. If the
+// trace ID is cached, it deletes the spans from the internal map.
 func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, id pcommon.TraceID, td ptrace.Traces) {
 	tsp.sampledIDCache.Put(id, true)
 	if err := tsp.nextConsumer.ConsumeTraces(ctx, td); err != nil {
 		tsp.logger.Warn(
 			"Error sending spans to destination",
 			zap.Error(err))
+	}
+	_, ok := tsp.sampledIDCache.Get(id)
+	if ok {
+		tsp.dropTrace(id, time.Now())
+	}
+}
+
+// releaseNotSampledTrace adds the trace ID to the cache of not sampled trace
+// IDs. If the trace ID is cached, it deletes the spans from the internal map.
+func (tsp *tailSamplingSpanProcessor) releaseNotSampledTrace(id pcommon.TraceID) {
+	tsp.nonSampledIDCache.Put(id, true)
+	_, ok := tsp.nonSampledIDCache.Get(id)
+	if ok {
+		tsp.dropTrace(id, time.Now())
 	}
 }
 

@@ -176,7 +176,7 @@ func (cc *Client) putRequestOnRetryChan(r *request) error {
 }
 
 // CorrelateCB is a call back invoked with Correlate requests
-// it is not invoked if the reqeust is deduplicated, cancelled, or the client context is cancelled
+// it is not invoked if the request is deduplicated, cancelled, or the client context is cancelled
 type CorrelateCB func(cor *Correlation, err error)
 
 // Correlate
