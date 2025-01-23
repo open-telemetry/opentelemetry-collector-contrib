@@ -214,6 +214,7 @@ body:
       - receiver/datadog
       - receiver/dockerstats
       - receiver/elasticsearch
+      - receiver/envoyals
       - receiver/expvar
       - receiver/filelog
       - receiver/filestats
