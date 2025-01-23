@@ -260,7 +260,7 @@ func testdataConfigYaml() *FileLogConfig {
 						// The Validate method modifies private fields on the helper.TimeParser
 						// object that need to be set for later comparison.
 						// If validation fails, the test will fail, so discard the error.
-						_ := timeCfg.Validate()
+						_ = timeCfg.Validate()
 						cfg.TimeParser = &timeCfg
 						return cfg
 					}(),
