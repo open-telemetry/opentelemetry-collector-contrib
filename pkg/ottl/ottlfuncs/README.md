@@ -467,6 +467,7 @@ Available Converters:
 - [Substring](#substring)
 - [Time](#time)
 - [ToKeyValueString](#tokeyvaluestring)
+- [ToLowerCase](#tolowercase)
 - [ToSnakeCase](#tosnakecase)
 - [ToUpperCase](#touppercase)
 - [TraceID](#traceid)
@@ -2057,6 +2058,18 @@ Examples:
 
 - `ToKeyValueString(body)`
 - `ToKeyValueString(body, ":", ",", true)`
+
+### ToLowerCase
+
+`ToLowerCase(target)`
+
+The `ToLowerCase` Converter converts the `target` string into lower case (e.g. `MyMetricName` to `mymetricmame`).
+
+`target` is a string.
+
+Examples:
+
+- `ToLowerCase(metric.name)`
 
 ### ToSnakeCase
 
