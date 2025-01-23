@@ -92,7 +92,7 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 
 	// Adjusted retry settings for faster testing
 	retrySettings := configretry.BackOffConfig{
-		Enabled:         false,
+		Enabled:         true,
 		InitialInterval: 100 * time.Millisecond, // Shorter initial interval
 		MaxInterval:     1 * time.Second,        // Shorter max interval
 		MaxElapsedTime:  2 * time.Second,        // Shorter max elapsed time
