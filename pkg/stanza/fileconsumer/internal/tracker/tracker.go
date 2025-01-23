@@ -11,7 +11,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
@@ -61,7 +61,7 @@ var errInvalidValue = errors.New("invalid value")
 var archiveIndexKey = "knownFilesArchiveIndex"
 var archivePollsToArchiveKey = "knonwFilesPollsToArchive"
 
-func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int, pollsToArchive int, persister operator.Persister) Tracker {
+func NewFileTracker(ctx context.Context, set component.TelemetrySettings, maxBatchFiles int, pollsToArchive int, persister operator.Persister) Tracker {
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
 	for i := 0; i < len(knownFiles); i++ {
 		knownFiles[i] = fileset.New[*reader.Metadata](maxBatchFiles)
@@ -79,7 +79,7 @@ func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int, pollsToA
 		archiveIndex:      0,
 	}
 	if t.archiveEnabled() {
-		t.restoreArchiveIndex(context.Background())
+		t.restoreArchiveIndex(ctx)
 	}
 
 	return t
@@ -162,23 +162,28 @@ func (t *fileTracker) TotalReaders() int {
 }
 
 func (t *fileTracker) restoreArchiveIndex(ctx context.Context) {
-	byteIndex, err := t.persister.Get(ctx, archiveIndexKey)
-	if err != nil {
-		t.set.Logger.Error("error while reading the archiveIndexKey. Starting from 0", zap.Error(err))
-		t.archiveIndex = 0
-		return
-	}
+	// remove extra "keys" once archive restoration is done
+	defer t.removeExtraKeys(ctx)
+	defer func() {
+		// store current pollsToArchive
+		if err := t.persister.Set(ctx, archivePollsToArchiveKey, encodeIndex(t.pollsToArchive)); err != nil {
+			t.set.Logger.Error("Error storing polls_to_archive", zap.Error(err))
+		}
+	}()
 
-	previousPollsToArchive, err := t.previousPollsToArchive(ctx)
+	previousPollsToArchive, err := t.getPreviousPollsToArchive(ctx)
 	if err != nil {
 		// if there's an error reading previousPollsToArchive, default to current value
 		previousPollsToArchive = t.pollsToArchive
 	}
 
-	t.archiveIndex, err = decodeIndex(byteIndex)
+	t.archiveIndex, err = t.getArchiveIndex(ctx)
 	if err != nil {
-		t.set.Logger.Error("error getting read index. Starting from 0", zap.Error(err))
-	} else if previousPollsToArchive < t.pollsToArchive {
+		t.set.Logger.Error("error while reading the archiveIndexKey. Starting from 0", zap.Error(err))
+		return
+	}
+
+	if previousPollsToArchive < t.pollsToArchive {
 		// if archive size has increased, we just increment the index until we enconter a nil value
 		for t.archiveIndex < t.pollsToArchive && t.isSet(ctx, t.archiveIndex) {
 			t.archiveIndex++
@@ -188,53 +193,37 @@ func (t *fileTracker) restoreArchiveIndex(ctx context.Context) {
 		t.set.Logger.Warn("polls_to_archive has changed. Will attempt to rewrite archive")
 		t.rewriteArchive(ctx, previousPollsToArchive)
 	}
-
-	t.removeExtraKeys(ctx)
-
-	// store current pollsToArchive
-	if err := t.persister.Set(ctx, archivePollsToArchiveKey, encodeIndex(t.pollsToArchive)); err != nil {
-		t.set.Logger.Error("Error storing polls_to_archive", zap.Error(err))
-	}
 }
 
 func (t *fileTracker) rewriteArchive(ctx context.Context, previousPollsToArchive int) {
-	// Ensure archiveIndex is non-negative
-	if t.archiveIndex < 0 {
-		t.archiveIndex = 0
-		return
-	}
 	// Function to swap data between two indices
-	swapData := func(idx1, idx2 int) error {
-		val1, err := t.persister.Get(ctx, archiveKey(idx1))
+	rewrite := func(newIdx, oldIdex int) error {
+		oldVal, err := t.persister.Get(ctx, archiveKey(oldIdex))
 		if err != nil {
 			return err
 		}
-		val2, err := t.persister.Get(ctx, archiveKey(idx2))
-		if err != nil {
-			return err
-		}
-		return t.persister.Batch(ctx, storage.SetOperation(archiveKey(idx1), val2), storage.SetOperation(archiveKey(idx2), val1))
+		return t.persister.Set(ctx, archiveKey(newIdx), oldVal)
 	}
 	// Calculate the least recent index, w.r.t. new archive size
 
 	leastRecentIndex := mod(t.archiveIndex-t.pollsToArchive, previousPollsToArchive)
-	// Refer archive.md for the detailed design
 
+	// Refer archive.md for the detailed design
 	if mod(t.archiveIndex-1, previousPollsToArchive) > t.pollsToArchive {
 		for i := 0; i < t.pollsToArchive; i++ {
-			if err := swapData(i, leastRecentIndex); err != nil {
+			if err := rewrite(i, leastRecentIndex); err != nil {
 				t.set.Logger.Error("error while swapping archive", zap.Error(err))
 			}
 			leastRecentIndex = (leastRecentIndex + 1) % previousPollsToArchive
 		}
 		t.archiveIndex = 0
 	} else {
-		if t.isSet(ctx, t.archiveIndex) {
+		if !t.isSet(ctx, t.archiveIndex) {
 			// If the current index points at an unset key, no need to do anything
 			return
 		}
 		for i := 0; i < t.pollsToArchive-t.archiveIndex; i++ {
-			if err := swapData(t.archiveIndex+i, leastRecentIndex); err != nil {
+			if err := rewrite(t.archiveIndex+i, leastRecentIndex); err != nil {
 				t.set.Logger.Warn("error while swapping archive", zap.Error(err))
 			}
 			leastRecentIndex = (leastRecentIndex + 1) % previousPollsToArchive
@@ -250,7 +239,7 @@ func (t *fileTracker) removeExtraKeys(ctx context.Context) {
 	}
 }
 
-func (t *fileTracker) previousPollsToArchive(ctx context.Context) (int, error) {
+func (t *fileTracker) getPreviousPollsToArchive(ctx context.Context) (int, error) {
 	byteIndex, err := t.persister.Get(ctx, archivePollsToArchiveKey)
 	if err != nil {
 		t.set.Logger.Error("error while reading the archiveIndexKey", zap.Error(err))
@@ -262,6 +251,18 @@ func (t *fileTracker) previousPollsToArchive(ctx context.Context) (int, error) {
 		return 0, err
 	}
 	return previousPollsToArchive, nil
+}
+
+func (t *fileTracker) getArchiveIndex(ctx context.Context) (int, error) {
+	byteIndex, err := t.persister.Get(ctx, archiveIndexKey)
+	if err != nil {
+		return 0, err
+	}
+	archiveIndex, err := decodeIndex(byteIndex)
+	if err != nil {
+		return 0, err
+	}
+	return archiveIndex, nil
 }
 
 func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
@@ -302,7 +303,7 @@ func (t *fileTracker) readArchive(index int) (*fileset.Fileset[*reader.Metadata]
 }
 
 // writeArchive saves data to the archive for a given index and returns an error, if encountered.
-func (t *fileTracker) writeArchive(index int, rmds *fileset.Fileset[*reader.Metadata], ops ...storage.Operation) error {
+func (t *fileTracker) writeArchive(index int, rmds *fileset.Fileset[*reader.Metadata], ops ...*storage.Operation) error {
 	return checkpoint.SaveKey(context.Background(), t.persister, rmds.Get(), archiveKey(index), ops...)
 }
 

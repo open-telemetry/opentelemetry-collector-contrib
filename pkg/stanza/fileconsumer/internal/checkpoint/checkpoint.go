@@ -10,7 +10,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -23,7 +23,7 @@ func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Meta
 	return SaveKey(ctx, persister, rmds, knownFilesKey)
 }
 
-func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string, ops ...storage.Operation) error {
+func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string, ops ...*storage.Operation) error {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 
