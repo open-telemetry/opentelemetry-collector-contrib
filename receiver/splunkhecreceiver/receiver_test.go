@@ -586,7 +586,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
 			if tt.passthrough && tt.tokenProvided != "" {
 				if tt.tokenContextGate {
-					req = req.WithContext(context.WithValue(req.Context(), splunk.LabelType(splunk.HecTokenLabel), tt.tokenProvided))
+					req = req.WithContext(context.WithValue(req.Context(), splunk.LabelType(splunk.SFxAccessTokenHeader), tt.tokenProvided))
 				} else {
 					req.Header.Set("Authorization", "Splunk "+tt.tokenProvided)
 				}
@@ -596,7 +596,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			go func() {
 				tokenReceived := <-accessTokensChan
 				if tt.tokenContextGate {
-					assert.Equal(t, req.Context().Value(splunk.LabelType(splunk.HecTokenLabel)), tt.tokenProvided)
+					assert.Equal(t, req.Context().Value(splunk.LabelType(splunk.SFxAccessTokenHeader)), tt.tokenProvided)
 				} else {
 					assert.Equal(t, "Splunk "+tt.tokenExpected, tokenReceived)
 				}

@@ -503,7 +503,7 @@ func (r *splunkReceiver) retrieveAccessToken(origCtx context.Context, req *http.
 	if strings.HasPrefix(accessToken, splunk.HECTokenHeader+" ") {
 		accessTokenValue := accessToken[len(splunk.HECTokenHeader)+1:]
 		if tokenContextGate.IsEnabled() {
-			return context.WithValue(origCtx, splunk.LabelType(splunk.HecTokenLabel), accessTokenValue), nil
+			return context.WithValue(origCtx, splunk.LabelType(splunk.SFxAccessTokenHeader), accessTokenValue), nil
 		}
 		return origCtx, func(resource pcommon.Resource) {
 			resource.Attributes().PutStr(splunk.HecTokenLabel, accessTokenValue)
