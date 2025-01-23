@@ -11,8 +11,9 @@ import (
 type Config struct {
 	// Tags is a list of regex's to match ec2 instance tag keys that users want
 	// to add as resource attributes to processed data
-	Tags               []string                          `mapstructure:"tags"`
-	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
+	Tags                  []string                          `mapstructure:"tags"`
+	ResourceAttributes    metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
+	FailOnMissingMetadata bool                              `mapstructure:"fail_on_missing_metadata"`
 }
 
 func CreateDefaultConfig() Config {
