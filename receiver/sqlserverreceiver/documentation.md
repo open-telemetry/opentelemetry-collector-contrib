@@ -323,8 +323,8 @@ This metric is only available when the receiver is configured to directly connec
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| server.address | The address of the SQL server host. | Any Str | true |
-| server.port | The port of the SQL server host. | Any Int | false |
+| server.address | Name of the database host. | Any Str | true |
+| server.port | Server port number. | Any Int | false |
 | sqlserver.computer.name | The name of the SQL Server instance being monitored. | Any Str | false |
 | sqlserver.database.name | The name of the SQL Server database. | Any Str | true |
 | sqlserver.instance.name | The name of the SQL Server instance being monitored. | Any Str | false |
