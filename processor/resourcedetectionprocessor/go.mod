@@ -137,7 +137,7 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.118.1-0.20250124013028-e8807bfe9423 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.118.1-0.20250124013028-e8807bfe9423 // indirect
 	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250124013028-e8807bfe9423 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.30.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect

@@ -82,7 +82,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250124013028-e8807bfe9423 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.118.1-0.20250124013028-e8807bfe9423 // indirect
 	go.opentelemetry.io/collector/semconv v0.118.1-0.20250124013028-e8807bfe9423 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
