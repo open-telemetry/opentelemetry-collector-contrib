@@ -58,13 +58,11 @@ func (w worker) simulateLogs(res *resource.Resource, exporterFunc func() (sdklog
 
 		if w.spanID != "" {
 			// we checked this for errors in the Validate function
-			// nolint: errcheck
 			b, _ := hex.DecodeString(w.spanID)
 			sid = trace.SpanID(b)
 		}
 		if w.traceID != "" {
 			// we checked this for errors in the Validate function
-			// nolint: errcheck
 			b, _ := hex.DecodeString(w.traceID)
 			tid = trace.TraceID(b)
 		}

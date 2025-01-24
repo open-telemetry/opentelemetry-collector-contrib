@@ -310,20 +310,16 @@ generate: install-tools
 	PATH="$$PWD/.tools:$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
 
-.PHONY: githubgen-install
-githubgen-install:
-	cd cmd/githubgen && $(GOCMD) install .
-
 .PHONY: gengithub
-gengithub: githubgen-install
-	githubgen
+gengithub: $(GITHUBGEN)
+	$(GITHUBGEN)
 
 .PHONY: gendistributions
-gendistributions: githubgen-install
-	githubgen distributions
+gendistributions: $(GITHUBGEN)
+	$(GITHUBGEN) distributions
 
 .PHONY: update-codeowners
-update-codeowners: gengithub generate
+update-codeowners: generate gengithub
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
@@ -344,7 +340,7 @@ chlog-update: $(CHLOGGEN)
 
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
-	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol
+	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
@@ -360,7 +356,7 @@ otelcontribcollite: genotelcontribcol
 
 .PHONY: genoteltestbedcol
 genoteltestbedcol: $(BUILDER)
-	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config.yaml --output-path cmd/oteltestbedcol
+	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config.yaml
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
@@ -559,8 +555,7 @@ clean:
 
 .PHONY: generate-gh-issue-templates
 generate-gh-issue-templates:
-	cd cmd/githubgen && $(GOCMD) install .
-	githubgen issue-templates
+	$(GITHUBGEN) issue-templates
 
 .PHONY: checks
 checks:
