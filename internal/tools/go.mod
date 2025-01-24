@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/build-tools/checkfile v0.16.0
 	go.opentelemetry.io/build-tools/chloggen v0.16.0
 	go.opentelemetry.io/build-tools/crosslink v0.16.0
+	go.opentelemetry.io/build-tools/githubgen v0.17.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.16.0
 	go.opentelemetry.io/build-tools/multimod v0.16.0
 	go.opentelemetry.io/collector/cmd/builder v0.118.1-0.20250121185328-fbefb22cc2b3
@@ -107,7 +108,8 @@ require (
 	github.com/golangci/unconvert v0.0.0-20240309020433-c5143eacb3ed // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-github v17.0.0+incompatible // indirect
-	github.com/google/go-querystring v1.0.0 // indirect
+	github.com/google/go-github/v66 v66.0.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/gordonklaus/ineffassign v0.1.0 // indirect
 	github.com/gostaticanalysis/analysisutil v0.7.1 // indirect

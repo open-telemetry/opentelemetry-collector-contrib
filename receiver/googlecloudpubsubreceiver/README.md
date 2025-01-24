@@ -41,29 +41,53 @@ receivers:
 
 ## Encoding
 
-You should not need to set the encoding of the subscription as the receiver will try to discover the type of the data
-by looking at the `ce-type` and `content-type` attributes of the message. Only when those attributes are not set 
-must the `encoding` field in the configuration be set. 
+The `encoding` options allows you to specify Encoding Extensions for decoding messages on the subscription. An
+extension need to be configured in the `extensions` section, and added to pipeline in the collectors configuration file.
 
-| ce-type                           | ce-datacontenttype   | encoding          | description                                    |
-|-----------------------------------|----------------------|-------------------|------------------------------------------------|
-| org.opentelemetry.otlp.traces.v1  | application/protobuf |                   | Decode OTLP trace message                      |
-| org.opentelemetry.otlp.metrics.v1 | application/protobuf |                   | Decode OTLP metric message                     |
-| org.opentelemetry.otlp.logs.v1    | application/json     |                   | Decode OTLP log message                        |
-| -                                 | -                    | otlp_proto_trace  | Decode OTLP trace message                      |
-| -                                 | -                    | otlp_proto_metric | Decode OTLP trace message                      |
-| -                                 | -                    | otlp_proto_log    | Decode OTLP trace message                      |
-| -                                 | -                    | cloud_logging     | Decode [Cloud Logging] [LogEntry] message type |
-| -                                 | -                    | raw_text          | Wrap in an OTLP log message                    |
+The following example shows how to use the text encoding extension for ingesting arbitrary text message on a 
+subscription, wrapping them in OTLP Log messages. Note that not all extensions support all signals.
 
-When the `encoding` configuration is set, the attributes on the message are ignored.
+```yaml
+extensions:
+  text_encoding:
+    encoding: utf8
+    unmarshaling_separator: "\r?\n"
+
+service:
+  extensions: [text_encoding]
+  pipelines:
+    logs:
+      receivers: [googlecloudpubsub]
+      processors: []
+      exporters: [debug]
+```
+
+The receiver also supports build in encodings for the native OTLP encodings, without the need to specify an Encoding 
+Extensions. The non OTLP build in encodings will be deprecated as soon as extensions for the formats are available.
+
+| encoding          | description                                    |
+|-------------------|------------------------------------------------|
+| otlp_proto_trace  | Decode OTLP trace message                      |
+| otlp_proto_metric | Decode OTLP trace message                      |
+| otlp_proto_log    | Decode OTLP trace message                      |
+| cloud_logging     | Decode [Cloud Logging] [LogEntry] message type |
+| raw_text          | Wrap in an OTLP log message                    |
 
 With `cloud_logging`, the receiver can be used to bring Cloud Logging messages into an OpenTelemetry pipeline. You'll
 first need to [set up a logging sink][sink-docs] with a Pub/Sub topic as its destination. Note that the `cloud_logging`
 integration is considered **alpha** as the semantic convention on some of the conversion are not stabilized yet.
 
 With `raw_text`, the receiver can be used for ingesting arbitrary text message on a Pubsub subscription, wrapping them
-in OTLP Log messages, making it a convenient way to ingest raw log lines from Pubsub.
+in OTLP Log messages.
+
+When no encoding is specified, the receiver will try to discover the type of the data by looking at the `ce-type` and
+`content-type` attributes of the message. These message attributes are set by the `googlepubsubexporter`.
+
+| ce-type                           | ce-datacontenttype   | encoding          | description                                    |
+|-----------------------------------|----------------------|-------------------|------------------------------------------------|
+| org.opentelemetry.otlp.traces.v1  | application/protobuf |                   | Decode OTLP trace message                      |
+| org.opentelemetry.otlp.metrics.v1 | application/protobuf |                   | Decode OTLP metric message                     |
+| org.opentelemetry.otlp.logs.v1    | application/protobuf |                   | Decode OTLP log message                        |
 
 [Cloud Logging]: https://cloud.google.com/logging
 [LogEntry]: https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry
