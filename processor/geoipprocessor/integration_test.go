@@ -7,10 +7,11 @@ import (
 	"os"
 	"testing"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 	maxmind "github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider/maxmindprovider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider/maxmindprovider/testdata"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 func TestProcessorWithMaxMind(t *testing.T) {
