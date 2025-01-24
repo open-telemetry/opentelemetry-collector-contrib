@@ -26,15 +26,13 @@ type BmcHelixSample struct {
 
 // MetricsProducer is responsible for converting OpenTelemetry metrics into BMC Helix metrics
 type MetricsProducer struct {
-	osHostname string
-	logger     *zap.Logger
+	logger *zap.Logger
 }
 
 // newMetricsProducer creates a new MetricsProducer
-func newMetricsProducer(osHostname string, logger *zap.Logger) *MetricsProducer {
+func newMetricsProducer(logger *zap.Logger) *MetricsProducer {
 	return &MetricsProducer{
-		osHostname: osHostname,
-		logger:     logger,
+		logger: logger,
 	}
 }
 
@@ -150,6 +148,11 @@ func (mp *MetricsProducer) createHelixMetric(metric pmetric.Metric, resourceAttr
 		return nil, fmt.Errorf("unsupported metric type %s", metric.Type())
 	}
 
+	// Check if the hostname is set
+	if labels["hostname"] == "" {
+		return nil, fmt.Errorf("hostname is required for the BMC Helix payload but not set for metric %s", metric.Name())
+	}
+
 	// Check if the entityTypeId is set
 	if labels["entityTypeId"] == "" {
 		return nil, fmt.Errorf("entityTypeId is required for the BMC Helix payload but not set for metric %s", metric.Name())
@@ -186,8 +189,7 @@ func (mp *MetricsProducer) updateEntityInformation(labels map[string]string, met
 		if maybeHostname, ok := dpAttributes[conventions.AttributeHostName].(string); ok && maybeHostname != "" {
 			hostname = maybeHostname
 		} else {
-			// Fallback to osHostname if hostname is not found in both places
-			hostname = mp.osHostname
+			return fmt.Errorf("the hostname is required for the BMC Helix payload but not set for metric %s. Metric datapoint will be skipped", metricName)
 		}
 	}
 

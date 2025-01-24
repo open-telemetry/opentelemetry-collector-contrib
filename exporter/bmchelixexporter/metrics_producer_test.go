@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -26,7 +27,7 @@ func TestProduceHelixPayload(t *testing.T) {
 			"entityTypeId":           "test-entity-type-id",
 			"entityName":             "test-entity",
 			"source":                 "OTEL",
-			"unit":                   "ms",
+			"unit":                   "s",
 			"hostType":               "server",
 			"metricName":             "test_metric",
 			"hostname":               "test-hostname",
@@ -34,6 +35,7 @@ func TestProduceHelixPayload(t *testing.T) {
 			"entityId":               "OTEL:test-hostname:test-entity-type-id:test-entity",
 			"parentEntityName":       "test-entity-type-id_container",
 			"parentEntityTypeId":     "test-entity-type-id_container",
+			"host.name":              "test-hostname",
 		},
 		Samples: []BmcHelixSample{sample},
 	}
@@ -54,7 +56,7 @@ func TestProduceHelixPayload(t *testing.T) {
 
 	expectedPayload := []BmcHelixMetric{parent, metric}
 
-	producer := newMetricsProducer("test-hostname", zap.NewExample())
+	producer := newMetricsProducer(zap.NewExample())
 
 	tests := []struct {
 		name                string
@@ -106,8 +108,9 @@ func generateMockMetrics(dpCreator func(metric pmetric.Metric) pmetric.NumberDat
 	metric := il.AppendEmpty()
 	metric.SetName("test_metric")
 	metric.SetDescription("This is a test metric")
-	metric.SetUnit("ms")
+	metric.SetUnit("s")
 	dp := dpCreator(metric)
+	dp.Attributes().PutStr(conventions.AttributeHostName, "test-hostname")
 	dp.Attributes().PutStr("entityName", "test-entity")
 	dp.Attributes().PutStr("entityTypeId", "test-entity-type-id")
 	dp.Attributes().PutStr("instanceName", "test-entity-Name")

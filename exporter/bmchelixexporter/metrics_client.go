@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap"
 )
 
@@ -18,7 +19,7 @@ import (
 type MetricsClient struct {
 	url        string
 	httpClient *http.Client
-	apiKey     string
+	apiKey     configopaque.String
 	logger     *zap.Logger
 }
 
@@ -73,7 +74,7 @@ func (mc *MetricsClient) SendHelixPayload(ctx context.Context, payload []BmcHeli
 		return fmt.Errorf("received non-2xx response: %d", resp.StatusCode)
 	}
 
-	mc.logger.Info("Successfully sent payload to BMC Helix", zap.String("url", mc.url))
+	mc.logger.Debug("Successfully sent payload to BMC Helix", zap.String("url", mc.url))
 	return nil
 }
 
@@ -87,7 +88,7 @@ func (mc *MetricsClient) createNewHTTPRequest(ctx context.Context, payloadBytes 
 
 	// Set required headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+mc.apiKey)
+	req.Header.Set("Authorization", "Bearer "+string(mc.apiKey))
 
 	return req, nil
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap"
 )
 
@@ -23,7 +24,7 @@ func TestNewMetricsClient(t *testing.T) {
 	t.Parallel()
 
 	endpoint := "https://helix1:8080"
-	apiKey := "api_key"
+	var apiKey configopaque.String = "api_key"
 
 	cfg := confighttp.NewDefaultClientConfig()
 	cfg.Endpoint = endpoint
@@ -88,7 +89,7 @@ func TestSendHelixPayload200(t *testing.T) {
 
 	payload := []BmcHelixMetric{parent, metric}
 
-	apiKey := "apiKey"
+	var apiKey configopaque.String = "apiKey"
 
 	// Create a mock HTTP server
 	mockServer := mockHTTPServer(t, apiKey, payload, http.StatusOK)
@@ -140,7 +141,7 @@ func TestSendHelixPayloadEmpty(t *testing.T) {
 func TestSendHelixPayload400(t *testing.T) {
 	t.Parallel()
 
-	apiKey := "apiKey"
+	var apiKey configopaque.String = "apiKey"
 	payload := []BmcHelixMetric{
 		{
 			Labels:  map[string]string{},
@@ -211,11 +212,11 @@ func TestSendHelixPayloadConnectionRefused(t *testing.T) {
 }
 
 // mockHTTPServer creates a new mock HTTP server that verifies the request headers, body, and responds with the given status code
-func mockHTTPServer(t *testing.T, apiKey string, payload []BmcHelixMetric, httpStatusCode int) *httptest.Server {
+func mockHTTPServer(t *testing.T, apiKey configopaque.String, payload []BmcHelixMetric, httpStatusCode int) *httptest.Server {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify the request headers
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-		assert.Equal(t, r.Header.Get("Authorization"), "Bearer "+apiKey)
+		assert.Equal(t, r.Header.Get("Authorization"), "Bearer "+string(apiKey))
 
 		// Verify the request body
 		var receivedPayload []BmcHelixMetric

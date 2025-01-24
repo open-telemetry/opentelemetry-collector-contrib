@@ -7,13 +7,14 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 )
 
 // Config struct is used to store the configuration of the exporter
 type Config struct {
 	confighttp.ClientConfig `mapstructure:",squash"`
-	APIKey                  string                    `mapstructure:"api_key"`
+	APIKey                  configopaque.String       `mapstructure:"api_key"`
 	RetryConfig             configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 }
 
