@@ -297,6 +297,7 @@ exporters:
 
       ## @param sums - custom object - optional
       ## Sums specific configuration.
+      # sums:
         ## @param cumulative_monotonic_mode - string - optional - default: to_delta
         ## How to report cumulative monotonic sums. Valid values are:
         ##
