@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -32,7 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 )
 
-var metricRemappingDisableddFeatureGate = featuregate.GlobalRegistry().MustRegister(
+var metricRemappingDisabledFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.metricremappingdisabled",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled the Datadog Exporter remaps OpenTelemetry semantic conventions to Datadog semantic conventions. This feature gate is only for internal use."),
@@ -41,7 +42,7 @@ var metricRemappingDisableddFeatureGate = featuregate.GlobalRegistry().MustRegis
 
 // isMetricRemappingDisabled returns true if the datadogexporter should generate Datadog-compliant metrics from OpenTelemetry metrics
 func isMetricRemappingDisabled() bool {
-	return metricRemappingDisableddFeatureGate.IsEnabled()
+	return metricRemappingDisabledFeatureGate.IsEnabled()
 }
 
 type metricsExporter struct {
@@ -153,6 +154,13 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 		return clientutil.WrapError(fmt.Errorf("failed to do sketches HTTP request: %w", err), resp)
 	}
 	defer resp.Body.Close()
+
+	// We must read the full response body from the http request to ensure that connections can be
+	// properly re-used. https://pkg.go.dev/net/http#Client.Do
+	_, err = io.Copy(io.Discard, resp.Body)
+	if err != nil {
+		return clientutil.WrapError(fmt.Errorf("failed to read response body from sketches HTTP request: %w", err), resp)
+	}
 
 	if resp.StatusCode >= 400 {
 		return clientutil.WrapError(fmt.Errorf("error when sending payload to %s: %s", sketches.SketchSeriesEndpoint, resp.Status), resp)

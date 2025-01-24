@@ -240,7 +240,7 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "raw"
-			// dedup is the default
+			// deduplication is always performed - there is no configuration that controls it
 		})
 		logs := newLogsWithAttributes(
 			// Scope collides with the top-level "Scope" field,
@@ -427,7 +427,7 @@ func TestExporterLogs(t *testing.T) {
 				body: func() pcommon.Value {
 					return pcommon.NewValueStr("foo")
 				}(),
-				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0,"body":{"text":"foo"}}`),
+				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"text":"foo"}}`),
 			},
 			{
 				body: func() pcommon.Value {
@@ -438,7 +438,7 @@ func TestExporterLogs(t *testing.T) {
 					m.PutEmptyMap("inner").PutStr("foo", "bar")
 					return vm
 				}(),
-				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0,"body":{"flattened":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
+				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"flattened":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
 			},
 			{
 				body: func() pcommon.Value {
@@ -450,7 +450,7 @@ func TestExporterLogs(t *testing.T) {
 					return vm
 				}(),
 				isEvent:      true,
-				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0,"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
+				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"event_name":"foo","data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
 			},
 			{
 				body: func() pcommon.Value {
@@ -461,7 +461,7 @@ func TestExporterLogs(t *testing.T) {
 					s.AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
 					return vs
 				}(),
-				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0,"body":{"flattened":{"value":["foo",false,{"foo":"bar"}]}}}`),
+				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"flattened":{"value":["foo",false,{"foo":"bar"}]}}}`),
 			},
 			{
 				body: func() pcommon.Value {
@@ -473,7 +473,7 @@ func TestExporterLogs(t *testing.T) {
 					return vs
 				}(),
 				isEvent:      true,
-				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0,"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
+				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"event_name":"foo","data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
 			},
 		} {
 			rec := newBulkRecorder()
@@ -546,7 +546,7 @@ func TestExporterLogs(t *testing.T) {
 			},
 		}
 
-		handlers := map[string]func(attempts *atomic.Int64) bulkHandler{
+		handlers := map[string]func(*atomic.Int64) bulkHandler{
 			"fail http request": func(attempts *atomic.Int64) bulkHandler {
 				return func([]itemRequest) ([]itemResponse, error) {
 					attempts.Add(1)
@@ -562,11 +562,9 @@ func TestExporterLogs(t *testing.T) {
 		}
 
 		for name, handler := range handlers {
-			handler := handler
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 				for name, configurer := range configurations {
-					configurer := configurer
 					t.Run(name, func(t *testing.T) {
 						t.Parallel()
 						attempts := &atomic.Int64{}
@@ -575,8 +573,9 @@ func TestExporterLogs(t *testing.T) {
 						exporter := newTestLogsExporter(t, server.URL, configurer)
 						mustSendLogRecords(t, exporter, plog.NewLogRecord())
 
-						time.Sleep(200 * time.Millisecond)
-						assert.Equal(t, int64(1), attempts.Load())
+						assert.Eventually(t, func() bool {
+							return attempts.Load() == 1
+						}, 5*time.Second, 20*time.Millisecond)
 					})
 				}
 			})
@@ -735,6 +734,112 @@ func TestExporterLogs(t *testing.T) {
 		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `attributes`).Raw)
 		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
 		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+	})
+
+	t.Run("publish logs with dynamic id", func(t *testing.T) {
+		t.Parallel()
+		exampleDocID := "abc123"
+		tableTests := []struct {
+			name          string
+			expectedDocID string // "" means the _id will not be set
+			recordAttrs   map[string]any
+		}{
+			{
+				name:          "missing document id attribute should not set _id",
+				expectedDocID: "",
+			},
+			{
+				name:          "empty document id attribute should not set _id",
+				expectedDocID: "",
+				recordAttrs: map[string]any{
+					documentIDAttributeName: "",
+				},
+			},
+			{
+				name:          "record attributes",
+				expectedDocID: exampleDocID,
+				recordAttrs: map[string]any{
+					documentIDAttributeName: exampleDocID,
+				},
+			},
+		}
+
+		cfgs := map[string]func(*Config){
+			"async": func(cfg *Config) {
+				batcherEnabled := false
+				cfg.Batcher.Enabled = &batcherEnabled
+			},
+			"sync": func(cfg *Config) {
+				batcherEnabled := true
+				cfg.Batcher.Enabled = &batcherEnabled
+				cfg.Batcher.FlushTimeout = 10 * time.Millisecond
+			},
+		}
+		for _, tt := range tableTests {
+			for cfgName, cfgFn := range cfgs {
+				t.Run(tt.name+"/"+cfgName, func(t *testing.T) {
+					t.Parallel()
+					rec := newBulkRecorder()
+					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+						rec.Record(docs)
+
+						if tt.expectedDocID == "" {
+							assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
+						} else {
+							assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+						}
+
+						// Ensure the document id attribute is removed from the final document.
+						assert.NotContains(t, string(docs[0].Document), documentIDAttributeName, "expected document id attribute to be removed")
+						return itemsAllOK(docs)
+					})
+
+					exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+						cfg.Mapping.Mode = "otel"
+						cfg.LogsDynamicID.Enabled = true
+						cfgFn(cfg)
+					})
+					logs := newLogsWithAttributes(
+						tt.recordAttrs,
+						map[string]any{},
+						map[string]any{},
+					)
+					logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
+					mustSendLogs(t, exporter, logs)
+
+					rec.WaitItems(1)
+				})
+			}
+		}
+	})
+	t.Run("otel mode attribute complex value", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		logs := plog.NewLogs()
+		resourceLog := logs.ResourceLogs().AppendEmpty()
+		resourceLog.Resource().Attributes().PutEmptyMap("some.resource.attribute").PutEmptyMap("foo.bar").PutStr("baz", "qux")
+		scopeLog := resourceLog.ScopeLogs().AppendEmpty()
+		scopeLog.Scope().Attributes().PutEmptyMap("some.scope.attribute").PutEmptyMap("foo.bar").PutStr("baz", "qux")
+		logRecord := scopeLog.LogRecords().AppendEmpty()
+		logRecord.Attributes().PutEmptyMap("some.record.attribute").PutEmptyMap("foo.bar").PutStr("baz", "qux")
+
+		mustSendLogs(t, exporter, logs)
+
+		rec.WaitItems(1)
+
+		assert.Len(t, rec.Items(), 1)
+		doc := rec.Items()[0].Document
+		assert.JSONEq(t, `{"some.record.attribute":{"foo.bar":{"baz":"qux"}}}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.JSONEq(t, `{"some.scope.attribute":{"foo.bar":{"baz":"qux"}}}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.JSONEq(t, `{"some.resource.attribute":{"foo.bar":{"baz":"qux"}}}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 }
 
@@ -1168,19 +1273,19 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+				Document: []byte(`{"@timestamp":"0.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[1,2,3,4],"values":[0.5,1.5,2.5,3.0]}},"resource":{},"scope":{}}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+				Document: []byte(`{"@timestamp":"3600000.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.foo":{"counts":[4,5,6,7],"values":[2.0,4.5,5.5,6.0]}},"resource":{},"scope":{}}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.sum":"gauge_double"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.sum":1.5},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"start_timestamp":"1970-01-01T02:00:00.000000000Z"}`),
+				Document: []byte(`{"@timestamp":"3600000.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.sum":1.5},"resource":{},"scope":{},"start_timestamp":"7200000.0"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T03:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.summary":{"sum":1.5,"value_count":1}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"start_timestamp":"1970-01-01T03:00:00.000000000Z"}`),
+				Document: []byte(`{"@timestamp":"10800000.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"metric.summary":{"sum":1.5,"value_count":1}},"resource":{},"scope":{},"start_timestamp":"10800000.0"}`),
 			},
 		}
 
@@ -1249,7 +1354,7 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.sum":"gauge_long","metrics.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"sum":0,"summary":{"sum":1.0,"value_count":10}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+				Document: []byte(`{"@timestamp":"0.0","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"sum":0,"summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{}}`),
 			},
 		}
 
@@ -1299,11 +1404,11 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.histogram.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"histogram.summary":{"sum":1.0,"value_count":10}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+				Document: []byte(`{"@timestamp":"0.0","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"histogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{}}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.exphistogram.summary":"summary"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"exphistogram.summary":{"sum":1.0,"value_count":10}},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+				Document: []byte(`{"@timestamp":"3600000.0","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"attributes":{},"metrics":{"exphistogram.summary":{"sum":1.0,"value_count":10}},"resource":{},"scope":{}}`),
 			},
 		}
 
@@ -1342,7 +1447,7 @@ func TestExporterMetrics(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.foo.bar":"gauge_long","metrics.foo":"gauge_long","metrics.foo.bar.baz":"gauge_long"}}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"foo":0,"foo.bar":0,"foo.bar.baz":0},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+				Document: []byte(`{"@timestamp":"0.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"foo":0,"foo.bar":0,"foo.bar.baz":0},"resource":{},"scope":{}}`),
 			},
 		}
 
@@ -1613,8 +1718,8 @@ func TestExporterTraces(t *testing.T) {
 		})
 
 		spanLink := span.Links().AppendEmpty()
-		spanLink.SetTraceID(pcommon.NewTraceIDEmpty())
-		spanLink.SetSpanID(pcommon.NewSpanIDEmpty())
+		spanLink.SetTraceID([16]byte{1})
+		spanLink.SetSpanID([8]byte{1})
 		spanLink.SetFlags(10)
 		spanLink.SetDroppedAttributesCount(11)
 		spanLink.TraceState().FromRaw("bar")
@@ -1627,11 +1732,11 @@ func TestExporterTraces(t *testing.T) {
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"traces-generic.otel-default"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","attributes":{"attr.foo":"attr.bar"},"data_stream":{"dataset":"generic.otel","namespace":"default","type":"traces"},"dropped_attributes_count":2,"dropped_events_count":3,"dropped_links_count":4,"duration":3600000000000,"kind":"Unspecified","links":[{"attributes":{"link.attr.foo":"link.attr.bar"},"dropped_attributes_count":11,"span_id":"","trace_id":"","trace_state":"bar"}],"name":"name","resource":{"attributes":{"resource.foo":"resource.bar"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"status":{"code":"Unset"},"trace_state":"foo"}`),
+				Document: []byte(`{"@timestamp":"3600000.0","attributes":{"attr.foo":"attr.bar"},"data_stream":{"dataset":"generic.otel","namespace":"default","type":"traces"},"dropped_attributes_count":2,"dropped_events_count":3,"dropped_links_count":4,"duration":3600000000000,"kind":"Unspecified","links":[{"attributes":{"link.attr.foo":"link.attr.bar"},"dropped_attributes_count":11,"span_id":"0100000000000000","trace_id":"01000000000000000000000000000000","trace_state":"bar"}],"name":"name","resource":{"attributes":{"resource.foo":"resource.bar"}},"scope":{},"status":{"code":"Unset"},"trace_state":"foo"}`),
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"logs-generic.otel-default"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"event.attr.foo":"event.attr.bar","event.name":"exception"},"data_stream":{"dataset":"generic.otel","namespace":"default","type":"logs"},"dropped_attributes_count":1,"resource":{"attributes":{"resource.foo":"resource.bar"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+				Document: []byte(`{"@timestamp":"0.0","event_name":"exception","attributes":{"event.attr.foo":"event.attr.bar","event.name":"exception"},"event_name":"exception","data_stream":{"dataset":"generic.otel","namespace":"default","type":"logs"},"dropped_attributes_count":1,"resource":{"attributes":{"resource.foo":"resource.bar"}},"scope":{}}`),
 			},
 		}
 
@@ -1839,6 +1944,7 @@ func mustSendLogRecords(t *testing.T, exporter exporter.Logs, records ...plog.Lo
 }
 
 func mustSendLogs(t *testing.T, exporter exporter.Logs, logs plog.Logs) {
+	logs.MarkReadOnly()
 	err := exporter.ConsumeLogs(context.Background(), logs)
 	require.NoError(t, err)
 }
@@ -1868,6 +1974,7 @@ func mustSendMetricGaugeDataPoints(t *testing.T, exporter exporter.Metrics, data
 }
 
 func mustSendMetrics(t *testing.T, exporter exporter.Metrics, metrics pmetric.Metrics) {
+	metrics.MarkReadOnly()
 	err := exporter.ConsumeMetrics(context.Background(), metrics)
 	require.NoError(t, err)
 }
@@ -1883,6 +1990,7 @@ func mustSendSpans(t *testing.T, exporter exporter.Traces, spans ...ptrace.Span)
 }
 
 func mustSendTraces(t *testing.T, exporter exporter.Traces, traces ptrace.Traces) {
+	traces.MarkReadOnly()
 	err := exporter.ConsumeTraces(context.Background(), traces)
 	require.NoError(t, err)
 }
@@ -1910,4 +2018,15 @@ func actionJSONToIndex(t *testing.T, actionJSON json.RawMessage) string {
 	err := json.Unmarshal(actionJSON, &action)
 	require.NoError(t, err)
 	return action.Create.Index
+}
+
+func actionJSONToID(t *testing.T, actionJSON json.RawMessage) string {
+	action := struct {
+		Create struct {
+			ID string `json:"_id"`
+		} `json:"create"`
+	}{}
+	err := json.Unmarshal(actionJSON, &action)
+	require.NoError(t, err)
+	return action.Create.ID
 }

@@ -39,7 +39,7 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 				},
 				"application start",
 			),
-			check: "datatbase operation",
+			check: "database operation",
 			attr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("service.version", "v0.0.0")
 			}),
@@ -48,13 +48,13 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 			}),
 		},
 		{
-			name: "No condition set, applys to all",
+			name: "No condition set, applies to all",
 			cond: NewConditionalAttributeSet[string](
 				map[string]string{
 					"service.version": "application.version",
 				},
 			),
-			check: "datatbase operation",
+			check: "database operation",
 			attr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("service.version", "v0.0.0")
 			}),
@@ -80,7 +80,6 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 			}),
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -119,7 +118,7 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 				},
 				"application start",
 			),
-			check: "datatbase operation",
+			check: "database operation",
 			attr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("service.version", "v0.0.0")
 			}),
@@ -128,13 +127,13 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 			}),
 		},
 		{
-			name: "No condition set, applys to all",
+			name: "No condition set, applies to all",
 			cond: NewConditionalAttributeSet[string](
 				map[string]string{
 					"service.version": "application.version",
 				},
 			),
-			check: "datatbase operation",
+			check: "database operation",
 			attr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("application.version", "v0.0.0")
 			}),
@@ -160,7 +159,6 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 			}),
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 

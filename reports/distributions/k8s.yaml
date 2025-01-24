@@ -36,6 +36,7 @@ components:
         - filter
         - groupbyattrs
         - groupbytrace
+        - interval
         - k8sattributes
         - logdedup
         - metricstransform
@@ -62,3 +63,14 @@ components:
         - prometheus
         - receiver_creator
         - zipkin
+    scraper:
+        - cpu
+        - disk
+        - filesystem
+        - load
+        - memory
+        - network
+        - paging
+        - process
+        - processes
+        - system

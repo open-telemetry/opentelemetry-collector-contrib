@@ -23,9 +23,10 @@ supported.
 
 The following configuration options are required:
 
-- `access_token` (no default): The access token is the authentication token
-  provided by Splunk Observability Cloud. The access token can be obtained from the
-  web app. For details on how to do so please refer the documentation [here](https://docs.splunk.com/observability/en/admin/authentication/authentication-tokens/manage-usage.html).
+- `access_token` (no default): The access token is the [authentication token
+  provided by Splunk Observability
+  Cloud](https://docs.splunk.com/observability/en/admin/authentication/authentication-tokens/manage-usage.html).
+  The access token can be obtained from the web app.
 - Either `realm` or both `api_url` and `ingest_url`. Both `api_url` and
   `ingest_url` take precedence over `realm`.
   - `realm` (no default): SignalFx realm where the data will be received.
@@ -56,13 +57,13 @@ The following configuration options can also be configured:
 - `exclude_metrics`: List of metric filters that will determine metrics to be
   excluded from sending to Signalfx backend. The filtering is applied after the default 
   translations controlled by `disable_default_translation_rules` option.
-  See [here](./testdata/config.yaml) for examples. Apart from the values explicitly
-  provided via this option, by default, [these](./internal/translation/default_metrics.go) are
+  See in [testdata/config.yaml](./testdata/config.yaml) for examples. Apart from the values explicitly
+  provided via this option, by default, [default metrics](./internal/translation/default_metrics.go) are
   also appended to this list. Setting this option to `[]` will override all the default
   excludes.
 - `include_metrics`: List of filters to override exclusion of any metrics.
   This option can be used to included metrics that are otherwise dropped by
-  default. See [here](./internal/translation/default_metrics.go) for a list of metrics
+  default. See [default metrics](./internal/translation/default_metrics.go) for a list of metrics
   that are dropped by default. For example, the following configuration can be
   used to send through some of that are dropped by default.
   ```yaml
@@ -145,12 +146,11 @@ will be replaced with a `_`.
 - `drop_histogram_buckets`:  (default = `false`) if set to true, histogram buckets will not be translated into datapoints with `_bucket` suffix but will be dropped instead, only datapoints with `_sum`, `_count`, `_min` (optional) and `_max` (optional) suffixes will be sent. Please note that this option does not apply to histograms sent in OTLP format with `send_otlp_histograms` enabled.
 - `send_otlp_histograms`: (default: `false`) if set to true, any histogram metrics receiver by the exporter will be sent to Splunk Observability backend in OTLP format without conversion to SignalFx format. This can only be enabled if the Splunk Observability environment (realm) has the new Histograms feature rolled out. Please note that histograms sent in OTLP format do not apply to the exporter configurations `include_metrics` and `exclude_metrics`.
 In addition, this exporter offers queued retry which is enabled by default.
-Information about queued retry configuration parameters can be found
-[here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
+For more information, see the queued retry options in the [exporter documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 
 ## Traces Configuration (correlation only)
 
-:warning: _Note that traces must still be sent in using [sapmexporter](../sapmexporter) to see them in SignalFx._
+:warning: _Note that traces must still be sent to Splunk Observability via a separate trace exporter._
 
 When traces are sent to the signalfx exporter it correlates traces to metrics. When a new service or environment is
 seen it associates the source (e.g. host or pod) to that service or environment in SignalFx. Metrics can then be
@@ -210,7 +210,7 @@ help ensure compatibility with custom charts and dashboards when using the OpenT
 The rule language is expressed in yaml mappings and is [documented here](./internal/translation/translator.go).  Translation rules currently allow the following actions:
 
 * `aggregate_metric` - Aggregates a metric through removal of specified dimensions
-* `calculate_new_metric` - Creates a new metric via operating on two consistuent ones
+* `calculate_new_metric` - Creates a new metric via operating on two constituent ones
 * `convert_values` - Convert float values to int or int to float for specified metric names
 * `copy_metrics` - Creates a new metric as a copy of another
 * `delta_metric` - Creates a new delta metric for a specified non-delta one
@@ -300,11 +300,10 @@ service:
       exporters: [signalfx]
 ```
 
-The full list of settings exposed for this exporter are documented [here](config.go)
-with detailed sample configurations [here](testdata/config.yaml).
+The full list of settings exposed for this exporter are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
-This exporter also offers proxy support as documented
-[here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
+This exporter also offers [proxy support](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
 
 ## Advanced Configuration
 

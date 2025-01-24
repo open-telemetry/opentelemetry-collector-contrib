@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.115.0
+    version: v0.118.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
@@ -35,6 +35,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/bmchelixexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter
@@ -69,6 +70,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter
@@ -84,6 +86,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/skywalkingencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension
@@ -214,12 +217,14 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/envoyalsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver

@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     beta: [traces, logs, metrics]
-  distributions: []
+  distributions: [contrib]
   codeowners:
     active: [alexvanboxel]
 
@@ -15,9 +15,7 @@ tests:
     timeout: 20s
     subscription: projects/my-project/subscriptions/otlp-subscription
   skip_lifecycle: true
-  skip_shutdown: true
   goleak:
-    skip: false
     ignore:
       # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
       top: go.opencensus.io/stats/view.(*worker).start

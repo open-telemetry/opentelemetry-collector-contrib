@@ -32,6 +32,7 @@ type Config struct {
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	MappingsSettings          `mapstructure:"mapping"`
+	QueueConfig               exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 
 	// The Observability indices would follow the recommended for immutable data stream ingestion pattern using
 	// the data_stream concepts. See https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
@@ -82,7 +83,7 @@ type MappingsSettings struct {
 	// Field to store timestamp in.  If not set uses the default @timestamp
 	TimestampField string `mapstructure:"timestamp_field"`
 
-	// Whether to store timestamp in Epoch miliseconds
+	// Whether to store timestamp in Epoch milliseconds
 	UnixTimestamp bool `mapstructure:"unix_timestamp"`
 
 	// Try to find and remove duplicate fields
