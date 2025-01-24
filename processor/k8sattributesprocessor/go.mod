@@ -21,16 +21,16 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/pdata/pprofile v0.118.1-0.20250123125445-24f88da7b583
-	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250123164917-689d43e5f977
+	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.116.0
-	go.opentelemetry.io/collector/processor v0.118.1-0.20250123164917-689d43e5f977
-	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.118.1-0.20250123164917-689d43e5f977
-	go.opentelemetry.io/collector/processor/processortest v0.118.1-0.20250123164917-689d43e5f977
-	go.opentelemetry.io/collector/processor/xprocessor v0.118.1-0.20250123164917-689d43e5f977
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.118.1-0.20250123164917-689d43e5f977
-	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250123164917-689d43e5f977
-	go.opentelemetry.io/collector/receiver/xreceiver v0.118.1-0.20250123164917-689d43e5f977
-	go.opentelemetry.io/collector/semconv v0.118.1-0.20250123164917-689d43e5f977
+	go.opentelemetry.io/collector/processor v0.118.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.118.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/processor/processortest v0.118.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/processor/xprocessor v0.118.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.118.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/receiver/xreceiver v0.118.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/semconv v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/otel/metric v1.34.0
 	go.opentelemetry.io/otel/sdk/metric v1.34.0
 	go.opentelemetry.io/otel/trace v1.34.0
@@ -104,8 +104,8 @@ require (
 	go.opentelemetry.io/collector/extension v0.118.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.118.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.118.1-0.20250123125445-24f88da7b583 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.118.1-0.20250123164917-689d43e5f977 // indirect
-	go.opentelemetry.io/collector/receiver v0.118.1-0.20250123164917-689d43e5f977 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.118.1-0.20250123125445-24f88da7b583 // indirect
+	go.opentelemetry.io/collector/receiver v0.118.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect

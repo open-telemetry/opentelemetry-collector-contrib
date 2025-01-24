@@ -10,9 +10,9 @@ require (
 	go.opentelemetry.io/collector/consumer v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250123125445-24f88da7b583
-	go.opentelemetry.io/collector/receiver v0.118.1-0.20250123164917-689d43e5f977
-	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250123164917-689d43e5f977
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.118.1-0.20250123164917-689d43e5f977
+	go.opentelemetry.io/collector/receiver v0.118.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.118.1-0.20250123125445-24f88da7b583
 	go.uber.org/zap v1.27.0
 	golang.org/x/oauth2 v0.25.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f
@@ -28,8 +28,8 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.118.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.118.1-0.20250123125445-24f88da7b583 // indirect
-	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250123164917-689d43e5f977 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.118.1-0.20250123164917-689d43e5f977 // indirect
+	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250123125445-24f88da7b583 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.118.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
@@ -56,7 +56,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.118.1-0.20250123125445-24f88da7b583 // indirect
-	go.opentelemetry.io/collector/scraper v0.118.1-0.20250123164917-689d43e5f977
+	go.opentelemetry.io/collector/scraper v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect

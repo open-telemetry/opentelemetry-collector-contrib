@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250123125445-24f88da7b583
-	go.opentelemetry.io/collector/semconv v0.118.1-0.20250123164917-689d43e5f977
+	go.opentelemetry.io/collector/semconv v0.118.1-0.20250123125445-24f88da7b583
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
