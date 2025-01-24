@@ -6,7 +6,7 @@ status:
     alpha: [extension]
   distributions: [contrib, k8s]
   codeowners:
-    active: []
+    active: [VihasMakwana]
     seeking_new: true
 tests:
   config:
