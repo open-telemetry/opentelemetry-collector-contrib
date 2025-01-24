@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -47,8 +46,6 @@ func newBQTest(t *testing.T, maxAdmit, maxWait uint64) bqTest {
 		sdkmetric.WithReader(reader),
 	)
 	settings.MeterProvider = provider
-	settings.MetricsLevel = configtelemetry.LevelDetailed
-
 	bq, err := NewBoundedQueue(component.MustNewID("admission_testing"), settings, maxAdmit, maxWait)
 	require.NoError(t, err)
 	return bqTest{
