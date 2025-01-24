@@ -535,7 +535,6 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 }
 
 func Test_setAndGetEventIndex(t *testing.T) {
-
 	tests := []struct {
 		name             string
 		setEventIndex    bool
