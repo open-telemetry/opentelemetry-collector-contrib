@@ -22,7 +22,7 @@ import (
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
 
-func serializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx esIndex, buf *bytes.Buffer) (map[string]string, error) {
+func serializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx elasticsearch.Index, buf *bytes.Buffer) (map[string]string, error) {
 	if len(dataPoints) == 0 {
 		return nil, nil
 	}
@@ -95,7 +95,7 @@ func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, val
 	return dynamicTemplates
 }
 
-func serializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, idx esIndex, buf *bytes.Buffer) {
+func serializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, idx elasticsearch.Index, buf *bytes.Buffer) {
 	v := json.NewVisitor(buf)
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
@@ -122,7 +122,7 @@ func serializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, sco
 	_ = v.OnObjectFinished()
 }
 
-func serializeSpan(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, idx esIndex, buf *bytes.Buffer) error {
+func serializeSpan(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, idx elasticsearch.Index, buf *bytes.Buffer) error {
 	v := json.NewVisitor(buf)
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
@@ -182,7 +182,7 @@ func serializeMap(m pcommon.Map, buf *bytes.Buffer) {
 	writeMap(v, m, false)
 }
 
-func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, record plog.LogRecord, idx esIndex, buf *bytes.Buffer) error {
+func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, record plog.LogRecord, idx elasticsearch.Index, buf *bytes.Buffer) error {
 	v := json.NewVisitor(buf)
 	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
 	// This is required to generate the correct dynamic mapping in ES.
@@ -201,23 +201,20 @@ func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pco
 	writeSpanIDField(v, "span_id", record.SpanID())
 	writeAttributes(v, record.Attributes(), false)
 	writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(record.DroppedAttributesCount()))
-	isEvent := false
 	if record.EventName() != "" {
-		isEvent = true
 		writeStringFieldSkipDefault(v, "event_name", record.EventName())
 	} else if eventNameAttr, ok := record.Attributes().Get("event.name"); ok && eventNameAttr.Str() != "" {
-		isEvent = true
 		writeStringFieldSkipDefault(v, "event_name", eventNameAttr.Str())
 	}
 	writeResource(v, resource, resourceSchemaURL, false)
 	writeScope(v, scope, scopeSchemaURL, false)
-	writeLogBody(v, record, isEvent)
+	writeLogBody(v, record)
 	_ = v.OnObjectFinished()
 	return nil
 }
 
-func writeDataStream(v *json.Visitor, idx esIndex) {
-	if !idx.isDataStream() {
+func writeDataStream(v *json.Visitor, idx elasticsearch.Index) {
+	if !idx.IsDataStream() {
 		return
 	}
 	_ = v.OnKey("data_stream")
@@ -228,21 +225,14 @@ func writeDataStream(v *json.Visitor, idx esIndex) {
 	_ = v.OnObjectFinished()
 }
 
-func writeLogBody(v *json.Visitor, record plog.LogRecord, isEvent bool) {
+func writeLogBody(v *json.Visitor, record plog.LogRecord) {
 	if record.Body().Type() == pcommon.ValueTypeEmpty {
 		return
 	}
 	_ = v.OnKey("body")
 	_ = v.OnObjectStart(-1, structform.AnyType)
 
-	// Determine if this log record is an event, as they are mapped differently
-	// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/general/events.md
-	var bodyType string
-	if isEvent {
-		bodyType = "structured"
-	} else {
-		bodyType = "flattened"
-	}
+	bodyType := "structured"
 	body := record.Body()
 	switch body.Type() {
 	case pcommon.ValueTypeMap:

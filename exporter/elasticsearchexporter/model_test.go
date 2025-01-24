@@ -25,6 +25,7 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
 
@@ -58,7 +59,7 @@ func TestEncodeSpan(t *testing.T) {
 	model := &encodeModel{dedot: false}
 	td := mockResourceSpans()
 	var buf bytes.Buffer
-	err := model.encodeSpan(td.ResourceSpans().At(0).Resource(), "", td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0), td.ResourceSpans().At(0).ScopeSpans().At(0).Scope(), "", esIndex{}, &buf)
+	err := model.encodeSpan(td.ResourceSpans().At(0).Resource(), "", td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0), td.ResourceSpans().At(0).ScopeSpans().At(0).Scope(), "", elasticsearch.Index{}, &buf)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSpanBody, buf.String())
 }
@@ -69,7 +70,7 @@ func TestEncodeLog(t *testing.T) {
 		td := mockResourceLogs()
 		td.ScopeLogs().At(0).LogRecords().At(0).SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)))
 		var buf bytes.Buffer
-		err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl(), esIndex{}, &buf)
+		err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl(), elasticsearch.Index{}, &buf)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedLogBody, buf.String())
 	})
@@ -78,7 +79,7 @@ func TestEncodeLog(t *testing.T) {
 		model := &encodeModel{dedot: false}
 		td := mockResourceLogs()
 		var buf bytes.Buffer
-		err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl(), esIndex{}, &buf)
+		err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl(), elasticsearch.Index{}, &buf)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedLogBodyWithEmptyTimestamp, buf.String())
 	})
@@ -88,7 +89,7 @@ func TestEncodeLog(t *testing.T) {
 		td := mockResourceLogs()
 		td.Resource().Attributes().PutStr("foo.bar", "baz")
 		var buf bytes.Buffer
-		err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl(), esIndex{}, &buf)
+		err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl(), elasticsearch.Index{}, &buf)
 		require.NoError(t, err)
 		require.Equal(t, expectedLogBodyDeDottedWithEmptyTimestamp, buf.String())
 	})
@@ -125,7 +126,7 @@ func TestEncodeMetric(t *testing.T) {
 	for _, dataPoints := range groupedDataPoints {
 		var buf bytes.Buffer
 		errors := make([]error, 0)
-		_, err := model.encodeMetrics(rm.Resource(), rm.SchemaUrl(), sm.Scope(), sm.SchemaUrl(), dataPoints, &errors, esIndex{}, &buf)
+		_, err := model.encodeMetrics(rm.Resource(), rm.SchemaUrl(), sm.Scope(), sm.SchemaUrl(), dataPoints, &errors, elasticsearch.Index{}, &buf)
 		require.Empty(t, errors, err)
 		require.NoError(t, err)
 		docsBytes = append(docsBytes, buf.Bytes())
@@ -254,7 +255,7 @@ func TestEncodeAttributes(t *testing.T) {
 			}
 
 			doc := objmodel.Document{}
-			m.encodeAttributes(&doc, attributes, esIndex{})
+			m.encodeAttributes(&doc, attributes, elasticsearch.Index{})
 			require.Equal(t, test.want(), doc)
 		})
 	}
@@ -351,7 +352,7 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 		dedot: true,
 	}
 	var buf bytes.Buffer
-	err = m.encodeLog(resource, "", record, scope, "", esIndex{}, &buf)
+	err = m.encodeLog(resource, "", record, scope, "", elasticsearch.Index{}, &buf)
 	require.NoError(t, err)
 
 	assert.Equal(t, want, buf.String())
@@ -425,7 +426,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 
 	var buf bytes.Buffer
 	m := encodeModel{}
-	doc := m.encodeLogECSMode(resource, record, scope, esIndex{})
+	doc := m.encodeLogECSMode(resource, record, scope, elasticsearch.Index{})
 	require.NoError(t, doc.Serialize(&buf, false))
 
 	require.JSONEq(t, `{
@@ -558,7 +559,7 @@ func TestEncodeLogECSModeAgentName(t *testing.T) {
 
 			var buf bytes.Buffer
 			m := encodeModel{}
-			doc := m.encodeLogECSMode(resource, record, scope, esIndex{})
+			doc := m.encodeLogECSMode(resource, record, scope, elasticsearch.Index{})
 			require.NoError(t, doc.Serialize(&buf, false))
 			require.JSONEq(t, fmt.Sprintf(`{
 				"@timestamp": "2024-03-13T23:50:59.123456789Z",
@@ -612,7 +613,7 @@ func TestEncodeLogECSModeAgentVersion(t *testing.T) {
 
 			var buf bytes.Buffer
 			m := encodeModel{}
-			doc := m.encodeLogECSMode(resource, record, scope, esIndex{})
+			doc := m.encodeLogECSMode(resource, record, scope, elasticsearch.Index{})
 			require.NoError(t, doc.Serialize(&buf, false))
 
 			if test.expectedAgentVersion == "" {
@@ -721,7 +722,7 @@ func TestEncodeLogECSModeHostOSType(t *testing.T) {
 			var buf bytes.Buffer
 			m := encodeModel{}
 			logs.MarkReadOnly()
-			doc := m.encodeLogECSMode(resource, record, scope, esIndex{})
+			doc := m.encodeLogECSMode(resource, record, scope, elasticsearch.Index{})
 			require.NoError(t, doc.Serialize(&buf, false))
 
 			expectedJSON := `{"@timestamp":"2024-03-13T23:50:59.123456789Z", "agent.name":"otlp"`
@@ -772,7 +773,7 @@ func TestEncodeLogECSModeTimestamps(t *testing.T) {
 
 			var buf bytes.Buffer
 			m := encodeModel{}
-			doc := m.encodeLogECSMode(resource, record, scope, esIndex{})
+			doc := m.encodeLogECSMode(resource, record, scope, elasticsearch.Index{})
 			require.NoError(t, doc.Serialize(&buf, false))
 
 			require.JSONEq(t, fmt.Sprintf(
@@ -1266,7 +1267,7 @@ func TestEncodeLogScalarObjectConflict(t *testing.T) {
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo", "scalar")
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo.bar", "baz")
 	var buf bytes.Buffer
-	err := model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "", esIndex{}, &buf)
+	err := model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "", elasticsearch.Index{}, &buf)
 	assert.NoError(t, err)
 
 	encoded := buf.Bytes()
@@ -1280,7 +1281,7 @@ func TestEncodeLogScalarObjectConflict(t *testing.T) {
 	// If there is an attribute named "foo.value", then "foo" would be omitted rather than renamed.
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo.value", "foovalue")
 	buf = bytes.Buffer{}
-	err = model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "", esIndex{}, &buf)
+	err = model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "", elasticsearch.Index{}, &buf)
 	assert.NoError(t, err)
 
 	encoded = buf.Bytes()

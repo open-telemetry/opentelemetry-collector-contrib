@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
 )
 
@@ -168,7 +169,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 	scopeSchemaURL string,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
-	fIndex := esIndex{Index: e.index}
+	fIndex := elasticsearch.Index{Index: e.index}
 	if e.dynamicIndex {
 		fIndex = routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), e.index, e.otel, scope.Name())
 	}
@@ -178,7 +179,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 		if err != nil {
 			return err
 		}
-		fIndex = esIndex{Index: formattedIndex}
+		fIndex = elasticsearch.Index{Index: formattedIndex}
 	}
 
 	buf := e.bufferPool.NewPooledBuffer()
@@ -217,7 +218,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 			var validationErrs []error // log instead of returning these so that upstream does not retry
 			scopeMetrics := scopeMetrics.At(j)
 			scope := scopeMetrics.Scope()
-			groupedDataPointsByIndex := make(map[esIndex]map[uint32][]datapoints.DataPoint)
+			groupedDataPointsByIndex := make(map[elasticsearch.Index]map[uint32][]datapoints.DataPoint)
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
 
@@ -335,8 +336,8 @@ func (e *elasticsearchExporter) getMetricDataPointIndex(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
 	dataPoint datapoints.DataPoint,
-) (esIndex, error) {
-	fIndex := esIndex{Index: e.index}
+) (elasticsearch.Index, error) {
+	fIndex := elasticsearch.Index{Index: e.index}
 	if e.dynamicIndex {
 		fIndex = routeDataPoint(dataPoint.Attributes(), scope.Attributes(), resource.Attributes(), e.index, e.otel, scope.Name())
 	}
@@ -344,9 +345,9 @@ func (e *elasticsearchExporter) getMetricDataPointIndex(
 	if e.logstashFormat.Enabled {
 		formattedIndex, err := generateIndexWithLogstashFormat(fIndex.Index, &e.logstashFormat, time.Now())
 		if err != nil {
-			return esIndex{}, err
+			return elasticsearch.Index{}, err
 		}
-		fIndex = esIndex{Index: formattedIndex}
+		fIndex = elasticsearch.Index{Index: formattedIndex}
 	}
 	return fIndex, nil
 }
@@ -410,7 +411,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 	scopeSchemaURL string,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
-	fIndex := esIndex{Index: e.index}
+	fIndex := elasticsearch.Index{Index: e.index}
 	if e.dynamicIndex {
 		fIndex = routeSpan(span.Attributes(), scope.Attributes(), resource.Attributes(), e.index, e.otel, span.Name())
 	}
@@ -420,7 +421,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 		if err != nil {
 			return err
 		}
-		fIndex = esIndex{Index: formattedIndex}
+		fIndex = elasticsearch.Index{Index: formattedIndex}
 	}
 
 	buf := e.bufferPool.NewPooledBuffer()
@@ -443,7 +444,7 @@ func (e *elasticsearchExporter) pushSpanEvent(
 	scopeSchemaURL string,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
-	fIndex := esIndex{Index: e.index}
+	fIndex := elasticsearch.Index{Index: e.index}
 	if e.dynamicIndex {
 		fIndex = routeSpanEvent(spanEvent.Attributes(), scope.Attributes(), resource.Attributes(), e.index, e.otel, scope.Name())
 	}
@@ -453,7 +454,7 @@ func (e *elasticsearchExporter) pushSpanEvent(
 		if err != nil {
 			return err
 		}
-		fIndex = esIndex{Index: formattedIndex}
+		fIndex = elasticsearch.Index{Index: formattedIndex}
 	}
 	buf := e.bufferPool.NewPooledBuffer()
 	e.model.encodeSpanEvent(resource, resourceSchemaURL, span, spanEvent, scope, scopeSchemaURL, fIndex, buf.Buffer)
