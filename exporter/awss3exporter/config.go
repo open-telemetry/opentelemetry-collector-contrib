@@ -64,14 +64,24 @@ type Config struct {
 
 func (c *Config) Validate() error {
 	var errs error
+	var validStorageClasses = map[string]bool{
+		"STANDARD":            true,
+		"STANDARD_IA":         true,
+		"ONEZONE_IA":          true,
+		"INTELLIGENT_TIERING": true,
+		"GLACIER":             true,
+		"DEEP_ARCHIVE":        true,
+	}
+
 	if c.S3Uploader.Region == "" {
 		errs = multierr.Append(errs, errors.New("region is required"))
 	}
 	if c.S3Uploader.S3Bucket == "" && c.S3Uploader.Endpoint == "" {
 		errs = multierr.Append(errs, errors.New("bucket or endpoint is required"))
 	}
-	if c.S3Uploader.StorageClass == "" {
-		c.S3Uploader.StorageClass = "STANDARD"
+
+	if !validStorageClasses[c.S3Uploader.StorageClass] {
+		errs = multierr.Append(errs, errors.New("invalid StorageClass"))
 	}
 
 	compression := c.S3Uploader.Compression
