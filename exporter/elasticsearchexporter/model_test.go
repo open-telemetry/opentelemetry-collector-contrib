@@ -1294,7 +1294,7 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	logRecords := scopeLogs.LogRecords()
-	observedTimestamp := pcommon.Timestamp(time.Now().UnixNano()) // nolint:gosec // UnixNano is positive and thus safe to convert to signed integer.
+	observedTimestamp := pcommon.Timestamp(time.Now().UnixNano())
 
 	logRecord := logRecords.AppendEmpty()
 	logRecord.SetObservedTimestamp(observedTimestamp)
