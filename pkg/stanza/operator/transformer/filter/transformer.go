@@ -22,6 +22,10 @@ type Transformer struct {
 	dropCutoff *big.Int // [0..1000)
 }
 
+func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	return t.ProcessBatchWith(ctx, entries, t.Process)
+}
+
 // Process will drop incoming entries that match the filter expression
 func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	env := helper.GetExprEnv(entry)
