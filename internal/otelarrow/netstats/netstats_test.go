@@ -32,6 +32,7 @@ func dropView(instrument metric.Instrument) metric.View {
 
 // TODO: This will be exposed by each component. Remove this function and use
 // the publicly exposed view once this is possible to do.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/11754
 func viewsFromLevel(level configtelemetry.Level) []metric.View {
 	var views []metric.View
 
