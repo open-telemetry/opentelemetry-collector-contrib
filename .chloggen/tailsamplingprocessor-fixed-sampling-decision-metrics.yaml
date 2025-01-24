@@ -15,7 +15,12 @@ issues: [37212]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  As a result of this change non-zero values of `otelcol_processor_tail_sampling_sampling_trace_dropped_too_early`
+  and `otelcol_processor_tail_sampling_sampling_policy_evaluation_error_total` metrics will be lower.
+  Before this fix, errors got counted several times depending on the amount of traces being processed
+  that tick and where in the batch the error happened.
+  Zero values are unaffected.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
