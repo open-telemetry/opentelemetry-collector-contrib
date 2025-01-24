@@ -103,7 +103,7 @@ func TestSerializeLog(t *testing.T) {
 				"resource":           map[string]any{},
 				"scope":              map[string]any{},
 				"body": map[string]any{
-					"flattened": map[string]any{
+					"structured": map[string]any{
 						"foo.bar": "baz",
 					},
 				},

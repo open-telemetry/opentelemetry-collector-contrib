@@ -200,17 +200,14 @@ func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pco
 	writeSpanIDField(v, "span_id", record.SpanID())
 	writeAttributes(v, record.Attributes(), false)
 	writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(record.DroppedAttributesCount()))
-	isEvent := false
 	if record.EventName() != "" {
-		isEvent = true
 		writeStringFieldSkipDefault(v, "event_name", record.EventName())
 	} else if eventNameAttr, ok := record.Attributes().Get("event.name"); ok && eventNameAttr.Str() != "" {
-		isEvent = true
 		writeStringFieldSkipDefault(v, "event_name", eventNameAttr.Str())
 	}
 	writeResource(v, resource, resourceSchemaURL, false)
 	writeScope(v, scope, scopeSchemaURL, false)
-	writeLogBody(v, record, isEvent)
+	writeLogBody(v, record)
 	_ = v.OnObjectFinished()
 	return nil
 }
@@ -227,21 +224,14 @@ func writeDataStream(v *json.Visitor, idx esIndex) {
 	_ = v.OnObjectFinished()
 }
 
-func writeLogBody(v *json.Visitor, record plog.LogRecord, isEvent bool) {
+func writeLogBody(v *json.Visitor, record plog.LogRecord) {
 	if record.Body().Type() == pcommon.ValueTypeEmpty {
 		return
 	}
 	_ = v.OnKey("body")
 	_ = v.OnObjectStart(-1, structform.AnyType)
 
-	// Determine if this log record is an event, as they are mapped differently
-	// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/general/events.md
-	var bodyType string
-	if isEvent {
-		bodyType = "structured"
-	} else {
-		bodyType = "flattened"
-	}
+	bodyType := "structured"
 	body := record.Body()
 	switch body.Type() {
 	case pcommon.ValueTypeMap:
