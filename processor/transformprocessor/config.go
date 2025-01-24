@@ -49,22 +49,36 @@ type Config struct {
 }
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
-// adding support to structured and flat configuration styles (array of statements strings).
+// adding support to structured and flat configuration styles.
 // When the flat configuration style is used, each statement becomes a new common.ContextStatements
 // object, with empty [common.ContextStatements.Context] value.
 // On the other hand, structured configurations are parsed following the mapstructure Config format.
 // Mixed configuration styles are also supported.
-func (c *Config) Unmarshal(component *confmap.Conf) error {
-	if component == nil {
+//
+// Example of flat configuration:
+//
+//	log_statements:
+//	  - set(attributes["service.new_name"], attributes["service.name"])
+//	  - delete_key(attributes, "service.name")
+//
+// Example of structured configuration:
+//
+//	log_statements:
+//	  - context: "span"
+//	    statements:
+//	      - set(attributes["service.new_name"], attributes["service.name"])
+//	      - delete_key(attributes, "service.name")
+func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	if conf == nil {
 		return nil
 	}
 
 	contextStatementsPatch := map[string]any{}
 	for _, fieldName := range contextStatementsFields {
-		if !component.IsSet(fieldName) {
+		if !conf.IsSet(fieldName) {
 			continue
 		}
-		rawVal := component.Get(fieldName)
+		rawVal := conf.Get(fieldName)
 		values, ok := rawVal.([]any)
 		if !ok {
 			return fmt.Errorf("invalid %s type, expected: array, got: %t", fieldName, rawVal)
@@ -96,13 +110,13 @@ func (c *Config) Unmarshal(component *confmap.Conf) error {
 	}
 
 	if len(contextStatementsPatch) > 0 {
-		err := component.Merge(confmap.NewFromStringMap(contextStatementsPatch))
+		err := conf.Merge(confmap.NewFromStringMap(contextStatementsPatch))
 		if err != nil {
 			return err
 		}
 	}
 
-	return component.Unmarshal(c)
+	return conf.Unmarshal(c)
 }
 
 var _ component.Config = (*Config)(nil)

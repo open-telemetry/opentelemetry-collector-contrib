@@ -7,18 +7,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// LoadContextCache retrieves or creates a context cache for the given context ID.
-// If `sharedCache` is true, it returns the cached context map if it exists,
-// or creates and stores a new one if it does not. If `sharedCache` is false, it returns nil.
-func LoadContextCache(cache map[ContextID]*pcommon.Map, context ContextID, sharedCache bool) *pcommon.Map {
-	if !sharedCache {
-		return nil
-	}
-	v, ok := cache[context]
+// LoadContextCache retrieves or creates a context cache map for the given context ID.
+// If the cache is not found, a new map is created and stored in the contextCache map.
+func LoadContextCache(contextCache map[ContextID]*pcommon.Map, context ContextID) *pcommon.Map {
+	v, ok := contextCache[context]
 	if ok {
 		return v
 	}
 	m := pcommon.NewMap()
-	cache[context] = &m
+	contextCache[context] = &m
 	return &m
 }

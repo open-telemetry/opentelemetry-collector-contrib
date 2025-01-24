@@ -63,7 +63,10 @@ func (p *Processor) ProcessLogs(ctx context.Context, ld plog.Logs) (plog.Logs, e
 
 	sharedContextCache := make(map[common.ContextID]*pcommon.Map, len(p.contexts))
 	for _, c := range p.contexts {
-		cache := common.LoadContextCache(sharedContextCache, c.Context(), c.sharedCache)
+		var cache *pcommon.Map
+		if c.sharedCache {
+			cache = common.LoadContextCache(sharedContextCache, c.Context())
+		}
 		err := c.ConsumeLogs(ctx, ld, cache)
 		if err != nil {
 			p.logger.Error("failed processing logs", zap.Error(err))

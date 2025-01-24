@@ -55,7 +55,10 @@ func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.E
 func (p *Processor) ProcessTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	sharedContextCache := make(map[common.ContextID]*pcommon.Map, len(p.contexts))
 	for _, c := range p.contexts {
-		cache := common.LoadContextCache(sharedContextCache, c.Context(), c.sharedCache)
+		var cache *pcommon.Map
+		if c.sharedCache {
+			cache = common.LoadContextCache(sharedContextCache, c.Context())
+		}
 		err := c.ConsumeTraces(ctx, td, cache)
 		if err != nil {
 			p.logger.Error("failed processing traces", zap.Error(err))
