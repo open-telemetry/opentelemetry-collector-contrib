@@ -48,8 +48,8 @@ type Translation interface {
 }
 
 type translator struct {
-	schemaURL string
-	target    *Version
+	targetSchemaURL string
+	target          *Version
 	indexes         map[Version]int
 	revisions       []RevisionV1
 
@@ -89,16 +89,16 @@ func (t *translator) loadTranslation(content *ast.Schema) error {
 	return errs
 }
 
-func newTranslatorFromSchema(log *zap.Logger, schemaURL string, schemaFileSchema *ast.Schema) (*translator, error) {
-	_, target, err := GetFamilyAndVersion(schemaURL)
+func newTranslatorFromSchema(log *zap.Logger, targetSchemaURL string, schemaFileSchema *ast.Schema) (*translator, error) {
+	_, target, err := GetFamilyAndVersion(targetSchemaURL)
 	if err != nil {
 		return nil, err
 	}
 	t := &translator{
-		schemaURL: schemaURL,
-		target:    target,
-		log:       log,
-		indexes:   map[Version]int{},
+		targetSchemaURL: targetSchemaURL,
+		target:          target,
+		log:             log,
+		indexes:         map[Version]int{},
 	}
 
 	if err := t.loadTranslation(schemaFileSchema); err != nil {
@@ -107,13 +107,13 @@ func newTranslatorFromSchema(log *zap.Logger, schemaURL string, schemaFileSchema
 	return t, nil
 }
 
-func newTranslatorFromReader(log *zap.Logger, schemaURL string, content io.Reader) (*translator, error) {
+func newTranslatorFromReader(log *zap.Logger, targetSchemaURL string, content io.Reader) (*translator, error) {
 	schemaFileSchema, err := encoder.Parse(content)
 	if err != nil {
 		return nil, err
 	}
 	var t *translator
-	if t, err = newTranslatorFromSchema(log, schemaURL, schemaFileSchema); err != nil {
+	if t, err = newTranslatorFromSchema(log, targetSchemaURL, schemaFileSchema); err != nil {
 		return nil, err
 	}
 	return t, nil
@@ -166,7 +166,7 @@ func (t *translator) ApplyAllResourceChanges(resource alias.Resource, inSchemaUR
 			}
 		}
 	}
-	resource.SetSchemaUrl(t.schemaURL)
+	resource.SetSchemaUrl(t.targetSchemaURL)
 	return nil
 }
 
@@ -193,18 +193,18 @@ func (t *translator) ApplyScopeLogChanges(scopeLogs plog.ScopeLogs, inSchemaURL 
 					return err
 				}
 			case Revert:
-				err = rev.all.Rollback(log)
+				err = rev.logs.Rollback(log)
 				if err != nil {
 					return err
 				}
-				err = rev.logs.Rollback(log)
+				err = rev.all.Rollback(log)
 				if err != nil {
 					return err
 				}
 			}
 		}
 	}
-	in.SetSchemaUrl(t.schemaURL)
+	scopeLogs.SetSchemaUrl(t.targetSchemaURL)
 	return nil
 }
 
@@ -258,7 +258,7 @@ func (t *translator) ApplyScopeSpanChanges(scopeSpans ptrace.ScopeSpans, inSchem
 				}
 			}
 		}
-		scopeSpans.SetSchemaUrl(t.schemaURL)
+		scopeSpans.SetSchemaUrl(t.targetSchemaURL)
 	}
 	return nil
 }
@@ -290,7 +290,7 @@ func (t *translator) ApplyScopeMetricChanges(scopeMetrics pmetric.ScopeMetrics, 
 			}
 		}
 	}
-	in.SetSchemaUrl(t.schemaURL)
+	scopeMetrics.SetSchemaUrl(t.targetSchemaURL)
 	return nil
 }
 
