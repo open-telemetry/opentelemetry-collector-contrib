@@ -1,0 +1,9 @@
+type: envoyals
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  distributions: []
+  codeowners:
+    active: [evan-bradley]
