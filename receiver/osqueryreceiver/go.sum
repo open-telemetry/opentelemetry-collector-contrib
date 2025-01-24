@@ -48,6 +48,7 @@ go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250121185328-f
 go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250121185328-fbefb22cc2b3/go.mod h1:SlBEwQg0qly75rXZ6W1Ig8jN25KBVBkFIIAUI1GiAAE=
 go.opentelemetry.io/collector/consumer v1.24.1-0.20250121185328-fbefb22cc2b3 h1:rMGS7YpPjLWbykAQNoBZhTZ8OONKSmnewCFggZXMPmg=
 go.opentelemetry.io/collector/consumer v1.24.1-0.20250121185328-fbefb22cc2b3/go.mod h1:YyTWeyBUYlVi983ylJAY5qHnCajq67on3A59OpS6A/I=
+go.opentelemetry.io/collector/consumer v1.24.1-0.20250124013028-e8807bfe9423/go.mod h1:YyTWeyBUYlVi983ylJAY5qHnCajq67on3A59OpS6A/I=
 go.opentelemetry.io/collector/consumer/consumererror v0.118.0 h1:Cx//ZFDa6wUEoRDRYRZ/Rkb52dWNoHj2e9FdlcM9jCA=
 go.opentelemetry.io/collector/consumer/consumererror v0.118.0/go.mod h1:2mhnzzLYR5zS2Zz4h9ZnRM8Uogu9qatcfQwGNenhing=
 go.opentelemetry.io/collector/consumer/consumertest v0.118.0 h1:8AAS9ejQapP1zqt0+cI6u+AUBheT3X0171N9WtXWsVY=
@@ -56,6 +57,7 @@ go.opentelemetry.io/collector/consumer/xconsumer v0.118.0 h1:guWnzzRqgCInjnYlOQ1
 go.opentelemetry.io/collector/consumer/xconsumer v0.118.0/go.mod h1:C5V2d6Ys/Fi6k3tzjBmbdZ9v3J/rZSAMlhx4KVcMIIg=
 go.opentelemetry.io/collector/pdata v1.24.1-0.20250121185328-fbefb22cc2b3 h1:GXjNTD7hyz2Qwuu5uwLYeJTkWECWL6eL41w/JrQIJrU=
 go.opentelemetry.io/collector/pdata v1.24.1-0.20250121185328-fbefb22cc2b3/go.mod h1:6lE9r5x41Z9GyvTSBetXSHRikhiZZK5ApmFtX35ZbXc=
+go.opentelemetry.io/collector/pdata v1.24.1-0.20250124013028-e8807bfe9423/go.mod h1:6lE9r5x41Z9GyvTSBetXSHRikhiZZK5ApmFtX35ZbXc=
 go.opentelemetry.io/collector/pdata/pprofile v0.118.0 h1:VK/fr65VFOwEhsSGRPj5c3lCv0yIK1Kt0sZxv9WZBb8=
 go.opentelemetry.io/collector/pdata/pprofile v0.118.0/go.mod h1:eJyP/vBm179EghV3dPSnamGAWQwLyd+4z/3yG54YFoQ=
 go.opentelemetry.io/collector/pdata/testdata v0.118.0 h1:5N0w1SX9KIRkwvtkrpzQgXy9eGk3vfNG0ds6mhEPMIM=

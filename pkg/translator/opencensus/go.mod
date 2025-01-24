@@ -11,7 +11,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250124013028-e8807bfe9423
-	go.opentelemetry.io/collector/semconv v0.118.1-0.20250121185328-fbefb22cc2b3
+	go.opentelemetry.io/collector/semconv v0.118.1-0.20250124013028-e8807bfe9423
 	go.uber.org/goleak v1.3.0
 	google.golang.org/protobuf v1.36.3
 )
@@ -27,7 +27,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.118.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.118.1-0.20250124013028-e8807bfe9423 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
