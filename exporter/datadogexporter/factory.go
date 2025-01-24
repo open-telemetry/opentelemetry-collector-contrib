@@ -102,6 +102,8 @@ type factory struct {
 	attributesErr            error
 
 	registry *featuregate.Registry
+
+	gatewayUsage *attributes.GatewayUsage
 }
 
 func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string, timeout time.Duration) (source.Provider, error) {
@@ -160,7 +162,7 @@ func (f *factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params exp
 }
 
 func newFactoryWithRegistry(registry *featuregate.Registry) exporter.Factory {
-	f := &factory{registry: registry}
+	f := &factory{registry: registry, gatewayUsage: attributes.NewGatewayUsage()}
 	return exporter.NewFactory(
 		metadata.Type,
 		f.createDefaultConfig,
@@ -299,7 +301,7 @@ func (f *factory) createMetricsExporter(
 			return nil
 		}
 	} else {
-		exp, metricsErr := newMetricsExporter(ctx, set, cfg, acfg, &f.onceMetadata, attrsTranslator, hostProvider, metadataReporter, statsIn)
+		exp, metricsErr := newMetricsExporter(ctx, set, cfg, acfg, &f.onceMetadata, attrsTranslator, hostProvider, metadataReporter, statsIn, f.gatewayUsage)
 		if metricsErr != nil {
 			cancel()  // first cancel context
 			wg.Wait() // then wait for shutdown
@@ -412,7 +414,7 @@ func (f *factory) createTracesExporter(
 			return nil
 		}
 	} else {
-		tracex, err2 := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent, metadataReporter)
+		tracex, err2 := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent, metadataReporter, f.gatewayUsage)
 		if err2 != nil {
 			cancel()
 			wg.Wait() // then wait for shutdown

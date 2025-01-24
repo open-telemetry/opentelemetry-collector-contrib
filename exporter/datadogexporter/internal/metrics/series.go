@@ -9,6 +9,8 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/component"
+
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 )
 
 // newMetricSeries creates a new Datadog metric series given a name, a Unix nanoseconds timestamp
@@ -65,6 +67,17 @@ func DefaultMetrics(exporterType string, hostname string, timestamp uint64, tags
 		})
 	}
 	return metrics
+}
+
+// GatewayUsageGauge creates a gauge metric to report is there is a gateway
+func GatewayUsageGauge(timestamp uint64, hostname string, tags []string, gatewayUsage *attributes.GatewayUsage) datadogV2.MetricSeries {
+	series := NewGauge("datadog.otel.gateway", timestamp, gatewayUsage.Gauge(), tags)
+	series.SetResources([]datadogV2.MetricResource{
+		{
+			Name: datadog.PtrString(hostname),
+			Type: datadog.PtrString("host"),
+		}})
+	return series
 }
 
 // TagsFromBuildInfo returns a list of tags derived from buildInfo to be used when creating metrics
