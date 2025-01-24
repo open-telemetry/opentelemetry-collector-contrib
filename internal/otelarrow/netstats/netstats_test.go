@@ -30,6 +30,8 @@ func dropView(instrument metric.Instrument) metric.View {
 	)
 }
 
+// TODO: This will be exposed by each component. Remove this function and use
+// the publicly exposed view once this is possible to do.
 func viewsFromLevel(level configtelemetry.Level) []metric.View {
 	var views []metric.View
 
@@ -57,10 +59,6 @@ func viewsFromLevel(level configtelemetry.Level) []metric.View {
 		)
 	}
 
-	// contrib's internal/otelarrow/netstats metrics
-	// See
-	// - https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/a25f05/internal/otelarrow/netstats/netstats.go#L130
-	// - https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/a25f05/internal/otelarrow/netstats/netstats.go#L165
 	if level < configtelemetry.LevelDetailed {
 		scope := instrumentation.Scope{Name: scopeName}
 		// Compressed size metrics.
