@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/build-tools/checkfile v0.16.0
 	go.opentelemetry.io/build-tools/chloggen v0.16.0
 	go.opentelemetry.io/build-tools/crosslink v0.16.0
-	go.opentelemetry.io/build-tools/githubgen v0.0.0-20250120111601-b29324c2a9f5
+	go.opentelemetry.io/build-tools/githubgen v0.17.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.16.0
 	go.opentelemetry.io/build-tools/multimod v0.16.0
 	go.opentelemetry.io/collector/cmd/builder v0.118.1-0.20250121185328-fbefb22cc2b3

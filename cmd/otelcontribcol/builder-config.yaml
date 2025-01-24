@@ -11,6 +11,7 @@ dist:
   name: otelcontribcol
   description: Local OpenTelemetry Collector Contrib binary, testing only.
   version: 0.118.0-dev
+  output_path: ./cmd/otelcontribcol
 
 extensions:
   - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.118.1-0.20250121185328-fbefb22cc2b3
@@ -355,6 +356,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => ../../internal/aws/ecsutil
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver => ../../receiver/rabbitmqreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver => ../../receiver/elasticsearchreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/envoyalsreceiver => ../../receiver/envoyalsreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor => ../../processor/metricsgenerationprocessor
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor => ../../processor/attributesprocessor
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver => ../../receiver/sqlqueryreceiver

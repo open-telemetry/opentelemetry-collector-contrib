@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
@@ -68,7 +70,7 @@ func serializeDataPoints(v *json.Visitor, dataPoints []dataPoint, validationErro
 		// TODO here's potential for more optimization by directly serializing the value instead of allocating a pcommon.Value
 		//  the tradeoff is that this would imply a duplicated logic for the ECS mode
 		value, err := dp.Value()
-		if dp.HasMappingHint(hintDocCount) {
+		if dp.HasMappingHint(elasticsearch.HintDocCount) {
 			docCount = dp.DocCount()
 		}
 		if err != nil {
@@ -198,17 +200,14 @@ func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pco
 	writeSpanIDField(v, "span_id", record.SpanID())
 	writeAttributes(v, record.Attributes(), false)
 	writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(record.DroppedAttributesCount()))
-	isEvent := false
 	if record.EventName() != "" {
-		isEvent = true
 		writeStringFieldSkipDefault(v, "event_name", record.EventName())
 	} else if eventNameAttr, ok := record.Attributes().Get("event.name"); ok && eventNameAttr.Str() != "" {
-		isEvent = true
 		writeStringFieldSkipDefault(v, "event_name", eventNameAttr.Str())
 	}
 	writeResource(v, resource, resourceSchemaURL, false)
 	writeScope(v, scope, scopeSchemaURL, false)
-	writeLogBody(v, record, isEvent)
+	writeLogBody(v, record)
 	_ = v.OnObjectFinished()
 	return nil
 }
@@ -225,21 +224,14 @@ func writeDataStream(v *json.Visitor, idx esIndex) {
 	_ = v.OnObjectFinished()
 }
 
-func writeLogBody(v *json.Visitor, record plog.LogRecord, isEvent bool) {
+func writeLogBody(v *json.Visitor, record plog.LogRecord) {
 	if record.Body().Type() == pcommon.ValueTypeEmpty {
 		return
 	}
 	_ = v.OnKey("body")
 	_ = v.OnObjectStart(-1, structform.AnyType)
 
-	// Determine if this log record is an event, as they are mapped differently
-	// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/general/events.md
-	var bodyType string
-	if isEvent {
-		bodyType = "structured"
-	} else {
-		bodyType = "flattened"
-	}
+	bodyType := "structured"
 	body := record.Body()
 	switch body.Type() {
 	case pcommon.ValueTypeMap:
@@ -296,7 +288,7 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 	_ = v.OnObjectStart(-1, structform.AnyType)
 	attributes.Range(func(k string, val pcommon.Value) bool {
 		switch k {
-		case dataStreamType, dataStreamDataset, dataStreamNamespace, mappingHintsAttrKey:
+		case dataStreamType, dataStreamDataset, dataStreamNamespace, elasticsearch.MappingHintsAttrKey, documentIDAttributeName:
 			return true
 		}
 		if isGeoAttribute(k, val) {

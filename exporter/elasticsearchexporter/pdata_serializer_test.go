@@ -31,6 +31,7 @@ func TestSerializeLog(t *testing.T) {
 			record.Attributes().PutDouble("double", 42.0)
 			record.Attributes().PutInt("int", 42)
 			record.Attributes().PutEmptyBytes("bytes").Append(42)
+			record.Attributes().PutStr(documentIDAttributeName, "my_id")
 			_ = record.Attributes().PutEmptySlice("slice").FromRaw([]any{42, "foo"})
 			record.Attributes().PutEmptySlice("map_slice").AppendEmpty().SetEmptyMap().PutStr("foo.bar", "baz")
 			mapAttr := record.Attributes().PutEmptyMap("map")
@@ -102,7 +103,7 @@ func TestSerializeLog(t *testing.T) {
 				"resource":           map[string]any{},
 				"scope":              map[string]any{},
 				"body": map[string]any{
-					"flattened": map[string]any{
+					"structured": map[string]any{
 						"foo.bar": "baz",
 					},
 				},
