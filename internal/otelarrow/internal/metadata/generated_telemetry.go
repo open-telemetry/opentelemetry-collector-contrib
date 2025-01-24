@@ -7,11 +7,9 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -72,28 +70,21 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.OtelarrowAdmissionInFlightBytes, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableUpDownCounter(
+	builder.OtelarrowAdmissionInFlightBytes, err = builder.meter.Int64ObservableUpDownCounter(
 		"otelcol_otelarrow_admission_in_flight_bytes",
 		metric.WithDescription("Number of bytes that have started processing but are not finished."),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
-	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeOtelarrowAdmissionInFlightBytes, builder.OtelarrowAdmissionInFlightBytes)
+	_, err = builder.meter.RegisterCallback(builder.observeOtelarrowAdmissionInFlightBytes, builder.OtelarrowAdmissionInFlightBytes)
 	errs = errors.Join(errs, err)
-	builder.OtelarrowAdmissionWaitingBytes, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableUpDownCounter(
+	builder.OtelarrowAdmissionWaitingBytes, err = builder.meter.Int64ObservableUpDownCounter(
 		"otelcol_otelarrow_admission_waiting_bytes",
 		metric.WithDescription("Number of items waiting to start processing."),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
-	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeOtelarrowAdmissionWaitingBytes, builder.OtelarrowAdmissionWaitingBytes)
+	_, err = builder.meter.RegisterCallback(builder.observeOtelarrowAdmissionWaitingBytes, builder.OtelarrowAdmissionWaitingBytes)
 	errs = errors.Join(errs, err)
 	return &builder, errs
-}
-
-func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
-	if cfgLevel <= srvLevel {
-		return meter
-	}
-	return noop.Meter{}
 }

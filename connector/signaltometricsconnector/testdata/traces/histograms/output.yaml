@@ -1,0 +1,272 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: signaltometrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+        - key: signaltometrics.service.name
+          value:
+            stringValue: signaltometrics
+        - key: signaltometrics.service.namespace
+          value:
+            stringValue: test
+    scopeMetrics:
+      - metrics:
+          - description: Spans with resource attribute including resource.foo as a histogram metric
+            histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - bucketCounts:
+                    - "1"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "3"
+                    - "2"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "1"
+                    - "1"
+                  count: "8"
+                  explicitBounds:
+                    - 2
+                    - 4
+                    - 6
+                    - 8
+                    - 10
+                    - 50
+                    - 100
+                    - 200
+                    - 400
+                    - 800
+                    - 1000
+                    - 1400
+                    - 2000
+                    - 5000
+                    - 10000
+                    - 15000
+                  sum: 31402
+                  timeUnixNano: "1000000"
+            name: with_resource_foo_only
+            unit: ms
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
+  - resource:
+      attributes:
+        - key: resource.bar
+          value:
+            stringValue: bar
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: signaltometrics.service.instance.id
+          value:
+            stringValue: 627cc493-f310-47de-96bd-71410b7dec09
+        - key: signaltometrics.service.name
+          value:
+            stringValue: signaltometrics
+        - key: signaltometrics.service.namespace
+          value:
+            stringValue: test
+    scopeMetrics:
+      - metrics:
+          - description: Spans with custom count OTTL expression as a histogram metric
+            histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - bucketCounts:
+                    - "2"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "4"
+                    - "4"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "2"
+                    - "2"
+                  count: "14"
+                  explicitBounds:
+                    - 2
+                    - 4
+                    - 6
+                    - 8
+                    - 10
+                    - 50
+                    - 100
+                    - 200
+                    - 400
+                    - 800
+                    - 1000
+                    - 1400
+                    - 2000
+                    - 5000
+                    - 10000
+                    - 15000
+                  sum: 61804
+                  timeUnixNano: "1000000"
+            name: with_custom_count
+            unit: ms
+          - description: Span duration for HTTP spans as a histogram metric
+            histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - attributes:
+                    - key: http.response.status_code
+                      value:
+                        intValue: "201"
+                  bucketCounts:
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "1"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "1"
+                    - "0"
+                  count: "2"
+                  explicitBounds:
+                    - 2
+                    - 4
+                    - 6
+                    - 8
+                    - 10
+                    - 50
+                    - 100
+                    - 200
+                    - 400
+                    - 800
+                    - 1000
+                    - 1400
+                    - 2000
+                    - 5000
+                    - 10000
+                    - 15000
+                  sum: 11900
+                  timeUnixNano: "1000000"
+            name: http.trace.span.duration
+            unit: ms
+          - description: Span duration for DB spans as a histogram metric
+            histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - attributes:
+                    - key: db.system
+                      value:
+                        stringValue: mysql
+                  bucketCounts:
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "3"
+                    - "1"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                  count: "4"
+                  explicitBounds:
+                    - 2
+                    - 4
+                    - 6
+                    - 8
+                    - 10
+                    - 50
+                    - 100
+                    - 200
+                    - 400
+                    - 800
+                    - 1000
+                    - 1400
+                    - 2000
+                    - 5000
+                    - 10000
+                    - 15000
+                  sum: 2500
+                  timeUnixNano: "1000000"
+            name: db.trace.span.duration
+            unit: ms
+          - description: Span duration for messaging spans as a histogram metric
+            histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - attributes:
+                    - key: messaging.system
+                      value:
+                        stringValue: kafka
+                  bucketCounts:
+                    - "1"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "1"
+                  count: "2"
+                  explicitBounds:
+                    - 2
+                    - 4
+                    - 6
+                    - 8
+                    - 10
+                    - 50
+                    - 100
+                    - 200
+                    - 400
+                    - 800
+                    - 1000
+                    - 1400
+                    - 2000
+                    - 5000
+                    - 10000
+                    - 15000
+                  sum: 17002
+                  timeUnixNano: "1000000"
+            name: msg.trace.span.duration
+            unit: ms
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector

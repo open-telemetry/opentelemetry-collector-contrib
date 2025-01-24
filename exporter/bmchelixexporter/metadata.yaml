@@ -1,0 +1,9 @@
+type: bmchelix
+
+status:
+  class: exporter
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: [bertysentry, NassimBtk]

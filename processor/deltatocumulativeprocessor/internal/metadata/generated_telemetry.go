@@ -7,11 +7,9 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -68,68 +66,61 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.DeltatocumulativeDatapointsDropped, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.DeltatocumulativeDatapointsDropped, err = builder.meter.Int64Counter(
 		"otelcol_deltatocumulative.datapoints.dropped",
 		metric.WithDescription("number of datapoints dropped due to given 'reason'"),
 		metric.WithUnit("{datapoint}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.DeltatocumulativeDatapointsLinear, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.DeltatocumulativeDatapointsLinear, err = builder.meter.Int64Counter(
 		"otelcol_deltatocumulative.datapoints.linear",
 		metric.WithDescription("total number of datapoints processed. may have 'error' attribute, if processing failed"),
 		metric.WithUnit("{datapoint}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.DeltatocumulativeDatapointsProcessed, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.DeltatocumulativeDatapointsProcessed, err = builder.meter.Int64Counter(
 		"otelcol_deltatocumulative.datapoints.processed",
 		metric.WithDescription("number of datapoints processed"),
 		metric.WithUnit("{datapoint}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.DeltatocumulativeGapsLength, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.DeltatocumulativeGapsLength, err = builder.meter.Int64Counter(
 		"otelcol_deltatocumulative.gaps.length",
 		metric.WithDescription("total duration where data was expected but not received"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
-	builder.DeltatocumulativeStreamsEvicted, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.DeltatocumulativeStreamsEvicted, err = builder.meter.Int64Counter(
 		"otelcol_deltatocumulative.streams.evicted",
 		metric.WithDescription("number of streams evicted"),
 		metric.WithUnit("{stream}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.DeltatocumulativeStreamsLimit, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Gauge(
+	builder.DeltatocumulativeStreamsLimit, err = builder.meter.Int64Gauge(
 		"otelcol_deltatocumulative.streams.limit",
 		metric.WithDescription("upper limit of tracked streams"),
 		metric.WithUnit("{stream}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.DeltatocumulativeStreamsMaxStale, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Gauge(
+	builder.DeltatocumulativeStreamsMaxStale, err = builder.meter.Int64Gauge(
 		"otelcol_deltatocumulative.streams.max_stale",
 		metric.WithDescription("duration after which streams inactive streams are dropped"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
-	builder.DeltatocumulativeStreamsTracked, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64UpDownCounter(
+	builder.DeltatocumulativeStreamsTracked, err = builder.meter.Int64UpDownCounter(
 		"otelcol_deltatocumulative.streams.tracked",
 		metric.WithDescription("number of streams tracked"),
 		metric.WithUnit("{dps}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.DeltatocumulativeStreamsTrackedLinear, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableUpDownCounter(
+	builder.DeltatocumulativeStreamsTrackedLinear, err = builder.meter.Int64ObservableUpDownCounter(
 		"otelcol_deltatocumulative.streams.tracked.linear",
 		metric.WithDescription("number of streams tracked"),
 		metric.WithUnit("{dps}"),
 	)
 	errs = errors.Join(errs, err)
-	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeDeltatocumulativeStreamsTrackedLinear, builder.DeltatocumulativeStreamsTrackedLinear)
+	_, err = builder.meter.RegisterCallback(builder.observeDeltatocumulativeStreamsTrackedLinear, builder.DeltatocumulativeStreamsTrackedLinear)
 	errs = errors.Join(errs, err)
 	return &builder, errs
-}
-
-func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
-	if cfgLevel <= srvLevel {
-		return meter
-	}
-	return noop.Meter{}
 }

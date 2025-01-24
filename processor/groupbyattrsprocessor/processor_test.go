@@ -20,6 +20,9 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor/internal/metadatatest"
 )
 
 var attrMap = prepareAttributeMap()
@@ -270,7 +273,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			inputMetrics := someComplexMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2)
 			inputHistogramMetrics := someComplexHistogramMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2, 2)
 
-			tel := setupTestTelemetry()
+			tel := metadatatest.SetupTelemetry()
 			gap, err := createGroupByAttrsProcessor(tel.NewSettings(), tt.groupByKeys)
 			require.NoError(t, err)
 
@@ -577,7 +580,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 					},
 				}
 			}
-			tel.assertMetrics(t, want)
+			tel.AssertMetrics(t, want, metricdatatest.IgnoreTimestamp())
 		})
 	}
 }
