@@ -52,8 +52,8 @@ go.opentelemetry.io/collector/confmap/provider/envprovider v1.24.1-0.20250123125
 go.opentelemetry.io/collector/confmap/provider/envprovider v1.24.1-0.20250123125445-24f88da7b583/go.mod h1:X0BuIYyscilkwApnmxlrdz0kTVWgKXq2ih8sTWm8Zio=
 go.opentelemetry.io/collector/confmap/provider/fileprovider v1.24.1-0.20250123125445-24f88da7b583 h1:566MDlv4AOJw+VUJs7h+E+vHDIqjfAqFEge4NcySPuE=
 go.opentelemetry.io/collector/confmap/provider/fileprovider v1.24.1-0.20250123125445-24f88da7b583/go.mod h1:ljIH/rWIUHJeWIDEKMRU/ufol/bcgC7ufamchtuTAwM=
-go.opentelemetry.io/collector/semconv v0.118.1-0.20250123164917-689d43e5f977 h1:5d2RgnsX2uA5xaoAk/rB0HSj76EyE6F7YRmBC5B0nIU=
-go.opentelemetry.io/collector/semconv v0.118.1-0.20250123164917-689d43e5f977/go.mod h1:N6XE8Q0JKgBN2fAhkUQtqK9LT7rEGR6+Wu/Rtbal1iI=
+go.opentelemetry.io/collector/semconv v0.118.1-0.20250123125445-24f88da7b583 h1:Fi5FqYA5/88DQN7Xcys/kb6JUwJFlV4j4M7GAeteuwk=
+go.opentelemetry.io/collector/semconv v0.118.1-0.20250123125445-24f88da7b583/go.mod h1:N6XE8Q0JKgBN2fAhkUQtqK9LT7rEGR6+Wu/Rtbal1iI=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=

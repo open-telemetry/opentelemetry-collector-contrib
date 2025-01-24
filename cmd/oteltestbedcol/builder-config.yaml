@@ -29,15 +29,15 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.118.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.118.1-0.20250123164917-689d43e5f977
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.118.1-0.20250123164917-689d43e5f977
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.118.1-0.20250123125445-24f88da7b583
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.118.1-0.20250123125445-24f88da7b583
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.118.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.118.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.118.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.118.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.118.1-0.20250123164917-689d43e5f977
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.118.1-0.20250123125445-24f88da7b583
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.118.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.118.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.118.0
