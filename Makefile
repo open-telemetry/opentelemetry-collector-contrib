@@ -319,7 +319,7 @@ gendistributions: $(GITHUBGEN)
 	$(GITHUBGEN) distributions
 
 .PHONY: update-codeowners
-update-codeowners: gengithub generate
+update-codeowners: generate gengithub
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
@@ -340,7 +340,7 @@ chlog-update: $(CHLOGGEN)
 
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
-	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol
+	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
@@ -356,7 +356,7 @@ otelcontribcollite: genotelcontribcol
 
 .PHONY: genoteltestbedcol
 genoteltestbedcol: $(BUILDER)
-	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config.yaml --output-path cmd/oteltestbedcol
+	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config.yaml
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
@@ -419,6 +419,8 @@ update-otel:$(MULTIMOD)
 	$(MAKE) genoteltestbedcol
 	$(MAKE) generate
 	$(MAKE) crosslink
+	# Tidy again after generating code
+	$(MAKE) gotidy
 	$(MAKE) remove-toolchain
 	git add . && git commit -s -m "[chore] mod and toolchain tidy" ; \
 
@@ -552,7 +554,7 @@ clean:
 	find . -type f -name 'builtunitetest.test' -delete
 
 .PHONY: generate-gh-issue-templates
-generate-gh-issue-templates: $(GITHUBGEN)
+generate-gh-issue-templates:
 	$(GITHUBGEN) issue-templates
 
 .PHONY: checks
