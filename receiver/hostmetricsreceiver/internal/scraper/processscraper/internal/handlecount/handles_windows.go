@@ -60,7 +60,7 @@ type Win32_Process struct {
 
 func (wmiHandleCountQueryer) queryProcessHandleCounts() (map[int64]uint32, error) {
 	handleCounts := []Win32_Process{}
-	// Creates query `get-wmiobject -query "select ProcessId, HandleCount from Win32_Process"`
+	// creates query `get-wmiobject -query "select ProcessId, HandleCount from Win32_Process"`
 	// based on reflection of Win32_Process type.
 	q := wmi.CreateQuery(&handleCounts, "")
 	err := wmi.Query(q, &handleCounts)

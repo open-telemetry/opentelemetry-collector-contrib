@@ -38,12 +38,12 @@ func itemRequestsSortFunc(a, b itemRequest) int {
 	return comp
 }
 
-func assertRecordedItems(t *testing.T, expected []itemRequest, recorder *bulkRecorder, assertOrder bool) { // nolint:unparam
+func assertRecordedItems(t *testing.T, expected []itemRequest, recorder *bulkRecorder, assertOrder bool) { //nolint:unparam
 	recorder.WaitItems(len(expected))
 	assertItemRequests(t, expected, recorder.Items(), assertOrder)
 }
 
-func assertItemRequests(t *testing.T, expected, actual []itemRequest, assertOrder bool) { // nolint:unparam
+func assertItemRequests(t *testing.T, expected, actual []itemRequest, assertOrder bool) {
 	expectedItems := expected
 	actualItems := actual
 	if !assertOrder {
