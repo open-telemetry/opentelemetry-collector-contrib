@@ -95,8 +95,7 @@ see the [Scraping README][ghsread].
 
 ## Traces - Getting Started
 
-Workflow tracing support is actively being added to the GitHub receiver.
-This is accomplished through the processing of GitHub Actions webhook
+Workflow tracing support processes the GitHub Actions webhook
 events for workflows and jobs. The [`workflow_job`][wjob] and
 [`workflow_run`][wrun] event payloads are then constructed into `trace`
 telemetry.
@@ -107,14 +106,13 @@ success, and failure rates.
 
 ### Configuration
 
-**IMPORTANT: At this time the tracing portion of this receiver only serves a health check endpoint.**
-
 The WebHook configuration exposes the following settings:
 
 * `endpoint`: (default = `localhost:8080`) - The address and port to bind the WebHook to.
 * `path`: (default = `/events`) - The path for Action events to be sent to.
 * `health_path`: (default = `/health`) - The path for health checks.
 * `secret`: (optional) - The secret used to [validates the payload][valid].
++ `service_name`: (optional) - The `service.name` to set in created spans.
 * `required_header`: (optional) - The required header key and value for incoming requests.
 
 The WebHook configuration block also accepts all the [confighttp][cfghttp]
