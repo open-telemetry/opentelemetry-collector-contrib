@@ -11,9 +11,13 @@ require (
 	go.opentelemetry.io/collector/confmap v1.24.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/consumer v1.24.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250121185328-fbefb22cc2b3
+	go.opentelemetry.io/collector/consumer/xconsumer v0.118.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250121185328-fbefb22cc2b3
+	go.opentelemetry.io/collector/pdata/pprofile v0.118.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/processor v0.118.1-0.20250121185328-fbefb22cc2b3
+	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.118.1-0.20250121185328-fbefb22cc2b3
 	go.opentelemetry.io/collector/processor/processortest v0.118.1-0.20250121185328-fbefb22cc2b3
+	go.opentelemetry.io/collector/processor/xprocessor v0.118.1-0.20250121185328-fbefb22cc2b3
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -40,11 +44,8 @@ require (
 	go.opentelemetry.io/collector/client v1.24.1-0.20250121185328-fbefb22cc2b3 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect
 	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
