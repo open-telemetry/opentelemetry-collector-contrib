@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
@@ -68,7 +70,7 @@ func serializeDataPoints(v *json.Visitor, dataPoints []dataPoint, validationErro
 		// TODO here's potential for more optimization by directly serializing the value instead of allocating a pcommon.Value
 		//  the tradeoff is that this would imply a duplicated logic for the ECS mode
 		value, err := dp.Value()
-		if dp.HasMappingHint(hintDocCount) {
+		if dp.HasMappingHint(elasticsearch.HintDocCount) {
 			docCount = dp.DocCount()
 		}
 		if err != nil {
@@ -296,7 +298,7 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 	_ = v.OnObjectStart(-1, structform.AnyType)
 	attributes.Range(func(k string, val pcommon.Value) bool {
 		switch k {
-		case dataStreamType, dataStreamDataset, dataStreamNamespace, mappingHintsAttrKey:
+		case dataStreamType, dataStreamDataset, dataStreamNamespace, elasticsearch.MappingHintsAttrKey, documentIDAttributeName:
 			return true
 		}
 		if isGeoAttribute(k, val) {

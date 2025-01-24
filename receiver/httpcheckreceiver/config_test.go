@@ -105,6 +105,98 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: nil,
 		},
+		{
+			desc: "missing both endpoint and endpoints",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: multierr.Combine(
+				errMissingEndpoint,
+			),
+		},
+		{
+			desc: "invalid single endpoint",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: "invalid://endpoint:  12efg",
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: multierr.Combine(
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
+			),
+		},
+		{
+			desc: "invalid endpoint in endpoints list",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						Endpoints: []string{
+							"https://valid.endpoint",
+							"invalid://endpoint:  12efg",
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: multierr.Combine(
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
+			),
+		},
+		{
+			desc: "missing scheme in single endpoint",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: "www.opentelemetry.io/docs",
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: multierr.Combine(
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "www.opentelemetry.io/docs": invalid URI for request`),
+			),
+		},
+		{
+			desc: "valid single endpoint",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: "https://opentelemetry.io",
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "valid endpoints list",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						Endpoints: []string{
+							"https://opentelemetry.io",
+							"https://opentelemetry.io:80/docs",
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: nil,
+		},
 	}
 
 	for _, tc := range testCases {
