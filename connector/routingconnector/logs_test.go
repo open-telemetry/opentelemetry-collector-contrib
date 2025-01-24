@@ -54,7 +54,7 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 
 	rtConn := conn.(*logsConnector)
 	require.NoError(t, err)
@@ -160,57 +160,6 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		assert.Empty(t, sink1.AllLogs())
 	})
 
-	t.Run("logs matched by two expressions", func(t *testing.T) {
-		resetSinks()
-
-		l := plog.NewLogs()
-
-		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutStr("X-Tenant", "x_acme")
-		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-
-		rl = l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutStr("X-Tenant", "_acme")
-		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-
-		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
-
-		assert.Empty(t, defaultSink.AllLogs())
-		assert.Len(t, sink0.AllLogs(), 1)
-		assert.Len(t, sink1.AllLogs(), 1)
-
-		assert.Equal(t, 2, sink0.AllLogs()[0].LogRecordCount())
-		assert.Equal(t, 2, sink1.AllLogs()[0].LogRecordCount())
-		assert.Equal(t, sink0.AllLogs(), sink1.AllLogs())
-	})
-
-	t.Run("one log matched by multiple expressions, other matched none", func(t *testing.T) {
-		resetSinks()
-
-		l := plog.NewLogs()
-
-		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutStr("X-Tenant", "_acme")
-		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-
-		rl = l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
-		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-
-		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
-
-		assert.Len(t, defaultSink.AllLogs(), 1)
-		assert.Len(t, sink0.AllLogs(), 1)
-		assert.Len(t, sink1.AllLogs(), 1)
-
-		assert.Equal(t, sink0.AllLogs(), sink1.AllLogs())
-
-		rlog := defaultSink.AllLogs()[0].ResourceLogs().At(0)
-		attr, ok := rlog.Resource().Attributes().Get("X-Tenant")
-		assert.True(t, ok, "routing attribute must exists")
-		assert.Equal(t, "something-else", attr.AsString())
-	})
-
 	t.Run("logs matched by one expression, multiple pipelines", func(t *testing.T) {
 		resetSinks()
 
@@ -253,7 +202,6 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 				Pipelines: []pipeline.ID{logsDefault, logs0},
 			},
 		},
-		MatchOnce: true,
 	}
 
 	var defaultSink, sink0, sink1 consumertest.LogsSink
@@ -465,7 +413,7 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 }
 
 func TestLogsConnectorDetailed(t *testing.T) {

@@ -147,7 +147,7 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 }
 
 func extractResponseSizeFromEvents(span ptrace.Span) int64 {
-	// Support insrumentation that sets response size in span or as an event.
+	// Support instrumentation that sets response size in span or as an event.
 	size := extractResponseSizeFromAttributes(span.Attributes())
 	if size != 0 {
 		return size

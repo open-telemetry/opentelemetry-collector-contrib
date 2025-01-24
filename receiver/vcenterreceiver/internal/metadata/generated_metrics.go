@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeCPUReservationType specifies the a value cpu_reservation_type attribute.
+// AttributeCPUReservationType specifies the value cpu_reservation_type attribute.
 type AttributeCPUReservationType int
 
 const (
@@ -38,7 +38,7 @@ var MapAttributeCPUReservationType = map[string]AttributeCPUReservationType{
 	"used":  AttributeCPUReservationTypeUsed,
 }
 
-// AttributeDiskDirection specifies the a value disk_direction attribute.
+// AttributeDiskDirection specifies the value disk_direction attribute.
 type AttributeDiskDirection int
 
 const (
@@ -64,7 +64,7 @@ var MapAttributeDiskDirection = map[string]AttributeDiskDirection{
 	"write": AttributeDiskDirectionWrite,
 }
 
-// AttributeDiskState specifies the a value disk_state attribute.
+// AttributeDiskState specifies the value disk_state attribute.
 type AttributeDiskState int
 
 const (
@@ -90,7 +90,7 @@ var MapAttributeDiskState = map[string]AttributeDiskState{
 	"used":      AttributeDiskStateUsed,
 }
 
-// AttributeDiskType specifies the a value disk_type attribute.
+// AttributeDiskType specifies the value disk_type attribute.
 type AttributeDiskType int
 
 const (
@@ -116,7 +116,7 @@ var MapAttributeDiskType = map[string]AttributeDiskType{
 	"physical": AttributeDiskTypePhysical,
 }
 
-// AttributeEntityStatus specifies the a value entity_status attribute.
+// AttributeEntityStatus specifies the value entity_status attribute.
 type AttributeEntityStatus int
 
 const (
@@ -150,7 +150,7 @@ var MapAttributeEntityStatus = map[string]AttributeEntityStatus{
 	"gray":   AttributeEntityStatusGray,
 }
 
-// AttributeHostPowerState specifies the a value host_power_state attribute.
+// AttributeHostPowerState specifies the value host_power_state attribute.
 type AttributeHostPowerState int
 
 const (
@@ -184,7 +184,7 @@ var MapAttributeHostPowerState = map[string]AttributeHostPowerState{
 	"unknown": AttributeHostPowerStateUnknown,
 }
 
-// AttributeMemoryGrantedType specifies the a value memory_granted_type attribute.
+// AttributeMemoryGrantedType specifies the value memory_granted_type attribute.
 type AttributeMemoryGrantedType int
 
 const (
@@ -210,7 +210,7 @@ var MapAttributeMemoryGrantedType = map[string]AttributeMemoryGrantedType{
 	"shared":  AttributeMemoryGrantedTypeShared,
 }
 
-// AttributeMemoryUsageType specifies the a value memory_usage_type attribute.
+// AttributeMemoryUsageType specifies the value memory_usage_type attribute.
 type AttributeMemoryUsageType int
 
 const (
@@ -240,7 +240,7 @@ var MapAttributeMemoryUsageType = map[string]AttributeMemoryUsageType{
 	"overhead": AttributeMemoryUsageTypeOverhead,
 }
 
-// AttributeThroughputDirection specifies the a value throughput_direction attribute.
+// AttributeThroughputDirection specifies the value throughput_direction attribute.
 type AttributeThroughputDirection int
 
 const (
@@ -266,7 +266,7 @@ var MapAttributeThroughputDirection = map[string]AttributeThroughputDirection{
 	"received":    AttributeThroughputDirectionReceived,
 }
 
-// AttributeVMCountPowerState specifies the a value vm_count_power_state attribute.
+// AttributeVMCountPowerState specifies the value vm_count_power_state attribute.
 type AttributeVMCountPowerState int
 
 const (
@@ -300,7 +300,7 @@ var MapAttributeVMCountPowerState = map[string]AttributeVMCountPowerState{
 	"unknown":   AttributeVMCountPowerStateUnknown,
 }
 
-// AttributeVsanLatencyType specifies the a value vsan_latency_type attribute.
+// AttributeVsanLatencyType specifies the value vsan_latency_type attribute.
 type AttributeVsanLatencyType int
 
 const (
@@ -326,7 +326,7 @@ var MapAttributeVsanLatencyType = map[string]AttributeVsanLatencyType{
 	"write": AttributeVsanLatencyTypeWrite,
 }
 
-// AttributeVsanOperationType specifies the a value vsan_operation_type attribute.
+// AttributeVsanOperationType specifies the value vsan_operation_type attribute.
 type AttributeVsanOperationType int
 
 const (
@@ -356,7 +356,7 @@ var MapAttributeVsanOperationType = map[string]AttributeVsanOperationType{
 	"unmap": AttributeVsanOperationTypeUnmap,
 }
 
-// AttributeVsanThroughputDirection specifies the a value vsan_throughput_direction attribute.
+// AttributeVsanThroughputDirection specifies the value vsan_throughput_direction attribute.
 type AttributeVsanThroughputDirection int
 
 const (
@@ -1768,6 +1768,57 @@ func (m *metricVcenterHostDiskThroughput) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterHostDiskThroughput(cfg MetricConfig) metricVcenterHostDiskThroughput {
 	m := metricVcenterHostDiskThroughput{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterHostMemoryCapacity struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.host.memory.capacity metric with initial data.
+func (m *metricVcenterHostMemoryCapacity) init() {
+	m.data.SetName("vcenter.host.memory.capacity")
+	m.data.SetDescription("Total memory  capacity of the host system.")
+	m.data.SetUnit("MiBy")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricVcenterHostMemoryCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterHostMemoryCapacity) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterHostMemoryCapacity) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterHostMemoryCapacity(cfg MetricConfig) metricVcenterHostMemoryCapacity {
+	m := metricVcenterHostMemoryCapacity{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3208,6 +3259,57 @@ func newMetricVcenterVMMemoryBallooned(cfg MetricConfig) metricVcenterVMMemoryBa
 	return m
 }
 
+type metricVcenterVMMemoryGranted struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.vm.memory.granted metric with initial data.
+func (m *metricVcenterVMMemoryGranted) init() {
+	m.data.SetName("vcenter.vm.memory.granted")
+	m.data.SetDescription("The amount of memory that is granted to a VM.")
+	m.data.SetUnit("MiBy")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricVcenterVMMemoryGranted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterVMMemoryGranted) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterVMMemoryGranted) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterVMMemoryGranted(cfg MetricConfig) metricVcenterVMMemoryGranted {
+	m := metricVcenterVMMemoryGranted{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricVcenterVMMemorySwapped struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -3811,6 +3913,7 @@ type MetricsBuilder struct {
 	metricVcenterHostDiskLatencyAvg          metricVcenterHostDiskLatencyAvg
 	metricVcenterHostDiskLatencyMax          metricVcenterHostDiskLatencyMax
 	metricVcenterHostDiskThroughput          metricVcenterHostDiskThroughput
+	metricVcenterHostMemoryCapacity          metricVcenterHostMemoryCapacity
 	metricVcenterHostMemoryUsage             metricVcenterHostMemoryUsage
 	metricVcenterHostMemoryUtilization       metricVcenterHostMemoryUtilization
 	metricVcenterHostNetworkPacketDropRate   metricVcenterHostNetworkPacketDropRate
@@ -3839,6 +3942,7 @@ type MetricsBuilder struct {
 	metricVcenterVMDiskUsage                 metricVcenterVMDiskUsage
 	metricVcenterVMDiskUtilization           metricVcenterVMDiskUtilization
 	metricVcenterVMMemoryBallooned           metricVcenterVMMemoryBallooned
+	metricVcenterVMMemoryGranted             metricVcenterVMMemoryGranted
 	metricVcenterVMMemorySwapped             metricVcenterVMMemorySwapped
 	metricVcenterVMMemorySwappedSsd          metricVcenterVMMemorySwappedSsd
 	metricVcenterVMMemoryUsage               metricVcenterVMMemoryUsage
@@ -3869,7 +3973,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                   mbc,
@@ -3903,6 +4006,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricVcenterHostDiskLatencyAvg:          newMetricVcenterHostDiskLatencyAvg(mbc.Metrics.VcenterHostDiskLatencyAvg),
 		metricVcenterHostDiskLatencyMax:          newMetricVcenterHostDiskLatencyMax(mbc.Metrics.VcenterHostDiskLatencyMax),
 		metricVcenterHostDiskThroughput:          newMetricVcenterHostDiskThroughput(mbc.Metrics.VcenterHostDiskThroughput),
+		metricVcenterHostMemoryCapacity:          newMetricVcenterHostMemoryCapacity(mbc.Metrics.VcenterHostMemoryCapacity),
 		metricVcenterHostMemoryUsage:             newMetricVcenterHostMemoryUsage(mbc.Metrics.VcenterHostMemoryUsage),
 		metricVcenterHostMemoryUtilization:       newMetricVcenterHostMemoryUtilization(mbc.Metrics.VcenterHostMemoryUtilization),
 		metricVcenterHostNetworkPacketDropRate:   newMetricVcenterHostNetworkPacketDropRate(mbc.Metrics.VcenterHostNetworkPacketDropRate),
@@ -3931,6 +4035,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricVcenterVMDiskUsage:                 newMetricVcenterVMDiskUsage(mbc.Metrics.VcenterVMDiskUsage),
 		metricVcenterVMDiskUtilization:           newMetricVcenterVMDiskUtilization(mbc.Metrics.VcenterVMDiskUtilization),
 		metricVcenterVMMemoryBallooned:           newMetricVcenterVMMemoryBallooned(mbc.Metrics.VcenterVMMemoryBallooned),
+		metricVcenterVMMemoryGranted:             newMetricVcenterVMMemoryGranted(mbc.Metrics.VcenterVMMemoryGranted),
 		metricVcenterVMMemorySwapped:             newMetricVcenterVMMemorySwapped(mbc.Metrics.VcenterVMMemorySwapped),
 		metricVcenterVMMemorySwappedSsd:          newMetricVcenterVMMemorySwappedSsd(mbc.Metrics.VcenterVMMemorySwappedSsd),
 		metricVcenterVMMemoryUsage:               newMetricVcenterVMMemoryUsage(mbc.Metrics.VcenterVMMemoryUsage),
@@ -4113,6 +4218,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricVcenterHostDiskLatencyAvg.emit(ils.Metrics())
 	mb.metricVcenterHostDiskLatencyMax.emit(ils.Metrics())
 	mb.metricVcenterHostDiskThroughput.emit(ils.Metrics())
+	mb.metricVcenterHostMemoryCapacity.emit(ils.Metrics())
 	mb.metricVcenterHostMemoryUsage.emit(ils.Metrics())
 	mb.metricVcenterHostMemoryUtilization.emit(ils.Metrics())
 	mb.metricVcenterHostNetworkPacketDropRate.emit(ils.Metrics())
@@ -4141,6 +4247,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricVcenterVMDiskUsage.emit(ils.Metrics())
 	mb.metricVcenterVMDiskUtilization.emit(ils.Metrics())
 	mb.metricVcenterVMMemoryBallooned.emit(ils.Metrics())
+	mb.metricVcenterVMMemoryGranted.emit(ils.Metrics())
 	mb.metricVcenterVMMemorySwapped.emit(ils.Metrics())
 	mb.metricVcenterVMMemorySwappedSsd.emit(ils.Metrics())
 	mb.metricVcenterVMMemoryUsage.emit(ils.Metrics())
@@ -4318,6 +4425,11 @@ func (mb *MetricsBuilder) RecordVcenterHostDiskThroughputDataPoint(ts pcommon.Ti
 	mb.metricVcenterHostDiskThroughput.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String(), objectNameAttributeValue)
 }
 
+// RecordVcenterHostMemoryCapacityDataPoint adds a data point to vcenter.host.memory.capacity metric.
+func (mb *MetricsBuilder) RecordVcenterHostMemoryCapacityDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricVcenterHostMemoryCapacity.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordVcenterHostMemoryUsageDataPoint adds a data point to vcenter.host.memory.usage metric.
 func (mb *MetricsBuilder) RecordVcenterHostMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricVcenterHostMemoryUsage.recordDataPoint(mb.startTime, ts, val)
@@ -4456,6 +4568,11 @@ func (mb *MetricsBuilder) RecordVcenterVMDiskUtilizationDataPoint(ts pcommon.Tim
 // RecordVcenterVMMemoryBalloonedDataPoint adds a data point to vcenter.vm.memory.ballooned metric.
 func (mb *MetricsBuilder) RecordVcenterVMMemoryBalloonedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricVcenterVMMemoryBallooned.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterVMMemoryGrantedDataPoint adds a data point to vcenter.vm.memory.granted metric.
+func (mb *MetricsBuilder) RecordVcenterVMMemoryGrantedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcenterVMMemoryGranted.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordVcenterVMMemorySwappedDataPoint adds a data point to vcenter.vm.memory.swapped metric.

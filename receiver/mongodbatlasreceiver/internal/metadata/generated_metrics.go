@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeAssertType specifies the a value assert_type attribute.
+// AttributeAssertType specifies the value assert_type attribute.
 type AttributeAssertType int
 
 const (
@@ -46,7 +46,7 @@ var MapAttributeAssertType = map[string]AttributeAssertType{
 	"user":    AttributeAssertTypeUser,
 }
 
-// AttributeBtreeCounterType specifies the a value btree_counter_type attribute.
+// AttributeBtreeCounterType specifies the value btree_counter_type attribute.
 type AttributeBtreeCounterType int
 
 const (
@@ -76,7 +76,7 @@ var MapAttributeBtreeCounterType = map[string]AttributeBtreeCounterType{
 	"misses":   AttributeBtreeCounterTypeMisses,
 }
 
-// AttributeCacheDirection specifies the a value cache_direction attribute.
+// AttributeCacheDirection specifies the value cache_direction attribute.
 type AttributeCacheDirection int
 
 const (
@@ -102,7 +102,7 @@ var MapAttributeCacheDirection = map[string]AttributeCacheDirection{
 	"written_from": AttributeCacheDirectionWrittenFrom,
 }
 
-// AttributeCacheRatioType specifies the a value cache_ratio_type attribute.
+// AttributeCacheRatioType specifies the value cache_ratio_type attribute.
 type AttributeCacheRatioType int
 
 const (
@@ -128,7 +128,7 @@ var MapAttributeCacheRatioType = map[string]AttributeCacheRatioType{
 	"dirty_fill": AttributeCacheRatioTypeDirtyFill,
 }
 
-// AttributeCacheStatus specifies the a value cache_status attribute.
+// AttributeCacheStatus specifies the value cache_status attribute.
 type AttributeCacheStatus int
 
 const (
@@ -154,7 +154,7 @@ var MapAttributeCacheStatus = map[string]AttributeCacheStatus{
 	"used":  AttributeCacheStatusUsed,
 }
 
-// AttributeClusterRole specifies the a value cluster_role attribute.
+// AttributeClusterRole specifies the value cluster_role attribute.
 type AttributeClusterRole int
 
 const (
@@ -180,7 +180,7 @@ var MapAttributeClusterRole = map[string]AttributeClusterRole{
 	"replica": AttributeClusterRoleReplica,
 }
 
-// AttributeCPUState specifies the a value cpu_state attribute.
+// AttributeCPUState specifies the value cpu_state attribute.
 type AttributeCPUState int
 
 const (
@@ -230,7 +230,7 @@ var MapAttributeCPUState = map[string]AttributeCPUState{
 	"steal":   AttributeCPUStateSteal,
 }
 
-// AttributeCursorState specifies the a value cursor_state attribute.
+// AttributeCursorState specifies the value cursor_state attribute.
 type AttributeCursorState int
 
 const (
@@ -256,7 +256,7 @@ var MapAttributeCursorState = map[string]AttributeCursorState{
 	"open":      AttributeCursorStateOpen,
 }
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -282,7 +282,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"transmit": AttributeDirectionTransmit,
 }
 
-// AttributeDiskDirection specifies the a value disk_direction attribute.
+// AttributeDiskDirection specifies the value disk_direction attribute.
 type AttributeDiskDirection int
 
 const (
@@ -312,7 +312,7 @@ var MapAttributeDiskDirection = map[string]AttributeDiskDirection{
 	"total": AttributeDiskDirectionTotal,
 }
 
-// AttributeDiskStatus specifies the a value disk_status attribute.
+// AttributeDiskStatus specifies the value disk_status attribute.
 type AttributeDiskStatus int
 
 const (
@@ -338,7 +338,7 @@ var MapAttributeDiskStatus = map[string]AttributeDiskStatus{
 	"used": AttributeDiskStatusUsed,
 }
 
-// AttributeDocumentStatus specifies the a value document_status attribute.
+// AttributeDocumentStatus specifies the value document_status attribute.
 type AttributeDocumentStatus int
 
 const (
@@ -372,7 +372,7 @@ var MapAttributeDocumentStatus = map[string]AttributeDocumentStatus{
 	"deleted":  AttributeDocumentStatusDeleted,
 }
 
-// AttributeExecutionType specifies the a value execution_type attribute.
+// AttributeExecutionType specifies the value execution_type attribute.
 type AttributeExecutionType int
 
 const (
@@ -402,7 +402,7 @@ var MapAttributeExecutionType = map[string]AttributeExecutionType{
 	"commands": AttributeExecutionTypeCommands,
 }
 
-// AttributeGlobalLockState specifies the a value global_lock_state attribute.
+// AttributeGlobalLockState specifies the value global_lock_state attribute.
 type AttributeGlobalLockState int
 
 const (
@@ -432,7 +432,7 @@ var MapAttributeGlobalLockState = map[string]AttributeGlobalLockState{
 	"current_queue_writers": AttributeGlobalLockStateCurrentQueueWriters,
 }
 
-// AttributeMemoryIssueType specifies the a value memory_issue_type attribute.
+// AttributeMemoryIssueType specifies the value memory_issue_type attribute.
 type AttributeMemoryIssueType int
 
 const (
@@ -462,7 +462,7 @@ var MapAttributeMemoryIssueType = map[string]AttributeMemoryIssueType{
 	"exceptions_thrown":             AttributeMemoryIssueTypeExceptionsThrown,
 }
 
-// AttributeMemoryState specifies the a value memory_state attribute.
+// AttributeMemoryState specifies the value memory_state attribute.
 type AttributeMemoryState int
 
 const (
@@ -508,7 +508,7 @@ var MapAttributeMemoryState = map[string]AttributeMemoryState{
 	"used":     AttributeMemoryStateUsed,
 }
 
-// AttributeMemoryStatus specifies the a value memory_status attribute.
+// AttributeMemoryStatus specifies the value memory_status attribute.
 type AttributeMemoryStatus int
 
 const (
@@ -550,7 +550,7 @@ var MapAttributeMemoryStatus = map[string]AttributeMemoryStatus{
 	"used":      AttributeMemoryStatusUsed,
 }
 
-// AttributeObjectType specifies the a value object_type attribute.
+// AttributeObjectType specifies the value object_type attribute.
 type AttributeObjectType int
 
 const (
@@ -596,7 +596,7 @@ var MapAttributeObjectType = map[string]AttributeObjectType{
 	"data":       AttributeObjectTypeData,
 }
 
-// AttributeOperation specifies the a value operation attribute.
+// AttributeOperation specifies the value operation attribute.
 type AttributeOperation int
 
 const (
@@ -646,7 +646,7 @@ var MapAttributeOperation = map[string]AttributeOperation{
 	"ttl_deleted":    AttributeOperationTTLDeleted,
 }
 
-// AttributeOplogType specifies the a value oplog_type attribute.
+// AttributeOplogType specifies the value oplog_type attribute.
 type AttributeOplogType int
 
 const (
@@ -676,7 +676,7 @@ var MapAttributeOplogType = map[string]AttributeOplogType{
 	"master_lag_time_diff":  AttributeOplogTypeMasterLagTimeDiff,
 }
 
-// AttributeScannedType specifies the a value scanned_type attribute.
+// AttributeScannedType specifies the value scanned_type attribute.
 type AttributeScannedType int
 
 const (
@@ -702,7 +702,7 @@ var MapAttributeScannedType = map[string]AttributeScannedType{
 	"objects":     AttributeScannedTypeObjects,
 }
 
-// AttributeStorageStatus specifies the a value storage_status attribute.
+// AttributeStorageStatus specifies the value storage_status attribute.
 type AttributeStorageStatus int
 
 const (
@@ -736,7 +736,7 @@ var MapAttributeStorageStatus = map[string]AttributeStorageStatus{
 	"data_size_wo_system": AttributeStorageStatusDataSizeWoSystem,
 }
 
-// AttributeTicketType specifies the a value ticket_type attribute.
+// AttributeTicketType specifies the value ticket_type attribute.
 type AttributeTicketType int
 
 const (
@@ -4156,7 +4156,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                     mbc,

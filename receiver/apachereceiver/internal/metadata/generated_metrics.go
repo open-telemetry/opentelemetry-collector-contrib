@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeCPULevel specifies the a value cpu_level attribute.
+// AttributeCPULevel specifies the value cpu_level attribute.
 type AttributeCPULevel int
 
 const (
@@ -40,7 +40,7 @@ var MapAttributeCPULevel = map[string]AttributeCPULevel{
 	"children": AttributeCPULevelChildren,
 }
 
-// AttributeCPUMode specifies the a value cpu_mode attribute.
+// AttributeCPUMode specifies the value cpu_mode attribute.
 type AttributeCPUMode int
 
 const (
@@ -66,7 +66,7 @@ var MapAttributeCPUMode = map[string]AttributeCPUMode{
 	"user":   AttributeCPUModeUser,
 }
 
-// AttributeScoreboardState specifies the a value scoreboard_state attribute.
+// AttributeScoreboardState specifies the value scoreboard_state attribute.
 type AttributeScoreboardState int
 
 const (
@@ -132,7 +132,7 @@ var MapAttributeScoreboardState = map[string]AttributeScoreboardState{
 	"unknown":      AttributeScoreboardStateUnknown,
 }
 
-// AttributeWorkersState specifies the a value workers_state attribute.
+// AttributeWorkersState specifies the value workers_state attribute.
 type AttributeWorkersState int
 
 const (
@@ -810,7 +810,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                         mbc,
