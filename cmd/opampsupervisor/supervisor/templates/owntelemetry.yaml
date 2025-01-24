@@ -8,3 +8,9 @@ service:
               otlp:
                 protocol: http/protobuf
                 endpoint: {{.MetricsEndpoint}}
+                {{- if .MetricsHeaders}}
+                headers:
+                {{- range $k := .MetricsHeaders}}
+                  "{{$k.Key}}": "{{$k.Value}}"
+                {{- end}}
+                {{- end}}

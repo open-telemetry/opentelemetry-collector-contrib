@@ -16,12 +16,12 @@ import (
 
 func TestMoveResourcesIf(t *testing.T) {
 	testCases := []struct {
-		name       string
-		moveIf     func(ptrace.ResourceSpans) bool
 		from       ptrace.Traces
 		to         ptrace.Traces
 		expectFrom ptrace.Traces
 		expectTo   ptrace.Traces
+		moveIf     func(ptrace.ResourceSpans) bool
+		name       string
 	}{
 		{
 			name: "move_none",
@@ -83,12 +83,12 @@ func TestMoveResourcesIf(t *testing.T) {
 
 func TestMoveSpansWithContextIf(t *testing.T) {
 	testCases := []struct {
-		name       string
-		moveIf     func(ptrace.ResourceSpans, ptrace.ScopeSpans, ptrace.Span) bool
 		from       ptrace.Traces
 		to         ptrace.Traces
 		expectFrom ptrace.Traces
 		expectTo   ptrace.Traces
+		moveIf     func(ptrace.ResourceSpans, ptrace.ScopeSpans, ptrace.Span) bool
+		name       string
 	}{
 		{
 			name: "move_none",
