@@ -27,7 +27,7 @@ import (
 //
 //	there is no checking the incoming signals if the schema family is a match.
 type Translation interface {
-	// SupportedVersions checks to see if the provided version is defined as part
+	// SupportedVersion checks to see if the provided version is defined as part
 	// of this translation since it is useful to know it the translation is missing
 	// updates.
 	SupportedVersion(v *Version) bool
@@ -43,7 +43,7 @@ type Translation interface {
 	ApplyScopeLogChanges(in plog.ScopeLogs, inSchemaURL string) error
 
 	// ApplyScopeMetricChanges will update all metrics including
-	// histograms, exponetial histograms, summarys, sum and gauges
+	// histograms, exponential histograms, summaries, sum and gauges
 	ApplyScopeMetricChanges(in pmetric.ScopeMetrics, inSchemaURL string) error
 }
 
@@ -294,7 +294,7 @@ func (t *translator) ApplyScopeMetricChanges(scopeMetrics pmetric.ScopeMetrics, 
 	return nil
 }
 
-// iterator abstractions the logic to perform an the migrations of, "From Version to Version".
+// iterator abstracts the logic to perform the migrations of "From Version to Version".
 // The return values an iterator type and translation status that
 // should be compared against Revert, Update, NoChange
 // to determine what should be applied.
@@ -319,13 +319,6 @@ func (t *translator) iterator(from *Version) (iterator, int) {
 		it++
 	}
 	return func() (RevisionV1, bool) {
-		select {
-		case <-ctx.Done():
-			return RevisionV1{}, false
-		default:
-			// No action required heree
-		}
-
 		// Performs a bounds check and if it has reached stop
 		if it < 0 || it == len(t.revisions) || it == stop {
 			return RevisionV1{}, false
