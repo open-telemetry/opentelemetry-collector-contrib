@@ -116,8 +116,6 @@ func (c *traceToMetricConnectorNative) Shutdown(context.Context) error {
 	c.logger.Info("Stopping obfuscator and concentrator")
 	// stop the obfuscator and concentrator and wait for the run loop to exit
 	c.obfuscator.Stop()
-	c.logger.Info("Stopping concentrator")
-	// stop the concentrator and wait for the run loop to exit
 	c.concentrator.Stop()
 	c.exit <- struct{}{} // signal exit
 	<-c.exit             // wait for close

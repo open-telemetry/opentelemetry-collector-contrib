@@ -73,6 +73,8 @@ func creteConnectorNativeWithCfg(t *testing.T, cfg *Config) (*traceToMetricConne
 
 	connector, ok := tconn.(*traceToMetricConnectorNative)
 	require.True(t, ok)
+	oconf := obfuscate.Config{Redis: obfuscate.RedisConfig{Enabled: false}}
+	connector.obfuscator = obfuscate.NewObfuscator(oconf)
 	return connector, metricsSink
 }
 
@@ -273,12 +275,15 @@ func testMeasuredAndClientKindNative(t *testing.T, enableOperationAndResourceNam
 func TestObfuscate(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.Traces.BucketInterval = time.Second
-	connector, metricsSink := creteConnectorNativeWithCfg(t, cfg)
 
-	oconf := obfuscate.Config{Redis: obfuscate.RedisConfig{Enabled: true}}
-	connector.obfuscator = obfuscate.NewObfuscator(oconf)
-	connector.tcfg.Features["enable_receive_resource_spans_v2"] = struct{}{}
-	connector.tcfg.Features["enable_operation_and_resource_name_logic_v2"] = struct{}{}
+	if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
+		t.Fatal(err)
+	}
+	if err := featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", true); err != nil {
+		t.Fatal(err)
+	}
+
+	connector, metricsSink := creteConnectorNativeWithCfg(t, cfg)
 
 	err := connector.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
