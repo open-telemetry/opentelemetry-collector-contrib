@@ -9,6 +9,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/confmap v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/consumer v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250123125445-24f88da7b583
@@ -60,14 +61,12 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.118.1-0.20250123125445-24f88da7b583 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.118.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.118.1-0.20250123125445-24f88da7b583 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.118.1-0.20250123164917-689d43e5f977 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.118.1-0.20250123164917-689d43e5f977 // indirect
-	go.opentelemetry.io/collector/semconv v0.118.1-0.20250123164917-689d43e5f977 // indirect
-	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.118.1-0.20250123125445-24f88da7b583 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.118.1-0.20250123125445-24f88da7b583 // indirect
+	go.opentelemetry.io/collector/semconv v0.118.1-0.20250123125445-24f88da7b583 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect

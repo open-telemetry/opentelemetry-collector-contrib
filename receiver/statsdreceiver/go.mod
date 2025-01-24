@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/config/confignet v1.24.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/confmap v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/consumer v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250123125445-24f88da7b583
@@ -47,14 +48,12 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.118.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.118.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.118.1-0.20250123125445-24f88da7b583 // indirect
-	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250123164917-689d43e5f977 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.118.1-0.20250123164917-689d43e5f977 // indirect
-	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250123125445-24f88da7b583 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.118.1-0.20250123125445-24f88da7b583 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
