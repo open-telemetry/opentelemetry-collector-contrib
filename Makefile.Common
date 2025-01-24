@@ -68,6 +68,7 @@ MISSPELL_CORRECTION := $(TOOLS_BIN_DIR)/misspell -w
 LINT                := $(TOOLS_BIN_DIR)/golangci-lint
 MULTIMOD            := $(TOOLS_BIN_DIR)/multimod
 CHLOGGEN            := $(TOOLS_BIN_DIR)/chloggen
+GITHUBGEN           := $(TOOLS_BIN_DIR)/githubgen
 GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
 PORTO               := $(TOOLS_BIN_DIR)/porto
 CHECKFILE           := $(TOOLS_BIN_DIR)/checkfile
