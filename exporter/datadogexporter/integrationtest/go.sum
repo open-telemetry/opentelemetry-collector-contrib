@@ -156,8 +156,6 @@ github.com/DataDog/datadog-agent/pkg/logs/util/testutils v0.61.0 h1:UurcFW+Oau4N
 github.com/DataDog/datadog-agent/pkg/logs/util/testutils v0.61.0/go.mod h1:CL4G7P4YqIyDmQW/otY5puTrzZwSmOG8tFxvwhu1FfE=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.63.0-devel.0.20250123185937-1feb84b482c8 h1:EII6ZnnngX+F2kfyFgUmNAu3rXIKxY4eP58iFpyoWww=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.63.0-devel.0.20250123185937-1feb84b482c8/go.mod h1:I6QWxMjT4/bmoghhsRsbRViNIJgHK/5cOhxoeEj/1JE=
-github.com/DataDog/datadog-agent/pkg/proto v0.63.0-devel h1:lnVQk6rmjbEuhAHF85tLSjw8cD0pGb9ziFlcW9Kitic=
-github.com/DataDog/datadog-agent/pkg/proto v0.63.0-devel/go.mod h1:f5zXowJhkfkMcLT82omBoPaDFuZ1iOQY5Eok2dusvfk=
 github.com/DataDog/datadog-agent/pkg/proto v0.63.0-devel.0.20250123185937-1feb84b482c8 h1:JGJekRSCOBFmoD4m+7OtP6ReUwIP9np07FJ56nD/F/0=
 github.com/DataDog/datadog-agent/pkg/proto v0.63.0-devel.0.20250123185937-1feb84b482c8/go.mod h1:QOAaPRsuM4WNXtP3Rbw+gWamge9lGnDH8ZKB6HdzoAs=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.61.0 h1:ojR8Cl+LJBmeRWjICN/8GVZh3rEbZPiQUBPn5rsVDCA=
@@ -184,8 +182,6 @@ github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.61.0 h1:zC8NtbxGP
 github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.61.0/go.mod h1:zjoCgrVWUvgYw4lTN15TO9+sWXWYqKF8IL3fqxPRMCg=
 github.com/DataDog/datadog-agent/pkg/util/http v0.61.0 h1:SKkvCxmBFEgxESbDPSP2KSdJb6+6U47FIOnTJHNdQg8=
 github.com/DataDog/datadog-agent/pkg/util/http v0.61.0/go.mod h1:P9IRzibna2VRFEYkPqTIVK7Zihgw3IocNdoZUG4tjYQ=
-github.com/DataDog/datadog-agent/pkg/util/log v0.61.0 h1:6HD4T+ZfERcc0hrpnYWtWlmqv6e9nWWu+x+iu0XtdYc=
-github.com/DataDog/datadog-agent/pkg/util/log v0.61.0/go.mod h1:+pdYGRmjvO7JwubO3ayCsnHjpb6M50r5cwHM2CCtLeE=
 github.com/DataDog/datadog-agent/pkg/util/log v0.63.0-devel.0.20250123185937-1feb84b482c8 h1:T7hc9Gb3IGi58fwBlfse8gpBWCyiOGWIjHThpbdb6xk=
 github.com/DataDog/datadog-agent/pkg/util/log v0.63.0-devel.0.20250123185937-1feb84b482c8/go.mod h1:GIwaONyqp/4sVfcss+F32u+N+2PtR8llbwlkM5y8vbQ=
 github.com/DataDog/datadog-agent/pkg/util/log/setup v0.61.0 h1:gZBsUcdCueboYct3nhHNw/dRd6DooxkPEW02tpT41UQ=
