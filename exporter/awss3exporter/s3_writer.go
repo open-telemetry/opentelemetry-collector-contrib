@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/upload"
@@ -70,6 +71,6 @@ func newUploadManager(
 			Compression:         conf.S3Uploader.Compression,
 		},
 		s3.NewFromConfig(cfg, s3Opts...),
-		conf.S3Uploader.StorageClass,
+		s3types.StorageClass(conf.S3Uploader.StorageClass),
 	), nil
 }

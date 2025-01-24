@@ -24,12 +24,12 @@ type s3manager struct {
 	bucket       string
 	builder      *PartitionKeyBuilder
 	uploader     *manager.Uploader
-	storageClass string
+	storageClass s3types.StorageClass
 }
 
 var _ Manager = (*s3manager)(nil)
 
-func NewS3Manager(bucket string, builder *PartitionKeyBuilder, service *s3.Client, storageClass string) Manager {
+func NewS3Manager(bucket string, builder *PartitionKeyBuilder, service *s3.Client, storageClass s3types.StorageClass) Manager {
 	return &s3manager{
 		bucket:       bucket,
 		builder:      builder,
@@ -60,7 +60,7 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte) error {
 		Key:             aws.String(sw.builder.Build(now)),
 		Body:            content,
 		ContentEncoding: aws.String(encoding),
-		StorageClass:    s3types.StorageClass(sw.storageClass),
+		StorageClass:    sw.storageClass,
 	})
 
 	return err
