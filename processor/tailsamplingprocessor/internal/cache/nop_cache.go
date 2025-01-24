@@ -18,7 +18,8 @@ func (n *nopDecisionCache[V]) Get(_ pcommon.TraceID) (V, bool) {
 	return v, false
 }
 
-func (n *nopDecisionCache[V]) Put(_ pcommon.TraceID, _ V) {
+func (n *nopDecisionCache[V]) Put(_ pcommon.TraceID, _ V) bool {
+	return false
 }
 
 func (n *nopDecisionCache[V]) Delete(_ pcommon.TraceID) {}
