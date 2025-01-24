@@ -80,7 +80,7 @@ func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 
 	// Downscale if an expected number of buckets after the merge is too large.
 	from := expo.Scale(dp.Scale())
-	to := max(
+	to := min(
 		expo.Limit(maxBuckets, from, dp.Positive(), in.Positive()),
 		expo.Limit(maxBuckets, from, dp.Negative(), in.Negative()),
 	)
