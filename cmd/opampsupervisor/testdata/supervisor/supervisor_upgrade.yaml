@@ -1,0 +1,20 @@
+server:
+  endpoint: ws://{{.url}}/v1/opamp
+  tls:
+    insecure: true
+
+capabilities:
+  reports_effective_config: true
+  reports_own_metrics: true
+  reports_health: true
+  accepts_remote_config: true
+  reports_remote_config: true
+  accepts_restart_command: true
+  accepts_package_available: true
+  reports_package_statuses: true
+
+storage:
+  directory: "{{.storage_dir}}"
+
+agent:
+  executable: "{{.agent_path}}"

@@ -10,7 +10,7 @@ for the Collector in 2 different ways:
 
 - As a Collector extension, with limited functionality,
 - As an external Supervisor, that implements all or most of OpAMP
-    capabilities.
+  capabilities.
 
 In discussions with users and Collector contributors we found that both
 of these approaches are wanted. This document describes how to implement
@@ -37,34 +37,34 @@ Here is how a Supervisor-based management works:
 The Supervisor process does the following:
 
 - Implements the client-side of OpAMP protocol and communicates with
-    the OpAMP Backend.
+  the OpAMP Backend.
 - Starts/stops the Collector process as necessary.
 - Receives configuration from the OpAMP Backend and pushes it to the
-    Collector, using the Collector config.yaml file as an intermediary,
-    restarting the Collector process as necessary.
+  Collector, using the Collector config.yaml file as an intermediary,
+  restarting the Collector process as necessary.
 - Serves as a watchdog, restarts the Collector process if the
-    Collector crashes.
-- Accepts an OpAMP connection from Collectors' [*opamp
-    extension*](#collectors-opamp-extension), receives the Collector's
-    AgentDescription, HealthStatus and EffectiveConfig messages and
-    forwards them to the OpAMP Backend.
+  Collector crashes.
+- Accepts an OpAMP connection from Collectors' [_opamp
+  extension_](#collectors-opamp-extension), receives the Collector's
+  AgentDescription, HealthStatus and EffectiveConfig messages and
+  forwards them to the OpAMP Backend.
 - Optionally: downloads Collector executable packages offered by the
-    Backend and performs the Collector updates.
+  Backend and performs the Collector updates.
 - Optionally: configures Collector to collect Collector's own metrics
-    and report the metrics to the OTLP telemetry backend requested by
-    OpAMP Backend.
+  and report the metrics to the OTLP telemetry backend requested by
+  OpAMP Backend.
 - Optionally: collects Collector logs and sends them to the Telemetry
-    Backend via OTLP.
+  Backend via OTLP.
 
 Supervisor is implemented as a Go library that may be customized and
 rebuilt by vendors with useful default configurations, such as the OpAMP
 Backend endpoint to connect to, in order to minimize the manual
 configuration required.
 
-*Important: the Supervisor needs to be highly stable, so we need to keep
+_Important: the Supervisor needs to be highly stable, so we need to keep
 its complexity and functionality to minimum. The features listed in this
 section need a critical review and may be removed (responsibility moved
-elsewhere, e.g. to the Collector itself).*
+elsewhere, e.g. to the Collector itself)._
 
 ### Supervisor Configuration
 
@@ -88,27 +88,27 @@ capabilities:
 
   # The Supervisor will report EffectiveConfig to the Server.
   reports_effective_config: # true if unspecified
-  
+
   # The Supervisor can accept Collector executable package updates.
   # If enabled the Supervisor will also report package status to the
   # Server.
   accepts_packages: # false if unspecified
-  
+
   # The Collector will report own metrics to the destination specified by
   # the Server.
   reports_own_metrics: # true if unspecified
-  
+
   # The Collector will report own logs to the destination specified by
   # the Server.
   reports_own_logs: # true if unspecified
-  
+
   # The Collector will accept connections settings for exporters
   # from the Server.
   accepts_other_connection_settings: # false if unspecified
-  
+
   # The Supervisor will accept restart requests.
   accepts_restart_command: # true if unspecified
-  
+
   # The Collector will report Health.
   reports_health: # true if unspecified
 
@@ -126,7 +126,7 @@ agent:
   # The interval on which the Collector checks to see if it's been orphaned.
   orphan_detection_interval: 5s
 
-  # The maximum wait duration for retrieving bootstrapping information from the agent 
+  # The maximum wait duration for retrieving bootstrapping information from the agent
   bootstrap_timeout: 3s
 
   # Extra command line flags to pass to the Collector executable.
@@ -134,7 +134,7 @@ agent:
 
   # Extra environment variables to set when executing the Collector.
   env:
-  
+
   # Optional user name to drop the privileges to when running the
   # Collector process.
   run_as: myuser
@@ -150,7 +150,7 @@ agent:
       deny: \[/var/log/secret_logs\]
     write:
       allow: \[/var/otelcol\]
-  
+
   # Optional key-value pairs to add to either the identifying attributes or
   # non-identifying attributes of the agent description sent to the OpAMP server.
   # Values here override the values in the agent description retrieved from the collector's
@@ -164,10 +164,9 @@ agent:
   # The port the Collector's health check extension will be configured to use
   health_check_port:
 
-  # The port the Supervisor will start its OpAmp server on and the Collector's 
+  # The port the Supervisor will start its OpAmp server on and the Collector's
   # OpAmp extension will connect to
-  opamp_server_port: 
-
+  opamp_server_port:
 ```
 
 ### Operation When OpAMP Server is Unavailable
@@ -206,8 +205,8 @@ Note: this capability must be manually enabled by the user via a
 AcceptsRemoteConfig setting in the supervisor config file and is
 disabled by default.
 
-The Supervisor receives [*Remote
-Configuration*](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#configuration)
+The Supervisor receives [_Remote
+Configuration_](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#configuration)
 from the OpAMP Backend, merges it with an optional local config file and
 writes it to the Collector's config file, then restarts the Collector.
 
@@ -234,13 +233,13 @@ The Supervisor will locate all such entries while building the Collector
 config file and will delete the ones which are prohibited by the access
 control settings.
 
-*Open Question: if after sanitizing the component's directory setting
-the configuration becomes invalid what do we do?*
+_Open Question: if after sanitizing the component's directory setting
+the configuration becomes invalid what do we do?_
 
-*The sanitizing logic is hard-coded in the Supervisor and works for
+_The sanitizing logic is hard-coded in the Supervisor and works for
 specific components only. In the future we will consider implementing a
 more generic safety mechanism that does not depend on the knowledge
-about specific component behavior.*
+about specific component behavior._
 
 #### Bootstrapping
 
@@ -255,8 +254,8 @@ configuration.
 To overcome this problem the Supervisor starts the Collector with an
 "noop" configuration that collects nothing but allows the opamp
 extension to be started. The "noop" configuration is a single pipeline
-with an nop receiver, a nop exporter, and the opamp extension. 
-The purpose of the "noop" configuration is to make sure the Collector starts 
+with an nop receiver, a nop exporter, and the opamp extension.
+The purpose of the "noop" configuration is to make sure the Collector starts
 and the opamp extension communicates with the Supervisor. The Collector is stopped
 after the AgentDescription is received from the Collector.
 
@@ -350,8 +349,8 @@ The Supervisor will also write the Collector's log to a local log file.
 The path to the Collector log files will be printed in the Supervisor
 output.
 
-*Open Question: instead of writing to a local log file do we want to
-pipe Collector logs to Supervisor's log output?*
+_Open Question: instead of writing to a local log file do we want to
+pipe Collector logs to Supervisor's log output?_
 
 ### Collector Executable Updates
 
@@ -384,6 +383,10 @@ the next Collector start (at the minimum the version number to be
 included in AgentDescription is expected to change after the executable
 is updated).
 
+More detail on the specific format and end-to-end flow can
+be found in the [Collector Executable Updates Flow](#collector-executable-updates-flow)
+section.
+
 ### Addons Management
 
 The Collector currently does not have a concept of addons so this OpAMP
@@ -399,7 +402,7 @@ will populate exporter settings from OpAMP ConnectionSettings message
 the following way:
 
 | **ConnectionSettings**    | **Exporter setting** |
-|---------------------------|----------------------|
+| ------------------------- | -------------------- |
 | destination_endpoint      | endpoint             |
 | headers                   | headers              |
 | certificate.public_key    | tls.cert_file        |
@@ -417,19 +420,19 @@ Collector's configuration. The opamp extension implements an OpAMP
 client with a small subset of OpAMP agent capabilities:
 
 - ReportsStatus. The extension reports agent description and status.
-    This is the first message from the client to the server in the OpAMP
-    protocol that is essential for beginning OpAMP message exchange.
+  This is the first message from the client to the server in the OpAMP
+  protocol that is essential for beginning OpAMP message exchange.
 - ReportsEffectiveConfig. The extension reports the Collector's
-    effective config on startup and any time the config changes. In
-    order to do this the opamp extension needs [access to the effective
-    config](https://github.com/open-telemetry/opentelemetry-collector/issues/6596).
+  effective config on startup and any time the config changes. In
+  order to do this the opamp extension needs [access to the effective
+  config](https://github.com/open-telemetry/opentelemetry-collector/issues/6596).
 - ReportsHealth. The extension reports Collector's health on startup
-    and any time the health changes. In order to do this the opamp
-    extension needs access to the health of the Collector. The very
-    basic health capability can be replicated by mirroring the
-    functionality of the healthcheck extension, a more advanced
-    capability depends on the [component status
-    reporting](https://github.com/open-telemetry/opentelemetry-collector/pull/6560).
+  and any time the health changes. In order to do this the opamp
+  extension needs access to the health of the Collector. The very
+  basic health capability can be replicated by mirroring the
+  functionality of the healthcheck extension, a more advanced
+  capability depends on the [component status
+  reporting](https://github.com/open-telemetry/opentelemetry-collector/pull/6560).
 
 The messages received from the opamp extension are forwarded by the
 Supervisor to the destination OpAMP Backend and replies to these
@@ -480,25 +483,165 @@ is an [open
 issue](https://github.com/open-telemetry/opentelemetry-collector/issues/6599)
 to allow this.
 
-*Open Question: when used with Supervisor do we want the Supervisor to
+_Open Question: when used with Supervisor do we want the Supervisor to
 actively periodically query the health of the Collector or we can rely
-on opamp extension to report the health when it changes?*
+on opamp extension to report the health when it changes?_
+
+## Collector Executable Updates Flow
+
+The Supervisor will download Collector package updates when offered so
+by the OpAMP Server, if the AcceptsPackages capability is enabled.
+
+### Overview
+
+![Supervisor architecture diagram](agent-upgrades-e2e.png)
+
+1. During the release workflow, [Cosign](https://github.com/sigstore/cosign) is used to sign the build artifacts.
+2. Cosign gets a signed certificate from [Fulcio](https://github.com/sigstore/fulcio). Fulcio verifies the
+   Open ID Connect token of the signer before signing the certificate.
+3. Cosign writes the computed signature and certificate to the public
+   [Rekor](https://github.com/sigstore/rekor) instance.
+4. The release workflow adds both the release artifacts and cosign generated signature
+   and certificate files to the release.
+5. An OpAMP server is made aware of the release through some mechanism
+   (e.g. manually through user intervention, through polling the GitHub API,
+   etc)
+6. The OpAMP server sends a PackagesAvailable message with the new agent
+   release specified. See the [Expected PackagesAvailable Format](#expected-packagesavailable-format)
+   section for more information.
+7. The supervisor, on startup, has retrieved the sigstore root certificates.
+8. The supervisor downloads the agent binary from the releases, using
+   the URL that the OpAMP server gave it for downloading. After
+   downloading, it verifies the content hash matches the server
+   provided content hash from the PackagesAvailable message.
+9. The supervisor verifies the certificate via the root certificates downloaded in step 7.
+   In addition, the supervisor checks against the Rekor transparency log to
+   verify the certificate hasn't been tampered with.
+10. The supervisor replaces and restarts the agent, and the new agent is now running.
+    The new agent will give its new AgentDescription and will report its new version.
+
+### Expected PackagesAvailable Format
+
+The PackagesAvailable message is expected to contain a single
+package.
+
+- This package MUST have an empty name.
+- The type of the package MUST be top level.
+- The version field SHOULD be the version of the agent. (e.g. `0.110.0`)
+- The download URL MUST point to a gzipped tarball, containing a file named
+  `otelcol-contrib`. This file will be used as the agent binary.
+- The content hash MUST be the sha256 sum of the gzipped tarball.
+- The signature field MUST be a cosign signater, formatted in the way
+  described in the [Signature Format](#signature-format) session.
+
+Example:
+
+```go
+&protobufs.PackagesAvailable{
+    Packages: map[string]*protobufs.PackageAvailable{
+        "": {
+            Type:    protobufs.PackageType_PackageType_TopLevel,
+            Version: "v0.110.0",
+            Hash: packageHash
+            File: &protobufs.DownloadableFile{
+                DownloadUrl: "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.111.0/otelcol-contrib_0.111.0_linux_amd64.tar.gz",
+                ContentHash: agentSHA256Hash,
+                Signature:   signature,
+            },
+        },
+    },
+    AllPackagesHash: allPackagesHash,
+}
+```
+
+### Signing
+
+In order for an agent package to be accepted by the supervisor, the
+package MUST be signed. The supervisor expects the agent tarball to be signed
+using [Cosign](https://github.com/sigstore/cosign), using the keyless signing method to generate separate certificate
+and signature files.
+
+Both the certificate and cosign signature will be used to create the
+file's signature in the PackagesAvailable message.
+
+During release, the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases)
+repository uses Cosign to sign the artifacts using a OpenID Connect identity token. This token is used to request a certificate from
+[Fulcio](https://github.com/sigstore/fulcio).
+This certificate contains the identity used to sign the certificate,
+and can be used to verify the signer.
+
+After Fulcio verifies the token, it signs a short-lived x509 certificate for
+the release workflow. This certificate's private key is used to compute
+a signature for the release artifact (in this case, the agent tarball).
+
+Afterwards, the certificate and signature are written to
+[Rekor](https://github.com/sigstore/rekor), a transparency log.
+
+As a result, both the certificate and signature together can be used to verify
+the identity of the signer, verify that the artifact that was downloaded
+is the same artifact that was signed, and verify the certificate/signature
+was not tampered with via its inclusion in Rekor.
+
+For more information on keyless signing and Cosign, see the
+[Cosign docs](https://docs.sigstore.dev/cosign/signing/overview/).
+
+### Signature Format
+
+In the PackagesAvailable message, the signature MUST be created
+by joining the base64 encoded certificate and signature files generated
+by Cosign with a space. Note that the files generated by Cosign are already
+base64 encoded and do not need to be encoded further.
+
+The signature format will therefore be like this:
+
+```
+${b64_certificate} ${b64_signature}
+```
+
+### Signature Verification
+
+The signature is verified using Cosign. In order to verify the signature,
+serveral things are needed:
+
+- A set of identities (issuer/subject pairs) that the signature must
+  signed by.
+  - By default, this will be issuer/subject used to sign the agent release
+    from the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases)
+    repository.
+- (optional) the name of the github repository that generated the artifact.
+  - By default, this is "open-telemetry/opentelemetry-collector-releases".
+  - This field may be explicitly set empty to skip verifying the repository field
+    in the certificate
+- A set of [Fulcio](https://github.com/sigstore/fulcio) root certificates.
+  - These certificates are retrieved from "https://tuf-repo-cdn.sigstore.dev"
+    on startup.
+- A URL of a running [Rekor](https://github.com/sigstore/rekor) instance.
+  - This is hardcoded to be the public Rekor instance, "https://rekor.sigstore.dev".
+- A set of trusted Rekor public keys.
+  - These public keys are retrieved from "https://tuf-repo-cdn.sigstore.dev"
+    on startup.
+- A set of trusted certificate transparency (CT) log public keys
+  - These certificates are retrieved from "https://tuf-repo-cdn.sigstore.dev"
+    on startup.
+
+For a more in depth explanation of how Cosign/Sigstore works, see
+[Sigstore's docs](https://docs.sigstore.dev/about/overview/#how-sigstore-works).
 
 ## Future Work
 
 - Decide if we want to have Supervisor-less AcceptsRemoteConfig
-    capability in the Collector. This currently can't be done by using
-    just an extension. At the minimum it requires a config Provider.
+  capability in the Collector. This currently can't be done by using
+  just an extension. At the minimum it requires a config Provider.
 - Consider extending the Supervisor to be able to manage multiple
-    Collector instances.
+  Collector instances.
 
 ## References
 
 - OpAMP Specification:
-    [https://github.com/open-telemetry/opamp-spec/blob/main/specification.md](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md)
+  [https://github.com/open-telemetry/opamp-spec/blob/main/specification.md](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md)
 - OpAMP client and server implementation in Go:
-    [https://github.com/open-telemetry/opamp-go](https://github.com/open-telemetry/opamp-go)
+  [https://github.com/open-telemetry/opamp-go](https://github.com/open-telemetry/opamp-go)
 - Example Supervisor implementation:
-    [https://github.com/open-telemetry/opamp-go/tree/main/internal/examples/supervisor](https://github.com/open-telemetry/opamp-go/tree/main/internal/examples/supervisor)
+  [https://github.com/open-telemetry/opamp-go/tree/main/internal/examples/supervisor](https://github.com/open-telemetry/opamp-go/tree/main/internal/examples/supervisor)
 - OpAMP Milestone in the Collector:
-    [https://github.com/open-telemetry/opentelemetry-collector/milestone/29](https://github.com/open-telemetry/opentelemetry-collector/milestone/29)
+  [https://github.com/open-telemetry/opentelemetry-collector/milestone/29](https://github.com/open-telemetry/opentelemetry-collector/milestone/29)
