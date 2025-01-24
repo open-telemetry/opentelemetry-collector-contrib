@@ -58,8 +58,10 @@ func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *TraceData {
 
 func TestCompositeEvaluatorNotSampled(t *testing.T) {
 	// Create 2 policies which do not match any trace
-	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
-	n2 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 200, 300, false)
+	min0 := int64(0)
+	max100 := int64(100)
+	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
+	n2 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
 	c := NewComposite(zap.NewNop(), 1000, []SubPolicyEvalParams{{n1, 100}, {n2, 100}}, FakeTimeProvider{})
 
 	trace := createTrace()
@@ -75,7 +77,9 @@ func TestCompositeEvaluatorNotSampled(t *testing.T) {
 
 func TestCompositeEvaluatorSampled(t *testing.T) {
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
-	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
+	min0 := int64(0)
+	max100 := int64(100)
+	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	c := NewComposite(zap.NewNop(), 1000, []SubPolicyEvalParams{{n1, 100}, {n2, 100}}, FakeTimeProvider{})
 
@@ -93,7 +97,9 @@ func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 	timeProvider := &FakeTimeProvider{second: 0}
 
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
-	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
+	min0 := int64(0)
+	max100 := int64(100)
+	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	c := NewComposite(zap.NewNop(), 3, []SubPolicyEvalParams{{n1, 1}, {n2, 1}}, timeProvider)
 
@@ -126,7 +132,9 @@ func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 
 func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
-	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
+	min0 := int64(0)
+	max100 := int64(100)
+	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20}, {n2, 20}}, FakeTimeProvider{})
 
@@ -201,7 +209,9 @@ func TestCompositeEvaluatorThrottling(t *testing.T) {
 }
 
 func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
-	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
+	min0 := int64(0)
+	max100 := int64(100)
+	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	timeProvider := &FakeTimeProvider{second: 0}
 	const totalSPS = 10
@@ -261,4 +271,27 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 		expected := Sampled
 		assert.Equal(t, expected, decision)
 	}
+}
+
+func TestComposite(t *testing.T) {
+	// Define the int64 values
+	min0 := int64(0)
+	max100 := int64(100)
+
+	// Update the policy creation calls
+	filter1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
+
+	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
+	n1 := filter1
+	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
+	c := NewComposite(zap.NewNop(), 1000, []SubPolicyEvalParams{{n1, 100}, {n2, 100}}, FakeTimeProvider{})
+
+	trace := createTrace()
+
+	decision, err := c.Evaluate(context.Background(), traceID, trace)
+	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+
+	// The second policy is AlwaysSample, so the decision should be Sampled.
+	expected := Sampled
+	assert.Equal(t, expected, decision)
 }
