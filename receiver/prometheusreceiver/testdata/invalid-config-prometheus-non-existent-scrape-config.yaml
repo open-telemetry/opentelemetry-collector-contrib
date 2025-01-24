@@ -17,3 +17,4 @@ prometheus/withOnlyScrape:
     scrape_configs:
       - job_name: 'demo'
         scrape_interval: 5s
+        fallback_scrape_protocol: "PrometheusText1.0.0"
