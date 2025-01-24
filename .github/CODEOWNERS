@@ -241,7 +241,7 @@ receiver/hostmetricsreceiver/internal/scraper/pagingscraper/     @open-telemetry
 receiver/hostmetricsreceiver/internal/scraper/processesscraper/  @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/hostmetricsreceiver/internal/scraper/processscraper/    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/hostmetricsreceiver/internal/scraper/systemscraper/     @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
-receiver/httpcheckreceiver/                                      @open-telemetry/collector-contrib-approvers @codeboten
+receiver/httpcheckreceiver/                                      @open-telemetry/collector-contrib-approvers @codeboten @VenuEmmadi
 receiver/huaweicloudcesreceiver/                                 @open-telemetry/collector-contrib-approvers @heitorganzeli @narcis96 @mwear
 receiver/iisreceiver/                                            @open-telemetry/collector-contrib-approvers @Mrod1598 @pjanotti
 receiver/influxdbreceiver/                                       @open-telemetry/collector-contrib-approvers @jacobmarble
