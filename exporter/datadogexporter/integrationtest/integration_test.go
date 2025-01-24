@@ -191,8 +191,6 @@ func getIntegrationTestComponents(t *testing.T) otelcol.Factories {
 }
 
 func getIntegrationTestCollector(t *testing.T, cfgFile string, factories otelcol.Factories) *otelcol.Collector {
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
-	// nolint:staticcheck
 	_, err := otelcoltest.LoadConfigAndValidate(cfgFile, factories)
 	require.NoError(t, err, "All yaml config must be valid.")
 
