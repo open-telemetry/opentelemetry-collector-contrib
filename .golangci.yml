@@ -166,6 +166,9 @@ linters-settings:
     explicit-exhaustive-switch: true
     ignore-enum-members: "pmetric.MetricTypeEmpty"
 
+  nolintlint:
+    require-specific: true
+
   predeclared:
     ignore: copy
 
@@ -201,6 +204,7 @@ linters:
     - gosec
     - govet
     - misspell
+    - nolintlint
     - predeclared
     - reassign
     - revive
@@ -227,3 +231,7 @@ issues:
     - text: "G115:"
       linters:
         - gosec
+    - path: "pagefile.go" # This exclusion is required for Windows only
+      text: "cachedBytes"
+      linters:
+        - unused

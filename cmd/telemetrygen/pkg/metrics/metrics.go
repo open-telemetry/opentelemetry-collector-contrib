@@ -150,14 +150,12 @@ func exemplarsFromConfig(c *Config) []metricdata.Exemplar[int64] {
 
 		if c.TraceID != "" {
 			// we validated this already during the Validate() function for config
-			// nolint: errcheck
 			traceID, _ := hex.DecodeString(c.TraceID)
 			exemplar.TraceID = traceID
 		}
 
 		if c.SpanID != "" {
 			// we validated this already during the Validate() function for config
-			// nolint: errcheck
 			spanID, _ := hex.DecodeString(c.SpanID)
 			exemplar.SpanID = spanID
 		}
