@@ -202,3 +202,11 @@ example [here.](https://blogs.oracle.com/developers/post/connecting-a-go-applica
 
 The `datasource` format for MySQL works as follows:  
 `user:password@tcp(host:port)/databasename`  
+
+#### Microsoft SQL Server Datasource Format Example
+
+The `datasource` format for SQL Server can either be in URL format:  
+`sqlserver://username:password@host/instance?param1=value&param2=value`
+
+Or in key=value; pair format:  
+`server=localhost;port=1433;param1=value;`
