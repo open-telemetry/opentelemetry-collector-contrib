@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
 func TestSerializeLog(t *testing.T) {
@@ -31,6 +33,7 @@ func TestSerializeLog(t *testing.T) {
 			record.Attributes().PutDouble("double", 42.0)
 			record.Attributes().PutInt("int", 42)
 			record.Attributes().PutEmptyBytes("bytes").Append(42)
+			record.Attributes().PutStr(documentIDAttributeName, "my_id")
 			_ = record.Attributes().PutEmptySlice("slice").FromRaw([]any{42, "foo"})
 			record.Attributes().PutEmptySlice("map_slice").AppendEmpty().SetEmptyMap().PutStr("foo.bar", "baz")
 			mapAttr := record.Attributes().PutEmptyMap("map")
@@ -102,7 +105,7 @@ func TestSerializeLog(t *testing.T) {
 				"resource":           map[string]any{},
 				"scope":              map[string]any{},
 				"body": map[string]any{
-					"flattened": map[string]any{
+					"structured": map[string]any{
 						"foo.bar": "baz",
 					},
 				},
@@ -184,7 +187,7 @@ func TestSerializeLog(t *testing.T) {
 			logs.MarkReadOnly()
 
 			var buf bytes.Buffer
-			err := serializeLog(resourceLogs.Resource(), "", scopeLogs.Scope(), "", record, esIndex{}, &buf)
+			err := serializeLog(resourceLogs.Resource(), "", scopeLogs.Scope(), "", record, elasticsearch.Index{}, &buf)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("serializeLog() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -219,7 +222,7 @@ func TestSerializeMetricsConflict(t *testing.T) {
 
 	var validationErrors []error
 	var buf bytes.Buffer
-	_, err := serializeMetrics(resourceMetrics.Resource(), "", scopeMetrics.Scope(), "", dataPoints, &validationErrors, esIndex{}, &buf)
+	_, err := serializeMetrics(resourceMetrics.Resource(), "", scopeMetrics.Scope(), "", dataPoints, &validationErrors, elasticsearch.Index{}, &buf)
 	if err != nil {
 		t.Errorf("serializeMetrics() error = %v", err)
 	}
