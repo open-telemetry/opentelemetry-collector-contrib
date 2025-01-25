@@ -33,11 +33,11 @@ func Test_SplunkHecToLogData(t *testing.T) {
 	nanoseconds := 123000000
 
 	tests := []struct {
+		output    plog.ResourceLogsSlice
+		wantErr   error
+		hecConfig *Config
 		name      string
 		events    []*splunk.Event
-		output    plog.ResourceLogsSlice
-		hecConfig *Config
-		wantErr   error
 	}{
 		{
 			name: "happy_path",
@@ -353,11 +353,11 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 		},
 	}
 	tests := []struct {
-		name           string
 		sc             io.Reader
 		query          map[string][]string
 		assertResource func(t *testing.T, got plog.Logs, slLen int)
 		config         *Config
+		name           string
 		time           pcommon.Timestamp
 	}{
 		{
