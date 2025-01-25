@@ -36,7 +36,7 @@ as [ClickHouse document says:](https://clickhouse.com/docs/en/introduction/perfo
 #### Official ClickHouse Plugin for Grafana
 
 The official [ClickHouse Datasource for Grafana](https://grafana.com/grafana/plugins/grafana-clickhouse-datasource/) contains features that integrate directly with this exporter.
-You can view associated [logs](https://clickhouse.com/docs/en/integrations/grafana/query-builder#logs) and [traces](https://clickhouse.com/docs/en/integrations/grafana/query-builder#traces), as well as visualize other queries such as tables and time series graphs. Learn how to configure the OpenTelemetry integration [here](https://clickhouse.com/docs/en/integrations/grafana/config#opentelemetry).
+You can view associated [logs](https://clickhouse.com/docs/en/integrations/grafana/query-builder#logs) and [traces](https://clickhouse.com/docs/en/integrations/grafana/query-builder#traces), as well as visualize other queries such as tables and time series graphs. Learn [how to configure the OpenTelemetry integration](https://clickhouse.com/docs/en/integrations/grafana/config#opentelemetry).
 
 #### Altinity's ClickHouse Plugin for Grafana
 

@@ -54,7 +54,7 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 
 	rtConn := conn.(*logsConnector)
 	require.NoError(t, err)
@@ -413,7 +413,7 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 }
 
 func TestLogsConnectorDetailed(t *testing.T) {
@@ -439,13 +439,13 @@ func TestLogsConnectorDetailed(t *testing.T) {
 	isResourceBFromLowerContext := `resource.attributes["resourceName"] == "resourceB"`
 
 	testCases := []struct {
-		name        string
-		cfg         *Config
 		ctx         context.Context
 		input       plog.Logs
 		expectSink0 plog.Logs
 		expectSink1 plog.Logs
 		expectSinkD plog.Logs
+		cfg         *Config
+		name        string
 	}{
 		{
 			name: "request/no_request_values",
