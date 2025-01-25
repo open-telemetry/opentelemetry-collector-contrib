@@ -74,11 +74,10 @@ func (s *Scraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
 	out := pmetric.NewMetrics()
 	rows, err := s.Client.QueryRows(ctx)
 	if err != nil {
-		if errors.Is(err, ErrNullValueWarning) {
-			s.Logger.Warn("problems encountered getting metric rows", zap.Error(err))
-		} else {
+		if !errors.Is(err, ErrNullValueWarning) {
 			return out, fmt.Errorf("Scraper: %w", err)
 		}
+		s.Logger.Warn("problems encountered getting metric rows", zap.Error(err))
 	}
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	rms := out.ResourceMetrics()

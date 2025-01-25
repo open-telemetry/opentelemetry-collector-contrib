@@ -26,11 +26,10 @@ func NewFloat64DeltaCalculator() MetricCalculator {
 
 func calculateDelta(prev *MetricValue, val any, _ time.Time) (any, bool) {
 	var deltaValue float64
-	if prev != nil {
-		deltaValue = val.(float64) - prev.RawValue.(float64)
-	} else {
+	if prev == nil {
 		return deltaValue, false
 	}
+	deltaValue = val.(float64) - prev.RawValue.(float64)
 	return deltaValue, true
 }
 

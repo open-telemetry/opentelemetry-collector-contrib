@@ -390,12 +390,12 @@ func (se *sumologicexporter) handleUnauthorizedErrors(ctx context.Context, errs 
 	for _, err := range errs {
 		if errors.Is(err, errUnauthorized) {
 			se.logger.Warn("Received unauthorized status code, triggering reconfiguration")
-			if errC := se.configure(ctx); errC != nil {
-				se.logger.Error("Error configuring the exporter with new credentials", zap.Error(err))
-			} else {
+			errC := se.configure(ctx)
+			if errC == nil {
 				// It's enough to successfully reconfigure the exporter just once.
 				return
 			}
+			se.logger.Error("Error configuring the exporter with new credentials", zap.Error(err))
 		}
 	}
 }

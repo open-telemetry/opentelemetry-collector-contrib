@@ -198,13 +198,13 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 		if _, ok := t.mc.GetMetadata(mn); !ok {
 			fn = normalizeMetricName(mn)
 		}
-		if mf, ok := t.families[key][scope][fn]; ok && mf.includesMetric(mn) {
-			curMf = mf
-		} else {
+		mf, ok := t.families[key][scope][fn]
+		if !ok || !mf.includesMetric(mn) {
 			curMf = newMetricFamily(mn, t.mc, t.logger)
 			t.families[key][scope][curMf.name] = curMf
 			return curMf, false
 		}
+		curMf = mf
 	}
 	return curMf, true
 }

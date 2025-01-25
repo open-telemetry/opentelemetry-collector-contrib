@@ -184,14 +184,13 @@ func (z *zookeeperMetricsScraper) processRuok(response []string) {
 	metricValue := int64(0)
 
 	if len(response) > 0 {
-		if response[0] == "imok" {
-			metricValue = int64(1)
-		} else {
+		if response[0] != "imok" {
 			z.logger.Error("invalid response from ruok",
 				zap.String("command", ruokCommand),
 			)
 			return
 		}
+		metricValue = int64(1)
 	}
 
 	recordDataPoints := creator.recordDataPointsFunc(metricKey)
