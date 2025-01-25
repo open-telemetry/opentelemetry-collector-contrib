@@ -241,6 +241,7 @@ type Config struct {
 	FederatedTokenFile                string                        `mapstructure:"federated_token_file"`
 	ResourceGroups                    []string                      `mapstructure:"resource_groups"`
 	Services                          []string                      `mapstructure:"services"`
+	Metrics                           []string                      `mapstructure:"metrics"`
 	CacheResources                    float64                       `mapstructure:"cache_resources"`
 	CacheResourcesDefinitions         float64                       `mapstructure:"cache_resources_definitions"`
 	MaximumNumberOfMetricsInACall     int                           `mapstructure:"maximum_number_of_metrics_in_a_call"`
