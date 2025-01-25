@@ -28,21 +28,3 @@ func Zip(data []byte) ([]byte, error) {
 
 	return b.Bytes(), nil
 }
-
-// Unzip expects gzip-compressed input bytes and returns their uncompressed form.
-func Unzip(data []byte) ([]byte, error) {
-	b := bytes.NewBuffer(data)
-
-	r, err := gzip.NewReader(b)
-	if err != nil {
-		return nil, err
-	}
-
-	var rv bytes.Buffer
-	_, err = rv.ReadFrom(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return rv.Bytes(), nil
-}

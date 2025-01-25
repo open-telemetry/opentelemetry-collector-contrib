@@ -103,3 +103,20 @@ func TestLogTimestamp(t *testing.T) {
 	expectedTimestamp := "2024-09-05 13:47:15.523 +0000 UTC"
 	require.Equal(t, expectedTimestamp, ilm.LogRecords().At(0).Timestamp().String())
 }
+
+func BenchmarkUnmarshal(b *testing.B) {
+	unmarshaler := NewUnmarshaler(zap.NewNop())
+	record, err := os.ReadFile(filepath.Join("testdata", "multiple_resources"))
+	require.NoError(b, err)
+
+	compressedRecord, err := compression.Zip(record)
+	require.NoError(b, err)
+	records := [][]byte{compressedRecord}
+
+	for i := 0; i < b.N; i++ {
+		_, err := unmarshaler.Unmarshal(records)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}

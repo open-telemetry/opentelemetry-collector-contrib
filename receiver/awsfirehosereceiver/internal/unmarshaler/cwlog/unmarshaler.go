@@ -5,19 +5,19 @@ package cwlog // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"errors"
+	"io"
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog/compression"
 )
 
 const (
-	TypeStr         = "cwlogs"
-	recordDelimiter = "\n"
+	TypeStr = "cwlogs"
 )
 
 var errInvalidRecords = errors.New("record format invalid")
@@ -41,7 +41,7 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (plog.Logs, error) {
 	md := plog.NewLogs()
 	builders := make(map[resourceAttributes]*resourceLogsBuilder)
 	for recordIndex, compressedRecord := range records {
-		record, err := compression.Unzip(compressedRecord)
+		reader, err := gzip.NewReader(bytes.NewReader(compressedRecord))
 		if err != nil {
 			u.logger.Error("Failed to unzip record",
 				zap.Error(err),
@@ -50,39 +50,40 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (plog.Logs, error) {
 			continue
 		}
 		// Multiple logs in each record separated by newline character
-		for datumIndex, datum := range bytes.Split(record, []byte(recordDelimiter)) {
-			if len(datum) > 0 {
-				var log cWLog
-				err := json.Unmarshal(datum, &log)
-				if err != nil {
-					u.logger.Error(
-						"Unable to unmarshal input",
-						zap.Error(err),
-						zap.Int("datum_index", datumIndex),
-						zap.Int("record_index", recordIndex),
-					)
-					continue
+		decoder := json.NewDecoder(reader)
+		for datumIndex := 0; ; datumIndex++ {
+			var log cWLog
+			if err := decoder.Decode(&log); err != nil {
+				if errors.Is(err, io.EOF) {
+					break
 				}
-				if !u.isValid(log) {
-					u.logger.Error(
-						"Invalid log",
-						zap.Int("datum_index", datumIndex),
-						zap.Int("record_index", recordIndex),
-					)
-					continue
-				}
-				attrs := resourceAttributes{
-					owner:     log.Owner,
-					logGroup:  log.LogGroup,
-					logStream: log.LogStream,
-				}
-				lb, ok := builders[attrs]
-				if !ok {
-					lb = newResourceLogsBuilder(md, attrs)
-					builders[attrs] = lb
-				}
-				lb.AddLog(log)
+				u.logger.Error(
+					"Unable to unmarshal input",
+					zap.Error(err),
+					zap.Int("datum_index", datumIndex),
+					zap.Int("record_index", recordIndex),
+				)
+				continue
 			}
+			if !u.isValid(log) {
+				u.logger.Error(
+					"Invalid log",
+					zap.Int("datum_index", datumIndex),
+					zap.Int("record_index", recordIndex),
+				)
+				continue
+			}
+			attrs := resourceAttributes{
+				owner:     log.Owner,
+				logGroup:  log.LogGroup,
+				logStream: log.LogStream,
+			}
+			lb, ok := builders[attrs]
+			if !ok {
+				lb = newResourceLogsBuilder(md, attrs)
+				builders[attrs] = lb
+			}
+			lb.AddLog(log)
 		}
 	}
 
