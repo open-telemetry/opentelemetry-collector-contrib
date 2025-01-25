@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
@@ -18,6 +19,14 @@ import (
 )
 
 // This file implements factory for Splunk HEC receiver.
+
+var tokenContextGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.splunkhec.passtokenviacontext",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37307"),
+	featuregate.WithRegisterDescription("When enabled, the Splunk HEC receiver will pass the access token via the context."),
+	featuregate.WithRegisterFromVersion("0.119.0"),
+)
 
 const (
 	// Default endpoint to bind to.
