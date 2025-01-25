@@ -1,0 +1,15 @@
+type: leader_elector
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [rakesh-garimella, k15r, skhalash, hisarbalik]
+
+# Skip life cycle tests as we need a real kubeconfig to run the lifecycle tests, as the test needs to generate a kubeconfig client. Enable them once we have a proper solution for this
+tests:
+  config:
+  skip_lifecycle: true
+  skip_shutdown: true
