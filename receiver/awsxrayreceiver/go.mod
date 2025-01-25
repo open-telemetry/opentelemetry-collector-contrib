@@ -3,7 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxra
 go 1.22.0
 
 require (
-	github.com/aws/aws-sdk-go v1.55.6
+	github.com/aws/aws-sdk-go-v2 v1.34.0
+	github.com/aws/aws-sdk-go-v2/service/xray v1.30.8
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.118.0
@@ -29,6 +30,8 @@ require (
 )
 
 require (
+	github.com/aws/aws-sdk-go v1.55.6 // indirect
+	github.com/aws/smithy-go v1.22.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
