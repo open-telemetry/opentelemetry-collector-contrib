@@ -23,6 +23,8 @@ The authenticator type has to be set to `bearertokenauth`.
 
 - `scheme`: Specifies the auth scheme name. Defaults to "Bearer". Optional.
 
+- `header`: Specifies which header to read the Bearer token from.  Defaults to 'Authorization'.
+
 - `token`: Static authorization token that needs to be sent on every gRPC client call as metadata.
 
 - `filename`: Name of file that contains a authorization token that needs to be sent in every client call.
@@ -38,6 +40,10 @@ extensions:
     token: "somerandomtoken"
     filename: "file-containing.token"
   bearertokenauth/withscheme:
+    scheme: "Bearer"
+    token: "randomtoken"
+  bearertokenauth/withheader:
+    header: "X-CustomAuthorization"
     scheme: "Bearer"
     token: "randomtoken"
 
@@ -61,11 +67,16 @@ exporters:
     auth:
       authenticator: bearertokenauth/withscheme
 
+  otlphttp/withheader:
+    endpoint: http://localhost:9000
+    auth:
+      authenticator: bearertokenauth/withheader
+
 service:
-  extensions: [bearertokenauth, bearertokenauth/withscheme]
+  extensions: [bearertokenauth, bearertokenauth/withscheme, bearertokenauth/withheader]
   pipelines:
     metrics:
       receivers: [hostmetrics]
       processors: []
-      exporters: [otlp/withauth, otlphttp/withauth]
+      exporters: [otlp/withauth, otlphttp/withauth, otlphttp/withheader]
 ```

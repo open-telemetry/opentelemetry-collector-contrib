@@ -6,9 +6,11 @@ package bearertokenauthextension
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -19,7 +21,7 @@ import (
 
 func TestPerRPCAuth(t *testing.T) {
 	metadata := map[string]string{
-		"authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+		strings.ToLower(defaultHeader): "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
 	}
 
 	// test meta data is properly
@@ -60,7 +62,8 @@ func TestBearerAuthenticatorHttp(t *testing.T) {
 	request := &http.Request{Method: http.MethodGet}
 	resp, err := c.RoundTrip(request)
 	assert.NoError(t, err)
-	authHeaderValue := resp.Header.Get("Authorization")
+	log.Println("Authheader: ", cfg.Header)
+	authHeaderValue := resp.Header.Get(cfg.Header)
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(cfg.BearerToken)))
 }
 
@@ -79,7 +82,7 @@ func TestBearerAuthenticator(t *testing.T) {
 
 	md, err := credential.GetRequestMetadata(context.Background())
 	expectedMd := map[string]string{
-		"authorization": fmt.Sprintf("Bearer %s", string(cfg.BearerToken)),
+		strings.ToLower(cfg.Header): fmt.Sprintf("Bearer %s", string(cfg.BearerToken)),
 	}
 	assert.Equal(t, expectedMd, md)
 	assert.NoError(t, err)
@@ -90,8 +93,8 @@ func TestBearerAuthenticator(t *testing.T) {
 		"Foo": {"bar"},
 	}
 	expectedHeaders := http.Header{
-		"Foo":           {"bar"},
-		"Authorization": {"Bearer " + string(cfg.BearerToken)},
+		"Foo":      {"bar"},
+		cfg.Header: {"Bearer " + string(cfg.BearerToken)},
 	}
 
 	resp, err := roundTripper.RoundTrip(&http.Request{Header: orgHeaders})
@@ -120,7 +123,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	tokenStr := fmt.Sprintf("Bearer %s", token)
 	md, err := credential.GetRequestMetadata(context.Background())
 	expectedMd := map[string]string{
-		"authorization": tokenStr,
+		strings.ToLower(cfg.Header): tokenStr,
 	}
 	assert.Equal(t, expectedMd, md)
 	assert.NoError(t, err)
@@ -131,7 +134,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	time.Sleep(5 * time.Second)
 	credential, _ = bauth.PerRPCCredentials()
 	md, err = credential.GetRequestMetadata(context.Background())
-	expectedMd["authorization"] = tokenStr + "test"
+	expectedMd[strings.ToLower(cfg.Header)] = tokenStr + "test"
 	assert.Equal(t, expectedMd, md)
 	assert.NoError(t, err)
 
@@ -140,7 +143,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	time.Sleep(5 * time.Second)
 	credential, _ = bauth.PerRPCCredentials()
 	md, err = credential.GetRequestMetadata(context.Background())
-	expectedMd["authorization"] = tokenStr
+	expectedMd[strings.ToLower(cfg.Header)] = tokenStr
 	time.Sleep(5 * time.Second)
 	assert.Equal(t, expectedMd, md)
 	assert.NoError(t, err)
@@ -173,7 +176,7 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	request := &http.Request{Method: http.MethodGet}
 	resp, err := rt.RoundTrip(request)
 	assert.NoError(t, err)
-	authHeaderValue := resp.Header.Get("Authorization")
+	authHeaderValue := resp.Header.Get(cfg.Header)
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(token)))
 
 	// change file content once
@@ -187,7 +190,7 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	request = &http.Request{Method: http.MethodGet}
 	resp, err = rt.RoundTrip(request)
 	assert.NoError(t, err)
-	authHeaderValue = resp.Header.Get("Authorization")
+	authHeaderValue = resp.Header.Get(cfg.Header)
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(tokenNew)))
 
 	// change file content back
@@ -198,8 +201,36 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	request = &http.Request{Method: http.MethodGet}
 	resp, err = rt.RoundTrip(request)
 	assert.NoError(t, err)
-	authHeaderValue = resp.Header.Get("Authorization")
+	authHeaderValue = resp.Header.Get(cfg.Header)
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(token)))
+}
+
+func TestBearerServerAuthenticateWithHeader(t *testing.T) {
+	const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // #nosec
+	cfg := createDefaultConfig().(*Config)
+	cfg.Scheme = "Bearer"
+	cfg.Header = "Custom-Auth-Header"
+	cfg.BearerToken = token
+
+	bauth := newBearerTokenAuth(cfg, nil)
+	assert.NotNil(t, bauth)
+
+	ctx := context.Background()
+	assert.NoError(t, bauth.Start(ctx, componenttest.NewNopHost()))
+
+	_, err := bauth.Authenticate(ctx, map[string][]string{strings.ToLower(cfg.Header): {"Bearer " + token}})
+	assert.NoError(t, err)
+
+	_, err = bauth.Authenticate(ctx, map[string][]string{strings.ToLower(defaultHeader): {"Bearer " + "1234"}})
+	assert.Error(t, err)
+
+	_, err = bauth.Authenticate(ctx, map[string][]string{strings.ToLower(defaultHeader): {"" + token}})
+	assert.Error(t, err)
+
+	_, err = bauth.Authenticate(ctx, map[string][]string{strings.ToLower(defaultHeader): {"Bearer " + token}})
+	assert.Error(t, err)
+
+	assert.NoError(t, bauth.Shutdown(context.Background()))
 }
 
 func TestBearerServerAuthenticateWithScheme(t *testing.T) {
@@ -214,13 +245,13 @@ func TestBearerServerAuthenticateWithScheme(t *testing.T) {
 	ctx := context.Background()
 	assert.NoError(t, bauth.Start(ctx, componenttest.NewNopHost()))
 
-	_, err := bauth.Authenticate(ctx, map[string][]string{"authorization": {"Bearer " + token}})
+	_, err := bauth.Authenticate(ctx, map[string][]string{strings.ToLower(cfg.Header): {"Bearer " + token}})
 	assert.NoError(t, err)
 
-	_, err = bauth.Authenticate(ctx, map[string][]string{"authorization": {"Bearer " + "1234"}})
+	_, err = bauth.Authenticate(ctx, map[string][]string{strings.ToLower(cfg.Header): {"Bearer " + "1234"}})
 	assert.Error(t, err)
 
-	_, err = bauth.Authenticate(ctx, map[string][]string{"authorization": {"" + token}})
+	_, err = bauth.Authenticate(ctx, map[string][]string{strings.ToLower(cfg.Header): {"" + token}})
 	assert.Error(t, err)
 
 	assert.NoError(t, bauth.Shutdown(context.Background()))
@@ -238,16 +269,16 @@ func TestBearerServerAuthenticate(t *testing.T) {
 	ctx := context.Background()
 	assert.NoError(t, bauth.Start(ctx, componenttest.NewNopHost()))
 
-	_, err := bauth.Authenticate(ctx, map[string][]string{"authorization": {"Bearer " + token}})
+	_, err := bauth.Authenticate(ctx, map[string][]string{strings.ToLower(cfg.Header): {"Bearer " + token}})
 	assert.Error(t, err)
 
-	_, err = bauth.Authenticate(ctx, map[string][]string{"authorization": {"Bearer " + "1234"}})
+	_, err = bauth.Authenticate(ctx, map[string][]string{strings.ToLower(cfg.Header): {"Bearer " + "1234"}})
 	assert.Error(t, err)
 
-	_, err = bauth.Authenticate(ctx, map[string][]string{"authorization": {"invalidtoken"}})
+	_, err = bauth.Authenticate(ctx, map[string][]string{strings.ToLower(cfg.Header): {"invalidtoken"}})
 	assert.Error(t, err)
 
-	_, err = bauth.Authenticate(ctx, map[string][]string{"authorization": {token}})
+	_, err = bauth.Authenticate(ctx, map[string][]string{strings.ToLower(cfg.Header): {token}})
 	assert.NoError(t, err)
 
 	assert.NoError(t, bauth.Shutdown(context.Background()))
