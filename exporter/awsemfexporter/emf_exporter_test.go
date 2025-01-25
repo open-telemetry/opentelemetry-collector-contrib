@@ -8,7 +8,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/smithy-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -32,7 +32,11 @@ func (p *mockPusher) AddLogEntry(_ *cwlogs.Event) error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
-		return awserr.NewRequestFailure(nil, 400, "").(error)
+		return &smithy.GenericAPIError{
+			Code:    "400",
+			Message: "",
+			Fault:   smithy.FaultClient,
+		}
 	}
 	return nil
 }
@@ -41,7 +45,11 @@ func (p *mockPusher) ForceFlush() error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
-		return awserr.NewRequestFailure(nil, 400, "").(error)
+		return &smithy.GenericAPIError{
+			Code:    "400",
+			Message: "",
+			Fault:   smithy.FaultClient,
+		}
 	}
 	return nil
 }
@@ -400,10 +408,18 @@ func TestNewExporterWithoutSession(t *testing.T) {
 }
 
 func TestWrapErrorIfBadRequest(t *testing.T) {
-	awsErr := awserr.NewRequestFailure(nil, 400, "").(error)
+	awsErr := &smithy.GenericAPIError{
+		Code:    "400",
+		Message: "",
+		Fault:   smithy.FaultClient,
+	}
 	err := wrapErrorIfBadRequest(awsErr)
 	assert.True(t, consumererror.IsPermanent(err))
-	awsErr = awserr.NewRequestFailure(nil, 500, "").(error)
+	awsErr = &smithy.GenericAPIError{
+		Code:    "500",
+		Message: "",
+		Fault:   smithy.FaultServer,
+	}
 	err = wrapErrorIfBadRequest(awsErr)
 	assert.False(t, consumererror.IsPermanent(err))
 }

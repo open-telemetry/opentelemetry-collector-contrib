@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemf
 go 1.22.0
 
 require (
-	github.com/aws/aws-sdk-go v1.55.6
+	github.com/aws/smithy-go v1.22.2
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.118.0
@@ -26,6 +26,7 @@ require (
 )
 
 require (
+	github.com/aws/aws-sdk-go v1.55.6 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
