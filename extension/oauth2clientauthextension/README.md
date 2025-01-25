@@ -38,6 +38,8 @@ extensions:
       key_file: keyfile
     # timeout for the token client
     timeout: 2s
+    # buffer time before token expiry to refresh
+    expiry_buffer: 10s
     
 receivers:
   hostmetrics:
@@ -84,5 +86,6 @@ Following are the configuration fields
 - [**scopes**](https://datatracker.ietf.org/doc/html/rfc6749#section-3.3) - **Optional** optional requested permissions associated for the client.
 - [**timeout**](https://golang.org/src/net/http/client.go#L90) -  **Optional** specifies the timeout on the underlying client to authorization server for fetching the tokens (initial and while refreshing).
   This is optional and not setting this configuration implies there is no timeout on the client.
+- **expiry_buffer** -  **Optional** Specifies the time buffer to refresh the access token before it expires, preventing authentication failures due to token expiration. The default value is 5m.
 
 For more information on client side TLS settings, see [configtls README](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/configtls).

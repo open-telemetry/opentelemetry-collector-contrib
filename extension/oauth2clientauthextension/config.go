@@ -53,6 +53,9 @@ type Config struct {
 	// Timeout parameter configures `http.Client.Timeout` for the underneath client to authorization
 	// server while fetching and refreshing tokens.
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
+
+	// ExpiryBuffer specifies the time buffer before token expiry to refresh it.
+	ExpiryBuffer time.Duration `mapstructure:"expiry_buffer,omitempty"`
 }
 
 var _ component.Config = (*Config)(nil)
