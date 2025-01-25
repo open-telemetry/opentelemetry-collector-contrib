@@ -439,13 +439,13 @@ func TestLogsConnectorDetailed(t *testing.T) {
 	isResourceBFromLowerContext := `resource.attributes["resourceName"] == "resourceB"`
 
 	testCases := []struct {
-		name        string
-		cfg         *Config
 		ctx         context.Context
 		input       plog.Logs
 		expectSink0 plog.Logs
 		expectSink1 plog.Logs
 		expectSinkD plog.Logs
+		cfg         *Config
+		name        string
 	}{
 		{
 			name: "request/no_request_values",
