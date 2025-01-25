@@ -56,6 +56,10 @@ all_set:
     sqlserver.user.connection.count:
       enabled: true
   resource_attributes:
+    server.address:
+      enabled: true
+    server.port:
+      enabled: true
     sqlserver.computer.name:
       enabled: true
     sqlserver.database.name:
@@ -119,6 +123,10 @@ none_set:
     sqlserver.user.connection.count:
       enabled: false
   resource_attributes:
+    server.address:
+      enabled: false
+    server.port:
+      enabled: false
     sqlserver.computer.name:
       enabled: false
     sqlserver.database.name:
@@ -127,6 +135,14 @@ none_set:
       enabled: false
 filter_set_include:
   resource_attributes:
+    server.address:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    server.port:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     sqlserver.computer.name:
       enabled: true
       metrics_include:
@@ -141,6 +157,14 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    server.address:
+      enabled: true
+      metrics_exclude:
+        - strict: "server.address-val"
+    server.port:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
     sqlserver.computer.name:
       enabled: true
       metrics_exclude:
