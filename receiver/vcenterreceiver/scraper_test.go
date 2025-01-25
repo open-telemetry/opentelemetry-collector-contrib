@@ -42,6 +42,11 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	optConfigs := metadata.DefaultMetricsBuilderConfig()
 	optConfigs.Metrics.VcenterHostMemoryCapacity.Enabled = true
 	optConfigs.Metrics.VcenterVMMemoryGranted.Enabled = true
+	optConfigs.Metrics.VcenterVMNetworkBroadcastPacketRate.Enabled = true
+	optConfigs.Metrics.VcenterVMNetworkMulticastPacketRate.Enabled = true
+	optConfigs.Metrics.VcenterVMCPUIdleTime.Enabled = true
+	optConfigs.Metrics.VcenterVMCPUWaitTime.Enabled = true
+	optConfigs.Metrics.VcenterVMCPUReadyTime.Enabled = true
 	setResourcePoolMemoryUsageAttrFeatureGate(t, true)
 
 	cfg := &Config{

@@ -95,11 +95,17 @@ all_set:
       enabled: true
     vcenter.resource_pool.memory.usage:
       enabled: true
+    vcenter.vm.cpu.idle.time:
+      enabled: true
     vcenter.vm.cpu.readiness:
+      enabled: true
+    vcenter.vm.cpu.ready.time:
       enabled: true
     vcenter.vm.cpu.usage:
       enabled: true
     vcenter.vm.cpu.utilization:
+      enabled: true
+    vcenter.vm.cpu.wait.time:
       enabled: true
     vcenter.vm.disk.latency.avg:
       enabled: true
@@ -122,6 +128,10 @@ all_set:
     vcenter.vm.memory.usage:
       enabled: true
     vcenter.vm.memory.utilization:
+      enabled: true
+    vcenter.vm.network.broadcast.packet.rate:
+      enabled: true
+    vcenter.vm.network.multicast.packet.rate:
       enabled: true
     vcenter.vm.network.packet.drop.rate:
       enabled: true
@@ -258,11 +268,17 @@ none_set:
       enabled: false
     vcenter.resource_pool.memory.usage:
       enabled: false
+    vcenter.vm.cpu.idle.time:
+      enabled: false
     vcenter.vm.cpu.readiness:
+      enabled: false
+    vcenter.vm.cpu.ready.time:
       enabled: false
     vcenter.vm.cpu.usage:
       enabled: false
     vcenter.vm.cpu.utilization:
+      enabled: false
+    vcenter.vm.cpu.wait.time:
       enabled: false
     vcenter.vm.disk.latency.avg:
       enabled: false
@@ -285,6 +301,10 @@ none_set:
     vcenter.vm.memory.usage:
       enabled: false
     vcenter.vm.memory.utilization:
+      enabled: false
+    vcenter.vm.network.broadcast.packet.rate:
+      enabled: false
+    vcenter.vm.network.multicast.packet.rate:
       enabled: false
     vcenter.vm.network.packet.drop.rate:
       enabled: false
