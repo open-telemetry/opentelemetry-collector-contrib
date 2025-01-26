@@ -81,14 +81,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: 1
+                - asInt: "1"
                   attributes:
                     - key: state
                       value:
                         stringValue: ready
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-                - asInt: 1
+                - asInt: "1"
                   attributes:
                     - key: state
                       value:

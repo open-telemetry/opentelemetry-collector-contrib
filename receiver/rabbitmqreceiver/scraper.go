@@ -104,6 +104,7 @@ func (r *rabbitmqScraper) collectQueueMetrics(ctx context.Context, now pcommon.T
 		return err
 	}
 
+	// Collect metrics for each queue
 	for _, queue := range queues {
 		r.collectQueue(queue, now)
 	}
@@ -129,15 +130,19 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestam
 	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.ReadyMessages, metadata.AttributeMessageStateReady)
 
 	for _, messageStatMetric := range messageStatMetrics {
+		// Get metric value
 		val, ok := queue.MessageStats[messageStatMetric]
+		// A metric may not exist if the actions that increment it do not occur
 		if !ok {
-			r.logger.Debug("metric not found", zap.String("metric", messageStatMetric), zap.String("queue", queue.Name))
+			r.logger.Debug("metric not found", zap.String("Metric", messageStatMetric), zap.String("Queue", queue.Name))
 			continue
 		}
 
+		// Convert to int64
 		val64, ok := convertValToInt64(val)
 		if !ok {
-			r.logger.Warn("metric not int64", zap.String("metric", messageStatMetric), zap.String("queue", queue.Name))
+			// Log warning if the metric is not in the format we expect
+			r.logger.Warn("metric not int64", zap.String("Metric", messageStatMetric), zap.String("Queue", queue.Name))
 			continue
 		}
 
@@ -190,7 +195,9 @@ func formatResourceAttributes(resource pcommon.Resource) string {
 	return "{" + strings.Join(attributes, ", ") + "}"
 }
 
-// convertValToInt64 converts a value to int64
+// convertValToInt64 values from message state unmarshal as float64s but should be int64.
+// Need to do a double cast to get an int64.
+// This should never fail but worth checking just in case.
 func convertValToInt64(val any) (int64, bool) {
 	f64Val, ok := val.(float64)
 	if !ok {

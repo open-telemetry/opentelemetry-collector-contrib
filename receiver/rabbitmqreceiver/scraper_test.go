@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -27,6 +28,11 @@ import (
 func TestScraperStart(t *testing.T) {
 	clientConfigInvalid := confighttp.NewDefaultClientConfig()
 	clientConfigInvalid.Endpoint = "invalid://endpoint"
+	clientConfigInvalid.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "/non/existent",
+		},
+	}
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = defaultEndpoint
@@ -114,6 +120,7 @@ func TestScraperScrape(t *testing.T) {
 			desc: "Successful Queue Collection",
 			setupMockClient: func(t *testing.T) client {
 				mockClient := mocks.MockClient{}
+				// use helper function from client tests
 				data := loadAPIResponseData(t, "get_queues_response.json")
 				var queues []*models.Queue
 				err := json.Unmarshal(data, &queues)
