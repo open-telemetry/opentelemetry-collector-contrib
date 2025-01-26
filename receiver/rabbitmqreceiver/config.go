@@ -19,6 +19,7 @@ import (
 var (
 	errMissingUsername = errors.New(`"username" not specified in config`)
 	errMissingPassword = errors.New(`"password" not specified in config`)
+
 	errInvalidEndpoint = errors.New(`"endpoint" must be in the form of <scheme>://<hostname>:<port>`)
 )
 
@@ -34,7 +35,7 @@ type Config struct {
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 }
 
-// Validate validates the configuration by checking for missing or invalid fields.
+// Validate validates the configuration by checking for missing or invalid fields
 func (cfg *Config) Validate() error {
 	var err []error
 

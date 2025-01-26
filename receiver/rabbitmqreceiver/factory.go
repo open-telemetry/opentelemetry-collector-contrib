@@ -20,13 +20,12 @@ import (
 
 var errConfigNotRabbit = errors.New("config was not a RabbitMQ receiver config")
 
-// NewFactory creates a new receiver factory.
+// NewFactory creates a new receiver factory
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-	)
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 // createDefaultConfig creates the default configuration for the RabbitMQ receiver.

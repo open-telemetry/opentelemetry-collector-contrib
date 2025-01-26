@@ -64,7 +64,7 @@ func (c *rabbitmqClient) GetQueues(ctx context.Context) ([]*models.Queue, error)
 	var queues []*models.Queue
 
 	if err := c.get(ctx, queuePath, &queues); err != nil {
-		c.logger.Error("Failed to retrieve queues", zap.Error(err))
+		c.logger.Debug("Failed to retrieve queues", zap.Error(err))
 		return nil, err
 	}
 
@@ -90,11 +90,13 @@ func (c *rabbitmqClient) get(ctx context.Context, path string, respObj any) erro
 		return fmt.Errorf("failed to create get request for path %s: %w", path, err)
 	}
 
+	// Set user/pass authentication
 	req.SetBasicAuth(c.creds.username, c.creds.password)
 
+	// Make request
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to make HTTP request: %w", err)
+		return fmt.Errorf("failed to make http request: %w", err)
 	}
 
 	// Defer body close
@@ -104,8 +106,9 @@ func (c *rabbitmqClient) get(ctx context.Context, path string, respObj any) erro
 		}
 	}()
 
+	// Check for OK status code
 	if resp.StatusCode != http.StatusOK {
-		c.logger.Error("Non-200 response code received", zap.Int("status_code", resp.StatusCode))
+		c.logger.Debug("rabbitMQ API non-200", zap.Error(err), zap.Int("status_code", resp.StatusCode))
 
 		payload, readErr := io.ReadAll(resp.Body)
 		if readErr == nil {
