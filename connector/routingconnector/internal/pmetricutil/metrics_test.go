@@ -16,12 +16,12 @@ import (
 
 func TestMoveResourcesIf(t *testing.T) {
 	testCases := []struct {
-		name       string
-		moveIf     func(pmetric.ResourceMetrics) bool
 		from       pmetric.Metrics
 		to         pmetric.Metrics
 		expectFrom pmetric.Metrics
 		expectTo   pmetric.Metrics
+		moveIf     func(pmetric.ResourceMetrics) bool
+		name       string
 	}{
 		{
 			name: "move_none",
@@ -83,12 +83,12 @@ func TestMoveResourcesIf(t *testing.T) {
 
 func TestMoveMetricsWithContextIf(t *testing.T) {
 	testCases := []struct {
-		name       string
-		moveIf     func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric) bool
 		from       pmetric.Metrics
 		to         pmetric.Metrics
 		expectFrom pmetric.Metrics
 		expectTo   pmetric.Metrics
+		moveIf     func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric) bool
+		name       string
 	}{
 		{
 			name: "move_none",
@@ -265,12 +265,12 @@ func TestMoveMetricsWithContextIf(t *testing.T) {
 
 func TestMoveDataPointsWithContextIf(t *testing.T) {
 	testCases := []struct {
-		name       string
-		moveIf     func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool
 		from       pmetric.Metrics
 		to         pmetric.Metrics
 		expectFrom pmetric.Metrics
 		expectTo   pmetric.Metrics
+		moveIf     func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool
+		name       string
 	}{
 		// gauge
 		{
