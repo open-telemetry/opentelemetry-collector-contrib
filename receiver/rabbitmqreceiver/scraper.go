@@ -64,7 +64,6 @@ func (r *rabbitmqScraper) start(ctx context.Context, host component.Host) error 
 	}
 
 	rabbitClient, err := newClient(ctx, r.cfg, host, r.settings, r.logger)
-
 	if err != nil {
 		return fmt.Errorf("failed to initialize RabbitMQ client: %w", err)
 	}
