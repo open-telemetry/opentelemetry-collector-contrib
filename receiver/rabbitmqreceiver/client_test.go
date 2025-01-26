@@ -57,7 +57,7 @@ func TestNewClient(t *testing.T) {
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
 			logger:      zap.NewNop(),
-			expectError: errors.New("failed to create HTTP client: failed to load TLS config"),
+			expectError: errors.New("failed to create HTTP Client: failed to load TLS config: failed to load CA CertPool File: failed to load cert /non/existent: open \\non\\existent: The system cannot find the path specified."),
 		},
 		{
 			desc: "Valid Configuration",
@@ -130,7 +130,7 @@ func TestGetQueuesDetails(t *testing.T) {
 
 				queues, err := tc.GetQueues(context.Background())
 				require.Nil(t, queues)
-				require.ErrorContains(t, err, "failed to decode response body: json: cannot unmarshal object into Go value of type []*models.Queue")
+				require.ErrorContains(t, err, "failed to decode response payload: json: cannot unmarshal object into Go value of type []*models.Queue")
 			},
 		},
 		{
