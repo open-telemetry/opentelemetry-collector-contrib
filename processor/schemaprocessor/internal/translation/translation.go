@@ -28,7 +28,7 @@ import (
 //	there is no checking the incoming signals if the schema family is a match.
 type Translation interface {
 	// SupportedVersion checks to see if the provided version is defined as part
-	// of this translation since it is useful to know it the translation is missing
+	// of this translation since it is useful to know if the translation is missing
 	// updates.
 	SupportedVersion(v *Version) bool
 
@@ -50,7 +50,7 @@ type Translation interface {
 type translator struct {
 	targetSchemaURL string
 	target          *Version
-	indexes         map[Version]int
+	indexes         map[Version]int // map from version to index in revisions containing the pertinent Version
 	revisions       []RevisionV1
 
 	log *zap.Logger
@@ -193,11 +193,11 @@ func (t *translator) ApplyScopeLogChanges(scopeLogs plog.ScopeLogs, inSchemaURL 
 					return err
 				}
 			case Revert:
-				err = rev.logs.Rollback(log)
+				err = rev.all.Rollback(log)
 				if err != nil {
 					return err
 				}
-				err = rev.all.Rollback(log)
+				err = rev.logs.Rollback(log)
 				if err != nil {
 					return err
 				}
