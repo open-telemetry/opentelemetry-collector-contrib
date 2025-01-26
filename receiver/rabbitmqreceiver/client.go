@@ -31,6 +31,8 @@ type client interface {
 	GetNodes(ctx context.Context) ([]*models.Node, error)
 }
 
+var _ client = (*rabbitmqClient)(nil)
+
 type rabbitmqClient struct {
 	client       *http.Client
 	hostEndpoint string
