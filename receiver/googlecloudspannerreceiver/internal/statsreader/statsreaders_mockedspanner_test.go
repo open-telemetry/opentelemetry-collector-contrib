@@ -144,7 +144,8 @@ func TestStatsReaders_Read(t *testing.T) {
 			METRIC_LABEL STRING(MAX),
 			METRIC_VALUE INT64
 		) PRIMARY KEY (METRIC_LABEL)
-		`},
+		`,
+		},
 	})
 	require.NoError(t, err)
 

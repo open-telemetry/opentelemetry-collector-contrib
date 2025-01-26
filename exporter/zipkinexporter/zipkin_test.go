@@ -121,7 +121,8 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 		  "timestamp": 1472470996199000,
 		  "duration": 207000
 		}]
-		`}
+		`,
+	}
 	for i, s := range wants {
 		want := unmarshalZipkinSpanArrayToMap(t, s)
 		gotBytes := buf.Next(int(sizes[i]))
