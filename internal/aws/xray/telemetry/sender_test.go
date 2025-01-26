@@ -10,10 +10,11 @@ import (
 	"testing"
 	"time"
 
-	awsmock "github.com/aws/aws-sdk-go/awstesting/mock"
-	"github.com/aws/aws-sdk-go/service/xray"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/xray"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -25,12 +26,12 @@ type mockClient struct {
 	count *atomic.Int64
 }
 
-func (m *mockClient) PutTraceSegments(input *xray.PutTraceSegmentsInput) (*xray.PutTraceSegmentsOutput, error) {
+func (m *mockClient) PutTraceSegments(ctx context.Context, input *xray.PutTraceSegmentsInput) (*xray.PutTraceSegmentsOutput, error) {
 	args := m.Called(input)
 	return args.Get(0).(*xray.PutTraceSegmentsOutput), args.Error(1)
 }
 
-func (m *mockClient) PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (*xray.PutTelemetryRecordsOutput, error) {
+func (m *mockClient) PutTelemetryRecords(ctx context.Context, input *xray.PutTelemetryRecordsInput) (*xray.PutTelemetryRecordsOutput, error) {
 	args := m.Called(input)
 	m.count.Add(1)
 	if args.Get(0) == nil {
@@ -68,19 +69,20 @@ func TestRotateRace(t *testing.T) {
 
 func TestIncludeMetadata(t *testing.T) {
 	cfg := Config{IncludeMetadata: false}
-	sess := awsmock.Session
+	awsCfg, err := config.LoadDefaultConfig(context.TODO())
+	require.NoError(t, err)
 	set := &awsutil.AWSSessionSettings{ResourceARN: "session_arn"}
-	opts := ToOptions(cfg, sess, set)
+	opts := ToOptions(cfg, awsCfg, set)
 	assert.Empty(t, opts)
 	cfg.IncludeMetadata = true
-	opts = ToOptions(cfg, sess, set)
+	opts = ToOptions(cfg, awsCfg, set)
 	sender := newSender(&mockClient{}, opts...)
 	assert.Equal(t, "", sender.hostname)
 	assert.Equal(t, "", sender.instanceID)
 	assert.Equal(t, "session_arn", sender.resourceARN)
 	t.Setenv(envAWSHostname, "env_hostname")
 	t.Setenv(envAWSInstanceID, "env_instance_id")
-	opts = ToOptions(cfg, sess, &awsutil.AWSSessionSettings{})
+	opts = ToOptions(cfg, awsCfg, &awsutil.AWSSessionSettings{})
 	sender = newSender(&mockClient{}, opts...)
 	assert.Equal(t, "env_hostname", sender.hostname)
 	assert.Equal(t, "env_instance_id", sender.instanceID)
@@ -88,7 +90,7 @@ func TestIncludeMetadata(t *testing.T) {
 	cfg.Hostname = "cfg_hostname"
 	cfg.InstanceID = "cfg_instance_id"
 	cfg.ResourceARN = "cfg_arn"
-	opts = ToOptions(cfg, sess, &awsutil.AWSSessionSettings{})
+	opts = ToOptions(cfg, awsCfg, &awsutil.AWSSessionSettings{})
 	sender = newSender(&mockClient{}, opts...)
 	assert.Equal(t, "cfg_hostname", sender.hostname)
 	assert.Equal(t, "cfg_instance_id", sender.instanceID)
@@ -119,7 +121,7 @@ func TestQueueOverflow(t *testing.T) {
 	assert.Len(t, sender.queue, 15)
 	// verify that sent back of queue
 	for _, record := range sender.queue {
-		assert.Greater(t, *record.SegmentsSentCount, int64(5))
-		assert.LessOrEqual(t, *record.SegmentsSentCount, int64(20))
+		assert.Greater(t, *record.SegmentsSentCount, int32(5))
+		assert.LessOrEqual(t, *record.SegmentsSentCount, int32(20))
 	}
 }

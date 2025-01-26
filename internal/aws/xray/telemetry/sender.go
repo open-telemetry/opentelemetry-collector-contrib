@@ -4,13 +4,16 @@
 package telemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 
 import (
+	"context"
+	"io"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/xray"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/aws-sdk-go-v2/service/xray"
+	"github.com/aws/aws-sdk-go-v2/service/xray/types"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -58,7 +61,7 @@ type telemetrySender struct {
 
 	// queue is used to keep records that failed to send for retry during
 	// the next period.
-	queue []*xray.TelemetryRecord
+	queue []types.TelemetryRecord
 
 	startOnce sync.Once
 	stopWait  sync.WaitGroup
@@ -150,24 +153,31 @@ func (p envMetadataProvider) get() string {
 }
 
 type ec2MetadataProvider struct {
-	client      *ec2metadata.EC2Metadata
+	client      *imds.Client
 	metadataKey string
 }
 
 func (p ec2MetadataProvider) get() string {
-	var metadata string
-	if result, err := p.client.GetMetadata(p.metadataKey); err == nil {
-		metadata = result
+	result, err := p.client.GetMetadata(context.TODO(), &imds.GetMetadataInput{Path: p.metadataKey})
+	if err != nil {
+		return ""
 	}
-	return metadata
+	defer result.Content.Close()
+
+	content, err := io.ReadAll(result.Content)
+	if err != nil {
+		return ""
+	}
+
+	return string(content)
 }
 
 // ToOptions returns the metadata options if enabled by the config.
-func ToOptions(cfg Config, sess *session.Session, settings *awsutil.AWSSessionSettings) []Option {
+func ToOptions(cfg Config, awsCfg aws.Config, settings *awsutil.AWSSessionSettings) []Option {
 	if !cfg.IncludeMetadata {
 		return nil
 	}
-	metadataClient := ec2metadata.New(sess)
+	metadataClient := imds.NewFromConfig(awsCfg)
 	return []Option{
 		WithHostname(getMetadata(
 			simpleMetadataProvider{metadata: cfg.Hostname},
@@ -243,9 +253,9 @@ func (ts *telemetrySender) run() {
 }
 
 // enqueue the record. If queue is full, drop the head of the queue and add.
-func (ts *telemetrySender) enqueue(record *xray.TelemetryRecord) {
+func (ts *telemetrySender) enqueue(record types.TelemetryRecord) {
 	for len(ts.queue) >= ts.queueSize {
-		var dropped *xray.TelemetryRecord
+		var dropped types.TelemetryRecord
 		dropped, ts.queue = ts.queue[0], ts.queue[1:]
 		if ts.logger != nil {
 			ts.logger.Debug("queue full, dropping telemetry record", zap.Time("dropped_timestamp", *dropped.Timestamp))
@@ -267,7 +277,7 @@ func (ts *telemetrySender) send() {
 			ResourceARN:      &ts.resourceARN,
 			TelemetryRecords: ts.queue[startIndex:i],
 		}
-		if _, err := ts.client.PutTelemetryRecords(input); err != nil {
+		if _, err := ts.client.PutTelemetryRecords(context.TODO(), input); err != nil {
 			ts.RecordConnectionError(err)
 			ts.queue = ts.queue[:i]
 			return
