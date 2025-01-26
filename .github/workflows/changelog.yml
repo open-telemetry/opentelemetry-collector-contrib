@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   changelog:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
     env:
       PR_HEAD: ${{ github.event.pull_request.head.sha }}
@@ -84,14 +84,10 @@ jobs:
       - name: Render .chloggen changelog entries
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
         run: make chlog-preview > changelog_preview.md
-      - name: Install markdown-link-check
+      - name: Link Checker
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
-        run: npm install -g markdown-link-check@${{ env.MD_LINK_CHECK_VERSION }}
-      - name: Run markdown-link-check
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
-        run: |
-          markdown-link-check \
-            --verbose \
-            --config .github/workflows/check_links_config.json \
-            changelog_preview.md \
-            || { echo "Check that anchor links are lowercase"; exit 1; }
+        id: lychee
+        uses: lycheeverse/lychee-action@f796c8b7d468feb9b8c0a46da3fac0af6874d374
+        with:
+          args: "--verbose --no-progress ./changelog_preview.md --config .github/lychee.toml"
+          failIfEmpty: false

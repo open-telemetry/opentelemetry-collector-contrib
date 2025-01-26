@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
@@ -123,7 +124,7 @@ func TestTraceIntegrity(t *testing.T) {
 		NumTraces:    defaultNumTraces,
 	}
 	nextConsumer := new(consumertest.TracesSink)
-	s := setupTestTelemetry()
+	s := metadatatest.SetupTelemetry()
 	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 
@@ -390,7 +391,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 			},
 		},
 	}
-	s := setupTestTelemetry()
+	s := metadatatest.SetupTelemetry()
 	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 	msp := new(consumertest.TracesSink)
@@ -447,6 +448,93 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 		require.EqualValues(t, expected, got)
 	}
+}
+
+func TestSetSamplingPolicy(t *testing.T) {
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "always",
+					Type: AlwaysSample,
+				},
+			},
+		},
+	}
+	s := metadatatest.SetupTelemetry()
+	ct := s.NewSettings()
+	idb := newSyncIDBatcher()
+	msp := new(consumertest.TracesSink)
+
+	p, err := newTracesProcessor(context.Background(), ct, msp, cfg, withDecisionBatcher(idb))
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	tsp := p.(*tailSamplingSpanProcessor)
+
+	assert.Len(t, tsp.policies, 1)
+
+	tsp.policyTicker.OnTick()
+
+	assert.Len(t, tsp.policies, 1)
+
+	cfgs := []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "always",
+				Type: AlwaysSample,
+			},
+		},
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "everything",
+				Type: AlwaysSample,
+			},
+		},
+	}
+	tsp.SetSamplingPolicy(cfgs)
+
+	assert.Len(t, tsp.policies, 1)
+
+	tsp.policyTicker.OnTick()
+
+	assert.Len(t, tsp.policies, 2)
+
+	// Duplicate policy name.
+	cfgs = []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "always",
+				Type: AlwaysSample,
+			},
+		},
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "everything",
+				Type: AlwaysSample,
+			},
+		},
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "everything",
+				Type: AlwaysSample,
+			},
+		},
+	}
+	tsp.SetSamplingPolicy(cfgs)
+
+	assert.Len(t, tsp.policies, 2)
+
+	tsp.policyTicker.OnTick()
+
+	// Should revert sampling policy.
+	assert.Len(t, tsp.policies, 2)
 }
 
 func TestSubSecondDecisionTime(t *testing.T) {
@@ -520,6 +608,46 @@ func TestDuplicatePolicyName(t *testing.T) {
 
 	// verify
 	assert.Equal(t, err, errors.New(`duplicate policy name "always_sample"`))
+}
+
+func TestDecisionPolicyMetrics(t *testing.T) {
+	traceIDs, batches := generateIDsAndBatches(10)
+	policy := []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name:             "test-policy",
+				Type:             Probabilistic,
+				ProbabilisticCfg: ProbabilisticCfg{SamplingPercentage: 50},
+			},
+		},
+	}
+	cfg := Config{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(2 * len(traceIDs)),
+		ExpectedNewTracesPerSec: 64,
+		PolicyCfgs:              policy,
+	}
+	sp, _ := newTracesProcessor(context.Background(), processortest.NewNopSettings(), consumertest.NewNop(), cfg)
+	tsp := sp.(*tailSamplingSpanProcessor)
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
+	metrics := &policyMetrics{}
+
+	for i, id := range traceIDs {
+		sb := &sampling.TraceData{
+			ArrivalTime:     time.Now(),
+			ReceivedBatches: batches[i],
+		}
+
+		_ = tsp.makeDecision(id, sb, metrics)
+	}
+
+	assert.EqualValues(t, 5, metrics.decisionSampled)
+	assert.EqualValues(t, 5, metrics.decisionNotSampled)
+	assert.EqualValues(t, 0, metrics.idNotFoundOnMapCount)
+	assert.EqualValues(t, 0, metrics.evaluateErrorCount)
 }
 
 func collectSpanIDs(trace ptrace.Traces) []pcommon.SpanID {

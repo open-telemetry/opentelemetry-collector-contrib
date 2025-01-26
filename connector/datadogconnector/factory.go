@@ -45,7 +45,10 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		Traces: TracesConfig{
 			TracesConfig: datadogconfig.TracesConfig{
-				IgnoreResources: []string{},
+				IgnoreResources:        []string{},
+				PeerServiceAggregation: true,
+				PeerTagsAggregation:    true,
+				ComputeStatsBySpanKind: true,
 			},
 
 			TraceBuffer:    1000,

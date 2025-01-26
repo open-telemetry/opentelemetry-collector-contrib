@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v67/github"
+	"github.com/google/go-github/v68/github"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -262,10 +262,10 @@ func TestGetAge(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			min := time.Now()
-			max := min.Add(tc.hrsAdd).Add(tc.minsAdd)
+			start := time.Now()
+			end := start.Add(tc.hrsAdd).Add(tc.minsAdd)
 
-			actual := getAge(min, max)
+			actual := getAge(start, end)
 
 			assert.Equal(t, int64(tc.expected), actual)
 		})
@@ -685,10 +685,10 @@ func TestGetContributors(t *testing.T) {
 				contribResponse: contribResponse{
 					contribs: [][]*github.Contributor{{
 						{
-							ID: github.Int64(1),
+							ID: github.Ptr(int64(1)),
 						},
 						{
-							ID: github.Int64(2),
+							ID: github.Ptr(int64(2)),
 						},
 					}},
 					responseCode: http.StatusOK,

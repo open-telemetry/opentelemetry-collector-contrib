@@ -14,9 +14,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 
@@ -430,7 +433,10 @@ func TestEventShutdown(t *testing.T) {
 func TestPeriodicMetrics(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(s.NewSettings().TelemetrySettings)
+	t.Cleanup(func() {
+		require.NoError(t, s.Shutdown(context.Background()))
+	})
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(s.newTelemetrySettings())
 	require.NoError(t, err)
 
 	em := newEventMachine(zap.NewNop(), 50, 1, 1_000, telemetryBuilder)
@@ -528,7 +534,7 @@ func TestDoWithTimeout_TimeoutTrigger(t *testing.T) {
 	assert.WithinDuration(t, start, time.Now(), 100*time.Millisecond)
 }
 
-func getGaugeValue(t *testing.T, name string, tt componentTestTelemetry) int64 {
+func getGaugeValue(t *testing.T, name string, tt testTelemetry) int64 {
 	var md metricdata.ResourceMetrics
 	require.NoError(t, tt.reader.Collect(context.Background(), &md))
 	m := tt.getMetric(name, md).Data
@@ -537,9 +543,44 @@ func getGaugeValue(t *testing.T, name string, tt componentTestTelemetry) int64 {
 	return g.DataPoints[0].Value
 }
 
-func assertGaugeNotCreated(t *testing.T, name string, tt componentTestTelemetry) {
+func assertGaugeNotCreated(t *testing.T, name string, tt testTelemetry) {
 	var md metricdata.ResourceMetrics
 	require.NoError(t, tt.reader.Collect(context.Background(), &md))
 	got := tt.getMetric(name, md)
 	assert.Equal(t, metricdata.Metrics{}, got, "gauge exists already but shouldn't")
+}
+
+type testTelemetry struct {
+	reader        *sdkmetric.ManualReader
+	meterProvider *sdkmetric.MeterProvider
+}
+
+func setupTestTelemetry() testTelemetry {
+	reader := sdkmetric.NewManualReader()
+	return testTelemetry{
+		reader:        reader,
+		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
+	}
+}
+
+func (tt *testTelemetry) newTelemetrySettings() component.TelemetrySettings {
+	set := componenttest.NewNopTelemetrySettings()
+	set.MeterProvider = tt.meterProvider
+	return set
+}
+
+func (tt *testTelemetry) getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+	for _, sm := range got.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if m.Name == name {
+				return m
+			}
+		}
+	}
+
+	return metricdata.Metrics{}
+}
+
+func (tt *testTelemetry) Shutdown(ctx context.Context) error {
+	return tt.meterProvider.Shutdown(ctx)
 }

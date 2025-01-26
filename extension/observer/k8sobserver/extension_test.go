@@ -24,10 +24,10 @@ const (
 	servicePortEnv = "KUBERNETES_SERVICE_PORT"
 )
 
-func mockServiceHost(t testing.TB, c *Config) {
+func mockServiceHost(tb testing.TB, c *Config) {
 	c.AuthType = k8sconfig.AuthTypeNone
-	t.Setenv(serviceHostEnv, "mock")
-	t.Setenv(servicePortEnv, "12345")
+	tb.Setenv(serviceHostEnv, "mock")
+	tb.Setenv(servicePortEnv, "12345")
 }
 
 func TestNewExtension(t *testing.T) {

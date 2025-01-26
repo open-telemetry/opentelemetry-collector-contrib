@@ -17,16 +17,16 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -84,7 +84,7 @@ func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, opti
 	)
 }
 
-func newProfilesProcessor(cfg component.Config, nextProfilesConsumer consumerprofiles.Profiles, options ...option) (processorprofiles.Profiles, error) {
+func newProfilesProcessor(cfg component.Config, nextProfilesConsumer xconsumer.Profiles, options ...option) (xprocessor.Profiles, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
 	set := processortest.NewNopSettings()
@@ -118,7 +118,7 @@ type multiTest struct {
 	tp processor.Traces
 	mp processor.Metrics
 	lp processor.Logs
-	pp processorprofiles.Profiles
+	pp xprocessor.Profiles
 
 	nextTrace    *consumertest.TracesSink
 	nextMetrics  *consumertest.MetricsSink
@@ -271,8 +271,7 @@ func TestProcessorBadClientProvider(t *testing.T) {
 	}
 
 	newMultiTest(t, NewFactory().CreateDefaultConfig(), func(err error) {
-		require.Error(t, err)
-		assert.Equal(t, "bad client error", err.Error())
+		require.EqualError(t, err, "bad client error")
 	}, withKubeClientProvider(clientProvider))
 }
 
@@ -1265,6 +1264,80 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				conventions.AttributeContainerImageName:       "test/app",
 			},
 		},
+		{
+			name: "fall back to only container",
+			op: func(kp *kubernetesprocessor) {
+				kp.podAssociations = []kube.Association{
+					{
+						Name: "k8s.pod.uid",
+						Sources: []kube.AssociationSource{
+							{
+								From: "resource_attribute",
+								Name: "k8s.pod.uid",
+							},
+						},
+					},
+				}
+				kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
+					Containers: kube.PodContainers{
+						ByName: map[string]*kube.Container{
+							"app": {
+								Name:      "app",
+								ImageName: "test/app",
+								ImageTag:  "1.0.1",
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
+			},
+			wantAttrs: map[string]any{
+				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				conventions.AttributeK8SContainerName:   "app",
+				conventions.AttributeContainerImageName: "test/app",
+				conventions.AttributeContainerImageTag:  "1.0.1",
+			},
+		},
+		{
+			name: "multiple containers in the pod - do not fall back to any container",
+			op: func(kp *kubernetesprocessor) {
+				kp.podAssociations = []kube.Association{
+					{
+						Name: "k8s.pod.uid",
+						Sources: []kube.AssociationSource{
+							{
+								From: "resource_attribute",
+								Name: "k8s.pod.uid",
+							},
+						},
+					},
+				}
+				kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
+					Containers: kube.PodContainers{
+						ByName: map[string]*kube.Container{
+							"app": {
+								Name:      "app",
+								ImageName: "test/app",
+								ImageTag:  "1.0.1",
+							},
+							"app2": {
+								Name:      "app2",
+								ImageName: "test/app",
+								ImageTag:  "1.0.1",
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
+			},
+			wantAttrs: map[string]any{
+				conventions.AttributeK8SPodUID: "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1297,7 +1370,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 	}
 }
 
-func TestProcessorPicksUpPassthoughPodIp(t *testing.T) {
+func TestProcessorPicksUpPassthroughPodIp(t *testing.T) {
 	m := newMultiTest(
 		t,
 		NewFactory().CreateDefaultConfig(),
@@ -1520,8 +1593,7 @@ func TestRealClient(t *testing.T) {
 		t,
 		NewFactory().CreateDefaultConfig(),
 		func(err error) {
-			require.Error(t, err)
-			assert.Equal(t, "unable to load k8s config, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined", err.Error())
+			require.EqualError(t, err, "unable to load k8s config, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined")
 		},
 		withKubeClientProvider(kubeClientProvider),
 		withAPIConfig(k8sconfig.APIConfig{AuthType: "none"}),
@@ -1636,4 +1708,63 @@ func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
 
 func (nh *nopHost) Report(event *componentstatus.Event) {
 	nh.reportFunc(event)
+}
+
+func Test_setResourceAttribute(t *testing.T) {
+	tests := []struct {
+		name       string
+		attributes func() pcommon.Map
+		key        string
+		val        string
+		wantAttrs  func() pcommon.Map
+	}{
+		{
+			name:       "attribute not present - add value",
+			attributes: pcommon.NewMap,
+			key:        "foo",
+			val:        "bar",
+			wantAttrs: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo", "bar")
+				return m
+			},
+		},
+		{
+			name: "attribute present with non-empty value - do not overwrite value",
+			attributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo", "bar")
+				return m
+			},
+			key: "foo",
+			val: "baz",
+			wantAttrs: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo", "bar")
+				return m
+			},
+		},
+		{
+			name: "attribute present with empty value - set value",
+			attributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo", "")
+				return m
+			},
+			key: "foo",
+			val: "bar",
+			wantAttrs: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo", "bar")
+				return m
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attrs := tt.attributes()
+			setResourceAttribute(attrs, tt.key, tt.val)
+			require.Equal(t, tt.wantAttrs(), attrs)
+		})
+	}
 }

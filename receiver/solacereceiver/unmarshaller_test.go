@@ -17,6 +17,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadatatest"
 	egress_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/egress/v1"
 	receive_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/receive/v1"
 )
@@ -320,8 +321,8 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tel := setupTestTelemetry()
-			telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+			tel := metadatatest.SetupTelemetry()
+			telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 			require.NoError(t, err)
 			metricAttr := attribute.NewSet(attribute.String("receiver_name", tel.NewSettings().ID.Name()))
 			u := newTracesUnmarshaller(zap.NewNop(), telemetryBuilder, metricAttr)

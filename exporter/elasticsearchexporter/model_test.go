@@ -24,10 +24,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
 
-var expectedSpanBody = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attributes.service.instance.id":"23","Duration":1000000,"EndTimestamp":"2023-04-19T03:04:06.000000006Z","Events.fooEvent.evnetMockBar":"bar","Events.fooEvent.evnetMockFoo":"foo","Events.fooEvent.time":"2023-04-19T03:04:05.000000006Z","Kind":"SPAN_KIND_CLIENT","Link":"[{\"attribute\":{},\"spanID\":\"\",\"traceID\":\"01020304050607080807060504030200\"}]","Name":"client span","Resource.cloud.platform":"aws_elastic_beanstalk","Resource.cloud.provider":"aws","Resource.deployment.environment":"BETA","Resource.service.instance.id":"23","Resource.service.name":"some-service","Resource.service.version":"env-version-1234","Scope.lib-foo":"lib-bar","Scope.name":"io.opentelemetry.rabbitmq-2.7","Scope.version":"1.30.0-alpha","SpanId":"1920212223242526","TraceId":"01020304050607080807060504030201","TraceStatus":2,"TraceStatusDescription":"Test"}`
+var expectedSpanBody = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attributes.service.instance.id":"23","Duration":1000000,"EndTimestamp":"2023-04-19T03:04:06.000000006Z","Events.fooEvent.eventMockBar":"bar","Events.fooEvent.eventMockFoo":"foo","Events.fooEvent.time":"2023-04-19T03:04:05.000000006Z","Kind":"SPAN_KIND_CLIENT","Link":"[{\"attribute\":{},\"spanID\":\"\",\"traceID\":\"01020304050607080807060504030200\"}]","Name":"client span","Resource.cloud.platform":"aws_elastic_beanstalk","Resource.cloud.provider":"aws","Resource.deployment.environment":"BETA","Resource.service.instance.id":"23","Resource.service.name":"some-service","Resource.service.version":"env-version-1234","Scope.lib-foo":"lib-bar","Scope.name":"io.opentelemetry.rabbitmq-2.7","Scope.version":"1.30.0-alpha","SpanId":"1920212223242526","TraceId":"01020304050607080807060504030201","TraceStatus":2,"TraceStatusDescription":"Test"}`
 
 var expectedLogBody = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
 
@@ -56,9 +57,10 @@ var (
 func TestEncodeSpan(t *testing.T) {
 	model := &encodeModel{dedot: false}
 	td := mockResourceSpans()
-	spanByte, err := model.encodeSpan(td.ResourceSpans().At(0).Resource(), "", td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0), td.ResourceSpans().At(0).ScopeSpans().At(0).Scope(), "")
+	var buf bytes.Buffer
+	err := model.encodeSpan(td.ResourceSpans().At(0).Resource(), "", td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0), td.ResourceSpans().At(0).ScopeSpans().At(0).Scope(), "", elasticsearch.Index{}, &buf)
 	assert.NoError(t, err)
-	assert.Equal(t, expectedSpanBody, string(spanByte))
+	assert.Equal(t, expectedSpanBody, buf.String())
 }
 
 func TestEncodeLog(t *testing.T) {
@@ -66,26 +68,29 @@ func TestEncodeLog(t *testing.T) {
 		model := &encodeModel{dedot: false}
 		td := mockResourceLogs()
 		td.ScopeLogs().At(0).LogRecords().At(0).SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)))
-		logByte, err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl())
+		var buf bytes.Buffer
+		err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl(), elasticsearch.Index{}, &buf)
 		assert.NoError(t, err)
-		assert.Equal(t, expectedLogBody, string(logByte))
+		assert.Equal(t, expectedLogBody, buf.String())
 	})
 
 	t.Run("both timestamp and observedTimestamp empty", func(t *testing.T) {
 		model := &encodeModel{dedot: false}
 		td := mockResourceLogs()
-		logByte, err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl())
+		var buf bytes.Buffer
+		err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl(), elasticsearch.Index{}, &buf)
 		assert.NoError(t, err)
-		assert.Equal(t, expectedLogBodyWithEmptyTimestamp, string(logByte))
+		assert.Equal(t, expectedLogBodyWithEmptyTimestamp, buf.String())
 	})
 
 	t.Run("dedot true", func(t *testing.T) {
 		model := &encodeModel{dedot: true}
 		td := mockResourceLogs()
 		td.Resource().Attributes().PutStr("foo.bar", "baz")
-		logByte, err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl())
+		var buf bytes.Buffer
+		err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl(), elasticsearch.Index{}, &buf)
 		require.NoError(t, err)
-		require.Equal(t, expectedLogBodyDeDottedWithEmptyTimestamp, string(logByte))
+		require.Equal(t, expectedLogBodyDeDottedWithEmptyTimestamp, buf.String())
 	})
 }
 
@@ -99,26 +104,31 @@ func TestEncodeMetric(t *testing.T) {
 		mode:  MappingECS,
 	}
 
-	docs := make(map[uint32]objmodel.Document)
+	groupedDataPoints := make(map[uint32][]dataPoint)
 
 	var docsBytes [][]byte
-	for i := 0; i < metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().Len(); i++ {
-		err := model.upsertMetricDataPointValue(
-			docs,
-			metrics.ResourceMetrics().At(0).Resource(),
-			"",
-			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope(),
-			"",
-			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0),
-			newNumberDataPoint(metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i)),
-		)
-		require.NoError(t, err)
+	rm := metrics.ResourceMetrics().At(0)
+	sm := rm.ScopeMetrics().At(0)
+	m := sm.Metrics().At(0)
+	dps := m.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dp := newNumberDataPoint(m, dps.At(i))
+		dpHash := model.hashDataPoint(dp)
+		dataPoints, ok := groupedDataPoints[dpHash]
+		if !ok {
+			groupedDataPoints[dpHash] = []dataPoint{dp}
+		} else {
+			groupedDataPoints[dpHash] = append(dataPoints, dp)
+		}
 	}
 
-	for _, doc := range docs {
-		bytes, err := model.encodeDocument(doc)
+	for _, dataPoints := range groupedDataPoints {
+		var buf bytes.Buffer
+		errors := make([]error, 0)
+		_, err := model.encodeMetrics(rm.Resource(), rm.SchemaUrl(), sm.Scope(), sm.SchemaUrl(), dataPoints, &errors, elasticsearch.Index{}, &buf)
+		require.Empty(t, errors, err)
 		require.NoError(t, err)
-		docsBytes = append(docsBytes, bytes)
+		docsBytes = append(docsBytes, buf.Bytes())
 	}
 
 	allDocsSorted := docBytesToSortedString(docsBytes)
@@ -142,6 +152,7 @@ func createTestMetrics(t *testing.T) pmetric.Metrics {
 	require.NoError(t, err)
 	metrics, err := metricsUnmarshaler.UnmarshalMetrics(metricBytes)
 	require.NoError(t, err)
+	metrics.MarkReadOnly()
 	return metrics
 }
 
@@ -181,8 +192,9 @@ func mockResourceSpans() ptrace.Traces {
 	event := span.Events().AppendEmpty()
 	event.SetName("fooEvent")
 	event.SetTimestamp(pcommon.NewTimestampFromTime(tStart))
-	event.Attributes().PutStr("evnetMockFoo", "foo")
-	event.Attributes().PutStr("evnetMockBar", "bar")
+	event.Attributes().PutStr("eventMockFoo", "foo")
+	event.Attributes().PutStr("eventMockBar", "bar")
+	traces.MarkReadOnly()
 	return traces
 }
 
@@ -242,7 +254,7 @@ func TestEncodeAttributes(t *testing.T) {
 			}
 
 			doc := objmodel.Document{}
-			m.encodeAttributes(&doc, attributes)
+			m.encodeAttributes(&doc, attributes, elasticsearch.Index{})
 			require.Equal(t, test.want(), doc)
 		})
 	}
@@ -303,7 +315,8 @@ func TestEncodeEvents(t *testing.T) {
 }
 
 func TestEncodeLogECSModeDuplication(t *testing.T) {
-	resource := pcommon.NewResource()
+	logs := plog.NewLogs()
+	resource := logs.ResourceLogs().AppendEmpty().Resource()
 	err := resource.Attributes().FromRaw(map[string]any{
 		semconv.AttributeServiceName:    "foo.bar",
 		semconv.AttributeHostName:       "localhost",
@@ -331,19 +344,22 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	require.NoError(t, err)
 	observedTimestamp := pcommon.Timestamp(1710273641123456789)
 	record.SetObservedTimestamp(observedTimestamp)
+	logs.MarkReadOnly()
 
 	m := encodeModel{
 		mode:  MappingECS,
 		dedot: true,
 	}
-	doc, err := m.encodeLog(resource, "", record, scope, "")
+	var buf bytes.Buffer
+	err = m.encodeLog(resource, "", record, scope, "", elasticsearch.Index{}, &buf)
 	require.NoError(t, err)
 
-	assert.Equal(t, want, string(doc))
+	assert.Equal(t, want, buf.String())
 }
 
 func TestEncodeLogECSMode(t *testing.T) {
-	resource := pcommon.NewResource()
+	logs := plog.NewLogs()
+	resource := logs.ResourceLogs().AppendEmpty().Resource()
 	err := resource.Attributes().FromRaw(map[string]any{
 		semconv.AttributeServiceName:           "foo.bar",
 		semconv.AttributeServiceVersion:        "1.1.0",
@@ -405,11 +421,12 @@ func TestEncodeLogECSMode(t *testing.T) {
 	require.NoError(t, err)
 	observedTimestamp := pcommon.Timestamp(1710273641123456789)
 	record.SetObservedTimestamp(observedTimestamp)
+	logs.MarkReadOnly()
 
 	var buf bytes.Buffer
 	m := encodeModel{}
-	doc := m.encodeLogECSMode(resource, record, scope)
-	require.NoError(t, doc.Serialize(&buf, false, false))
+	doc := m.encodeLogECSMode(resource, record, scope, elasticsearch.Index{})
+	require.NoError(t, doc.Serialize(&buf, false))
 
 	require.JSONEq(t, `{
 		"@timestamp":                 "2024-03-12T20:00:41.123456789Z",
@@ -520,7 +537,8 @@ func TestEncodeLogECSModeAgentName(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			resource := pcommon.NewResource()
+			logs := plog.NewLogs()
+			resource := logs.ResourceLogs().AppendEmpty().Resource()
 			scope := pcommon.NewInstrumentationScope()
 			record := plog.NewLogRecord()
 
@@ -536,11 +554,12 @@ func TestEncodeLogECSModeAgentName(t *testing.T) {
 
 			timestamp := pcommon.Timestamp(1710373859123456789)
 			record.SetTimestamp(timestamp)
+			logs.MarkReadOnly()
 
 			var buf bytes.Buffer
 			m := encodeModel{}
-			doc := m.encodeLogECSMode(resource, record, scope)
-			require.NoError(t, doc.Serialize(&buf, false, false))
+			doc := m.encodeLogECSMode(resource, record, scope, elasticsearch.Index{})
+			require.NoError(t, doc.Serialize(&buf, false))
 			require.JSONEq(t, fmt.Sprintf(`{
 				"@timestamp": "2024-03-13T23:50:59.123456789Z",
 				"agent.name": %q
@@ -575,7 +594,8 @@ func TestEncodeLogECSModeAgentVersion(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			resource := pcommon.NewResource()
+			logs := plog.NewLogs()
+			resource := logs.ResourceLogs().AppendEmpty().Resource()
 			scope := pcommon.NewInstrumentationScope()
 			record := plog.NewLogRecord()
 
@@ -588,11 +608,12 @@ func TestEncodeLogECSModeAgentVersion(t *testing.T) {
 
 			timestamp := pcommon.Timestamp(1710373859123456789)
 			record.SetTimestamp(timestamp)
+			logs.MarkReadOnly()
 
 			var buf bytes.Buffer
 			m := encodeModel{}
-			doc := m.encodeLogECSMode(resource, record, scope)
-			require.NoError(t, doc.Serialize(&buf, false, false))
+			doc := m.encodeLogECSMode(resource, record, scope, elasticsearch.Index{})
+			require.NoError(t, doc.Serialize(&buf, false))
 
 			if test.expectedAgentVersion == "" {
 				require.JSONEq(t, `{
@@ -682,7 +703,8 @@ func TestEncodeLogECSModeHostOSType(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			resource := pcommon.NewResource()
+			logs := plog.NewLogs()
+			resource := logs.ResourceLogs().AppendEmpty().Resource()
 			scope := pcommon.NewInstrumentationScope()
 			record := plog.NewLogRecord()
 
@@ -698,8 +720,9 @@ func TestEncodeLogECSModeHostOSType(t *testing.T) {
 
 			var buf bytes.Buffer
 			m := encodeModel{}
-			doc := m.encodeLogECSMode(resource, record, scope)
-			require.NoError(t, doc.Serialize(&buf, false, false))
+			logs.MarkReadOnly()
+			doc := m.encodeLogECSMode(resource, record, scope, elasticsearch.Index{})
+			require.NoError(t, doc.Serialize(&buf, false))
 
 			expectedJSON := `{"@timestamp":"2024-03-13T23:50:59.123456789Z", "agent.name":"otlp"`
 			if test.expectedHostOsName != "" {
@@ -749,8 +772,8 @@ func TestEncodeLogECSModeTimestamps(t *testing.T) {
 
 			var buf bytes.Buffer
 			m := encodeModel{}
-			doc := m.encodeLogECSMode(resource, record, scope)
-			require.NoError(t, doc.Serialize(&buf, false, false))
+			doc := m.encodeLogECSMode(resource, record, scope, elasticsearch.Index{})
+			require.NoError(t, doc.Serialize(&buf, false))
 
 			require.JSONEq(t, fmt.Sprintf(
 				`{"@timestamp":%q,"agent.name":"otlp"}`, test.expectedTimestamp,
@@ -904,10 +927,9 @@ func TestMapLogAttributesToECS(t *testing.T) {
 type OTelRecord struct {
 	TraceID                OTelTraceID          `json:"trace_id"`
 	SpanID                 OTelSpanID           `json:"span_id"`
-	Timestamp              time.Time            `json:"@timestamp"`
-	ObservedTimestamp      time.Time            `json:"observed_timestamp"`
 	SeverityNumber         int32                `json:"severity_number"`
 	SeverityText           string               `json:"severity_text"`
+	EventName              string               `json:"event_name"`
 	Attributes             map[string]any       `json:"attributes"`
 	DroppedAttributesCount uint32               `json:"dropped_attributes_count"`
 	Scope                  OTelScope            `json:"scope"`
@@ -1076,6 +1098,30 @@ func TestEncodeLogOtelMode(t *testing.T) {
 				return assignDatastreamData(or, "", ds, ns)
 			},
 		},
+		{
+			name: "event_name from attributes.event.name",
+			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+				or.Attributes["event.name"] = "foo"
+				or.EventName = ""
+				return or
+			}),
+			wantFn: func(or OTelRecord) OTelRecord {
+				or.EventName = "foo"
+				return assignDatastreamData(or)
+			},
+		},
+		{
+			name: "event_name takes precedent over attributes.event.name",
+			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+				or.Attributes["event.name"] = "foo"
+				or.EventName = "bar"
+				return or
+			}),
+			wantFn: func(or OTelRecord) OTelRecord {
+				or.EventName = "bar"
+				return assignDatastreamData(or)
+			},
+		},
 	}
 
 	m := encodeModel{
@@ -1086,10 +1132,10 @@ func TestEncodeLogOtelMode(t *testing.T) {
 	for _, tc := range tests {
 		record, scope, resource := createTestOTelLogRecord(t, tc.rec)
 
-		// This sets the data_stream values default or derived from the record/scope/resources
-		routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), "", true, scope.Name())
+		idx := routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), "", true, scope.Name())
 
-		b, err := m.encodeLog(resource, tc.rec.Resource.SchemaURL, record, scope, tc.rec.Scope.SchemaURL)
+		var buf bytes.Buffer
+		err := m.encodeLog(resource, tc.rec.Resource.SchemaURL, record, scope, tc.rec.Scope.SchemaURL, idx, &buf)
 		require.NoError(t, err)
 
 		want := tc.rec
@@ -1098,7 +1144,7 @@ func TestEncodeLogOtelMode(t *testing.T) {
 		}
 
 		var got OTelRecord
-		err = json.Unmarshal(b, &got)
+		err = json.Unmarshal(buf.Bytes(), &got)
 
 		require.NoError(t, err)
 
@@ -1109,14 +1155,13 @@ func TestEncodeLogOtelMode(t *testing.T) {
 // helper function that creates the OTel LogRecord from the test structure
 func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
 	record := plog.NewLogRecord()
-	record.SetTimestamp(pcommon.Timestamp(uint64(rec.Timestamp.UnixNano())))
-	record.SetObservedTimestamp(pcommon.Timestamp(uint64(rec.ObservedTimestamp.UnixNano())))
 
 	record.SetTraceID(pcommon.TraceID(rec.TraceID))
 	record.SetSpanID(pcommon.SpanID(rec.SpanID))
 	record.SetSeverityNumber(plog.SeverityNumber(rec.SeverityNumber))
 	record.SetSeverityText(rec.SeverityText)
 	record.SetDroppedAttributesCount(rec.DroppedAttributesCount)
+	record.SetEventName(rec.EventName)
 
 	err := record.Attributes().FromRaw(rec.Attributes)
 	require.NoError(t, err)
@@ -1143,6 +1188,7 @@ func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelR
         "event.name": "user-password-change",
         "foo.some": "bar"
     },
+    "event_name": "user-password-change",
     "dropped_attributes_count": 1,
     "observed_timestamp": "2024-03-12T20:00:41.123456789Z",
     "resource": {
@@ -1219,9 +1265,11 @@ func TestEncodeLogScalarObjectConflict(t *testing.T) {
 	td := mockResourceLogs()
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo", "scalar")
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo.bar", "baz")
-	encoded, err := model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "")
+	var buf bytes.Buffer
+	err := model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "", elasticsearch.Index{}, &buf)
 	assert.NoError(t, err)
 
+	encoded := buf.Bytes()
 	assert.True(t, gjson.ValidBytes(encoded))
 	assert.False(t, gjson.GetBytes(encoded, "Attributes\\.foo").Exists())
 	fooValue := gjson.GetBytes(encoded, "Attributes\\.foo\\.value")
@@ -1231,9 +1279,11 @@ func TestEncodeLogScalarObjectConflict(t *testing.T) {
 
 	// If there is an attribute named "foo.value", then "foo" would be omitted rather than renamed.
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo.value", "foovalue")
-	encoded, err = model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "")
+	buf = bytes.Buffer{}
+	err = model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "", elasticsearch.Index{}, &buf)
 	assert.NoError(t, err)
 
+	encoded = buf.Bytes()
 	assert.False(t, gjson.GetBytes(encoded, "Attributes\\.foo").Exists())
 	fooValue = gjson.GetBytes(encoded, "Attributes\\.foo\\.value")
 	assert.Equal(t, "foovalue", fooValue.Str)
@@ -1260,7 +1310,8 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 	bodyMap.CopyTo(logRecord.Body().SetEmptyMap())
 
 	m := encodeModel{}
-	got, err := m.encodeLogBodyMapMode(logRecord)
+	var buf bytes.Buffer
+	err := m.encodeLogBodyMapMode(logRecord, &buf)
 	require.NoError(t, err)
 
 	require.JSONEq(t, `{
@@ -1270,11 +1321,11 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 		"key.a":                      "a",
 		"key.a.b":                    "b",
 		"pi":                         3.14
-	}`, string(got))
+	}`, buf.String())
 
 	// invalid body map
 	logRecord.Body().SetEmptySlice()
-	_, err = m.encodeLogBodyMapMode(logRecord)
+	err = m.encodeLogBodyMapMode(logRecord, &bytes.Buffer{})
 	require.Error(t, err)
 	require.ErrorIs(t, err, ErrInvalidTypeForBodyMapMode)
 }

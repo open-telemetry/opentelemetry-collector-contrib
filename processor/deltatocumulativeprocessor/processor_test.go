@@ -13,11 +13,14 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"gopkg.in/yaml.v3"
 
@@ -97,8 +100,8 @@ func config(t *testing.T, file string) *Config {
 	return cfg
 }
 
-func setup(t testing.TB, cfg *Config) State {
-	t.Helper()
+func setup(tb testing.TB, cfg *Config) State {
+	tb.Helper()
 
 	next := &consumertest.MetricsSink{}
 	if cfg == nil {
@@ -106,13 +109,16 @@ func setup(t testing.TB, cfg *Config) State {
 	}
 
 	tt := setupTestTelemetry()
+	tb.Cleanup(func() {
+		assert.NoError(tb, tt.Shutdown(context.Background()))
+	})
 	proc, err := NewFactory().CreateMetrics(
 		context.Background(),
-		tt.NewSettings(),
+		tt.newSettings(),
 		cfg,
 		next,
 	)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	return State{
 		proc: proc,
@@ -125,7 +131,7 @@ type State struct {
 	proc processor.Metrics
 	sink *consumertest.MetricsSink
 
-	tel componentTestTelemetry
+	tel testTelemetry
 }
 
 func unmarshalMetrics(data []byte, into *pmetric.Metrics) error {
@@ -153,14 +159,35 @@ func TestTelemetry(t *testing.T) {
 
 	_, err := NewFactory().CreateMetrics(
 		context.Background(),
-		tt.NewSettings(),
+		tt.newSettings(),
 		cfg,
 		next,
 	)
 	require.NoError(t, err)
 
 	var rm metricdata.ResourceMetrics
-	if err := tt.reader.Collect(context.Background(), &rm); err != nil {
-		t.Fatal(err)
+	require.NoError(t, tt.reader.Collect(context.Background(), &rm))
+}
+
+type testTelemetry struct {
+	reader        *sdkmetric.ManualReader
+	meterProvider *sdkmetric.MeterProvider
+}
+
+func setupTestTelemetry() testTelemetry {
+	reader := sdkmetric.NewManualReader()
+	return testTelemetry{
+		reader:        reader,
+		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
 	}
+}
+
+func (tt *testTelemetry) newSettings() processor.Settings {
+	set := processortest.NewNopSettings()
+	set.TelemetrySettings.MeterProvider = tt.meterProvider
+	return set
+}
+
+func (tt *testTelemetry) Shutdown(ctx context.Context) error {
+	return tt.meterProvider.Shutdown(ctx)
 }

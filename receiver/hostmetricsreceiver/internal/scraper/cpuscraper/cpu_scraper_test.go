@@ -16,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
@@ -74,7 +74,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newCPUScraper(context.Background(), receivertest.NewNopSettings(), &Config{MetricsBuilderConfig: test.metricsConfig})
+			scraper := newCPUScraper(context.Background(), scrapertest.NewNopSettings(), &Config{MetricsBuilderConfig: test.metricsConfig})
 			if test.bootTimeFunc != nil {
 				scraper.bootTime = test.bootTimeFunc
 			}
@@ -163,7 +163,6 @@ func TestScrape_CpuUtilization(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			settings := test.metricsConfig
@@ -173,7 +172,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 				settings.Metrics.SystemCPUUtilization.Enabled = test.utilization
 			}
 
-			scraper := newCPUScraper(context.Background(), receivertest.NewNopSettings(), &Config{MetricsBuilderConfig: settings})
+			scraper := newCPUScraper(context.Background(), scrapertest.NewNopSettings(), &Config{MetricsBuilderConfig: settings})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
@@ -210,7 +209,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 
 // Error in calculation should be returned as PartialScrapeError
 func TestScrape_CpuUtilizationError(t *testing.T) {
-	scraper := newCPUScraper(context.Background(), receivertest.NewNopSettings(), &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
+	scraper := newCPUScraper(context.Background(), scrapertest.NewNopSettings(), &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
 	// mock times function to force an error in next scrape
 	scraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {
 		return []cpu.TimesStat{{CPU: "1", System: 1, User: 2}}, nil
@@ -278,7 +277,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 		},
 	}
 
-	cpuScraper := newCPUScraper(context.Background(), receivertest.NewNopSettings(), &Config{MetricsBuilderConfig: overriddenMetricsSettings})
+	cpuScraper := newCPUScraper(context.Background(), scrapertest.NewNopSettings(), &Config{MetricsBuilderConfig: overriddenMetricsSettings})
 	for _, scrapeData := range scrapesData {
 		// mock TimeStats and Now
 		cpuScraper.times = func(context.Context, bool) ([]cpu.TimesStat, error) {

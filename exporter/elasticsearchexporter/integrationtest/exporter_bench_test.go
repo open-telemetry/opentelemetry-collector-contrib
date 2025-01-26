@@ -27,7 +27,7 @@ import (
 
 func BenchmarkExporter(b *testing.B) {
 	for _, eventType := range []string{"logs", "metrics", "traces"} {
-		for _, mappingMode := range []string{"none", "ecs", "raw"} {
+		for _, mappingMode := range []string{"none", "ecs", "raw", "otel"} {
 			for _, tc := range []struct {
 				name      string
 				batchSize int
@@ -65,11 +65,12 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	require.NoError(b, err)
 	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
 
+	logs, _ := runnerCfg.provider.GenerateLogs()
+	logs.MarkReadOnly()
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.StopTimer()
 	for i := 0; i < b.N; i++ {
-		logs, _ := runnerCfg.provider.GenerateLogs()
 		b.StartTimer()
 		require.NoError(b, exporter.ConsumeLogs(ctx, logs))
 		b.StopTimer()
@@ -94,11 +95,12 @@ func benchmarkMetrics(b *testing.B, batchSize int, mappingMode string) {
 	require.NoError(b, err)
 	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
 
+	metrics, _ := runnerCfg.provider.GenerateMetrics()
+	metrics.MarkReadOnly()
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.StopTimer()
 	for i := 0; i < b.N; i++ {
-		metrics, _ := runnerCfg.provider.GenerateMetrics()
 		b.StartTimer()
 		require.NoError(b, exporter.ConsumeMetrics(ctx, metrics))
 		b.StopTimer()
@@ -123,11 +125,12 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	require.NoError(b, err)
 	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
 
+	traces, _ := runnerCfg.provider.GenerateTraces()
+	traces.MarkReadOnly()
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.StopTimer()
 	for i := 0; i < b.N; i++ {
-		traces, _ := runnerCfg.provider.GenerateTraces()
 		b.StartTimer()
 		require.NoError(b, exporter.ConsumeTraces(ctx, traces))
 		b.StopTimer()
