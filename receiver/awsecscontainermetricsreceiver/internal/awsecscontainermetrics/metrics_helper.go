@@ -4,7 +4,7 @@
 package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.uber.org/zap"
 )
 
@@ -13,12 +13,12 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 	m := ECSMetrics{}
 
 	if stats.Memory != nil {
-		m.MemoryUsage = aws.Uint64Value(stats.Memory.Usage)
-		m.MemoryMaxUsage = aws.Uint64Value(stats.Memory.MaxUsage)
-		m.MemoryLimit = aws.Uint64Value(stats.Memory.Limit)
+		m.MemoryUsage = aws.ToUint64(stats.Memory.Usage)
+		m.MemoryMaxUsage = aws.ToUint64(stats.Memory.MaxUsage)
+		m.MemoryLimit = aws.ToUint64(stats.Memory.Limit)
 
 		if stats.Memory.Stats != nil {
-			m.MemoryUtilized = (aws.Uint64Value(stats.Memory.Usage) - stats.Memory.Stats["cache"]) / bytesInMiB
+			m.MemoryUtilized = (aws.ToUint64(stats.Memory.Usage) - stats.Memory.Stats["cache"]) / bytesInMiB
 		}
 	} else {
 		logger.Debug("Nil memory stats found for docker container:" + stats.Name)
@@ -31,17 +31,17 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 
 		cpuUsageInVCpu := float64(0)
 		if timeDiffSinceLastRead > 0 {
-			cpuDelta := (float64)(aws.Uint64Value(stats.CPU.CPUUsage.TotalUsage) - aws.Uint64Value(stats.PreviousCPU.CPUUsage.TotalUsage))
+			cpuDelta := (float64)(aws.ToUint64(stats.CPU.CPUUsage.TotalUsage) - aws.ToUint64(stats.PreviousCPU.CPUUsage.TotalUsage))
 			cpuUsageInVCpu = cpuDelta / timeDiffSinceLastRead
 		}
 		cpuUtilized := cpuUsageInVCpu * 100
 
-		m.CPUTotalUsage = aws.Uint64Value(stats.CPU.CPUUsage.TotalUsage)
-		m.CPUUsageInKernelmode = aws.Uint64Value(stats.CPU.CPUUsage.UsageInKernelmode)
-		m.CPUUsageInUserMode = aws.Uint64Value(stats.CPU.CPUUsage.UsageInUserMode)
+		m.CPUTotalUsage = aws.ToUint64(stats.CPU.CPUUsage.TotalUsage)
+		m.CPUUsageInKernelmode = aws.ToUint64(stats.CPU.CPUUsage.UsageInKernelmode)
+		m.CPUUsageInUserMode = aws.ToUint64(stats.CPU.CPUUsage.UsageInUserMode)
 		m.NumOfCPUCores = numOfCores
-		m.CPUOnlineCpus = aws.Uint64Value(stats.CPU.OnlineCpus)
-		m.SystemCPUUsage = aws.Uint64Value(stats.CPU.SystemCPUUsage)
+		m.CPUOnlineCpus = aws.ToUint64(stats.CPU.OnlineCpus)
+		m.SystemCPUUsage = aws.ToUint64(stats.CPU.SystemCPUUsage)
 		m.CPUUsageInVCPU = cpuUsageInVCpu
 		m.CPUUtilized = cpuUtilized
 	} else {
@@ -49,8 +49,8 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 	}
 
 	if stats.NetworkRate != nil {
-		m.NetworkRateRxBytesPerSecond = aws.Float64Value(stats.NetworkRate.RxBytesPerSecond)
-		m.NetworkRateTxBytesPerSecond = aws.Float64Value(stats.NetworkRate.TxBytesPerSecond)
+		m.NetworkRateRxBytesPerSecond = aws.ToFloat64(stats.NetworkRate.RxBytesPerSecond)
+		m.NetworkRateTxBytesPerSecond = aws.ToFloat64(stats.NetworkRate.TxBytesPerSecond)
 	} else {
 		logger.Debug("Nil NetworkRate stats found for docker container:" + stats.Name)
 	}
@@ -86,15 +86,15 @@ func getContainerMetrics(stats *ContainerStats, logger *zap.Logger) ECSMetrics {
 func getNetworkStats(stats map[string]NetworkStats) [8]uint64 {
 	var netStatArray [8]uint64
 	for _, netStat := range stats {
-		netStatArray[0] += aws.Uint64Value(netStat.RxBytes)
-		netStatArray[1] += aws.Uint64Value(netStat.RxPackets)
-		netStatArray[2] += aws.Uint64Value(netStat.RxErrors)
-		netStatArray[3] += aws.Uint64Value(netStat.RxDropped)
+		netStatArray[0] += aws.ToUint64(netStat.RxBytes)
+		netStatArray[1] += aws.ToUint64(netStat.RxPackets)
+		netStatArray[2] += aws.ToUint64(netStat.RxErrors)
+		netStatArray[3] += aws.ToUint64(netStat.RxDropped)
 
-		netStatArray[4] += aws.Uint64Value(netStat.TxBytes)
-		netStatArray[5] += aws.Uint64Value(netStat.TxPackets)
-		netStatArray[6] += aws.Uint64Value(netStat.TxErrors)
-		netStatArray[7] += aws.Uint64Value(netStat.TxDropped)
+		netStatArray[4] += aws.ToUint64(netStat.TxBytes)
+		netStatArray[5] += aws.ToUint64(netStat.TxPackets)
+		netStatArray[6] += aws.ToUint64(netStat.TxErrors)
+		netStatArray[7] += aws.ToUint64(netStat.TxDropped)
 	}
 	return netStatArray
 }
@@ -110,9 +110,9 @@ func extractStorageUsage(stats *DiskStats) (uint64, uint64) {
 	for _, blockStat := range stats.IoServiceBytesRecursives {
 		switch op := blockStat.Op; op {
 		case "Read":
-			readBytes = aws.Uint64Value(blockStat.Value)
+			readBytes = aws.ToUint64(blockStat.Value)
 		case "Write":
-			writeBytes = aws.Uint64Value(blockStat.Value)
+			writeBytes = aws.ToUint64(blockStat.Value)
 		default:
 			// ignoring "Async", "Total", "Sum", etc
 			continue
