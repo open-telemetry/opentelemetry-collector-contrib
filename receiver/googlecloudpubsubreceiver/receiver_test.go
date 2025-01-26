@@ -12,14 +12,13 @@ import (
 	"cloud.google.com/go/pubsub/pstest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/testdata"
@@ -27,9 +26,9 @@ import (
 
 func createBaseReceiver() (*pstest.Server, *pubsubReceiver) {
 	srv := pstest.NewServer()
-	core, _ := observer.New(zap.WarnLevel)
+	settings := receivertest.NewNopSettings()
 	return srv, &pubsubReceiver{
-		logger:    zap.New(core),
+		settings:  settings,
 		userAgent: "test-user-agent",
 
 		config: &Config{
@@ -100,8 +99,7 @@ func TestReceiver(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	core, _ := observer.New(zap.WarnLevel)
-	params := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings()
 	traceSink := new(consumertest.TracesSink)
 	metricSink := new(consumertest.MetricsSink)
 	logSink := new(consumertest.LogsSink)
@@ -110,12 +108,12 @@ func TestReceiver(t *testing.T) {
 		ReceiverID:             component.NewID(metadata.Type),
 		Transport:              reportTransport,
 		LongLivedCtx:           false,
-		ReceiverCreateSettings: params,
+		ReceiverCreateSettings: settings,
 	})
 	require.NoError(t, err)
 
 	receiver := &pubsubReceiver{
-		logger:    zap.New(core),
+		settings:  settings,
 		obsrecv:   obsrecv,
 		userAgent: "test-user-agent",
 
