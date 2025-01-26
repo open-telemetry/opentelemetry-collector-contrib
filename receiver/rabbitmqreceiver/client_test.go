@@ -6,7 +6,6 @@ package rabbitmqreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -47,7 +46,7 @@ func TestNewClient(t *testing.T) {
 		host        component.Host
 		settings    component.TelemetrySettings
 		logger      *zap.Logger
-		expectError error
+		expectError string // Updated to string to match substrings in the error
 	}{
 		{
 			desc: "Invalid HTTP config",
@@ -57,7 +56,7 @@ func TestNewClient(t *testing.T) {
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
 			logger:      zap.NewNop(),
-			expectError: errors.New("failed to create HTTP Client: failed to load TLS config: failed to load CA CertPool File: failed to load cert /non/existent: open \\non\\existent: The system cannot find the path specified."),
+			expectError: "failed to create HTTP Client: failed to load TLS config",
 		},
 		{
 			desc: "Valid Configuration",
@@ -69,16 +68,17 @@ func TestNewClient(t *testing.T) {
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
 			logger:      zap.NewNop(),
-			expectError: nil,
+			expectError: "",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			ac, err := newClient(context.Background(), tc.cfg, tc.host, tc.settings, tc.logger)
-			if tc.expectError != nil {
+			if tc.expectError != "" {
 				require.Nil(t, ac)
-				require.ErrorContains(t, err, tc.expectError.Error())
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tc.expectError) // Check for the substring
 			} else {
 				require.NoError(t, err)
 

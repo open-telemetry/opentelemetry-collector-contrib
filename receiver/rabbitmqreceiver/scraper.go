@@ -63,12 +63,13 @@ func (r *rabbitmqScraper) start(ctx context.Context, host component.Host) error 
 		return fmt.Errorf("invalid configuration: missing endpoint, username, or password")
 	}
 
-	client, err := newClient(ctx, r.cfg, host, r.settings, r.logger)
+	rabbitClient, err := newClient(ctx, r.cfg, host, r.settings, r.logger)
+
 	if err != nil {
 		return fmt.Errorf("failed to initialize RabbitMQ client: %w", err)
 	}
 
-	r.client = client
+	r.client = rabbitClient
 	return nil
 }
 

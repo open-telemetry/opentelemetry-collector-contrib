@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -30,51 +31,50 @@ func TestScraperStart(t *testing.T) {
 	clientConfigInvalid.Endpoint = "invalid://endpoint"
 	clientConfigInvalid.TLSSetting = configtls.ClientConfig{
 		Config: configtls.Config{
-			CAFile: "/non/existent",
+			CAFile: "/non/existent", // Invalid CA file
 		},
 	}
 
 	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.Endpoint = defaultEndpoint
+	clientConfig.Endpoint = "http://localhost:15672" // Valid endpoint
 
+	// Test cases for the scraper start function.
 	testcases := []struct {
 		desc        string
-		scraper     *rabbitmqScraper
+		clientCfg   confighttp.ClientConfig
+		username    string
+		password    string
 		expectError bool
 	}{
 		{
-			desc: "Bad Config",
-			scraper: &rabbitmqScraper{
-				cfg: &Config{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint: "", // Invalid endpoint
-					},
-					Username: "", // Missing username
-					Password: "", // Missing password
-				},
-				settings: componenttest.NewNopTelemetrySettings(),
-			},
+			desc:        "Bad Config - Invalid Endpoint",
+			clientCfg:   clientConfigInvalid,
+			username:    "", // Missing username
+			password:    "", // Missing password
 			expectError: true,
 		},
 		{
-			desc: "Valid Config",
-			scraper: &rabbitmqScraper{
-				cfg: &Config{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint: "http://localhost:15672",
-					},
-					Username: "valid_user",
-					Password: "valid_password",
-				},
-				settings: componenttest.NewNopTelemetrySettings(),
-			},
+			desc:        "Valid Config",
+			clientCfg:   clientConfig,
+			username:    "valid_user",
+			password:    "valid_password",
 			expectError: false,
 		},
 	}
 
+	// Run each test case.
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			err := tc.scraper.start(context.Background(), componenttest.NewNopHost())
+			scraper := &rabbitmqScraper{
+				cfg: &Config{
+					ClientConfig: tc.clientCfg,
+					Username:     tc.username,
+					Password:     configopaque.String(tc.password), // Convert to configopaque.String
+				},
+				settings: componenttest.NewNopTelemetrySettings(),
+			}
+
+			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
