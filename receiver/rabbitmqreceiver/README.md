@@ -34,7 +34,7 @@ The following settings are optional:
 - `endpoint` (default: `http://localhost:15672`): The URL of the node to be monitored.
 - `collection_interval` (default = `10s`): This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 - `tls` (defaults defined [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)): TLS control. By default insecure settings are rejected and certificate verification is on.
-- `enable_node_metrics` (default = `false`): Enables collection of RabbitMQ node-level metrics such as memory usage, file descriptors, and disk space.
+- `enable_node_metrics` (default = `true`): Enables collection of RabbitMQ node-level metrics such as memory usage, file descriptors, and disk space.
 
 ### Example Configuration
 
