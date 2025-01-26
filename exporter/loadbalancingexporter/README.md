@@ -423,6 +423,72 @@ service:
         - debug
 ```
 
+If needing to load balance using an unsupported attribute, a workaround is to temporarily override a supported attribute value and restore it after load balancing:
+
+```yaml
+receivers:
+  # Spans received for load balancing
+  otlp:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+
+  # Spans received after load balancing
+  otlp/load_balanced:
+    protocols:
+      grpc:
+        endpoint: localhost:4417
+        
+processors:
+  # Load balance based on the "k8s.pod.name" resource attribute instead of "service.name"
+  transform/before_load_balancing:
+    error_mode: ignore
+    trace_statements:
+      - context: resource
+        statements:
+          - set(attributes["service.name.backup"], attributes["service.name"])
+          - set(attributes["service.name"], attributes["k8s.pod.name"])
+  
+  # Restore the actual "service.name" attribute after load balancing
+  transform/after_load_balancing:
+    error_mode: ignore
+    trace_statements:
+      - context: resource
+        statements:
+          - set(attributes["service.name"], attributes["service.name.backup"])
+          - delete_key(attributes, "service.name.backup")
+
+exporters:
+  debug:
+  # In this example, the kubernetes service load balances to other pods part of the same service
+  loadbalancing:
+    routing_key: "service"
+    protocol:
+      otlp:
+    resolver:
+      k8s:
+        service: backend-svc.kube-public
+        ports:
+          - 4417
+
+service:
+  pipelines:
+    traces:
+      receivers:
+        - otlp
+      processors:
+        - transform/before_load_balancing
+      exporters:
+        - loadbalancing
+    traces/load_balanced:
+      receivers:
+        - otlp/load_balanced
+      processors:
+        - transform/after_load_balancing
+      exporters: 
+        - debug
+```
+
 ## Metrics
 
 The following metrics are recorded by this exporter:
