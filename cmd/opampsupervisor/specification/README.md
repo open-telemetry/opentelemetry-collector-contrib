@@ -175,6 +175,8 @@ agent:
 
 Please be aware that when using the `.agent.config_files` parameter,
 the configuration files specified are applied after the configuration from the OpAMP server.
+After the configuration files, arguments present in `.agent.args` are passed to the executable binary.
+The environmanet variables specified in `.agent.env` are set in the collector process environment.
 
 The following configuration:
 
@@ -184,12 +186,17 @@ agent:
   config_files: 
     - './custom-config.yaml'
     - './another-custom-config.yaml'
+  args:
+    - '--feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient'
+  env:
+    HOME: '/dev/home'
+    GO_HOME: '~/go'
 ```
 
 results to the following startup parameters for the collector process:
 
 ```shell
-./otel-binary --config opamp-config.yaml --config custom-config.yaml --config another-custom-config.yaml
+./otel-binary --config opamp-config.yaml --config custom-config.yaml --config another-custom-config.yaml --feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient
 ```
 
 In case of conflicting values in the configuration files, the latest applied value takes precedence.
