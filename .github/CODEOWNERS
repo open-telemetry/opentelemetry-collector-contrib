@@ -320,6 +320,7 @@ testbed/mockdatasenders/mockdatadogagentexporter/                @open-telemetry
 reports/distributions/core.yaml    @open-telemetry/collector-contrib-approvers
 reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers
 reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers
+reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 #####################################################
 #
 ## UNMAINTAINED components
