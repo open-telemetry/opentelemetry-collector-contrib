@@ -66,12 +66,6 @@ type MetricsConfig struct {
 	MongodbOperationTime          MetricConfig `mapstructure:"mongodb.operation.time"`
 	MongodbPageFaults             MetricConfig `mapstructure:"mongodb.page_faults"`
 	MongodbQueriesPerSec          MetricConfig `mapstructure:"mongodb.queries_per_sec"`
-	MongodbReplCommandsPerSec     MetricConfig `mapstructure:"mongodb.repl_commands_per_sec"`
-	MongodbReplDeletesPerSec      MetricConfig `mapstructure:"mongodb.repl_deletes_per_sec"`
-	MongodbReplGetmoresPerSec     MetricConfig `mapstructure:"mongodb.repl_getmores_per_sec"`
-	MongodbReplInsertsPerSec      MetricConfig `mapstructure:"mongodb.repl_inserts_per_sec"`
-	MongodbReplQueriesPerSec      MetricConfig `mapstructure:"mongodb.repl_queries_per_sec"`
-	MongodbReplUpdatesPerSec      MetricConfig `mapstructure:"mongodb.repl_updates_per_sec"`
 	MongodbSessionCount           MetricConfig `mapstructure:"mongodb.session.count"`
 	MongodbStorageSize            MetricConfig `mapstructure:"mongodb.storage.size"`
 	MongodbUpdatesPerSec          MetricConfig `mapstructure:"mongodb.updates_per_sec"`
@@ -193,24 +187,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		MongodbQueriesPerSec: MetricConfig{
-			Enabled: false,
-		},
-		MongodbReplCommandsPerSec: MetricConfig{
-			Enabled: false,
-		},
-		MongodbReplDeletesPerSec: MetricConfig{
-			Enabled: false,
-		},
-		MongodbReplGetmoresPerSec: MetricConfig{
-			Enabled: false,
-		},
-		MongodbReplInsertsPerSec: MetricConfig{
-			Enabled: false,
-		},
-		MongodbReplQueriesPerSec: MetricConfig{
-			Enabled: false,
-		},
-		MongodbReplUpdatesPerSec: MetricConfig{
 			Enabled: false,
 		},
 		MongodbSessionCount: MetricConfig{
