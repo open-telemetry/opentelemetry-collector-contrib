@@ -304,7 +304,7 @@ func (s *mongodbScraper) findSecondaryHosts(ctx context.Context) ([]string, erro
 
 	members, ok := result["members"].(primitive.A)
 	if !ok {
-		return nil, fmt.Errorf("invalid members format")
+		return nil, fmt.Errorf("invalid members format: expected type primitive.A but got %T, value: %v", result["members"], result["members"])
 	}
 
 	var hosts []string
@@ -331,10 +331,6 @@ func (s *mongodbScraper) findSecondaryHosts(ctx context.Context) ([]string, erro
 				zap.String("state", state))
 			hosts = append(hosts, name)
 		}
-	}
-
-	if len(hosts) == 0 {
-		s.logger.Warn("No secondary hosts found in replica set")
 	}
 
 	return hosts, nil

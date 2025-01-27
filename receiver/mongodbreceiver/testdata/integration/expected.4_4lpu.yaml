@@ -136,7 +136,7 @@ resourceMetrics:
                   startTimeUnixNano: "1682363202250964000"
                   timeUnixNano: "1682363222253814000"
               isMonotonic: true
-            unit: '{operations}'                                       
+            unit: '{operations}'
           - description: The total time spent performing operations.
             name: mongodb.operation.time
             sum:

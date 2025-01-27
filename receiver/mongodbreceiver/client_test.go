@@ -74,7 +74,16 @@ func (fc *fakeClient) RunCommand(ctx context.Context, db string, command bson.M)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(bson.M), args.Error(1)
+
+	result, ok := args.Get(0).(bson.M)
+	if !ok {
+		err := errors.New("mock returned invalid type")
+		zap.L().Error("type assertion failed",
+			zap.String("expected", "bson.M"))
+		return nil, err
+	}
+
+	return result, args.Error(1)
 }
 
 func TestListDatabaseNames(t *testing.T) {
