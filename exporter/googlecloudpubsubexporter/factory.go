@@ -81,6 +81,11 @@ func createDefaultConfig() component.Config {
 			Behavior:     "current",
 			AllowedDrift: 0,
 		},
+		Ordering: OrderingConfig{
+			Enabled:                 false,
+			FromResourceAttribute:   "",
+			RemoveResourceAttribute: false,
+		},
 	}
 }
 
