@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/aws/smithy-go"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -199,8 +199,8 @@ func (emf *emfExporter) shutdown(_ context.Context) error {
 }
 
 func wrapErrorIfBadRequest(err error) error {
-	var apiErr smithy.APIError
-	if errors.As(err, &apiErr) && apiErr.ErrorCode() < "500" && apiErr.ErrorFault() == smithy.FaultClient {
+	var respErr *smithyhttp.ResponseError
+	if errors.As(err, &respErr) && respErr.HTTPStatusCode() < 500 {
 		return consumererror.NewPermanent(err)
 	}
 	return err

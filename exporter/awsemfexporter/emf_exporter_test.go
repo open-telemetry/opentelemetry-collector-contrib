@@ -6,9 +6,10 @@ package awsemfexporter
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 
-	"github.com/aws/smithy-go"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -32,10 +33,13 @@ func (p *mockPusher) AddLogEntry(_ *cwlogs.Event) error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
-		return &smithy.GenericAPIError{
-			Code:    "400",
-			Message: "",
-			Fault:   smithy.FaultClient,
+		return &smithyhttp.ResponseError{
+			Err: nil,
+			Response: &smithyhttp.Response{
+				Response: &http.Response{
+					StatusCode: http.StatusBadRequest,
+				},
+			},
 		}
 	}
 	return nil
@@ -45,10 +49,13 @@ func (p *mockPusher) ForceFlush() error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
-		return &smithy.GenericAPIError{
-			Code:    "400",
-			Message: "",
-			Fault:   smithy.FaultClient,
+		return &smithyhttp.ResponseError{
+			Err: nil,
+			Response: &smithyhttp.Response{
+				Response: &http.Response{
+					StatusCode: http.StatusBadRequest,
+				},
+			},
 		}
 	}
 	return nil
@@ -408,17 +415,23 @@ func TestNewExporterWithoutSession(t *testing.T) {
 }
 
 func TestWrapErrorIfBadRequest(t *testing.T) {
-	awsErr := &smithy.GenericAPIError{
-		Code:    "400",
-		Message: "",
-		Fault:   smithy.FaultClient,
+	awsErr := &smithyhttp.ResponseError{
+		Err: nil,
+		Response: &smithyhttp.Response{
+			Response: &http.Response{
+				StatusCode: http.StatusBadRequest,
+			},
+		},
 	}
 	err := wrapErrorIfBadRequest(awsErr)
 	assert.True(t, consumererror.IsPermanent(err))
-	awsErr = &smithy.GenericAPIError{
-		Code:    "500",
-		Message: "",
-		Fault:   smithy.FaultServer,
+	awsErr = &smithyhttp.ResponseError{
+		Err: nil,
+		Response: &smithyhttp.Response{
+			Response: &http.Response{
+				StatusCode: http.StatusInternalServerError,
+			},
+		},
 	}
 	err = wrapErrorIfBadRequest(awsErr)
 	assert.False(t, consumererror.IsPermanent(err))
