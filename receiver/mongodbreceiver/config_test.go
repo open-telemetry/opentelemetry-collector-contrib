@@ -165,7 +165,7 @@ func TestOptions(t *testing.T) {
 		ReplicaSet: "rs-1",
 	}
 
-	clientOptions := cfg.ClientOptions(false)
+	clientOptions := cfg.ClientOptions()
 	require.Equal(t, clientOptions.Auth.Username, cfg.Username)
 	require.Equal(t,
 		clientOptions.ConnectTimeout.Milliseconds(),
@@ -191,7 +191,7 @@ func TestOptionsTLS(t *testing.T) {
 			},
 		},
 	}
-	opts := cfg.ClientOptions(false)
+	opts := cfg.ClientOptions()
 	require.NotNil(t, opts.TLSConfig)
 }
 

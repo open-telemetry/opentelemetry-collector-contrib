@@ -413,54 +413,6 @@ metrics:
     gauge:
       value_type: double
       aggregation_temporality: delta
-      monotonic: false      
-  mongodb.repl_queries_per_sec:
-    description: The number of replicated queries executed per second.
-    unit: "{query}/s"
-    enabled: false
-    gauge:
-      value_type: double
-      aggregation_temporality: delta
-      monotonic: false
-  mongodb.repl_inserts_per_sec:
-    description: The number of replicated insertions executed per second.
-    unit: "{insert}/s"
-    enabled: false
-    gauge:
-      value_type: double
-      aggregation_temporality: delta
-      monotonic: false
-  mongodb.repl_commands_per_sec:
-    description: The number of replicated commands executed per second.
-    unit: "{command}/s"
-    enabled: false
-    gauge:
-      value_type: double
-      aggregation_temporality: delta
-      monotonic: false
-  mongodb.repl_getmores_per_sec:
-    description: The number of replicated getmores executed per second.
-    unit: "{getmore}/s"
-    enabled: false
-    gauge:
-      value_type: double
-      aggregation_temporality: delta
-      monotonic: false
-  mongodb.repl_deletes_per_sec:
-    description: The number of replicated deletes executed per second.
-    unit: "{delete}/s"
-    enabled: false
-    gauge:
-      value_type: double
-      aggregation_temporality: delta
-      monotonic: false 
-  mongodb.repl_updates_per_sec:
-    description: The number of replicated updates executed per second.
-    unit: "{update}/s"
-    enabled: false
-    gauge:
-      value_type: double
-      aggregation_temporality: delta
       monotonic: false
   mongodb.active.writes:
     description: The number of write operations currently being processed.

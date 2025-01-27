@@ -13,9 +13,7 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -42,14 +40,11 @@ type mongodbScraper struct {
 	logger             *zap.Logger
 	config             *Config
 	client             client
-	secondaryClients   []client
 	mongoVersion       *version.Version
 	mb                 *metadata.MetricsBuilder
 	prevTimestamp      pcommon.Timestamp
-	prevReplTimestamp  pcommon.Timestamp
 	prevFlushTimestamp pcommon.Timestamp
 	prevCounts         map[string]int64
-	prevReplCounts     map[string]int64
 	prevFlushCount     int64
 }
 
@@ -60,68 +55,24 @@ func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScrap
 		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 		mongoVersion:       unknownVersion(),
 		prevTimestamp:      pcommon.Timestamp(0),
-		prevReplTimestamp:  pcommon.Timestamp(0),
 		prevFlushTimestamp: pcommon.Timestamp(0),
 		prevCounts:         make(map[string]int64),
-		prevReplCounts:     make(map[string]int64),
 		prevFlushCount:     0,
 	}
 }
 
 func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
-	c, err := newClient(ctx, s.config, s.logger, false)
+	c, err := newClient(ctx, s.config, s.logger)
 	if err != nil {
 		return fmt.Errorf("create mongo client: %w", err)
 	}
 	s.client = c
-
-	// Skip secondary host discovery if direct connection is enabled
-	if s.config.DirectConnection {
-		return nil
-	}
-
-	secondaries, err := s.findSecondaryHosts(ctx)
-	if err != nil {
-		s.logger.Warn("failed to find secondary hosts", zap.Error(err))
-		return nil
-	}
-
-	for _, secondary := range secondaries {
-		secondaryConfig := *s.config
-		secondaryConfig.Hosts = []confignet.TCPAddrConfig{
-			{
-				Endpoint: secondary,
-			},
-		}
-
-		secondaryClient, err := newClient(ctx, &secondaryConfig, s.logger, true)
-		if err != nil {
-			s.logger.Warn("failed to connect to secondary", zap.String("host", secondary), zap.Error(err))
-			continue
-		}
-		s.secondaryClients = append(s.secondaryClients, secondaryClient)
-	}
-
 	return nil
 }
 
 func (s *mongodbScraper) shutdown(ctx context.Context) error {
-	var errs []error
-
 	if s.client != nil {
-		if err := s.client.Disconnect(ctx); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	for _, client := range s.secondaryClients {
-		if err := client.Disconnect(ctx); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	if len(errs) > 0 {
-		return fmt.Errorf("multiple disconnect errors: %v", errs)
+		return s.client.Disconnect(ctx)
 	}
 	return nil
 }
@@ -293,45 +244,4 @@ func serverAddressAndPort(serverStatus bson.M) (string, int64, error) {
 	default:
 		return "", 0, fmt.Errorf("unexpected host format: %s", host)
 	}
-}
-
-func (s *mongodbScraper) findSecondaryHosts(ctx context.Context) ([]string, error) {
-	result, err := s.client.RunCommand(ctx, "admin", bson.M{"replSetGetStatus": 1})
-	if err != nil {
-		s.logger.Error("Failed to get replica set status", zap.Error(err))
-		return nil, fmt.Errorf("failed to get replica set status: %w", err)
-	}
-
-	members, ok := result["members"].(primitive.A)
-	if !ok {
-		return nil, fmt.Errorf("invalid members format: expected type primitive.A but got %T, value: %v", result["members"], result["members"])
-	}
-
-	var hosts []string
-	for _, member := range members {
-		m, ok := member.(bson.M)
-		if !ok {
-			continue
-		}
-
-		state, ok := m["stateStr"].(string)
-		if !ok {
-			continue
-		}
-
-		name, ok := m["name"].(string)
-		if !ok {
-			continue
-		}
-
-		// Only add actual secondaries, not arbiters or other states
-		if state == "SECONDARY" {
-			s.logger.Debug("Found secondary",
-				zap.String("host", name),
-				zap.String("state", state))
-			hosts = append(hosts, name)
-		}
-	}
-
-	return hosts, nil
 }
