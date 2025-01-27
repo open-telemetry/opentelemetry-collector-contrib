@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
@@ -129,6 +131,20 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			logs := tln.AllLogs()
 			require.Len(t, logs, 1)
 			assert.NoError(t, plogtest.CompareLogs(wantLogData, logs[0]))
+
+			// Test profiles consumer
+			tpn := new(consumertest.ProfilesSink)
+			rpp, err := createProfilesProcessor(context.Background(), processortest.NewNopSettings(), tt.config, tpn)
+			require.NoError(t, err)
+			assert.True(t, rpp.Capabilities().MutatesData)
+
+			sourceProfileData := generateProfileData(tt.sourceAttributes)
+			wantProfileData := generateProfileData(tt.wantAttributes)
+			err = rpp.ConsumeProfiles(context.Background(), sourceProfileData)
+			require.NoError(t, err)
+			profiles := tpn.AllProfiles()
+			require.Len(t, profiles, 1)
+			assert.NoError(t, pprofiletest.CompareProfiles(wantProfileData, profiles[0]))
 		})
 	}
 }
@@ -167,4 +183,16 @@ func generateLogData(attributes map[string]string) plog.Logs {
 		resource.Attributes().PutStr(k, v)
 	}
 	return ld
+}
+
+func generateProfileData(attributes map[string]string) pprofile.Profiles {
+	pd := testdata.GenerateProfilesOneEmptyResourceProfiles()
+	if attributes == nil {
+		return pd
+	}
+	resource := pd.ResourceProfiles().At(0).Resource()
+	for k, v := range attributes {
+		resource.Attributes().PutStr(k, v)
+	}
+	return pd
 }
