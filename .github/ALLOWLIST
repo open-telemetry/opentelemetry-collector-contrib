@@ -24,3 +24,4 @@ exporter/kineticaexporter/
 exporter/opensearchexporter/
 extension/observer/ecstaskobserver/
 receiver/awscloudwatchmetricsreceiver/
+receiver/rabbitmqreceiver/
