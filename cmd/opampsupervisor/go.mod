@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsuperv
 
 go 1.22.0
 
-replace github.com/open-telemetry/opamp-go => /Users/ian/git/opamp-go
-
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/uuid v1.6.0
@@ -12,7 +10,7 @@ require (
 	github.com/knadh/koanf/providers/file v1.1.2
 	github.com/knadh/koanf/providers/rawbytes v0.1.0
 	github.com/knadh/koanf/v2 v2.1.2
-	github.com/open-telemetry/opamp-go v0.18.1-0.20250109233938-e6fac32dddf5
+	github.com/open-telemetry/opamp-go v0.19.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/config/configopaque v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/config/configtls v1.24.1-0.20250123125445-24f88da7b583
