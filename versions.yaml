@@ -181,6 +181,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor
