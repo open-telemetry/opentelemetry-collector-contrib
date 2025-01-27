@@ -46,8 +46,8 @@ type traceExporter struct {
 	params           exporter.Settings
 	cfg              *Config
 	ctx              context.Context         // ctx triggers shutdown upon cancellation
-	client           *zorkian.Client         // client sends runnimg metrics to backend & performs API validation
-	metricsAPI       *datadogV2.MetricsApi   // client sends runnimg metrics to backend
+	client           *zorkian.Client         // client sends running metrics to backend & performs API validation
+	metricsAPI       *datadogV2.MetricsApi   // client sends running metrics to backend
 	scrubber         scrub.Scrubber          // scrubber scrubs sensitive information from error messages
 	onceMetadata     *sync.Once              // onceMetadata ensures that metadata is sent only once across all exporters
 	agent            *agent.Agent            // agent processes incoming traces
@@ -226,6 +226,11 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 		acfg.HTTPClientFunc = func() *http.Client {
 			return clientutil.NewHTTPClient(cfg.ClientConfig)
 		}
+	}
+	if datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
+		acfg.Features["enable_operation_and_resource_name_logic_v2"] = struct{}{}
+	} else {
+		params.Logger.Info("Please enable feature gate datadog.EnableOperationAndResourceNameV2 for improved operation and resource name logic. This feature will be enabled by default in the future - if you have Datadog monitors or alerts set on operation/resource names, you may need to migrate them to the new convention.")
 	}
 	if v := cfg.Traces.GetFlushInterval(); v > 0 {
 		acfg.TraceWriter.FlushPeriodSeconds = v

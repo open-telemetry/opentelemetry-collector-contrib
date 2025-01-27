@@ -252,13 +252,13 @@ func TestDomainWithAllExporters(t *testing.T) {
 	assert.NoError(t, le.shutdown(context.Background()))
 }
 
-func TestEndpoindsAndDomainWithAllExporters(t *testing.T) {
+func TestEndpointsAndDomainWithAllExporters(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "domain_endoints").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "domain_endpoints").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
