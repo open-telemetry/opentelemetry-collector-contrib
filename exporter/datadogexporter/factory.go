@@ -504,7 +504,7 @@ func (f *factory) createLogsExporter(
 			return nil
 		}
 	case isLogsAgentExporterEnabled():
-		la, exp, err := newLogsAgentExporter(ctx, set, cfg, hostProvider)
+		la, exp, err := newLogsAgentExporter(ctx, set, cfg, hostProvider, f.gatewayUsage)
 		if err != nil {
 			cancel()
 			return nil, err
@@ -512,7 +512,7 @@ func (f *factory) createLogsExporter(
 		logsAgent = la
 		pusher = exp.ConsumeLogs
 	default:
-		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, attributesTranslator, hostProvider, metadataReporter)
+		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, attributesTranslator, hostProvider, metadataReporter, f.gatewayUsage)
 		if err != nil {
 			cancel()
 			return nil, err

@@ -7,25 +7,28 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/DataDog/datadog-agent/comp/logs/agent/config"
 	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline"
 	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl"
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter"
 	"github.com/DataDog/datadog-agent/pkg/logs/sources"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	logsmapping "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+	"go.uber.org/zap"
 )
 
 const (
@@ -45,6 +48,9 @@ type logsExporter struct {
 	onceMetadata     *sync.Once
 	sourceProvider   source.Provider
 	metadataReporter *inframetadata.Reporter
+	retrier          *clientutil.Retrier
+	metricsAPI       *datadogV2.MetricsApi
+	gatewayUsage     *attributes.GatewayUsage
 }
 
 // newLogsExporter creates a new instance of logsExporter
@@ -56,16 +62,19 @@ func newLogsExporter(
 	attributesTranslator *attributes.Translator,
 	sourceProvider source.Provider,
 	metadataReporter *inframetadata.Reporter,
+	gatewayUsage *attributes.GatewayUsage,
 ) (*logsExporter, error) {
 	// create Datadog client
 	// validation endpoint is provided by Metrics
 	errchan := make(chan error)
+	var metricsAPI *datadogV2.MetricsApi
 	if isMetricExportV2Enabled() {
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
 			cfg.Metrics.TCPAddrConfig.Endpoint,
 			cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
+		metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
 		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
 		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
@@ -82,7 +91,7 @@ func newLogsExporter(
 		return nil, fmt.Errorf("failed to create logs translator: %w", err)
 	}
 	s := logs.NewSender(cfg.Logs.TCPAddrConfig.Endpoint, params.Logger, cfg.ClientConfig, cfg.Logs.DumpPayloads, string(cfg.API.Key))
-
+	scrubber := scrub.NewScrubber()
 	return &logsExporter{
 		params:           params,
 		cfg:              cfg,
@@ -90,9 +99,12 @@ func newLogsExporter(
 		translator:       translator,
 		sender:           s,
 		onceMetadata:     onceMetadata,
-		scrubber:         scrub.NewScrubber(),
+		scrubber:         scrubber,
 		sourceProvider:   sourceProvider,
 		metadataReporter: metadataReporter,
+		retrier:          clientutil.NewRetrier(params.Logger, cfg.BackOffConfig, scrubber),
+		metricsAPI:       metricsAPI,
+		gatewayUsage:     gatewayUsage,
 	}, nil
 }
 
@@ -120,7 +132,38 @@ func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err err
 	}
 
 	payloads := exp.translator.MapLogs(ctx, ld)
+	hosts := make(map[string]struct{})
+
+	for _, payload := range payloads {
+		if payload.Hostname != nil {
+			hosts[*payload.Hostname] = struct{}{}
+		}
+	}
+	exp.exportUsageMetrics(ctx, hosts)
 	return exp.sender.SubmitLogs(exp.ctx, payloads)
+}
+
+func (exp *logsExporter) exportUsageMetrics(ctx context.Context, hosts map[string]struct{}) {
+	now := pcommon.NewTimestampFromTime(time.Now())
+	buildTags := metrics.TagsFromBuildInfo(exp.params.BuildInfo)
+	var err error
+	if exp.metricsAPI != nil {
+		series := make([]datadogV2.MetricSeries, 0, len(hosts))
+		timestamp := uint64(now)
+		for host := range hosts {
+			series = append(series, metrics.GatewayUsageGauge(timestamp, host, buildTags, exp.gatewayUsage))
+		}
+
+		_, err = exp.retrier.DoWithRetries(ctx, func(context.Context) error {
+			ctx2 := clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
+			_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx2, datadogV2.MetricPayload{Series: series}, *clientutil.GZipSubmitMetricsOptionalParameters)
+			return clientutil.WrapError(merr, httpresp)
+		})
+	}
+
+	if err != nil {
+		exp.params.Logger.Error("Error posting hostname/tags series", zap.Error(err))
+	}
 }
 
 // newLogsAgentExporter creates new instances of the logs agent and the logs agent exporter
@@ -129,6 +172,7 @@ func newLogsAgentExporter(
 	params exporter.Settings,
 	cfg *Config,
 	sourceProvider source.Provider,
+	gatewayUsage *attributes.GatewayUsage,
 ) (logsagentpipeline.LogsAgent, *logsagentexporter.Exporter, error) {
 	logComponent := newLogComponent(params.TelemetrySettings)
 	cfgComponent := newConfigComponent(params.TelemetrySettings, cfg)
