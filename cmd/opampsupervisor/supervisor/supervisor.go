@@ -484,7 +484,7 @@ func (s *Supervisor) startOpAMPClient() error {
 	}
 
 	if ac, ok := s.availableComponents.Load().(*protobufs.AvailableComponents); ok && ac != nil {
-		if err := s.opampClient.SetAvailableComponents(ac); err != nil {
+		if err = s.opampClient.SetAvailableComponents(ac); err != nil {
 			return err
 		}
 	}
