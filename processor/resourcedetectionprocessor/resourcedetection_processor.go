@@ -31,7 +31,7 @@ func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component
 	client, _ := rdp.httpClientSettings.ToClient(ctx, host, rdp.telemetrySettings)
 	ctx = internal.ContextWithClient(ctx, client)
 	var err error
-	rdp.resource, rdp.schemaURL, err = rdp.provider.Get(ctx, client)
+	rdp.resource, rdp.schemaURL, err = rdp.provider.Get(ctx, client) // here
 	return err
 }
 
