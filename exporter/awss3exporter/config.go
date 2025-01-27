@@ -64,7 +64,7 @@ type Config struct {
 
 func (c *Config) Validate() error {
 	var errs error
-	var validStorageClasses = map[string]bool{
+	validStorageClasses := map[string]bool{
 		"STANDARD":            true,
 		"STANDARD_IA":         true,
 		"ONEZONE_IA":          true,

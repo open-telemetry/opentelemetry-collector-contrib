@@ -92,7 +92,7 @@ func TestConfigS3StorageClaas(t *testing.T) {
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
-	// nolint:staticcheck
+	//nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(
 		filepath.Join("testdata", "config-s3_storage_class.yaml"), factories)
 
