@@ -5,9 +5,10 @@ package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/config/confignet"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/config/confignet"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"

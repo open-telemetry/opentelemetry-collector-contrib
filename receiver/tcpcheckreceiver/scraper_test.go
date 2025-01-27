@@ -1,14 +1,18 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver"
 
 import (
 	"bufio"
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/config/confignet"
 	"net"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/config/confignet"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,7 +47,7 @@ func (server *Server) runTCPServer(t *testing.T) string {
 	return listener.Addr().String()
 }
 
-func (server *Server) runTCPServerError(t *testing.T) (string, error) {
+func (server *Server) runTCPServerError() (string, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%s", server.host, server.port))
 	if err != nil {
 		return "", err
@@ -171,7 +175,7 @@ func TestScraper(t *testing.T) {
 
 func TestScraper_TCPErrorMetrics(t *testing.T) {
 	s := newTCPServer("127.0.0.1", "8081")
-	endpoint, _ := s.runTCPServerError(t)
+	endpoint, _ := s.runTCPServerError()
 	defer s.shutdown()
 
 	testCases := []struct {

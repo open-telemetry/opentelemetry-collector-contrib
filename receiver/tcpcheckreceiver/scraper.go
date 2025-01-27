@@ -5,16 +5,18 @@ package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/config/confignet"
-	"go.uber.org/zap"
 	"sync"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
 )
 
 type scraper struct {
@@ -31,7 +33,6 @@ type TCPConnectionState struct {
 }
 
 func getConnectionState(tcpConfig *confignet.TCPAddrConfig) (TCPConnectionState, error) {
-
 	fmt.Println(tcpConfig.Endpoint, tcpConfig.DialerConfig)
 	conn, err := tcpConfig.Dial(context.Background())
 	if err != nil {
@@ -49,7 +50,6 @@ func getConnectionState(tcpConfig *confignet.TCPAddrConfig) (TCPConnectionState,
 func (s *scraper) scrapeEndpoint(tcpConfig *confignet.TCPAddrConfig, wg *sync.WaitGroup, mux *sync.Mutex) {
 	defer wg.Done()
 	const pointValue int64 = 1
-	const fail int64 = 0
 
 	start := time.Now()
 	_, err := s.getConnectionState(tcpConfig)
