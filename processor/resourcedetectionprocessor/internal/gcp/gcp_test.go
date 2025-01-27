@@ -142,6 +142,37 @@ func TestDetect(t *testing.T) {
 			},
 		},
 		{
+			desc: "GCE with MIG",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:              "my-project",
+				cloudPlatform:          gcp.GCE,
+				gceHostID:              "1472385723456792345",
+				gceHostName:            "my-gke-node-1234",
+				gceHostType:            "n1-standard1",
+				gceAvailabilityZone:    "us-central1-c",
+				gceRegion:              "us-central1",
+				gcpGceInstanceHostname: "custom.dns.example.com",
+				gcpGceInstanceName:     "my-gke-node-1234",
+				gcpGceManagedInstanceGroup: gcp.ManagedInstanceGroup{
+					Name:     "my-gke-node",
+					Location: "us-central1",
+					Type:     gcp.Region,
+				},
+			}),
+			expectedResource: map[string]any{
+				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID:        "my-project",
+				conventions.AttributeCloudPlatform:         conventions.AttributeCloudPlatformGCPComputeEngine,
+				conventions.AttributeHostID:                "1472385723456792345",
+				conventions.AttributeHostName:              "my-gke-node-1234",
+				conventions.AttributeHostType:              "n1-standard1",
+				conventions.AttributeCloudRegion:           "us-central1",
+				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
+				"gcp.gce.instance_group_manager.name":      "my-gke-node",
+				"gcp.gce.instance_group_manager.region":    "us-central1",
+			},
+		},
+		{
 			desc: "Cloud Run",
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:       "my-project",
@@ -456,6 +487,7 @@ type fakeGCPDetector struct {
 	gcpCloudRunJobTaskIndex         string
 	gcpGceInstanceName              string
 	gcpGceInstanceHostname          string
+	gcpGceManagedInstanceGroup      gcp.ManagedInstanceGroup
 	gcpBareMetalSolutionInstanceID  string
 	gcpBareMetalSolutionCloudRegion string
 	gcpBareMetalSolutionProjectID   string
@@ -620,6 +652,13 @@ func (f *fakeGCPDetector) GCEInstanceHostname() (string, error) {
 		return "", f.err
 	}
 	return f.gcpGceInstanceHostname, nil
+}
+
+func (f *fakeGCPDetector) GCEManagedInstanceGroup() (gcp.ManagedInstanceGroup, error) {
+	if f.err != nil {
+		return gcp.ManagedInstanceGroup{}, f.err
+	}
+	return f.gcpGceManagedInstanceGroup, nil
 }
 
 func (f *fakeGCPDetector) BareMetalSolutionInstanceID() (string, error) {
