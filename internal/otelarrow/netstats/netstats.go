@@ -6,7 +6,6 @@ package netstats // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/otel/attribute"
@@ -128,13 +127,6 @@ func makeRecvMetrics(prefix string, meter metric.Meter, major bool) (recv, recvW
 
 // NewExporterNetworkReporter creates a new NetworkReporter configured for an exporter.
 func NewExporterNetworkReporter(settings exporter.Settings) (*NetworkReporter, error) {
-	level := settings.TelemetrySettings.MetricsLevel
-
-	if level <= configtelemetry.LevelBasic {
-		// Note: NetworkReporter implements nil a check.
-		return nil, nil
-	}
-
 	meter := settings.TelemetrySettings.MeterProvider.Meter(scopeName)
 	rep := &NetworkReporter{
 		isExporter:    true,
@@ -143,33 +135,22 @@ func NewExporterNetworkReporter(settings exporter.Settings) (*NetworkReporter, e
 	}
 
 	var errors, err error
-	if level > configtelemetry.LevelNormal {
-		rep.compSizeHisto, err = meter.Int64Histogram("otelcol_"+ExporterKey+"_"+CompSize, metric.WithDescription(compSizeDescription), metric.WithUnit(bytesUnit))
-		errors = multierr.Append(errors, err)
-	}
+	rep.compSizeHisto, err = meter.Int64Histogram("otelcol_"+ExporterKey+"_"+CompSize, metric.WithDescription(compSizeDescription), metric.WithUnit(bytesUnit))
+	errors = multierr.Append(errors, err)
 
 	rep.sentBytes, rep.sentWireBytes, err = makeSentMetrics("otelcol_"+ExporterKey, meter, true)
 	errors = multierr.Append(errors, err)
 
 	// Normally, an exporter counts sent bytes, and skips received
 	// bytes.  LevelDetailed will reveal exporter-received bytes.
-	if level > configtelemetry.LevelNormal {
-		rep.recvBytes, rep.recvWireBytes, err = makeRecvMetrics("otelcol_"+ExporterKey, meter, false)
-		errors = multierr.Append(errors, err)
-	}
+	rep.recvBytes, rep.recvWireBytes, err = makeRecvMetrics("otelcol_"+ExporterKey, meter, false)
+	errors = multierr.Append(errors, err)
 
 	return rep, errors
 }
 
 // NewReceiverNetworkReporter creates a new NetworkReporter configured for an exporter.
 func NewReceiverNetworkReporter(settings receiver.Settings) (*NetworkReporter, error) {
-	level := settings.TelemetrySettings.MetricsLevel
-
-	if level <= configtelemetry.LevelBasic {
-		// Note: NetworkReporter implements nil a check.
-		return nil, nil
-	}
-
 	meter := settings.MeterProvider.Meter(scopeName)
 	rep := &NetworkReporter{
 		isExporter:    false,
@@ -178,20 +159,16 @@ func NewReceiverNetworkReporter(settings receiver.Settings) (*NetworkReporter, e
 	}
 
 	var errors, err error
-	if level > configtelemetry.LevelNormal {
-		rep.compSizeHisto, err = meter.Int64Histogram("otelcol_"+ReceiverKey+"_"+CompSize, metric.WithDescription(compSizeDescription), metric.WithUnit(bytesUnit))
-		errors = multierr.Append(errors, err)
-	}
+	rep.compSizeHisto, err = meter.Int64Histogram("otelcol_"+ReceiverKey+"_"+CompSize, metric.WithDescription(compSizeDescription), metric.WithUnit(bytesUnit))
+	errors = multierr.Append(errors, err)
 
 	rep.recvBytes, rep.recvWireBytes, err = makeRecvMetrics("otelcol_"+ReceiverKey, meter, true)
 	errors = multierr.Append(errors, err)
 
 	// Normally, a receiver counts received bytes, and skips sent
 	// bytes.  LevelDetailed will reveal receiver-sent bytes.
-	if level > configtelemetry.LevelNormal {
-		rep.sentBytes, rep.sentWireBytes, err = makeSentMetrics("otelcol_"+ReceiverKey, meter, false)
-		errors = multierr.Append(errors, err)
-	}
+	rep.sentBytes, rep.sentWireBytes, err = makeSentMetrics("otelcol_"+ReceiverKey, meter, false)
+	errors = multierr.Append(errors, err)
 
 	return rep, errors
 }

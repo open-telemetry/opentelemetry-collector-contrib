@@ -30,7 +30,7 @@ type bestOfNPrioritizer struct {
 	// state tracks the work being handled by all streams.
 	state []*streamWorkState
 
-	// numChoices is the number of streams to consder in each decision.
+	// numChoices is the number of streams to consider in each decision.
 	numChoices int
 
 	// loadFunc is the load function.
@@ -71,7 +71,7 @@ func newBestOfNPrioritizer(dc doneCancel, numChoices, numStreams int, lf loadFun
 	}
 
 	for i := 0; i < numStreams; i++ {
-		// TODO It's not clear if/when the the prioritizer can
+		// TODO It's not clear if/when the prioritizer can
 		// become a bottleneck.
 		go lp.run()
 	}
