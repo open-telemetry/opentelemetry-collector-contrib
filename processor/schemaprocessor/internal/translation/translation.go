@@ -193,11 +193,11 @@ func (t *translator) ApplyScopeLogChanges(scopeLogs plog.ScopeLogs, inSchemaURL 
 					return err
 				}
 			case Revert:
-				err = rev.all.Rollback(log)
+				err = rev.logs.Rollback(log)
 				if err != nil {
 					return err
 				}
-				err = rev.logs.Rollback(log)
+				err = rev.all.Rollback(log)
 				if err != nil {
 					return err
 				}
