@@ -27,11 +27,10 @@ func createToSnakeCaseFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 		return nil, fmt.Errorf("ToSnakeCaseFactory args must be of type *ToSnakeCaseArguments[K]")
 	}
 
-	return toSnakeCase(args.Target)
+	return toSnakeCase(args.Target), nil
 }
 
-//nolint:unparam
-func toSnakeCase[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func toSnakeCase[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -43,5 +42,5 @@ func toSnakeCase[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
 		}
 
 		return strcase.ToSnake(val), nil
-	}, nil
+	}
 }

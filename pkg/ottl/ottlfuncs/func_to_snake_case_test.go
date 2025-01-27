@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -67,8 +66,7 @@ func Test_toSnakeCase(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := toSnakeCase(tt.target)
-			assert.NoError(t, err)
+			exprFunc := toSnakeCase(tt.target)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -103,9 +101,8 @@ func Test_toSnakeCaseRuntimeError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := toSnakeCase[any](tt.target)
-			require.NoError(t, err)
-			_, err = exprFunc(context.Background(), nil)
+			exprFunc := toSnakeCase[any](tt.target)
+			_, err := exprFunc(context.Background(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
