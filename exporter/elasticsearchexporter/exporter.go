@@ -147,13 +147,14 @@ func (e *elasticsearchExporter) pushLogRecord(
 
 	buf := e.bufferPool.NewPooledBuffer()
 	docID := e.extractDocumentIDAttribute(record.Attributes())
+	pipeline := e.extractDocumentPipelineAttribute(record.Attributes())
 	if err := encoder.encodeLog(ec, record, index, buf.Buffer); err != nil {
 		buf.Recycle()
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
 
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, docID, buf, nil, docappender.ActionCreate)
+	return bulkIndexerSession.Add(ctx, index.Index, docID, pipeline, buf, nil, docappender.ActionCreate)
 }
 
 type dataPointsGroup struct {
@@ -189,7 +190,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 	}
 	defer session.End()
 
-	groupedDataPointsByIndex := make(map[elasticsearch.Index]map[uint32]*dataPointsGroup)
+	groupedDataPointsByIndex := make(map[elasticsearch.Index]map[string]map[uint32]*dataPointsGroup)
 	var validationErrs []error // log instead of returning these so that upstream does not retry
 	var errs []error
 	resourceMetrics := metrics.ResourceMetrics()
@@ -209,10 +210,16 @@ func (e *elasticsearchExporter) pushMetricsData(
 					if err != nil {
 						return err
 					}
-					groupedDataPoints, ok := groupedDataPointsByIndex[index]
+					pipeline := e.extractDocumentPipelineAttribute(dp.Attributes())
+					_, ok := groupedDataPointsByIndex[index]
+					if !ok {
+						pipelineMap := make(map[string]map[uint32]*dataPointsGroup)
+						groupedDataPointsByIndex[index] = pipelineMap
+					}
+					groupedDataPoints, ok := groupedDataPointsByIndex[index][pipeline]
 					if !ok {
 						groupedDataPoints = make(map[uint32]*dataPointsGroup)
-						groupedDataPointsByIndex[index] = groupedDataPoints
+						groupedDataPointsByIndex[index][pipeline] = groupedDataPoints
 					}
 					dpHash := hasher.hashDataPoint(resource, scope, dp)
 					dpGroup, ok := groupedDataPoints[dpHash]
@@ -289,32 +296,35 @@ func (e *elasticsearchExporter) pushMetricsData(
 		}
 	}
 
-	for index, groupedDataPoints := range groupedDataPointsByIndex {
-		for _, dpGroup := range groupedDataPoints {
-			buf := e.bufferPool.NewPooledBuffer()
-			dynamicTemplates, err := encoder.encodeMetrics(
-				encodingContext{
-					resource:          dpGroup.resource,
-					resourceSchemaURL: dpGroup.resourceSchemaURL,
-					scope:             dpGroup.scope,
-					scopeSchemaURL:    dpGroup.scopeSchemaURL,
-				},
-				dpGroup.dataPoints,
-				&validationErrs,
-				index,
-				buf.Buffer,
-			)
-			if err != nil {
-				buf.Recycle()
-				errs = append(errs, err)
-				continue
-			}
-			if err := session.Add(ctx, index.Index, "", buf, dynamicTemplates, docappender.ActionCreate); err != nil {
-				// not recycling after Add returns an error as we don't know if it's already recycled
-				if cerr := ctx.Err(); cerr != nil {
-					return cerr
+	for index, indexGroupedDataPoints := range groupedDataPointsByIndex {
+		for pipeline, groupedDataPoints := range indexGroupedDataPoints {
+			for _, dpGroup := range groupedDataPoints {
+				buf := e.bufferPool.NewPooledBuffer()
+				dynamicTemplates, err := encoder.encodeMetrics(
+					encodingContext{
+						resource:          dpGroup.resource,
+						resourceSchemaURL: dpGroup.resourceSchemaURL,
+						scope:             dpGroup.scope,
+						scopeSchemaURL:    dpGroup.scopeSchemaURL,
+					},
+					dpGroup.dataPoints,
+					&validationErrs,
+					index,
+					buf.Buffer,
+				)
+				if err != nil {
+					buf.Recycle()
+					errs = append(errs, err)
+					continue
 				}
-				errs = append(errs, err)
+				err2 := session.Add(ctx, index.Index, "", pipeline, buf, dynamicTemplates, docappender.ActionCreate)
+				if err2 != nil {
+					// not recycling after Add returns an error as we don't know if it's already recycled
+					if cerr := ctx.Err(); cerr != nil {
+						return cerr
+					}
+					errs = append(errs, err2)
+				}
 			}
 		}
 	}
@@ -407,6 +417,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 	if err != nil {
 		return err
 	}
+	pipeline := e.extractDocumentPipelineAttribute(span.Attributes())
 
 	buf := e.bufferPool.NewPooledBuffer()
 	if err := encoder.encodeSpan(ec, span, index, buf.Buffer); err != nil {
@@ -414,7 +425,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, "", buf, nil, docappender.ActionCreate)
+	return bulkIndexerSession.Add(ctx, index.Index, "", pipeline, buf, nil, docappender.ActionCreate)
 }
 
 func (e *elasticsearchExporter) pushSpanEvent(
@@ -430,6 +441,7 @@ func (e *elasticsearchExporter) pushSpanEvent(
 	if err != nil {
 		return err
 	}
+	pipeline := e.extractDocumentPipelineAttribute(span.Attributes())
 
 	buf := e.bufferPool.NewPooledBuffer()
 	if err := encoder.encodeSpanEvent(ec, span, spanEvent, index, buf.Buffer); err != nil || buf.Buffer.Len() == 0 {
@@ -437,7 +449,7 @@ func (e *elasticsearchExporter) pushSpanEvent(
 		return err
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, "", buf, nil, docappender.ActionCreate)
+	return bulkIndexerSession.Add(ctx, index.Index, "", pipeline, buf, nil, docappender.ActionCreate)
 }
 
 func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string {
@@ -446,6 +458,18 @@ func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string
 	}
 
 	v, ok := m.Get(elasticsearch.DocumentIDAttributeName)
+	if !ok {
+		return ""
+	}
+	return v.AsString()
+}
+
+func (e *elasticsearchExporter) extractDocumentPipelineAttribute(m pcommon.Map) string {
+	if !e.config.DynamicPipeline.Enabled {
+		return ""
+	}
+
+	v, ok := m.Get(elasticsearch.DocumentPipelineAttributeName)
 	if !ok {
 		return ""
 	}
@@ -569,15 +593,15 @@ func (e *elasticsearchExporter) pushProfileRecord(
 	return encoder.encodeProfile(ec, profile, func(buf *bytes.Buffer, docID, index string) error {
 		switch index {
 		case otelserializer.StackTraceIndex:
-			return stackTracesSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
+			return stackTracesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case otelserializer.StackFrameIndex:
-			return stackFramesSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
+			return stackFramesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case otelserializer.AllEventsIndex:
-			return eventsSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
+			return eventsSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case otelserializer.ExecutablesIndex:
-			return executablesSession.Add(ctx, index, docID, buf, nil, docappender.ActionUpdate)
+			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionUpdate)
 		default:
-			return defaultSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
+			return defaultSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		}
 	})
 }

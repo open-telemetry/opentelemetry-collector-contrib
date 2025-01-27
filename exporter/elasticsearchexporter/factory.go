@@ -74,6 +74,9 @@ func createDefaultConfig() component.Config {
 		LogsDynamicID: DynamicIDSettings{
 			Enabled: false,
 		},
+		DynamicPipeline: DynamicPipelineSettings{
+			Enabled: false,
+		},
 		Retry: RetrySettings{
 			Enabled:         true,
 			MaxRetries:      0, // default is set in exporter code
