@@ -27,16 +27,20 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -164,7 +168,7 @@ func Test_Start(t *testing.T) {
 	clientConfigTLS.Endpoint = "https://some.url:9411/api/prom/push"
 	clientConfigTLS.TLSSetting = configtls.ClientConfig{
 		Config: configtls.Config{
-			CAFile:   "non-existent file",
+			CAFile:   "nonexistent file",
 			CertFile: "",
 			KeyFile:  "",
 		},
@@ -736,10 +740,19 @@ func Test_PushMetrics(t *testing.T) {
 						Description: "OpenTelemetry Collector",
 						Version:     "1.0",
 					}
-					tel := setupTestTelemetry()
+					tel := metadatatest.SetupTelemetry(
+						componenttest.WithMetricOptions(sdkmetric.WithView(
+							// Drop otelhttp metrics
+							sdkmetric.NewView(
+								sdkmetric.Instrument{
+									Scope: instrumentation.Scope{Name: otelhttp.ScopeName},
+								},
+								sdkmetric.Stream{
+									Aggregation: sdkmetric.AggregationDrop{},
+								},
+							))),
+					)
 					set := tel.NewSettings()
-					// detailed level enables otelhttp client instrumentation which we dont want to test here
-					set.MetricsLevel = configtelemetry.LevelBasic
 					set.BuildInfo = buildInfo
 
 					prwe, nErr := newPRWExporter(cfg, set)
@@ -790,7 +803,7 @@ func Test_PushMetrics(t *testing.T) {
 							},
 						},
 					})
-					tel.assertMetrics(t, expectedMetrics)
+					tel.AssertMetrics(t, expectedMetrics, metricdatatest.IgnoreTimestamp())
 					assert.NoError(t, err)
 				})
 			}
@@ -997,7 +1010,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	errs := prwe.handleExport(ctx, tsMap, nil)
 	assert.NoError(t, errs)
 	// Shutdown after we've written to the WAL. This ensures that our
-	// exported data in-flight will flushed flushed to the WAL before exiting.
+	// exported data in-flight will be flushed to the WAL before exiting.
 	require.NoError(t, prwe.Shutdown(ctx))
 
 	// 3. Let's now read back all of the WAL records and ensure
@@ -1293,7 +1306,7 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 	endpointURL, err := url.Parse(mockServer.URL)
 	require.NoError(b, err)
 
-	tel := setupTestTelemetry()
+	tel := metadatatest.SetupTelemetry()
 	set := tel.NewSettings()
 	// Adjusted retry settings for faster testing
 	retrySettings := configretry.BackOffConfig{

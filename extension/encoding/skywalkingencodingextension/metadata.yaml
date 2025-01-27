@@ -1,0 +1,12 @@
+type: skywalking_encoding
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: []
+  codeowners:
+    active: [JaredTan95]
+
+tests:
+  config:

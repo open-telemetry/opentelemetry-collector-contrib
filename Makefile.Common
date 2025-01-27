@@ -29,11 +29,9 @@ GO_BUILD_TAGS=""
 GO_BUILD_LDFLAGS="-s -w"
 GOTEST_TIMEOUT?= 600s
 GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
-GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4 -skip Sudo
-GOTEST_INTEGRATION_OPT_SUDO?= -race -timeout 360s -parallel 4 -exec sudo -run Sudo
+GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS)
-GOTEST_OPT_WITH_INTEGRATION_SUDO=$(GOTEST_INTEGRATION_OPT_SUDO) -tags=integration,$(GO_BUILD_TAGS)
 GOTEST_OPT_WITH_INTEGRATION_COVERAGE=$(GOTEST_OPT_WITH_INTEGRATION) -coverprofile=integration-coverage.txt -covermode=atomic
 GOCMD?= go
 GOOS=$(shell $(GOCMD) env GOOS)
@@ -70,6 +68,7 @@ MISSPELL_CORRECTION := $(TOOLS_BIN_DIR)/misspell -w
 LINT                := $(TOOLS_BIN_DIR)/golangci-lint
 MULTIMOD            := $(TOOLS_BIN_DIR)/multimod
 CHLOGGEN            := $(TOOLS_BIN_DIR)/chloggen
+GITHUBGEN           := $(TOOLS_BIN_DIR)/githubgen
 GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
 PORTO               := $(TOOLS_BIN_DIR)/porto
 CHECKFILE           := $(TOOLS_BIN_DIR)/checkfile
@@ -156,13 +155,12 @@ endif
 runbuilttest: $(GOTESTSUM)
 ifneq (,$(wildcard ./builtunitetest.test))
 	$(GOTESTSUM) --raw-command -- $(GOCMD) tool test2json -p "./..." -t ./builtunitetest.test -test.v -test.failfast -test.timeout $(GOTEST_TIMEOUT)
-endif
+endif	
 
 .PHONY: mod-integration-test
 mod-integration-test: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration test ./... in `pwd`"
 	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION)
-	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION_SUDO)
 	@if [ -e integration-coverage.txt ]; then \
 		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
 	fi
@@ -271,11 +269,11 @@ CHANGED_GOLANG_SOURCES?=$(shell git diff main --name-only | grep -E '.*\.go$$' |
 .PHONY: for-affected-components
 for-affected-components:
 	@echo "Checking for affected components..."
-	@if [ -z '$(CHANGED_GOLANG_SOURCES)' ]; then \
+	@if [ -z '$${CHANGED_GOLANG_SOURCES}' ]; then \
 		echo "No go source changes detected in shippable code."; \
 	else \
 		cd $(SRC_ROOT); \
-		DEPENDENT_PKGS=$$(echo $(CHANGED_GOLANG_SOURCES) | xargs sed -n 's|^package .* // import "\(.*\)"$$|\1|p' | uniq); \
+		DEPENDENT_PKGS=$$(echo $${CHANGED_GOLANG_SOURCES} | xargs sed -n 's|^package .* // import "\(.*\)"$$|\1|p' | uniq); \
 		if [ -z '$${DEPENDENT_PKGS}' ]; then \
 			echo "No other package depends on the one being changed."; \
 		else \
@@ -292,11 +290,11 @@ CHANGED_GOLANG_TESTS?=$(shell git diff main --name-only | grep -E '.*_test\.go$$
 .PHONY: run-changed-tests
 run-changed-tests:
 	@echo "Checking for affected tests..."
-	@if [ -z '$(CHANGED_GOLANG_TESTS)' ]; then \
+	@if [ -z '$${CHANGED_GOLANG_TESTS}' ]; then \
 		echo "No go test changes detected."; \
 	else \
 		cd $(SRC_ROOT); \
-		AFFECTED_TEST_DIRS=$$(echo $(CHANGED_GOLANG_TESTS) | tr ' ' '\n' | xargs dirname | uniq); \
+		AFFECTED_TEST_DIRS=$$(echo $${CHANGED_GOLANG_TESTS} | tr ' ' '\n' | xargs dirname | uniq); \
 		if [ -z '$${AFFECTED_TEST_DIRS}' ]; then \
 			echo "Failed to find the affected test directories."; \
 		else \

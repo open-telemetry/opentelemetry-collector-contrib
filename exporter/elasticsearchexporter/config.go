@@ -53,6 +53,9 @@ type Config struct {
 	// fall back to pure TracesIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
 	TracesDynamicIndex DynamicIndexSetting `mapstructure:"traces_dynamic_index"`
 
+	// LogsDynamicID configures whether log record attribute `elasticsearch.document_id` is set as the document ID in ES.
+	LogsDynamicID DynamicIDSettings `mapstructure:"logs_dynamic_id"`
+
 	// Pipeline configures the ingest node pipeline name that should be used to process the
 	// events.
 	//
@@ -109,6 +112,10 @@ type LogstashFormatSettings struct {
 }
 
 type DynamicIndexSetting struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+type DynamicIDSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
@@ -182,13 +189,6 @@ type RetrySettings struct {
 type MappingsSettings struct {
 	// Mode configures the field mappings.
 	Mode string `mapstructure:"mode"`
-
-	// Dedup is non-operational, and will be removed in the future.
-	//
-	// Deprecated: [v0.104.0] deduplication is always enabled, and cannot be
-	// disabled. Disabling deduplication is not meaningful, as Elasticsearch
-	// will always reject documents with duplicate JSON object keys.
-	Dedup *bool `mapstructure:"dedup,omitempty"`
 
 	// Deprecated: [v0.104.0] dedotting will always be applied for ECS mode
 	// in future, and never for other modes. Elasticsearch's "dot_expander"
@@ -363,9 +363,6 @@ func (cfg *Config) MappingMode() MappingMode {
 }
 
 func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
-	if cfg.Mapping.Dedup != nil {
-		logger.Warn("dedup is deprecated, and is always enabled")
-	}
 	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS || !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
 		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")
 	}
