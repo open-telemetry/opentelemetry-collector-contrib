@@ -27,11 +27,10 @@ func createToCamelCaseFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 		return nil, fmt.Errorf("ToCamelCaseFactory args must be of type *ToCamelCaseArguments[K]")
 	}
 
-	return toCamelCase(args.Target)
+	return toCamelCase(args.Target), nil
 }
 
-//nolint:unparam
-func toCamelCase[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func toCamelCase[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -43,5 +42,5 @@ func toCamelCase[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
 		}
 
 		return strcase.ToCamel(val), nil
-	}, nil
+	}
 }

@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -58,8 +57,7 @@ func Test_toCamelCase(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := toCamelCase(tt.target)
-			assert.NoError(t, err)
+			exprFunc := toCamelCase(tt.target)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -94,9 +92,8 @@ func Test_toCamelCaseRuntimeError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := toCamelCase[any](tt.target)
-			require.NoError(t, err)
-			_, err = exprFunc(context.Background(), nil)
+			exprFunc := toCamelCase[any](tt.target)
+			_, err := exprFunc(context.Background(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}

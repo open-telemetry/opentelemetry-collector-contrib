@@ -466,8 +466,8 @@ Available Converters:
 - [String](#string)
 - [Substring](#substring)
 - [Time](#time)
-- [ToKeyValueString](#tokeyvaluestring)
 - [ToCamelCase](#tocamelcase)
+- [ToKeyValueString](#tokeyvaluestring)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
@@ -2019,6 +2019,18 @@ Examples:
 - `Time("mercoledì set 4 2024", "%A %h %e %Y", "", "it")`
 - `Time("Febrero 25 lunes, 2002, 02:03:04 p.m.", "%B %d %A, %Y, %r", "America/New_York", "es-ES")`
 
+### ToCamelCase
+
+`ToCamelCase(target)`
+
+The `ToCamelCase` Converter converts the `target` string into camel case.
+
+`target` is a string.
+
+Examples:
+
+- `ToCamelCase(metric.name)` where `metric.name` contains `my_metric_name`, which will be converted to `MyMetricName`
+
 ### ToKeyValueString
 
 `ToKeyValueString(target, Optional[delimiter], Optional[pair_delimiter], Optional[sort_output])`
@@ -2056,18 +2068,6 @@ Examples:
 
 - `ToKeyValueString(body)`
 - `ToKeyValueString(body, ":", ",", true)`
-
-### ToCamelCase
-
-`ToCamelCase(target)`
-
-The `ToCamelCase` Converter converts the `target` string into camel case.
-
-`target` is a string.
-
-Examples:
-
-- `ToCamelCase(metric.name)`
 
 ### TraceID
 
