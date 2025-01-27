@@ -143,7 +143,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 }
 
 // Each metric has its own scrape function associated with it
-func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkLicenseIndexUsage.Enabled || !s.splunkClient.isConfigured(typeCm) {
@@ -217,7 +217,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 	}
 }
 
-func (s *splunkScraper) scrapeAvgExecLatencyByHost(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeAvgExecLatencyByHost(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSchedulerAvgExecutionLatency.Enabled {
@@ -295,7 +295,7 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(ctx context.Context, now pcom
 	}
 }
 
-func (s *splunkScraper) scrapeIndexerAvgRate(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeIndexerAvgRate(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerAvgRate.Enabled {
@@ -1749,11 +1749,11 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 }
 
 // somewhat unique scrape function for gathering the info attribute
-func (s *splunkScraper) scrapeInfo(ctx context.Context, now pcommon.Timestamp, errs chan error) map[any]Info {
+func (s *splunkScraper) scrapeInfo(ctx context.Context, _ pcommon.Timestamp, errs chan error) map[any]Info {
 	// there could be an endpoint configured for each type (never more than 3)
 	info := make(map[any]Info)
 
-	for cliType, _ := range s.splunkClient.clients {
+	for cliType := range s.splunkClient.clients {
 		var i Info
 
 		ctx = context.WithValue(ctx, endpointType("type"), cliType)
