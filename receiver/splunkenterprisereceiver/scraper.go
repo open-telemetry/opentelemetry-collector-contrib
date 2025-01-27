@@ -376,7 +376,7 @@ func (s *splunkScraper) scrapeIndexerAvgRate(_ context.Context, now pcommon.Time
 	}
 }
 
-func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeIndexerPipelineQueues(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAggregationQueueRatio.Enabled {
@@ -488,7 +488,7 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pco
 	}
 }
 
-func (s *splunkScraper) scrapeBucketsSearchableStatus(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeBucketsSearchableStatus(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkBucketsSearchableStatus.Enabled {
@@ -576,7 +576,7 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(ctx context.Context, now p
 	}
 }
 
-func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexesSize.Enabled {
@@ -689,7 +689,7 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now p
 	}
 }
 
-func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSchedulerCompletionRatio.Enabled {
@@ -767,7 +767,7 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(ctx context.Context
 	}
 }
 
-func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerRawWriteTime.Enabled {
@@ -845,7 +845,7 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, 
 	}
 }
 
-func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerCPUTime.Enabled {
@@ -923,7 +923,7 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now p
 	}
 }
 
-func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeAvgIopsByHost(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIoAvgIops.Enabled {
@@ -1001,7 +1001,7 @@ func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Tim
 	}
 }
 
-func (s *splunkScraper) scrapeSchedulerRunTimeByHost(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeSchedulerRunTimeByHost(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSchedulerAvgRunTime.Enabled {
@@ -1101,7 +1101,7 @@ func unmarshallSearchReq(res *http.Response, sr *searchResponse) error {
 }
 
 // Scrape index throughput introspection endpoint
-func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeIndexThroughput(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerThroughput.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1142,7 +1142,7 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 }
 
 // Scrape indexes extended total size
-func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeIndexesTotalSize(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1195,7 +1195,7 @@ func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.
 }
 
 // Scrape indexes extended total event count
-func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeIndexesEventCount(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1242,7 +1242,7 @@ func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon
 }
 
 // Scrape indexes extended total bucket count
-func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeIndexesBucketCount(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1295,7 +1295,7 @@ func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommo
 }
 
 // Scrape indexes extended raw size
-func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeIndexesRawSize(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedRawSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1348,7 +1348,7 @@ func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Ti
 }
 
 // Scrape indexes extended bucket event count
-func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeIndexesBucketEventCount(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1418,7 +1418,7 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 }
 
 // Scrape indexes extended bucket hot/warm count
-func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1481,7 +1481,7 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now
 }
 
 // Scrape introspection queues
-func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeIntrospectionQueues(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1529,7 +1529,7 @@ func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcomm
 }
 
 // Scrape introspection queues bytes
-func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeIntrospectionQueuesBytes(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
@@ -1576,7 +1576,7 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now 
 }
 
 // Scrape introspection kv store status
-func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeKVStoreStatus(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreStatus.Enabled ||
 		!s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreReplicationStatus.Enabled ||
 		!s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreBackupStatus.Enabled ||
@@ -1642,7 +1642,7 @@ func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Tim
 }
 
 // Scrape dispatch artifacts
-func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	if !s.splunkClient.isConfigured(typeSh) {
 		return
 	}
