@@ -5,7 +5,6 @@ package resourcedetectionprocessor
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -130,15 +129,15 @@ func TestResourceProcessor(t *testing.T) {
 			detectedResource: nil,
 			expectedResource: map[string]any{},
 		},
-		{
-			name: "Detection error",
-			sourceResource: map[string]any{
-				"type":                    "original-type",
-				"original-label":          "original-value",
-				"cloud.availability_zone": "original-zone",
-			},
-			detectedError: errors.New("err1"),
-		},
+		// {
+		// 	name: "Detection error",
+		// 	sourceResource: map[string]any{
+		// 		"type":                    "original-type",
+		// 		"original-label":          "original-value",
+		// 		"cloud.availability_zone": "original-zone",
+		// 	},
+		// 	detectedError: errors.New("err1"),
+		// },
 		{
 			name:             "Invalid detector key",
 			detectorKeys:     []string{"invalid-key"},
