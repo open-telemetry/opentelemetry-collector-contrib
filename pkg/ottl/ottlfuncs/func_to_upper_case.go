@@ -26,11 +26,10 @@ func createToUpperCaseFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 		return nil, fmt.Errorf("ToUpperCaseFactory args must be of type *ToUpperCaseArguments[K]")
 	}
 
-	return toUpperCase(args.Target)
+	return toUpperCase(args.Target), nil
 }
 
-//nolint:unparam
-func toUpperCase[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func toUpperCase[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -42,5 +41,5 @@ func toUpperCase[K any](target ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
 		}
 
 		return strings.ToUpper(val), nil
-	}, nil
+	}
 }
