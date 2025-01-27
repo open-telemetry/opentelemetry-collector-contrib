@@ -19,7 +19,7 @@ This exporter sends OTLP messages to a Google Cloud [Pubsub](https://cloud.googl
 The following configuration options are supported:
 
 * `project` (Optional): The Google Cloud Project of the topics.
-* `topic` (Required): The topic name to receive OTLP data over. The topic name should be a fully qualified resource
+* `topic` (Required): The topic name to send OTLP data over. The topic name should be a fully qualified resource
   name (eg: `projects/otel-project/topics/otlp`).
 * `compression` (Optional): Set the payload compression, only `gzip` is supported. Default is no compression.
 * `watermark` Behaviour of how the `ce-time` attribute is set (see watermark section for more info)
@@ -31,17 +31,25 @@ The following configuration options are supported:
   or switching between [global and regional service endpoints](https://cloud.google.com/pubsub/docs/reference/service_apis_overview#service_endpoints).
 * `insecure` (Optional): allows performing “insecure” SSL connections and transfers, useful when connecting to a local
   emulator instance. Only has effect if Endpoint is not ""
+* `ordering`: Configures the [PubSub ordering](https://cloud.google.com/pubsub/docs/ordering) feature, see 
+  [ordering](#ordering) section for more info.
+  * `enabled` (default = `false`): Enables the ordering. Default is disabled.
+  * `from_resource_attribute` (no default): resource attribute that will be used as the ordering key. Required when
+    `ordering.enabled` is `true`. If the resource attribute is missing or has an empty value, the messages will not be
+    ordered for this resource.
+  * `remove_resource_attribute` (default = `false`): if the ordering key resource attribute specified 
+    `from_resource_attribute` should be removed from the resource attributes.
 
 ```yaml
 exporters:
   googlecloudpubsub:
     project: my-project
-    topic: otlp-traces
+    topic: projects/my-project/topics/otlp-traces
 ```
 
 ## Pubsub topic
 
-The Google Cloud [Pubsub](https://cloud.google.com/pubsub) export doesn't automatic create topics, it expects the topic
+The Google Cloud [Pubsub](https://cloud.google.com/pubsub) exporter doesn't automatically create topics, it expects the topic
 to be created upfront. Security wise it's best to give the collector its own service account and give the
 topic `Pub/Sub Publisher` permission.
 
@@ -74,11 +82,11 @@ up to 20% of the cost. This can be done by setting the `compression` to `gzip`.
 exporters:
   googlecloudpubsub:
     project: my-project
-    topic: otlp-traces
+    topic: projects/my-project/topics/otlp-traces
     compression: gzip
 ```
 
-The exporter with add the `content-encoding` attribute to the message. The receiver will look at this attribute
+The exporter will add the `content-encoding` attribute to the message. The receiver will look at this attribute
 to detect the compression that is used on the payload.
 
 Only `gzip` is supported.
@@ -100,7 +108,7 @@ timestamp , if you want to behaviour to have effect as the default is `0s`.
 exporters:
   googlecloudpubsub:
     project: my-project
-    topic: otlp-traces
+    topic: projects/my-project/topics/otlp-traces
     watermark: 
       behavior: earliest
       allow_drift: 1h
@@ -119,3 +127,35 @@ scenario is `behavior: earliest` with a reasonable `allow_drift` of `1h`.
 
 Allowed behavior values are `current` or `earliest`. For `allow_drift` the default is `0s`, so make sure to set the 
 value.
+
+## Ordering
+
+When ordering is enabled (`ordering.enabled`), you are required to specify a resource attribute key that will be used as
+the ordering key (`ordering.from_resource_attribute`). If this resource attribute is only meant to be used as an
+ordering key, you may want to choose to get this resource attribute key (`ordering.from_resource_attribute`) removed
+before publishing to PubSub by enabling the `ordering.remove_resource_attribute` configuration.
+
+```yaml
+exporters:
+  googlecloudpubsub:
+    project: my-project
+    topic: projects/my-project/topics/otlp-traces
+    ordering:
+      enabled: true
+      from_resource_attribute: some.resource.attribute.key
+      remove_resource_attribute: true
+```
+
+### Notes
+
+While the PubSub topic doesn't require any configuration for ordering, you will need to enable ordering on your 
+subscription(s) if you need it. Enabling ordering on a subscription is only possible at creation.
+For composite ordering keys you'd need to compose the resource attribute value before exporting e.g., by using a
+[transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor)
+.
+
+Empty values in the ordering key are accepted but won't be ordered, see [PubSub ordering documentation](https://cloud.google.com/pubsub/docs/ordering)
+for more details.
+
+PubSub requires one publish request per ordering key value, so this exporter groups the signals per ordering key before 
+publishing.
