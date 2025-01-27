@@ -106,15 +106,15 @@ func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesTo
 	}
 }
 
-func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resource pcommon.Resource, schemaURL string, err error) {
+func (p *ResourceProvider) Get(ctx context.Context, _ *http.Client) (resource pcommon.Resource, schemaURL string, err error) {
 	p.once.Do(func() {
-		p.detectResource(ctx, client)
+		p.detectResource(ctx)
 	})
 
 	return p.detectedResource.resource, p.detectedResource.schemaURL, p.detectedResource.err
 }
 
-func (p *ResourceProvider) detectResource(ctx context.Context, client *http.Client) {
+func (p *ResourceProvider) detectResource(ctx context.Context) {
 	p.detectedResource = &resourceResult{}
 
 	res := pcommon.NewResource()
@@ -131,8 +131,8 @@ func (p *ResourceProvider) detectResource(ctx context.Context, client *http.Clie
 	resultsChan := make(chan result, len(p.detectors))
 	for _, detector := range p.detectors {
 		go func(detector Detector) {
+			sleep := 2 * time.Second
 			for {
-				sleep := 2 * time.Second
 				r, schemaURL, err := detector.Detect(ctx)
 				if err != nil {
 					p.logger.Warn("failed to detect resource", zap.Error(err))
