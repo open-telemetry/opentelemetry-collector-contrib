@@ -153,13 +153,14 @@ func TestDetector_Detect(t *testing.T) {
 		ctx context.Context
 	}
 	tests := []struct {
-		name          string
-		fields        fields
-		tagKeyRegexes []*regexp.Regexp
-		args          args
-		want          pcommon.Resource
-		wantErr       bool
-		tagsProvider  ec2ifaceBuilder
+		name                  string
+		fields                fields
+		tagKeyRegexes         []*regexp.Regexp
+		args                  args
+		want                  pcommon.Resource
+		wantErr               bool
+		tagsProvider          ec2ifaceBuilder
+		failOnMissingMetadata bool
 	}{
 		{
 			name: "success",
@@ -268,6 +269,18 @@ func TestDetector_Detect(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "endpoint not available, with fail_on_missing_metadata",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc:    imds.InstanceIdentityDocument{},
+				retErrIDDoc: errors.New("should not be called"),
+				isAvailable: false,
+			}},
+			args:                  args{ctx: context.Background()},
+			want:                  pcommon.NewResource(),
+			wantErr:               true,
+			failOnMissingMetadata: true,
+		},
+		{
 			name: "get fails",
 			fields: fields{metadataProvider: &mockMetadata{
 				retIDDoc:    imds.InstanceIdentityDocument{},
@@ -294,11 +307,12 @@ func TestDetector_Detect(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &Detector{
-				metadataProvider: tt.fields.metadataProvider,
-				logger:           zap.NewNop(),
-				rb:               metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
-				tagKeyRegexes:    tt.tagKeyRegexes,
-				ec2ClientBuilder: tt.tagsProvider,
+				metadataProvider:      tt.fields.metadataProvider,
+				logger:                zap.NewNop(),
+				rb:                    metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+				tagKeyRegexes:         tt.tagKeyRegexes,
+				ec2ClientBuilder:      tt.tagsProvider,
+				failOnMissingMetadata: tt.failOnMissingMetadata,
 			}
 			got, _, err := d.Detect(tt.args.ctx)
 
