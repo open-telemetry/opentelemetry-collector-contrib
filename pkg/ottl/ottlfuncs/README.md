@@ -466,8 +466,8 @@ Available Converters:
 - [String](#string)
 - [Substring](#substring)
 - [Time](#time)
-- [ToSnakeCase](#tosnakecase)
 - [ToKeyValueString](#tokeyvaluestring)
+- [ToSnakeCase](#tosnakecase)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
@@ -2019,18 +2019,6 @@ Examples:
 - `Time("mercoledì set 4 2024", "%A %h %e %Y", "", "it")`
 - `Time("Febrero 25 lunes, 2002, 02:03:04 p.m.", "%B %d %A, %Y, %r", "America/New_York", "es-ES")`
 
-### ToSnakeCase
-
-`ToSnakeCase(target)`
-
-The `ToSnakeCase` Converter converts the `target` string into snake case.
-
-`target` is a string.
-
-Examples:
-
-- `ToSnakeCase(metric.name)` where `metric.name` contains `MyMetricName`, which will be converted to `my_metric_name`
-
 ### ToKeyValueString
 
 `ToKeyValueString(target, Optional[delimiter], Optional[pair_delimiter], Optional[sort_output])`
@@ -2068,6 +2056,18 @@ Examples:
 
 - `ToKeyValueString(body)`
 - `ToKeyValueString(body, ":", ",", true)`
+
+### ToSnakeCase
+
+`ToSnakeCase(target)`
+
+The `ToSnakeCase` Converter converts the `target` string into snake case.
+
+`target` is a string.
+
+Examples:
+
+- `ToSnakeCase(metric.name)` where `metric.name` contains `MyMetricName`, which will be converted to `my_metric_name`
 
 ### TraceID
 
