@@ -183,6 +183,7 @@ body:
       - processor/logdedup
       - processor/logstransform
       - processor/metricsgeneration
+      - processor/metricstarttime
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
