@@ -239,7 +239,7 @@ func (i *Input) readMessage(buffer []byte) ([]byte, net.Addr, int, error) {
 // This will remove trailing characters and NULs from the buffer
 func (i *Input) removeTrailingCharactersAndNULsFromBuffer(buffer []byte, n int) []byte {
 	// Remove trailing characters and NULs
-	for ; (n > 0) && (buffer[n-1] < 32); n-- { // nolint
+	for ; (n > 0) && (buffer[n-1] < 32); n-- { //nolint:revive
 	}
 
 	return buffer[:n]

@@ -75,7 +75,6 @@ linters-settings:
     # TODO: Enable this and fix the alignment issues.
     disable:
       - fieldalignment
-      - loopclosure
 
   revive:
     # minimal confidence for issues, default is 0.8
@@ -167,6 +166,9 @@ linters-settings:
     explicit-exhaustive-switch: true
     ignore-enum-members: "pmetric.MetricTypeEmpty"
 
+  nolintlint:
+    require-specific: true
+
   predeclared:
     ignore: copy
 
@@ -202,6 +204,7 @@ linters:
     - gosec
     - govet
     - misspell
+    - nolintlint
     - predeclared
     - reassign
     - revive
@@ -219,7 +222,6 @@ linters:
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
-    # Exclude some linters from running on tests files.
     - text: "G404:"
       linters:
         - gosec
@@ -229,3 +231,7 @@ issues:
     - text: "G115:"
       linters:
         - gosec
+    - path: "pagefile.go" # This exclusion is required for Windows only
+      text: "cachedBytes"
+      linters:
+        - unused
