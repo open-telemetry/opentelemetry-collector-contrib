@@ -54,7 +54,7 @@ The following settings can be optionally configured:
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
   - `enabled`: enable the sending queue (default: `true`)
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false` (default: `10000`)
-  - `num_consumers`: minimum number of workers to use to fan out the outgoing requests. (default: `5`)
+  - `num_consumers`: minimum number of workers to use to fan out the outgoing requests. (default: `5` or default: `1` if `EnableMultipleWorkersFeatureGate` is enabled).
 - `resource_to_telemetry_conversion`
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
 - `target_info`: customize `target_info` metric
@@ -66,6 +66,7 @@ The following settings can be optionally configured:
 - `max_batch_size_bytes` (default = `3000000` -> `~2.861 mb`): Maximum size of a batch of
   samples to be sent to the remote write endpoint. If the batch size is larger
   than this value, it will be split into multiple batches.
+- `max_batch_request_parallelism` (default = `5`): Maximum parallelism allowed for a single request bigger than `max_batch_size_bytes`.
 
 Example:
 
@@ -101,11 +102,21 @@ Several helper files are leveraged to provide additional capabilities automatica
 - [Retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), note that the exporter doesn't support `sending_queue` but provides `remote_write_queue`.
 
 ### Feature gates
+
+#### RetryOn429
+
 This exporter has feature gate: `exporter.prometheusremotewritexporter.RetryOn429`.
 When this feature gate is enable the prometheus remote write exporter will retry on 429 http status code with the provided retry configuration.
 It currently doesn't support respecting the http header `Retry-After` if provided since the retry library used doesn't support this feature.
 
 To enable it run collector with enabled feature gate `exporter.prometheusremotewritexporter.RetryOn429`. This can be done by executing it with one additional parameter - `--feature-gates=telemetry.useOtelForInternalMetrics`.
+
+#### EnableMultipleWorkersFeatureGate
+
+This exporter has feature gate: `+exporter.prometheusremotewritexporter.EnableMultipleWorkers`.
+
+When this feature gate is enabled, `num_consumers` will be used as the worker counter for handling batches from the queue, and `max_batch_request_parallelism` will be used for parallelism on single batch bigger than `max_batch_size_bytes`.
+Enabling this feature gate, with `num_consumers` higher than 1 requires the target destination to supports ingestion of OutOfOrder samples. See [Multiple Consumers and OutOfOrder](#multiple-consumers-and-outoforder) for more info
 
 ## Metric names and labels normalization
 
@@ -149,3 +160,19 @@ sum by (namespace) (app_ads_ad_requests_total)
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
+
+## Multiple Consumers and OutOfOrder
+
+**DISCLAIMER**: This snippet applies only to Prometheus, other remote write destinations using Prometheus Protocol (ex: Thanos/Grafana Mimir/VictoriaMetrics) may have different settings.
+
+By default, Prometheus expects samples to be ingested sequentially, in temporal order.
+
+When multiple consumers are enabled, the temporal ordering of the samples written to the target destination is not deterministic, and temporal ordering can no longer be guaranteed. For example, one worker may push a sample for `t+30s`, and a second worker may push an additional sample but for `t+15s`.
+
+Vanilla Prometheus configurations will reject these unordered samples and you'll receive "out of order" errors.
+
+Out-of-order support in Prometheus must be enabled for multiple consumers.
+This can be done by using the `tsdb.out_of_order_time_window: 10m` settings. Please choose an appropriate time window to support pushing the worst-case scenarios of a "queue" build-up on the sender side.
+
+See for more info:
+- https://prometheus.io/docs/prometheus/latest/configuration/configuration/#tsdb

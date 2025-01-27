@@ -44,9 +44,10 @@ const (
 
 var exportCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.prometheusremotewriteexporter.deprecateCreatedMetric",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("Feature gate used to control the deprecation of created metrics."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35003"),
+	featuregate.WithRegisterToVersion("v0.118.0"),
 )
 
 type bucketBoundsData struct {
@@ -141,7 +142,10 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	for _, label := range labels {
 		finalKey := prometheustranslator.NormalizeLabel(label.Name)
 		if existingValue, alreadyExists := l[finalKey]; alreadyExists {
-			l[finalKey] = existingValue + ";" + label.Value
+			// Only append to existing value if the new value is different
+			if existingValue != label.Value {
+				l[finalKey] = existingValue + ";" + label.Value
+			}
 		} else {
 			l[finalKey] = label.Value
 		}
