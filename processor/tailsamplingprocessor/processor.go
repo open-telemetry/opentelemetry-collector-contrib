@@ -447,6 +447,8 @@ func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.
 }
 
 func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.ResourceSpans) {
+	currTime := time.Now()
+
 	// Group spans per their traceId to minimize contention on idToTrace
 	idToSpansAndScope := tsp.groupSpansByTraceKey(resourceSpans)
 	var newTraceIDs int64
@@ -476,33 +478,35 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		if !loaded {
 			spanCount := &atomic.Int64{}
 			spanCount.Store(lenSpans)
-			d, loaded = tsp.idToTrace.LoadOrStore(id, &sampling.TraceData{
-				ArrivalTime:     time.Now(),
+
+			td := &sampling.TraceData{
+				ArrivalTime:     currTime,
 				SpanCount:       spanCount,
 				ReceivedBatches: ptrace.NewTraces(),
-			})
-		}
-		actualData := d.(*sampling.TraceData)
-		if loaded {
-			actualData.SpanCount.Add(lenSpans)
-		} else {
-			newTraceIDs++
-			tsp.decisionBatcher.AddToCurrentBatch(id)
-			tsp.numTracesOnMap.Add(1)
-			postDeletion := false
-			currTime := time.Now()
-			for !postDeletion {
-				select {
-				case tsp.deleteChan <- id:
-					postDeletion = true
-				default:
-					traceKeyToDrop := <-tsp.deleteChan
-					tsp.dropTrace(traceKeyToDrop, currTime)
+			}
+
+			if d, loaded = tsp.idToTrace.LoadOrStore(id, td); !loaded {
+				newTraceIDs++
+				tsp.decisionBatcher.AddToCurrentBatch(id)
+				tsp.numTracesOnMap.Add(1)
+				postDeletion := false
+				for !postDeletion {
+					select {
+					case tsp.deleteChan <- id:
+						postDeletion = true
+					default:
+						traceKeyToDrop := <-tsp.deleteChan
+						tsp.dropTrace(traceKeyToDrop, currTime)
+					}
 				}
 			}
 		}
 
-		// The only thing we really care about here is the final decision.
+		actualData := d.(*sampling.TraceData)
+		if loaded {
+			actualData.SpanCount.Add(lenSpans)
+		}
+
 		actualData.Lock()
 		finalDecision := actualData.FinalDecision
 
@@ -510,25 +514,24 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 			// If the final decision hasn't been made, add the new spans under the lock.
 			appendToTraces(actualData.ReceivedBatches, resourceSpans, spans)
 			actualData.Unlock()
-		} else {
-			actualData.Unlock()
+			continue
+		}
 
-			switch finalDecision {
-			case sampling.Sampled:
-				// Forward the spans to the policy destinations
-				traceTd := ptrace.NewTraces()
-				appendToTraces(traceTd, resourceSpans, spans)
-				tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
-			case sampling.NotSampled:
-				tsp.releaseNotSampledTrace(id)
-			default:
-				tsp.logger.Warn("Encountered unexpected sampling decision",
-					zap.Int("decision", int(finalDecision)))
-			}
+		actualData.Unlock()
 
-			if !actualData.DecisionTime.IsZero() {
-				tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second))
-			}
+		switch finalDecision {
+		case sampling.Sampled:
+			traceTd := ptrace.NewTraces()
+			appendToTraces(traceTd, resourceSpans, spans)
+			tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
+		case sampling.NotSampled:
+			tsp.releaseNotSampledTrace(id)
+		default:
+			tsp.logger.Warn("Unexpected sampling decision", zap.Int("decision", int(finalDecision)))
+		}
+
+		if !actualData.DecisionTime.IsZero() {
+			tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second))
 		}
 	}
 
