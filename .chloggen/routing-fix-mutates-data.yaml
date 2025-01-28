@@ -4,6 +4,15 @@
 change_type: 'bug_fix'
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+<<<<<<<< HEAD:.chloggen/clickhouse_examples.yaml
+component: exporter/clickhouse
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Adding missing examples of DDL created by the clickhouse exporter
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [35903]
+========
 component: routingconnector
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
@@ -11,6 +20,7 @@ note: The connector splits the original payload so that it may be emitted in par
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [37390]
+>>>>>>>> upstream/main:.chloggen/routing-fix-mutates-data.yaml
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

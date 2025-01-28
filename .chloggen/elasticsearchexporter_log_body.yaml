@@ -1,6 +1,18 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+<<<<<<<< HEAD:.chloggen/add_doris_to_build.yaml
+change_type: new_component
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: dorisexporter
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Mark the Doris exporter as Alpha.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [33479]
+========
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
@@ -11,6 +23,7 @@ note: Consistently store the structured body of logs and events in `body.structu
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [37387]
+>>>>>>>> upstream/main:.chloggen/elasticsearchexporter_log_body.yaml
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

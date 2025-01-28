@@ -4,6 +4,15 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+<<<<<<<< HEAD:.chloggen/msg_migrate-to-sdk-v2.yaml
+component: s3exporter
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Upgrading to adopt aws sdk v2
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [36699]
+========
 component: cumulativetodeltaprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
@@ -11,6 +20,7 @@ note: Add metric type filter for cumulativetodelta processor
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [33673]
+>>>>>>>> upstream/main:.chloggen/cumulative-to-delta-processor-metric-type-filter.yaml
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

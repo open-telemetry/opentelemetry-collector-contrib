@@ -4,13 +4,31 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+<<<<<<<< HEAD:.chloggen/tailsamplingprocessor-fixed-batch-debug-metrics.yaml
+<<<<<<<< HEAD:.chloggen/dd-config-api-key-fix.yaml
+component: connector/datadog, exporter/datadog, pkg/datadog
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: throw error if datadog API key contains invalid characters
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [36509]
+========
+component: tailsamplingprocessor
+========
 component: signalfxexporter
+>>>>>>>> upstream/main:.chloggen/warn_on_dropped_dp.yaml
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Warn on dropping metric data points when they have more than allowed dimension count
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+<<<<<<<< HEAD:.chloggen/tailsamplingprocessor-fixed-batch-debug-metrics.yaml
+issues: [37040]
+>>>>>>>> upstream/main:.chloggen/tailsamplingprocessor-fixed-batch-debug-metrics.yaml
+========
 issues: [37484]
+>>>>>>>> upstream/main:.chloggen/warn_on_dropped_dp.yaml
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

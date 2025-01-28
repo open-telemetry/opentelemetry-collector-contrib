@@ -4,6 +4,15 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+<<<<<<<< HEAD:.chloggen/awsxrayexporter-fix-segment-gen.yaml
+component: awsxrayexporter
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: "Generate url section in xray segment when `net.peer.name` is available"
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [35375]
+========
 component: opampsupervisor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
@@ -11,6 +20,7 @@ note: add support for headers configuration for reporting own telemetry
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [37353]
+>>>>>>>> upstream/main:.chloggen/codeboten_add-support-for-headers.yaml
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
