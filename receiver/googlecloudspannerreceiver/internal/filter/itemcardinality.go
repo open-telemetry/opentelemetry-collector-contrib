@@ -19,7 +19,7 @@ type Item struct {
 }
 
 type ItemFilter interface {
-	Filter(source []*Item) ([]*Item, error)
+	Filter(source []*Item) []*Item
 	Shutdown() error
 	TotalLimit() int
 	LimitByTimestamp() int
@@ -83,47 +83,40 @@ func (f *itemCardinalityFilter) LimitByTimestamp() int {
 	return f.limitByTimestamp
 }
 
-func (f *itemCardinalityFilter) Filter(sourceItems []*Item) ([]*Item, error) {
+func (f *itemCardinalityFilter) Filter(sourceItems []*Item) []*Item {
 	var filteredItems []*Item
 	groupedItems := groupByTimestamp(sourceItems)
 	sortedItemKeys := sortedKeys(groupedItems)
 
 	for _, key := range sortedItemKeys {
-		filteredGroupedItems, err := f.filterItems(groupedItems[key])
-		if err != nil {
-			return nil, err
-		}
-
-		filteredItems = append(filteredItems, filteredGroupedItems...)
+		filteredItems = append(filteredItems, f.filterItems(groupedItems[key])...)
 	}
 
-	return filteredItems, nil
+	return filteredItems
 }
 
-func (f *itemCardinalityFilter) filterItems(items []*Item) ([]*Item, error) {
+func (f *itemCardinalityFilter) filterItems(items []*Item) []*Item {
 	limit := currentLimitByTimestamp{
 		limitByTimestamp: f.limitByTimestamp,
 	}
 
 	var filteredItems []*Item
 	for _, item := range items {
-		if included, err := f.includeItem(item, &limit); err != nil {
-			return nil, err
-		} else if included {
+		if f.includeItem(item, &limit) {
 			filteredItems = append(filteredItems, item)
 		}
 	}
 
-	return filteredItems, nil
+	return filteredItems
 }
 
-func (f *itemCardinalityFilter) includeItem(item *Item, limit *currentLimitByTimestamp) (bool, error) {
+func (f *itemCardinalityFilter) includeItem(item *Item, limit *currentLimitByTimestamp) bool {
 	if f.cache.Get(item.SeriesKey) != nil {
-		return true, nil
+		return true
 	}
 	if !f.canIncludeNewItem(limit.get()) {
 		f.logger.Debug("Skip item", zap.String("seriesKey", item.SeriesKey), zap.Time("timestamp", item.Timestamp))
-		return false, nil
+		return false
 	}
 
 	_ = f.cache.Set(item.SeriesKey, struct{}{}, f.itemActivityPeriod)
@@ -132,7 +125,7 @@ func (f *itemCardinalityFilter) includeItem(item *Item, limit *currentLimitByTim
 
 	limit.dec()
 
-	return true, nil
+	return true
 }
 
 func (f *itemCardinalityFilter) canIncludeNewItem(currentLimitByTimestamp int) bool {

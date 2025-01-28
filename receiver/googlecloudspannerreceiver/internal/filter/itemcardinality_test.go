@@ -114,15 +114,13 @@ func TestItemCardinalityFilter_Filter(t *testing.T) {
 	filterCasted := filter.(*itemCardinalityFilter)
 	defer executeShutdown(t, filterCasted)
 
-	filteredItems, err := filter.Filter(items)
-	require.NoError(t, err)
+	filteredItems := filter.Filter(items)
 
 	// Items with key3 and key6 must be not present in filtered items
 	assertInitialFiltering(t, expectedFilteredInitialItems(t), filteredItems)
 
 	items = additionalTestData(t)
-	filteredItems, err = filter.Filter(items)
-	require.NoError(t, err)
+	filteredItems = filter.Filter(items)
 
 	// Cache timeout hasn't been reached, so filtered out all items
 	assert.Empty(t, filteredItems)
@@ -142,8 +140,7 @@ func TestItemCardinalityFilter_Filter(t *testing.T) {
 
 	filterCasted.cache.OnEviction(nil)
 
-	filteredItems, err = filter.Filter(items)
-	require.NoError(t, err)
+	filteredItems = filter.Filter(items)
 
 	// All entries expired, nothing should be filtered out from items
 	assertInitialFiltering(t, items, filteredItems)
@@ -160,20 +157,17 @@ func TestItemCardinalityFilter_FilterItems(t *testing.T) {
 	filterCasted := filter.(*itemCardinalityFilter)
 	defer executeShutdown(t, filterCasted)
 
-	filteredItems, err := filterCasted.filterItems(items)
-	require.NoError(t, err)
+	filteredItems := filterCasted.filterItems(items)
 
 	// Items with key1 and key2 must be not present in filtered items
 	assertInitialFiltering(t, expectedFilteredInitialItemsWithSameTimestamp(t), filteredItems)
 
 	// 2 new and 2 existing items must be present in filtered items
-	filteredItems, err = filterCasted.filterItems(items)
-	require.NoError(t, err)
+	filteredItems = filterCasted.filterItems(items)
 
 	assert.Len(t, filteredItems, totalLimit)
 
-	filteredItems, err = filter.Filter(items)
-	require.NoError(t, err)
+	filteredItems = filter.Filter(items)
 
 	// Cache timeout hasn't been reached, so no more new items expected
 	assert.Len(t, filteredItems, totalLimit)
@@ -193,8 +187,7 @@ func TestItemCardinalityFilter_FilterItems(t *testing.T) {
 
 	filterCasted.cache.OnEviction(nil)
 
-	filteredItems, err = filter.Filter(items)
-	require.NoError(t, err)
+	filteredItems = filter.Filter(items)
 
 	// All entries expired, same picture as on first case
 	assertInitialFiltering(t, expectedFilteredInitialItemsWithSameTimestamp(t), filteredItems)
@@ -216,18 +209,15 @@ func TestItemCardinalityFilter_IncludeItem(t *testing.T) {
 		limitByTimestamp: 1,
 	}
 
-	result, err := filterCasted.includeItem(item1, timestampLimiter)
-	require.NoError(t, err)
+	result := filterCasted.includeItem(item1, timestampLimiter)
 	assert.True(t, result)
 
 	// Item already exists in cache
-	result, err = filterCasted.includeItem(item1, timestampLimiter)
-	require.NoError(t, err)
+	result = filterCasted.includeItem(item1, timestampLimiter)
 	assert.True(t, result)
 
 	// Limit by timestamp reached
-	result, err = filterCasted.includeItem(item2, timestampLimiter)
-	require.NoError(t, err)
+	result = filterCasted.includeItem(item2, timestampLimiter)
 	assert.False(t, result)
 }
 
