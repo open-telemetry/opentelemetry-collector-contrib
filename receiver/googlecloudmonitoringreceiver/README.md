@@ -41,8 +41,10 @@ receivers:
 
 Each single metric can have the following configuration:
 
-- `metric_name` (Required): The specific metric name to collect.
+- `metric_name` (Optional): The specific metric name to collect.
+- `monitoring_filter` (Optional): The [monitoring filter](https://cloud.google.com/monitoring/api/v3/filters) to filter metrics.
 
+One of `metric_name` and `monitoring_filter` MUST be specified, but should not be specified at the same time.
 
 ## Authentication with Google Cloud
 
