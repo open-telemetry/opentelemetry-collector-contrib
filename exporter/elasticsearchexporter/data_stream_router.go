@@ -10,6 +10,8 @@ import (
 	"unicode"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
 var receiverRegex = regexp.MustCompile(`/receiver/(\w*receiver)`)
@@ -46,7 +48,7 @@ func routeWithDefaults(defaultDSType string) func(
 	string,
 	bool,
 	string,
-) esIndex {
+) elasticsearch.Index {
 	return func(
 		recordAttr pcommon.Map,
 		scopeAttr pcommon.Map,
@@ -54,7 +56,7 @@ func routeWithDefaults(defaultDSType string) func(
 		fIndex string,
 		otel bool,
 		scopeName string,
-	) esIndex {
+	) elasticsearch.Index {
 		// Order:
 		// 1. read data_stream.* from attributes
 		// 2. read elasticsearch.index.* from attributes
@@ -67,7 +69,7 @@ func routeWithDefaults(defaultDSType string) func(
 			prefix, prefixExists := getFromAttributes(indexPrefix, "", resourceAttr, scopeAttr, recordAttr)
 			suffix, suffixExists := getFromAttributes(indexSuffix, "", resourceAttr, scopeAttr, recordAttr)
 			if prefixExists || suffixExists {
-				return esIndex{Index: fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)}
+				return elasticsearch.Index{Index: fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)}
 			}
 		}
 
@@ -89,28 +91,8 @@ func routeWithDefaults(defaultDSType string) func(
 
 		dataset = sanitizeDataStreamField(dataset, disallowedDatasetRunes, datasetSuffix)
 		namespace = sanitizeDataStreamField(namespace, disallowedNamespaceRunes, "")
-		return newDataStream(defaultDSType, dataset, namespace)
+		return elasticsearch.NewDataStreamIndex(defaultDSType, dataset, namespace)
 	}
-}
-
-type esIndex struct {
-	Index     string
-	Type      string
-	Dataset   string
-	Namespace string
-}
-
-func newDataStream(typ, dataset, namespace string) esIndex {
-	return esIndex{
-		Index:     fmt.Sprintf("%s-%s-%s", typ, dataset, namespace),
-		Type:      typ,
-		Dataset:   dataset,
-		Namespace: namespace,
-	}
-}
-
-func (i esIndex) isDataStream() bool {
-	return i.Type != "" && i.Dataset != "" && i.Namespace != ""
 }
 
 var (

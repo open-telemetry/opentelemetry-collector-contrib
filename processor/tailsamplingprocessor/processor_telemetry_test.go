@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -540,7 +539,6 @@ func (tt *testTelemetry) newSettings() processor.Settings {
 	set := processortest.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("tail_sampling"))
 	set.TelemetrySettings.MeterProvider = tt.meterProvider
-	set.TelemetrySettings.MetricsLevel = configtelemetry.LevelDetailed
 	return set
 }
 
