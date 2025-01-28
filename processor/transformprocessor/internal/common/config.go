@@ -39,6 +39,14 @@ type ContextStatements struct {
 	Context    ContextID `mapstructure:"context"`
 	Conditions []string  `mapstructure:"conditions"`
 	Statements []string  `mapstructure:"statements"`
+	// ErrorMode determines how the processor reacts to errors that occur while processing
+	// this group of statements. When provided, it overrides the default Config ErrorMode.
+	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
+	// SharedCache is experimental and subject to change or removal in the future.
+	// Although it's configurable via `mapstructure`, users won't be able to set it on their
+	// configurations, as it's currently meant for internal use only, and it's validated by
+	// the transformprocessor Config unmarshaller function.
+	SharedCache bool `mapstructure:"shared_cache"`
 }
 
 func (c ContextStatements) GetStatements() []string {
