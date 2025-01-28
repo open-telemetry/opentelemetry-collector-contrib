@@ -820,6 +820,48 @@ Total memory  capacity of the host system.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MiBy | Sum | Double | Cumulative | false |
 
+### vcenter.vm.cpu.idle.time
+
+Total time that the CPU spent in an idle state.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
+
+### vcenter.vm.cpu.ready.time
+
+CPU time spent in ready state.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
+
+### vcenter.vm.cpu.wait.time
+
+Total CPU time spent in wait state.The wait total includes time spent the CPU Idle, CPU Swap Wait, and CPU I/O Wait states.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
+
 ### vcenter.vm.memory.granted
 
 The amount of memory that is granted to a VM.
@@ -827,6 +869,40 @@ The amount of memory that is granted to a VM.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.vm.network.broadcast.packet.rate
+
+The rate of broadcast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {packets/s} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
+
+### vcenter.vm.network.multicast.packet.rate
+
+The rate of multicast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {packets/s} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ## Resource Attributes
 

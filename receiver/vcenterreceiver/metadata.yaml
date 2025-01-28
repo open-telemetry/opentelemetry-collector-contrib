@@ -568,6 +568,27 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+  vcenter.vm.cpu.idle.time:
+    enabled: false
+    description: Total time that the CPU spent in an idle state.
+    unit: ms
+    gauge:
+      value_type: int
+    attributes: [object_name]
+  vcenter.vm.cpu.wait.time:
+    enabled: false
+    description: Total CPU time spent in wait state.The wait total includes time spent the CPU Idle, CPU Swap Wait, and CPU I/O Wait states.
+    unit: ms
+    gauge:
+      value_type: int
+    attributes: [object_name]
+  vcenter.vm.cpu.ready.time:
+    enabled: false
+    description: CPU time spent in ready state.
+    unit: ms
+    gauge:
+      value_type: int
+    attributes: [object_name]
   vcenter.vm.memory.ballooned:
     enabled: true
     description: The amount of memory that is ballooned due to virtualization.
@@ -660,6 +681,22 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+  vcenter.vm.network.broadcast.packet.rate:
+    enabled: false
+    description: The rate of broadcast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+    unit: "{packets/s}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+  vcenter.vm.network.multicast.packet.rate:
+    enabled: false
+    description: The rate of multicast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+    unit: "{packets/s}"
+    gauge:
+      value_type: double
     attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
   vcenter.vm.network.packet.rate:
