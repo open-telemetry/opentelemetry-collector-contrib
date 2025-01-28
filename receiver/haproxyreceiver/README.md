@@ -35,7 +35,7 @@ Default: `1s`
 
 ```yaml
 haproxy:
-  endpoint: file:///var/run/haproxy.ipc
+  endpoint: /var/run/haproxy.sock
   collection_interval: 1m
   metrics:
     
