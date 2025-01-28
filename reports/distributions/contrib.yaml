@@ -195,6 +195,7 @@ components:
         - sshcheck
         - statsd
         - syslog
+        - tcpcheck
         - tcplog
         - tlscheck
         - udplog
