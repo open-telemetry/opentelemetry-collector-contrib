@@ -249,34 +249,36 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 	telemetrySettings := tsp.set.TelemetrySettings
 	componentID := tsp.set.ID.Name()
 
-	policyNames := map[string]bool{}
-	tsp.policies = make([]*policy, len(cfgs))
+	cLen := len(cfgs)
+	policies := make([]*policy, 0, cLen)
+	policyNames := make(map[string]struct{}, cLen)
 
-	for i := range cfgs {
-		policyCfg := &cfgs[i]
-
-		if policyNames[policyCfg.Name] {
-			return fmt.Errorf("duplicate policy name %q", policyCfg.Name)
+	for _, cfg := range cfgs {
+		if _, exists := policyNames[cfg.Name]; exists {
+			return fmt.Errorf("duplicate policy name %q", cfg.Name)
 		}
-		policyNames[policyCfg.Name] = true
+		policyNames[cfg.Name] = struct{}{}
 
-		eval, err := getPolicyEvaluator(telemetrySettings, policyCfg)
+		eval, err := getPolicyEvaluator(telemetrySettings, &cfg)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create policy evaluator for %q: %w", cfg.Name, err)
 		}
-		uniquePolicyName := policyCfg.Name
+
+		uniquePolicyName := cfg.Name
 		if componentID != "" {
-			uniquePolicyName = fmt.Sprintf("%s.%s", componentID, policyCfg.Name)
+			uniquePolicyName = fmt.Sprintf("%s.%s", componentID, cfg.Name)
 		}
-		p := &policy{
-			name:      policyCfg.Name,
+
+		policies = append(policies, &policy{
+			name:      cfg.Name,
 			evaluator: eval,
 			attribute: metric.WithAttributes(attribute.String("policy", uniquePolicyName)),
-		}
-		tsp.policies[i] = p
+		})
 	}
 
-	tsp.logger.Debug("Loaded sampling policy", zap.Int("policies.len", len(tsp.policies)))
+	tsp.policies = policies
+
+	tsp.logger.Debug("Loaded sampling policy", zap.Int("policies.len", len(policies)))
 
 	return nil
 }
@@ -302,9 +304,6 @@ func (tsp *tailSamplingSpanProcessor) loadPendingSamplingPolicy() {
 
 	tsp.logger.Debug("Loading pending sampling policy", zap.Int("pending.len", pLen))
 
-	// In case something goes wrong.
-	prev := tsp.policies
-
 	err := tsp.loadSamplingPolicy(tsp.pendingPolicy)
 
 	// Empty pending regardless of error. If policy is invalid, it will fail on
@@ -313,8 +312,7 @@ func (tsp *tailSamplingSpanProcessor) loadPendingSamplingPolicy() {
 
 	if err != nil {
 		tsp.logger.Error("Failed to load pending sampling policy", zap.Error(err))
-		tsp.logger.Debug("Falling back to previous sampling policy")
-		tsp.policies = prev
+		tsp.logger.Debug("Continue to use the previous sampling policy")
 	}
 }
 
