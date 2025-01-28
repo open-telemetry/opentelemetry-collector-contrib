@@ -237,6 +237,31 @@ func TestDetectResource_Parallel(t *testing.T) {
 	md2.AssertNumberOfCalls(t, "Detect", 1)
 }
 
+func TestDetectResource_Reconnect(t *testing.T) {
+	md1 := &MockDetector{}
+	res1 := pcommon.NewResource()
+	require.NoError(t, res1.Attributes().FromRaw(map[string]any{"a": "1", "b": "2"}))
+	md1.On("Detect").Return(pcommon.NewResource(), errors.New("connection error")).Twice()
+	md1.On("Detect").Return(res1, nil)
+
+	md2 := &MockDetector{}
+	res2 := pcommon.NewResource()
+	require.NoError(t, res2.Attributes().FromRaw(map[string]any{"c": "3"}))
+	md2.On("Detect").Return(pcommon.NewResource(), errors.New("connection error")).Once()
+	md2.On("Detect").Return(res2, nil)
+
+	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
+
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, true, md1, md2)
+
+	detected, _, err := p.Get(context.Background(), http.DefaultClient)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
+
+	md1.AssertNumberOfCalls(t, "Detect", 3) // 2 errors + 1 success
+	md2.AssertNumberOfCalls(t, "Detect", 2) // 1 error + 1 success
+}
+
 func TestFilterAttributes_Match(t *testing.T) {
 	m := map[string]struct{}{
 		"host.name": {},
