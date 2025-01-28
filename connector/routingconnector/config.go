@@ -65,7 +65,7 @@ func (c *Config) Validate() error {
 		}
 
 		switch item.Context {
-		case "", "resource": // ok
+		case "", "resource", "span", "metric", "datapoint", "log": // ok
 		case "request":
 			if item.Statement != "" || item.Condition == "" {
 				return fmt.Errorf("%q context requires a 'condition'", item.Context)
@@ -73,7 +73,6 @@ func (c *Config) Validate() error {
 			if _, err := parseRequestCondition(item.Condition); err != nil {
 				return err
 			}
-			fallthrough
 		default:
 			return errors.New("invalid context: " + item.Context)
 		}

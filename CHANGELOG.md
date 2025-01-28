@@ -7,6 +7,10 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+### 🧰 Bug fixes 🧰
+
+- `routingconnector`: Fix config validation whith context other than resource. (#37410)
+
 ## v0.118.0
 
 ### 🛑 Breaking changes 🛑

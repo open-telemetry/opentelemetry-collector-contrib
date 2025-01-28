@@ -234,6 +234,20 @@ func TestValidateConfig(t *testing.T) {
 			error: `"request" context requires a 'condition'`,
 		},
 		{
+			name: "request context with condition",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "request",
+						Condition: `request["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "request context with invalid condition",
 			config: &Config{
 				Table: []RoutingTableItem{
