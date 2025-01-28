@@ -2023,13 +2023,13 @@ Examples:
 
 `ToCamelCase(target)`
 
-The `ToCamelCase` Converter converts the `target` string into camel case.
+The `ToCamelCase` Converter converts the `target` string into camel case (e.g. `my_metric_name` to `MyMetricName`).
 
 `target` is a string.
 
 Examples:
 
-- `ToCamelCase(metric.name)` where `metric.name` contains `my_metric_name`, which will be converted to `MyMetricName`
+- `ToCamelCase(metric.name)`
 
 ### ToKeyValueString
 
