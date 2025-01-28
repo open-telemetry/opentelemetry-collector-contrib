@@ -78,6 +78,7 @@ body:
       - exporter/pulsar
       - exporter/rabbitmq
       - exporter/sapm
+      - exporter/sematext
       - exporter/sentry
       - exporter/signalfx
       - exporter/splunkhec
