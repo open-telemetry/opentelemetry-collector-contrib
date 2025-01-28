@@ -53,7 +53,7 @@ type ResponseBodyConfig struct {
 }
 
 // CheckCollectorPipelineConfig is legacy config that is currently ignored as the
-// `check_collector_pipeline` feature in the original healtcheck extension was not working as
+// `check_collector_pipeline` feature in the original healthcheck extension was not working as
 // expected. This is here for backwards compatibility.
 type CheckCollectorPipelineConfig struct {
 	// Enabled indicates whether to not enable collector pipeline check.

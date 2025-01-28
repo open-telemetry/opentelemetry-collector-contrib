@@ -8,11 +8,11 @@ import "go.opentelemetry.io/collector/pdata/ptrace"
 // MoveResourcesIf calls f sequentially for each ResourceSpans present in the first ptrace.Traces.
 // If f returns true, the element is removed from the first ptrace.Traces and added to the second ptrace.Traces.
 func MoveResourcesIf(from, to ptrace.Traces, f func(ptrace.ResourceSpans) bool) {
-	from.ResourceSpans().RemoveIf(func(resoruceSpans ptrace.ResourceSpans) bool {
-		if !f(resoruceSpans) {
+	from.ResourceSpans().RemoveIf(func(resourceSpans ptrace.ResourceSpans) bool {
+		if !f(resourceSpans) {
 			return false
 		}
-		resoruceSpans.CopyTo(to.ResourceSpans().AppendEmpty())
+		resourceSpans.CopyTo(to.ResourceSpans().AppendEmpty())
 		return true
 	})
 }
