@@ -11,6 +11,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.35.0
 	go.mongodb.org/mongo-driver v1.17.2
+	go.mongodb.org/mongo-driver/v2 v2.0.0
 	go.opentelemetry.io/collector/component v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/config/confignet v1.24.1-0.20250123125445-24f88da7b583
