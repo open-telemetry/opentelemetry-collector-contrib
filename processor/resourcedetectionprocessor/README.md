@@ -640,7 +640,7 @@ resourcedetection:
 
 ## Ordering
 
-Note that if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.platform` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
+By default, if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.platform` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
 
 ### AWS
 
@@ -652,3 +652,14 @@ Note that if multiple detectors are inserting the same attribute name, the first
 
 The full list of settings exposed for this extension are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
+
+**Note:**
+
+If you want to disable the ordering of the detectors and instead have a non-blocking resource detection in case of a detection failure, set the `keepOrder` parameter to `false`. For example:
+
+```yaml
+processors:
+  resourcedetection:
+    detectors: [docker]
+    keepOrder: false
+```
