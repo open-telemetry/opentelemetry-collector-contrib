@@ -467,6 +467,7 @@ Available Converters:
 - [Substring](#substring)
 - [Time](#time)
 - [ToKeyValueString](#tokeyvaluestring)
+- [ToUpperCase](#touppercase)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
@@ -2055,6 +2056,18 @@ Examples:
 
 - `ToKeyValueString(body)`
 - `ToKeyValueString(body, ":", ",", true)`
+
+### ToUpperCase
+
+`ToUpperCase(target)`
+
+The `ToUpperCase` Converter converts the `target` string into upper case.
+
+`target` is a string.
+
+Examples:
+
+- `ToUpperCase(metric.name)` where `metric.name` contains `MyMetricName`, which will be converted to `MYMETRICNAME`
 
 ### TraceID
 
