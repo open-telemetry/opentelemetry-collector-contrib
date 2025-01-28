@@ -4,13 +4,15 @@
 package entry
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	yaml "gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v3"
 )
 
 func TestResourceFieldGet(t *testing.T) {
@@ -420,8 +422,10 @@ func TestResourceFieldUnmarshal(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			decoder := yaml.NewDecoder(strings.NewReader(tc.jsonDot))
+			decoder.KnownFields(true)
 			var fy ResourceField
-			err := yaml.UnmarshalStrict([]byte(tc.jsonDot), &fy)
+			err := decoder.Decode(&fy)
 			require.NoError(t, err)
 			require.Equal(t, tc.keys, fy.Keys)
 
@@ -458,8 +462,10 @@ func TestResourceFieldUnmarshalFailure(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			decoder := yaml.NewDecoder(bytes.NewReader(tc.invalid))
+			decoder.KnownFields(true)
 			var fy ResourceField
-			err := yaml.UnmarshalStrict(tc.invalid, &fy)
+			err := decoder.Decode(&fy)
 			require.ErrorContains(t, err, tc.expectedErr)
 
 			var fj ResourceField

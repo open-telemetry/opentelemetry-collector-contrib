@@ -1,5 +1,5 @@
 - targets:
-  - 172.168.1.0:2113
+    - 172.168.1.0:2113
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -16,7 +16,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.1.1:2113
+    - 172.168.1.1:2113
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -33,7 +33,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.1:2117
+    - 172.168.2.1:2117
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -53,7 +53,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.1:2117
+    - 172.168.2.1:2117
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -74,7 +74,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.0:2118
+    - 172.168.2.0:2118
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -94,7 +94,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.0:2118
+    - 172.168.2.0:2118
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -115,7 +115,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.1:2119
+    - 172.168.2.1:2119
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -135,7 +135,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.1:2119
+    - 172.168.2.1:2119
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -156,7 +156,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.0:2120
+    - 172.168.2.0:2120
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -176,7 +176,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.0:2120
+    - 172.168.2.0:2120
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -197,7 +197,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.1:2121
+    - 172.168.2.1:2121
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -217,7 +217,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.1:2121
+    - 172.168.2.1:2121
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -238,7 +238,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.0:2122
+    - 172.168.2.0:2122
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -258,7 +258,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.0:2122
+    - 172.168.2.0:2122
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -279,7 +279,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.1:2123
+    - 172.168.2.1:2123
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -299,7 +299,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.1:2123
+    - 172.168.2.1:2123
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -320,7 +320,7 @@
     __metrics_path__: /new/metrics
     prometheus_job: PROM_JOB_1
 - targets:
-  - 172.168.2.0:2124
+    - 172.168.2.0:2124
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
@@ -340,7 +340,7 @@
     __meta_ecs_task_started_by: deploy1
     __metrics_path__: /metrics
 - targets:
-  - 172.168.2.0:2124
+    - 172.168.2.0:2124
   labels:
     __meta_ecs_cluster_name: ut-cluster-1
     __meta_ecs_container_labels_MY_JOB_NAME: PROM_JOB_1
