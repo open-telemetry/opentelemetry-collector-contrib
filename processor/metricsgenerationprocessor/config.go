@@ -61,7 +61,7 @@ type GenerationType string
 
 const (
 
-	// Generates a new metric applying an arithmatic operation with two operands
+	// Generates a new metric applying an arithmetic operation with two operands
 	calculate GenerationType = "calculate"
 
 	// Generates a new metric scaling the value of s given metric with a provided constant

@@ -236,7 +236,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Token = "foo"
 				return cfg
 			}(),
-			wantErr: "queue size must be positive",
+			wantErr: "`queue_size` must be positive",
 		},
 	}
 

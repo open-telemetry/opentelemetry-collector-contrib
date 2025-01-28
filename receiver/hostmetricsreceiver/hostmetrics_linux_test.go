@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 )
 
@@ -44,9 +43,9 @@ func TestLoadConfigRootPath(t *testing.T) {
 
 	expectedConfig := factory.CreateDefaultConfig().(*Config)
 	expectedConfig.RootPath = "testdata"
-	cpuScraperCfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
-	cpuScraperCfg.SetRootPath("testdata")
-	expectedConfig.Scrapers = map[component.Type]internal.Config{cpuscraper.Type: cpuScraperCfg}
+	f := cpuscraper.NewFactory()
+	cpuScraperCfg := f.CreateDefaultConfig()
+	expectedConfig.Scrapers = map[component.Type]component.Config{f.Type(): cpuScraperCfg}
 	assert.Equal(t, expectedConfig, cfg)
 	expectedEnvMap := common.EnvMap{
 		common.HostDevEnvKey: "testdata/dev",

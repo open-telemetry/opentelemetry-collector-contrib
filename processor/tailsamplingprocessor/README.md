@@ -6,7 +6,7 @@
 | Stability     | [beta]: traces   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftailsampling%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ftailsampling) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftailsampling%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ftailsampling) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jpkrohling](https://www.github.com/jpkrohling) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jpkrohling](https://www.github.com/jpkrohling), [@portertech](https://www.github.com/portertech) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -49,7 +49,7 @@ The following configuration options can also be modified:
 - `decision_cache`: Options for configuring caches for sampling decisions. You may want to vary the size of these caches
   depending on how many "keep" vs "drop" decisions you expect from your policies. For example, you may allocate a
   larger `non_sampled_cache_size` if you expect most traces to be dropped.
-  Additionally, if using, configure this as much higher than `num_traces` so decisions for trace IDs are kept
+  Additionally, if using, configure this as much greater than `num_traces` so decisions for trace IDs are kept
   longer than the span data for the trace.
   - `sampled_cache_size` (default = 0): Configures amount of trace IDs to be kept in an LRU cache,
   persisting the "keep" decisions for traces that may have already been released from memory. 
@@ -469,7 +469,7 @@ A circular buffer is used to ensure the number of traces in-memory doesn't excee
 otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
 ```
 
-**Pre-emptively Preventing Dropped Traces**
+**Preemptively Preventing Dropped Traces**
 
 A trace is dropped without sampling if it's removed from the circular buffer before `decision_wait`.
 

@@ -281,7 +281,7 @@ func makeTestTraces(i int) ptrace.Traces {
 
 func bulkyGenFunc() MkGen {
 	return func() GenFunc {
-		entropy := datagen.NewTestEntropy(int64(rand.Uint64())) //nolint:gosec // only used for testing
+		entropy := datagen.NewTestEntropy(int64(rand.Uint64()))
 
 		tracesGen := datagen.NewTracesGenerator(
 			entropy,
@@ -627,7 +627,7 @@ func nearLimitGenFunc() MkGen {
 	const hardLimit = 1 << 20   // 1 MiB
 
 	return func() GenFunc {
-		entropy := datagen.NewTestEntropy(int64(rand.Uint64())) //nolint:gosec // only used for testing
+		entropy := datagen.NewTestEntropy(int64(rand.Uint64()))
 
 		tracesGen := datagen.NewTracesGenerator(
 			entropy,

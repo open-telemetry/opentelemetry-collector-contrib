@@ -63,7 +63,7 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
-	return scraperhelper.NewScraperControllerReceiver(&recv.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, scrp))
+	return scraperhelper.NewMetricsController(&recv.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, scrp))
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {

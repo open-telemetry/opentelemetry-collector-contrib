@@ -739,7 +739,7 @@ func fixSegmentName(name string) string {
 	return name
 }
 
-// fixAnnotationKey removes any invalid characters from the annotaiton key.  AWS X-Ray defines
+// fixAnnotationKey removes any invalid characters from the annotation key.  AWS X-Ray defines
 // the list of valid characters here:
 // https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
 func fixAnnotationKey(key string) string {
