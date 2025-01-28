@@ -1,0 +1,18 @@
+strip_ansi_escape_codes_body:
+  type: strip_ansi_escape_codes
+  field: body.nested
+strip_ansi_escape_codes_nested_attribute:
+  type: strip_ansi_escape_codes
+  field: attributes.one.two
+strip_ansi_escape_codes_nested_body:
+  type: strip_ansi_escape_codes
+  field: body.one.two
+strip_ansi_escape_codes_nested_resource:
+  type: strip_ansi_escape_codes
+  field: resource.one.two
+strip_ansi_escape_codes_single_attribute:
+  type: strip_ansi_escape_codes
+  field: attributes.key
+strip_ansi_escape_codes_single_resource:
+  type: strip_ansi_escape_codes
+  field: resource.key
