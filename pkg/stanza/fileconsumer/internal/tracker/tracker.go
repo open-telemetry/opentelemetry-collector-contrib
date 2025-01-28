@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -55,8 +54,6 @@ type fileTracker struct {
 	pollsToArchive int
 	archiveIndex   int
 }
-
-var errInvalidValue = errors.New("invalid value")
 
 var archiveIndexKey = "knownFilesArchiveIndex"
 var archivePollsToArchiveKey = "knonwFilesPollsToArchive"
