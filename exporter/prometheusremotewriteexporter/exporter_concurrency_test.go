@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
+	"runtime"
 	"strconv"
 	"sync"
 	"testing"
@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -32,9 +31,6 @@ import (
 // Test everything works when there is more than one goroutine calling PushMetrics.
 // Today we only use 1 worker per exporter, but the intention of this test is to future-proof in case it changes.
 func Test_PushMetricsConcurrent(t *testing.T) {
-	if os.Getenv("ImageOs") == "win25" && os.Getenv("GITHUB_ACTIONS") == "true" {
-		t.Skip("Skipping test on Windows 2025 GH runners, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37104")
-	}
 	n := 1000
 	ms := make([]pmetric.Metrics, n)
 	testIDKey := "test_id"
@@ -120,8 +116,6 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 
 	assert.NotNil(t, cfg)
 	set := exportertest.NewNopSettings()
-	set.MetricsLevel = configtelemetry.LevelBasic
-
 	prwe, nErr := newPRWExporter(cfg, set)
 
 	require.NoError(t, nErr)
@@ -137,15 +131,22 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 		resp, checkRequestErr := http.Get(server.URL)
 		require.NoError(c, checkRequestErr)
 		assert.NoError(c, resp.Body.Close())
-	}, 5*time.Second, 100*time.Millisecond)
+	}, 15*time.Second, 100*time.Millisecond)
 
 	var wg sync.WaitGroup
 	wg.Add(n)
+	maxConcurrentGoroutines := runtime.NumCPU() * 4
+	semaphore := make(chan struct{}, maxConcurrentGoroutines)
 	for _, m := range ms {
+		semaphore <- struct{}{}
 		go func() {
+			defer func() {
+				<-semaphore
+				wg.Done()
+			}()
+
 			err := prwe.PushMetrics(ctx, m)
 			assert.NoError(t, err)
-			wg.Done()
 		}()
 	}
 	wg.Wait()

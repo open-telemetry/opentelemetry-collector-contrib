@@ -1,4 +1,4 @@
-:warn: This executable has moved to [opentelemetry-go-build-tools](Deprecated: use https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/githubgen).
+⚠️ This executable has moved to [opentelemetry-go-build-tools](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/githubgen).
 
 This code is deprecated and will be removed soon. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37294.
 

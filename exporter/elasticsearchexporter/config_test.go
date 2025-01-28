@@ -73,6 +73,9 @@ func TestConfig(t *testing.T) {
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
+				LogsDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
@@ -144,6 +147,9 @@ func TestConfig(t *testing.T) {
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
+				LogsDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
@@ -213,6 +219,9 @@ func TestConfig(t *testing.T) {
 				},
 				TracesIndex: "traces-generic-default",
 				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",

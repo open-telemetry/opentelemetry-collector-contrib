@@ -7,11 +7,9 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -62,32 +60,25 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.GrafanacloudDatapointCount, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.GrafanacloudDatapointCount, err = builder.meter.Int64Counter(
 		"otelcol_grafanacloud_datapoint_count",
 		metric.WithDescription("Number of datapoints sent to Grafana Cloud"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.GrafanacloudFlushCount, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.GrafanacloudFlushCount, err = builder.meter.Int64Counter(
 		"otelcol_grafanacloud_flush_count",
 		metric.WithDescription("Number of metrics flushes"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.GrafanacloudHostCount, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableGauge(
+	builder.GrafanacloudHostCount, err = builder.meter.Int64ObservableGauge(
 		"otelcol_grafanacloud_host_count",
 		metric.WithDescription("Number of unique hosts"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeGrafanacloudHostCount, builder.GrafanacloudHostCount)
+	_, err = builder.meter.RegisterCallback(builder.observeGrafanacloudHostCount, builder.GrafanacloudHostCount)
 	errs = errors.Join(errs, err)
 	return &builder, errs
-}
-
-func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
-	if cfgLevel <= srvLevel {
-		return meter
-	}
-	return noopmetric.Meter{}
 }
