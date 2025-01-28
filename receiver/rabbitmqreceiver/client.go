@@ -16,12 +16,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/models"
 )
 
-// queuePath is the path to queues endpoint
-const queuePath = "/api/queues"
+const (
+	// queuePath is the endpoint for RabbitMQ queues.
+	queuePath = "/api/queues"
+
+	// nodePath is the endpoint for RabbitMQ nodes.
+	nodePath = "/api/nodes"
+)
 
 type client interface {
 	// GetQueues calls "/api/queues" endpoint to get list of queues for the target node
 	GetQueues(ctx context.Context) ([]*models.Queue, error)
+	// GetQueues calls "/api/nodes" endpoint to get list of nodes for the target node
+	GetNodes(ctx context.Context) ([]*models.Node, error)
 }
 
 var _ client = (*rabbitmqClient)(nil)
@@ -66,6 +73,17 @@ func (c *rabbitmqClient) GetQueues(ctx context.Context) ([]*models.Queue, error)
 	return queues, nil
 }
 
+func (c *rabbitmqClient) GetNodes(ctx context.Context) ([]*models.Node, error) {
+	var nodes []*models.Node
+
+	if err := c.get(ctx, nodePath, &nodes); err != nil {
+		c.logger.Error("Failed to retrieve nodes", zap.Error(err))
+		return nil, err
+	}
+
+	return nodes, nil
+}
+
 func (c *rabbitmqClient) get(ctx context.Context, path string, respObj any) error {
 	// Construct endpoint and create request
 	url := c.hostEndpoint + path
@@ -94,15 +112,11 @@ func (c *rabbitmqClient) get(ctx context.Context, path string, respObj any) erro
 	if resp.StatusCode != http.StatusOK {
 		c.logger.Debug("rabbitMQ API non-200", zap.Error(err), zap.Int("status_code", resp.StatusCode))
 
-		// Attempt to extract the error payload
-		payloadData, err := io.ReadAll(resp.Body)
-		if err != nil {
-			c.logger.Debug("failed to read payload error message", zap.Error(err))
-		} else {
-			c.logger.Debug("rabbitMQ API Error", zap.ByteString("api_error", payloadData))
+		payload, readErr := io.ReadAll(resp.Body)
+		if readErr == nil {
+			c.logger.Debug("Error response payload", zap.ByteString("error_payload", payload))
 		}
-
-		return fmt.Errorf("non 200 code returned %d", resp.StatusCode)
+		return fmt.Errorf("non-200 response code: %d", resp.StatusCode)
 	}
 
 	// Decode the payload into the passed in response object

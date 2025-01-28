@@ -138,12 +138,14 @@ func TestStatsReaders_Read(t *testing.T) {
 
 	op, err := databaseAdminClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
 		Database: databaseName,
-		Statements: []string{`CREATE TABLE STATS (
+		Statements: []string{
+			`CREATE TABLE STATS (
 			INTERVAL_END TIMESTAMP,
 			METRIC_LABEL STRING(MAX),
 			METRIC_VALUE INT64
 		) PRIMARY KEY (METRIC_LABEL)
-		`},
+		`,
+		},
 	})
 	require.NoError(t, err)
 

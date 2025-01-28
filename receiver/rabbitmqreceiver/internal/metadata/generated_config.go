@@ -34,6 +34,10 @@ type MetricsConfig struct {
 	RabbitmqMessageDelivered    MetricConfig `mapstructure:"rabbitmq.message.delivered"`
 	RabbitmqMessageDropped      MetricConfig `mapstructure:"rabbitmq.message.dropped"`
 	RabbitmqMessagePublished    MetricConfig `mapstructure:"rabbitmq.message.published"`
+	RabbitmqNodeDiskFree        MetricConfig `mapstructure:"rabbitmq.node.disk_free"`
+	RabbitmqNodeFdUsed          MetricConfig `mapstructure:"rabbitmq.node.fd_used"`
+	RabbitmqNodeMemLimit        MetricConfig `mapstructure:"rabbitmq.node.mem_limit"`
+	RabbitmqNodeMemUsed         MetricConfig `mapstructure:"rabbitmq.node.mem_used"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -54,6 +58,18 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		RabbitmqMessagePublished: MetricConfig{
+			Enabled: true,
+		},
+		RabbitmqNodeDiskFree: MetricConfig{
+			Enabled: true,
+		},
+		RabbitmqNodeFdUsed: MetricConfig{
+			Enabled: true,
+		},
+		RabbitmqNodeMemLimit: MetricConfig{
+			Enabled: true,
+		},
+		RabbitmqNodeMemUsed: MetricConfig{
 			Enabled: true,
 		},
 	}
