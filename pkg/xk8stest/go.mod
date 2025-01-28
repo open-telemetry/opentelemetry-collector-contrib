@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest
+module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest
 
 go 1.22.0
 

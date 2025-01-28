@@ -133,7 +133,6 @@ body:
       - internal/filter
       - internal/grpcutil
       - internal/k8sconfig
-      - internal/k8stest
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
@@ -170,6 +169,7 @@ body:
       - pkg/translator/skywalking
       - pkg/translator/zipkin
       - pkg/winperfcounters
+      - pkg/xk8stest
       - processor/attributes
       - processor/coralogix
       - processor/cumulativetodelta
