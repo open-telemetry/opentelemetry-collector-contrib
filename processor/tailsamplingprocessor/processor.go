@@ -319,14 +319,17 @@ func (tsp *tailSamplingSpanProcessor) loadPendingSamplingPolicy() {
 }
 
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
+	tsp.logger.Debug("Sampling Policy Evaluation ticked")
+
 	tsp.loadPendingSamplingPolicy()
 
+	ctx := context.Background()
 	metrics := policyMetrics{}
-
 	startTime := time.Now()
+
 	batch, _ := tsp.decisionBatcher.CloseCurrentAndTakeFirstBatch()
 	batchLen := len(batch)
-	tsp.logger.Debug("Sampling Policy Evaluation ticked")
+
 	for _, id := range batch {
 		d, ok := tsp.idToTrace.Load(id)
 		if !ok {
@@ -337,9 +340,8 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		trace.DecisionTime = time.Now()
 
 		decision := tsp.makeDecision(id, trace, &metrics)
+
 		tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, int64(time.Since(startTime)/time.Microsecond))
-		tsp.telemetry.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(tsp.ctx, metrics.idNotFoundOnMapCount)
-		tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount)
 		tsp.telemetry.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, int64(tsp.numTracesOnMap.Load()))
 		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttribute[decision])
 
@@ -352,11 +354,14 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 		switch decision {
 		case sampling.Sampled:
-			tsp.releaseSampledTrace(context.Background(), id, allSpans)
+			tsp.releaseSampledTrace(ctx, id, allSpans)
 		case sampling.NotSampled:
 			tsp.releaseNotSampledTrace(id)
 		}
 	}
+
+	tsp.telemetry.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(tsp.ctx, metrics.idNotFoundOnMapCount)
+	tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount)
 
 	tsp.logger.Debug("Sampling policy evaluation completed",
 		zap.Int("batch.len", batchLen),
