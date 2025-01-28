@@ -254,6 +254,10 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 	policyNames := make(map[string]struct{}, cLen)
 
 	for _, cfg := range cfgs {
+		if cfg.Name == "" {
+			return fmt.Errorf("policy name cannot be empty")
+		}
+
 		if _, exists := policyNames[cfg.Name]; exists {
 			return fmt.Errorf("duplicate policy name %q", cfg.Name)
 		}
