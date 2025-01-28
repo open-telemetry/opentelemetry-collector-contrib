@@ -45,6 +45,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 	timeout time.Duration,
 	attributes []string,
 	detectorConfigs ResourceDetectorConfig,
+	order bool,
 	detectorTypes ...DetectorType,
 ) (*ResourceProvider, error) {
 	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes)
@@ -59,7 +60,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 		}
 	}
 
-	provider := NewResourceProvider(params.Logger, timeout, attributesToKeep, detectors...)
+	provider := NewResourceProvider(params.Logger, timeout, attributesToKeep, order, detectors...)
 	return provider, nil
 }
 
@@ -89,6 +90,7 @@ type ResourceProvider struct {
 	detectedResource *resourceResult
 	once             sync.Once
 	attributesToKeep map[string]struct{}
+	order            bool
 }
 
 type resourceResult struct {
@@ -97,24 +99,37 @@ type resourceResult struct {
 	err       error
 }
 
-func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesToKeep map[string]struct{}, detectors ...Detector) *ResourceProvider {
+func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesToKeep map[string]struct{}, order bool, detectors ...Detector) *ResourceProvider {
 	return &ResourceProvider{
 		logger:           logger,
 		timeout:          timeout,
 		detectors:        detectors,
 		attributesToKeep: attributesToKeep,
+		order:            order,
 	}
 }
 
-func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resource pcommon.Resource, schemaURL string, err error) {
+func (p *ResourceProvider) Get(ctx context.Context, _ *http.Client) (resource pcommon.Resource, schemaURL string, err error) {
 	p.once.Do(func() {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, client.Timeout)
-		defer cancel()
 		p.detectResource(ctx)
 	})
 
 	return p.detectedResource.resource, p.detectedResource.schemaURL, p.detectedResource.err
+}
+
+type detectResult struct {
+	r         pcommon.Resource
+	schemaURL string
+	err       error
+}
+
+func handleResult(res *pcommon.Resource, resultsChan chan detectResult, mergedSchemaURL string) string {
+	result := <-resultsChan
+	if result.err == nil {
+		mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, result.schemaURL)
+		MergeResource(*res, result.r, false)
+	}
+	return mergedSchemaURL
 }
 
 func (p *ResourceProvider) detectResource(ctx context.Context) {
@@ -125,13 +140,29 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 
 	p.logger.Info("began detecting resource information")
 
+	resultsChan := make(chan detectResult, len(p.detectors))
 	for _, detector := range p.detectors {
-		r, schemaURL, err := detector.Detect(ctx)
-		if err != nil {
-			p.logger.Warn("failed to detect resource", zap.Error(err))
-		} else {
-			mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, schemaURL)
-			MergeResource(res, r, false)
+		go func(detector Detector) {
+			sleep := 2 * time.Second
+			for {
+				r, schemaURL, err := detector.Detect(ctx)
+				if err != nil {
+					p.logger.Warn("failed to detect resource", zap.Error(err))
+					time.Sleep(sleep)
+					sleep *= 2
+				} else {
+					resultsChan <- detectResult{r: r, schemaURL: schemaURL, err: nil}
+					return
+				}
+			}
+		}(detector)
+		if p.order {
+			mergedSchemaURL = handleResult(&res, resultsChan, mergedSchemaURL)
+		}
+	}
+	if !p.order {
+		for range p.detectors {
+			mergedSchemaURL = handleResult(&res, resultsChan, mergedSchemaURL)
 		}
 	}
 
