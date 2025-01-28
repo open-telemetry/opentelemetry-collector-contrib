@@ -316,7 +316,7 @@ func (tsp *tailSamplingSpanProcessor) loadPendingSamplingPolicy() {
 
 	if err != nil {
 		tsp.logger.Error("Failed to load pending sampling policy", zap.Error(err))
-		tsp.logger.Debug("Continue to use the previous sampling policy")
+		tsp.logger.Debug("Continuing to use the previously loaded sampling policy")
 	}
 }
 
