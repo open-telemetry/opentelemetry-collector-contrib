@@ -319,20 +319,13 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 				for _, attr := range identAttr {
 					if attr.Key == semconv.AttributeServiceInstanceID {
-						// TODO: Consider whether to attempt restarting the Collector.
-						// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29864
 						if attr.Value.GetStringValue() != s.persistentState.InstanceID.String() {
-							errMsg := fmt.Sprintf("the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s)",
+							done <- fmt.Errorf(
+								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s): %w",
 								attr.Value.GetStringValue(),
 								s.persistentState.InstanceID.String(),
+								errNonMatchingInstanceUID,
 							)
-							if err := s.opampClient.SetHealth(&protobufs.ComponentHealth{
-								Healthy:   false,
-								LastError: errMsg,
-							}); err != nil {
-								s.logger.Error("Could not report health to OpAmp Server", zap.Error(err))
-							}
-							done <- fmt.Errorf("%s: %w", errMsg, errNonMatchingInstanceUID)
 							return
 						}
 						instanceIDSeen = true
