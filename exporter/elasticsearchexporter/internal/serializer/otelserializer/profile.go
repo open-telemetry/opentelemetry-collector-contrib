@@ -5,38 +5,82 @@ package otelserializer // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"bytes"
+	"encoding/json"
 
-	"github.com/elastic/go-structform"
-	"github.com/elastic/go-structform/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
+)
+
+const (
+	stackTraceIndex  = "profiling-stacktraces"
+	stackFrameIndex  = "profiling-stackframes"
+	executablesIndex = "profiling-executables"
 )
 
 // SerializeProfile serializes a profile into the specified buffer
-func SerializeProfile(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, profile pprofile.Profile, idx elasticsearch.Index, buf *bytes.Buffer) error {
-	v := json.NewVisitor(buf)
-	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
-	// This is required to generate the correct dynamic mapping in ES.
-	v.SetExplicitRadixPoint(true)
-	writeProfileSamples(v, idx, profile)
+func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, callback func(*bytes.Buffer, string, string) error) error {
+	data, err := serializeprofiles.ResourceProfiles(resource, scope, profile)
+	if err != nil {
+		return err
+	}
 
+	for _, payload := range data {
+		event := payload.StackTraceEvent
+
+		if event.StackTraceID != "" {
+			c, err := toJSON(event)
+			if err != nil {
+				return err
+			}
+			err = callback(c, "", "")
+			if err != nil {
+				return err
+			}
+		}
+
+		if payload.StackTrace.DocID != "" {
+			c, err := toJSON(payload.StackTrace)
+			if err != nil {
+				return err
+			}
+			err = callback(c, payload.StackTrace.DocID, stackTraceIndex)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, stackFrame := range payload.StackFrames {
+			c, err := toJSON(stackFrame)
+			if err != nil {
+				return err
+			}
+			err = callback(c, stackFrame.DocID, stackFrameIndex)
+			if err != nil {
+				return err
+			}
+		}
+
+		for _, executable := range payload.Executables {
+			c, err := toJSON(executable)
+			if err != nil {
+				return err
+			}
+			err = callback(c, executable.DocID, executablesIndex)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
-func writeProfileSamples(v *json.Visitor, idx elasticsearch.Index, profile pprofile.Profile) {
-	for i := 0; i < profile.Sample().Len(); i++ {
-		sample := profile.Sample().At(i)
-
-		for j := 0; j < sample.TimestampsUnixNano().Len(); j++ {
-			t := sample.TimestampsUnixNano().At(j)
-
-			_ = v.OnObjectStart(-1, structform.AnyType)
-			writeDataStream(v, idx)
-			writeTimestampField(v, "@timestamp", pcommon.Timestamp(t))
-
-			_ = v.OnObjectFinished()
-		}
+func toJSON(d any) (*bytes.Buffer, error) {
+	c, err := json.Marshal(d)
+	if err != nil {
+		return nil, err
 	}
+
+	return bytes.NewBuffer(c), nil
 }

@@ -6,7 +6,6 @@ package otelserializer
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
 )
 
 func TestSerializeProfile(t *testing.T) {
@@ -27,31 +26,55 @@ func TestSerializeProfile(t *testing.T) {
 		{
 			name: "with a simple sample",
 			profileCustomizer: func(_ pcommon.Resource, _ pcommon.InstrumentationScope, profile pprofile.Profile) {
+				profile.StringTable().Append("samples", "count", "cpu", "nanoseconds")
+				st := profile.SampleType().AppendEmpty()
+				st.SetTypeStrindex(0)
+				st.SetUnitStrindex(1)
+				pt := profile.PeriodType()
+				pt.SetTypeStrindex(2)
+				pt.SetUnitStrindex(3)
+
+				a := profile.AttributeTable().AppendEmpty()
+				a.SetKey("process.executable.build_id.profiling")
+				a.Value().SetStr("600DCAFE4A110000F2BF38C493F5FB92")
+
 				sample := profile.Sample().AppendEmpty()
 				sample.TimestampsUnixNano().Append(0)
+				sample.SetLocationsLength(1)
+
+				m := profile.MappingTable().AppendEmpty()
+				m.AttributeIndices().Append(0)
+
+				l := profile.LocationTable().AppendEmpty()
+				l.SetMappingIndex(0)
+				l.SetAddress(111)
 			},
 			wantErr: false,
 			expected: []map[string]any{
 				{
-					"@timestamp": "0.0",
-				},
-			},
-		},
-		{
-			name: "with multiple samples",
-			profileCustomizer: func(_ pcommon.Resource, _ pcommon.InstrumentationScope, profile pprofile.Profile) {
-				sample := profile.Sample().AppendEmpty()
-				sample.TimestampsUnixNano().Append(0)
-				sample = profile.Sample().AppendEmpty()
-				sample.TimestampsUnixNano().Append(1)
-			},
-			wantErr: false,
-			expected: []map[string]any{
-				{
-					"@timestamp": "0.0",
+					"Stacktrace.frame.ids":   "YA3K_koRAADyvzjEk_X7kgAAAAAAAABv",
+					"Stacktrace.frame.types": "AQA",
+					"ecs.version":            "",
 				},
 				{
-					"@timestamp": "0.1",
+					"script": map[string]any{
+						"params": map[string]any{
+							"buildid":    "YA3K_koRAADyvzjEk_X7kg",
+							"ecsversion": "1.12.0",
+							"filename":   "samples",
+							"timestamp":  json.Number("1737936000"),
+						},
+						"source": serializeprofiles.ExeMetadataUpsertScript,
+					},
+					"scripted_upsert": true,
+					"upsert":          map[string]any{},
+				},
+				{
+					"@timestamp":          json.Number("0"),
+					"Stacktrace.count":    json.Number("1"),
+					"Stacktrace.id":       "02VzuClbpt_P3xxwox83Ng",
+					"ecs.version":         "",
+					"process.thread.name": "",
 				},
 			},
 		},
@@ -65,29 +88,27 @@ func TestSerializeProfile(t *testing.T) {
 			tt.profileCustomizer(resource.Resource(), scope.Scope(), profile)
 			profiles.MarkReadOnly()
 
-			var buf bytes.Buffer
-			err := SerializeProfile(resource.Resource(), "", scope.Scope(), "", profile, elasticsearch.Index{}, &buf)
+			buf := []*bytes.Buffer{}
+			err := SerializeProfile(resource.Resource(), scope.Scope(), profile, func(b *bytes.Buffer, _ string, _ string) error {
+				buf = append(buf, b)
+				return nil
+			})
 			if !tt.wantErr {
 				require.NoError(t, err)
 			}
 
-			b := buf.Bytes()
-			eventAsJSON := string(b)
-			decoder := json.NewDecoder(bytes.NewBuffer(b))
-			decoder.UseNumber()
-
 			var results []map[string]any
-			for {
-				var v map[string]any
-				err := decoder.Decode(&v)
-				if err == io.EOF {
-					break
-				}
+			for _, v := range buf {
+				var d map[string]any
+				decoder := json.NewDecoder(v)
+				decoder.UseNumber()
+				err := decoder.Decode(&d)
+
 				require.NoError(t, err)
-				results = append(results, v)
+				results = append(results, d)
 			}
 
-			assert.Equal(t, tt.expected, results, eventAsJSON)
+			assert.Equal(t, tt.expected, results)
 		})
 	}
 }
