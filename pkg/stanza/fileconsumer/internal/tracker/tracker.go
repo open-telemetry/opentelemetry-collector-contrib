@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -19,6 +18,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+)
+
+const (
+	archiveIndexKey          = "knownFilesArchiveIndex"
+	archivePollsToArchiveKey = "knonwFilesPollsToArchive"
 )
 
 // Interface for tracking files that are being consumed.
@@ -55,11 +59,6 @@ type fileTracker struct {
 	pollsToArchive int
 	archiveIndex   int
 }
-
-var errInvalidValue = errors.New("invalid value")
-
-var archiveIndexKey = "knownFilesArchiveIndex"
-var archivePollsToArchiveKey = "knonwFilesPollsToArchive"
 
 func NewFileTracker(ctx context.Context, set component.TelemetrySettings, maxBatchFiles int, pollsToArchive int, persister operator.Persister) Tracker {
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
@@ -196,7 +195,7 @@ func (t *fileTracker) restoreArchiveIndex(ctx context.Context) {
 }
 
 func (t *fileTracker) rewriteArchive(ctx context.Context, previousPollsToArchive int) {
-	// Function to swap data between two indices
+	// helper to rewrite data from oldIndex to newIndex
 	rewrite := func(newIdx, oldIdex int) error {
 		oldVal, err := t.persister.Get(ctx, archiveKey(oldIdex))
 		if err != nil {

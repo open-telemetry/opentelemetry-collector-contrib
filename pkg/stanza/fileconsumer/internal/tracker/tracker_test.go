@@ -93,7 +93,6 @@ func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive 
 	// 		1.25 means archive is 125% filled (i.e it was rolled over once)
 	pctFilled := []float32{0.25, 0.5, 0.75, 1, 1.25, 1.50, 1.75, 2.00}
 	for _, pct := range pctFilled {
-
 		persister := testutil.NewUnscopedMockPersister()
 		tracker := NewFileTracker(context.Background(), componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
 		iterations := int(pct * float32(pollsToArchive))
@@ -119,7 +118,7 @@ func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive 
 			val, err := persister.Get(context.Background(), archiveKey(i))
 			require.NoError(t, err)
 			if val != nil {
-				count += 1
+				count++
 			}
 		}
 		require.Equal(t, min(iterations, pollsToArchive), count)
@@ -138,8 +137,8 @@ func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive 
 					foundIteration := int(element.Offset)
 					require.Equal(t, mostRecentIteration, foundIteration)
 				}
-				mostRecentIteration -= 1
-				startIdx -= 1
+				mostRecentIteration--
+				startIdx--
 			}
 
 			// make sure we've removed all extra keys
@@ -150,7 +149,6 @@ func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive 
 			}
 		}
 	}
-
 }
 
 func populatedPersisterData(persister operator.Persister, fps []*fingerprint.Fingerprint) []bool {
