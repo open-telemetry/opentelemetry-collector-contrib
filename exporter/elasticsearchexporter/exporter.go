@@ -194,6 +194,18 @@ func (e *elasticsearchExporter) pushLogRecord(
 	return bulkIndexerSession.Add(ctx, fIndex.Index, docID, buf, nil)
 }
 
+type dataPointsGroup struct {
+	resource          pcommon.Resource
+	resourceSchemaURL string
+	scope             pcommon.InstrumentationScope
+	scopeSchemaURL    string
+	dataPoints        []datapoints.DataPoint
+}
+
+func (p *dataPointsGroup) addDataPoint(dp datapoints.DataPoint) {
+	p.dataPoints = append(p.dataPoints, dp)
+}
+
 func (e *elasticsearchExporter) pushMetricsData(
 	ctx context.Context,
 	metrics pmetric.Metrics,
@@ -207,6 +219,8 @@ func (e *elasticsearchExporter) pushMetricsData(
 	}
 	defer session.End()
 
+	groupedDataPointsByIndex := make(map[elasticsearch.Index]map[uint32]*dataPointsGroup)
+	var validationErrs []error // log instead of returning these so that upstream does not retry
 	var errs []error
 	resourceMetrics := metrics.ResourceMetrics()
 	for i := 0; i < resourceMetrics.Len(); i++ {
@@ -215,10 +229,8 @@ func (e *elasticsearchExporter) pushMetricsData(
 		scopeMetrics := resourceMetric.ScopeMetrics()
 
 		for j := 0; j < scopeMetrics.Len(); j++ {
-			var validationErrs []error // log instead of returning these so that upstream does not retry
 			scopeMetrics := scopeMetrics.At(j)
 			scope := scopeMetrics.Scope()
-			groupedDataPointsByIndex := make(map[elasticsearch.Index]map[uint32][]datapoints.DataPoint)
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
 
@@ -229,15 +241,19 @@ func (e *elasticsearchExporter) pushMetricsData(
 					}
 					groupedDataPoints, ok := groupedDataPointsByIndex[fIndex]
 					if !ok {
-						groupedDataPoints = make(map[uint32][]datapoints.DataPoint)
+						groupedDataPoints = make(map[uint32]*dataPointsGroup)
 						groupedDataPointsByIndex[fIndex] = groupedDataPoints
 					}
 					dpHash := e.model.hashDataPoint(dp)
-					dataPoints, ok := groupedDataPoints[dpHash]
+					dpGroup, ok := groupedDataPoints[dpHash]
 					if !ok {
-						groupedDataPoints[dpHash] = []datapoints.DataPoint{dp}
+						groupedDataPoints[dpHash] = &dataPointsGroup{
+							resource:   resource,
+							scope:      scope,
+							dataPoints: []datapoints.DataPoint{dp},
+						}
 					} else {
-						groupedDataPoints[dpHash] = append(dataPoints, dp)
+						dpGroup.addDataPoint(dp)
 					}
 					return nil
 				}
@@ -298,29 +314,30 @@ func (e *elasticsearchExporter) pushMetricsData(
 					}
 				}
 			}
+		}
+	}
 
-			for fIndex, groupedDataPoints := range groupedDataPointsByIndex {
-				for _, dataPoints := range groupedDataPoints {
-					buf := e.bufferPool.NewPooledBuffer()
-					dynamicTemplates, err := e.model.encodeMetrics(resource, resourceMetric.SchemaUrl(), scope, scopeMetrics.SchemaUrl(), dataPoints, &validationErrs, fIndex, buf.Buffer)
-					if err != nil {
-						buf.Recycle()
-						errs = append(errs, err)
-						continue
-					}
-					if err := session.Add(ctx, fIndex.Index, "", buf, dynamicTemplates); err != nil {
-						// not recycling after Add returns an error as we don't know if it's already recycled
-						if cerr := ctx.Err(); cerr != nil {
-							return cerr
-						}
-						errs = append(errs, err)
-					}
-				}
+	for fIndex, groupedDataPoints := range groupedDataPointsByIndex {
+		for _, dpGroup := range groupedDataPoints {
+			buf := e.bufferPool.NewPooledBuffer()
+			dynamicTemplates, err := e.model.encodeMetrics(
+				dpGroup.resource, dpGroup.resourceSchemaURL, dpGroup.scope, dpGroup.scopeSchemaURL, dpGroup.dataPoints, &validationErrs, fIndex, buf.Buffer)
+			if err != nil {
+				buf.Recycle()
+				errs = append(errs, err)
+				continue
 			}
-			if len(validationErrs) > 0 {
-				e.Logger.Warn("validation errors", zap.Error(errors.Join(validationErrs...)))
+			if err := session.Add(ctx, fIndex.Index, "", buf, dynamicTemplates); err != nil {
+				// not recycling after Add returns an error as we don't know if it's already recycled
+				if cerr := ctx.Err(); cerr != nil {
+					return cerr
+				}
+				errs = append(errs, err)
 			}
 		}
+	}
+	if len(validationErrs) > 0 {
+		e.Logger.Warn("validation errors", zap.Error(errors.Join(validationErrs...)))
 	}
 
 	if err := session.Flush(ctx); err != nil {
