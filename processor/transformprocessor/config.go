@@ -28,7 +28,6 @@ var (
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080#issuecomment-2120764953"),
 	)
 	errFlatLogsGateDisabled = errors.New("'flatten_data' requires the 'transform.flatten.logs' feature gate to be enabled")
-	contextStatementsFields = []string{"trace_statements", "metric_statements", "log_statements"}
 )
 
 // Config defines the configuration for the processor.
@@ -73,8 +72,15 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		return nil
 	}
 
+	contextStatementsFields := map[string]*[]common.ContextStatements{
+		"trace_statements":  &c.TraceStatements,
+		"metric_statements": &c.MetricStatements,
+		"log_statements":    &c.LogStatements,
+	}
+
+	flatContextStatements := map[string][]int{}
 	contextStatementsPatch := map[string]any{}
-	for _, fieldName := range contextStatementsFields {
+	for fieldName := range contextStatementsFields {
 		if !conf.IsSet(fieldName) {
 			continue
 		}
@@ -91,18 +97,9 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		for i, value := range values {
 			// Array of strings means it's a flat configuration style
 			if reflect.TypeOf(value).Kind() == reflect.String {
-				stmts = append(stmts, map[string]any{
-					"statements":   []any{value},
-					"shared_cache": true,
-				})
+				stmts = append(stmts, map[string]any{"statements": []any{value}})
+				flatContextStatements[fieldName] = append(flatContextStatements[fieldName], i)
 			} else {
-				configuredKeys, ok := value.(map[string]any)
-				if ok {
-					_, hasShareCacheKey := configuredKeys["shared_cache"]
-					if hasShareCacheKey {
-						return fmt.Errorf("%s[%d] has invalid keys: %s", fieldName, i, "shared_cache")
-					}
-				}
 				stmts = append(stmts, value)
 			}
 		}
@@ -116,7 +113,18 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		}
 	}
 
-	return conf.Unmarshal(c)
+	err := conf.Unmarshal(c)
+	if err != nil {
+		return err
+	}
+
+	for fieldName, indexes := range flatContextStatements {
+		for _, i := range indexes {
+			(*contextStatementsFields[fieldName])[i].SharedCache = true
+		}
+	}
+
+	return err
 }
 
 var _ component.Config = (*Config)(nil)
