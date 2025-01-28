@@ -41,9 +41,9 @@ type Config struct {
 	// If a supplied attribute is not a valid attribute of a supplied detector it will be ignored.
 	// Deprecated: Please use detector's resource_attributes config instead
 	Attributes []string `mapstructure:"attributes"`
-	// KeepOrder is a parameter which perserves the order of detectors and the detection of data
+	// Order is a parameter which perserves the order of detectors and the detection of data
 	// This also introduces a blocking behavior, if one of the detectors cannot detect the resource
-	KeepOrder bool `mapstructure:"keepOrder"`
+	Order bool `mapstructure:"order"`
 }
 
 // DetectorConfig contains user-specified configurations unique to all individual detectors

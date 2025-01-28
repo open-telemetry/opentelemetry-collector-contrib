@@ -45,7 +45,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 	timeout time.Duration,
 	attributes []string,
 	detectorConfigs ResourceDetectorConfig,
-	keepOrder bool,
+	order bool,
 	detectorTypes ...DetectorType,
 ) (*ResourceProvider, error) {
 	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes)
@@ -60,7 +60,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 		}
 	}
 
-	provider := NewResourceProvider(params.Logger, timeout, attributesToKeep, keepOrder, detectors...)
+	provider := NewResourceProvider(params.Logger, timeout, attributesToKeep, order, detectors...)
 	return provider, nil
 }
 
@@ -90,7 +90,7 @@ type ResourceProvider struct {
 	detectedResource *resourceResult
 	once             sync.Once
 	attributesToKeep map[string]struct{}
-	keepOrder        bool
+	order            bool
 }
 
 type resourceResult struct {
@@ -99,13 +99,13 @@ type resourceResult struct {
 	err       error
 }
 
-func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesToKeep map[string]struct{}, keepOrder bool, detectors ...Detector) *ResourceProvider {
+func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesToKeep map[string]struct{}, order bool, detectors ...Detector) *ResourceProvider {
 	return &ResourceProvider{
 		logger:           logger,
 		timeout:          timeout,
 		detectors:        detectors,
 		attributesToKeep: attributesToKeep,
-		keepOrder:        keepOrder,
+		order:            order,
 	}
 }
 
@@ -156,11 +156,11 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 				}
 			}
 		}(detector)
-		if p.keepOrder {
+		if p.order {
 			mergedSchemaURL = handleResult(&res, resultsChan, mergedSchemaURL)
 		}
 	}
-	if !p.keepOrder {
+	if !p.order {
 		for range p.detectors {
 			mergedSchemaURL = handleResult(&res, resultsChan, mergedSchemaURL)
 		}
