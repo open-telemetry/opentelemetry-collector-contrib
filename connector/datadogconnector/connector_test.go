@@ -13,6 +13,7 @@ import (
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -202,9 +203,11 @@ func TestReceiveResourceSpansV2(t *testing.T) {
 }
 
 func testReceiveResourceSpansV2(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2); err != nil {
-		t.Fatal(err)
-	}
+	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
+	}()
 	connector, metricsSink := creteConnector(t)
 	err := connector.Start(context.Background(), componenttest.NewNopHost())
 	if err != nil {

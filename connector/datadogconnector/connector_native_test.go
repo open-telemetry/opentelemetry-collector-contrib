@@ -5,6 +5,7 @@ package datadogconnector
 
 import (
 	"context"
+	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	"sort"
 	"testing"
 	"time"
@@ -276,9 +277,11 @@ func TestObfuscate(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.Traces.BucketInterval = time.Second
 
-	if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-		t.Fatal(err)
-	}
+	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
+	}()
 	if err := featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", true); err != nil {
 		t.Fatal(err)
 	}
