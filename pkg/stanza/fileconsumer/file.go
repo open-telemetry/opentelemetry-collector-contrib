@@ -50,7 +50,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 	}
 
 	// instantiate the tracker
-	m.instantiateTracker(persister)
+	m.instantiateTracker(ctx, persister)
 
 	if persister != nil {
 		m.persister = persister
@@ -271,12 +271,12 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 	return r, nil
 }
 
-func (m *Manager) instantiateTracker(persister operator.Persister) {
+func (m *Manager) instantiateTracker(ctx context.Context, persister operator.Persister) {
 	var t tracker.Tracker
 	if m.noTracking {
 		t = tracker.NewNoStateTracker(m.set, m.maxBatchFiles)
 	} else {
-		t = tracker.NewFileTracker(m.set, m.maxBatchFiles, m.pollsToArchive, persister)
+		t = tracker.NewFileTracker(ctx, m.set, m.maxBatchFiles, m.pollsToArchive, persister)
 	}
 	m.tracker = t
 }
