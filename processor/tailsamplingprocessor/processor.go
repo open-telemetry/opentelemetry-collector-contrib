@@ -368,49 +368,47 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 }
 
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sampling.TraceData, metrics *policyMetrics) sampling.Decision {
-	finalDecision := sampling.NotSampled
-	samplingDecision := map[sampling.Decision]bool{
-		sampling.Error:            false,
-		sampling.Sampled:          false,
-		sampling.NotSampled:       false,
-		sampling.InvertSampled:    false,
-		sampling.InvertNotSampled: false,
-	}
-
+	var decisions [8]bool
 	ctx := context.Background()
-	// Check all policies before making a final decision
+	startTime := time.Now()
+
+	// Check all policies before making a final decision.
 	for _, p := range tsp.policies {
-		policyEvaluateStartTime := time.Now()
 		decision, err := p.evaluator.Evaluate(ctx, id, trace)
-		tsp.telemetry.ProcessorTailSamplingSamplingDecisionLatency.Record(ctx, int64(time.Since(policyEvaluateStartTime)/time.Microsecond), p.attribute)
+		latency := time.Since(startTime)
+		tsp.telemetry.ProcessorTailSamplingSamplingDecisionLatency.Record(ctx, int64(latency/time.Microsecond), p.attribute)
+
 		if err != nil {
-			samplingDecision[sampling.Error] = true
+			decisions[sampling.Error] = true
 			metrics.evaluateErrorCount++
 			tsp.logger.Debug("Sampling policy error", zap.Error(err))
-		} else {
-			tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToAttribute[decision])
-			if telemetry.IsMetricStatCountSpansSampledEnabled() {
-				tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToAttribute[decision])
-			}
-
-			samplingDecision[decision] = true
+			continue
 		}
+
+		tsp.telemetry.ProcessorTailSamplingCountTracesSampled.Add(ctx, 1, p.attribute, decisionToAttribute[decision])
+
+		if telemetry.IsMetricStatCountSpansSampledEnabled() {
+			tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToAttribute[decision])
+		}
+
+		decisions[decision] = true
 	}
 
-	// InvertNotSampled takes precedence over any other decision
+	var finalDecision sampling.Decision
 	switch {
-	case samplingDecision[sampling.InvertNotSampled]:
+	case decisions[sampling.InvertNotSampled]: // InvertNotSampled takes precedence
 		finalDecision = sampling.NotSampled
-	case samplingDecision[sampling.Sampled]:
+	case decisions[sampling.Sampled]:
 		finalDecision = sampling.Sampled
-	case samplingDecision[sampling.InvertSampled] && !samplingDecision[sampling.NotSampled]:
+	case decisions[sampling.InvertSampled] && !decisions[sampling.NotSampled]:
 		finalDecision = sampling.Sampled
+	default:
+		finalDecision = sampling.NotSampled
 	}
 
-	switch finalDecision {
-	case sampling.Sampled:
+	if finalDecision == sampling.Sampled {
 		metrics.decisionSampled++
-	case sampling.NotSampled:
+	} else {
 		metrics.decisionNotSampled++
 	}
 
