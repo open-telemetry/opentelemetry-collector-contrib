@@ -1050,7 +1050,7 @@ func Test_FunctionGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardStringGetter_WrappedError(t *testing.T) {
 	getter := StandardStringGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1197,7 +1197,7 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardStringLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardStringLikeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1274,7 +1274,7 @@ func Test_StandardFloatGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardFloatGetter_WrappedError(t *testing.T) {
 	getter := StandardFloatGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1451,7 +1451,7 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardFloatLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardFloatLikeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1528,7 +1528,7 @@ func Test_StandardIntGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardIntGetter_WrappedError(t *testing.T) {
 	getter := StandardIntGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1705,7 +1705,7 @@ func Test_StandardIntLikeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardIntLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardIntLikeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1904,7 +1904,7 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardByteSliceLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardByteSliceLikeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1981,7 +1981,7 @@ func Test_StandardBoolGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardBoolGetter_WrappedError(t *testing.T) {
 	getter := StandardBoolGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -2137,7 +2137,7 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardBoolLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardBoolLikeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -2224,7 +2224,7 @@ func Test_StandardPMapGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardPMapGetter_WrappedError(t *testing.T) {
 	getter := StandardPMapGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -2329,7 +2329,7 @@ func Test_StandardDurationGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardDurationGetter_WrappedError(t *testing.T) {
 	getter := StandardDurationGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -2418,7 +2418,7 @@ func Test_StandardTimeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardTimeGetter_WrappedError(t *testing.T) {
 	getter := StandardTimeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {

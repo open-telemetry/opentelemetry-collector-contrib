@@ -81,6 +81,7 @@ body:
       - exporter/sentry
       - exporter/signalfx
       - exporter/splunkhec
+      - exporter/stef
       - exporter/sumologic
       - exporter/syslog
       - exporter/tencentcloudlogservice
@@ -183,6 +184,7 @@ body:
       - processor/logdedup
       - processor/logstransform
       - processor/metricsgeneration
+      - processor/metricstarttime
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
@@ -219,6 +221,7 @@ body:
       - receiver/datadog
       - receiver/dockerstats
       - receiver/elasticsearch
+      - receiver/envoyals
       - receiver/expvar
       - receiver/filelog
       - receiver/filestats

@@ -19,9 +19,9 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	testcases := []struct {
-		configPath string
-		id         component.ID
 		expected   component.Config
+		id         component.ID
+		configPath string
 	}{
 		{
 			configPath: filepath.Join("testdata", "config", "traces.yaml"),

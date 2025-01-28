@@ -220,6 +220,12 @@ written as a double going forward. The simplest way to do this is by using the
 "Try this method" tab in the API reference for
 [DeleteMetricDescriptor](https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors/delete).
 
+Alternatively, you can run this
+[Go program](https://github.com/GoogleCloudPlatform/prometheus-engine/blob/v0.13.0/examples/scripts/delete_metric_descriptors/delete_metric_descriptors.go)
+that accepts your project ID and a [RE2](https://github.com/google/re2/wiki/syntax) regular expression to match multiple metric descriptors and delete them
+simulataneously.\
+This is useful if the conflicting value type errors are across multiple descriptors, especially with similar names.
+
 ### Points Written Too Frequently
 
 Error: `One or more points were written more frequently than the maximum sampling period configured for the metric.`

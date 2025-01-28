@@ -147,9 +147,63 @@ func TestLoadConfig(t *testing.T) {
 			id:       component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
 			errorLen: 3,
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "structured_configuration_with_path_context"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Context:    "span",
+						Statements: []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						Context:    "metric",
+						Statements: []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						Context:    "log",
+						Statements: []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "structured_configuration_with_inferred_context"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Statements: []string{
+							`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						Statements: []string{
+							`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						Statements: []string{
+							`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.id.String(), func(t *testing.T) {
+		t.Run(tt.id.Name(), func(t *testing.T) {
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 			assert.NoError(t, err)
 

@@ -6,11 +6,9 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -52,42 +50,35 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.FluentClosedConnections, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64UpDownCounter(
+	builder.FluentClosedConnections, err = builder.meter.Int64UpDownCounter(
 		"otelcol_fluent_closed_connections",
 		metric.WithDescription("Number of connections closed to the fluentforward receiver"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.FluentEventsParsed, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64UpDownCounter(
+	builder.FluentEventsParsed, err = builder.meter.Int64UpDownCounter(
 		"otelcol_fluent_events_parsed",
 		metric.WithDescription("Number of Fluent events parsed successfully"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.FluentOpenedConnections, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64UpDownCounter(
+	builder.FluentOpenedConnections, err = builder.meter.Int64UpDownCounter(
 		"otelcol_fluent_opened_connections",
 		metric.WithDescription("Number of connections opened to the fluentforward receiver"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.FluentParseFailures, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64UpDownCounter(
+	builder.FluentParseFailures, err = builder.meter.Int64UpDownCounter(
 		"otelcol_fluent_parse_failures",
 		metric.WithDescription("Number of times Fluent messages failed to be decoded"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.FluentRecordsGenerated, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64UpDownCounter(
+	builder.FluentRecordsGenerated, err = builder.meter.Int64UpDownCounter(
 		"otelcol_fluent_records_generated",
 		metric.WithDescription("Number of log records generated from Fluent forward input"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
-}
-
-func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
-	if cfgLevel <= srvLevel {
-		return meter
-	}
-	return noopmetric.Meter{}
 }

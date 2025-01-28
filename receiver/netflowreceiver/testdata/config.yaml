@@ -14,3 +14,29 @@ netflow/invalid_port:
   sockets: 1
   workers: 1
   port: 0
+
+netflow/zero_sockets:
+  scheme: netflow
+  port: 2055
+  sockets: 0
+  workers: 1
+
+netflow/zero_workers:
+  scheme: netflow
+  port: 2055
+  sockets: 1
+  workers: 0
+
+netflow/zero_queue:
+  scheme: netflow
+  port: 2055
+  sockets: 1
+  workers: 1
+  queue_size: 0
+
+netflow/sflow:
+  scheme: sflow
+  port: 6343
+  sockets: 1
+  workers: 1
+  queue_size: 0

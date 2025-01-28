@@ -53,6 +53,9 @@ type Config struct {
 	// fall back to pure TracesIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
 	TracesDynamicIndex DynamicIndexSetting `mapstructure:"traces_dynamic_index"`
 
+	// LogsDynamicID configures whether log record attribute `elasticsearch.document_id` is set as the document ID in ES.
+	LogsDynamicID DynamicIDSettings `mapstructure:"logs_dynamic_id"`
+
 	// Pipeline configures the ingest node pipeline name that should be used to process the
 	// events.
 	//
@@ -109,6 +112,10 @@ type LogstashFormatSettings struct {
 }
 
 type DynamicIndexSetting struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+type DynamicIDSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 

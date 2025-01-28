@@ -14,6 +14,12 @@ set -eu -o pipefail
 
 mod_files=$(find . -type f -name "go.mod")
 
+# Check if GNU sed is installed
+GNU_SED_INSTALLED=false
+if sed --version 2>/dev/null | grep -q "GNU sed"; then
+   GNU_SED_INSTALLED=true
+fi
+
 # Return the collector main core version
 get_collector_version() {
    collector_module="$1"
@@ -37,7 +43,7 @@ check_collector_versions_correct() {
 
    # Loop through all the module files, checking the collector version
    for mod_file in $mod_files; do
-      if [ "$(uname)" == "Darwin" ]; then
+      if [ "${GNU_SED_INSTALLED}" = false ]; then
          sed -i '' "s|$collector_module [^ ]*|$collector_module $collector_mod_version|g" $mod_file
       else
          sed -i'' "s|$collector_module [^ ]*|$collector_module $collector_mod_version|g" $mod_file

@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -34,6 +35,8 @@ type samplingProvider struct {
 	cancelFunc context.CancelFunc
 
 	options Options
+
+	wg sync.WaitGroup
 }
 
 type storedStrategies struct {
@@ -77,6 +80,7 @@ func NewFileSource(options Options, logger *zap.Logger) (source.Source, error) {
 	}
 
 	if options.ReloadInterval > 0 {
+		h.wg.Add(1)
 		go h.autoUpdateStrategies(ctx, options.ReloadInterval, loadFn)
 	}
 	return h, nil
@@ -96,6 +100,7 @@ func (h *samplingProvider) GetSamplingStrategy(_ context.Context, serviceName st
 // Close stops updating the strategies
 func (h *samplingProvider) Close() error {
 	h.cancelFunc()
+	h.wg.Wait()
 	return nil
 }
 
@@ -156,6 +161,7 @@ func (h *samplingProvider) samplingStrategyLoader(strategiesFile string) strateg
 }
 
 func (h *samplingProvider) autoUpdateStrategies(ctx context.Context, interval time.Duration, loader strategyLoader) {
+	defer h.wg.Done()
 	lastValue := string(nullJSON)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()

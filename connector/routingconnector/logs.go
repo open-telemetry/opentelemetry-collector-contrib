@@ -61,7 +61,7 @@ func newLogsConnector(
 }
 
 func (c *logsConnector) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	return consumer.Capabilities{MutatesData: true}
 }
 
 func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {

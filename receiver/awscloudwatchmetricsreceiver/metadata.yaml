@@ -7,6 +7,7 @@ status:
   distributions: []
   codeowners:
     active: []
+    seeking_new: true
 
 tests:
   config:

@@ -10,7 +10,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/mitchellh/hashstructure"
+	"github.com/mitchellh/hashstructure/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -177,7 +177,7 @@ func (mdp *MetricsDataPoint) TruncateQueryText(length int) {
 }
 
 func (mdp *MetricsDataPoint) hash() (string, error) {
-	hashedData, err := hashstructure.Hash(mdp.toDataForHashing(), nil)
+	hashedData, err := hashstructure.Hash(mdp.toDataForHashing(), hashstructure.FormatV1, nil)
 	if err != nil {
 		return "", err
 	}

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package syslog // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
+package syslogtest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog/syslogtest"
 
 import (
 	"fmt"
@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
 )
 
 // This is the name of a test which requires setting the PreserveWhitespace flags.
@@ -16,7 +17,7 @@ const RFC6587OctetCountingPreserveSpaceTest = "RFC6587 Octet Counting Preserve S
 
 type Case struct {
 	Name   string
-	Config *Config
+	Config *syslog.Config
 	Input  *entry.Entry
 	Expect *entry.Entry
 
@@ -42,7 +43,7 @@ func testLocations() (map[string]*time.Location, error) {
 	return l, nil
 }
 
-func CreateCases(basicConfig func() *Config) ([]Case, error) {
+func CreateCases(basicConfig func() *syslog.Config) ([]Case, error) {
 	location, err := testLocations()
 	if err != nil {
 		return nil, err
@@ -54,16 +55,16 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 	nonTransparentBodyBuilder.WriteByte(0x00)
 	nonTransparentBody := nonTransparentBodyBuilder.String()
 
-	nulFramingTrailer := NULTrailer
+	nulFramingTrailer := syslog.NULTrailer
 
 	ts := time.Now()
 
 	cases := []Case{
 		{
 			"RFC3164SkipPriAbsent",
-			func() *Config {
+			func() *syslog.Config {
 				cfg := basicConfig()
-				cfg.Protocol = RFC3164
+				cfg.Protocol = syslog.RFC3164
 				cfg.Location = location["utc"].String()
 				cfg.AllowSkipPriHeader = true
 				return cfg
@@ -87,9 +88,9 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 		},
 		{
 			"RFC3164SkipPriPresent",
-			func() *Config {
+			func() *syslog.Config {
 				cfg := basicConfig()
-				cfg.Protocol = RFC3164
+				cfg.Protocol = syslog.RFC3164
 				cfg.Location = location["utc"].String()
 				cfg.AllowSkipPriHeader = true
 				return cfg
@@ -115,9 +116,9 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 		},
 		{
 			"RFC3164",
-			func() *Config {
+			func() *syslog.Config {
 				cfg := basicConfig()
-				cfg.Protocol = RFC3164
+				cfg.Protocol = syslog.RFC3164
 				cfg.Location = location["utc"].String()
 				return cfg
 			}(),
@@ -142,9 +143,9 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 		},
 		{
 			"RFC3164Detroit",
-			func() *Config {
+			func() *syslog.Config {
 				cfg := basicConfig()
-				cfg.Protocol = RFC3164
+				cfg.Protocol = syslog.RFC3164
 				cfg.Location = location["detroit"].String()
 				return cfg
 			}(),
@@ -169,9 +170,9 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 		},
 		{
 			"RFC3164Athens",
-			func() *Config {
+			func() *syslog.Config {
 				cfg := basicConfig()
-				cfg.Protocol = RFC3164
+				cfg.Protocol = syslog.RFC3164
 				cfg.Location = location["athens"].String()
 				return cfg
 			}(),
@@ -196,9 +197,9 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 		},
 		{
 			"RFC5424",
-			func() *Config {
+			func() *syslog.Config {
 				cfg := basicConfig()
-				cfg.Protocol = RFC5424
+				cfg.Protocol = syslog.RFC5424
 				return cfg
 			}(),
 			&entry.Entry{
@@ -233,9 +234,9 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 		},
 		{
 			"RFC5424SkipPriAbsent",
-			func() *Config {
+			func() *syslog.Config {
 				cfg := basicConfig()
-				cfg.Protocol = RFC5424
+				cfg.Protocol = syslog.RFC5424
 				cfg.AllowSkipPriHeader = true
 				return cfg
 			}(),
@@ -269,9 +270,9 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 		},
 		{
 			"RFC5424SkipPriPresent",
-			func() *Config {
+			func() *syslog.Config {
 				cfg := basicConfig()
-				cfg.Protocol = RFC5424
+				cfg.Protocol = syslog.RFC5424
 				cfg.AllowSkipPriHeader = true
 				return cfg
 			}(),
@@ -307,9 +308,9 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 		},
 		{
 			"RFC6587 Octet Counting",
-			func() *Config {
+			func() *syslog.Config {
 				cfg := basicConfig()
-				cfg.Protocol = RFC5424
+				cfg.Protocol = syslog.RFC5424
 				cfg.EnableOctetCounting = true
 				return cfg
 			}(),
@@ -345,9 +346,9 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 		},
 		{
 			RFC6587OctetCountingPreserveSpaceTest,
-			func() *Config {
+			func() *syslog.Config {
 				cfg := basicConfig()
-				cfg.Protocol = RFC5424
+				cfg.Protocol = syslog.RFC5424
 				cfg.EnableOctetCounting = true
 				return cfg
 			}(),
@@ -373,9 +374,9 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 		},
 		{
 			"RFC6587 Non-Transparent-framing",
-			func() *Config {
+			func() *syslog.Config {
 				cfg := basicConfig()
-				cfg.Protocol = RFC5424
+				cfg.Protocol = syslog.RFC5424
 				cfg.NonTransparentFramingTrailer = &nulFramingTrailer
 				return cfg
 			}(),

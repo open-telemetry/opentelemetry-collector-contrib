@@ -276,7 +276,7 @@ func TestSweep(t *testing.T) {
 		assert.LessOrEqual(t, time.Since(sweepTime), mwe.ttl)
 	}
 	require.NoError(t, mwe.Shutdown())
-	for range sweepEvent { // nolint
+	for range sweepEvent { //nolint:revive
 	}
 	assert.True(t, closed.Load(), "Sweeper did not terminate.")
 }

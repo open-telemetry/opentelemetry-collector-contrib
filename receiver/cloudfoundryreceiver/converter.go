@@ -39,7 +39,7 @@ var ResourceAttributesKeys = []string{
 
 var allowResourceAttributes = featuregate.GlobalRegistry().MustRegister(
 	"cloudfoundry.resourceAttributes.allow",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, envelope tags are copied to the metrics as resource attributes instead of datapoint attributes"),
 	featuregate.WithRegisterFromVersion("v0.117.0"),
 )

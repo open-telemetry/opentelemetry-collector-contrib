@@ -15,7 +15,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -186,7 +185,6 @@ func setupTestTelemetry() testTelemetry {
 func (tt *testTelemetry) newSettings() processor.Settings {
 	set := processortest.NewNopSettings()
 	set.TelemetrySettings.MeterProvider = tt.meterProvider
-	set.TelemetrySettings.MetricsLevel = configtelemetry.LevelDetailed
 	return set
 }
 

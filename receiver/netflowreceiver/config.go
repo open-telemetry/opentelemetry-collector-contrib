@@ -32,7 +32,7 @@ type Config struct {
 
 // Validate checks if the receiver configuration is valid
 func (cfg *Config) Validate() error {
-	validSchemes := [3]string{"sflow", "netflow", "flow"}
+	validSchemes := [2]string{"sflow", "netflow"}
 
 	validScheme := false
 	for _, scheme := range validSchemes {
@@ -42,7 +42,7 @@ func (cfg *Config) Validate() error {
 		}
 	}
 	if !validScheme {
-		return fmt.Errorf("scheme must be one of sflow, netflow, or flow")
+		return fmt.Errorf("scheme must be netflow or sflow")
 	}
 
 	if cfg.Sockets <= 0 {

@@ -102,7 +102,7 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 			session, err := bulkIndexer.StartSession(context.Background())
 			require.NoError(t, err)
 
-			assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`), nil))
+			assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil))
 			// should flush
 			time.Sleep(100 * time.Millisecond)
 			assert.Equal(t, int64(1), bulkIndexer.stats.docsIndexed.Load())
@@ -229,7 +229,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			session, err := bulkIndexer.StartSession(context.Background())
 			require.NoError(t, err)
 
-			assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`), nil))
+			assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil))
 			// should flush
 			time.Sleep(100 * time.Millisecond)
 			assert.Equal(t, int64(0), bulkIndexer.stats.docsIndexed.Load())
@@ -312,7 +312,7 @@ func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Clie
 	session, err := bulkIndexer.StartSession(context.Background())
 	require.NoError(t, err)
 
-	assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`), nil))
+	assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil))
 	assert.NoError(t, bulkIndexer.Close(context.Background()))
 
 	return bulkIndexer
@@ -338,7 +338,7 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 	session, err := bi.StartSession(context.Background())
 	require.NoError(t, err)
 
-	assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`), nil))
+	assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil))
 	assert.Equal(t, int64(1), reqCnt.Load()) // flush due to flush::bytes
 	assert.NoError(t, bi.Close(context.Background()))
 }
