@@ -100,6 +100,7 @@ func createDefaultConfig() component.Config {
 			Bytes:    5e+6,
 			Interval: 30 * time.Second,
 		},
+		Version: 8,
 	}
 }
 
