@@ -1,5 +1,5 @@
-github.com/SAP/go-hdb v1.12.10 h1:rV3DKg7YmilgGi0qQcWm9e1isi8GFy4I5eDX6uWQc+k=
-github.com/SAP/go-hdb v1.12.10/go.mod h1:kU3Mm74ZfMRQmR+t49eD6sUPjLFh3QTJKOcv8LrWdv0=
+github.com/SAP/go-hdb v1.12.11 h1:yNDEaAXFsEKROk5d5bi0dQ1rz4LrSdda7RYAvlEZfpM=
+github.com/SAP/go-hdb v1.12.11/go.mod h1:kU3Mm74ZfMRQmR+t49eD6sUPjLFh3QTJKOcv8LrWdv0=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

@@ -9,7 +9,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.14.1
 	github.com/iancoleman/strcase v0.3.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.114.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.118.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250123125445-24f88da7b583
@@ -27,7 +27,7 @@ require (
 	google.golang.org/genproto v0.0.0-20241118233622-e639e219e697
 	google.golang.org/genproto/googleapis/api v0.0.0-20241209162323-e6fa225c2576
 	google.golang.org/grpc v1.69.4
-	google.golang.org/protobuf v1.36.3
+	google.golang.org/protobuf v1.36.4
 )
 
 require (

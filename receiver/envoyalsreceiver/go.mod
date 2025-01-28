@@ -4,8 +4,8 @@ go 1.22.0
 
 require (
 	github.com/envoyproxy/go-control-plane v0.13.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.117.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.117.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.118.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/component/componentstatus v0.118.1-0.20250123125445-24f88da7b583
@@ -21,7 +21,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.69.4
-	google.golang.org/protobuf v1.36.3
+	google.golang.org/protobuf v1.36.4
 )
 
 require (
