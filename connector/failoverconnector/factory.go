@@ -29,6 +29,7 @@ func createDefaultConfig() component.Config {
 		RetryGap:      30 * time.Second,
 		RetryInterval: 10 * time.Minute,
 		MaxRetries:    10,
+		RetryBackoff:  0,
 	}
 }
 
