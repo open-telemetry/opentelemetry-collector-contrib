@@ -30,9 +30,10 @@ func TestHandlePipelineError(t *testing.T) {
 	var wg sync.WaitGroup
 	done := make(chan struct{})
 	constants := PSConstants{
-		RetryInterval: 50 * time.Millisecond,
-		RetryGap:      10 * time.Millisecond,
-		MaxRetries:    1000,
+		RetryInterval:   50 * time.Millisecond,
+		RetryGap:        10 * time.Millisecond,
+		MaxRetries:      1000,
+		PriorityListLen: 5,
 	}
 	pS := NewPipelineSelector(constants)
 
@@ -55,9 +56,10 @@ func TestHandlePipelineError(t *testing.T) {
 
 func TestCurrentPipelineWithRetry(t *testing.T) {
 	constants := PSConstants{
-		RetryInterval: 50 * time.Millisecond,
-		RetryGap:      10 * time.Millisecond,
-		MaxRetries:    1000,
+		RetryInterval:   50 * time.Millisecond,
+		RetryGap:        10 * time.Millisecond,
+		MaxRetries:      1000,
+		PriorityListLen: 5,
 	}
 	pS := NewPipelineSelector(constants)
 
