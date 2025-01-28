@@ -114,10 +114,8 @@ func TestTracesSource(t *testing.T) {
 }
 
 func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-			t.Fatal(err)
-		}
+	if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2); err != nil {
+		t.Fatal(err)
 	}
 
 	reqs := make(chan []byte, 1)
@@ -261,10 +259,8 @@ func TestTraceExporter(t *testing.T) {
 }
 
 func testTraceExporter(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-			t.Fatal(err)
-		}
+	if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2); err != nil {
+		t.Fatal(err)
 	}
 	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
@@ -346,10 +342,8 @@ func TestPushTraceData(t *testing.T) {
 }
 
 func testPushTraceData(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-			t.Fatal(err)
-		}
+	if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2); err != nil {
+		t.Fatal(err)
 	}
 	server := testutil.DatadogServerMock()
 	defer server.Close()
@@ -398,10 +392,8 @@ func TestPushTraceDataNewEnvConvention(t *testing.T) {
 }
 
 func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-			t.Fatal(err)
-		}
+	if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2); err != nil {
+		t.Fatal(err)
 	}
 
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
