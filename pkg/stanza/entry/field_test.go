@@ -4,11 +4,12 @@
 package entry
 
 import (
+	"bytes"
 	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	yaml "gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v3"
 )
 
 func TestFieldUnmarshalJSON(t *testing.T) {
@@ -190,8 +191,10 @@ func TestFieldUnmarshalYAML(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			decoder := yaml.NewDecoder(bytes.NewReader(tc.input))
+			decoder.KnownFields(true)
 			var f Field
-			err := yaml.UnmarshalStrict(tc.input, &f)
+			err := decoder.Decode(&f)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expected, f)
@@ -229,8 +232,10 @@ func TestFieldUnmarshalYAMLFailure(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			decoder := yaml.NewDecoder(bytes.NewReader(tc.input))
+			decoder.KnownFields(true)
 			var f Field
-			err := yaml.UnmarshalStrict(tc.input, &f)
+			err := decoder.Decode(&f)
 			require.ErrorContains(t, err, tc.expected)
 		})
 	}
