@@ -16,6 +16,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.118.0
@@ -333,7 +334,6 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gotest.tools/v3 v3.5.0 // indirect
 	k8s.io/api v0.29.3 // indirect
 	k8s.io/apimachinery v0.29.3 // indirect
 	k8s.io/client-go v0.29.3 // indirect
@@ -412,6 +412,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockda
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../pkg/translator/jaeger
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils => ../pkg/core/xidutils
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../pkg/resourcetotelemetry
 

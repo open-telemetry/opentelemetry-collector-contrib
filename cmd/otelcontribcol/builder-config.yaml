@@ -336,6 +336,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver => ../../receiver/journaldreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter => ../../exporter/logzioexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils => ../../pkg/core/xidutils
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver => ../../receiver/k8seventsreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => ../../receiver/k8sclusterreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ../../processor/transformprocessor

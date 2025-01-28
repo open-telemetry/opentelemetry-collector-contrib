@@ -17,9 +17,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.16.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 )
 
 // Use timespamp with microsecond granularity to work well with jaeger thrift translation

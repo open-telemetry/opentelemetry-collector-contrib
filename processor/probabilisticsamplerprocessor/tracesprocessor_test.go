@@ -22,7 +22,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
