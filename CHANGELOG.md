@@ -7,6 +7,86 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.118.0
+
+### 🛑 Breaking changes 🛑
+
+- `elasticsearchexporter`: Remove Index config, which was deprecated and replace with LogsIndex since v0.60.0 (#37094)
+- `elasticsearchexporter`: Remove `dedup` config setting that was deprecated in v0.104.0 (#33773)
+- `pkg/stanza`: Move `filelog.container.removeOriginalTimeField` feature gate to stable (#33389)
+- `pkg/ottl`: Support dynamic indexing of maps and slices. (#36644)
+- `prometheusremotewriteexporter`: Only append label values if they are different for colliding OTel attributes (#35896)
+  This change ensures that, when translating colliding attributes from OTel attributes to Prometheus label, the label values are only appended if their values are different. 
+  This is a breaking change as it changes the value of label outputted.
+  
+- `routingconnector`: Disconnect `match_once` parameter from functionality. (#29882)
+  The parameter will be ignored, except to trigger a warning log about its upcoming removal in v0.120.0.
+  
+
+### 🚩 Deprecations 🚩
+
+- `awscloudwatchmetricsreceiver`: move the component to unmaintained status (#36599)
+- `githubgen`: Deprecate githubgen in this repository (#37294)
+  githubgen has moved to opentelemetry-go-build-tools. Please change your scripts to use this new location.
+  
+
+### 🚀 New components 🚀
+
+- `intervalprocessor`: Interval Processor is now Alpha stability and is added to the `contrib` and `k8s` distributions (#36514)
+- `exporter/bmchelix`: Add a new component for exporting metrics to BMC Helix (#36773)
+- `gitlabreceiver`: Adds webhook skeleton to GitLab receiver to receive events from GitLab for tracing. (#35207)
+  This PR adds a skeleton for the GitLab receiver to receive events from GitLab for tracing via a webhook. The trace portion of this receiver will run and respond to GET requests for the health check only.
+- `extension/skywalkingencodingextension`: Support skywalking_encoding extension for skywalking traces. (#28693)
+
+### 💡 Enhancements 💡
+
+- `mysqlreceiver`: Add delete_multi, update_multi metrics to mysql.commands for mysqlreceiver (#37301)
+- `datadogexporter`: Add a feature gate datadog.EnableReceiveResourceSpansV2. Enabling this gate uses a refactored implementation of OTLP->Datadog Span translation in datadogexporter and datadogconnector which improves performance by 10%, and deprecates the following functionality: - No longer checks for resource-related values (container, env, hostname) in span attributes. This previous behavior did not follow the OTel spec. (#37171)
+- `pkg/ottl`: Add the `Nanosecond` converter to return the nanosecond component from the specified time.Time (#37042)
+- `pkg/ottl`: Add the `Second` converter to return the second component from the specified time.Time (#37042)
+- `vcenterreceiver`: Adds vCenter memory capacity for hosts and memory granted metric for VMs. (#37257)
+- `awss3exporter`: Implement sending queue for S3 exporter (#37274, #36264)
+- `huaweicloudces`: Move huaweicloudces receiver to alpha (#34953)
+- `cgroupruntimeextension`: Implement ECS metadata retrieval for cgroupruntime extension. (#36814)
+- `deltatocumulativeprocessor`: cap the number of exponential histogram buckets to 160 (#33277)
+- `resourcedetectionprocessor`: This enhancement detects AWS EKS cloud account ID (#37179)
+- `elasticsearchexporter`: Handle `EventName` for log records in OTel mode (#37011)
+- `elasticsearchexporter`: More efficient JSON encoding for OTel mode (#37032)
+  Increases throughput for metrics by 2x and for logs and traces by 3x
+- `elasticsearchexporter`: Mark OTel mapping mode as stable (#37240)
+  OTel mapping mode should no longer be considered unstable as there is no planned breaking change.
+- `googlecloudmonitoringreceiver`: set the minimum collection interval as 60s (#36898)
+- `datadogexporter`: Add a feature gate datadog.EnableOperationAndResourceNameV2. Enabling this gate modifies the logic for computing operation and resource names from OTLP spans to produce shorter, more readable names and improve alignment with OpenTelemetry specifications. (#36419)
+- `dorisexporter`: send json lines to doris rather than json array (#36896)
+- `k8sattributesprocessor`: For pods with only one container, the `container.id` and `k8s.container.name` are not longer required in the resource attributes to add the container attributes (#34189)
+- `logdedupprocessor`: Add 'include_fields' option to deduplicate log records via body or attribute fields. (#36965)
+- `pkg/ottl`: Enhanced error messages for invalid cache access and introduced options to configure their values within the OTTL contexts. (#29017)
+- `pkg/ottl`: Add the `FormatTime` function to convert `time.Time` values to human-readable strings (#36870)
+- `prometheusremotewriteexporter`: Re allows the configuration of multiple workers (#36134)
+- `receiver/prometheusremotewrite`: Check if Scope is already present comparing with the received labels (#36927)
+- `extension/jaegerremotesampling`: remove dependency on jaeger internal code (#36976)
+- `telemetrygen`: Remove go-grpc-middleware dependency (#37103)
+- `resourcedetectionprocessor`: Introduce kubeadm detector to retrieve local cluster name. (#35116)
+- `signalfxexporter`: Prioritize retrieving token from context when accesstokenpassthrough is enabled (#37102)
+- `signaltometricsconnector`: Add core logic for the signal to metrics connector to make it functional. (#35930)
+- `signaltometrics`: Adds resource attributes based on telemetry settings to the connector to ensure single writer (#35930)
+- `tailsamplingprocessor`: Added debug logging to the sampling decision caches. (#37038)
+- `tailsamplingprocessor`: Improved not sampled decision cache usage and deleting traces from the internal map when they are in a decision cache. (#37189)
+
+### 🧰 Bug fixes 🧰
+
+- `googlecloudpubsubreceiver`: Fix a goroutine leak during shutdown. (#30438)
+  A goroutine leak was found in the googlecloudpubsubreceiver. 
+  The goroutine leak was caused by the receiver not closing the underlying created gRPC client when using an insecure custom endpoint.
+  
+- `signalfxexporter`: Honor access_token_passthrough config option for sending events (#37102)
+- `clickhouseexporter`: Fix Nil Pointer Exception on Metrics/Traces export without service.name Resource Attribute (#37030)
+- `k8sattributesprocessor`: Ensure the pods gathered by the processor contain the information about their related replica sets and deployments after the initial sync (#37056)
+- `logdedupprocessor`: Fix config validation not working when creating a processor. (#37278)
+- `pkg/ottl`: Fix bug with `replace_all_matches` and `replace_all_patterns` that caused non-string values to be changed to empty string when matching against empty string. (#37071)
+- `tailsamplingprocessor`: Fixed sampling policy evaluation debug logging batch metrics (e.g. sampled). (#37040)
+- `tailsamplingprocessor`: Late span age histogram should include sampled traces. (#37180)
+
 ## v0.117.0
 
 ### 🛑 Breaking changes 🛑
