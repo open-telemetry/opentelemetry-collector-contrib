@@ -294,6 +294,22 @@ func TestValidate_sasl_version(t *testing.T) {
 	assert.EqualError(t, err, "auth.sasl.version has to be either 0 or 1. configured value 42")
 }
 
+func TestValidate_sasl_iam(t *testing.T) {
+	config := &Config{
+		Producer: Producer{
+			Compression: "none",
+		},
+		Authentication: kafka.Authentication{
+			SASL: &kafka.SASLConfig{
+				Mechanism: "AWS_MSK_IAM",
+			},
+		},
+	}
+
+	err := config.Validate()
+	assert.Equal(t, err, nil)
+}
+
 func Test_saramaProducerCompressionCodec(t *testing.T) {
 	tests := map[string]struct {
 		compression         string
