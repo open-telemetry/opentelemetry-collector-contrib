@@ -126,11 +126,12 @@ Examples:
 
 ### flatten
 
-`flatten(target, Optional[prefix], Optional[depth])`
+`flatten(target, Optional[prefix], Optional[depth], Optional[resolveConflicts])`
 
 The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root. 
 
-`target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int.
+`target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int, `resolveConflicts` resolves the potential conflicts in the map keys by adding a number suffix starting with `0` from the first duplicated key.
+
 
 For example, the following map
 
@@ -199,6 +200,42 @@ the result would be
 
 A `depth` of `0` means that no flattening will occur.
 
+If `resolveConflicts` is set to `true`, conflicts within the map will be resolved
+
+```json
+{
+  "address": {
+    "street": {
+      "number": "first",
+    },
+    "house": "1234",
+  },
+  "address.street": {
+    "number": ["second", "third"],
+  },
+  "address.street.number": "fourth",
+  "occupants": [
+    "user 1",
+    "user 2",
+  ],
+}
+```
+
+the result would be
+
+```json
+{
+  "address.street.number":   "first",
+  "address.house":           "1234",
+  "address.street.number.0": "second",
+  "address.street.number.1": "third",
+  "occupants":               "user 1",
+  "occupants.0":             "user 2",
+  "address.street.number.2": "fourth",
+}
+
+```
+
 Examples:
 
 - `flatten(attributes)`
@@ -208,6 +245,9 @@ Examples:
 
 
 - `flatten(body, depth=2)`
+
+
+- `flatten(body, resolveConflicts=true)`
 
 
 ### keep_keys
