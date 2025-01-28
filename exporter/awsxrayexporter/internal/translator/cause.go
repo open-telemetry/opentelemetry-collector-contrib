@@ -301,7 +301,7 @@ func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []aws
 			// when append causes `exceptions` to outgrow its existing
 			// capacity, re-allocation will happen so the place
 			// `exception` points to is no longer `exceptions[len(exceptions)-2]`,
-			// consequently, we can not write `exception.Cause = newException.ID`
+			// consequently, we cannot write `exception.Cause = newException.ID`
 			// below.
 			newException := &exceptions[len(exceptions)-1]
 			exceptions[len(exceptions)-2].Cause = newException.ID
@@ -398,7 +398,7 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 			// when append causes `exceptions` to outgrow its existing
 			// capacity, re-allocation will happen so the place
 			// `exception` points to is no longer `exceptions[len(exceptions)-2]`,
-			// consequently, we can not write `exception.Cause = newException.ID`
+			// consequently, we cannot write `exception.Cause = newException.ID`
 			// below.
 			newException := &exceptions[len(exceptions)-1]
 			exceptions[len(exceptions)-2].Cause = newException.ID

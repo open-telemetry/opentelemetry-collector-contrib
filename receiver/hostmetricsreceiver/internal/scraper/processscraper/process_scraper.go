@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
@@ -42,7 +42,7 @@ const (
 
 // scraper for Process Metrics
 type processScraper struct {
-	settings           receiver.Settings
+	settings           scraper.Settings
 	config             *Config
 	mb                 *metadata.MetricsBuilder
 	includeFS          filterset.FilterSet
@@ -59,7 +59,7 @@ type processScraper struct {
 }
 
 // newProcessScraper creates a Process Scraper
-func newProcessScraper(settings receiver.Settings, cfg *Config) (*processScraper, error) {
+func newProcessScraper(settings scraper.Settings, cfg *Config) (*processScraper, error) {
 	scraper := &processScraper{
 		settings:             settings,
 		config:               cfg,

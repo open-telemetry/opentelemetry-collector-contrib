@@ -43,6 +43,7 @@ type detectorUtils interface {
 	getConfigMap(ctx context.Context, namespace string, name string) (map[string]string, error)
 	getClusterName(ctx context.Context, logger *zap.Logger) string
 	getClusterNameTagFromReservations([]*ec2.Reservation) string
+	getCloudAccountID(ctx context.Context, logger *zap.Logger) string
 }
 
 type eksDetectorUtils struct {
@@ -87,6 +88,10 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
 	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSEKS)
+	if d.ra.CloudAccountID.Enabled {
+		accountID := d.utils.getCloudAccountID(ctx, d.logger)
+		d.rb.SetCloudAccountID(accountID)
+	}
 
 	if d.ra.K8sClusterName.Enabled {
 		clusterName := d.utils.getClusterName(ctx, d.logger)
@@ -193,4 +198,22 @@ func (e eksDetectorUtils) getClusterNameTagFromReservations(reservations []*ec2.
 	}
 
 	return ""
+}
+
+func (e eksDetectorUtils) getCloudAccountID(ctx context.Context, logger *zap.Logger) string {
+	defaultErrorMessage := "Unable to get EKS cluster account ID"
+	sess, err := session.NewSession()
+	if err != nil {
+		logger.Warn(defaultErrorMessage, zap.Error(err))
+		return ""
+	}
+
+	ec2Svc := ec2metadata.New(sess)
+	instanceIdentityDocument, err := ec2Svc.GetInstanceIdentityDocumentWithContext(ctx)
+	if err != nil {
+		logger.Warn(defaultErrorMessage, zap.Error(err))
+		return ""
+	}
+
+	return instanceIdentityDocument.AccountID
 }

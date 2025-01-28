@@ -49,7 +49,7 @@ func HardFailedPutRecordsOperation(r *kinesis.PutRecordsInput) (*kinesis.PutReco
 		&types.ResourceNotFoundException{Message: aws.String("testing incorrect kinesis configuration")}
 }
 
-func TransiantPutRecordsOperation(recoverAfter int) func(_ *kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error) {
+func TransientPutRecordsOperation(recoverAfter int) func(_ *kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error) {
 	attempt := 0
 	return func(r *kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error) {
 		if attempt < recoverAfter {
@@ -74,7 +74,7 @@ func TestBatchedExporter(t *testing.T) {
 	}{
 		{name: "Successful put to kinesis", PutRecordsOP: SuccessfulPutRecordsOperation, shouldErr: false, isPermanent: false},
 		{name: "Invalid kinesis configuration", PutRecordsOP: HardFailedPutRecordsOperation, shouldErr: true, isPermanent: true},
-		{name: "Test throttled kinesis operation", PutRecordsOP: TransiantPutRecordsOperation(2), shouldErr: true, isPermanent: false},
+		{name: "Test throttled kinesis operation", PutRecordsOP: TransientPutRecordsOperation(2), shouldErr: true, isPermanent: false},
 	}
 
 	bt := batch.New()

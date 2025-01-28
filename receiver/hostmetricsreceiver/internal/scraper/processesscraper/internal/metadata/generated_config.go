@@ -25,7 +25,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for hostmetricsreceiver/processes metrics.
+// MetricsConfig provides config for processes metrics.
 type MetricsConfig struct {
 	SystemProcessesCount   MetricConfig `mapstructure:"system.processes.count"`
 	SystemProcessesCreated MetricConfig `mapstructure:"system.processes.created"`
@@ -42,7 +42,7 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for hostmetricsreceiver/processes metrics builder.
+// MetricsBuilderConfig is a configuration for processes metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }
