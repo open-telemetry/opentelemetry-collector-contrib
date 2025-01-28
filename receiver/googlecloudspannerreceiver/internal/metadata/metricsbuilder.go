@@ -108,10 +108,7 @@ func (b *metricsFromDataPointBuilder) filter(metricName string, dataPoints []*Me
 		}
 	}
 
-	filteredItems, err := itemFilter.Filter(itemsForFiltering)
-	if err != nil {
-		return nil, err
-	}
+	filteredItems := itemFilter.Filter(itemsForFiltering)
 
 	// Creating new slice instead of removing elements from source slice because removing by value is not efficient operation.
 	// Need to use such approach for preserving data points order.
