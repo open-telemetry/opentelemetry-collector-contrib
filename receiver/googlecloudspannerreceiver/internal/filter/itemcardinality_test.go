@@ -138,8 +138,6 @@ func TestItemCardinalityFilter_Filter(t *testing.T) {
 
 	<-syncChannel
 
-	filterCasted.cache.OnEviction(nil)
-
 	filteredItems = filter.Filter(items)
 
 	// All entries expired, nothing should be filtered out from items
@@ -184,8 +182,6 @@ func TestItemCardinalityFilter_FilterItems(t *testing.T) {
 	})
 
 	<-syncChannel
-
-	filterCasted.cache.OnEviction(nil)
 
 	filteredItems = filter.Filter(items)
 
