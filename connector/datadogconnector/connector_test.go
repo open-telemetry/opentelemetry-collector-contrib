@@ -5,6 +5,7 @@ package datadogconnector
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"sync"
 	"testing"
 	"time"
@@ -20,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -202,10 +202,8 @@ func TestReceiveResourceSpansV2(t *testing.T) {
 }
 
 func testReceiveResourceSpansV2(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-			t.Fatal(err)
-		}
+	if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2); err != nil {
+		t.Fatal(err)
 	}
 	connector, metricsSink := creteConnector(t)
 	err := connector.Start(context.Background(), componenttest.NewNopHost())
