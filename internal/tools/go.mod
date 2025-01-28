@@ -235,7 +235,7 @@ require (
 	gitlab.com/bosi/decorder v0.4.2 // indirect
 	go-simpler.org/musttag v0.13.0 // indirect
 	go-simpler.org/sloglint v0.7.2 // indirect
-	go.opentelemetry.io/build-tools v0.16.0 // indirect
+	go.opentelemetry.io/build-tools v0.17.0 // indirect
 	go.opentelemetry.io/collector/component v0.118.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/collector/confmap v1.24.1-0.20250123125445-24f88da7b583 // indirect
