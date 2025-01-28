@@ -26,21 +26,21 @@ The following settings are optional:
 
 ## Example Configuration
 
-Targets are 
+Targets are
 
 ```yaml
 receivers:
   tcpcheck:
     targets:
       - endpoint: example.com:443
-        dialer: 
+        dialer:
           timeout: 15s
       - endpoint: foobar.com:8080
-        dialer: 
+        dialer:
           timeout: 15s
       - endpoint: localhost:10901
 ```
-The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml). 
+The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
 
 ## Metrics
 
