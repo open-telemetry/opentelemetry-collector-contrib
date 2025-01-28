@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
 )
@@ -198,10 +199,10 @@ type dataPointsGroup struct {
 	resourceSchemaURL string
 	scope             pcommon.InstrumentationScope
 	scopeSchemaURL    string
-	dataPoints        []dataPoint
+	dataPoints        []datapoints.DataPoint
 }
 
-func (p *dataPointsGroup) addDataPoint(dp dataPoint) {
+func (p *dataPointsGroup) addDataPoint(dp datapoints.DataPoint) {
 	p.dataPoints = append(p.dataPoints, dp)
 }
 
@@ -233,7 +234,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
 
-				upsertDataPoint := func(dp dataPoint) error {
+				upsertDataPoint := func(dp datapoints.DataPoint) error {
 					fIndex, err := e.getMetricDataPointIndex(resource, scope, dp)
 					if err != nil {
 						return err
@@ -249,7 +250,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 						groupedDataPoints[dpHash] = &dataPointsGroup{
 							resource:   resource,
 							scope:      scope,
-							dataPoints: []dataPoint{dp},
+							dataPoints: []datapoints.DataPoint{dp},
 						}
 					} else {
 						dpGroup.addDataPoint(dp)
@@ -262,7 +263,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Sum().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(newNumberDataPoint(metric, dp)); err != nil {
+						if err := upsertDataPoint(datapoints.NewNumber(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}
@@ -271,7 +272,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Gauge().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(newNumberDataPoint(metric, dp)); err != nil {
+						if err := upsertDataPoint(datapoints.NewNumber(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}
@@ -284,7 +285,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.ExponentialHistogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(newExponentialHistogramDataPoint(metric, dp)); err != nil {
+						if err := upsertDataPoint(datapoints.NewExponentialHistogram(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}
@@ -297,7 +298,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Histogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(newHistogramDataPoint(metric, dp)); err != nil {
+						if err := upsertDataPoint(datapoints.NewHistogram(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}
@@ -306,7 +307,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Summary().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(newSummaryDataPoint(metric, dp)); err != nil {
+						if err := upsertDataPoint(datapoints.NewSummary(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}
@@ -351,7 +352,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 func (e *elasticsearchExporter) getMetricDataPointIndex(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
-	dataPoint dataPoint,
+	dataPoint datapoints.DataPoint,
 ) (elasticsearch.Index, error) {
 	fIndex := elasticsearch.Index{Index: e.index}
 	if e.dynamicIndex {
