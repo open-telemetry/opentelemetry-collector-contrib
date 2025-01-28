@@ -1186,6 +1186,61 @@ func Test_e2e_ottl_features(t *testing.T) {
 	}
 }
 
+func Test_e2e_ottl_value_expressions(t *testing.T) {
+	tests := []struct {
+		name      string
+		statement string
+		want      any
+	}{
+		{
+			name:      "string literal",
+			statement: `"foo"`,
+			want:      "foo",
+		},
+		{
+			name:      "attribute value",
+			statement: `resource.attributes["host.name"]`,
+			want:      "localhost",
+		},
+		{
+			name:      "accessing enum",
+			statement: `SEVERITY_NUMBER_TRACE`,
+			want:      int64(1),
+		},
+		{
+			name:      "Using converter",
+			statement: `TraceID(0x0102030405060708090a0b0c0d0e0f10)`,
+			want:      pcommon.TraceID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x10},
+		},
+		{
+			name:      "Adding results of two converter operations",
+			statement: `Len(attributes) + Len(attributes)`,
+			want:      int64(24),
+		},
+		{
+			name:      "Nested converter operations",
+			statement: `Hex(Len(attributes) + Len(attributes))`,
+			want:      "0000000000000018",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			settings := componenttest.NewNopTelemetrySettings()
+			logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
+			assert.NoError(t, err)
+			valueExpr, err := logParser.ParseValueExpression(tt.statement)
+			assert.NoError(t, err)
+
+			tCtx := constructLogTransformContext()
+			val, err := valueExpr.Eval(context.Background(), tCtx)
+			assert.NoError(t, err)
+
+			assert.Equal(t, tt.want, val)
+		})
+	}
+}
+
 func Test_ProcessTraces_TraceContext(t *testing.T) {
 	tests := []struct {
 		statement string

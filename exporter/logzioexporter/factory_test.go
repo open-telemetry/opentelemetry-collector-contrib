@@ -50,9 +50,9 @@ func TestGenerateUrl(t *testing.T) {
 	generateURLTests := []generateURLTest{
 		{"", "us", "https://listener.logz.io:8071/?token=token"},
 		{"", "", "https://listener.logz.io:8071/?token=token"},
-		{"https://doesnotexist.com", "", "https://doesnotexist.com"},
-		{"https://doesnotexist.com", "us", "https://doesnotexist.com"},
-		{"https://doesnotexist.com", "not-valid", "https://doesnotexist.com"},
+		{"https://nonexistent.com", "", "https://nonexistent.com"},
+		{"https://nonexistent.com", "us", "https://nonexistent.com"},
+		{"https://nonexistent.com", "not-valid", "https://nonexistent.com"},
 		{"", "not-valid", "https://listener.logz.io:8071/?token=token"},
 		{"", "US", "https://listener.logz.io:8071/?token=token"},
 		{"", "Us", "https://listener.logz.io:8071/?token=token"},

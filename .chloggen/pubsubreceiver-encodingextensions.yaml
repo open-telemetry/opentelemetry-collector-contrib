@@ -1,0 +1,11 @@
+change_type: enhancement
+
+component: googlecloudpubsubreceiver
+
+note: Added support for encoding extensions.
+
+issues: [37109]
+
+subtext:
+
+change_logs: [user]
