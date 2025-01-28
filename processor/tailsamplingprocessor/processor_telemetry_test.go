@@ -39,10 +39,13 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 				},
 			},
 		},
+		Options: []Option{
+			withDecisionBatcher(syncBatcher),
+		},
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
 		err = proc.Shutdown(context.Background())
@@ -232,11 +235,14 @@ func TestMetricsWithComponentID(t *testing.T) {
 				},
 			},
 		},
+		Options: []Option{
+			withDecisionBatcher(syncBatcher),
+		},
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
 	ct.ID = component.MustNewIDWithName("tail_sampling", "unique_id") // e.g tail_sampling/unique_id
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
 		err = proc.Shutdown(context.Background())
@@ -336,10 +342,13 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 				},
 			},
 		},
+		Options: []Option{
+			withDecisionBatcher(syncBatcher),
+		},
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
 		err = proc.Shutdown(context.Background())
@@ -401,10 +410,13 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 				},
 			},
 		},
+		Options: []Option{
+			withDecisionBatcher(syncBatcher),
+		},
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
 		err = proc.Shutdown(context.Background())
@@ -462,10 +474,13 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 				},
 			},
 		},
+		Options: []Option{
+			withDecisionBatcher(syncBatcher),
+		},
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
 		err = proc.Shutdown(context.Background())
