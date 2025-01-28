@@ -16,12 +16,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
 
-func serializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []dataPoint, validationErrors *[]error, idx elasticsearch.Index, buf *bytes.Buffer) (map[string]string, error) {
+func serializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx elasticsearch.Index, buf *bytes.Buffer) (map[string]string, error) {
 	if len(dataPoints) == 0 {
 		return nil, nil
 	}
@@ -46,7 +47,7 @@ func serializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope
 	return dynamicTemplates, nil
 }
 
-func serializeDataPoints(v *json.Visitor, dataPoints []dataPoint, validationErrors *[]error) map[string]string {
+func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, validationErrors *[]error) map[string]string {
 	_ = v.OnKey("metrics")
 	_ = v.OnObjectStart(-1, structform.AnyType)
 
