@@ -6,8 +6,7 @@ package otelserializer
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"os"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,7 +22,7 @@ func TestSerializeProfile(t *testing.T) {
 		name              string
 		profileCustomizer func(resource pcommon.Resource, scope pcommon.InstrumentationScope, record pprofile.Profile)
 		wantErr           bool
-		expected          any
+		expected          []map[string]any
 	}{
 		{
 			name: "with a simple sample",
@@ -32,8 +31,28 @@ func TestSerializeProfile(t *testing.T) {
 				sample.TimestampsUnixNano().Append(0)
 			},
 			wantErr: false,
-			expected: map[string]any{
-				"@timestamp": "0.0",
+			expected: []map[string]any{
+				{
+					"@timestamp": "0.0",
+				},
+			},
+		},
+		{
+			name: "with multiple samples",
+			profileCustomizer: func(_ pcommon.Resource, _ pcommon.InstrumentationScope, profile pprofile.Profile) {
+				sample := profile.Sample().AppendEmpty()
+				sample.TimestampsUnixNano().Append(0)
+				sample = profile.Sample().AppendEmpty()
+				sample.TimestampsUnixNano().Append(1)
+			},
+			wantErr: false,
+			expected: []map[string]any{
+				{
+					"@timestamp": "0.0",
+				},
+				{
+					"@timestamp": "0.1",
+				},
 			},
 		},
 	}
@@ -52,16 +71,23 @@ func TestSerializeProfile(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			fmt.Fprintf(os.Stdout, "== %s\n", buf.String())
-
 			b := buf.Bytes()
 			eventAsJSON := string(b)
-			var result any
 			decoder := json.NewDecoder(bytes.NewBuffer(b))
 			decoder.UseNumber()
-			err = decoder.Decode(&result)
-			require.NoError(t, err)
-			assert.Equal(t, tt.expected, result, eventAsJSON)
+
+			var results []map[string]any
+			for {
+				var v map[string]any
+				err := decoder.Decode(&v)
+				if err == io.EOF {
+					break
+				}
+				require.NoError(t, err)
+				results = append(results, v)
+			}
+
+			assert.Equal(t, tt.expected, results, eventAsJSON)
 		})
 	}
 }
