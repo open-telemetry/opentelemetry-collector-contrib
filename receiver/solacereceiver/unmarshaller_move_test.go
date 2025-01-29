@@ -12,9 +12,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadatatest"
 	move_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/move/v1"
 )
 
@@ -56,7 +58,7 @@ func TestMoveUnmarshallerMapResourceSpan(t *testing.T) {
 					},
 				})
 			}
-			tel.assertMetrics(t, expectedMetrics)
+			tel.AssertMetrics(t, expectedMetrics, metricdatatest.IgnoreTimestamp())
 		})
 	}
 }
@@ -390,14 +392,14 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 					},
 				})
 			}
-			tel.assertMetrics(t, expectedMetrics)
+			tel.AssertMetrics(t, expectedMetrics, metricdatatest.IgnoreTimestamp())
 		})
 	}
 }
 
-func newTestMoveV1Unmarshaller(t *testing.T) (*brokerTraceMoveUnmarshallerV1, componentTestTelemetry) {
-	tt := setupTestTelemetry()
-	builder, err := metadata.NewTelemetryBuilder(tt.NewSettings().TelemetrySettings)
+func newTestMoveV1Unmarshaller(t *testing.T) (*brokerTraceMoveUnmarshallerV1, metadatatest.Telemetry) {
+	tt := metadatatest.SetupTelemetry()
+	builder, err := metadata.NewTelemetryBuilder(tt.NewTelemetrySettings())
 	require.NoError(t, err)
 	metricAttr := attribute.NewSet(attribute.String("receiver_name", tt.NewSettings().ID.Name()))
 	return &brokerTraceMoveUnmarshallerV1{zap.NewNop(), builder, metricAttr}, tt

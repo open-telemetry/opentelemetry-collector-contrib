@@ -426,6 +426,43 @@ processors:
     override: false
 ```
 
+### Kubeadm Metadata
+
+Queries the K8S API server to retrieve kubeadm resource attributes:
+
+The list of the populated resource attributes can be found at [kubeadm Detector Resource Attributes](./internal/kubeadm/documentation.md).
+
+The following permissions are required:
+```yaml
+kind: Role
+metadata:
+  name: otel-collector
+  namespace: kube-system
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["kubeadm-config"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: otel-collector-rolebinding
+  namespace: kube-system
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default
+roleRef:
+  kind: Role
+  name: otel-collector
+  apiGroup: rbac.authorization.k8s.io
+```
+
+| Name | Type | Required | Default         | Docs                                                                                                                                                                                                                                   |
+| ---- | ---- |----------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| auth_type | string | No       | `serviceAccount` | How to authenticate to the K8s API server.  This can be one of `none` (for no auth), `serviceAccount` (to use the standard service account token provided to the agent pod), or `kubeConfig` to use credentials from `~/.kube/config`. |
+
 ### K8S Node Metadata
 
 Queries the K8S api server to retrieve node resource attributes.

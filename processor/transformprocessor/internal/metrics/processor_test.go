@@ -65,6 +65,47 @@ func Test_ProcessMetrics_ResourceContext(t *testing.T) {
 	}
 }
 
+func Test_ProcessMetrics_InferredResourceContext(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(td pmetric.Metrics)
+	}{
+		{
+			statement: `set(resource.attributes["test"], "pass")`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).Resource().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(resource.attributes["test"], "pass") where resource.attributes["host.name"] == "wrong"`,
+			want: func(_ pmetric.Metrics) {
+			},
+		},
+		{
+			statement: `set(resource.schema_url, "test_schema_url")`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).SetSchemaUrl("test_schema_url")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			td := constructMetrics()
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessMetrics(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructMetrics()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func Test_ProcessMetrics_ScopeContext(t *testing.T) {
 	tests := []struct {
 		statement string
@@ -93,6 +134,47 @@ func Test_ProcessMetrics_ScopeContext(t *testing.T) {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructMetrics()
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessMetrics(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructMetrics()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessMetrics_InferredScopeContext(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(td pmetric.Metrics)
+	}{
+		{
+			statement: `set(scope.attributes["test"], "pass") where scope.name == "scope"`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(scope.attributes["test"], "pass") where scope.version == 2`,
+			want: func(_ pmetric.Metrics) {
+			},
+		},
+		{
+			statement: `set(scope.schema_url, "test_schema_url")`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).SetSchemaUrl("test_schema_url")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			td := constructMetrics()
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -268,6 +350,186 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 		t.Run(tt.statements[0], func(t *testing.T) {
 			td := constructMetrics()
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "metric", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessMetrics(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructMetrics()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessMetrics_InferredMetricContext(t *testing.T) {
+	tests := []struct {
+		statements []string
+		want       func(pmetric.Metrics)
+	}{
+		{
+			statements: []string{`extract_sum_metric(true) where metric.name == "operationB"`},
+			want: func(td pmetric.Metrics) {
+				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				sumDp := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
+
+				histogramMetric := pmetric.NewMetric()
+				fillMetricTwo(histogramMetric)
+				histogramDp := histogramMetric.Histogram().DataPoints().At(0)
+
+				sumMetric.SetDescription(histogramMetric.Description())
+				sumMetric.SetName(histogramMetric.Name() + "_sum")
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				sumMetric.Sum().SetIsMonotonic(true)
+				sumMetric.SetUnit(histogramMetric.Unit())
+
+				histogramDp.Attributes().CopyTo(sumDp.Attributes())
+				sumDp.SetDoubleValue(histogramDp.Sum())
+				sumDp.SetStartTimestamp(StartTimestamp)
+
+				// we have two histogram datapoints, but only one of them has the Sum set
+				// so we should only have one Sum datapoint
+			},
+		},
+		{ // this checks if subsequent statements apply to the newly created metric
+			statements: []string{
+				`extract_sum_metric(true) where metric.name == "operationB"`,
+				`set(metric.name, "new_name") where metric.name == "operationB_sum"`,
+			},
+			want: func(td pmetric.Metrics) {
+				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				sumDp := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
+
+				histogramMetric := pmetric.NewMetric()
+				fillMetricTwo(histogramMetric)
+				histogramDp := histogramMetric.Histogram().DataPoints().At(0)
+
+				sumMetric.SetDescription(histogramMetric.Description())
+				sumMetric.SetName("new_name")
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				sumMetric.Sum().SetIsMonotonic(true)
+				sumMetric.SetUnit(histogramMetric.Unit())
+
+				histogramDp.Attributes().CopyTo(sumDp.Attributes())
+				sumDp.SetDoubleValue(histogramDp.Sum())
+				sumDp.SetStartTimestamp(StartTimestamp)
+
+				// we have two histogram datapoints, but only one of them has the Sum set
+				// so we should only have one Sum datapoint
+			},
+		},
+		{
+			statements: []string{`extract_count_metric(true) where metric.name == "operationB"`},
+			want: func(td pmetric.Metrics) {
+				countMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				countMetric.SetEmptySum()
+
+				histogramMetric := pmetric.NewMetric()
+				fillMetricTwo(histogramMetric)
+
+				countMetric.SetDescription(histogramMetric.Description())
+				countMetric.SetName(histogramMetric.Name() + "_count")
+				countMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				countMetric.Sum().SetIsMonotonic(true)
+				countMetric.SetUnit("1")
+
+				histogramDp0 := histogramMetric.Histogram().DataPoints().At(0)
+				countDp0 := countMetric.Sum().DataPoints().AppendEmpty()
+				histogramDp0.Attributes().CopyTo(countDp0.Attributes())
+				countDp0.SetIntValue(int64(histogramDp0.Count()))
+				countDp0.SetStartTimestamp(StartTimestamp)
+
+				// we have two histogram datapoints
+				histogramDp1 := histogramMetric.Histogram().DataPoints().At(1)
+				countDp1 := countMetric.Sum().DataPoints().AppendEmpty()
+				histogramDp1.Attributes().CopyTo(countDp1.Attributes())
+				countDp1.SetIntValue(int64(histogramDp1.Count()))
+				countDp1.SetStartTimestamp(StartTimestamp)
+			},
+		},
+		{
+			statements: []string{`copy_metric(name="http.request.status_code", unit="s") where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				newMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).CopyTo(newMetric)
+				newMetric.SetName("http.request.status_code")
+				newMetric.SetUnit("s")
+			},
+		},
+		{
+			statements: []string{`scale_metric(10.0,"s") where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).SetDoubleValue(10.0)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).SetDoubleValue(37.0)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetUnit("s")
+			},
+		},
+		{
+			statements: []string{`scale_metric(10.0) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).SetDoubleValue(10.0)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).SetDoubleValue(37.0)
+			},
+		},
+		{
+			statements: []string{`aggregate_on_attributes("sum", ["attr1", "attr2"]) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				m := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+
+				dataPoints := pmetric.NewNumberDataPointSlice()
+				dataPoint1 := dataPoints.AppendEmpty()
+				dataPoint1.SetStartTimestamp(StartTimestamp)
+				dataPoint1.SetDoubleValue(4.7)
+				dataPoint1.Attributes().PutStr("attr1", "test1")
+				dataPoint1.Attributes().PutStr("attr2", "test2")
+
+				dataPoints.CopyTo(m.Sum().DataPoints())
+			},
+		},
+		{
+			statements: []string{`aggregate_on_attributes("min") where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				m := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+
+				dataPoints := pmetric.NewNumberDataPointSlice()
+				dataPoint1 := dataPoints.AppendEmpty()
+				dataPoint1.SetStartTimestamp(StartTimestamp)
+				dataPoint1.SetDoubleValue(1.0)
+				dataPoint1.Attributes().PutStr("attr1", "test1")
+				dataPoint1.Attributes().PutStr("attr2", "test2")
+				dataPoint1.Attributes().PutStr("attr3", "test3")
+				dataPoint1.Attributes().PutStr("flags", "A|B|C")
+				dataPoint1.Attributes().PutStr("total.string", "123456789")
+
+				dataPoints.CopyTo(m.Sum().DataPoints())
+			},
+		},
+		{
+			statements: []string{`aggregate_on_attribute_value("sum", "attr1", ["test1", "test2"], "test") where metric.name == "operationE"`},
+			want: func(td pmetric.Metrics) {
+				m := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4)
+
+				dataPoints := pmetric.NewNumberDataPointSlice()
+				dataPoint1 := dataPoints.AppendEmpty()
+				dataPoint1.SetStartTimestamp(StartTimestamp)
+				dataPoint1.SetDoubleValue(4.7)
+				dataPoint1.Attributes().PutStr("attr1", "test")
+
+				dataPoints.CopyTo(m.Sum().DataPoints())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statements[0], func(t *testing.T) {
+			var contextStatements []common.ContextStatements
+			for _, statement := range tt.statements {
+				contextStatements = append(contextStatements, common.ContextStatements{Context: "", Statements: []string{statement}})
+			}
+
+			td := constructMetrics()
+			processor, err := NewProcessor(contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)
@@ -724,6 +986,454 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 	}
 }
 
+func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
+	tests := []struct {
+		statements []string
+		want       func(pmetric.Metrics)
+	}{
+		{
+			statements: []string{`set(datapoint.attributes["test"], "pass") where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], "pass") where resource.attributes["host.name"] == "myhost"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Sum().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Sum().DataPoints().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["int_value"], Int("2")) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutInt("int_value", 2)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutInt("int_value", 2)
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["int_value"], Int(datapoint.value_double)) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutInt("int_value", 1)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutInt("int_value", 3)
+			},
+		},
+		{
+			statements: []string{`keep_keys(datapoint.attributes, ["attr2"]) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Clear()
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("attr2", "test2")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().Clear()
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("attr2", "test2")
+			},
+		},
+		{
+			statements: []string{`set(metric.description, "test") where datapoint.attributes["attr1"] == "test1"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription("test")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetDescription("test")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetDescription("test")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).SetDescription("test")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).SetDescription("test")
+			},
+		},
+		{
+			statements: []string{`set(metric.unit, "new unit")`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetUnit("new unit")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetUnit("new unit")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetUnit("new unit")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).SetUnit("new unit")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).SetUnit("new unit")
+			},
+		},
+		{
+			statements: []string{`set(metric.description, "Sum") where metric.type == METRIC_DATA_TYPE_SUM`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription("Sum")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).SetDescription("Sum")
+			},
+		},
+		{
+			statements: []string{`set(metric.aggregation_temporality, AGGREGATION_TEMPORALITY_DELTA) where metric.aggregation_temporality == 0`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+			},
+		},
+		{
+			statements: []string{`set(metric.is_monotonic, true) where metric.is_monotonic == false`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().SetIsMonotonic(true)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Sum().SetIsMonotonic(true)
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], "pass") where datapoint.count == 1`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], "pass") where datapoint.scale == 1`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], "pass") where datapoint.zero_count == 1`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], "pass") where datapoint.positive.offset == 1`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], "pass") where datapoint.negative.offset == 1`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statements: []string{`replace_pattern(datapoint.attributes["attr1"], "test1", "pass")`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutStr("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().PutStr("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutStr("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().PutStr("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().PutStr("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Sum().DataPoints().At(0).Attributes().PutStr("attr1", "pass")
+			},
+		},
+		{
+			statements: []string{`replace_all_patterns(datapoint.attributes, "value", "test1", "pass")`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutStr("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().PutStr("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutStr("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().PutStr("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().PutStr("attr1", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Sum().DataPoints().At(0).Attributes().PutStr("attr1", "pass")
+			},
+		},
+		{
+			statements: []string{`replace_all_patterns(datapoint.attributes, "key", "attr3", "attr4")`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Clear()
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("attr1", "test1")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("attr2", "test2")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("attr4", "test3")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("flags", "A|B|C")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("total.string", "123456789")
+
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().Clear()
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("attr1", "test1")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("attr2", "test2")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("attr4", "test3")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("flags", "A|B|C")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("total.string", "123456789")
+
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().Clear()
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutStr("attr1", "test1")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutStr("attr2", "test2")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutStr("attr4", "test3")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutStr("flags", "C|D")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutStr("total.string", "345678")
+
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().Clear()
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().PutStr("attr1", "test1")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().PutStr("attr2", "test2")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().PutStr("attr4", "test3")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().PutStr("flags", "C|D")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().PutStr("total.string", "345678")
+
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().Clear()
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutStr("attr1", "test1")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutStr("attr2", "test2")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutStr("attr4", "test3")
+
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().Clear()
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().PutStr("attr1", "test1")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().PutStr("attr2", "test2")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().PutStr("attr4", "test3")
+
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().Clear()
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().PutStr("attr1", "test1")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().PutStr("attr2", "test2")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().PutStr("attr4", "test3")
+			},
+		},
+		{
+			statements: []string{`convert_summary_count_val_to_sum("delta", true) where metric.name == "operationD"`},
+			want: func(td pmetric.Metrics) {
+				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				sumDp := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
+
+				summaryMetric := pmetric.NewMetric()
+				fillMetricFour(summaryMetric)
+				summaryDp := summaryMetric.Summary().DataPoints().At(0)
+
+				sumMetric.SetDescription(summaryMetric.Description())
+				sumMetric.SetName(summaryMetric.Name() + "_count")
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				sumMetric.Sum().SetIsMonotonic(true)
+				sumMetric.SetUnit(summaryMetric.Unit())
+
+				summaryDp.Attributes().CopyTo(sumDp.Attributes())
+				sumDp.SetIntValue(int64(summaryDp.Count()))
+				sumDp.SetStartTimestamp(StartTimestamp)
+				sumDp.SetTimestamp(TestTimeStamp)
+			},
+		},
+		{
+			statements: []string{`convert_summary_sum_val_to_sum("delta", true) where metric.name == "operationD"`},
+			want: func(td pmetric.Metrics) {
+				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				sumDp := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
+
+				summaryMetric := pmetric.NewMetric()
+				fillMetricFour(summaryMetric)
+				summaryDp := summaryMetric.Summary().DataPoints().At(0)
+
+				sumMetric.SetDescription(summaryMetric.Description())
+				sumMetric.SetName(summaryMetric.Name() + "_sum")
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				sumMetric.Sum().SetIsMonotonic(true)
+				sumMetric.SetUnit(summaryMetric.Unit())
+
+				summaryDp.Attributes().CopyTo(sumDp.Attributes())
+				sumDp.SetDoubleValue(summaryDp.Sum())
+				sumDp.SetStartTimestamp(StartTimestamp)
+				sumDp.SetTimestamp(TestTimeStamp)
+			},
+		},
+		{
+			statements: []string{
+				`convert_summary_sum_val_to_sum("delta", true) where metric.name == "operationD"`,
+				`set(metric.unit, "new unit")`,
+			},
+			want: func(td pmetric.Metrics) {
+				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				sumDp := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
+
+				summaryMetric := pmetric.NewMetric()
+				fillMetricFour(summaryMetric)
+				summaryDp := summaryMetric.Summary().DataPoints().At(0)
+
+				sumMetric.SetDescription(summaryMetric.Description())
+				sumMetric.SetName(summaryMetric.Name() + "_sum")
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				sumMetric.Sum().SetIsMonotonic(true)
+				sumMetric.SetUnit("new unit")
+
+				summaryDp.Attributes().CopyTo(sumDp.Attributes())
+				sumDp.SetDoubleValue(summaryDp.Sum())
+				sumDp.SetStartTimestamp(StartTimestamp)
+				sumDp.SetTimestamp(TestTimeStamp)
+
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetUnit("new unit")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetUnit("new unit")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetUnit("new unit")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).SetUnit("new unit")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).SetUnit("new unit")
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], "pass") where IsMatch(metric.name, "operation[AC]")`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).ExponentialHistogram().DataPoints().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statements: []string{`delete_key(datapoint.attributes, "attr3") where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Clear()
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("attr1", "test1")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("attr2", "test2")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("total.string", "123456789")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("flags", "A|B|C")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().Clear()
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("attr1", "test1")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("attr2", "test2")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("total.string", "123456789")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("flags", "A|B|C")
+			},
+		},
+		{
+			statements: []string{`delete_matching_keys(datapoint.attributes, "[23]") where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().Clear()
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("attr1", "test1")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("flags", "A|B|C")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("total.string", "123456789")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().Clear()
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("attr1", "test1")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("flags", "A|B|C")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("total.string", "123456789")
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], Concat([datapoint.attributes["attr1"], datapoint.attributes["attr2"]], "-")) where metric.name == Concat(["operation", "A"], "")`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test", "test1-test2")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "test1-test2")
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], Split(datapoint.attributes["flags"], "|"))`},
+			want: func(td pmetric.Metrics) {
+				v00 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutEmptySlice("test")
+				v00.AppendEmpty().SetStr("A")
+				v00.AppendEmpty().SetStr("B")
+				v00.AppendEmpty().SetStr("C")
+				v01 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutEmptySlice("test")
+				v01.AppendEmpty().SetStr("A")
+				v01.AppendEmpty().SetStr("B")
+				v01.AppendEmpty().SetStr("C")
+				v10 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutEmptySlice("test")
+				v10.AppendEmpty().SetStr("C")
+				v10.AppendEmpty().SetStr("D")
+				v11 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().PutEmptySlice("test")
+				v11.AppendEmpty().SetStr("C")
+				v11.AppendEmpty().SetStr("D")
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], Split(datapoint.attributes["flags"], "|")) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				v00 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutEmptySlice("test")
+				v00.AppendEmpty().SetStr("A")
+				v00.AppendEmpty().SetStr("B")
+				v00.AppendEmpty().SetStr("C")
+				v01 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutEmptySlice("test")
+				v01.AppendEmpty().SetStr("A")
+				v01.AppendEmpty().SetStr("B")
+				v01.AppendEmpty().SetStr("C")
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], Split(datapoint.attributes["not_exist"], "|"))`},
+			want:       func(_ pmetric.Metrics) {},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], Substring(datapoint.attributes["total.string"], 3, 3))`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test", "456")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "456")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().PutStr("test", "678")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(1).Attributes().PutStr("test", "678")
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], Substring(datapoint.attributes["total.string"], 3, 3)) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test", "456")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "456")
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], Substring(datapoint.attributes["not_exist"], 3, 3))`},
+			want:       func(_ pmetric.Metrics) {},
+		},
+		{
+			statements: []string{
+				`set(datapoint.attributes["test_lower"], ConvertCase(metric.name, "lower")) where metric.name == "operationA"`,
+				`set(datapoint.attributes["test_upper"], ConvertCase(metric.name, "upper")) where metric.name == "operationA"`,
+				`set(datapoint.attributes["test_snake"], ConvertCase(metric.name, "snake")) where metric.name == "operationA"`,
+				`set(datapoint.attributes["test_camel"], ConvertCase(metric.name, "camel")) where metric.name == "operationA"`,
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test_lower", "operationa")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test_lower", "operationa")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test_upper", "OPERATIONA")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test_upper", "OPERATIONA")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test_snake", "operation_a")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test_snake", "operation_a")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test_camel", "OperationA")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test_camel", "OperationA")
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], ["A", "B", "C"]) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				v00 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutEmptySlice("test")
+				v00.AppendEmpty().SetStr("A")
+				v00.AppendEmpty().SetStr("B")
+				v00.AppendEmpty().SetStr("C")
+				v01 := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutEmptySlice("test")
+				v01.AppendEmpty().SetStr("A")
+				v01.AppendEmpty().SetStr("B")
+				v01.AppendEmpty().SetStr("C")
+			},
+		},
+		{
+			statements: []string{`merge_maps(datapoint.attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("json_test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("json_test", "pass")
+			},
+		},
+		{
+			statements: []string{`limit(datapoint.attributes, 0, []) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
+			},
+		},
+		{
+			statements: []string{`set(datapoint.attributes["test"], Log(1)) where metric.name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutDouble("test", 0.0)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutDouble("test", 0.0)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statements[0], func(t *testing.T) {
+			td := constructMetrics()
+			var contextStatements []common.ContextStatements
+			for _, statement := range tt.statements {
+				contextStatements = append(contextStatements, common.ContextStatements{Context: "", Statements: []string{statement}})
+			}
+
+			processor, err := NewProcessor(contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessMetrics(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructMetrics()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func Test_ProcessMetrics_MixContext(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -862,7 +1572,7 @@ func Test_ProcessMetrics_MixContext(t *testing.T) {
 	}
 }
 
-func Test_ProcessMetrics_Error(t *testing.T) {
+func Test_ProcessMetrics_ErrorMode(t *testing.T) {
 	tests := []struct {
 		statement string
 		context   common.ContextID

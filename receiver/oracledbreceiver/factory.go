@@ -65,7 +65,7 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 		}
 		opt := scraperhelper.AddScraper(metadata.Type, mp)
 
-		return scraperhelper.NewScraperControllerReceiver(
+		return scraperhelper.NewMetricsController(
 			&sqlCfg.ControllerConfig,
 			settings,
 			consumer,

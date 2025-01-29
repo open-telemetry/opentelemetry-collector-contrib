@@ -63,7 +63,7 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte) error {
 }
 
 func (sw *s3manager) contentBuffer(raw []byte) (*bytes.Buffer, error) {
-	//nolint: gocritic // Leaving this as a switch statemenet to make it easier to add more later compressions
+	//nolint:gocritic // Leaving this as a switch statement to make it easier to add more later compressions
 	switch sw.builder.Compression {
 	case configcompression.TypeGzip:
 		content := bytes.NewBuffer(nil)

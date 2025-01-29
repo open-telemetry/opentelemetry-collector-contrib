@@ -229,12 +229,16 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		// commands
 		case "Com_delete":
 			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandDelete))
+		case "Com_delete_multi":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandDeleteMulti))
 		case "Com_insert":
 			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandInsert))
 		case "Com_select":
 			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandSelect))
 		case "Com_update":
 			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandUpdate))
+		case "Com_update_multi":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandUpdateMulti))
 
 		// created tmps
 		case "Created_tmp_disk_tables":

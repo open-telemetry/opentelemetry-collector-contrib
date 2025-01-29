@@ -597,6 +597,15 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
+          - description: Total memory  capacity of the host system.
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 784648.000000
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.memory.capacity
+            unit: 'MiBy'
           - description: The amount of memory the host system is using.
             name: vcenter.host.memory.usage
             sum:
@@ -1332,6 +1341,15 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
+          - description: Total memory  capacity of the host system.
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 784648.000000
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.host.memory.capacity
+            unit: 'MiBy'
           - description: The amount of memory the host system is using.
             name: vcenter.host.memory.usage
             sum:
@@ -2291,6 +2309,15 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
+          - description: The amount of memory that is granted to a VM.
+            name: vcenter.vm.memory.granted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
           - description: The portion of memory that is granted to this VM from the host's swap space.
             name: vcenter.vm.memory.swapped
             sum:
@@ -2921,6 +2948,15 @@ resourceMetrics:
             unit: '%'
           - description: The amount of memory that is ballooned due to virtualization.
             name: vcenter.vm.memory.ballooned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The amount of memory that is granted to a VM.
+            name: vcenter.vm.memory.granted
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -3657,6 +3693,15 @@ resourceMetrics:
             unit: '%'
           - description: The amount of memory that is ballooned due to virtualization.
             name: vcenter.vm.memory.ballooned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The amount of memory that is granted to a VM.
+            name: vcenter.vm.memory.granted
             sum:
               aggregationTemporality: 2
               dataPoints:

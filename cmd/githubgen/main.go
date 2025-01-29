@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Deprecated: use https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/githubgen
 package main
 
 import (
@@ -30,6 +31,7 @@ type generator interface {
 // .github/ISSUE_TEMPLATES/*.yaml (list of components)
 // reports/distributions/*
 func main() {
+	fmt.Println("[DEPRECATED] this tool is now deprecated. Please make sure to install go.opentelemetry.io/build-tools/githubgen instead")
 	folder := flag.String("folder", ".", "folder investigated for codeowners")
 	allowlistFilePath := flag.String("allowlist", "cmd/githubgen/allowlist.txt", "path to a file containing an allowlist of members outside the OpenTelemetry organization")
 	skipGithubCheck := flag.Bool("skipgithub", false, "skip checking GitHub membership check for CODEOWNERS generator")

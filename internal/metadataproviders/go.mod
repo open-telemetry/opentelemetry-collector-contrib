@@ -4,14 +4,14 @@ go 1.22.0
 
 require (
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go-v2 v1.32.7
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.22
-	github.com/docker/docker v27.4.1+incompatible
+	github.com/aws/aws-sdk-go-v2 v1.34.0
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.25
+	github.com/docker/docker v27.5.1+incompatible
 	github.com/hashicorp/consul/api v1.31.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.117.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.118.0
 	github.com/shirou/gopsutil/v4 v4.24.12
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/semconv v0.117.0
+	go.opentelemetry.io/collector/semconv v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/otel v1.32.0
 	go.opentelemetry.io/otel/sdk v1.32.0
 	go.uber.org/goleak v1.3.0
@@ -23,7 +23,7 @@ require (
 require (
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/smithy-go v1.22.1 // indirect
+	github.com/aws/smithy-go v1.22.2 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.5.0 // indirect

@@ -5,6 +5,7 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"net"
+	"strings"
 	"testing"
 	"time"
 
@@ -59,4 +60,12 @@ func findRandomPort() (int, error) {
 	}
 
 	return port, nil
+}
+
+func TestToJsonLines(t *testing.T) {
+	logs, err := toJSONLines([]*dLog{
+		{}, {},
+	})
+	require.NoError(t, err)
+	require.Len(t, strings.Split(string(logs), "\n"), 2+1)
 }
