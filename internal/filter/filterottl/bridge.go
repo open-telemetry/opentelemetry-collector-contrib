@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
@@ -401,4 +402,29 @@ func createMetricStatement(mp filterconfig.MetricMatchProperties) (*string, erro
 	}
 	statement := fmt.Sprintf(format, strings.Join(metricNameConditions, " or "))
 	return &statement, nil
+}
+
+func NewProfileSkipExprBridge(mc *filterconfig.MatchConfig) (expr.BoolExpr[ottlprofile.TransformContext], error) {
+	statements := make([]string, 0, 2)
+	if mc.Include != nil {
+		statement, err := createStatement(*mc.Include)
+		if err != nil {
+			return nil, err
+		}
+		statements = append(statements, fmt.Sprintf("not (%v)", statement))
+	}
+
+	if mc.Exclude != nil {
+		statement, err := createStatement(*mc.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		statements = append(statements, fmt.Sprintf("%v", statement))
+	}
+
+	if len(statements) == 0 {
+		return nil, nil
+	}
+
+	return NewBoolExprForProfile(statements, StandardProfileFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
 }
