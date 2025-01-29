@@ -29,6 +29,9 @@ func TestIntegrationInternalMetrics(t *testing.T) {
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
 	t.Setenv("PROM_SERVER", commonTestutil.GetAvailableLocalAddress(t))
+	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
+	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
+	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
@@ -41,7 +44,7 @@ func TestIntegrationInternalMetrics(t *testing.T) {
 	waitForReadiness(app)
 
 	// 3. Generate and send traces
-	sendTraces(t)
+	sendTraces(t, otlpGRPCEndpoint)
 
 	// 4. Validate Datadog trace agent & OTel internal metrics are sent to the mock server
 	expectedMetrics := map[string]struct{}{

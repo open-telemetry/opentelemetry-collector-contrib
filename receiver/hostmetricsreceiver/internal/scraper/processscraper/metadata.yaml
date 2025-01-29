@@ -207,3 +207,10 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [direction]
+  
+  process.uptime:
+    enabled: false
+    description: The time the process has been running.
+    unit: s
+    gauge:
+      value_type: double
