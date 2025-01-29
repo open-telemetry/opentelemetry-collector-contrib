@@ -343,7 +343,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sco
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ../../internal/docker
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ../../internal/k8stest
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest => ../../pkg/xk8stest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
 
@@ -400,3 +400,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdata
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../pkg/experimentalmetricmetadata
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog => ../../pkg/datadog
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils => ../../pkg/core/xidutils

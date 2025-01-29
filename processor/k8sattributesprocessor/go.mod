@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.118.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest v0.118.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/component v0.118.1-0.20250123125445-24f88da7b583
@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/pdata/pprofile v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250123125445-24f88da7b583
-	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.116.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/processor v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/processor/processortest v0.118.1-0.20250123125445-24f88da7b583
@@ -146,7 +146,7 @@ retract (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ../../internal/k8stest
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest => ../../pkg/xk8stest
 
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
 replace cloud.google.com/go v0.54.0 => cloud.google.com/go v0.110.10

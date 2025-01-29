@@ -451,7 +451,7 @@ replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../../pkg/pdatatest
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ../../../internal/k8stest
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest => ../../../pkg/xk8stest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => ../../../receiver/dockerstatsreceiver
 
@@ -478,3 +478,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdata
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../../pkg/experimentalmetricmetadata
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog => ../../../pkg/datadog/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils => ../../../pkg/core/xidutils

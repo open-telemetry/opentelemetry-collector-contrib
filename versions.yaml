@@ -133,7 +133,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
@@ -145,6 +144,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic
@@ -167,6 +167,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor
