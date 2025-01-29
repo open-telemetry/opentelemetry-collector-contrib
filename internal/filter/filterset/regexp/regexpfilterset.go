@@ -17,8 +17,8 @@ import (
 // FilterSet satisfies the FilterSet interface from
 // "go.opentelemetry.io/collector/internal/processor/filterset"
 type FilterSet struct {
-	regexes []*regexp.Regexp
 	cache   *lru.Cache[string, bool]
+	regexes []*regexp.Regexp
 }
 
 // NewFilterSet constructs a FilterSet of re2 regex strings.
