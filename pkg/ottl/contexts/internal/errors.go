@@ -18,6 +18,7 @@ const (
 	MetricRef               = "https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlmetric"
 	DataPointRef            = "https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint"
 	LogRef                  = "https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllog"
+	ProfileRef              = "https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlprofile"
 )
 
 func FormatDefaultErrorMessage(pathSegment, fullPath, context, ref string) error {
