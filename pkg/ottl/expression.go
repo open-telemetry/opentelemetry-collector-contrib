@@ -432,6 +432,50 @@ func (g StandardPMapGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Map, er
 	}
 }
 
+// PMapGetter is a Getter that must return a []pcommon.Map.
+type PMapSliceLikeGetter[K any] interface {
+	// Get retrieves a []pcommon.Map value.
+	Get(ctx context.Context, tCtx K) ([]pcommon.Map, error)
+}
+
+// StandardPMapGetter is a basic implementation of PMapGetter
+type StandardPMapSliceLikeGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (any, error)
+}
+
+// Get retrieves a pcommon.Map value.
+// If the value is not a pcommon.Map a new TypeError is returned.
+// If there is an error getting the value it will be returned.
+func (g StandardPMapSliceLikeGetter[K]) Get(ctx context.Context, tCtx K) ([]pcommon.Map, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return []pcommon.Map{}, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return []pcommon.Map{}, TypeError("expected []pcommon.Map but got nil")
+	}
+	switch v := val.(type) {
+	case pcommon.Map:
+		return []pcommon.Map{v}, nil
+	case []pcommon.Map:
+		return v, nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeMap {
+			return []pcommon.Map{v.Map()}, nil
+		}
+		return []pcommon.Map{}, TypeError(fmt.Sprintf("expected []pcommon.Map but got %v", v.Type()))
+	case map[string]any:
+		m := pcommon.NewMap()
+		err = m.FromRaw(v)
+		if err != nil {
+			return []pcommon.Map{}, err
+		}
+		return []pcommon.Map{m}, nil
+	default:
+		return []pcommon.Map{}, TypeError(fmt.Sprintf("expected []pcommon.Map but got %T", val))
+	}
+}
+
 // StringLikeGetter is a Getter that returns a string by converting the underlying value to a string if necessary.
 type StringLikeGetter[K any] interface {
 	// Get retrieves a string value.
