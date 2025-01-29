@@ -64,20 +64,20 @@ func TestURIs(t *testing.T) {
 	tests := []struct {
 		name   string
 		uri    string
-		valid  bool
 		bucket string
 		region string
 		key    string
+		valid  bool
 	}{
-		{"Invalid domain", "s3://bucket.s3.region.aws.com/key", false, "", "", ""},
-		{"Invalid region", "s3://bucket.s3.region.aws.amazonaws.com/key", false, "", "", ""},
-		{"Invalid bucket", "s3://b.s3.region.amazonaws.com/key", false, "", "", ""},
-		{"No key", "s3://bucket.s3.region.amazonaws.com/", false, "", "", ""},
-		{"Merged region domain", "s3://bucket.name-here.s3.us-west-2aamazonaws.com/key", false, "", "", ""},
-		{"No bucket", "s3://s3.region.amazonaws.com/key", false, "", "", ""},
-		{"No region", "s3://some-bucket.s3..amazonaws.com/key", false, "", "", ""},
-		{"Test malformed uri", "s3://some-bucket.s3.us-west-2.amazonaws.com/key%", false, "", "", ""},
-		{"Valid bucket", "s3://bucket.name-here.s3.us-west-2.amazonaws.com/key", true, "bucket.name-here", "us-west-2", "key"},
+		{"Invalid domain", "s3://bucket.s3.region.aws.com/key", "", "", "", false},
+		{"Invalid region", "s3://bucket.s3.region.aws.amazonaws.com/key", "", "", "", false},
+		{"Invalid bucket", "s3://b.s3.region.amazonaws.com/key", "", "", "", false},
+		{"No key", "s3://bucket.s3.region.amazonaws.com/", "", "", "", false},
+		{"Merged region domain", "s3://bucket.name-here.s3.us-west-2aamazonaws.com/key", "", "", "", false},
+		{"No bucket", "s3://s3.region.amazonaws.com/key", "", "", "", false},
+		{"No region", "s3://some-bucket.s3..amazonaws.com/key", "", "", "", false},
+		{"Test malformed uri", "s3://some-bucket.s3.us-west-2.amazonaws.com/key%", "", "", "", false},
+		{"Valid bucket", "s3://bucket.name-here.s3.us-west-2.amazonaws.com/key", "bucket.name-here", "us-west-2", "key", true},
 	}
 
 	for _, tt := range tests {

@@ -8,30 +8,30 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.IsType(t, &Config{}, cfg)
 }
 
-func TestCreateMetricsScraper(t *testing.T) {
-	factory := &Factory{}
+func TestCreateMetrics(t *testing.T) {
+	factory := NewFactory()
 	cfg := &Config{}
 
-	scraper, err := factory.CreateMetricsScraper(context.Background(), receivertest.NewNopSettings(), cfg)
+	scraper, err := factory.CreateMetrics(context.Background(), scrapertest.NewNopSettings(), cfg)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, scraper)
 }
 
-func TestCreateMetricsScraper_Error(t *testing.T) {
-	factory := &Factory{}
+func TestCreateMetrics_Error(t *testing.T) {
+	factory := NewFactory()
 	cfg := &Config{Include: MatchConfig{Devices: []string{""}}}
 
-	_, err := factory.CreateMetricsScraper(context.Background(), receivertest.NewNopSettings(), cfg)
+	_, err := factory.CreateMetrics(context.Background(), scrapertest.NewNopSettings(), cfg)
 
 	assert.Error(t, err)
 }

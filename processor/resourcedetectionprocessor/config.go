@@ -19,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
@@ -85,6 +86,9 @@ type DetectorConfig struct {
 
 	// K8SNode contains user-specified configurations for the K8SNode detector
 	K8SNodeConfig k8snode.Config `mapstructure:"k8snode"`
+
+	// Kubeadm contains user-specified configurations for the Kubeadm detector
+	KubeadmConfig kubeadm.Config `mapstructure:"kubeadm"`
 }
 
 func detectorCreateDefaultConfig() DetectorConfig {
@@ -103,6 +107,7 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		SystemConfig:           system.CreateDefaultConfig(),
 		OpenShiftConfig:        openshift.CreateDefaultConfig(),
 		K8SNodeConfig:          k8snode.CreateDefaultConfig(),
+		KubeadmConfig:          kubeadm.CreateDefaultConfig(),
 	}
 }
 
@@ -136,6 +141,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.OpenShiftConfig
 	case k8snode.TypeStr:
 		return d.K8SNodeConfig
+	case kubeadm.TypeStr:
+		return d.KubeadmConfig
 	default:
 		return nil
 	}

@@ -1,6 +1,8 @@
 default:
 all_set:
   resource_attributes:
+    cloud.account.id:
+      enabled: true
     cloud.platform:
       enabled: true
     cloud.provider:
@@ -9,6 +11,8 @@ all_set:
       enabled: true
 none_set:
   resource_attributes:
+    cloud.account.id:
+      enabled: false
     cloud.platform:
       enabled: false
     cloud.provider:

@@ -57,7 +57,10 @@ func createTracesToMetrics(
 	}
 
 	return &signalToMetrics{
-		logger:         set.Logger,
+		logger: set.Logger,
+		collectorInstanceInfo: model.NewCollectorInstanceInfo(
+			set.TelemetrySettings,
+		),
 		next:           nextConsumer,
 		spanMetricDefs: metricDefs,
 	}, nil
@@ -85,7 +88,10 @@ func createMetricsToMetrics(
 	}
 
 	return &signalToMetrics{
-		logger:       set.Logger,
+		logger: set.Logger,
+		collectorInstanceInfo: model.NewCollectorInstanceInfo(
+			set.TelemetrySettings,
+		),
 		next:         nextConsumer,
 		dpMetricDefs: metricDefs,
 	}, nil
@@ -113,7 +119,10 @@ func createLogsToMetrics(
 	}
 
 	return &signalToMetrics{
-		logger:        set.Logger,
+		logger: set.Logger,
+		collectorInstanceInfo: model.NewCollectorInstanceInfo(
+			set.TelemetrySettings,
+		),
 		next:          nextConsumer,
 		logMetricDefs: metricDefs,
 	}, nil

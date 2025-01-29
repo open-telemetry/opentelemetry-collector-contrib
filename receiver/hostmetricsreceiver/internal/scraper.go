@@ -9,45 +9,42 @@ import (
 	"github.com/shirou/gopsutil/v4/common"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 )
-
-// ScraperFactory can create a MetricScraper.
-type ScraperFactory interface {
-	// CreateDefaultConfig creates the default configuration for the Scraper.
-	CreateDefaultConfig() component.Config
-
-	// CreateMetricsScraper creates a scraper based on this config.
-	// If the config is not valid, error will be returned instead.
-	CreateMetricsScraper(ctx context.Context, settings receiver.Settings, cfg component.Config) (scraper.Metrics, error)
-}
 
 // Config is the configuration of a scraper.
 type Config interface {
 	SetRootPath(rootPath string)
 }
 
-type EnvVarScraper struct {
+func NewEnvVarFactory(delegate scraper.Factory, envMap common.EnvMap) scraper.Factory {
+	return scraper.NewFactory(delegate.Type(), func() component.Config {
+		return delegate.CreateDefaultConfig()
+	}, scraper.WithMetrics(func(ctx context.Context, settings scraper.Settings, config component.Config) (scraper.Metrics, error) {
+		scrp, err := delegate.CreateMetrics(ctx, settings, config)
+		if err != nil {
+			return nil, err
+		}
+		return &envVarScraper{delegate: scrp, envMap: envMap}, nil
+	}, delegate.MetricsStability()))
+}
+
+type envVarScraper struct {
 	delegate scraper.Metrics
 	envMap   common.EnvMap
 }
 
-func NewEnvVarScraper(delegate scraper.Metrics, envMap common.EnvMap) scraper.Metrics {
-	return &EnvVarScraper{delegate: delegate, envMap: envMap}
-}
-
-func (evs *EnvVarScraper) Start(ctx context.Context, host component.Host) error {
+func (evs *envVarScraper) Start(ctx context.Context, host component.Host) error {
 	ctx = context.WithValue(ctx, common.EnvKey, evs.envMap)
 	return evs.delegate.Start(ctx, host)
 }
 
-func (evs *EnvVarScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
+func (evs *envVarScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
 	ctx = context.WithValue(ctx, common.EnvKey, evs.envMap)
 	return evs.delegate.ScrapeMetrics(ctx)
 }
 
-func (evs *EnvVarScraper) Shutdown(ctx context.Context) error {
+func (evs *envVarScraper) Shutdown(ctx context.Context) error {
 	ctx = context.WithValue(ctx, common.EnvKey, evs.envMap)
 	return evs.delegate.Shutdown(ctx)
 }
