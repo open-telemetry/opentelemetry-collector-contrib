@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
@@ -128,6 +129,85 @@ func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 				assert.NotEmpty(t, resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
 			}
 		})
+	}
+}
+
+func TestHandlerPRWContentTypeNegotiation_httptest(t *testing.T) {
+	body := writev2.Request{}
+	pBuf := proto.NewBuffer(nil)
+	err := pBuf.Marshal(&body)
+	assert.NoError(t, err)
+
+	var compressedBody []byte
+	snappy.Encode(compressedBody, pBuf.Bytes())
+
+	// no content type
+	expectedCode := http.StatusUnsupportedMediaType
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(compressedBody))
+	req.Header.Set("Content-Encoding", "snappy")
+	req.Header.Set("Content-Type", "")
+	w := httptest.NewRecorder()
+
+	prwReceiver := setupMetricsReceiver(t)
+
+	prwReceiver.handlePRW(w, req)
+
+	resp := w.Result()
+	assert.Equal(t, expectedCode, resp.StatusCode)
+
+	// unsupported content type
+
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(compressedBody))
+	req.Header.Set("Content-Encoding", "snappy")
+	req.Header.Set("Content-Type", "application/json")
+	w = httptest.NewRecorder()
+
+	prwReceiver.handlePRW(w, req)
+
+	resp = w.Result()
+	assert.Equal(t, expectedCode, resp.StatusCode)
+
+	// x-protobuf/no proto parameter
+
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(compressedBody))
+	req.Header.Set("Content-Encoding", "snappy")
+	req.Header.Set("Content-Type", "application/x-protobuf")
+
+	w = httptest.NewRecorder()
+
+	prwReceiver.handlePRW(w, req)
+
+	resp = w.Result()
+	assert.Equal(t, expectedCode, resp.StatusCode)
+
+	// x-protobuf/v1 proto parameter
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(compressedBody))
+	req.Header.Set("Content-Encoding", "snappy")
+	req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV1))
+	w = httptest.NewRecorder()
+
+	prwReceiver.handlePRW(w, req)
+
+	resp = w.Result()
+	assert.Equal(t, expectedCode, resp.StatusCode)
+
+	// x-protobuf/v2 proto parameter
+	expectedCode = http.StatusNoContent
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/write", nil)
+	req.Header.Set("Content-Encoding", "snappy")
+	req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
+	w = httptest.NewRecorder()
+
+	prwReceiver.handlePRW(w, req)
+
+	resp = w.Result()
+	assert.Equal(t, expectedCode, resp.StatusCode)
+
+	if expectedCode == http.StatusNoContent { // We went until the end
+		assert.NotEmpty(t, resp.Header.Get("X-Prometheus-Remote-Write-Samples-Written"))
+		assert.NotEmpty(t, resp.Header.Get("X-Prometheus-Remote-Write-Histograms-Written"))
+		assert.NotEmpty(t, resp.Header.Get("X-Prometheus-Remote-Write-Exemplars-Written"))
 	}
 }
 
