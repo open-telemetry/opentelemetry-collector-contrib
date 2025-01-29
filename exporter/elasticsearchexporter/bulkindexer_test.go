@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -293,15 +293,11 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 			runBulkIndexerOnce(t, &tt.config, client)
 
 			records := logObserver.AllUntimed()
-			assert.Len(t, records, 2)
+			require.Len(t, records, 1)
 
-			assert.Equal(t, "/", records[0].ContextMap()["path"])
-			assert.Nil(t, records[0].ContextMap()["request_body"])
+			assert.Equal(t, "/_bulk", records[0].ContextMap()["path"])
+			assert.Equal(t, "{\"create\":{\"_index\":\"foo\"}}\n{\"foo\": \"bar\"}\n", records[0].ContextMap()["request_body"])
 			assert.JSONEq(t, successResp, records[0].ContextMap()["response_body"].(string))
-
-			assert.Equal(t, "/_bulk", records[1].ContextMap()["path"])
-			assert.Equal(t, "{\"create\":{\"_index\":\"foo\"}}\n{\"foo\": \"bar\"}\n", records[1].ContextMap()["request_body"])
-			assert.JSONEq(t, successResp, records[1].ContextMap()["response_body"].(string))
 		})
 	}
 }
@@ -327,8 +323,9 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 				reqCnt.Add(1)
 			}
 			return &http.Response{
-				Header: http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-				Body:   io.NopCloser(strings.NewReader(successResp)),
+				Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+				Body:       io.NopCloser(strings.NewReader(successResp)),
+				StatusCode: http.StatusOK,
 			}, nil
 		},
 	}})
