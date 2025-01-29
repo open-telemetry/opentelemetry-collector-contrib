@@ -262,6 +262,118 @@ func TestValidateConfig(t *testing.T) {
 			},
 			error: `condition must have format 'request["<name>"] <comparator> <value>'`,
 		},
+		{
+			name: "span context with statement",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "span",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "span context with condition",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "span",
+						Condition: `attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "metric context with statement",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "metric",
+						Statement: `route() where instrumentation_scope.attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "metric context with condition",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "metric",
+						Condition: `instrumentation_scope.attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "datapoint context with statement",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "datapoint",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "datapoint context with condition",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "datapoint",
+						Condition: `attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "log context with statement",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "log",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "log context with condition",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "log",
+						Condition: `attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
