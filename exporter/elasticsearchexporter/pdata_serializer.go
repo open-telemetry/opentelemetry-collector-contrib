@@ -7,6 +7,8 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"hash/fnv"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -53,10 +55,12 @@ func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, val
 
 	dynamicTemplates := make(map[string]string, len(dataPoints))
 	var docCount uint64
-	metricNames := make(map[string]bool, len(dataPoints))
-	for _, dp := range dataPoints {
+	metricNamesSet := make(map[string]bool, len(dataPoints))
+	metricNames := make([]string, len(dataPoints))
+	for i, dp := range dataPoints {
 		metric := dp.Metric()
-		if _, present := metricNames[metric.Name()]; present {
+		metricNames[i] = metric.Name()
+		if _, present := metricNamesSet[metric.Name()]; present {
 			*validationErrors = append(
 				*validationErrors,
 				fmt.Errorf(
@@ -67,7 +71,7 @@ func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, val
 			)
 			continue
 		}
-		metricNames[metric.Name()] = true
+		metricNamesSet[metric.Name()] = true
 		// TODO here's potential for more optimization by directly serializing the value instead of allocating a pcommon.Value
 		//  the tradeoff is that this would imply a duplicated logic for the ECS mode
 		value, err := dp.Value()
@@ -92,6 +96,15 @@ func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, val
 	if docCount != 0 {
 		writeUIntField(v, "_doc_count", docCount)
 	}
+	sort.Strings(metricNames)
+	hasher := fnv.New32a()
+	for _, name := range metricNames {
+		_, _ = hasher.Write([]byte(name))
+	}
+	// workaround for https://github.com/elastic/elasticsearch/issues/99123
+	// should use a string field to benefit from run-length encoding
+	writeStringFieldSkipDefault(v, "_metric_names_hash", strconv.FormatUint(uint64(hasher.Sum32()), 16))
+
 	return dynamicTemplates
 }
 
