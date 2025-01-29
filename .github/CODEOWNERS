@@ -183,6 +183,7 @@ processor/k8sattributesprocessor/                                @open-telemetry
 processor/logdedupprocessor/                                     @open-telemetry/collector-contrib-approvers @MikeGoldsmith @djaglowski
 processor/logstransformprocessor/                                @open-telemetry/collector-contrib-approvers @dehaansa
 processor/metricsgenerationprocessor/                            @open-telemetry/collector-contrib-approvers @Aneurysm9
+processor/metricstarttimeprocessor/                              @open-telemetry/collector-contrib-approvers @dashpole
 processor/metricstransformprocessor/                             @open-telemetry/collector-contrib-approvers @dmitryax
 processor/probabilisticsamplerprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling @jmacd
 processor/redactionprocessor/                                    @open-telemetry/collector-contrib-approvers @dmitryax @mx-psi @TylerHelmuth
@@ -247,7 +248,7 @@ receiver/huaweicloudcesreceiver/                                 @open-telemetry
 receiver/iisreceiver/                                            @open-telemetry/collector-contrib-approvers @Mrod1598 @pjanotti
 receiver/influxdbreceiver/                                       @open-telemetry/collector-contrib-approvers @jacobmarble
 receiver/jaegerreceiver/                                         @open-telemetry/collector-contrib-approvers @yurishkuro
-receiver/jmxreceiver/                                            @open-telemetry/collector-contrib-approvers @atoulme
+receiver/jmxreceiver/                                            @open-telemetry/collector-contrib-approvers @atoulme @rogercoll
 receiver/journaldreceiver/                                       @open-telemetry/collector-contrib-approvers @sumo-drosiek @djaglowski
 receiver/k8sclusterreceiver/                                     @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @povilasv @ChrsMark
 receiver/k8seventsreceiver/                                      @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @ChrsMark
@@ -278,7 +279,6 @@ receiver/prometheusremotewritereceiver/                          @open-telemetry
 receiver/pulsarreceiver/                                         @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
 receiver/purefareceiver/                                         @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure
 receiver/purefbreceiver/                                         @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure
-receiver/rabbitmqreceiver/                                       @open-telemetry/collector-contrib-approvers @cpheps
 receiver/receivercreator/                                        @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/redisreceiver/                                          @open-telemetry/collector-contrib-approvers @dmitryax @hughesjj
 receiver/riakreceiver/                                           @open-telemetry/collector-contrib-approvers @armstrmi
@@ -321,6 +321,7 @@ testbed/mockdatasenders/mockdatadogagentexporter/                @open-telemetry
 reports/distributions/core.yaml    @open-telemetry/collector-contrib-approvers
 reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers
 reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers
+reports/distributions/otlp.yaml    @open-telemetry/collector-contrib-approvers
 #####################################################
 #
 ## UNMAINTAINED components
@@ -330,3 +331,4 @@ exporter/kineticaexporter/                                       @open-telemetry
 exporter/opensearchexporter/                                     @open-telemetry/collector-contrib-approvers
 extension/observer/ecstaskobserver/                              @open-telemetry/collector-contrib-approvers
 receiver/awscloudwatchmetricsreceiver/                           @open-telemetry/collector-contrib-approvers
+receiver/rabbitmqreceiver/                                       @open-telemetry/collector-contrib-approvers

@@ -419,13 +419,13 @@ func TestTracesConnectorDetailed(t *testing.T) {
 	isResourceBFromLowerContext := `resource.attributes["resourceName"] == "resourceB"`
 
 	testCases := []struct {
-		name        string
-		cfg         *Config
 		ctx         context.Context
 		input       ptrace.Traces
 		expectSink0 ptrace.Traces
 		expectSink1 ptrace.Traces
 		expectSinkD ptrace.Traces
+		cfg         *Config
+		name        string
 	}{
 		{
 			name: "request/no_request_values",

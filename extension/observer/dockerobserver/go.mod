@@ -3,18 +3,18 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.22.0
 
 require (
-	github.com/docker/docker v27.5.0+incompatible
+	github.com/docker/docker v27.5.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.118.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.35.0
-	go.opentelemetry.io/collector/component v0.118.1-0.20250121185328-fbefb22cc2b3
-	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250121185328-fbefb22cc2b3
-	go.opentelemetry.io/collector/confmap v1.24.1-0.20250121185328-fbefb22cc2b3
-	go.opentelemetry.io/collector/extension v0.118.1-0.20250121185328-fbefb22cc2b3
-	go.opentelemetry.io/collector/extension/extensiontest v0.118.1-0.20250121185328-fbefb22cc2b3
+	go.opentelemetry.io/collector/component v0.118.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/confmap v1.24.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/extension v0.118.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/extension/extensiontest v0.118.1-0.20250123125445-24f88da7b583
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -66,8 +66,8 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250121185328-fbefb22cc2b3 // indirect
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250121185328-fbefb22cc2b3 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250123125445-24f88da7b583 // indirect
+	go.opentelemetry.io/collector/pdata v1.24.1-0.20250123125445-24f88da7b583 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.19.0 // indirect
