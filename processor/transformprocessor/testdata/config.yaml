@@ -118,3 +118,31 @@ transform/unknown_context:
 
 transform/unknown_error_mode:
   error_mode: test
+
+transform/structured_configuration_with_path_context:
+  trace_statements:
+    - context: span
+      statements:
+        - set(span.name, "bear") where span.attributes["http.path"] == "/animal"
+  metric_statements:
+    - context: metric
+      statements:
+        - set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"
+  log_statements:
+    - context: log
+      statements:
+        - set(log.body, "bear") where log.attributes["http.path"] == "/animal"
+
+transform/structured_configuration_with_inferred_context:
+  trace_statements:
+    - statements:
+      - set(span.name, "bear") where span.attributes["http.path"] == "/animal"
+      - set(resource.attributes["name"], "bear")
+  metric_statements:
+    - statements:
+      - set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"
+      - set(resource.attributes["name"], "bear")
+  log_statements:
+    - statements:
+      - set(log.body, "bear") where log.attributes["http.path"] == "/animal"
+      - set(resource.attributes["name"], "bear")

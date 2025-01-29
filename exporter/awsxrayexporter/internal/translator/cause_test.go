@@ -1072,7 +1072,7 @@ func TestParseExceptionWithStacktraceNotJavaScript(t *testing.T) {
 	assert.Equal(t, isRemote, *exceptions[0].Remote)
 }
 
-func TestParseExceptionWithJavaScriptStactracekMalformedLines(t *testing.T) {
+func TestParseExceptionWithJavaScriptStacktraceMalformedLines(t *testing.T) {
 	exceptionType := "TypeError"
 	message := "Cannot read property 'value' of null"
 	// We ignore the exception type / message from the stacktrace

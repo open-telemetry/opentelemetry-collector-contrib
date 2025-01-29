@@ -6,8 +6,10 @@ package common
 import (
 	"fmt"
 
-	grpcZap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zapgrpc"
+	"google.golang.org/grpc/grpclog"
 )
 
 // CreateLogger creates a logger for use by telemetrygen
@@ -16,10 +18,12 @@ func CreateLogger(skipSettingGRPCLogger bool) (*zap.Logger, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to obtain logger: %w", err)
 	}
+
 	if !skipSettingGRPCLogger {
-		grpcZap.ReplaceGrpcLoggerV2WithVerbosity(logger.WithOptions(
-			zap.AddCallerSkip(3),
-		), 1) // set to warn verbosity to avoid copious logging from grpc framework
+		grpcLogger := zapgrpc.NewLogger(logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+			return core.With([]zapcore.Field{zap.Bool("grpc_log", true)})
+		}), zap.AddCallerSkip(3)))
+		grpclog.SetLoggerV2(grpcLogger)
 	}
 	return logger, err
 }

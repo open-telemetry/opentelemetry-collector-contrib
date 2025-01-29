@@ -51,29 +51,29 @@ intervalprocessor:
 
 The following sum metrics come into the processor to be handled
 
-| Timestamp | Metric Name  | Aggregation Temporarility | Attributes        | Value |
-| --------- | ------------ | ------------------------- | ----------------- | ----: |
-| 0         | test_metric  | Cumulative                | labelA: foo       |   4.0 |
-| 2         | test_metric  | Cumulative                | labelA: bar       |   3.1 |
-| 4         | other_metric | Delta                     | fruitType: orange |  77.4 |
-| 6         | test_metric  | Cumulative                | labelA: foo       |   8.2 |
-| 8         | test_metric  | Cumulative                | labelA: foo       |  12.8 |
-| 10        | test_metric  | Cumulative                | labelA: bar       |   6.4 |
+| Timestamp | Metric Name  | Aggregation Temporality | Attributes        | Value |
+| --------- | ------------ | ----------------------- | ----------------- | ----: |
+| 0         | test_metric  | Cumulative              | labelA: foo       |   4.0 |
+| 2         | test_metric  | Cumulative              | labelA: bar       |   3.1 |
+| 4         | other_metric | Delta                   | fruitType: orange |  77.4 |
+| 6         | test_metric  | Cumulative              | labelA: foo       |   8.2 |
+| 8         | test_metric  | Cumulative              | labelA: foo       |  12.8 |
+| 10        | test_metric  | Cumulative              | labelA: bar       |   6.4 |
 
 The processor would immediately pass the following metrics to the next processor in the chain
 
-| Timestamp | Metric Name  | Aggregation Temporarility | Attributes        | Value |
-| --------- | ------------ | ------------------------- | ----------------- | ----: |
-| 4         | other_metric | Delta                     | fruitType: orange |  77.4 |
+| Timestamp | Metric Name  | Aggregation Temporality | Attributes        | Value |
+| --------- | ------------ | ----------------------- | ----------------- | ----: |
+| 4         | other_metric | Delta                   | fruitType: orange |  77.4 |
 
 Because it's a Delta metric.
 
 At the next `interval` (15s by default), the processor would pass the following metrics to the next processor in the chain
 
-| Timestamp | Metric Name | Aggregation Temporarility | Attributes  | Value |
-| --------- | ----------- | ------------------------- | ----------- | ----: |
-| 8         | test_metric | Cumulative                | labelA: foo |  12.8 |
-| 10        | test_metric | Cumulative                | labelA: bar |   6.4 |
+| Timestamp | Metric Name | Aggregation Temporality | Attributes  | Value |
+| --------- | ----------- | ----------------------- | ----------- | ----: |
+| 8         | test_metric | Cumulative              | labelA: foo |  12.8 |
+| 10        | test_metric | Cumulative              | labelA: bar |   6.4 |
 
 > [!IMPORTANT]
 > After exporting, any internal state is cleared. So if no new metrics come in, the next interval will export nothing.

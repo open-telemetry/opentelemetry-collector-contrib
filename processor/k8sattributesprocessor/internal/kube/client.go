@@ -209,30 +209,10 @@ func New(
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
 	synced := make([]cache.InformerSynced, 0)
-	reg, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.handlePodAdd,
-		UpdateFunc: c.handlePodUpdate,
-		DeleteFunc: c.handlePodDelete,
-	})
-	if err != nil {
-		return err
-	}
-	synced = append(synced, reg.HasSynced)
-	go c.informer.Run(c.stopCh)
-
-	reg, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.handleNamespaceAdd,
-		UpdateFunc: c.handleNamespaceUpdate,
-		DeleteFunc: c.handleNamespaceDelete,
-	})
-	if err != nil {
-		return err
-	}
-	synced = append(synced, reg.HasSynced)
-	go c.namespaceInformer.Run(c.stopCh)
-
+	// start the replicaSet informer first, as the replica sets need to be
+	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
 	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
-		reg, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
 			DeleteFunc: c.handleReplicaSetDelete,
@@ -243,6 +223,17 @@ func (c *WatchClient) Start() error {
 		synced = append(synced, reg.HasSynced)
 		go c.replicasetInformer.Run(c.stopCh)
 	}
+
+	reg, err := c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    c.handleNamespaceAdd,
+		UpdateFunc: c.handleNamespaceUpdate,
+		DeleteFunc: c.handleNamespaceDelete,
+	})
+	if err != nil {
+		return err
+	}
+	synced = append(synced, reg.HasSynced)
+	go c.namespaceInformer.Run(c.stopCh)
 
 	if c.nodeInformer != nil {
 		reg, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -257,20 +248,35 @@ func (c *WatchClient) Start() error {
 		go c.nodeInformer.Run(c.stopCh)
 	}
 
+	reg, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    c.handlePodAdd,
+		UpdateFunc: c.handlePodUpdate,
+		DeleteFunc: c.handlePodDelete,
+	})
+	if err != nil {
+		return err
+	}
+
+	// start the podInformer with the prerequisite of the other informers to be finished first
+	go c.runInformerWithDependencies(c.informer, synced)
+
 	if c.waitForMetadata {
 		timeoutCh := make(chan struct{})
 		t := time.AfterFunc(c.waitForMetadataTimeout, func() {
 			close(timeoutCh)
 		})
 		defer t.Stop()
-		if !cache.WaitForCacheSync(timeoutCh, synced...) {
+		// Wait for the Pod informer to be completed.
+		// The other informers will already be finished at this point, as the pod informer
+		// waits for them be finished before it can run
+		if !cache.WaitForCacheSync(timeoutCh, reg.HasSynced) {
 			return errors.New("failed to wait for caches to sync")
 		}
 	}
 	return nil
 }
 
-// Stop signals the the k8s watcher/informer to stop watching for new events.
+// Stop signals the k8s watcher/informer to stop watching for new events.
 func (c *WatchClient) Stop() {
 	close(c.stopCh)
 }
@@ -1118,6 +1124,22 @@ func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {
 		return replicaset, ok
 	}
 	return nil, false
+}
+
+// runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete
+// before the informer is started. This is necessary e.g. for the pod informer which requires the replica set informer
+// to be finished to correctly establish the connection to the replicaset/deployment it belongs to.
+func (c *WatchClient) runInformerWithDependencies(informer cache.SharedInformer, dependencies []cache.InformerSynced) {
+	if len(dependencies) > 0 {
+		timeoutCh := make(chan struct{})
+		// TODO hard coding the timeout for now, check if we should make this configurable
+		t := time.AfterFunc(5*time.Second, func() {
+			close(timeoutCh)
+		})
+		defer t.Stop()
+		cache.WaitForCacheSync(timeoutCh, dependencies...)
+	}
+	informer.Run(c.stopCh)
 }
 
 // ignoreDeletedFinalStateUnknown returns the object wrapped in

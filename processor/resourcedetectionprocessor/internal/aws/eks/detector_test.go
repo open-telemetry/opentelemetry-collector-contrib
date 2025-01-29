@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	clusterName = "my-cluster"
+	clusterName    = "my-cluster"
+	cloudAccountID = "cloud1234"
 )
 
 type MockDetectorUtils struct {
@@ -38,6 +39,10 @@ func (detectorUtils *MockDetectorUtils) getClusterName(_ context.Context, _ *zap
 
 func (detectorUtils *MockDetectorUtils) getClusterNameTagFromReservations(_ []*ec2.Reservation) string {
 	return clusterName
+}
+
+func (detectorUtils *MockDetectorUtils) getCloudAccountID(_ context.Context, _ *zap.Logger) string {
+	return cloudAccountID
 }
 
 func TestNewDetector(t *testing.T) {
@@ -71,4 +76,58 @@ func TestNotEKS(t *testing.T) {
 	r, _, err := eksResourceDetector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 0, r.Attributes().Len(), "Resource object should be empty")
+}
+
+func TestEKSResourceDetection_ForCloudAccountID(t *testing.T) {
+	tests := []struct {
+		name           string
+		ra             metadata.ResourceAttributesConfig
+		expectedOutput map[string]any
+		shouldError    bool
+	}{
+		{
+			name: "Detects CloudAccountID when enabled",
+			ra: metadata.ResourceAttributesConfig{
+				CloudAccountID: metadata.ResourceAttributeConfig{Enabled: true},
+			},
+			expectedOutput: map[string]any{
+				"cloud.account.id": "cloud1234",
+			},
+			shouldError: false,
+		},
+		{
+			name: "Does not detect CloudAccountID when disabled",
+			ra: metadata.ResourceAttributesConfig{
+				CloudAccountID: metadata.ResourceAttributeConfig{Enabled: false},
+			},
+			expectedOutput: map[string]any{},
+			shouldError:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			detectorUtils := new(MockDetectorUtils)
+			ctx := context.Background()
+
+			t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
+			detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{conventions.AttributeK8SClusterName: clusterName}, nil)
+
+			eksResourceDetector := &detector{
+				utils: detectorUtils,
+				err:   nil,
+				ra:    tt.ra,
+				rb:    metadata.NewResourceBuilder(tt.ra),
+			}
+			res, _, err := eksResourceDetector.Detect(ctx)
+
+			if tt.shouldError {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedOutput, res.Attributes().AsRaw())
+		})
+	}
 }

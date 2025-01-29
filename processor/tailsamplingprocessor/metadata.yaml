@@ -6,7 +6,7 @@ status:
     beta: [traces]
   distributions: [contrib, k8s]
   codeowners:
-    active: [jpkrohling]
+    active: [jpkrohling, portertech]
 
 tests:
   config:

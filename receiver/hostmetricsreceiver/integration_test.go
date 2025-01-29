@@ -17,7 +17,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 )
 
@@ -35,14 +34,15 @@ func Test_ProcessScrape(t *testing.T) {
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
-				pCfg := (&processscraper.Factory{}).CreateDefaultConfig().(*processscraper.Config)
+				f := processscraper.NewFactory()
+				pCfg := f.CreateDefaultConfig().(*processscraper.Config)
 				pCfg.MuteProcessExeError = true
 				pCfg.Include = processscraper.MatchConfig{
 					Config: filterset.Config{MatchType: filterset.Regexp},
 					Names:  []string{"sleep"},
 				}
-				rCfg.Scrapers = map[component.Type]internal.Config{
-					processscraper.Type: pCfg,
+				rCfg.Scrapers = map[component.Type]component.Config{
+					f.Type(): pCfg,
 				}
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
@@ -70,10 +70,10 @@ func Test_ProcessScrapeWithCustomRootPath(t *testing.T) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
 				rCfg.RootPath = rootPath
-				pCfg := (&processscraper.Factory{}).CreateDefaultConfig().(*processscraper.Config)
-				pCfg.SetRootPath(rootPath)
-				rCfg.Scrapers = map[component.Type]internal.Config{
-					processscraper.Type: pCfg,
+				f := processscraper.NewFactory()
+				pCfg := f.CreateDefaultConfig().(*processscraper.Config)
+				rCfg.Scrapers = map[component.Type]component.Config{
+					f.Type(): pCfg,
 				}
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
@@ -99,12 +99,12 @@ func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
-				pCfg := (&processscraper.Factory{}).CreateDefaultConfig().(*processscraper.Config)
-				pCfg.SetRootPath(badRootPath)
-				rCfg.Scrapers = map[component.Type]internal.Config{
-					processscraper.Type: pCfg,
-				}
 				rCfg.RootPath = badRootPath
+				f := processscraper.NewFactory()
+				pCfg := f.CreateDefaultConfig().(*processscraper.Config)
+				rCfg.Scrapers = map[component.Type]component.Config{
+					f.Type(): pCfg,
+				}
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(

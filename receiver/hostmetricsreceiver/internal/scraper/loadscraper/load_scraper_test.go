@@ -16,8 +16,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/internal/metadata"
@@ -75,7 +75,7 @@ func TestScrape(t *testing.T) {
 		// wait for messurement to start
 		<-startChan
 
-		scraper := newLoadScraper(context.Background(), receivertest.NewNopSettings(), test.config)
+		scraper := newLoadScraper(context.Background(), scrapertest.NewNopSettings(), test.config)
 		if test.loadFunc != nil {
 			scraper.load = test.loadFunc
 		}
