@@ -129,9 +129,8 @@ attribute (only logs).  The hashed value, presumed to be random, is
 compared against a threshold value that corresponds with the sampling
 percentage.
 
-This mode requires configuring the `hash_seed` field.  This mode is
-enabled when the `hash_seed` field is not zero, or when log records
-are sampled with `attribute_source` is set to `record`.
+This mode is selected by default. The seed value will be 0 if the
+`hash_seed` is not configured.
 
 In order for hashing to be consistent, all collectors for a given tier
 (e.g. behind the same load balancer) must have the same
@@ -142,8 +141,6 @@ requirements.
 This mode uses 14 bits of information in its sampling decision; the
 default `sampling_precision`, which is 4 hexadecimal digits, exactly
 encodes this information.
-
-This mode is selected by default.
 
 #### Hash seed: Use-cases
 
@@ -304,7 +301,7 @@ false, in which case erroneous data will pass through the processor.
 
 The following configuration options can be modified:
 
-- `mode` (string, optional): One of "proportional", "equalizing", or "hash_seed"; the default is "proportional" unless either `hash_seed` is configured or `attribute_source` is set to `record`.
+- `mode` (string, optional): One of "proportional", "equalizing", or "hash_seed"; the default is "hash_seed".
 - `sampling_percentage` (32-bit floating point, required): Percentage at which items are sampled; >= 100 samples all items, 0 rejects all items.
 - `hash_seed` (32-bit unsigned integer, optional, default = 0): An integer used to compute the hash algorithm. Note that all collectors for a given tier (e.g. behind the same load balancer) should have the same hash_seed.
 - `fail_closed` (boolean, optional, default = true): Whether to reject items with sampling-related errors.
