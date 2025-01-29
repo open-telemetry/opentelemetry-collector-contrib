@@ -75,6 +75,7 @@ body:
       - exporter/sentry
       - exporter/signalfx
       - exporter/splunkhec
+      - exporter/stef
       - exporter/sumologic
       - exporter/syslog
       - exporter/tencentcloudlogservice
@@ -127,7 +128,6 @@ body:
       - internal/filter
       - internal/grpcutil
       - internal/k8sconfig
-      - internal/k8stest
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
@@ -140,6 +140,7 @@ body:
       - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal
+      - pkg/core/xidutils
       - pkg/datadog
       - pkg/experimentalmetricmetadata
       - pkg/golden
@@ -163,6 +164,7 @@ body:
       - pkg/translator/skywalking
       - pkg/translator/zipkin
       - pkg/winperfcounters
+      - pkg/xk8stest
       - processor/attributes
       - processor/coralogix
       - processor/cumulativetodelta
@@ -177,6 +179,7 @@ body:
       - processor/logdedup
       - processor/logstransform
       - processor/metricsgeneration
+      - processor/metricstarttime
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
@@ -213,6 +216,7 @@ body:
       - receiver/datadog
       - receiver/dockerstats
       - receiver/elasticsearch
+      - receiver/envoyals
       - receiver/expvar
       - receiver/filelog
       - receiver/filestats
