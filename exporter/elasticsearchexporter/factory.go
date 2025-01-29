@@ -62,6 +62,9 @@ func createDefaultConfig() component.Config {
 		TracesDynamicIndex: DynamicIndexSetting{
 			Enabled: false,
 		},
+		LogsDynamicID: DynamicIDSettings{
+			Enabled: false,
+		},
 		Retry: RetrySettings{
 			Enabled:         true,
 			MaxRetries:      0, // default is set in exporter code
@@ -166,7 +169,7 @@ func exporterhelperOptions(
 	shutdown component.ShutdownFunc,
 ) []exporterhelper.Option {
 	opts := []exporterhelper.Option{
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(start),
 		exporterhelper.WithShutdown(shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),

@@ -19,8 +19,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const name = "googlecloudpubsub"
-
 type pubsubExporter struct {
 	logger               *zap.Logger
 	client               publisherClient
@@ -35,10 +33,10 @@ type pubsubExporter struct {
 	metricsWatermarkFunc metricsWatermarkFunc
 	logsMarshaler        plog.Marshaler
 	logsWatermarkFunc    logsWatermarkFunc
-}
 
-func (*pubsubExporter) Name() string {
-	return name
+	// To be overridden in tests
+	makeUUID   func() (uuid.UUID, error)
+	makeClient func(ctx context.Context, cfg *Config, userAgent string) (publisherClient, error)
 }
 
 type encoding int
@@ -67,7 +65,7 @@ func (ex *pubsubExporter) start(ctx context.Context, _ component.Host) error {
 	ctx, ex.cancel = context.WithCancel(ctx)
 
 	if ex.client == nil {
-		client, err := newPublisherClient(ctx, ex.config, ex.userAgent)
+		client, err := ex.makeClient(ctx, ex.config, ex.userAgent)
 		if err != nil {
 			return fmt.Errorf("failed creating the gRPC client to Pubsub: %w", err)
 		}
@@ -88,7 +86,11 @@ func (ex *pubsubExporter) shutdown(_ context.Context) error {
 }
 
 func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding encoding, data []byte, watermark time.Time) error {
-	id, err := uuid.NewRandom()
+	if len(data) == 0 {
+		return nil
+	}
+
+	id, err := ex.makeUUID()
 	if err != nil {
 		return err
 	}

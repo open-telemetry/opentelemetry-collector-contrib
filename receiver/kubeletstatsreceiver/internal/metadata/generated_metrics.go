@@ -3099,7 +3099,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	if mbc.Metrics.ContainerCPUUtilization.Enabled {
 		settings.Logger.Warn("[WARNING] `container.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric container.cpu.usage instead.")

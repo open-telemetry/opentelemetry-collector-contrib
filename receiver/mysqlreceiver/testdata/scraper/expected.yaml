@@ -181,6 +181,13 @@ resourceMetrics:
                         stringValue: delete
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
+                - asInt: "51"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: delete_multi
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "78"
                   attributes:
                     - key: command
@@ -200,6 +207,13 @@ resourceMetrics:
                     - key: command
                       value:
                         stringValue: update
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "174"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: update_multi
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true

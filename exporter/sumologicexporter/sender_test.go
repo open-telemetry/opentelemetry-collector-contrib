@@ -41,7 +41,7 @@ type senderTest struct {
 }
 
 // prepareSenderTest prepares sender test environment.
-// Provided cfgOpts additionally configure the sender after the sendible default
+// Provided cfgOpts additionally configure the sender after the sensible default
 // for tests have been applied.
 // The enclosed httptest.Server is closed automatically using test.Cleanup.
 func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []func(w http.ResponseWriter, req *http.Request), cfgOpts ...func(*Config)) *senderTest {
@@ -1284,7 +1284,7 @@ func TestSendMetricsSplitFailedAll(t *testing.T) {
 }
 
 func TestSendMetricsUnexpectedFormat(t *testing.T) {
-	// Expect no requestes
+	// Expect no requests
 	test := prepareSenderTest(t, NoCompression, nil)
 	test.s.config.MetricFormat = "invalid"
 

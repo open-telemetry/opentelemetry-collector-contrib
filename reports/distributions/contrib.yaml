@@ -201,3 +201,14 @@ components:
         - windowsperfcounters
         - zipkin
         - zookeeper
+    scraper:
+        - cpu
+        - disk
+        - filesystem
+        - load
+        - memory
+        - network
+        - paging
+        - process
+        - processes
+        - system
