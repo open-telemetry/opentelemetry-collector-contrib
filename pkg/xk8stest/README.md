@@ -2,6 +2,9 @@
 
 The purpose of this package is to provide reusable kubernetes test helpers.
 
+**Warning:**
+This package is experimental and its API compatibility might be broken without any notice.
+
 ## Functionality
 
 This package includes the ability to [create and delete k8s objects](./k8s_objects.go),

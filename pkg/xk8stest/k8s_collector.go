@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package k8stest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
+package xk8stest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest"
 
 import (
 	"bytes"
@@ -20,15 +20,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func CreateCollectorObjects(t *testing.T, client *K8sClient, testID string, manifestsDir string) []*unstructured.Unstructured {
+func CreateCollectorObjects(t *testing.T, client *K8sClient, testID string, manifestsDir string, templateValues map[string]string, host string) []*unstructured.Unstructured {
 	if manifestsDir == "" {
 		manifestsDir = filepath.Join(".", "testdata", "e2e", "collector")
 	}
 	manifestFiles, err := os.ReadDir(manifestsDir)
 	require.NoErrorf(t, err, "failed to read collector manifests directory %s", manifestsDir)
-	host := HostEndpoint(t)
 	if host == "" {
-		require.Fail(t, "host endpoint cannot be empty")
+		host = HostEndpoint(t)
 	}
 	var podNamespace string
 	var podLabels map[string]any
@@ -36,11 +35,15 @@ func CreateCollectorObjects(t *testing.T, client *K8sClient, testID string, mani
 	for _, manifestFile := range manifestFiles {
 		tmpl := template.Must(template.New(manifestFile.Name()).ParseFiles(filepath.Join(manifestsDir, manifestFile.Name())))
 		manifest := &bytes.Buffer{}
-		require.NoError(t, tmpl.Execute(manifest, map[string]string{
+		defaultTemplateValues := map[string]string{
 			"Name":         "otelcol-" + testID,
 			"HostEndpoint": host,
 			"TestID":       testID,
-		}))
+		}
+		for key, value := range templateValues {
+			defaultTemplateValues[key] = value
+		}
+		require.NoError(t, tmpl.Execute(manifest, defaultTemplateValues))
 		obj, err := CreateObject(client, manifest.Bytes())
 		require.NoErrorf(t, err, "failed to create collector object from manifest %s", manifestFile.Name())
 		objKind := obj.GetKind()
