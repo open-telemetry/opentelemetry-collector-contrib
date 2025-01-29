@@ -166,8 +166,6 @@ github.com/DataDog/datadog-agent/pkg/status/health v0.61.0 h1:qMrc4qvum2GfZW1yRb
 github.com/DataDog/datadog-agent/pkg/status/health v0.61.0/go.mod h1:u7btrms/cuXnU5HAmEauHLXdsiVqUS9TfGGiYCwdpTs=
 github.com/DataDog/datadog-agent/pkg/telemetry v0.61.0 h1:5eqDN9YnIm1Y7TNzc+y3rLGIKA08tz2sqS8y3VqjAc0=
 github.com/DataDog/datadog-agent/pkg/telemetry v0.61.0/go.mod h1:6L8df1TdfYzCI0EGo0BPFgf4k2OJ19d2At96VbtTHgk=
-github.com/DataDog/datadog-agent/pkg/trace v0.63.0-devel.0.20250123185937-1feb84b482c8 h1:PCRnIPazrYw3hThLjQDwuKiJMypmCNVNuyG1pnpB824=
-github.com/DataDog/datadog-agent/pkg/trace v0.63.0-devel.0.20250123185937-1feb84b482c8/go.mod h1:5TEeZF01pkIbQskIcBnz6QooMpqC+cX+sYoqwdJfByI=
 github.com/DataDog/datadog-agent/pkg/trace v0.64.0-devel.0.20250129182827-bab631c10d61 h1:vCSPUaK/NYjayQ7W/8jp7H/wk432GM1BlKNDSSYEnFQ=
 github.com/DataDog/datadog-agent/pkg/trace v0.64.0-devel.0.20250129182827-bab631c10d61/go.mod h1:pJcvXfnlgmRtJbFRBFfR3ykl0w9Th9mM+ZwKakwGPMg=
 github.com/DataDog/datadog-agent/pkg/util/backoff v0.61.0 h1:VP1r5qulh6MwzcoWeMhOT197/QSY1t94U4MXLqnJM30=
@@ -343,8 +341,7 @@ github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDk
 github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGXZJjfX53e64911xZQV5JYwmTeXPW+k8Sc=
 github.com/cncf/xds/go v0.0.0-20240905190251-b4127c9b8d78 h1:QVw89YDxXxEe+l8gU8ETbOasdwEV+avkR75ZzsVV9WI=
 github.com/cncf/xds/go v0.0.0-20240905190251-b4127c9b8d78/go.mod h1:W+zGtBO5Y1IgJhy4+A9GOqVhqLpfZi+vwmdNXUehLA8=
-github.com/containerd/cgroups/v3 v3.0.4 h1:2fs7l3P0Qxb1nKWuJNFiwhp2CqiKzho71DQkDrHJIo4=
-github.com/containerd/cgroups/v3 v3.0.4/go.mod h1:SA5DLYnXO8pTGYiAHXz94qvLQTKfVM5GEVisn4jpins=
+github.com/containerd/cgroups/v3 v3.0.5 h1:44na7Ud+VwyE7LIoJ8JTNQOa549a8543BmzaJHo6Bzo=
 github.com/containerd/cgroups/v3 v3.0.5/go.mod h1:SA5DLYnXO8pTGYiAHXz94qvLQTKfVM5GEVisn4jpins=
 github.com/containerd/log v0.1.0 h1:TCJt7ioM2cr/tfR8GPbGf9/VRAX8D2B4PjzCpfX540I=
 github.com/containerd/log v0.1.0/go.mod h1:VRRf09a7mHDIRezVKTRCrOq78v577GXq3bSa3EhrzVo=
