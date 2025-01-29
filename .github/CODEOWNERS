@@ -130,7 +130,6 @@ internal/exp/metrics/                                            @open-telemetry
 internal/filter/                                                 @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/grpcutil/                                               @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3 @lquerel
 internal/k8sconfig/                                              @open-telemetry/collector-contrib-approvers @dmitryax
-internal/k8stest/                                                @open-telemetry/collector-contrib-approvers @crobert-1
 internal/kafka/                                                  @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 internal/kubelet/                                                @open-telemetry/collector-contrib-approvers @dmitryax
 internal/metadataproviders/                                      @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
@@ -144,6 +143,7 @@ internal/tools/                                                  @open-telemetry
 
 pkg/batchperresourceattr/                                        @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 pkg/batchpersignal/                                              @open-telemetry/collector-contrib-approvers @jpkrohling
+pkg/core/xidutils/                                               @open-telemetry/collector-contrib-approvers @odubajDT
 pkg/datadog/                                                     @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96 @jade-guiton-dd @IbraheemA
 pkg/experimentalmetricmetadata/                                  @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/golden/                                                      @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
@@ -167,6 +167,7 @@ pkg/translator/signalfx/                                         @open-telemetry
 pkg/translator/skywalking/                                       @open-telemetry/collector-contrib-approvers @JaredTan95
 pkg/translator/zipkin/                                           @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
 pkg/winperfcounters/                                             @open-telemetry/collector-contrib-approvers @dashpole @Mrod1598 @alxbl @pjanotti
+pkg/xk8stest/                                                    @open-telemetry/collector-contrib-approvers @crobert-1
 
 processor/attributesprocessor/                                   @open-telemetry/collector-contrib-approvers @boostchicken
 processor/coralogixprocessor/                                    @open-telemetry/collector-contrib-approvers @crobert-1 @povilasv
