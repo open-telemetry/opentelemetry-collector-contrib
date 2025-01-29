@@ -113,8 +113,8 @@ go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJyS
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
 go.opentelemetry.io/collector v0.118.0 h1:OBqxppK9Ul6bzEabcHsx11pXwgp05sBpqYxIxiOkyFo=
 go.opentelemetry.io/collector v0.118.0/go.mod h1:yxfijW5k9dwd9sifTBAEoItE+ahFEtOlyvex1B99uno=
-go.opentelemetry.io/collector/client v1.24.1-0.20250123125445-24f88da7b583 h1:JBHR5s9m7Upy8XtIAnUM9WUpiCkzIRTnmEEViMR1BRs=
-go.opentelemetry.io/collector/client v1.24.1-0.20250123125445-24f88da7b583/go.mod h1:I5195HMWPseUSVEbNaEgMbz8rzx11T59I2YIkJQ2jrE=
+go.opentelemetry.io/collector/client v1.24.0 h1:eH7ctqDnRWNH5QVVbAvdYYdkvr8QWLkEm8FUPaaYbWE=
+go.opentelemetry.io/collector/client v1.24.0/go.mod h1:C/38SYPa0tTL6ikPz/glYz6f3GVzEuT4nlEml6IBDMw=
 go.opentelemetry.io/collector/component v0.118.1-0.20250123125445-24f88da7b583 h1:j8aeyY8Zhv2jzxyqFysoZ1RRGDFMV8UlGdOx4/8V5/w=
 go.opentelemetry.io/collector/component v0.118.1-0.20250123125445-24f88da7b583/go.mod h1:/fqrkzmOXsqm4boZaVtxi5YIz39/i8K8Wqd9oryz8Iw=
 go.opentelemetry.io/collector/component/componentstatus v0.118.1-0.20250123125445-24f88da7b583 h1:WPD2b620wnscJH0Gma4Le23oRK56wpjg/6O6Ri/e23o=
@@ -308,8 +308,8 @@ google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f h1:
 google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f/go.mod h1:Ic02D47M+zbarjYYUlK57y316f2MoN0gjAwI3f2S95o=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f h1:OxYkA3wjPsZyBylwymxSHa7ViiW1Sml4ToBrncvFehI=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f/go.mod h1:+2Yz8+CLJbIfL9z73EW45avw8Lmge3xVElCP9zEKi50=
-google.golang.org/grpc v1.69.4 h1:MF5TftSMkd8GLw/m0KM6V8CMOCY6NZ1NQDPGFgbTt4A=
-google.golang.org/grpc v1.69.4/go.mod h1:vyjdE6jLBI76dgpDojsFGNaHlxdjXN9ghpnd2o7JGZ4=
+google.golang.org/grpc v1.70.0 h1:pWFv03aZoHzlRKHWicjsZytKAiYCtNS0dHbXnIdq7jQ=
+google.golang.org/grpc v1.70.0/go.mod h1:ofIJqVKDXx/JiXrwr2IG4/zwdH9txy3IlF40RmcJSQw=
 google.golang.org/protobuf v1.36.3 h1:82DV7MYdb8anAVi3qge1wSnMDrnKK7ebr+I0hHRN1BU=
 google.golang.org/protobuf v1.36.3/go.mod h1:9fA7Ob0pmnwhb644+1+CVWFRbNajQ6iRojtC/QF5bRE=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
