@@ -123,7 +123,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.29 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.29 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.201.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.202.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.10 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.24.12 // indirect
@@ -318,7 +318,7 @@ require (
 	gonum.org/v1/gonum v0.15.1 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
-	google.golang.org/grpc v1.69.4 // indirect
+	google.golang.org/grpc v1.70.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -343,7 +343,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sco
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker => ../../internal/docker
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ../../internal/k8stest
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest => ../../pkg/xk8stest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
 
@@ -400,3 +400,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdata
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata => ../../pkg/experimentalmetricmetadata
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog => ../../pkg/datadog
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils => ../../pkg/core/xidutils

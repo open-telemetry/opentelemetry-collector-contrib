@@ -28,7 +28,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/grpc v1.69.4
+	google.golang.org/grpc v1.70.0
 )
 
 require (
@@ -54,6 +54,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.118.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.118.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/cors v1.11.1 // indirect
@@ -87,6 +88,8 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils => ../../pkg/core/xidutils
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../pkg/translator/jaeger
 
