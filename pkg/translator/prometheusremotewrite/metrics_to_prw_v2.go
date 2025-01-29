@@ -119,6 +119,7 @@ func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
 func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label) {
 	buf := make([]uint32, 0, len(lbls)*2)
 
+	// TODO: Read the PRW spec to see if labels need to be sorted. If it is, then we need to sort in export code. If not, we can sort in the test. (@dashpole have more context on this)
 	sort.Slice(lbls, func(i, j int) bool {
 		return lbls[i].Name < lbls[j].Name
 	})
