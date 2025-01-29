@@ -94,7 +94,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.34.0
 	github.com/aws/aws-sdk-go-v2/config v1.29.2
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.25
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.201.1
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.202.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.118.0
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/consumer/consumererror v0.118.1-0.20250123125445-24f88da7b583
@@ -420,7 +420,7 @@ require (
 	google.golang.org/api v0.188.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
-	google.golang.org/grpc v1.69.4 // indirect
+	google.golang.org/grpc v1.70.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
