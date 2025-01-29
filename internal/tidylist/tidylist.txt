@@ -17,8 +17,9 @@ internal/aws/ecsutil
 internal/k8sconfig
 internal/metadataproviders
 pkg/resourcetotelemetry
-internal/k8stest
+pkg/xk8stest
 processor/k8sattributesprocessor
+pkg/core/xidutils
 pkg/sampling
 processor/probabilisticsamplerprocessor
 processor/resourcedetectionprocessor
@@ -135,6 +136,7 @@ exporter/pulsarexporter
 internal/rabbitmq
 exporter/rabbitmqexporter
 exporter/sentryexporter
+exporter/stefexporter
 extension/sumologicextension
 exporter/sumologicexporter
 exporter/tencentcloudlogserviceexporter
@@ -200,6 +202,7 @@ processor/intervalprocessor
 processor/logdedupprocessor
 processor/logstransformprocessor
 processor/metricsgenerationprocessor
+processor/metricstarttimeprocessor
 processor/metricstransformprocessor
 processor/redactionprocessor
 processor/remotetapprocessor
@@ -229,6 +232,7 @@ receiver/cloudfoundryreceiver
 receiver/collectdreceiver
 receiver/couchdbreceiver
 receiver/elasticsearchreceiver
+receiver/envoyalsreceiver
 receiver/expvarreceiver
 receiver/filestatsreceiver
 receiver/flinkmetricsreceiver
