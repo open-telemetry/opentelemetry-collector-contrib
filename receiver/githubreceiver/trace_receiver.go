@@ -16,11 +16,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
-	// "go.opentelemetry.io/collector/pdata/pcommon"
-	// "go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -95,10 +94,10 @@ func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host)
 	router := mux.NewRouter()
 
 	// setup health route
-    router.HandleFunc(gtr.cfg.WebHook.HealthPath, gtr.handleHealthCheck)
-    
-    // setup webhook route for traces
-    router.HandleFunc(gtr.cfg.WebHook.Path, gtr.handleReq)
+	router.HandleFunc(gtr.cfg.WebHook.HealthPath, gtr.handleHealthCheck)
+
+	// setup webhook route for traces
+	router.HandleFunc(gtr.cfg.WebHook.Path, gtr.handleReq)
 
 	// webhook server standup and configuration
 	gtr.server, err = gtr.cfg.WebHook.ServerConfig.ToServer(ctx, host, gtr.settings.TelemetrySettings, router)
@@ -134,58 +133,68 @@ func (gtr *githubTracesReceiver) Shutdown(_ context.Context) error {
 // handleReq handles incoming request sent to the webhook endoint. On success
 // returns a 200 response code.
 func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Request) {
-    // ctx := gtr.obsrecv.StartTracesOp(req.Context())
-    
-    p, err := github.ValidatePayload(req, []byte(gtr.cfg.WebHook.Secret))
-    if err != nil {
-        gtr.logger.Sugar().Debugf("unable to validate payload", zap.Error(err))
-        http.Error(w, "invalid payload", http.StatusBadRequest)
-        return
-    }
+	ctx := gtr.obsrecv.StartTracesOp(req.Context())
 
-    eventType := github.WebHookType(req)
-    event, err := github.ParseWebHook(eventType, p)
-    if err != nil {
-        gtr.logger.Sugar().Debugf("failed to parse event", zap.Error(err))
-        http.Error(w, "failed to parse event", http.StatusBadRequest)
-        return
-    }
+	p, err := github.ValidatePayload(req, []byte(gtr.cfg.WebHook.Secret))
+	if err != nil {
+		gtr.logger.Sugar().Debugf("unable to validate payload", zap.Error(err))
+		http.Error(w, "invalid payload", http.StatusBadRequest)
+		return
+	}
 
-    var rawEvent interface{}
+	eventType := github.WebHookType(req)
+	event, err := github.ParseWebHook(eventType, p)
+	if err != nil {
+		gtr.logger.Sugar().Debugf("failed to parse event", zap.Error(err))
+		http.Error(w, "failed to parse event", http.StatusBadRequest)
+		return
+	}
 
-    if err :=  json.Unmarshal(p, &rawEvent); err != nil {
-        gtr.logger.Sugar().Errorf("failed to unmarshal event", zap.Error(err))
-    }
-    // payload, err := github.Parse
+	var rawEvent interface{}
 
-    switch e := event.(type) {
-    case *github.WorkflowRunEvent:
-        if e.GetWorkflowRun().GetStatus() == "completed" {
-            // var rawEvent []interface{}
-            // event := append(rawEvent, e.GetWorkflowRun(), e.GetInstallation(), e.GetSender(), e.GetOrg(), e.GetRepo(), e.GetWorkflow())
-            gtr.logger.Debug("event", zap.Any("event", event))
-        }
-		// if e.GetWorkflowRun().GetStatus() != "completed" {
-		// 	gtr.logger.Debug("skipping non-completed WorkflowRunEvent", zap.String("status", e.GetWorkflowRun().GetStatus()))
-		// 	w.WriteHeader(http.StatusNoContent)
-		// 	return
-		// }
-        return
-    case *github.WorkflowJobEvent:
-		if e.GetWorkflowJob().GetStatus() != "completed" {
-			gtr.logger.Debug("skipping non-completed WorkflowJobEvent", zap.String("status", e.GetWorkflowJob().GetStatus()))
+	if err := json.Unmarshal(p, &rawEvent); err != nil {
+		gtr.logger.Sugar().Errorf("failed to unmarshal event", zap.Error(err))
+	}
+
+	var td ptrace.Traces
+	switch e := event.(type) {
+	case *github.WorkflowRunEvent:
+		if e.GetWorkflowRun().GetStatus() != "completed" {
+			gtr.logger.Debug("workflow run not complete, skipping...", zap.String("status", e.GetWorkflowRun().GetStatus()))
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-        return
-    default:
-        gtr.logger.Sugar().Debugf("event type not supported", zap.String("event_type", eventType))
-        http.Error(w, "event type not supported", http.StatusBadRequest)
-        return
-    }
+		td, err = gtr.handleWorkflowRun(e)
+	case *github.WorkflowJobEvent:
+		if e.GetWorkflowJob().GetStatus() != "completed" {
+			gtr.logger.Debug("workflow job not complete, skipping...", zap.String("status", e.GetWorkflowJob().GetStatus()))
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		return
+		// TODO: Enable
+		// td, err = gtr.handleWorkflowJob(ctx, e)
+	case *github.PingEvent:
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		return
+	default:
+		gtr.logger.Sugar().Debugf("event type not supported", zap.String("event_type", eventType))
+		http.Error(w, "event type not supported", http.StatusBadRequest)
+		return
+	}
 
-    // TODO: Figure this out
-	// gtr.obsrecv.EndTracesOp(ctx, "protobuf", td.SpanCount(), err)
+	if td.SpanCount() > 0 {
+		err = gtr.traceConsumer.ConsumeTraces(ctx, td)
+		if err != nil {
+			http.Error(w, "failed to consume traces", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	gtr.obsrecv.EndTracesOp(ctx, "protobuf", td.SpanCount(), err)
 }
 
 // Simple healthcheck endpoint.
@@ -195,48 +204,3 @@ func (gtr *githubTracesReceiver) handleHealthCheck(w http.ResponseWriter, _ *htt
 
 	_, _ = w.Write([]byte(healthyResponse))
 }
-
-// maybe accept event.type here directly.
-// func (gtr *githubTracesReceiver) eventToSpan(e interface{}) (ptrace.Traces, error) {
-//     t := ptrace.NewTraces()
-//     r := t.ResourceSpans().AppendEmpty()
-//     s := r.ScopeSpans().AppendEmpty()
-//
-//     switch e := e.(type) {
-// 	case *github.WorkflowJobEvent:
-// 		jobResource := resourceSpans.Resource()
-// 		createResourceAttributes(jobResource, e, config, logger)
-//
-// 		traceID, err := generateTraceID(e.GetWorkflowJob().GetRunID(), int(e.GetWorkflowJob().GetRunAttempt()))
-// 		if err != nil {
-// 			logger.Error("Failed to generate trace ID", zap.Error(err))
-// 			return ptrace.Traces{}, fmt.Errorf("failed to generate trace ID: %w", err)
-// 		}
-//
-// 		parentSpanID := createParentSpan(scopeSpans, e.GetWorkflowJob().Steps, e.GetWorkflowJob(), traceID, logger)
-// 		processSteps(scopeSpans, e.GetWorkflowJob().Steps, e.GetWorkflowJob(), traceID, parentSpanID, logger)
-//
-// 	case *github.WorkflowRunEvent:
-// 		runResource := resourceSpans.Resource()
-//
-// 		traceID, err := generateTraceID(e.GetWorkflowRun().GetID(), e.GetWorkflowRun().GetRunAttempt())
-// 		if err != nil {
-// 			logger.Error("Failed to generate trace ID", zap.Error(err))
-// 			return ptrace.Traces{}, fmt.Errorf("failed to generate trace ID: %w", err)
-// 		}
-//
-// 		createResourceAttributes(runResource, e, config, logger)
-// 		_, err = createRootSpan(resourceSpans, e, traceID, logger)
-// 		if err != nil {
-// 			logger.Error("Failed to create root span", zap.Error(err))
-// 			return ptrace.Traces{}, fmt.Errorf("failed to create root span: %w", err)
-// 		}
-//
-// 	default:
-// 		logger.Error("unknown event type, dropping payload")
-// 		return ptrace.Traces{}, fmt.Errorf("unknown event type")
-// 	}
-//
-//
-//     return nil, nil
-// }
