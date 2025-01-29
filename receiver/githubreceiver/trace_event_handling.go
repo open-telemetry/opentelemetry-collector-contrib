@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package githubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver"
 
 import (
@@ -7,10 +10,9 @@ import (
 	"fmt"
 
 	"github.com/google/go-github/v68/github"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 )
 
 func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent) (ptrace.Traces, error) {
@@ -24,7 +26,7 @@ func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent) (
 		return ptrace.Traces{}, fmt.Errorf("failed to get workflow attributes: %w", err)
 	}
 
-	traceID, err := newTraceID(e.GetWorkflowRun().GetID(), int(e.GetWorkflowRun().GetRunAttempt()))
+	traceID, err := newTraceID(e.GetWorkflowRun().GetID(), e.GetWorkflowRun().GetRunAttempt())
 	if err != nil {
 		gtr.logger.Sugar().Errorf("Failed to generate trace ID", zap.String("error", fmt.Sprint(err)))
 	}
@@ -88,7 +90,7 @@ func newParentSpanID(runID int64, runAttempt int) (pcommon.SpanID, error) {
 }
 
 // createRootSpan creates a root span based on the provided event, associated
-// with the determinitic traceID.
+// with the deterministic traceID.
 func (gtr *githubTracesReceiver) createRootSpan(
 	resourceSpans ptrace.ResourceSpans,
 	event *github.WorkflowRunEvent,

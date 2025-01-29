@@ -189,7 +189,7 @@ func (gtr *githubTracesReceiver) getWorkflowAttrs(resource pcommon.Resource, e *
 // replaced by hyphens. If none of these are set, it returns "unknown_service"
 // and an error.
 // func (gtr *githubTracesReceiver) getServiceName(customProps map[string]interface{}, repoName string) (string, error) {
-func (gtr *githubTracesReceiver) getServiceName(customProps interface{}, repoName string) (string, error) {
+func (gtr *githubTracesReceiver) getServiceName(customProps any, repoName string) (string, error) {
 	switch {
 	case gtr.cfg.WebHook.ServiceName != "":
 		formatted := formatString(gtr.cfg.WebHook.ServiceName)
@@ -205,7 +205,7 @@ func (gtr *githubTracesReceiver) getServiceName(customProps interface{}, repoNam
 	default:
 		// This should never happen, but in the event it does, unknown_service
 		// and a error will be returned to abide by semantic conventions.
-		return "unkown_service", errors.New("unable to generate service.name resource attribute")
+		return "unknown_service", errors.New("unable to generate service.name resource attribute")
 	}
 }
 

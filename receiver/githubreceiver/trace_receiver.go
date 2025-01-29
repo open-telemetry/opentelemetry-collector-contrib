@@ -5,7 +5,6 @@ package githubreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -19,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-
 	"go.uber.org/zap"
 )
 
@@ -148,12 +146,6 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
 		gtr.logger.Sugar().Debugf("failed to parse event", zap.Error(err))
 		http.Error(w, "failed to parse event", http.StatusBadRequest)
 		return
-	}
-
-	var rawEvent interface{}
-
-	if err := json.Unmarshal(p, &rawEvent); err != nil {
-		gtr.logger.Sugar().Errorf("failed to unmarshal event", zap.Error(err))
 	}
 
 	var td ptrace.Traces
