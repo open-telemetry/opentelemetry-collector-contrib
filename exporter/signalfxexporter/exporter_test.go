@@ -669,6 +669,7 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
+			cfg.QueueSettings.Enabled = false
 			sfxExp, err := NewFactory().CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			ctx := context.Background()
@@ -768,6 +769,7 @@ func TestConsumeLogsAccessTokenPassthrough(t *testing.T) {
 			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
+			cfg.QueueSettings.Enabled = false
 			sfxExp, err := NewFactory().CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
