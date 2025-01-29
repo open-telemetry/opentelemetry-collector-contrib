@@ -56,8 +56,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
-				MaxBatchSizeBytes: 3000000,
-				TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
+				MaxBatchSizeBytes:          3000000,
+				MaxBatchRequestParallelism: toPtr(10),
+				TimeoutSettings:            exporterhelper.NewDefaultTimeoutConfig(),
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
@@ -89,6 +90,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(metadata.Type, "negative_num_consumers"),
 			errorMessage: "remote write consumer number can't be negative",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "less_than_1_max_batch_request_parallelism"),
+			errorMessage: "max_batch_request_parallelism can't be set to below 1",
 		},
 	}
 
@@ -135,4 +140,8 @@ func TestDisabledTargetInfo(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.False(t, cfg.(*Config).TargetInfo.Enabled)
+}
+
+func toPtr[T any](val T) *T {
+	return &val
 }

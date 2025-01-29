@@ -48,7 +48,7 @@ This also supports service name based exporting for traces. If you have two or m
 
 ## Resilience and scaling considerations
 
-The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`, `dns`, `k8s`), create one `otlp` exporter per endpoint. Each level of exporters, `loadbalancingexporter` itself and all sub-exporters (one per each endpoint), have it's own queue, timeout and retry mechanisms. Importantly, the `loadbalancingexporter`, by default, will NOT attempt to re-route data to a healthy endpoint on delivery failure, because in-memory queue, retry and timeout setting are disabled by default ([more details on queuing, retry and timeout default settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)).
+The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`, `dns`, `k8s`), create one `otlp` exporter per endpoint. Each level of exporters, `loadbalancingexporter` itself and all sub-exporters (one per each endpoint), have its own queue, timeout and retry mechanisms. Importantly, the `loadbalancingexporter`, by default, will NOT attempt to re-route data to a healthy endpoint on delivery failure, because in-memory queue, retry and timeout setting are disabled by default ([more details on queuing, retry and timeout default settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)).
 
 ```
                                         +------------------+          +---------------+

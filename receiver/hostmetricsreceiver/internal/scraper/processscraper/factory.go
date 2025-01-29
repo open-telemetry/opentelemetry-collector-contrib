@@ -10,16 +10,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
-
-// This file implements Factory for Process scraper.
-
-// Type the value of "type" key in configuration.
-var Type = component.MustNewType("process")
 
 var (
 	bootTimeCacheFeaturegateID = "hostmetrics.process.bootTimeCache"
@@ -32,20 +26,22 @@ var (
 	)
 )
 
-// Factory is the Factory for scraper.
-type Factory struct{}
+// NewFactory for Process scraper.
+func NewFactory() scraper.Factory {
+	return scraper.NewFactory(metadata.Type, createDefaultConfig, scraper.WithMetrics(createMetricsScraper, metadata.MetricsStability))
+}
 
-// CreateDefaultConfig creates the default configuration for the Scraper.
-func (f *Factory) CreateDefaultConfig() component.Config {
+// createDefaultConfig creates the default configuration for the Scraper.
+func createDefaultConfig() component.Config {
 	return &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
-// CreateMetricsScraper creates a resource scraper based on provided config.
-func (f *Factory) CreateMetricsScraper(
+// createMetricsScraper creates a resource scraper based on provided config.
+func createMetricsScraper(
 	_ context.Context,
-	settings receiver.Settings,
+	settings scraper.Settings,
 	cfg component.Config,
 ) (scraper.Metrics, error) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {

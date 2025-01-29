@@ -124,7 +124,7 @@ type metric interface {
 	dMetricGauge | dMetricSum | dMetricHistogram | dMetricExponentialHistogram | dMetricSummary
 }
 
-func toJsonLines[T dLog | dTrace | metric](data []*T) ([]byte, error) {
+func toJSONLines[T dLog | dTrace | metric](data []*T) ([]byte, error) {
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
 	for _, d := range data {

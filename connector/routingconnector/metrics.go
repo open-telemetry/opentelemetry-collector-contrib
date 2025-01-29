@@ -62,7 +62,7 @@ func newMetricsConnector(
 }
 
 func (c *metricsConnector) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	return consumer.Capabilities{MutatesData: true}
 }
 
 func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {

@@ -139,7 +139,7 @@ LOOP:
 		for stability := range m.Status.Stability {
 			if stability == unmaintainedStatus {
 				unmaintainedList += key + "/\n"
-				unmaintainedCodeowners += fmt.Sprintf("%s/%s @open-telemetry/collector-contrib-approvers \n", key, strings.Repeat(" ", data.maxLength-len(key)))
+				unmaintainedCodeowners += fmt.Sprintf("%s/%s @open-telemetry/collector-contrib-approvers\n", key, strings.Repeat(" ", data.maxLength-len(key)))
 				continue LOOP
 			}
 			if stability == "deprecated" && (m.Status.Codeowners == nil || len(m.Status.Codeowners.Active) == 0) {
@@ -176,7 +176,13 @@ LOOP:
 		for _, m := range dist.Maintainers {
 			maintainers = append(maintainers, fmt.Sprintf("@%s", m))
 		}
-		codeowners += fmt.Sprintf("reports/distributions/%s.yaml%s @open-telemetry/collector-contrib-approvers %s\n", dist.Name, strings.Repeat(" ", longestName-len(dist.Name)), strings.Join(maintainers, " "))
+
+		distribution := fmt.Sprintf("\nreports/distributions/%s.yaml%s @open-telemetry/collector-contrib-approvers", dist.Name, strings.Repeat(" ", longestName-len(dist.Name)))
+		if len(maintainers) > 0 {
+			distribution += fmt.Sprintf(" %s", strings.Join(maintainers, " "))
+		}
+
+		codeowners += distribution
 	}
 
 	err = os.WriteFile(filepath.Join(".github", "CODEOWNERS"), []byte(codeowners+unmaintainedCodeowners), 0o600)
@@ -199,7 +205,7 @@ func (cg codeownersGenerator) getGithubMembers() (map[string]struct{}, error) {
 	if githubToken == "" {
 		return nil, fmt.Errorf("Set the environment variable `GITHUB_TOKEN` to a PAT token to authenticate")
 	}
-	client := github.NewTokenClient(context.Background(), githubToken)
+	client := github.NewClient(nil).WithAuthToken(githubToken)
 	var allUsers []*github.User
 	pageIndex := 0
 	for {

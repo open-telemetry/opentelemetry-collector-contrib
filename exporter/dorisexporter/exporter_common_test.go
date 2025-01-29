@@ -63,7 +63,7 @@ func findRandomPort() (int, error) {
 }
 
 func TestToJsonLines(t *testing.T) {
-	logs, err := toJsonLines([]*dLog{
+	logs, err := toJSONLines([]*dLog{
 		{}, {},
 	})
 	require.NoError(t, err)

@@ -17,7 +17,7 @@
 
 **This exporter is undergoing major changes right now.**
 
-For some time we have been developing the [new Sumo Logic exporter](https://github.com/SumoLogic/sumologic-otel-collector/tree/main/pkg/exporter/sumologicexporter#sumo-logic-exporter) and now we are in the process of moving it into this repository.
+We are in the process of [moving the Sumo Logic exporter into this repository](https://github.com/SumoLogic/sumologic-otel-collector/pull/1601).
 
 The following options are no longer supported:
 
@@ -69,8 +69,7 @@ After the new exporter will be moved to this repository:
 ## Configuration
 
 This exporter supports sending logs and metrics data to [Sumo Logic](https://www.sumologic.com/).
-Traces are exported using native otlphttp exporter as described
-[here](https://help.sumologic.com/Traces/Getting_Started_with_Transaction_Tracing)
+Traces are exported using the [native otlphttp exporter](https://help.sumologic.com/Traces/Getting_Started_with_Transaction_Tracing).
 
 Configuration is specified via the yaml in the following structure:
 
