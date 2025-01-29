@@ -194,7 +194,7 @@ func TestHandlerPRWContentTypeNegotiation_httptest(t *testing.T) {
 
 	// x-protobuf/v2 proto parameter
 	expectedCode = http.StatusNoContent
-	req = httptest.NewRequest(http.MethodPost, "/api/v1/write", nil)
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(compressedBody))
 	req.Header.Set("Content-Encoding", "snappy")
 	req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
 	w = httptest.NewRecorder()
