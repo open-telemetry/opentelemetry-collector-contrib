@@ -29,7 +29,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/exporter v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250123125445-24f88da7b583
-	go.opentelemetry.io/collector/otelcol v0.118.0
+	go.opentelemetry.io/collector/otelcol v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/processor v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/processor/batchprocessor v0.118.1-0.20250123125445-24f88da7b583
