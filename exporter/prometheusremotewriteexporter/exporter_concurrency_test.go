@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -117,8 +116,6 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 
 	assert.NotNil(t, cfg)
 	set := exportertest.NewNopSettings()
-	set.MetricsLevel = configtelemetry.LevelBasic
-
 	prwe, nErr := newPRWExporter(cfg, set)
 
 	require.NoError(t, nErr)

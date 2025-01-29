@@ -25,8 +25,8 @@ var (
 )
 
 type requestCondition struct {
-	attributeName string
 	compareFunc   func(string) bool
+	attributeName string
 }
 
 func parseRequestCondition(condition string) (*requestCondition, error) {
