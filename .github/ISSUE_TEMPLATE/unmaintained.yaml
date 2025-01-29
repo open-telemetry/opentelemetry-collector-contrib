@@ -183,6 +183,7 @@ body:
       - processor/logdedup
       - processor/logstransform
       - processor/metricsgeneration
+      - processor/metricstarttime
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
@@ -219,6 +220,7 @@ body:
       - receiver/datadog
       - receiver/dockerstats
       - receiver/elasticsearch
+      - receiver/envoyals
       - receiver/expvar
       - receiver/filelog
       - receiver/filestats
