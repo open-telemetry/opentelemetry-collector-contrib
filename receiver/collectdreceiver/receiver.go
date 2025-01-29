@@ -26,13 +26,13 @@ var _ receiver.Metrics = (*collectdReceiver)(nil)
 
 // collectdReceiver implements the receiver.Metrics for CollectD protocol.
 type collectdReceiver struct {
+	nextConsumer       consumer.Metrics
 	logger             *zap.Logger
 	server             *http.Server
-	defaultAttrsPrefix string
-	nextConsumer       consumer.Metrics
 	obsrecv            *receiverhelper.ObsReport
-	createSettings     receiver.Settings
 	config             *Config
+	createSettings     receiver.Settings
+	defaultAttrsPrefix string
 }
 
 // newCollectdReceiver creates the CollectD receiver with the given parameters.
