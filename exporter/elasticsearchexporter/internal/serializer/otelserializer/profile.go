@@ -21,7 +21,7 @@ const (
 
 // SerializeProfile serializes a profile into the specified buffer
 func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, callback func(*bytes.Buffer, string, string) error) error {
-	data, err := serializeprofiles.ResourceProfiles(resource, scope, profile)
+	data, err := serializeprofiles.Transform(resource, scope, profile)
 	if err != nil {
 		return err
 	}

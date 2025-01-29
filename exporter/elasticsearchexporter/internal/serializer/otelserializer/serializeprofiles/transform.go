@@ -20,7 +20,7 @@ import (
 
 // Transform transforms a [pprofile.Profile] into our own
 // representation, for ingestion into Elasticsearch
-func ResourceProfiles(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) ([]StackPayload, error) {
+func Transform(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) ([]StackPayload, error) {
 	var data []StackPayload
 
 	if err := checkProfileType(profile); err != nil {
