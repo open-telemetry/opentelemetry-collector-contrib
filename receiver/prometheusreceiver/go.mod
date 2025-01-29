@@ -8,13 +8,12 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.118.0
 	github.com/prometheus/client_golang v1.20.5
-	github.com/prometheus/common v0.62.0
-	github.com/prometheus/exporter-toolkit v0.13.2
+	github.com/prometheus/common v0.61.0
+	github.com/prometheus/exporter-toolkit v0.12.0
 	github.com/prometheus/prometheus v0.54.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.118.1-0.20250123125445-24f88da7b583
@@ -29,7 +28,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/exporter v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250123125445-24f88da7b583
-	go.opentelemetry.io/collector/otelcol v0.118.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/otelcol v0.118.0
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/processor v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/processor/batchprocessor v0.118.1-0.20250123125445-24f88da7b583
@@ -159,7 +158,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.118.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.118.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/ovh/go-ovh v1.6.0 // indirect
