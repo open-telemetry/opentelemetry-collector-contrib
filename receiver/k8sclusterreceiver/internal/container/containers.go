@@ -19,10 +19,10 @@ import (
 )
 
 const (
-	// Keys for container metadata.
-	containerKeyStatus          = "container.status"
-	containerKeyStatusReason    = "container.status.reason"
-	containerContainerTimestamp = "container.creation_timestamp"
+	// Keys for container metadata used for entity attributes.
+	containerKeyStatus         = "container.status"
+	containerKeyStatusReason   = "container.status.reason"
+	containerCreationTimestamp = "container.creation_timestamp"
 
 	// Values for container metadata
 	containerStatusRunning    = "running"
@@ -102,7 +102,7 @@ func GetMetadata(cs corev1.ContainerStatus) *metadata.KubernetesMetadata {
 	if cs.State.Running != nil {
 		mdata[containerKeyStatus] = containerStatusRunning
 		if !cs.State.Running.StartedAt.IsZero() {
-			mdata[containerContainerTimestamp] = cs.State.Running.StartedAt.Format(time.RFC3339)
+			mdata[containerCreationTimestamp] = cs.State.Running.StartedAt.Format(time.RFC3339)
 		}
 	}
 
@@ -110,7 +110,7 @@ func GetMetadata(cs corev1.ContainerStatus) *metadata.KubernetesMetadata {
 		mdata[containerKeyStatus] = containerStatusTerminated
 		mdata[containerKeyStatusReason] = cs.State.Terminated.Reason
 		if !cs.State.Terminated.StartedAt.IsZero() {
-			mdata[containerContainerTimestamp] = cs.State.Terminated.StartedAt.Format(time.RFC3339)
+			mdata[containerCreationTimestamp] = cs.State.Terminated.StartedAt.Format(time.RFC3339)
 		}
 	}
 

@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	// Keys for namespace metadata and entity attributes. These are NOT used by resource attributes.
+	// Keys for namespace metadata and entity attributes.
 	k8sNamespaceCreationTime = "k8s.namespace.creation_timestamp"
 	k8sNamespacePhase        = "k8s.namespace.phase"
 )

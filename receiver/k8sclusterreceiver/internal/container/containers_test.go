@@ -72,8 +72,8 @@ func TestGetMetadata(t *testing.T) {
 				assert.Equal(t, tt.expectedReason, md.Metadata[containerKeyStatusReason])
 			}
 			if tt.containerState.Running != nil || tt.containerState.Terminated != nil {
-				assert.Contains(t, md.Metadata, containerContainerTimestamp)
-				assert.Equal(t, tt.expectedStartedAt, md.Metadata[containerContainerTimestamp])
+				assert.Contains(t, md.Metadata, containerCreationTimestamp)
+				assert.Equal(t, tt.expectedStartedAt, md.Metadata[containerCreationTimestamp])
 			}
 		})
 	}
