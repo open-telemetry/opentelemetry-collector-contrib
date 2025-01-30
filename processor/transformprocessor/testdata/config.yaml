@@ -81,12 +81,12 @@ transform/bad_syntax_multi_signal:
   metric_statements:
     - context: datapoint
       statements:
-        - set(name, "bear" where attributes["http.path"] == "/animal"
+        - set(name, "bear" attributes["http.path"] == "/animal"
         - keep_keys(attributes, ["http.method", "http.path"])
   log_statements:
     - context: log
       statements:
-        - set(body, "bear" where attributes["http.path"] == "/animal"
+        - set(body, "bear" none["http.path"] == "/animal"
         - keep_keys(attributes, ["http.method", "http.path"])
 
 transform/unknown_function_log:
