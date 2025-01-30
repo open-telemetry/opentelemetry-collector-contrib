@@ -2069,7 +2069,7 @@ The `ToLowerCase` Converter converts the `target` string into lower case (e.g. `
 
 Examples:
 
-- `ToLowerCase(metric.name)` where `metric.name` contains `MyMetricName`, which will be converted to `mymetricmame`
+- `ToLowerCase(metric.name)`
 
 ### ToSnakeCase
 
