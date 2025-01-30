@@ -109,7 +109,22 @@ func (s *redaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs
 		for k := 0; k < ils.LogRecords().Len(); k++ {
 			log := ils.LogRecords().At(k)
 			s.processAttrs(ctx, log.Attributes())
+			s.processLogBody(ctx, log.Body(), log.Attributes())
 		}
+	}
+}
+
+func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attributes pcommon.Map) {
+	if body.Type() == pcommon.ValueTypeMap {
+		s.processAttrs(ctx, body.Map())
+		return
+	}
+
+	maskedBody, redactionCount := s.processString(body.Str())
+	// If redaction happened, update the body and add to attributes for the summary
+	if redactionCount > 0 {
+		body.SetStr(maskedBody)
+		attributes.PutInt(bodyMaskedCount, int64(redactionCount))
 	}
 }
 
@@ -238,6 +253,21 @@ func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map,
 	}
 }
 
+// processString applies regex-based redaction to a string and returns the modified string & count.
+func (s *redaction) processString(str string) (string, int) {
+	maskedStr := str
+	redactionCount := 0
+
+	// Apply redaction using regex patterns and count matches
+	for _, compiledRE := range s.blockRegexList {
+		matches := compiledRE.FindAllString(str, -1)
+		redactionCount += len(matches)
+		maskedStr = compiledRE.ReplaceAllString(maskedStr, "****")
+	}
+
+	return str, redactionCount
+}
+
 const (
 	debug            = "debug"
 	info             = "info"
@@ -246,6 +276,7 @@ const (
 	maskedValues     = "redaction.masked.keys"
 	maskedValueCount = "redaction.masked.count"
 	ignoredKeyCount  = "redaction.ignored.count"
+	bodyMaskedCount  = "redaction.body.masked.count"
 )
 
 // makeAllowList sets up a lookup table of allowed span attribute keys
