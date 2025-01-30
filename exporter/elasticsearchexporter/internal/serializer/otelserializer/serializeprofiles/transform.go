@@ -225,9 +225,7 @@ func stackFrames(profile pprofile.Profile, sample pprofile.Sample) ([]StackFrame
 
 		frameTypeStr, err := getStringFromAttribute(profile, location, "profile.frame.type")
 		if err != nil {
-			// Fallback option if the frame type is still provided via the
-			// deprecated Location.type_index field.
-			frameTypeStr = profile.StringTable().At(int(location.MappingIndex()))
+			return nil, nil, nil, err
 		}
 		frameTypes = append(frameTypes, libpf.FrameTypeFromString(frameTypeStr))
 
