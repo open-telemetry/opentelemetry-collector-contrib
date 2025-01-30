@@ -10,8 +10,8 @@ require (
 	github.com/testcontainers/testcontainers-go v0.35.0
 	go.opentelemetry.io/collector/component v0.118.1-0.20250130214220-d9b97ffb43cc
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250130214220-d9b97ffb43cc
-	go.opentelemetry.io/collector/confmap v1.24.1-0.20250130214220-d9b97ffb43cc
-	go.opentelemetry.io/collector/consumer v1.24.1-0.20250130214220-d9b97ffb43cc
+	go.opentelemetry.io/collector/confmap v1.24.1-0.20250130224751-50b76b95bf35
+	go.opentelemetry.io/collector/consumer v1.24.1-0.20250130224751-50b76b95bf35
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250130220845-0276d781be89
 	go.opentelemetry.io/collector/receiver v0.118.1-0.20250130220845-0276d781be89
 	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250130220845-0276d781be89
@@ -72,7 +72,7 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/confignet v1.24.1-0.20250130214220-d9b97ffb43cc // indirect
+	go.opentelemetry.io/collector/config/confignet v1.24.1-0.20250130224751-50b76b95bf35 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250130220845-0276d781be89 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.118.1-0.20250130220845-0276d781be89 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.118.1-0.20250130220845-0276d781be89 // indirect
