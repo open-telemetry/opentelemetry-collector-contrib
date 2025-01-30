@@ -27,7 +27,6 @@ import (
 )
 
 func TestScrape(t *testing.T) {
-	t.Skip("")
 	type testCase struct {
 		name                     string
 		config                   Config
