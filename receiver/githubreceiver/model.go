@@ -91,22 +91,33 @@ const (
 	AttributeCICDPipelineTaskRunStatusError        = "error"
 	AttributeCICDPipelineTaskRunStatusSkip         = "skip"
 
-	// TODO: Evaluate these
+	// The following attributes are not part of the semantic conventions yet.
 	AttributeCICDPipelineRunSenderLogin     = "cicd.pipeline.run.sender.login"      // GitHub's Run Sender Login
 	AttributeCICDPipelineTaskRunSenderLogin = "cicd.pipeline.task.run.sender.login" // GitHub's Task Sender Login
 	AttributeVCSVendorName                  = "vcs.vendor.name"                     // GitHub
 	AttributeVCSRepositoryOwner             = "vcs.repository.owner"                // GitHub's Owner Login
+	AttributeCICDPipelineFilePath           = "cicd.pipeline.file.path"             // GitHub's Path in workflow_run
 
-	AttributeCICDPipelineFilePath = "cicd.pipeline.file.path" // GitHub's Path in workflow_run
-
-	AttributeGitHubAppInstallationID = "github.app.installation.id" // GitHub's Installation ID
-
+	AttributeGitHubAppInstallationID  = "github.app.installation.id"  // GitHub's Installation ID
 	AttributeGitHubWorkflowRunAttempt = "github.workflow.run.attempt" // GitHub's Run Attempt
 
 	// TODO: Evaluate whether or not these should be added. Always iffy on adding specific usernames and emails.
-	AttributeVCSRefHeadRevisionAuthorName       = "vcs.ref.head.revision.author.name"      // GitHub's Head Revision Author Name
-	AttributeVCSRefHeadRevisionAuthorEmail      = "vcs.ref.head.revision.author.email"     // GitHub's Head Revision Author Email
+	AttributeVCSRefHeadRevisionAuthorName  = "vcs.ref.head.revision.author.name"  // GitHub's Head Revision Author Name
+	AttributeVCSRefHeadRevisionAuthorEmail = "vcs.ref.head.revision.author.email" // GitHub's Head Revision Author Email
+
+	// The following attributes are exclusive to GitHub but not listed under
+	// Vendor Extensions within Semantic Conventions yet.
 	AttributeGitHubWorkflowTriggerActorUsername = "github.workflow.trigger.actor.username" // GitHub's Triggering Actor Username
+
+	// github.reference.workflow acts as a template attribute where it'll be
+	// joined with a `name` and a `version` value. There is an unknown amount of
+	// reference workflows that are sent as a list of string by GitHub making it
+	// necessary to leverage template attributes. One key thing to note is the
+	// length of the names. Evaluate if this causes issues.
+	// eg. github.reference.workflow.my-great-workflow.path
+	// eg. github.reference.workflow.my-great-workflow.version
+	// eg. github.reference.workflow.my-great-workflow.revision
+	AttributeGitHubReferenceWorkflow = "github.reference.workflow"
 )
 
 // getWorkflowAttrs returns a pcommon.Map of attributes for the Workflow Run
@@ -161,13 +172,15 @@ func (gtr *githubTracesReceiver) getWorkflowAttrs(resource pcommon.Resource, e *
 	// TODO: This attribute is important for determining what shared workflows
 	// exist, and what versions (or shas). Previously, it would all get
 	// appended. But this should be a slice of values instead.
-	// if len(e.GetWorkflowRun().ReferencedWorkflows) > 0 {
-	// 	var referencedWorkflows []string
-	// 	for _, workflow := range e.GetWorkflowRun().ReferencedWorkflows {
-	// 		referencedWorkflows = append(referencedWorkflows, workflow.GetPath())
-	// 	}
-	// 	attrs.PutStr("cicd.pipeline.run.referenced_workflows", strings.Join(referencedWorkflows, ";"))
-	// }
+	if len(e.GetWorkflowRun().ReferencedWorkflows) > 0 {
+		var referencedWorkflows []string
+		for _, w := range e.GetWorkflowRun().ReferencedWorkflows {
+			referencedWorkflows = append(referencedWorkflows, w.GetPath())
+			referencedWorkflows = append(referencedWorkflows, w.GetSHA())
+			referencedWorkflows = append(referencedWorkflows, w.GetRef())
+		}
+		attrs.PutStr("cicd.pipeline.run.referenced_workflows", strings.Join(referencedWorkflows, ";"))
+	}
 
 	// TODO: Convert this to the VCS Change Request.
 	// if len(e.GetWorkflowRun().PullRequests) > 0 {
@@ -181,6 +194,11 @@ func (gtr *githubTracesReceiver) getWorkflowAttrs(resource pcommon.Resource, e *
 	return err
 }
 
+// splitRefWorkflow takes in the workl
+func splitRefWorkflow(workflow string) (name string, version string, err error) {
+	return "", "", nil
+}
+
 // getServiceName returns a generated service.name resource attribute derived
 // from 1) the service_name defined in the webhook configuration 2) a
 // service.name value set in the custom_properties section of a GitHub event, or
@@ -192,7 +210,7 @@ func (gtr *githubTracesReceiver) getWorkflowAttrs(resource pcommon.Resource, e *
 func (gtr *githubTracesReceiver) getServiceName(customProps any, repoName string) (string, error) {
 	switch {
 	case gtr.cfg.WebHook.ServiceName != "":
-		formatted := formatString(gtr.cfg.WebHook.ServiceName)
+
 		return formatted, nil
 	// customProps would be an index map[string]interface{} passed in but should
 	// only be non-nil if the index of `service_name` exists
