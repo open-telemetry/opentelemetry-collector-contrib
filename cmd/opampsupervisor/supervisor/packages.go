@@ -33,7 +33,7 @@ var (
 	// https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#packages
 	agentPackageKey = ""
 
-	lastPackageStatusFileName = "last-reported-package-statuses.proto"
+	lastPackageStatusFileName = "last-reported-package-statuses.binpb"
 )
 
 // maxAgentBytes is the max size of an agent package that will be accepted.
@@ -45,14 +45,17 @@ const maxAgentBytes = 1024 * 1024 * 1024
 // Currently, it only allows for a single top-level package containing the agent
 // to be received.
 type packageManager struct {
+	// persistentState is used to track the AllPackagesHash, currently this should evaluate to just the collector package hash
 	persistentState *persistentState
-	topLevelHash    []byte
+	// topLevelHash is the collector package hash from the Hash object in the PackageAvailable OpAmp message handled by the OpAmp.Client
+	topLevelHash []byte
+	// topLevelVersion is the collector package version from the Version object in the PackageAvailable OpAmp message handled by the OpAmp.Client
 	topLevelVersion string
 
-	storageDir string
-	agentPath  string
-	checkOpts  *cosign.CheckOpts
-	am         agentManager
+	storageDir   string
+	agentExePath string
+	checkOpts    *cosign.CheckOpts
+	am           agentManager
 }
 
 type agentManager interface {
@@ -89,7 +92,7 @@ func newPackageManager(
 		topLevelHash:    agentHash,
 		topLevelVersion: agentVersion,
 		storageDir:      storageDir,
-		agentPath:       agentPath,
+		agentExePath:    agentPath,
 		checkOpts:       checkOpts,
 		am:              am,
 	}, nil
@@ -171,7 +174,7 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 		return fmt.Errorf("read package bytes: %w", err)
 	}
 
-	err = verifyPackageIntegrity(by, contentHash)
+	err = verifyPackageHash(by, contentHash)
 	if err != nil {
 		return fmt.Errorf("could not verify package integrity: %w", err)
 	}
@@ -196,23 +199,10 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 	defer close(startAgent)
 
 	// Create a backup in case we fail to write the agent
+	// verify collector backup path is clear
 	agentBackupPath := filepath.Join(p.storageDir, "collector.bak")
-	backupFile, err := os.OpenFile(agentBackupPath, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0600)
-	if err != nil {
-		return fmt.Errorf("open backup file: %w", err)
-	}
-	defer backupFile.Close()
-
-	agentFile, err := os.OpenFile(p.agentPath, os.O_RDWR, 0700)
-	if err != nil {
-		return fmt.Errorf("open file: %w", err)
-	}
-	defer agentFile.Close()
-
-	// Copy to backup
-	_, err = io.Copy(backupFile, agentFile)
-	if err != nil {
-		return fmt.Errorf("write backup file: %w", err)
+	if err := renameFile(p.agentExePath, agentBackupPath); err != nil {
+		return fmt.Errorf("rename collector exe path to backup path: %w", err)
 	}
 
 	// Create reader for new agent
@@ -235,6 +225,13 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 		}
 	}
 
+	// open collector destination file
+	agentFile, err := os.OpenFile(p.agentExePath, os.O_RDWR, 0700)
+	if err != nil {
+		return fmt.Errorf("open file: %w", err)
+	}
+	defer agentFile.Close()
+
 	// Seek to beginning of and truncate the current agent file
 	_, err = agentFile.Seek(0, io.SeekStart)
 	if err != nil {
@@ -252,10 +249,10 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 	switch {
 	case errors.Is(err, io.EOF): // OK
 	case err != nil:
-		restoreErr := restoreBackup(agentBackupPath, p.agentPath)
+		restoreErr := renameFile(agentBackupPath, p.agentExePath)
 		return errors.Join(fmt.Errorf("write package to file: %w", err), restoreErr)
 	default:
-		restoreErr := restoreBackup(agentBackupPath, p.agentPath)
+		restoreErr := renameFile(agentBackupPath, p.agentExePath)
 		return errors.Join(fmt.Errorf("agent package met or exceeded %d bytes", maxAgentBytes), restoreErr)
 	}
 
@@ -309,7 +306,7 @@ func (p *packageManager) lastPackageStatusPath() string {
 	return filepath.Join(p.storageDir, lastPackageStatusFileName)
 }
 
-func verifyPackageIntegrity(packageBytes, expectedHash []byte) error {
+func verifyPackageHash(packageBytes, expectedHash []byte) error {
 	actualHash := sha256.Sum256(packageBytes)
 	if !bytes.Equal(actualHash[:], expectedHash) {
 		return errors.New("invalid hash for package")
@@ -396,22 +393,20 @@ func createCosignCheckOpts(signatureOpts config.AgentSignature) (*cosign.CheckOp
 	}, nil
 }
 
-func restoreBackup(backupPath, restorePath string) error {
-	backupFile, err := os.Open(backupPath)
-	if err != nil {
-		return fmt.Errorf("open backup file: %w", err)
+// renameFile will rename the file at srcPath to dstPath
+// verifies the dstPath is cleared up, calling os.Remove, so a clean rename can occur
+func renameFile(srcPath, dstPath string) error {
+	// verify dstPath is cleared up
+	if _, err := os.Stat(dstPath); err == nil {
+		// delete existing file at dstPath
+		if err := os.Remove(dstPath); err != nil {
+			return fmt.Errorf("remove existing file at destination path: %w", err)
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("check destination path: %w", err)
 	}
-	defer backupFile.Close()
-
-	restoreFile, err := os.OpenFile(restorePath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0600)
-	if err != nil {
-		return fmt.Errorf("open restore file: %w", err)
+	if err := os.Rename(srcPath, dstPath); err != nil {
+		return fmt.Errorf("rename source to destination: %w", err)
 	}
-	defer restoreFile.Close()
-
-	if _, err := io.Copy(restoreFile, backupFile); err != nil {
-		return fmt.Errorf("copy backup file to restore file: %w", err)
-	}
-
 	return nil
 }
