@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.24.1-0.20250130214220-d9b97ffb43cc
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.24.1-0.20250130214220-d9b97ffb43cc
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.24.1-0.20250130214220-d9b97ffb43cc
-	go.opentelemetry.io/collector/semconv v0.118.1-0.20250130000211-c119b2a55eb4
+	go.opentelemetry.io/collector/semconv v0.118.1-0.20250130220845-0276d781be89
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/sys v0.29.0
