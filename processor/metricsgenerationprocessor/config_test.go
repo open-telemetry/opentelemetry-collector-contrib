@@ -76,8 +76,12 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: fmt.Sprintf("%q must be in %q", operationFieldName, operationTypeKeys()),
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "scale_by_matching_metric_names"),
-			errorMessage: fmt.Sprintf("The generated metric name may not match a given metric name."),
+			id:           component.NewIDWithName(metadata.Type, "matching_metric1"),
+			errorMessage: fmt.Sprintf("value of field %q may not match value of field %q", nameFieldName, metric1FieldName),
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "matching_metric2"),
+			errorMessage: fmt.Sprintf("value of field %q may not match value of field %q", nameFieldName, metric2FieldName),
 		},
 	}
 
