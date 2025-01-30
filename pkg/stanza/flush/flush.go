@@ -61,7 +61,7 @@ func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.Spli
 		}
 
 		// Flush timed out
-		if time.Since(s.LastDataChange) > period {
+		if internaltime.Since(s.LastDataChange) > period {
 			s.LastDataChange = internaltime.Now()
 			s.LastDataLength = 0
 			return len(data), data, nil
