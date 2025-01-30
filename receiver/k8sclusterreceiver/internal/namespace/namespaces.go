@@ -39,7 +39,6 @@ var namespacePhaseValues = map[corev1.NamespacePhase]int32{
 func GetMetadata(ns *corev1.Namespace) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	meta := map[string]string{}
 	meta[metadata.GetOTelNameFromKind("namespace")] = ns.Name
-	// meta[metadata.GetOTelUIDFromKind("namespace")] = string(ns.UID)
 	if ns.Status.Phase == "" {
 		meta[k8sNamespacePhase] = "unknown"
 	} else {
