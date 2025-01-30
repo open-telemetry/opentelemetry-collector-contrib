@@ -2080,7 +2080,7 @@ The `ToUpperCase` Converter converts the `target` string into upper case (e.g. `
 
 Examples:
 
-- `ToUpperCase(metric.name)` where `metric.name` contains `MyMetricName`, which will be converted to `MYMETRICNAME`
+- `ToUpperCase(metric.name)`
 
 ### TraceID
 
