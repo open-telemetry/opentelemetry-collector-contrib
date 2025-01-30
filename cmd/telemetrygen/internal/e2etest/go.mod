@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen v0.118.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.118.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250130214220-d9b97ffb43cc
+	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250130224751-50b76b95bf35
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250130220845-0276d781be89
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.118.1-0.20250130220845-0276d781be89
 	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250130220845-0276d781be89
@@ -40,10 +40,10 @@ require (
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector v0.118.1-0.20250130214220-d9b97ffb43cc // indirect
+	go.opentelemetry.io/collector v0.118.1-0.20250130224751-50b76b95bf35 // indirect
 	go.opentelemetry.io/collector/client v1.24.1-0.20250130224751-50b76b95bf35 // indirect
-	go.opentelemetry.io/collector/component v0.118.1-0.20250130214220-d9b97ffb43cc // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.118.1-0.20250130000211-c119b2a55eb4 // indirect
+	go.opentelemetry.io/collector/component v0.118.1-0.20250130224751-50b76b95bf35 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.118.1-0.20250130224751-50b76b95bf35 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.118.1-0.20250130220845-0276d781be89 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.24.1-0.20250130224751-50b76b95bf35 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.118.1-0.20250130220845-0276d781be89 // indirect
@@ -59,7 +59,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.118.1-0.20250130220845-0276d781be89 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.118.1-0.20250130220845-0276d781be89 // indirect
 	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250130224751-50b76b95bf35 // indirect
-	go.opentelemetry.io/collector/internal/sharedcomponent v0.118.1-0.20250130214220-d9b97ffb43cc // indirect
+	go.opentelemetry.io/collector/internal/sharedcomponent v0.118.1-0.20250130224751-50b76b95bf35 // indirect
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250130220845-0276d781be89 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.118.1-0.20250130220845-0276d781be89 // indirect
 	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250130220845-0276d781be89 // indirect
