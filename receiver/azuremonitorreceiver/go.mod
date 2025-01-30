@@ -13,10 +13,10 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.118.1-0.20250130000211-c119b2a55eb4
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250130000211-c119b2a55eb4
-	go.opentelemetry.io/collector/confmap v1.24.1-0.20250130000211-c119b2a55eb4
-	go.opentelemetry.io/collector/consumer v1.24.1-0.20250130000211-c119b2a55eb4
+	go.opentelemetry.io/collector/confmap v1.24.1-0.20250130214220-d9b97ffb43cc
+	go.opentelemetry.io/collector/consumer v1.24.1-0.20250130214220-d9b97ffb43cc
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250130000211-c119b2a55eb4
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250130000211-c119b2a55eb4
+	go.opentelemetry.io/collector/pdata v1.24.1-0.20250130220845-0276d781be89
 	go.opentelemetry.io/collector/receiver v0.118.1-0.20250130000211-c119b2a55eb4
 	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250130000211-c119b2a55eb4
 	go.opentelemetry.io/collector/scraper v0.118.1-0.20250130000211-c119b2a55eb4
