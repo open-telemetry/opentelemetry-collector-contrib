@@ -231,7 +231,7 @@ func (a Agent) Validate() error {
 type AgentSignature struct {
 	// TODO: The Fulcio root certificate can be specified via SIGSTORE_ROOT_FILE for now
 	// But we should add it as a config option.
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3593
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35931
 
 	// github_workflow_repository defines the expected repository field
 	// on the sigstore certificate.
