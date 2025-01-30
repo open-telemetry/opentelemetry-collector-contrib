@@ -117,7 +117,8 @@ type Pod struct {
 	// Containers specifies all containers in this pod.
 	Containers PodContainers
 
-	DeletedAt time.Time
+	DeletedAt    time.Time
+	ServiceNames map[string]string
 }
 
 // PodContainers specifies a list of pod containers. It is not safe for concurrent use.
@@ -130,9 +131,12 @@ type PodContainers struct {
 
 // Container stores resource attributes for a specific container defined by k8s pod spec.
 type Container struct {
-	Name      string
-	ImageName string
-	ImageTag  string
+	Name              string
+	ImageName         string
+	ImageTag          string
+	ServiceInstanceID string
+	ServiceVersion    string
+	ServiceName       string
 
 	// Statuses is a map of container k8s.container.restart_count attribute to ContainerStatus struct.
 	Statuses map[int]ContainerStatus
@@ -223,6 +227,8 @@ type ExtractionRules struct {
 
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule
+
+	OperatorRules OperatorRules
 }
 
 // IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners
@@ -245,7 +251,7 @@ func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
 			return true
 		}
 	}
-	return false
+	return rules.OperatorRules.Enabled
 }
 
 // FieldExtractionRule is used to specify which fields to extract from pod fields
