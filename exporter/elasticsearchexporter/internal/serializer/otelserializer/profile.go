@@ -20,7 +20,7 @@ const (
 )
 
 // SerializeProfile serializes a profile into the specified buffer
-func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, callback func(*bytes.Buffer, string, string) error) error {
+func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
 	data, err := serializeprofiles.Transform(resource, scope, profile)
 	if err != nil {
 		return err
@@ -34,7 +34,7 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 			if err != nil {
 				return err
 			}
-			err = callback(c, "", "")
+			err = pushData(c, "", "")
 			if err != nil {
 				return err
 			}
@@ -45,7 +45,7 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 			if err != nil {
 				return err
 			}
-			err = callback(c, payload.StackTrace.DocID, stackTraceIndex)
+			err = pushData(c, payload.StackTrace.DocID, stackTraceIndex)
 			if err != nil {
 				return err
 			}
@@ -56,7 +56,7 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 			if err != nil {
 				return err
 			}
-			err = callback(c, stackFrame.DocID, stackFrameIndex)
+			err = pushData(c, stackFrame.DocID, stackFrameIndex)
 			if err != nil {
 				return err
 			}
@@ -67,7 +67,7 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 			if err != nil {
 				return err
 			}
-			err = callback(c, executable.DocID, executablesIndex)
+			err = pushData(c, executable.DocID, executablesIndex)
 			if err != nil {
 				return err
 			}

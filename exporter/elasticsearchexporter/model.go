@@ -295,10 +295,10 @@ func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaU
 	serializeSpanEvent(resource, resourceSchemaURL, scope, scopeSchemaURL, span, spanEvent, idx, buf)
 }
 
-func (m *encodeModel) encodeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, record pprofile.Profile, callback func(*bytes.Buffer, string, string) error) error {
+func (m *encodeModel) encodeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, record pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
 	switch m.mode {
 	case MappingOTel:
-		return otelserializer.SerializeProfile(resource, scope, record, callback)
+		return otelserializer.SerializeProfile(resource, scope, record, pushData)
 	default:
 		return errors.New("profiles can only be encoded in OTel mode")
 	}
