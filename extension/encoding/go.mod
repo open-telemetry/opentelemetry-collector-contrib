@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	go.opentelemetry.io/collector/extension v0.118.1-0.20250123125445-24f88da7b583
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/pdata v1.24.1-0.20250130000211-c119b2a55eb4
 	go.opentelemetry.io/collector/pdata/pprofile v0.118.1-0.20250123125445-24f88da7b583
 )
 

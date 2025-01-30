@@ -10,10 +10,10 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250123125445-24f88da7b583
-	go.opentelemetry.io/collector/confmap v1.24.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/confmap v1.24.1-0.20250130000211-c119b2a55eb4
 	go.opentelemetry.io/collector/extension v0.118.1-0.20250123125445-24f88da7b583
 	go.opentelemetry.io/collector/extension/extensiontest v0.118.1-0.20250123125445-24f88da7b583
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250123125445-24f88da7b583
+	go.opentelemetry.io/collector/pdata v1.24.1-0.20250130000211-c119b2a55eb4
 	go.uber.org/goleak v1.3.0
 )
 
