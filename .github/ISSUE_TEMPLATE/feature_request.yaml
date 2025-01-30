@@ -42,6 +42,7 @@ body:
       - exporter/awsxray
       - exporter/azuredataexplorer
       - exporter/azuremonitor
+      - exporter/bmchelix
       - exporter/carbon
       - exporter/cassandra
       - exporter/clickhouse
@@ -74,6 +75,7 @@ body:
       - exporter/sentry
       - exporter/signalfx
       - exporter/splunkhec
+      - exporter/stef
       - exporter/sumologic
       - exporter/syslog
       - exporter/tencentcloudlogservice
@@ -89,6 +91,7 @@ body:
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
       - extension/encoding/otlpencoding
+      - extension/encoding/skywalkingencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
       - extension/googleclientauth
@@ -125,7 +128,6 @@ body:
       - internal/filter
       - internal/grpcutil
       - internal/k8sconfig
-      - internal/k8stest
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
@@ -138,6 +140,7 @@ body:
       - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal
+      - pkg/core/xidutils
       - pkg/datadog
       - pkg/experimentalmetricmetadata
       - pkg/golden
@@ -161,6 +164,7 @@ body:
       - pkg/translator/skywalking
       - pkg/translator/zipkin
       - pkg/winperfcounters
+      - pkg/xk8stest
       - processor/attributes
       - processor/coralogix
       - processor/cumulativetodelta
@@ -175,6 +179,7 @@ body:
       - processor/logdedup
       - processor/logstransform
       - processor/metricsgeneration
+      - processor/metricstarttime
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
@@ -211,17 +216,29 @@ body:
       - receiver/datadog
       - receiver/dockerstats
       - receiver/elasticsearch
+      - receiver/envoyals
       - receiver/expvar
       - receiver/filelog
       - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
       - receiver/github
+      - receiver/gitlab
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
       - receiver/haproxy
       - receiver/hostmetrics
+      - receiver/hostmetrics/internal/scraper/cpuscraper
+      - receiver/hostmetrics/internal/scraper/diskscraper
+      - receiver/hostmetrics/internal/scraper/filesystemscraper
+      - receiver/hostmetrics/internal/scraper/loadscraper
+      - receiver/hostmetrics/internal/scraper/memoryscraper
+      - receiver/hostmetrics/internal/scraper/networkscraper
+      - receiver/hostmetrics/internal/scraper/pagingscraper
+      - receiver/hostmetrics/internal/scraper/processesscraper
+      - receiver/hostmetrics/internal/scraper/processscraper
+      - receiver/hostmetrics/internal/scraper/systemscraper
       - receiver/httpcheck
       - receiver/huaweicloudces
       - receiver/iis
@@ -235,6 +252,7 @@ body:
       - receiver/kafka
       - receiver/kafkametrics
       - receiver/kubeletstats
+      - receiver/libhoney
       - receiver/loki
       - receiver/memcached
       - receiver/mongodb

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver/internal/metadata"
 )
@@ -74,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expectedErrMsg != "" {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.expectedErrMsg)
+				assert.ErrorContains(t, component.ValidateConfig(cfg), tt.expectedErrMsg)
 				return
 			}
 

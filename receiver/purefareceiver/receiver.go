@@ -53,35 +53,35 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 		"fa_array_name": ArrayName,
 	}
 
-	arrScraper := internal.NewScraper(ctx, internal.ScraperTypeArray, r.cfg.Endpoint, r.cfg.Array, r.cfg.Settings.ReloadIntervals.Array, commomLabel)
+	arrScraper := internal.NewScraper(ctx, internal.ScraperTypeArray, r.cfg.Endpoint, r.cfg.Namespace, r.cfg.TLSSetting, r.cfg.Array, r.cfg.Settings.ReloadIntervals.Array, commomLabel)
 	if scCfgs, err := arrScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
 	}
 
-	hostScraper := internal.NewScraper(ctx, internal.ScraperTypeHosts, r.cfg.Endpoint, r.cfg.Hosts, r.cfg.Settings.ReloadIntervals.Hosts, labelSet)
+	hostScraper := internal.NewScraper(ctx, internal.ScraperTypeHosts, r.cfg.Endpoint, r.cfg.Namespace, r.cfg.TLSSetting, r.cfg.Hosts, r.cfg.Settings.ReloadIntervals.Hosts, labelSet)
 	if scCfgs, err := hostScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
 	}
 
-	directoriesScraper := internal.NewScraper(ctx, internal.ScraperTypeDirectories, r.cfg.Endpoint, r.cfg.Directories, r.cfg.Settings.ReloadIntervals.Directories, commomLabel)
+	directoriesScraper := internal.NewScraper(ctx, internal.ScraperTypeDirectories, r.cfg.Endpoint, r.cfg.Namespace, r.cfg.TLSSetting, r.cfg.Directories, r.cfg.Settings.ReloadIntervals.Directories, commomLabel)
 	if scCfgs, err := directoriesScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
 	}
 
-	podsScraper := internal.NewScraper(ctx, internal.ScraperTypePods, r.cfg.Endpoint, r.cfg.Pods, r.cfg.Settings.ReloadIntervals.Pods, commomLabel)
+	podsScraper := internal.NewScraper(ctx, internal.ScraperTypePods, r.cfg.Endpoint, r.cfg.Namespace, r.cfg.TLSSetting, r.cfg.Pods, r.cfg.Settings.ReloadIntervals.Pods, commomLabel)
 	if scCfgs, err := podsScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
 	}
 
-	volumesScraper := internal.NewScraper(ctx, internal.ScraperTypeVolumes, r.cfg.Endpoint, r.cfg.Volumes, r.cfg.Settings.ReloadIntervals.Volumes, labelSet)
+	volumesScraper := internal.NewScraper(ctx, internal.ScraperTypeVolumes, r.cfg.Endpoint, r.cfg.Namespace, r.cfg.TLSSetting, r.cfg.Volumes, r.cfg.Settings.ReloadIntervals.Volumes, labelSet)
 	if scCfgs, err := volumesScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {

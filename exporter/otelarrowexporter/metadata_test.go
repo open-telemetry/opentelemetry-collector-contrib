@@ -44,6 +44,7 @@ func TestSendTracesWithMetadata(t *testing.T) {
 		},
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
+	cfg.QueueSettings.Enabled = false
 
 	cfg.MetadataCardinalityLimit = 10
 	cfg.MetadataKeys = []string{"key1", "key2"}

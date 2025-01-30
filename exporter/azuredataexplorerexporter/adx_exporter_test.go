@@ -228,8 +228,7 @@ func TestCreateKcsb(t *testing.T) {
 			isAzureAuth: true,
 		},
 	}
-	for i := range tests {
-		tt := tests[i]
+	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wantAppID := tt.applicationID
 			gotKcsb := createKcsb(&tt.config, "1.0.0")

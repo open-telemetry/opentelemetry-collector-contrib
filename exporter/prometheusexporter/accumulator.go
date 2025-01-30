@@ -29,9 +29,9 @@ type accumulatedValue struct {
 	scope pcommon.InstrumentationScope
 }
 
-// accumulator stores aggragated values of incoming metrics
+// accumulator stores aggregated values of incoming metrics
 type accumulator interface {
-	// Accumulate stores aggragated metric values
+	// Accumulate stores aggregated metric values
 	Accumulate(resourceMetrics pmetric.ResourceMetrics) (processed int)
 	// Collect returns a slice with relevant aggregated metrics and their resource attributes.
 	// The number or metrics and attributes returned will be the same.

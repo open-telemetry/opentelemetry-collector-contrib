@@ -45,20 +45,20 @@ func newTestFileOperator(t *testing.T, cfgMod func(*Config)) (*Input, chan *entr
 	return op.(*Input), fakeOutput.Received, tempDir
 }
 
-func openTemp(t testing.TB, tempDir string) *os.File {
-	return openTempWithPattern(t, tempDir, "")
+func openTemp(tb testing.TB, tempDir string) *os.File {
+	return openTempWithPattern(tb, tempDir, "")
 }
 
-func openTempWithPattern(t testing.TB, tempDir, pattern string) *os.File {
+func openTempWithPattern(tb testing.TB, tempDir, pattern string) *os.File {
 	file, err := os.CreateTemp(tempDir, pattern)
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = file.Close() })
+	require.NoError(tb, err)
+	tb.Cleanup(func() { _ = file.Close() })
 	return file
 }
 
-func writeString(t testing.TB, file *os.File, s string) {
+func writeString(tb testing.TB, file *os.File, s string) {
 	_, err := file.WriteString(s)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 }
 
 func waitForOne(t *testing.T, c chan *entry.Entry) *entry.Entry {

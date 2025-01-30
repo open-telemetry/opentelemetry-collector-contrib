@@ -54,7 +54,7 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 
 	rtConn := conn.(*tracesConnector)
 	require.NoError(t, err)
@@ -161,31 +161,6 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		assert.Empty(t, sink1.AllTraces())
 	})
 
-	t.Run("span matched by all expressions", func(t *testing.T) {
-		resetSinks()
-
-		tr := ptrace.NewTraces()
-		rl := tr.ResourceSpans().AppendEmpty()
-		rl.Resource().Attributes().PutInt("value", 2)
-		span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-		span.SetName("span")
-
-		rl = tr.ResourceSpans().AppendEmpty()
-		rl.Resource().Attributes().PutInt("value", 3)
-		span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-		span.SetName("span1")
-
-		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
-
-		assert.Empty(t, defaultSink.AllTraces())
-		assert.Len(t, sink0.AllTraces(), 1)
-		assert.Len(t, sink1.AllTraces(), 1)
-
-		assert.Equal(t, 2, sink0.AllTraces()[0].SpanCount())
-		assert.Equal(t, 2, sink1.AllTraces()[0].SpanCount())
-		assert.Equal(t, sink0.AllTraces(), sink1.AllTraces())
-	})
-
 	t.Run("span matched by one expression, multiple pipelines", func(t *testing.T) {
 		resetSinks()
 
@@ -214,7 +189,6 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 	cfg := &Config{
 		DefaultPipelines: []pipeline.ID{tracesDefault},
-		MatchOnce:        true,
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where attributes["value"] > 0 and attributes["value"] < 4`,
@@ -419,7 +393,7 @@ func TestTraceConnectorCapabilities(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 }
 
 func TestTracesConnectorDetailed(t *testing.T) {
@@ -445,13 +419,13 @@ func TestTracesConnectorDetailed(t *testing.T) {
 	isResourceBFromLowerContext := `resource.attributes["resourceName"] == "resourceB"`
 
 	testCases := []struct {
-		name        string
-		cfg         *Config
 		ctx         context.Context
 		input       ptrace.Traces
 		expectSink0 ptrace.Traces
 		expectSink1 ptrace.Traces
 		expectSinkD ptrace.Traces
+		cfg         *Config
+		name        string
 	}{
 		{
 			name: "request/no_request_values",

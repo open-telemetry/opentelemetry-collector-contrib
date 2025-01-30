@@ -240,6 +240,9 @@ func TestItemCardinalityFilter_FilterItems(t *testing.T) {
 }
 
 func TestItemCardinalityFilter_IncludeItem(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32397")
+	}
 	timestamp := time.Now().UTC()
 	item1 := &Item{SeriesKey: key1, Timestamp: timestamp}
 	item2 := &Item{SeriesKey: key2, Timestamp: timestamp}

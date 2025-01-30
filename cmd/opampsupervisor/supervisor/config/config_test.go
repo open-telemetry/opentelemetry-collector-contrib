@@ -4,6 +4,8 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,6 +15,7 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.uber.org/zap/zapcore"
 )
 
 func TestValidate(t *testing.T) {
@@ -495,4 +498,241 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 			require.Equal(t, tc.expectedAgentCapabilities, tc.capabilities.SupportedCapabilities())
 		})
 	}
+}
+
+func TestLoad(t *testing.T) {
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "*")
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		require.NoError(t, os.Chmod(tmpDir, 0o700))
+		require.NoError(t, os.RemoveAll(tmpDir))
+	})
+
+	executablePath := filepath.Join(tmpDir, "binary")
+	err = os.WriteFile(executablePath, []byte{}, 0o600)
+	require.NoError(t, err)
+
+	testCases := []struct {
+		desc     string
+		testFunc func(t *testing.T)
+	}{
+		{
+			desc: "Minimal Config Supervisor",
+			testFunc: func(t *testing.T) {
+				config := `
+server:
+  endpoint: ws://localhost/v1/opamp
+
+agent:
+  executable: %s
+`
+				config = fmt.Sprintf(config, executablePath)
+
+				expected := Supervisor{
+					Server: OpAMPServer{
+						Endpoint: "ws://localhost/v1/opamp",
+					},
+					Capabilities: DefaultSupervisor().Capabilities,
+					Storage:      DefaultSupervisor().Storage,
+					Agent: Agent{
+						Executable:              executablePath,
+						OrphanDetectionInterval: DefaultSupervisor().Agent.OrphanDetectionInterval,
+						ConfigApplyTimeout:      DefaultSupervisor().Agent.ConfigApplyTimeout,
+						BootstrapTimeout:        DefaultSupervisor().Agent.BootstrapTimeout,
+					},
+					Telemetry: DefaultSupervisor().Telemetry,
+				}
+
+				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
+				runSupervisorConfigLoadTest(t, cfgPath, expected, nil)
+			},
+		},
+		{
+			desc: "Full Config Supervisor",
+			testFunc: func(t *testing.T) {
+				config := `
+server:
+  endpoint: ws://localhost/v1/opamp
+  tls:
+    insecure: true
+
+capabilities:
+  reports_effective_config: false
+  reports_own_metrics: false
+  reports_health: false
+  accepts_remote_config: true
+  reports_remote_config: true
+  accepts_restart_command: true
+  accepts_opamp_connection_settings: true
+
+storage:
+  directory: %s
+
+agent:
+  executable: %s
+  description:
+    identifying_attributes:
+      "service.name": "io.opentelemetry.collector"
+    non_identifying_attributes:
+      "os.type": darwin
+  orphan_detection_interval: 10s
+  config_apply_timeout: 8s
+  bootstrap_timeout: 8s
+  health_check_port: 8089
+  opamp_server_port: 8090
+  passthrough_logs: true
+
+telemetry:
+  logs:
+    level: warn
+    output_paths: ["stdout"]
+`
+				config = fmt.Sprintf(config, filepath.Join(tmpDir, "storage"), executablePath)
+
+				expected := Supervisor{
+					Server: OpAMPServer{
+						Endpoint: "ws://localhost/v1/opamp",
+						TLSSetting: configtls.ClientConfig{
+							Insecure: true,
+						},
+					},
+					Capabilities: Capabilities{
+						ReportsEffectiveConfig:         false,
+						ReportsOwnMetrics:              false,
+						ReportsHealth:                  false,
+						AcceptsRemoteConfig:            true,
+						ReportsRemoteConfig:            true,
+						AcceptsRestartCommand:          true,
+						AcceptsOpAMPConnectionSettings: true,
+					},
+					Storage: Storage{
+						Directory: filepath.Join(tmpDir, "storage"),
+					},
+					Agent: Agent{
+						Executable: executablePath,
+						Description: AgentDescription{
+							IdentifyingAttributes: map[string]string{
+								"service.name": "io.opentelemetry.collector",
+							},
+							NonIdentifyingAttributes: map[string]string{
+								"os.type": "darwin",
+							},
+						},
+						OrphanDetectionInterval: 10 * time.Second,
+						ConfigApplyTimeout:      8 * time.Second,
+						BootstrapTimeout:        8 * time.Second,
+						HealthCheckPort:         8089,
+						OpAMPServerPort:         8090,
+						PassthroughLogs:         true,
+					},
+					Telemetry: Telemetry{
+						Logs: Logs{
+							Level:       zapcore.WarnLevel,
+							OutputPaths: []string{"stdout"},
+						},
+					},
+				}
+
+				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
+				runSupervisorConfigLoadTest(t, cfgPath, expected, nil)
+			},
+		},
+		{
+			desc: "Environment Variable Config Supervisor",
+			testFunc: func(t *testing.T) {
+				config := `
+server:
+  endpoint: ${TEST_ENDPOINT}
+
+agent:
+  executable: ${TEST_EXECUTABLE_PATH}
+`
+				expected := Supervisor{
+					Server: OpAMPServer{
+						Endpoint: "ws://localhost/v1/opamp",
+					},
+					Capabilities: DefaultSupervisor().Capabilities,
+					Storage:      DefaultSupervisor().Storage,
+					Agent: Agent{
+						Executable:              executablePath,
+						OrphanDetectionInterval: DefaultSupervisor().Agent.OrphanDetectionInterval,
+						ConfigApplyTimeout:      DefaultSupervisor().Agent.ConfigApplyTimeout,
+						BootstrapTimeout:        DefaultSupervisor().Agent.BootstrapTimeout,
+					},
+					Telemetry: DefaultSupervisor().Telemetry,
+				}
+
+				t.Setenv("TEST_ENDPOINT", "ws://localhost/v1/opamp")
+				t.Setenv("TEST_EXECUTABLE_PATH", executablePath)
+
+				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
+				runSupervisorConfigLoadTest(t, cfgPath, expected, nil)
+			},
+		},
+		{
+			desc: "Empty Config Filepath",
+			testFunc: func(t *testing.T) {
+				runSupervisorConfigLoadTest(t, "", Supervisor{}, errors.New("path to config file cannot be empty"))
+			},
+		},
+		{
+			desc: "Nonexistent Config File",
+			testFunc: func(t *testing.T) {
+				config := `
+server:
+  endpoint: ws://localhost/v1/opamp
+
+agent:
+  executable: %s
+`
+				config = fmt.Sprintf(config, executablePath)
+
+				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
+				require.NoError(t, os.Remove(cfgPath))
+				runSupervisorConfigLoadTest(t, cfgPath, Supervisor{}, errors.New("cannot retrieve the configuration: unable to read the file"))
+			},
+		},
+		{
+			desc: "Failed Validation Supervisor",
+			testFunc: func(t *testing.T) {
+				config := `
+server:
+
+agent:
+  executable: %s
+`
+				config = fmt.Sprintf(config, executablePath)
+				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
+				runSupervisorConfigLoadTest(t, cfgPath, Supervisor{}, errors.New("cannot validate supervisor config"))
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, tc.testFunc)
+	}
+}
+
+func setupSupervisorConfigFile(t *testing.T, tmpDir, configString string) string {
+	t.Helper()
+
+	testDir, err := os.MkdirTemp(tmpDir, "*")
+	require.NoError(t, err)
+	cfgPath := filepath.Join(testDir, "config.yaml")
+	err = os.WriteFile(cfgPath, []byte(configString), 0o600)
+	require.NoError(t, err)
+	return cfgPath
+}
+
+func runSupervisorConfigLoadTest(t *testing.T, cfgPath string, expected Supervisor, expectedErr error) {
+	t.Helper()
+
+	cfg, err := Load(cfgPath)
+	if expectedErr != nil {
+		require.ErrorContains(t, err, expectedErr.Error())
+		return
+	}
+	require.NoError(t, err)
+	require.Equal(t, expected, cfg)
 }

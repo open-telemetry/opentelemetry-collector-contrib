@@ -165,21 +165,21 @@ func TestNotifyOfLatestEndpointsMultipleNotify(t *testing.T) {
 	require.Nil(t, existingEndpoints(t, watcher, notifyTwo.ID()))
 }
 
-func existingEndpoints(t testing.TB, watcher *EndpointsWatcher, id NotifyID) map[EndpointID]Endpoint {
+func existingEndpoints(tb testing.TB, watcher *EndpointsWatcher, id NotifyID) map[EndpointID]Endpoint {
 	if existing, ok := watcher.existingEndpoints.Load(id); ok {
 		endpoints, ok := existing.(map[EndpointID]Endpoint)
-		assert.True(t, ok)
+		assert.True(tb, ok)
 		return endpoints
 	}
 	return nil
 }
 
-func setup(t testing.TB) (*mockEndpointsLister, *EndpointsWatcher, *mockNotifier) {
+func setup(tb testing.TB) (*mockEndpointsLister, *EndpointsWatcher, *mockNotifier) {
 	ml := &mockEndpointsLister{
 		endpointsMap: map[EndpointID]Endpoint{},
 	}
 
-	ew := NewEndpointsWatcher(ml, 2*time.Second, zaptest.NewLogger(t))
+	ew := NewEndpointsWatcher(ml, 2*time.Second, zaptest.NewLogger(tb))
 	mn := &mockNotifier{id: "mockNotifier"}
 
 	return ml, ew, mn

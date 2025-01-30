@@ -437,7 +437,7 @@ func getPage(p pageInput) (*pageOutput, error) {
 			return nil, fmt.Errorf("invalid next token %q: %w", token, err)
 		}
 	}
-	end := minInt(p.size, start+p.limit)
+	end := min(p.size, start+p.limit)
 	var newNextToken *string
 	if end < p.size {
 		newNextToken = aws.String(strconv.Itoa(end))
@@ -461,13 +461,4 @@ func getArns(items any, arnGetter func(i int) *string) []*string {
 		arns = append(arns, arnGetter(i))
 	}
 	return arns
-}
-
-// 'generic' End
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

@@ -32,6 +32,10 @@ func createLogsProcessor(_ context.Context, settings processor.Settings, cfg com
 		return nil, fmt.Errorf("invalid config type: %+v", cfg)
 	}
 
+	if err := processorCfg.Validate(); err != nil {
+		return nil, err
+	}
+
 	processor, err := newProcessor(processorCfg, consumer, settings)
 	if err != nil {
 		return nil, fmt.Errorf("error creating processor: %w", err)

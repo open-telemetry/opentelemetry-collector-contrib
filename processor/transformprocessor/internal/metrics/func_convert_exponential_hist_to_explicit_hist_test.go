@@ -191,7 +191,7 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			// 0 scale exponential histogram will result in an extremely large upper bound
 			// resulting in all the counts being in buckets much larger than the explicit bounds
 			// thus all counts will be in the overflow bucket
-			name: "0 scale expontential histogram given using upper distribute",
+			name: "0 scale exponential histogram given using upper distribute",
 			input: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				defaultTestMetric().CopyTo(m)
@@ -221,7 +221,7 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			},
 		},
 		{
-			name: "empty expontential histogram given using upper distribute",
+			name: "empty exponential histogram given using upper distribute",
 			input: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				m.SetName("empty")
@@ -236,7 +236,7 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			},
 		},
 		{
-			name:         "non-expontential histogram",
+			name:         "non-exponential histogram",
 			arg:          []float64{0},
 			distribution: "upper",
 			input:        nonExponentialHist,
@@ -403,7 +403,7 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			},
 		},
 		{
-			name: "empty expontential histogram given",
+			name: "empty exponential histogram given",
 			input: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				m.SetName("empty")
@@ -418,7 +418,7 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			},
 		},
 		{
-			name:         "non-expontential histogram given using upper distribute",
+			name:         "non-exponential histogram given using upper distribute",
 			arg:          []float64{0},
 			distribution: "midpoint",
 			input:        nonExponentialHist,
@@ -448,7 +448,7 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 	}
 }
 
-func TestUniforn_convert_exponential_hist_to_explicit_hist(t *testing.T) {
+func TestUniform_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	defaultTestMetric := func() pmetric.Metric {
 		m := pmetric.NewMetric()
@@ -751,8 +751,7 @@ func Test_convertExponentialHistToExplicitHist_validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := convertExponentialHistToExplicitHist("random", tt.sliceExplicitBoundsArgs)
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), "explicit bounds cannot be empty")
+			assert.ErrorContains(t, err, "explicit bounds cannot be empty")
 		})
 	}
 }

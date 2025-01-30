@@ -13,14 +13,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
-)
-
-const (
-	picosecondsInNanoseconds int64 = 1000
 )
 
 type mySQLScraper struct {
@@ -143,9 +139,13 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
 				metadata.AttributeBufferPoolPagesFree))
 		case "Innodb_buffer_pool_pages_misc":
+			_, err := strconv.ParseInt(v, 10, 64)
+			if err != nil {
+				m.logger.Warn("Innodb_buffer_pool_pages_misc reports an out-of-bounds value and will be ignored. See https://bugs.mysql.com/bug.php?id=59550.")
+				continue
+			}
 			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
 				metadata.AttributeBufferPoolPagesMisc))
-
 		// buffer_pool.page_flushes
 		case "Innodb_buffer_pool_pages_flushed":
 			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPageFlushesDataPoint(now, v))
@@ -229,12 +229,16 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		// commands
 		case "Com_delete":
 			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandDelete))
+		case "Com_delete_multi":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandDeleteMulti))
 		case "Com_insert":
 			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandInsert))
 		case "Com_select":
 			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandSelect))
 		case "Com_update":
 			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandUpdate))
+		case "Com_update_multi":
+			addPartialIfError(errs, m.mb.RecordMysqlCommandsDataPoint(now, v, metadata.AttributeCommandUpdateMulti))
 
 		// created tmps
 		case "Created_tmp_disk_tables":
@@ -451,16 +455,16 @@ func (m *mySQLScraper) scrapeTableIoWaitsStats(now pcommon.Timestamp, errs *scra
 
 		// times
 		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
-			now, s.timeDelete/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema,
+			now, s.timeDelete, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema,
 		)
 		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
-			now, s.timeFetch/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema,
+			now, s.timeFetch, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema,
 		)
 		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
-			now, s.timeInsert/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema,
+			now, s.timeInsert, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema,
 		)
 		m.mb.RecordMysqlTableIoWaitTimeDataPoint(
-			now, s.timeUpdate/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema,
+			now, s.timeUpdate, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema,
 		)
 	}
 }
@@ -483,16 +487,16 @@ func (m *mySQLScraper) scrapeIndexIoWaitsStats(now pcommon.Timestamp, errs *scra
 
 		// times
 		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
-			now, s.timeDelete/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema, s.index,
+			now, s.timeDelete, metadata.AttributeIoWaitsOperationsDelete, s.name, s.schema, s.index,
 		)
 		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
-			now, s.timeFetch/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema, s.index,
+			now, s.timeFetch, metadata.AttributeIoWaitsOperationsFetch, s.name, s.schema, s.index,
 		)
 		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
-			now, s.timeInsert/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema, s.index,
+			now, s.timeInsert, metadata.AttributeIoWaitsOperationsInsert, s.name, s.schema, s.index,
 		)
 		m.mb.RecordMysqlIndexIoWaitTimeDataPoint(
-			now, s.timeUpdate/picosecondsInNanoseconds, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema, s.index,
+			now, s.timeUpdate, metadata.AttributeIoWaitsOperationsUpdate, s.name, s.schema, s.index,
 		)
 	}
 }
@@ -518,7 +522,7 @@ func (m *mySQLScraper) scrapeStatementEventsStats(now pcommon.Timestamp, errs *s
 		m.mb.RecordMysqlStatementEventCountDataPoint(now, s.countSortRows, s.schema, s.digest, s.digestText, metadata.AttributeEventStateSortRows)
 		m.mb.RecordMysqlStatementEventCountDataPoint(now, s.countWarnings, s.schema, s.digest, s.digestText, metadata.AttributeEventStateWarnings)
 
-		m.mb.RecordMysqlStatementEventWaitTimeDataPoint(now, s.sumTimerWait/picosecondsInNanoseconds, s.schema, s.digest, s.digestText)
+		m.mb.RecordMysqlStatementEventWaitTimeDataPoint(now, s.sumTimerWait, s.schema, s.digest, s.digestText)
 	}
 }
 
@@ -540,11 +544,11 @@ func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs
 		m.mb.RecordMysqlTableLockWaitReadCountDataPoint(now, s.countReadExternal, s.schema, s.name, metadata.AttributeReadLockTypeExternal)
 
 		// read time data points
-		m.mb.RecordMysqlTableLockWaitReadTimeDataPoint(now, s.sumTimerReadNormal/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeReadLockTypeNormal)
-		m.mb.RecordMysqlTableLockWaitReadTimeDataPoint(now, s.sumTimerReadWithSharedLocks/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeReadLockTypeWithSharedLocks)
-		m.mb.RecordMysqlTableLockWaitReadTimeDataPoint(now, s.sumTimerReadHighPriority/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeReadLockTypeHighPriority)
-		m.mb.RecordMysqlTableLockWaitReadTimeDataPoint(now, s.sumTimerReadNoInsert/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeReadLockTypeNoInsert)
-		m.mb.RecordMysqlTableLockWaitReadTimeDataPoint(now, s.sumTimerReadExternal/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeReadLockTypeExternal)
+		m.mb.RecordMysqlTableLockWaitReadTimeDataPoint(now, s.sumTimerReadNormal, s.schema, s.name, metadata.AttributeReadLockTypeNormal)
+		m.mb.RecordMysqlTableLockWaitReadTimeDataPoint(now, s.sumTimerReadWithSharedLocks, s.schema, s.name, metadata.AttributeReadLockTypeWithSharedLocks)
+		m.mb.RecordMysqlTableLockWaitReadTimeDataPoint(now, s.sumTimerReadHighPriority, s.schema, s.name, metadata.AttributeReadLockTypeHighPriority)
+		m.mb.RecordMysqlTableLockWaitReadTimeDataPoint(now, s.sumTimerReadNoInsert, s.schema, s.name, metadata.AttributeReadLockTypeNoInsert)
+		m.mb.RecordMysqlTableLockWaitReadTimeDataPoint(now, s.sumTimerReadExternal, s.schema, s.name, metadata.AttributeReadLockTypeExternal)
 
 		// write data points
 		m.mb.RecordMysqlTableLockWaitWriteCountDataPoint(now, s.countWriteAllowWrite, s.schema, s.name, metadata.AttributeWriteLockTypeAllowWrite)
@@ -554,11 +558,11 @@ func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs
 		m.mb.RecordMysqlTableLockWaitWriteCountDataPoint(now, s.countWriteExternal, s.schema, s.name, metadata.AttributeWriteLockTypeExternal)
 
 		// write time data points
-		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteAllowWrite/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeWriteLockTypeAllowWrite)
-		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteConcurrentInsert/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeWriteLockTypeConcurrentInsert)
-		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteLowPriority/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeWriteLockTypeLowPriority)
-		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteNormal/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeWriteLockTypeNormal)
-		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteExternal/picosecondsInNanoseconds, s.schema, s.name, metadata.AttributeWriteLockTypeExternal)
+		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteAllowWrite, s.schema, s.name, metadata.AttributeWriteLockTypeAllowWrite)
+		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteConcurrentInsert, s.schema, s.name, metadata.AttributeWriteLockTypeConcurrentInsert)
+		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteLowPriority, s.schema, s.name, metadata.AttributeWriteLockTypeLowPriority)
+		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteNormal, s.schema, s.name, metadata.AttributeWriteLockTypeNormal)
+		m.mb.RecordMysqlTableLockWaitWriteTimeDataPoint(now, s.sumTimerWriteExternal, s.schema, s.name, metadata.AttributeWriteLockTypeExternal)
 	}
 }
 

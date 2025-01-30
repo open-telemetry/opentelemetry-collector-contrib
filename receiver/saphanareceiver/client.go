@@ -11,7 +11,7 @@ import (
 	"fmt"
 
 	sapdriver "github.com/SAP/go-hdb/driver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 )
 
 // Interface for a SAP HANA client. Implementation can be faked for testing.

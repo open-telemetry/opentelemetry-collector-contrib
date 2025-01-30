@@ -32,6 +32,11 @@ receivers:
       port: 2055
       sockets: 16
       workers: 32
+  netflow/sflow:
+    - scheme: sflow
+      port: 6343
+      sockets: 16
+      workers: 32
 
 processors:
   batch:
@@ -45,7 +50,7 @@ exporters:
 service:
   pipelines:
     logs:
-      receivers: [netflow]
+      receivers: [netflow, netflow/sflow]
       processors: [batch]
       exporters: [debug]
   telemetry:
@@ -61,42 +66,52 @@ You would then configure your network devices to send netflow, sflow, or ipfix d
 
 | Field | Description | Examples | Default |
 |-------|-------------|--------| ------- |
-| scheme | The type of flow data that to receive | `sflow`, `netflow`, `flow` | `netflow` |
+| scheme | The type of flow data that to receive | `sflow`, `netflow` | `netflow` |
 | hostname | The hostname or IP address to bind to | `localhost` | `0.0.0.0` |
 | port | The port to bind to | `2055` or `6343` | `2055` |
 | sockets | The number of sockets to use | 1 | 1 |
 | workers | The number of workers used to decode incoming flow messages | 2 | 2 |
-| queue_size | The size of the incoming netflow packets queue | 1000 | 1000000 |
+| queue_size | The size of the incoming netflow packets queue, it will always be at least 1000. | 5000 | 1000 |
 
 ## Data format
 
-The netflow data is standardized for the different schemas and is converted to OpenTelemetry logs following the [semantic conventions](https://opentelemetry.io/docs/specs/semconv/general/attributes/#server-client-and-shared-network-attributes)
+The netflow data is standardized for the different schemas and is converted to OpenTelemetry log records following the [semantic conventions](https://opentelemetry.io/docs/specs/semconv/general/attributes/#server-client-and-shared-network-attributes)
 
-The output will adhere the format:
+The log record will have the following attributes (with examples):
 
-```json
-{
-    "destination": {
-        "address": "192.168.0.1",
-        "port": 22
-    },
-    "flow": {
-        "end": 1731073104662487000,
-        "sampler_address": "192.168.0.2",
-        "sequence_num": 49,
-        "start": 1731073077662487000,
-        "time_received": 1731073138662487000,
-        "type": "NETFLOW_V5"
-    },
-    "io": {
-        "bytes": 529,
-        "packets": 378
-    },
-    "source": {
-        "address": "192.168.0.3",
-        "port": 40
-    },
-    "transport": "TCP",
-    "type": "IPv4"
-}
-```
+* **source.address**: Str(132.189.238.100)
+* **source.port**: Int(1255)
+* **destination.address**: Str(241.171.33.110)
+* **destination.port**: Int(64744)
+* **network.transport**: Str(tcp)
+* **network.type**: Str(ipv4)
+* **flow.io.bytes**: Int(853)
+* **flow.io.packets**: Int(83)
+* **flow.type**: Str(netflow_v5)
+* **flow.sequence_num**: Int(191)
+* **flow.time_received**: Int(1736309689918929427)
+* **flow.start**: Int(1736309689830846400)
+* **flow.end**: Int(1736309689871846400)
+* **flow.sampling_rate**: Int(0)
+* **flow.sampler_address**: Str(172.28.176.1)
+
+The log record timestamps will be:
+
+* **Observed timestamp**: The time the flow was received.
+* **Timestamp**: The flow `start` field.  
+
+### Schema support
+
+#### netflow
+
+* Process [Template Records](https://www.cisco.com/en/US/technologies/tk648/tk362/technologies_white_paper09186a00800a3db9.html) if present
+* Process Netflow V5, V9, and IPFIX messages
+* Extract the attributes documented above
+* Mapping of custom fields is not yet supported
+
+#### sflow
+
+* Process [sFlow version 5](https://sflow.org/sflow_version_5.txt) datagrams
+* `flow_sample` and `flow_sample_expanded` are supported.
+* `counter_sample` and `counter_sample_expanded` are NOT yet supported.
+* Mapping of custom fields is not yet supported

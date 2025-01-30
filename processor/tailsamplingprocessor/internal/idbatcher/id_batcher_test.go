@@ -50,9 +50,7 @@ func BenchmarkConcurrentEnqueue(b *testing.B) {
 	ids := generateSequentialIDs(1)
 	batcher, err := New(10, 100, uint64(4*runtime.NumCPU()))
 	defer batcher.Stop()
-	if err != nil {
-		b.Fatalf("Failed to create Batcher: %v", err)
-	}
+	require.NoError(b, err, "Failed to create Batcher")
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()

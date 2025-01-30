@@ -13,7 +13,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
 
 var errClientClosed = errors.New("client closed")
@@ -99,7 +99,7 @@ func (p *TestClient) Delete(_ context.Context, key string) error {
 	return nil
 }
 
-func (p *TestClient) Batch(_ context.Context, ops ...storage.Operation) error {
+func (p *TestClient) Batch(_ context.Context, ops ...*storage.Operation) error {
 	p.cacheMux.Lock()
 	defer p.cacheMux.Unlock()
 	if p.closed {

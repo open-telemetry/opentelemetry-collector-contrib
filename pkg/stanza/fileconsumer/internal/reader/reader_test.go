@@ -57,7 +57,6 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 	lineLens := []int{3, 5, 7, 11, 13, 17, 19, 23, 27}
 
 	for _, lineLen := range lineLens {
-		lineLen := lineLen
 		t.Run(fmt.Sprintf("%d", lineLen), func(t *testing.T) {
 			t.Parallel()
 
@@ -118,7 +117,6 @@ func TestFingerprintChangeSize(t *testing.T) {
 	lineLens := []int{3, 4, 5, 6, 7, 8, 11, 12, 13, 17, 19, 23, 27, 36}
 
 	for _, lineLen := range lineLens {
-		lineLen := lineLen
 		t.Run(fmt.Sprintf("%d", lineLen), func(t *testing.T) {
 			t.Parallel()
 

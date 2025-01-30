@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v68/github"
 )
 
 const (
