@@ -7,16 +7,7 @@ import "bufio"
 
 // State tracks the potential length of a token before any terminator checking
 type State struct {
-	PotentialLength int
-}
-
-func (s *State) Copy() *State {
-	if s == nil {
-		return nil
-	}
-	return &State{
-		PotentialLength: s.PotentialLength,
-	}
+	MinimumLength int
 }
 
 // Func wraps a bufio.SplitFunc to track potential token lengths
@@ -27,20 +18,19 @@ func (s *State) Func(splitFunc bufio.SplitFunc) bufio.SplitFunc {
 	}
 
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		// Note the potential token length but don't update state yet
+		// Note the potential token length but don't update state until we know
+		// whether or not a token is actually returned
 		potentialLen := len(data)
 
-		// Delegate to the wrapped split function
 		advance, token, err = splitFunc(data, atEOF)
-
-		// Only update state if we didn't find a token (delegate returned 0, nil, nil)
 		if advance == 0 && token == nil && err == nil {
-			s.PotentialLength = potentialLen
+			// The splitFunc is asking for more data. Remember how much
+			// we saw previously so the buffer can be sized appropriately.
+			s.MinimumLength = potentialLen
 		} else {
-			// Clear the state if we got a token or error
-			s.PotentialLength = 0
+			// A token was returned. This state represented that token, so clear it.
+			s.MinimumLength = 0
 		}
-
 		return advance, token, err
 	}
 }

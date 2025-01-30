@@ -180,10 +180,10 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 func (r *Reader) readContents(ctx context.Context) {
 	// Create the scanner to read the contents of the file.
 	bufferSize := r.initialBufferSize
-	if r.TokenLenState.PotentialLength > bufferSize {
+	if r.TokenLenState.MinimumLength > bufferSize {
 		// If we previously saw a potential token larger than the default buffer,
 		// size the buffer to be at least one byte larger so we can see if there's more data
-		bufferSize = r.TokenLenState.PotentialLength + 1
+		bufferSize = r.TokenLenState.MinimumLength + 1
 	}
 
 	s := scanner.New(r, r.maxLogSize, bufferSize, r.Offset, r.contentSplitFunc)

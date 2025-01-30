@@ -258,7 +258,7 @@ func TestUntermintedLongLogEntry(t *testing.T) {
 	r.ReadToEnd(context.Background())
 	sink.ExpectNoCalls(t)
 
-	// Advance time past the flush period
+	// Advance time past the flush period to test behavior after timer is expired
 	clock.Advance(2 * flushPeriod)
 
 	// Second ReadToEnd should emit the full untruncated token
@@ -273,9 +273,8 @@ func TestUntermintedLogEntryGrows(t *testing.T) {
 	temp := filetest.OpenTemp(t, tempDir)
 
 	// Create a log entry longer than DefaultBufferSize (16KB) but shorter than maxLogSize
-	content := filetest.TokenWithLength(20 * 1024)      // 20KB
-	additionalContext := filetest.TokenWithLength(1024) // 1KB
-	_, err := temp.WriteString(string(content))         // no newline
+	content := filetest.TokenWithLength(20 * 1024) // 20KB
+	_, err := temp.WriteString(string(content))    // no newline
 	require.NoError(t, err)
 
 	// Use a controlled clock. It advances by 1ns each time Now() is called, which may happen
@@ -302,25 +301,22 @@ func TestUntermintedLogEntryGrows(t *testing.T) {
 	r.ReadToEnd(context.Background())
 	sink.ExpectNoCalls(t)
 
-	// Advance time past the flush period
+	// Advance time past the flush period to test behavior after timer is expired
 	clock.Advance(2 * flushPeriod)
 
-	// Write additional unterminated content to the file. We want to ensure this
-	// is all picked up in the same token.
-	// Importantly, this resets the flush timer so the next call still will not
-	// return anything
+	// Write additional unterminated content to ensure all is picked up in the same token
+	// The flusher should notice new data and not return anything on the next call
+	additionalContext := filetest.TokenWithLength(1024)
 	_, err = temp.WriteString(string(additionalContext)) // no newline
 	require.NoError(t, err)
 
-	// Next ReadToEnd should STILL not emit anything as flush period has been extended
-	// because we saw more data than last time
 	r.ReadToEnd(context.Background())
 	sink.ExpectNoCalls(t)
 
-	// Advance time past the flush period
+	// Advance time past the flush period to test behavior after timer is expired
 	clock.Advance(2 * flushPeriod)
 
-	// Finally, since we haven't seen new data, we should emit the token
+	// Finally, since we haven't seen new data, flusher should emit the token
 	r.ReadToEnd(context.Background())
 	sink.ExpectToken(t, append(content, additionalContext...))
 
