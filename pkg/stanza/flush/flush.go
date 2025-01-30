@@ -15,16 +15,6 @@ type State struct {
 	LastDataLength int
 }
 
-func (s *State) Copy() *State {
-	if s == nil {
-		return nil
-	}
-	return &State{
-		LastDataChange: s.LastDataChange,
-		LastDataLength: s.LastDataLength,
-	}
-}
-
 // Func wraps a bufio.SplitFunc with a timer.
 // When the timer expires, an incomplete token may be returned.
 // The timer will reset any time the data parameter changes.
