@@ -60,3 +60,7 @@ providers:
   - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.24.1-0.20250123125445-24f88da7b583
   - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.24.1-0.20250123125445-24f88da7b583
 
+# When using `make genoteltestbedcol`, a `replaces` section is appended to this
+# file before passing it to OCB, to ensure that local versions are used for all
+# Contrib modules.
+
