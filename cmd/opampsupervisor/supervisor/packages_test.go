@@ -4,6 +4,11 @@
 package supervisor
 
 import (
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/base64"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -217,6 +222,58 @@ func TestPackageManager_LastReportedStatuses(t *testing.T) {
 	lrs, err = pm2.LastReportedStatuses()
 	require.NoError(t, err)
 	require.Equal(t, statuses, lrs)
+}
+
+func TestPackageManager_UpdateContent(t *testing.T) {
+	t.Run("non-agent package", func(t *testing.T) {
+		pm := initPackageManager(t, t.TempDir())
+		err := pm.UpdateContent(context.Background(), "random-package", nil, nil, nil)
+		require.Equal(t, "package does not exist", err.Error())
+	})
+
+	t.Run("invalid hash", func(t *testing.T) {
+		pm := initPackageManager(t, t.TempDir())
+		invalidHash := []byte{0x01, 0x02}
+		err := pm.UpdateContent(context.Background(), agentPackageKey,
+			bytes.NewReader([]byte("test data")), invalidHash, nil)
+		require.ErrorContains(t, err, "could not verify package integrity")
+	})
+
+	t.Run("invalid signature format", func(t *testing.T) {
+		pm := initPackageManager(t, t.TempDir())
+		data := []byte("test data")
+		hash := sha256.Sum256(data)
+		invalidSig := []byte("invalid-signature-no-space")
+
+		err := pm.UpdateContent(context.Background(), agentPackageKey,
+			bytes.NewReader(data), hash[:], invalidSig)
+		require.ErrorContains(t, err, "signature must be formatted as a space separated cert and signature")
+	})
+
+	t.Run("invalid base64 cert", func(t *testing.T) {
+		pm := initPackageManager(t, t.TempDir())
+		data := []byte("test data")
+		hash := sha256.Sum256(data)
+		invalidSig := []byte("invalid-b64-cert valid-sig")
+
+		err := pm.UpdateContent(context.Background(), agentPackageKey,
+			bytes.NewReader(data), hash[:], invalidSig)
+		require.ErrorContains(t, err, "b64 decode cert")
+	})
+
+	t.Run("correct hash but invalid signature", func(t *testing.T) {
+		pm := initPackageManager(t, t.TempDir())
+		data := []byte("test data")
+		hash := sha256.Sum256(data)
+		// Use valid base64 encoding but invalid cert/signature
+		fakeCert := base64.StdEncoding.EncodeToString([]byte("fake-cert"))
+		fakeSig := base64.StdEncoding.EncodeToString([]byte("fake-sig"))
+		sig := []byte(fmt.Sprintf("%s %s", fakeCert, fakeSig))
+
+		err := pm.UpdateContent(context.Background(), agentPackageKey,
+			bytes.NewReader(data), hash[:], sig)
+		require.ErrorContains(t, err, "could not verify package signature")
+	})
 }
 
 func initPackageManager(t *testing.T, tmpDir string) *packageManager {
