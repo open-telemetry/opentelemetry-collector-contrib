@@ -21,8 +21,8 @@ import (
 func TestValidate(t *testing.T) {
 	testCases := []struct {
 		name          string
-		config        Supervisor
 		expectedError string
+		config        Supervisor
 	}{
 		{
 			name: "Valid filled out config",
@@ -514,8 +514,8 @@ func TestLoad(t *testing.T) {
 	require.NoError(t, err)
 
 	testCases := []struct {
-		desc     string
 		testFunc func(t *testing.T)
+		desc     string
 	}{
 		{
 			desc: "Minimal Config Supervisor",
