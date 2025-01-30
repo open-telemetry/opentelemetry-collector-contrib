@@ -168,8 +168,8 @@ go.opentelemetry.io/collector/consumer/xconsumer v0.118.1-0.20250130000211-c119b
 go.opentelemetry.io/collector/consumer/xconsumer v0.118.1-0.20250130000211-c119b2a55eb4/go.mod h1:++/yvA1L5F8+5dU7PdZ4Y4il5OtzJhdKjVYLureVsJY=
 go.opentelemetry.io/collector/exporter v0.118.1-0.20250130000211-c119b2a55eb4 h1:u6NzPqppLcVgebTo5FbqNfkHjTm+qNbfCjewcD29HWc=
 go.opentelemetry.io/collector/exporter v0.118.1-0.20250130000211-c119b2a55eb4/go.mod h1:dOEuzXCvDxGDRwQepMPly5q5H8p+ccRElaAbshWQIzA=
-go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.118.0 h1:wC4IyE98DR4eXVyT7EnA4iJ6s+sbUTZVq/5KoVWSKDw=
-go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.118.0/go.mod h1:spjZv9QX+pCcx/ECSqlo/UKCYJzp2rR5NsvIgpfdUxQ=
+go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.118.1-0.20250130000211-c119b2a55eb4 h1:NWyycu4XFKMoiGdVVU8hcTbrl6bb/R3weacRNKpqe4g=
+go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.118.1-0.20250130000211-c119b2a55eb4/go.mod h1:vWoKYd0i2aKyKhkSxmQ3G4V25AY5xFgwFVaa8QSxR4s=
 go.opentelemetry.io/collector/exporter/exportertest v0.118.1-0.20250130000211-c119b2a55eb4 h1:ukR3eXhz1EJTsQStCLTOGYLmyZD+cT8+STlATfMZCBQ=
 go.opentelemetry.io/collector/exporter/exportertest v0.118.1-0.20250130000211-c119b2a55eb4/go.mod h1:D3uAfcHg6etzedKJT+gGBxa78UfgqqbICjVpZSGDd2E=
 go.opentelemetry.io/collector/exporter/xexporter v0.118.1-0.20250130000211-c119b2a55eb4 h1:C96V4kE+GkQViaK70LwFqI1thsMeo5LViXLA/kU8HOA=

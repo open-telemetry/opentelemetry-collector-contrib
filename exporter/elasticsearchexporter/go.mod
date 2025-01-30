@@ -24,7 +24,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.24.1-0.20250130000211-c119b2a55eb4
 	go.opentelemetry.io/collector/consumer v1.24.1-0.20250130000211-c119b2a55eb4
 	go.opentelemetry.io/collector/exporter v0.118.1-0.20250130000211-c119b2a55eb4
-	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.118.0
+	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.118.1-0.20250130000211-c119b2a55eb4
 	go.opentelemetry.io/collector/exporter/exportertest v0.118.1-0.20250130000211-c119b2a55eb4
 	go.opentelemetry.io/collector/exporter/xexporter v0.118.1-0.20250130000211-c119b2a55eb4
 	go.opentelemetry.io/collector/extension/auth/authtest v0.118.1-0.20250130000211-c119b2a55eb4
