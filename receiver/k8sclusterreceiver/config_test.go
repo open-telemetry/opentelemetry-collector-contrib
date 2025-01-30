@@ -93,7 +93,8 @@ func TestInvalidConfig(t *testing.T) {
 		Distribution:       "wrong",
 		CollectionInterval: 30 * time.Second,
 	}
+	expectedErr := "\"wrong\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\""
 	err = component.ValidateConfig(cfg)
 	assert.Error(t, err)
-	assert.Equal(t, "\"wrong\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", err.Error())
+	assert.ErrorContains(t, err, expectedErr)
 }
