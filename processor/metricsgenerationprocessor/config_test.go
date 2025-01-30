@@ -75,6 +75,10 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "invalid_operation"),
 			errorMessage: fmt.Sprintf("%q must be in %q", operationFieldName, operationTypeKeys()),
 		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "scale_by_matching_metric_names"),
+			errorMessage: fmt.Sprintf("The generated metric name may not match a given metric name."),
+		},
 	}
 
 	for _, tt := range tests {

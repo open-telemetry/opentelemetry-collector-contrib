@@ -68,3 +68,11 @@ metricsgeneration/missing_type:
       metric1: metric1
       metric2: metric2
       operation: percent
+
+metricsgeneration/scale_by_matching_metric_names:
+  rules:
+    - name: new_metric
+      type: scale
+      metric1: new_metric
+      operation: multiply
+      scale_by: 100
