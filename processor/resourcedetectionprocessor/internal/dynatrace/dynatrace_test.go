@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -40,6 +41,20 @@ dt.foo=bar=
 
 test = attr
 `
+
+func TestDetectorNewDetector(t *testing.T) {
+	d, err := NewDetector(processor.Settings{}, nil)
+
+	require.NoError(t, err)
+	require.NotNil(t, d)
+
+	if runtime.GOOS == "windows" {
+		t.Setenv("ProgramData", "C:\\ProgramData")
+		require.Equal(t, "C:\\ProgramData//dynatrace/enrichment", d.(*Detector).enrichmentDirectory)
+	} else {
+		require.Equal(t, "/var/lib/dynatrace/enrichment", d.(*Detector).enrichmentDirectory)
+	}
+}
 
 func TestDetector_DetectFromProperties(t *testing.T) {
 	d, err := NewDetector(processor.Settings{}, nil)
