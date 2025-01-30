@@ -253,4 +253,3 @@ providers:
 # When using `make genotelcontribcol`, a `replaces` section is appended to this
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
-
