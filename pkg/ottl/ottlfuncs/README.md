@@ -2061,13 +2061,13 @@ Examples:
 
 `ToSnakeCase(target)`
 
-The `ToSnakeCase` Converter converts the `target` string into snake case.
+The `ToSnakeCase` Converter converts the `target` string into snake case (e.g. `MyMetricName` to `my_metric_name`).
 
 `target` is a string.
 
 Examples:
 
-- `ToSnakeCase(metric.name)` where `metric.name` contains `MyMetricName`, which will be converted to `my_metric_name`
+- `ToSnakeCase(metric.name)`
 
 ### TraceID
 
