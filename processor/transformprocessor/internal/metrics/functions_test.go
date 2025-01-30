@@ -36,6 +36,7 @@ func Test_DataPointFunctions(t *testing.T) {
 			expected := ottlfuncs.StandardFuncs[ottldatapoint.TransformContext]()
 			expected["convert_summary_sum_val_to_sum"] = newConvertSummarySumValToSumFactory()
 			expected["convert_summary_count_val_to_sum"] = newConvertSummaryCountValToSumFactory()
+			expected["convert_summary_quantile_val_to_gauge"] = newConvertSummaryQuantileValToGaugeFactory()
 
 			actual := DataPointFunctions()
 
