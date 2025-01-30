@@ -20,7 +20,8 @@ import (
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-	collectorVersionResolver collectorVersionResolver
+	// collectorVersion is the build version of the collector. This is overridden when an exporter is initialized.
+	collectorVersion string
 
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
@@ -150,11 +151,11 @@ func (cfg *Config) buildDSN() (string, error) {
 	}
 
 	productInfo := queryParams.Get("client_info_product")
-	binaryProductInfo := fmt.Sprintf("%s/%s", "otelcol", cfg.collectorVersionResolver.GetVersion())
+	collectorProductInfo := fmt.Sprintf("%s/%s", "otelcol", cfg.collectorVersion)
 	if productInfo == "" {
-		productInfo = binaryProductInfo
+		productInfo = collectorProductInfo
 	} else {
-		productInfo = fmt.Sprintf("%s,%s", productInfo, binaryProductInfo)
+		productInfo = fmt.Sprintf("%s,%s", productInfo, collectorProductInfo)
 	}
 	queryParams.Set("client_info_product", productInfo)
 
