@@ -20,7 +20,7 @@ import (
 
 func TestValidate(t *testing.T) {
 	clientConfigInvalid := confighttp.NewDefaultClientConfig()
-	clientConfigInvalid.Endpoint = "invalid://endpoint:  12efg"
+	clientConfigInvalid.Endpoint = "invalid://endpoint: 12efg"
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = defaultEndpoint
@@ -38,7 +38,7 @@ func TestValidate(t *testing.T) {
 			expectedErr: errors.Join(
 				errMissingUsername,
 				errMissingPassword,
-				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`)),
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint: 12efg": invalid port ": 12efg" after host`)),
 		},
 		{
 			desc: "missing password and invalid endpoint",
@@ -48,7 +48,7 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errors.Join(
 				errMissingPassword,
-				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint: 12efg": invalid port ": 12efg" after host`),
 			),
 		},
 		{
@@ -59,7 +59,7 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errors.Join(
 				errMissingUsername,
-				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint: 12efg": invalid port ": 12efg" after host`),
 			),
 		},
 		{
@@ -70,15 +70,26 @@ func TestValidate(t *testing.T) {
 				ClientConfig: clientConfigInvalid,
 			},
 			expectedErr: errors.Join(
-				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint: 12efg": invalid port ": 12efg" after host`),
 			),
 		},
 		{
-			desc: "valid config",
+			desc: "valid config with node metrics enabled",
 			cfg: &Config{
-				Username:     "otelu",
-				Password:     "otelp",
-				ClientConfig: clientConfig,
+				Username:          "otelu",
+				Password:          "otelp",
+				ClientConfig:      clientConfig,
+				EnableNodeMetrics: true,
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "valid config with node metrics disabled",
+			cfg: &Config{
+				Username:          "otelu",
+				Password:          "otelp",
+				ClientConfig:      clientConfig,
+				EnableNodeMetrics: false,
 			},
 			expectedErr: nil,
 		},
@@ -112,6 +123,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.Username = "otelu"
 	expected.Password = "${env:RABBITMQ_PASSWORD}"
 	expected.CollectionInterval = 10 * time.Second
+	expected.EnableNodeMetrics = true
 
 	require.Equal(t, expected, cfg)
 }

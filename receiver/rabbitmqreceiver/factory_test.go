@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -39,13 +38,14 @@ func TestNewFactory(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 
-				var expectedCfg component.Config = &Config{
+				expectedCfg := &Config{
 					ControllerConfig: scraperhelper.ControllerConfig{
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
 					ClientConfig:         clientConfig,
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+					EnableNodeMetrics:    true, // Ensure default includes EnableNodeMetrics
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
@@ -72,10 +72,27 @@ func TestNewFactory(t *testing.T) {
 				_, err := factory.CreateMetrics(
 					context.Background(),
 					receivertest.NewNopSettings(),
-					nil,
+					nil, // Passing nil config
 					consumertest.NewNop(),
 				)
 				require.ErrorIs(t, err, errConfigNotRabbit)
+			},
+		},
+		{
+			desc: "returns error if EnableNodeMetrics is false but metrics are attempted",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.EnableNodeMetrics = false
+
+				_, err := factory.CreateMetrics(
+					context.Background(),
+					receivertest.NewNopSettings(),
+					cfg,
+					consumertest.NewNop(),
+				)
+				// No error expected since node metrics disabling shouldn't block creation.
+				require.NoError(t, err)
 			},
 		},
 	}

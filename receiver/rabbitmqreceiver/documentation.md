@@ -66,6 +66,38 @@ The number of messages published to a queue.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {messages} | Sum | Int | Cumulative | true |
 
+### rabbitmq.node.disk_free
+
+Free disk space on the node.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {bytes} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.fd_used
+
+The number of file descriptors used on the node.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {fd} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.mem_limit
+
+The memory limit on the node.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {bytes} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.mem_used
+
+The memory used on the node.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {bytes} | Sum | Int | Cumulative | false |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
