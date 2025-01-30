@@ -43,6 +43,8 @@ func TestLoadConfig(t *testing.T) {
 	ec2Config.EC2Config = ec2.Config{
 		Tags:               []string{"^tag1$", "^tag2$"},
 		ResourceAttributes: ec2.CreateDefaultConfig().ResourceAttributes,
+		MaxAttempts:        3,
+		MaxBackoff:         20 * time.Second,
 	}
 
 	systemConfig := detectorCreateDefaultConfig()
