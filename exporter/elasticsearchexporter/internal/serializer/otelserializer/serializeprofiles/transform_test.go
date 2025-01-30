@@ -269,13 +269,18 @@ func TestStackPayloads(t *testing.T) {
 				a = p.AttributeTable().AppendEmpty()
 				a.SetKey("process.executable.build_id.profiling")
 				a.Value().SetStr(buildID2Encoded)
+				a = p.AttributeTable().AppendEmpty()
+				a.SetKey("profile.frame.type")
+				a.Value().SetStr("native")
 
 				l := p.LocationTable().AppendEmpty()
 				l.SetMappingIndex(0)
 				l.SetAddress(address)
+				l.AttributeIndices().Append(3)
 				l = p.LocationTable().AppendEmpty()
 				l.SetMappingIndex(1)
 				l.SetAddress(address2)
+				l.AttributeIndices().Append(3)
 
 				m := p.MappingTable().AppendEmpty()
 				m.AttributeIndices().Append(1)
@@ -299,8 +304,8 @@ func TestStackPayloads(t *testing.T) {
 						DocID:    wantedTraceID,
 						FrameIDs: frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
-							libpf.FrameType(0),
-							libpf.FrameType(0),
+							libpf.FrameType(3),
+							libpf.FrameType(3),
 						}),
 					},
 					StackFrames: []StackFrame{},
@@ -347,13 +352,18 @@ func TestStackPayloads(t *testing.T) {
 				a = p.AttributeTable().AppendEmpty()
 				a.SetKey("process.executable.build_id.profiling")
 				a.Value().SetStr(buildID2Encoded)
+				a = p.AttributeTable().AppendEmpty()
+				a.SetKey("profile.frame.type")
+				a.Value().SetStr("native")
 
 				l := p.LocationTable().AppendEmpty()
 				l.SetMappingIndex(0)
 				l.SetAddress(address)
+				l.AttributeIndices().Append(2)
 				l = p.LocationTable().AppendEmpty()
 				l.SetMappingIndex(1)
 				l.SetAddress(address2)
+				l.AttributeIndices().Append(2)
 
 				m := p.MappingTable().AppendEmpty()
 				m.AttributeIndices().Append(0)
@@ -377,8 +387,8 @@ func TestStackPayloads(t *testing.T) {
 						DocID:    wantedTraceID,
 						FrameIDs: frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
-							libpf.FrameType(0),
-							libpf.FrameType(0),
+							libpf.FrameType(3),
+							libpf.FrameType(3),
 						}),
 					},
 					StackFrames: []StackFrame{},
@@ -648,6 +658,10 @@ func mkStackTraceID(t *testing.T, frameIDs []libpf.FrameID) string {
 	s := p.Sample().AppendEmpty()
 	s.SetLocationsLength(int32(len(frameIDs)))
 
+	a := p.AttributeTable().AppendEmpty()
+	a.SetKey("profile.frame.type")
+	a.Value().SetStr("native")
+
 	for i, frameID := range frameIDs {
 		p.StringTable().Append(frameID.FileID().StringNoQuotes())
 
@@ -656,11 +670,12 @@ func mkStackTraceID(t *testing.T, frameIDs []libpf.FrameID) string {
 		a.Value().SetStr(frameID.FileID().StringNoQuotes())
 
 		m := p.MappingTable().AppendEmpty()
-		m.AttributeIndices().Append(int32(i))
+		m.AttributeIndices().Append(int32(i + 1))
 
 		l := p.LocationTable().AppendEmpty()
 		l.SetMappingIndex(int32(i))
 		l.SetAddress(uint64(frameID.AddressOrLine()))
+		l.AttributeIndices().Append(0)
 	}
 
 	frames, _, _, err := stackFrames(p, s)

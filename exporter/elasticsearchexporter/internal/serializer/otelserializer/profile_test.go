@@ -37,6 +37,9 @@ func TestSerializeProfile(t *testing.T) {
 				a := profile.AttributeTable().AppendEmpty()
 				a.SetKey("process.executable.build_id.profiling")
 				a.Value().SetStr("600DCAFE4A110000F2BF38C493F5FB92")
+				a = profile.AttributeTable().AppendEmpty()
+				a.SetKey("profile.frame.type")
+				a.Value().SetStr("native")
 
 				sample := profile.Sample().AppendEmpty()
 				sample.TimestampsUnixNano().Append(0)
@@ -48,12 +51,13 @@ func TestSerializeProfile(t *testing.T) {
 				l := profile.LocationTable().AppendEmpty()
 				l.SetMappingIndex(0)
 				l.SetAddress(111)
+				l.AttributeIndices().Append(1)
 			},
 			wantErr: false,
 			expected: []map[string]any{
 				{
 					"Stacktrace.frame.ids":   "YA3K_koRAADyvzjEk_X7kgAAAAAAAABv",
-					"Stacktrace.frame.types": "AQA",
+					"Stacktrace.frame.types": "AQM",
 					"ecs.version":            "",
 				},
 				{
