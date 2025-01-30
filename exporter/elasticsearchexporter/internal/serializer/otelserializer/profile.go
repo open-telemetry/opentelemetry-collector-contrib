@@ -19,7 +19,7 @@ const (
 	executablesIndex = "profiling-executables"
 )
 
-// SerializeProfile serializes a profile into the specified buffer
+// SerializeProfile serializes a profile and calls the `pushData` callback for each generated document.
 func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
 	data, err := serializeprofiles.Transform(resource, scope, profile)
 	if err != nil {
