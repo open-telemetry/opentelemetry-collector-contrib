@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	allEventsIndex   = "profiling-events-all"
 	stackTraceIndex  = "profiling-stacktraces"
 	stackFrameIndex  = "profiling-stackframes"
 	executablesIndex = "profiling-executables"
@@ -34,7 +35,7 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 			if err != nil {
 				return err
 			}
-			err = pushData(c, "", "")
+			err = pushData(c, "", allEventsIndex)
 			if err != nil {
 				return err
 			}
