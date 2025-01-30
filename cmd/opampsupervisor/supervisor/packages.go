@@ -201,7 +201,7 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 	// Create a backup in case we fail to write the agent
 	// verify collector backup path is clear
 	agentBackupPath := filepath.Join(p.storageDir, "collector.bak")
-	if err := renameFile(p.agentExePath, agentBackupPath); err != nil {
+	if err = renameFile(p.agentExePath, agentBackupPath); err != nil {
 		return fmt.Errorf("rename collector exe path to backup path: %w", err)
 	}
 
@@ -226,7 +226,7 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 	}
 
 	// open collector destination file
-	agentFile, err := os.OpenFile(p.agentExePath, os.O_RDWR, 0700)
+	agentFile, err := os.OpenFile(p.agentExePath, os.O_RDWR|os.O_CREATE, 0o700)
 	if err != nil {
 		return fmt.Errorf("open file: %w", err)
 	}
@@ -294,7 +294,7 @@ func (p packageManager) SetLastReportedStatuses(statuses *protobufs.PackageStatu
 		return fmt.Errorf("marshal statuses: %w", err)
 	}
 
-	err = os.WriteFile(p.lastPackageStatusPath(), lastStatusBytes, 0600)
+	err = os.WriteFile(p.lastPackageStatusPath(), lastStatusBytes, 0o600)
 	if err != nil {
 		return fmt.Errorf("write package statues: %w", err)
 	}
@@ -399,7 +399,7 @@ func renameFile(srcPath, dstPath string) error {
 	// verify dstPath is cleared up
 	if _, err := os.Stat(dstPath); err == nil {
 		// delete existing file at dstPath
-		if err := os.Remove(dstPath); err != nil {
+		if err = os.Remove(dstPath); err != nil {
 			return fmt.Errorf("remove existing file at destination path: %w", err)
 		}
 	} else if !os.IsNotExist(err) {

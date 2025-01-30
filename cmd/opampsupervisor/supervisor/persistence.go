@@ -93,8 +93,10 @@ func createNewPersistentState(file string) (*persistentState, error) {
 // to/from a hex string.
 type hexEncodedBytes []byte
 
-var _ yaml.Marshaler = (*hexEncodedBytes)(nil)
-var _ yaml.Unmarshaler = (*hexEncodedBytes)(nil)
+var (
+	_ yaml.Marshaler   = (*hexEncodedBytes)(nil)
+	_ yaml.Unmarshaler = (*hexEncodedBytes)(nil)
+)
 
 func (h hexEncodedBytes) MarshalYAML() (any, error) {
 	return hex.EncodeToString(h), nil
