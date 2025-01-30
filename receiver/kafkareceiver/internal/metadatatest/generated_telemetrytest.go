@@ -22,6 +22,7 @@ type Telemetry struct {
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
 	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
 }
+
 func (tt *Telemetry) NewSettings() receiver.Settings {
 	set := receivertest.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("kafka"))
@@ -34,7 +35,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
 	// ensure all required metrics are present
 	for _, want := range expected {
-		got := getMetric(want.Name, md)
+		got := getMetricFromResource(want.Name, md)
 		metricdatatest.AssertEqual(t, want, got, opts...)
 	}
 
@@ -42,7 +43,129 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+func AssertEqualKafkaReceiverCurrentOffset(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_kafka_receiver_current_offset",
+		Description: "Current message offset",
+		Unit:        "1",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_kafka_receiver_current_offset")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualKafkaReceiverMessages(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_kafka_receiver_messages",
+		Description: "Number of received messages",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_kafka_receiver_messages")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualKafkaReceiverOffsetLag(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_kafka_receiver_offset_lag",
+		Description: "Current offset lag",
+		Unit:        "1",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_kafka_receiver_offset_lag")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualKafkaReceiverPartitionClose(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_kafka_receiver_partition_close",
+		Description: "Number of finished partitions",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_kafka_receiver_partition_close")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualKafkaReceiverPartitionStart(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_kafka_receiver_partition_start",
+		Description: "Number of started partitions",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_kafka_receiver_partition_start")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualKafkaReceiverUnmarshalFailedLogRecords(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_kafka_receiver_unmarshal_failed_log_records",
+		Description: "Number of log records failed to be unmarshaled",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_kafka_receiver_unmarshal_failed_log_records")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualKafkaReceiverUnmarshalFailedMetricPoints(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_kafka_receiver_unmarshal_failed_metric_points",
+		Description: "Number of metric points failed to be unmarshaled",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_kafka_receiver_unmarshal_failed_metric_points")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualKafkaReceiverUnmarshalFailedSpans(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_kafka_receiver_unmarshal_failed_spans",
+		Description: "Number of spans failed to be unmarshaled",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_kafka_receiver_unmarshal_failed_spans")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
+	var md metricdata.ResourceMetrics
+	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
+	return getMetricFromResource(name, md)
+}
+
+func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
 	for _, sm := range got.ScopeMetrics {
 		for _, m := range sm.Metrics {
 			if m.Name == name {
