@@ -16,7 +16,7 @@ import (
 )
 
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
@@ -43,7 +43,14 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualReceiverReceivedStatsdMetrics(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
+	set := receivertest.NewNopSettings()
+	set.ID = component.NewID(component.MustNewType("statsd"))
+	set.TelemetrySettings = tt.NewTelemetrySettings()
+	return set
+}
+
+func AssertEqualReceiverReceivedStatsdMetrics(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_received_statsd_metrics",
 		Description: "Number of statsd metrics received.",
@@ -54,14 +61,9 @@ func AssertEqualReceiverReceivedStatsdMetrics(t *testing.T, tt componenttest.Tel
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_receiver_received_statsd_metrics")
+	got, err := tt.GetMetric("otelcol_receiver_received_statsd_metrics")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
