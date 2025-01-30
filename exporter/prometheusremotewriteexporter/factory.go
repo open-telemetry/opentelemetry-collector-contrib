@@ -82,16 +82,15 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 	return resourcetotelemetry.WrapMetricsExporter(prwCfg.ResourceToTelemetrySettings, exporter), nil
 }
 
+func newDefaultPRWClientConfig() confighttp.ClientConfig {
+	cfg := confighttp.NewDefaultClientConfig()
+	setDefaultsPRWClientConfig(&cfg)
+	return cfg
+}
+
 func createDefaultConfig() component.Config {
 	retrySettings := configretry.NewDefaultBackOffConfig()
 	retrySettings.InitialInterval = 50 * time.Millisecond
-	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.Endpoint = "http://some.url:9411/api/prom/push"
-	// We almost read 0 bytes, so no need to tune ReadBufferSize.
-	clientConfig.ReadBufferSize = 0
-	clientConfig.WriteBufferSize = 512 * 1024
-	clientConfig.Timeout = exporterhelper.NewDefaultTimeoutConfig().Timeout
-
 	numConsumers := 5
 	if enableMultipleWorkersFeatureGate.IsEnabled() {
 		numConsumers = 1
@@ -106,7 +105,8 @@ func createDefaultConfig() component.Config {
 		BackOffConfig:     retrySettings,
 		AddMetricSuffixes: true,
 		SendMetadata:      false,
-		ClientConfig:      clientConfig,
+		ClientConfig:      newDefaultPRWClientConfig(),
+		PRWClient:         nil,
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{
 			Enabled:      true,

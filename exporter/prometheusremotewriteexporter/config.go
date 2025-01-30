@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -31,6 +32,8 @@ type Config struct {
 	ExternalLabels map[string]string `mapstructure:"external_labels"`
 
 	ClientConfig confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	// PRWClient configures HTTP client for Prometheus remote write
+	PRWClient *confighttp.ClientConfig `mapstructure:"prw_client,omitempty"`
 
 	// maximum size in bytes of time series batch sent to remote storage
 	MaxBatchSizeBytes int `mapstructure:"max_batch_size_bytes"`
@@ -57,6 +60,16 @@ type Config struct {
 
 	// SendMetadata controls whether prometheus metadata will be generated and sent
 	SendMetadata bool `mapstructure:"send_metadata"`
+}
+
+func (cfg *Config) Unmarshal(c *confmap.Conf) error {
+	if err := c.Unmarshal(cfg); err != nil {
+		return err
+	}
+	if cfg.PRWClient != nil {
+		setDefaultsPRWClientConfig(cfg.PRWClient)
+	}
+	return nil
 }
 
 type CreatedMetric struct {
@@ -125,4 +138,34 @@ func (cfg *Config) Validate() error {
 	}
 
 	return nil
+}
+
+func setDefaultsPRWClientConfig(cfg *confighttp.ClientConfig) {
+	if cfg.Endpoint == "" {
+		cfg.Endpoint = "http://some.url:9411/api/prom/push"
+	}
+	// We almost read 0 bytes, so no need to tune ReadBufferSize.
+	if cfg.WriteBufferSize == 0 {
+		cfg.WriteBufferSize = 512 * 1024
+	}
+	if cfg.Timeout == 0 {
+		cfg.Timeout = exporterhelper.NewDefaultTimeoutConfig().Timeout
+	}
+
+	defaultCfg := confighttp.NewDefaultClientConfig()
+	if cfg.Headers == nil {
+		cfg.Headers = defaultCfg.Headers
+	}
+	if cfg.MaxIdleConns == nil {
+		cfg.MaxIdleConns = defaultCfg.MaxIdleConns
+	}
+	if cfg.MaxIdleConnsPerHost == nil {
+		cfg.MaxIdleConnsPerHost = defaultCfg.MaxIdleConnsPerHost
+	}
+	if cfg.MaxConnsPerHost == nil {
+		cfg.MaxConnsPerHost = defaultCfg.MaxConnsPerHost
+	}
+	if cfg.IdleConnTimeout == nil {
+		cfg.IdleConnTimeout = defaultCfg.IdleConnTimeout
+	}
 }

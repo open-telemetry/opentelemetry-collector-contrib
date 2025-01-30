@@ -112,7 +112,12 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		return nil, err
 	}
 
-	endpointURL, err := url.ParseRequestURI(cfg.ClientConfig.Endpoint)
+	clientSettings := &cfg.ClientConfig
+	if cfg.PRWClient != nil {
+		clientSettings = cfg.PRWClient
+	}
+
+	endpointURL, err := url.ParseRequestURI(clientSettings.Endpoint)
 	if err != nil {
 		return nil, errors.New("invalid endpoint")
 	}
@@ -139,7 +144,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		userAgentHeader:   userAgentHeader,
 		maxBatchSizeBytes: cfg.MaxBatchSizeBytes,
 		concurrency:       concurrency,
-		clientSettings:    &cfg.ClientConfig,
+		clientSettings:    clientSettings,
 		settings:          set.TelemetrySettings,
 		retrySettings:     cfg.BackOffConfig,
 		retryOnHTTP429:    retryOn429FeatureGate.IsEnabled(),
