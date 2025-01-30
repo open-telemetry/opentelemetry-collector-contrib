@@ -10,7 +10,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-
 	goleak.VerifyTestMain(
 		m,
 		// This leaky goroutine seems to come from the cosign dependency tree.
