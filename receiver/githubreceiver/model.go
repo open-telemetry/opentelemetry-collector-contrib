@@ -194,7 +194,6 @@ func (gtr *githubTracesReceiver) getWorkflowAttrs(resource pcommon.Resource, e *
 	return err
 }
 
-// splitRefWorkflow takes in the workl
 func splitRefWorkflow(workflow string) (name string, version string, err error) {
 	return "", "", nil
 }
@@ -210,7 +209,7 @@ func splitRefWorkflow(workflow string) (name string, version string, err error) 
 func (gtr *githubTracesReceiver) getServiceName(customProps any, repoName string) (string, error) {
 	switch {
 	case gtr.cfg.WebHook.ServiceName != "":
-
+		formatted := formatString(gtr.cfg.WebHook.ServiceName)
 		return formatted, nil
 	// customProps would be an index map[string]interface{} passed in but should
 	// only be non-nil if the index of `service_name` exists
