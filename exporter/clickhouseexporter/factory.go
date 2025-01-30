@@ -8,11 +8,11 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
-	"time"
-
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
