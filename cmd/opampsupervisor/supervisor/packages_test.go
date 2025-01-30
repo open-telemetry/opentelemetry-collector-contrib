@@ -38,8 +38,8 @@ func TestNewPackageManager(t *testing.T) {
 		storageDir := filepath.Join(tmpDir, "storage")
 		defaultSigOpts := config.DefaultSupervisor().Agent.Signature
 
-		require.NoError(t, os.MkdirAll(storageDir, 0700))
-		require.NoError(t, os.WriteFile(agentFile, []byte(testAgentFileContents), 0600))
+		require.NoError(t, os.MkdirAll(storageDir, 0o700))
+		require.NoError(t, os.WriteFile(agentFile, []byte(testAgentFileContents), 0o600))
 
 		pm, err := newPackageManager(agentFile, storageDir, "v0.110.0", &persistentState{}, defaultSigOpts, nil)
 		require.NoError(t, err)
@@ -54,7 +54,7 @@ func TestNewPackageManager(t *testing.T) {
 		storageDir := filepath.Join(tmpDir, "storage")
 		defaultSigOpts := config.DefaultSupervisor().Agent.Signature
 
-		require.NoError(t, os.MkdirAll(storageDir, 0700))
+		require.NoError(t, os.MkdirAll(storageDir, 0o700))
 
 		_, err := newPackageManager(agentFile, storageDir, "v0.110.0", &persistentState{}, defaultSigOpts, nil)
 		require.ErrorContains(t, err, "open agent:")
@@ -81,7 +81,6 @@ func TestPackageManager_AllPackagesHash(t *testing.T) {
 	by, err = pm2.AllPackagesHash()
 	require.NoError(t, err)
 	require.Equal(t, allPackagesHash, by)
-
 }
 
 func TestPackageManager_Packages(t *testing.T) {
@@ -281,8 +280,8 @@ func initPackageManager(t *testing.T, tmpDir string) *packageManager {
 	storageDir := filepath.Join(tmpDir, "storage")
 	defaultSigOpts := config.DefaultSupervisor().Agent.Signature
 
-	require.NoError(t, os.MkdirAll(storageDir, 0700))
-	require.NoError(t, os.WriteFile(agentFile, []byte(testAgentFileContents), 0600))
+	require.NoError(t, os.MkdirAll(storageDir, 0o700))
+	require.NoError(t, os.WriteFile(agentFile, []byte(testAgentFileContents), 0o600))
 	ps, err := loadOrCreatePersistentState(filepath.Join(tmpDir, "persistent_state.yaml"))
 	require.NoError(t, err)
 

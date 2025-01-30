@@ -540,6 +540,7 @@ agent:
 						OrphanDetectionInterval: DefaultSupervisor().Agent.OrphanDetectionInterval,
 						ConfigApplyTimeout:      DefaultSupervisor().Agent.ConfigApplyTimeout,
 						BootstrapTimeout:        DefaultSupervisor().Agent.BootstrapTimeout,
+						Signature:               DefaultSupervisor().Agent.Signature,
 					},
 					Telemetry: DefaultSupervisor().Telemetry,
 				}
@@ -625,6 +626,7 @@ telemetry:
 						HealthCheckPort:         8089,
 						OpAMPServerPort:         8090,
 						PassthroughLogs:         true,
+						Signature:               DefaultSupervisor().Agent.Signature,
 					},
 					Telemetry: Telemetry{
 						Logs: Logs{
@@ -659,6 +661,7 @@ agent:
 						OrphanDetectionInterval: DefaultSupervisor().Agent.OrphanDetectionInterval,
 						ConfigApplyTimeout:      DefaultSupervisor().Agent.ConfigApplyTimeout,
 						BootstrapTimeout:        DefaultSupervisor().Agent.BootstrapTimeout,
+						Signature:               DefaultSupervisor().Agent.Signature,
 					},
 					Telemetry: DefaultSupervisor().Telemetry,
 				}
