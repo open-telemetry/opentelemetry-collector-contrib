@@ -162,6 +162,8 @@ go.opentelemetry.io/collector/consumer/consumererror v0.118.1-0.20250130000211-c
 go.opentelemetry.io/collector/consumer/consumererror v0.118.1-0.20250130000211-c119b2a55eb4/go.mod h1:wJiNWl/ieSTcok2WE4f1H9whdmS1N0KZrEwub85PMtw=
 go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.118.0 h1:/kkWdw1PQtPb1noZMTt6tbgP1ntWdJ835u1o45nYhTg=
 go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.118.0/go.mod h1:2mdXnTT0nPd/KTG9w29cc1OGKBLzL2HW+x/o7QVpCpI=
+go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.118.1-0.20250130000211-c119b2a55eb4 h1:wy0QlIyx4zyR4OrztcRLRvm2394iiI4RMPaePAIBGRw=
+go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.118.1-0.20250130000211-c119b2a55eb4/go.mod h1:tqXqqgJHHi3+2r1+Tv9SxdHykOlmbpZOklB/BY1PXsE=
 go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250130000211-c119b2a55eb4 h1:/LvvZftwxAHPQiu81JKt0kpLZ1Pb6fMQT0/xZk0uMcE=
 go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250130000211-c119b2a55eb4/go.mod h1:RTVwAJCP2PHuSGTmsqa66pQqX6rSdkDqzjdXftmiO2w=
 go.opentelemetry.io/collector/consumer/xconsumer v0.118.1-0.20250130000211-c119b2a55eb4 h1:jeynUhsoUF2gUBEcFyB9mrlUikCHkN2V+aZhcZIa8aA=
@@ -196,6 +198,8 @@ go.opentelemetry.io/collector/pipeline v0.118.1-0.20250130000211-c119b2a55eb4 h1
 go.opentelemetry.io/collector/pipeline v0.118.1-0.20250130000211-c119b2a55eb4/go.mod h1:qE3DmoB05AW0C3lmPvdxZqd/H4po84NPzd5MrqgtL74=
 go.opentelemetry.io/collector/pipeline/xpipeline v0.118.0 h1:ZUVF1MYNQYZvmuL30KfP+QbVGSbFZvldBM9hgCe4J4k=
 go.opentelemetry.io/collector/pipeline/xpipeline v0.118.0/go.mod h1:XgG1ktGO9J1f6fasMYPWSXL9Raan/VYB9vddKKWp5hQ=
+go.opentelemetry.io/collector/pipeline/xpipeline v0.118.1-0.20250130000211-c119b2a55eb4 h1:9FDj7usA32CrZu4Hbrpi8R/AfsCb3fOgHXQvM9oV7lU=
+go.opentelemetry.io/collector/pipeline/xpipeline v0.118.1-0.20250130000211-c119b2a55eb4/go.mod h1:XgG1ktGO9J1f6fasMYPWSXL9Raan/VYB9vddKKWp5hQ=
 go.opentelemetry.io/collector/receiver v0.118.1-0.20250130000211-c119b2a55eb4 h1:4S7CUbP9SKskntHMvfnkogA5OenIwlnQZUpqY4yBZIk=
 go.opentelemetry.io/collector/receiver v0.118.1-0.20250130000211-c119b2a55eb4/go.mod h1:huwfVvNKWyMZjmeFOM1YB9HWx3cbJdjzNV9RCwFyl70=
 go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250130000211-c119b2a55eb4 h1:1EIizwzmdLiW+ah1LatGqmozQgkXZ0TNnRq5OpLTQ40=
