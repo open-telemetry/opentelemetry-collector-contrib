@@ -27,6 +27,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0
 	go.opentelemetry.io/otel v1.34.0
 	go.opentelemetry.io/otel/sdk v1.34.0
+	go.opentelemetry.io/otel/sdk/metric v1.34.0
 	go.opentelemetry.io/otel/trace v1.34.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.70.0
@@ -74,7 +75,6 @@ require (
 	go.opentelemetry.io/collector/receiver/xreceiver v0.118.1-0.20250131104636-a737a48402e0 // indirect
 	go.opentelemetry.io/collector/semconv v0.118.1-0.20250131104636-a737a48402e0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.34.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.34.0 // indirect

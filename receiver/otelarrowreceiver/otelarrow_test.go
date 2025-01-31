@@ -34,6 +34,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -133,7 +136,48 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 	require.Len(t, sink.AllTraces(), expectedReceivedBatches)
 
 	expectedIngestionBlockedRPCs := 1
-	require.NoError(t, tt.CheckReceiverTraces("grpc", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs)))
+
+	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
+	assert.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_accepted_spans",
+			Description: "Number of spans successfully pushed into the pipeline. [alpha]",
+			Unit:        "{spans}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", testReceiverID.String()),
+							attribute.String("transport", "grpc")),
+						Value: int64(expectedReceivedBatches),
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	got, err = tt.GetMetric("otelcol_receiver_refused_spans")
+	assert.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_refused_spans",
+			Description: "Number of spans that could not be pushed into the pipeline. [alpha]",
+			Unit:        "{spans}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", testReceiverID.String()),
+							attribute.String("transport", "grpc")),
+						Value: int64(expectedIngestionBlockedRPCs),
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestGRPCInvalidTLSCredentials(t *testing.T) {

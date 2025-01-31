@@ -21,6 +21,9 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -145,7 +148,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 		}
 	}, 10*time.Second, 5*time.Millisecond, "poller should return parsed segment")
 
-	assert.NoError(t, tt.CheckReceiverTraces(Transport, 2, 0))
+	assertReceiverTraces(t, tt, receiverID, 2, 0)
 }
 
 func TestIncompletePacketNoSeparator(t *testing.T) {
@@ -175,7 +178,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 				fmt.Sprintf("unable to split incoming data as header and segment, incoming bytes: %v", rawData)) == 0
 	}, 10*time.Second, 5*time.Millisecond, "poller should reject segment")
 
-	assert.NoError(t, tt.CheckReceiverTraces(Transport, 0, 1))
+	assertReceiverTraces(t, tt, receiverID, 0, 1)
 }
 
 func TestIncompletePacketNoBody(t *testing.T) {
@@ -200,7 +203,7 @@ func TestIncompletePacketNoBody(t *testing.T) {
 			lastEntry.Context[1].Integer == 1
 	}, 10*time.Second, 5*time.Millisecond, "poller should log missing body")
 
-	assert.NoError(t, tt.CheckReceiverTraces(Transport, 0, 1))
+	assertReceiverTraces(t, tt, receiverID, 0, 1)
 }
 
 func TestNonJsonHeader(t *testing.T) {
@@ -230,7 +233,7 @@ func TestNonJsonHeader(t *testing.T) {
 				"invalid character 'o'")
 	}, 10*time.Second, 5*time.Millisecond, "poller should reject segment")
 
-	assert.NoError(t, tt.CheckReceiverTraces(Transport, 0, 1))
+	assertReceiverTraces(t, tt, receiverID, 0, 1)
 }
 
 func TestJsonInvalidHeader(t *testing.T) {
@@ -266,7 +269,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 			)
 	}, 10*time.Second, 5*time.Millisecond, "poller should reject segment")
 
-	assert.NoError(t, tt.CheckReceiverTraces(Transport, 0, 1))
+	assertReceiverTraces(t, tt, receiverID, 0, 1)
 }
 
 func TestSocketReadIrrecoverableNetError(t *testing.T) {
@@ -303,7 +306,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == randErrStr.String()
 	}, 10*time.Second, 5*time.Millisecond, "poller should exit due to irrecoverable net read error")
 
-	assert.NoError(t, tt.CheckReceiverTraces(Transport, 0, 1))
+	assertReceiverTraces(t, tt, receiverID, 0, 1)
 }
 
 func TestSocketReadTimeOutNetError(t *testing.T) {
@@ -341,7 +344,7 @@ func TestSocketReadTimeOutNetError(t *testing.T) {
 			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == randErrStr.String()
 	}, 10*time.Second, 5*time.Millisecond, "poller should encounter net read error")
 
-	assert.NoError(t, tt.CheckReceiverTraces(Transport, 0, 1))
+	assertReceiverTraces(t, tt, receiverID, 0, 1)
 }
 
 func TestSocketGenericReadError(t *testing.T) {
@@ -377,7 +380,7 @@ func TestSocketGenericReadError(t *testing.T) {
 			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == randErrStr.String()
 	}, 10*time.Second, 5*time.Millisecond, "poller should encounter generic socket read error")
 
-	assert.NoError(t, tt.CheckReceiverTraces(Transport, 0, 1))
+	assertReceiverTraces(t, tt, receiverID, 0, 1)
 }
 
 type mockNetError struct {
@@ -485,4 +488,48 @@ func writePacket(t *testing.T, addr, toWrite string) error {
 func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 	core, recorded := observer.New(zapcore.InfoLevel)
 	return zap.New(core), recorded
+}
+
+func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id component.ID, accepted, refused int64) {
+	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
+	assert.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_accepted_spans",
+			Description: "Number of spans successfully pushed into the pipeline. [alpha]",
+			Unit:        "{spans}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", id.String()),
+							attribute.String("transport", Transport)),
+						Value: accepted,
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	got, err = tt.GetMetric("otelcol_receiver_refused_spans")
+	assert.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_refused_spans",
+			Description: "Number of spans that could not be pushed into the pipeline. [alpha]",
+			Unit:        "{spans}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", id.String()),
+							attribute.String("transport", Transport)),
+						Value: refused,
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
