@@ -15,11 +15,9 @@ import (
 
 func TestSetupTelemetry(t *testing.T) {
 	testTel := SetupTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(
-		testTel.NewTelemetrySettings(),
-	)
+	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
-	require.NotNil(t, tb)
+	defer tb.Shutdown()
 	tb.LokiexporterSendFailedDueToMissingLabels.Add(context.Background(), 1)
 
 	testTel.AssertMetrics(t, []metricdata.Metrics{
@@ -36,5 +34,9 @@ func TestSetupTelemetry(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+	AssertEqualLokiexporterSendFailedDueToMissingLabels(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }
