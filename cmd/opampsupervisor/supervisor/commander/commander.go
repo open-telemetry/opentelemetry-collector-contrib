@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -69,10 +70,21 @@ func (c *Commander) Start(ctx context.Context) error {
 		default:
 		}
 	}
-
 	c.logger.Debug("Starting agent", zap.String("agent", c.cfg.Executable))
 
+	for _, conf := range c.cfg.ConfigFiles {
+		fileName := filepath.Base(conf)
+		newPath := c.logsDir + "/" + fileName
+		if err := copyFile(conf, newPath); err != nil {
+			return fmt.Errorf("cannot copy config file '%s' to storage directory: %s", conf, err.Error())
+		}
+		c.args = append(c.args, "--config")
+		c.args = append(c.args, newPath)
+	}
+	c.args = append(c.args, c.cfg.Arguments...)
+
 	c.cmd = exec.CommandContext(ctx, c.cfg.Executable, c.args...) // #nosec G204
+	c.cmd.Env = envVarMapToEnvMapSlice(c.cfg.Env)
 	c.cmd.SysProcAttr = sysProcAttrs()
 
 	// PassthroughLogging changes how collector start up happens
@@ -82,6 +94,23 @@ func (c *Commander) Start(ctx context.Context) error {
 	return c.startNormal()
 }
 
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destinationFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destinationFile.Close()
+
+	_, err = io.Copy(destinationFile, sourceFile)
+	return err
+}
+
 func (c *Commander) Restart(ctx context.Context) error {
 	c.logger.Debug("Restarting agent", zap.String("agent", c.cfg.Executable))
 	if err := c.Stop(ctx); err != nil {
@@ -89,6 +118,14 @@ func (c *Commander) Restart(ctx context.Context) error {
 	}
 
 	return c.Start(ctx)
+}
+
+func envVarMapToEnvMapSlice(m map[string]string) []string {
+	var result []string
+	for key, value := range m {
+		result = append(result, key+"="+value)
+	}
+	return result
 }
 
 func (c *Commander) startNormal() error {
