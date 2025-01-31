@@ -455,7 +455,7 @@
           "version": "7.17.7",
           "elasticsearch_version": "7.17.7",
           "java_version": "1.8",
-          "description": "Ingest processor that uses looksup geo data based on ip adresses using the Maxmind geo database",
+          "description": "Ingest processor that uses looksup geo data based on ip addresses using the Maxmind geo database",
           "classname": "org.elasticsearch.ingest.geoip.IngestGeoIpPlugin",
           "extended_plugins": [],
           "has_native_controller": false,

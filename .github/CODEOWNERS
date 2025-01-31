@@ -73,6 +73,7 @@ exporter/prometheusremotewriteexporter/                          @open-telemetry
 exporter/pulsarexporter/                                         @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
 exporter/rabbitmqexporter/                                       @open-telemetry/collector-contrib-approvers @swar8080 @atoulme
 exporter/sapmexporter/                                           @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
+exporter/sematextexporter/                                       @open-telemetry/collector-contrib-approvers @AkhigbeEromo
 exporter/sentryexporter/                                         @open-telemetry/collector-contrib-approvers @AbhiPrasad
 exporter/signalfxexporter/                                       @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1
 exporter/splunkhecexporter/                                      @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
@@ -308,6 +309,8 @@ receiver/windowseventlogreceiver/                                @open-telemetry
 receiver/windowsperfcountersreceiver/                            @open-telemetry/collector-contrib-approvers @dashpole @alxbl @pjanotti
 receiver/zipkinreceiver/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
 receiver/zookeeperreceiver/                                      @open-telemetry/collector-contrib-approvers @djaglowski
+
+scraper/zookeeperscraper/                                        @open-telemetry/collector-contrib-approvers @djaglowski
 
 testbed/                                                         @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 testbed/mockdatasenders/mockdatadogagentexporter/                @open-telemetry/collector-contrib-approvers @boostchicken

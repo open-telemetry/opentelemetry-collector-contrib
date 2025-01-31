@@ -34,7 +34,7 @@ This receiver supports NSX-T Datacenter versions:
 
 ## Configuration
 
-- `endpoint`: Endpoint of the NSX Manager. Must be formatted as `{scheme}://{host}:{port}`. Schems supported are `http` and `https`
+- `endpoint`: Endpoint of the NSX Manager. Must be formatted as `{scheme}://{host}:{port}`. Schemes supported are `http` and `https`
 
 - `username`: Username of the `Auditor` user
 
