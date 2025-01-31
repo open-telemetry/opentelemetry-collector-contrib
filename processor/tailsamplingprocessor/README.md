@@ -186,7 +186,7 @@ processors:
                     {
                       name: test-composite-policy-1,
                       type: numeric_attribute,
-                      numeric_attribute: {key: key1, min_value: 50, max_value: 100}
+                      numeric_attribute: {key: key1, min_value: 50}
                     },
                     {
                       name: test-composite-policy-2,
