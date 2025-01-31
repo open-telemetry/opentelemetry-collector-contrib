@@ -5,8 +5,11 @@ package transformprocessor // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"errors"
+	"fmt"
+	"reflect"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -25,6 +28,7 @@ var (
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32080#issuecomment-2120764953"),
 	)
 	errFlatLogsGateDisabled = errors.New("'flatten_data' requires the 'transform.flatten.logs' feature gate to be enabled")
+	contextStatementsFields = []string{"trace_statements", "metric_statements", "log_statements"}
 )
 
 // Config defines the configuration for the processor.
@@ -42,6 +46,63 @@ type Config struct {
 
 	FlattenData bool `mapstructure:"flatten_data"`
 	logger      *zap.Logger
+}
+
+// Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
+// adding support to structured and flat configuration styles (array of statements strings).
+// When the flat configuration style is used, each statement becomes a new common.ContextStatements
+// object, with empty [common.ContextStatements.Context] value.
+// On the other hand, structured configurations are parsed following the mapstructure Config format.
+// Mixed configuration styles are also supported.
+func (c *Config) Unmarshal(component *confmap.Conf) error {
+	if component == nil {
+		return nil
+	}
+
+	contextStatementsPatch := map[string]any{}
+	for _, fieldName := range contextStatementsFields {
+		if !component.IsSet(fieldName) {
+			continue
+		}
+		rawVal := component.Get(fieldName)
+		values, ok := rawVal.([]any)
+		if !ok {
+			return fmt.Errorf("invalid %s type, expected: array, got: %t", fieldName, rawVal)
+		}
+		if len(values) == 0 {
+			continue
+		}
+
+		stmts := make([]any, 0, len(values))
+		for i, value := range values {
+			// Array of strings means it's a flat configuration style
+			if reflect.TypeOf(value).Kind() == reflect.String {
+				stmts = append(stmts, map[string]any{
+					"statements":   []any{value},
+					"shared_cache": true,
+				})
+			} else {
+				configuredKeys, ok := value.(map[string]any)
+				if ok {
+					_, hasShareCacheKey := configuredKeys["shared_cache"]
+					if hasShareCacheKey {
+						return fmt.Errorf("%s[%d] has invalid keys: %s", fieldName, i, "shared_cache")
+					}
+				}
+				stmts = append(stmts, value)
+			}
+		}
+		contextStatementsPatch[fieldName] = stmts
+	}
+
+	if len(contextStatementsPatch) > 0 {
+		err := component.Merge(confmap.NewFromStringMap(contextStatementsPatch))
+		if err != nil {
+			return err
+		}
+	}
+
+	return component.Unmarshal(c)
 }
 
 var _ component.Config = (*Config)(nil)

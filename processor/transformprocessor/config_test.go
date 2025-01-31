@@ -205,6 +205,144 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "flat_configuration"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "mixed_configuration_styles"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
+					},
+					{
+						Context: "span",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+					{
+						Statements: []string{`set(span.attributes["name"], "lion")`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(span.name, "lion") where span.attributes["http.path"] == "/animal"`},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+					{
+						Statements: []string{`set(metric.name, "lion")`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(metric.name, "lion") where resource.attributes["http.path"] == "/animal"`},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+					{
+						Statements: []string{`set(log.attributes["name"], "lion")`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(log.body, "lion") where log.attributes["http.path"] == "/animal"`},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "context_statements_error_mode"),
+			expected: &Config{
+				ErrorMode: ottl.IgnoreError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(resource.attributes["name"], "propagate")`},
+						ErrorMode:  ottl.PropagateError,
+					},
+					{
+						Statements: []string{`set(resource.attributes["name"], "ignore")`},
+						ErrorMode:  "",
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(resource.attributes["name"], "silent")`},
+						ErrorMode:  ottl.SilentError,
+					},
+					{
+						Statements: []string{`set(resource.attributes["name"], "ignore")`},
+						ErrorMode:  "",
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(resource.attributes["name"], "propagate")`},
+						ErrorMode:  ottl.PropagateError,
+					},
+					{
+						Statements: []string{`set(resource.attributes["name"], "ignore")`},
+						ErrorMode:  "",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.Name(), func(t *testing.T) {
@@ -261,4 +399,20 @@ func Test_UnknownErrorMode(t *testing.T) {
 	sub, err := cm.Sub(id.String())
 	assert.NoError(t, err)
 	assert.Error(t, sub.Unmarshal(cfg))
+}
+
+func Test_SharedCacheKeyError(t *testing.T) {
+	id := component.NewIDWithName(metadata.Type, "with_shared_cache_key")
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(id.String())
+	assert.NoError(t, err)
+
+	err = sub.Unmarshal(cfg)
+	assert.ErrorContains(t, err, "metric_statements[0] has invalid keys: shared_cache")
 }
