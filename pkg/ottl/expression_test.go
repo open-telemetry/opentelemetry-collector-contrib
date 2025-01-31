@@ -641,6 +641,16 @@ func Test_newGetter(t *testing.T) {
 																Int: ottltest.Intp(1),
 															},
 														},
+														{
+															Map: &mapValue{
+																Values: []mapItem{
+																	{
+																		Key:   ottltest.Strp("stringAttr"),
+																		Value: &value{String: ottltest.Strp("value")},
+																	},
+																},
+															},
+														},
 													},
 												},
 											},
@@ -660,7 +670,7 @@ func Test_newGetter(t *testing.T) {
 					"foo": map[string]any{
 						"test": "value",
 					},
-					"listAttr": []any{"test0", int64(1)},
+					"listAttr": []any{"test0", int64(1), map[string]any{"stringAttr": "value"}},
 				},
 				"stringAttr": "value",
 				"intAttr":    int64(3),
