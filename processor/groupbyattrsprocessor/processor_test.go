@@ -6,7 +6,7 @@ package groupbyattrsprocessor
 import (
 	"context"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"sort"
 	"testing"
 	"time"
