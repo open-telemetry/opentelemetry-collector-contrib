@@ -44,6 +44,9 @@ func TestLoadConfig(t *testing.T) {
 		"Prometheus-Remote-Write-Version": "0.1.0",
 		"X-Scope-OrgID":                   "234",
 	}
+	prwClientConfig := newDefaultPRWClientConfig()
+	prwClientConfig.Endpoint = "localhost:8888"
+	prwClientConfig.Timeout = 11 * time.Second
 	tests := []struct {
 		id           component.ID
 		expected     component.Config
@@ -76,11 +79,42 @@ func TestLoadConfig(t *testing.T) {
 				Namespace:                   "test-space",
 				ExternalLabels:              map[string]string{"key1": "value1", "key2": "value2"},
 				ClientConfig:                clientConfig,
+				PRWClient:                   nil,
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 				TargetInfo: &TargetInfo{
 					Enabled: true,
 				},
 				CreatedMetric: &CreatedMetric{Enabled: true},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "prw_client"),
+			expected: &Config{
+				MaxBatchSizeBytes: 3000000,
+				TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig: configretry.BackOffConfig{
+					Enabled:             true,
+					InitialInterval:     50 * time.Millisecond,
+					MaxInterval:         30 * time.Second,
+					MaxElapsedTime:      5 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
+				},
+				RemoteWriteQueue: RemoteWriteQueue{
+					Enabled:      true,
+					QueueSize:    10000,
+					NumConsumers: 5,
+				},
+				AddMetricSuffixes:           true,
+				Namespace:                   "",
+				ExternalLabels:              make(map[string]string),
+				ClientConfig:                newDefaultPRWClientConfig(),
+				PRWClient:                   &prwClientConfig,
+				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: false},
+				TargetInfo: &TargetInfo{
+					Enabled: true,
+				},
+				CreatedMetric: &CreatedMetric{Enabled: false},
 			},
 		},
 		{
