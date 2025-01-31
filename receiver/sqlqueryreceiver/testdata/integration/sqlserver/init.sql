@@ -35,7 +35,7 @@ PRINT 'Data inserted into movie table.';
 CREATE TABLE simple_logs
 (
     id INT PRIMARY KEY,
-    insert_time DATETIME2,
+    insert_time DATETIME2 default GETDATE(),
     body NVARCHAR(MAX),
     attribute NVARCHAR(100)
 );
