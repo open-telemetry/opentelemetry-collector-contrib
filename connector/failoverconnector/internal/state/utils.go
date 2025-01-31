@@ -10,9 +10,11 @@ import (
 )
 
 type PSConstants struct {
-	RetryInterval time.Duration
-	RetryGap      time.Duration
-	MaxRetries    int
+	RetryInterval   time.Duration
+	RetryGap        time.Duration
+	MaxRetries      int
+	RetryBackoff    time.Duration
+	PriorityListLen int
 }
 
 type TryLock struct {
@@ -30,22 +32,23 @@ func NewTryLock() *TryLock {
 	return &TryLock{}
 }
 
+type cancelManager struct {
+	cancelFunc context.CancelFunc
+}
+
+func (c *cancelManager) CancelAndSet(cancelFunc context.CancelFunc) {
+	c.Cancel()
+	c.cancelFunc = cancelFunc
+}
+
+func (c *cancelManager) Cancel() {
+	if c.cancelFunc != nil {
+		c.cancelFunc()
+	}
+}
+
 // Manages cancel function for retry goroutine, ends up cleaner than using channels
 type RetryState struct {
-	lock        sync.Mutex
-	cancelRetry context.CancelFunc
-}
-
-func (m *RetryState) UpdateCancelFunc(newCancelFunc context.CancelFunc) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	m.cancelRetry = newCancelFunc
-}
-
-func (m *RetryState) InvokeCancel() {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	if m.cancelRetry != nil {
-		m.cancelRetry()
-	}
+	lock sync.Mutex
+	cancelManager
 }
