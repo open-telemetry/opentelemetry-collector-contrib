@@ -19,6 +19,11 @@ type Config struct {
 	// without being changed or removed.
 	IgnoredKeys []string `mapstructure:"ignored_keys"`
 
+	// RedactAllTypes is a flag to allow the processor to redact all span
+	// attribute values including those that are not strings. By default
+	// it is false and only string values are redacted.
+	RedactAllTypes bool `mapstructure:"redact_all_types"`
+
 	// BlockedValues is a list of regular expressions for blocking values of
 	// allowed span attributes. Values that match are masked
 	BlockedValues []string `mapstructure:"blocked_values"`

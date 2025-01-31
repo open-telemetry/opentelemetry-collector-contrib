@@ -73,6 +73,8 @@ processors:
     # Any keys in this list are allowed so they don't need to be in both lists.
     ignored_keys:
       - safe_attribute
+    # redact_all_types will check incoming fields for sensitive data based on their AsString() representation. This allows the processor to redact sensitive data from ints. This is useful for redacting credit card numbers
+    redact_all_types: true
     # blocked_values is a list of regular expressions for blocking values of
     # allowed span attributes. Values that match are masked
     blocked_values:
