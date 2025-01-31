@@ -6,9 +6,10 @@ package awsemfexporter
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -32,7 +33,14 @@ func (p *mockPusher) AddLogEntry(_ *cwlogs.Event) error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
-		return awserr.NewRequestFailure(nil, 400, "").(error)
+		return &smithyhttp.ResponseError{
+			Err: nil,
+			Response: &smithyhttp.Response{
+				Response: &http.Response{
+					StatusCode: http.StatusBadRequest,
+				},
+			},
+		}
 	}
 	return nil
 }
@@ -41,7 +49,14 @@ func (p *mockPusher) ForceFlush() error {
 	args := p.Called(nil)
 	errorStr := args.String(0)
 	if errorStr != "" {
-		return awserr.NewRequestFailure(nil, 400, "").(error)
+		return &smithyhttp.ResponseError{
+			Err: nil,
+			Response: &smithyhttp.Response{
+				Response: &http.Response{
+					StatusCode: http.StatusBadRequest,
+				},
+			},
+		}
 	}
 	return nil
 }
@@ -400,10 +415,24 @@ func TestNewExporterWithoutSession(t *testing.T) {
 }
 
 func TestWrapErrorIfBadRequest(t *testing.T) {
-	awsErr := awserr.NewRequestFailure(nil, 400, "").(error)
+	awsErr := &smithyhttp.ResponseError{
+		Err: nil,
+		Response: &smithyhttp.Response{
+			Response: &http.Response{
+				StatusCode: http.StatusBadRequest,
+			},
+		},
+	}
 	err := wrapErrorIfBadRequest(awsErr)
 	assert.True(t, consumererror.IsPermanent(err))
-	awsErr = awserr.NewRequestFailure(nil, 500, "").(error)
+	awsErr = &smithyhttp.ResponseError{
+		Err: nil,
+		Response: &smithyhttp.Response{
+			Response: &http.Response{
+				StatusCode: http.StatusInternalServerError,
+			},
+		},
+	}
 	err = wrapErrorIfBadRequest(awsErr)
 	assert.False(t, consumererror.IsPermanent(err))
 }
