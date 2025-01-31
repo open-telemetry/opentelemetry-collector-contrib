@@ -8,7 +8,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.118.1-0.20250130224751-50b76b95bf35
 	go.opentelemetry.io/collector/pdata v1.24.1-0.20250130224751-50b76b95bf35
-	go.opentelemetry.io/collector/semconv v0.118.1-0.20250130220845-0276d781be89
+	go.opentelemetry.io/collector/semconv v0.118.1-0.20250130224751-50b76b95bf35
 	go.opentelemetry.io/otel v1.34.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.8.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.8.0
@@ -43,7 +43,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250130220845-0276d781be89 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250130224751-50b76b95bf35 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
