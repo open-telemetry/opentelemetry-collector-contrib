@@ -10,7 +10,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 )
 
-// Config relating to Github Metric Scraper.
+// Config relating to GitHub Metric Scraper.
 type Config struct {
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	confighttp.ClientConfig       `mapstructure:",squash"`

@@ -16,7 +16,7 @@ import (
 )
 
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
@@ -43,7 +43,14 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualExporterRequestsBytes(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func NewSettings(tt *componenttest.Telemetry) exporter.Settings {
+	set := exportertest.NewNopSettings()
+	set.ID = component.NewID(component.MustNewType("sumologic"))
+	set.TelemetrySettings = tt.NewTelemetrySettings()
+	return set
+}
+
+func AssertEqualExporterRequestsBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_requests_bytes",
 		Description: "Total size of requests (in bytes)",
@@ -54,11 +61,12 @@ func AssertEqualExporterRequestsBytes(t *testing.T, tt componenttest.Telemetry, 
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_requests_bytes")
+	got, err := tt.GetMetric("otelcol_exporter_requests_bytes")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterRequestsDuration(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterRequestsDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_requests_duration",
 		Description: "Duration of HTTP requests (in milliseconds)",
@@ -69,11 +77,12 @@ func AssertEqualExporterRequestsDuration(t *testing.T, tt componenttest.Telemetr
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_requests_duration")
+	got, err := tt.GetMetric("otelcol_exporter_requests_duration")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterRequestsRecords(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterRequestsRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_requests_records",
 		Description: "Total size of requests (in number of records)",
@@ -84,11 +93,12 @@ func AssertEqualExporterRequestsRecords(t *testing.T, tt componenttest.Telemetry
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_requests_records")
+	got, err := tt.GetMetric("otelcol_exporter_requests_records")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterRequestsSent(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterRequestsSent(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_requests_sent",
 		Description: "Number of requests",
@@ -99,14 +109,9 @@ func AssertEqualExporterRequestsSent(t *testing.T, tt componenttest.Telemetry, d
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_requests_sent")
+	got, err := tt.GetMetric("otelcol_exporter_requests_sent")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {

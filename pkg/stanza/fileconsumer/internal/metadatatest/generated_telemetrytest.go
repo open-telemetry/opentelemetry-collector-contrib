@@ -13,7 +13,7 @@ import (
 )
 
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
@@ -33,7 +33,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualFileconsumerOpenFiles(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualFileconsumerOpenFiles(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_fileconsumer_open_files",
 		Description: "Number of open files",
@@ -44,11 +44,12 @@ func AssertEqualFileconsumerOpenFiles(t *testing.T, tt componenttest.Telemetry, 
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_fileconsumer_open_files")
+	got, err := tt.GetMetric("otelcol_fileconsumer_open_files")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualFileconsumerReadingFiles(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualFileconsumerReadingFiles(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_fileconsumer_reading_files",
 		Description: "Number of open files that are being read",
@@ -59,14 +60,9 @@ func AssertEqualFileconsumerReadingFiles(t *testing.T, tt componenttest.Telemetr
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_fileconsumer_reading_files")
+	got, err := tt.GetMetric("otelcol_fileconsumer_reading_files")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {

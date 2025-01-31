@@ -52,9 +52,9 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/skywalkingencodingextension v0.118.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.118.1-0.20250123125445-24f88da7b583
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.118.1-0.20250130224751-50b76b95bf35
   - gomod: go.opentelemetry.io/collector/exporter/nopexporter v0.118.1-0.20250123125445-24f88da7b583
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.118.1-0.20250123125445-24f88da7b583
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.118.1-0.20250130224751-50b76b95bf35
   - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.118.1-0.20250123125445-24f88da7b583
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter v0.118.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.118.0
@@ -102,8 +102,8 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.118.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.118.1-0.20250123125445-24f88da7b583
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.118.1-0.20250123125445-24f88da7b583
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.118.1-0.20250130224751-50b76b95bf35
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.118.1-0.20250130224751-50b76b95bf35
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.118.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.118.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.118.0
@@ -130,7 +130,7 @@ processors:
 
 receivers:
   - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.118.1-0.20250123125445-24f88da7b583
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.118.1-0.20250123125445-24f88da7b583
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.118.1-0.20250130224751-50b76b95bf35
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver v0.118.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver v0.118.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver v0.118.0
@@ -239,17 +239,17 @@ connectors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.118.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.118.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/sumconnector v0.118.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector v0.118.0
 
 providers:
-  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.24.1-0.20250123125445-24f88da7b583
-  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.24.1-0.20250123125445-24f88da7b583
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.24.1-0.20250123125445-24f88da7b583
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.24.1-0.20250130224751-50b76b95bf35
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.24.1-0.20250130224751-50b76b95bf35
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.24.1-0.20250130224751-50b76b95bf35
   - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.24.1-0.20250123125445-24f88da7b583
-  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.24.1-0.20250123125445-24f88da7b583
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.24.1-0.20250130224751-50b76b95bf35
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.118.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider v0.118.0
 
 # When using `make genotelcontribcol`, a `replaces` section is appended to this
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
-

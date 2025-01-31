@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package zookeeperreceiver
+package zookeeperscraper
 
 import (
 	"bufio"
@@ -16,8 +16,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -25,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper/internal/metadata"
 )
 
 type logMsg struct {
@@ -290,12 +291,10 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			}
 
 			core, observedLogs := observer.New(zap.DebugLevel)
-			settings := receivertest.NewNopSettings()
+			settings := scrapertest.NewNopSettings()
 			settings.Logger = zap.New(core)
-			z, err := newZookeeperMetricsScraper(settings, cfg)
-			require.NoError(t, err)
-			require.Equal(t, "zookeeper", z.Name())
 
+			z := newZookeeperMetricsScraper(settings, cfg)
 			if tt.setConnectionDeadline != nil {
 				z.setConnectionDeadline = tt.setConnectionDeadline
 			}
@@ -307,10 +306,11 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			if tt.sendCmd != nil {
 				z.sendCmd = tt.sendCmd
 			}
-			ctx, cancel := context.WithTimeout(context.Background(), z.config.Timeout)
+			require.NoError(t, z.Start(context.Background(), componenttest.NewNopHost()))
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			actualMetrics, err := z.scrape(ctx)
-			require.NoError(t, z.shutdown(ctx))
+			actualMetrics, err := z.ScrapeMetrics(ctx)
+			require.NoError(t, z.Shutdown(context.Background()))
 
 			require.Equal(t, len(tt.expectedLogs), observedLogs.Len())
 			for i, log := range tt.expectedLogs {
@@ -323,7 +323,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					require.Error(t, err)
 					require.Equal(t, pmetric.NewMetrics(), actualMetrics)
 				}
-				require.NoError(t, z.shutdown(ctx))
+				require.NoError(t, z.Shutdown(context.Background()))
 				return
 			}
 
@@ -339,9 +339,9 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 
 func TestZookeeperShutdownBeforeScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	z, err := newZookeeperMetricsScraper(receivertest.NewNopSettings(), cfg)
-	require.NoError(t, err)
-	require.NoError(t, z.shutdown(context.Background()))
+	z := newZookeeperMetricsScraper(scrapertest.NewNopSettings(), cfg)
+	require.NoError(t, z.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, z.Shutdown(context.Background()))
 }
 
 type mockedServer struct {

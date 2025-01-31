@@ -16,7 +16,7 @@ import (
 )
 
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
@@ -43,7 +43,14 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualLokiexporterSendFailedDueToMissingLabels(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func NewSettings(tt *componenttest.Telemetry) exporter.Settings {
+	set := exportertest.NewNopSettings()
+	set.ID = component.NewID(component.MustNewType("loki"))
+	set.TelemetrySettings = tt.NewTelemetrySettings()
+	return set
+}
+
+func AssertEqualLokiexporterSendFailedDueToMissingLabels(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_lokiexporter_send_failed_due_to_missing_labels",
 		Description: "Number of log records failed to send because labels were missing",
@@ -54,14 +61,9 @@ func AssertEqualLokiexporterSendFailedDueToMissingLabels(t *testing.T, tt compon
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_lokiexporter_send_failed_due_to_missing_labels")
+	got, err := tt.GetMetric("otelcol_lokiexporter_send_failed_due_to_missing_labels")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
