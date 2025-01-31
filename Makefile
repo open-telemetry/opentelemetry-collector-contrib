@@ -384,28 +384,36 @@ telemetrygenlite:
 # helper function to update the core packages in builder-config.yaml
 # input parameters are
 # $(1) = path/to/versions.yaml (where it greps the relevant packages)
-# $(2) = path/to/go.mod (where it greps the package-versions)
-# $(3) = path/to/builder-config.yaml (where we want to update the versions)
+# $(2) = path/to/builder-config.yaml (where we want to update the versions)
 define updatehelper
-	if [ ! -f $(1) ] || [ ! -f $(2) ] || [ ! -f $(3) ]; then \
-			echo "Usage: updatehelper <versions.yaml> <go.mod> <builder-config.yaml>"; \
-			exit 1; \
+	if [ ! -f $(1) ] || [ ! -f $(2) ]; then \
+		echo "Usage: updatehelper <versions.yaml> <builder-config.yaml>"; \
+		exit 1; \
 	fi
+	# For each line in versions.yaml referencing go.opentelemetry.io,
+	# try to find it in any go.mod under the current directory.
 	grep "go\.opentelemetry\.io" $(1) | sed 's/^[[:space:]]*-[[:space:]]*//' | while IFS= read -r line; do \
-			if grep -qF "$$line" $(2); then \
-					package=$$(grep -F "$$line" $(2) | head -n 1 | awk '{print $$1}'); \
-					version=$$(grep -F "$$line" $(2) | head -n 1 | awk '{print $$2}'); \
-					builder_package=$$(grep -F "$$package" $(3) | awk '{print $$3}'); \
-					builder_version=$$(grep -F "$$package" $(3) | awk '{print $$4}'); \
-					if [ "$$builder_package" == "$$package" ]; then \
-						sed -i.bak -e "s|$$builder_package.*$$builder_version|$$builder_package $$version|" $(3); \
-						rm $(3).bak; \
-						echo "[$(3)]: $$package updated from $$builder_version to $$version"; \
-					fi; \
+		found="false"; \
+		for gomod in $$(find . -name 'go.mod'); do \
+			if grep -qF "$$line" "$$gomod"; then \
+				found="true"; \
+				package=$$(grep -F "$$line" "$$gomod" | head -n 1 | awk '{print $$1}'); \
+				version=$$(grep -F "$$line" "$$gomod" | head -n 1 | awk '{print $$2}'); \
+				builder_package=$$(grep -F "$$package" $(2) | awk '{print $$3}'); \
+				builder_version=$$(grep -F "$$package" $(2) | awk '{print $$4}'); \
+				if [ "$$builder_package" == "$$package" ]; then \
+					sed -i.bak -e "s|$$builder_package.*$$builder_version|$$builder_package $$version|" $(2); \
+					rm $(2).bak; \
+					echo "[$(2)]: $$package updated from $$builder_version to $$version"; \
+				fi; \
+				break; \
 			fi; \
+		done; \
+		if [ "$$found" = "false" ]; then \
+			echo "Package '$$line' not found in any go.mod"; \
+		fi; \
 	done
 endef
-
 
 .PHONY: update-otel
 update-otel:$(MULTIMOD)
@@ -414,13 +422,9 @@ update-otel:$(MULTIMOD)
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
 	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
 	$(MAKE) gotidy
-	# Ensure the otelcontribcol is generated, update deps, then
+	$(call updatehelper,$(CORE_VERSIONS),./cmd/otelcontribcol/builder-config.yaml)
+	$(call updatehelper,$(CORE_VERSIONS),./cmd/oteltestbedcol/builder-config.yaml)
 	$(MAKE) genotelcontribcol
-	$(call updatehelper,$(CORE_VERSIONS),./cmd/otelcontribcol/go.mod,./cmd/otelcontribcol/builder-config.yaml)
-	$(MAKE) genotelcontribcol
-	# Ensure the otelcontribcol is generated.
-	$(MAKE) genoteltestbedcol
-	$(call updatehelper,$(CORE_VERSIONS),./cmd/oteltestbedcol/go.mod,./cmd/oteltestbedcol/builder-config.yaml)
 	$(MAKE) genoteltestbedcol
 	$(MAKE) generate
 	$(MAKE) crosslink
