@@ -220,6 +220,8 @@ func (s *mongodbScraper) recordLatencyTime(now pcommon.Timestamp, doc bson.M, er
 
 // Admin Stats
 func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	currentCounts := make(map[string]int64)
+
 	for operationVal, operation := range metadata.MapAttributeOperation {
 		metricPath := []string{"opcounters", operationVal}
 		metricName := "mongodb.operation.count"
@@ -228,8 +230,17 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
 			continue
 		}
+
 		s.mb.RecordMongodbOperationCountDataPoint(now, val, operation)
+
+		currentCounts[operationVal] = val
+		s.recordOperationPerSecond(now, operationVal, val)
 	}
+
+	// For telegraf metrics to get QPS for opcounters
+	// Store current counts for next iteration
+	s.prevCounts = currentCounts
+	s.prevTimestamp = now
 }
 
 func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
@@ -243,6 +254,132 @@ func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M,
 		}
 		s.mb.RecordMongodbOperationReplCountDataPoint(now, val, operation)
 	}
+}
+
+func (s *mongodbScraper) recordFlushesPerSecond(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"wiredTiger", "checkpoint", "total succeed number of checkpoints"}
+	metricName := "mongodb.flushes_per_sec"
+	currentFlushes, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+
+	if s.prevFlushTimestamp > 0 {
+		timeDelta := float64(now-s.prevFlushTimestamp) / 1e9
+		if timeDelta > 0 {
+			if prevFlushCount := s.prevFlushCount; true {
+				delta := currentFlushes - prevFlushCount
+				flushesPerSec := float64(delta) / timeDelta
+				s.mb.RecordMongodbFlushesPerSecDataPoint(now, flushesPerSec)
+			}
+		}
+	}
+
+	s.prevFlushCount = currentFlushes
+	s.prevFlushTimestamp = now
+}
+
+func (s *mongodbScraper) recordOperationPerSecond(now pcommon.Timestamp, operationVal string, currentCount int64) {
+	if s.prevTimestamp > 0 {
+		timeDelta := float64(now-s.prevTimestamp) / 1e9
+		if timeDelta > 0 {
+			if prevCount, exists := s.prevCounts[operationVal]; exists {
+				delta := currentCount - prevCount
+				queriesPerSec := float64(delta) / timeDelta
+
+				switch operationVal {
+				case "query":
+					s.mb.RecordMongodbQueriesPerSecDataPoint(now, queriesPerSec)
+				case "insert":
+					s.mb.RecordMongodbInsertsPerSecDataPoint(now, queriesPerSec)
+				case "command":
+					s.mb.RecordMongodbCommandsPerSecDataPoint(now, queriesPerSec)
+				case "getmore":
+					s.mb.RecordMongodbGetmoresPerSecDataPoint(now, queriesPerSec)
+				case "delete":
+					s.mb.RecordMongodbDeletesPerSecDataPoint(now, queriesPerSec)
+				case "update":
+					s.mb.RecordMongodbUpdatesPerSecDataPoint(now, queriesPerSec)
+				default:
+					fmt.Printf("Unhandled operation: %s\n", operationVal)
+				}
+			}
+		}
+	}
+}
+
+func (s *mongodbScraper) recordActiveWrites(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"globalLock", "activeClients", "writers"}
+	metricName := "mongodb.active.writes"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbActiveWritesDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordActiveReads(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"globalLock", "activeClients", "readers"}
+	metricName := "mongodb.active.reads"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbActiveReadsDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordWTCacheBytes(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"wiredTiger", "cache", "bytes read into cache"}
+	metricName := "mongodb.wtcache.bytes.read"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbWtcacheBytesReadDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordCachePercentages(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	wt, ok := doc["wiredTiger"].(bson.M)
+	if !ok {
+		errs.AddPartial(2, errors.New("failed to find wiredTiger metrics"))
+		return
+	}
+
+	cache, ok := wt["cache"].(bson.M)
+	if !ok {
+		errs.AddPartial(2, errors.New("failed to find cache metrics"))
+		return
+	}
+
+	// Calculate dirty percentage
+	trackedDirtyBytes, err1 := collectMetric(cache, []string{"tracked dirty bytes in the cache"})
+	maxBytes, err2 := collectMetric(cache, []string{"maximum bytes configured"})
+	if err1 == nil && err2 == nil && maxBytes > 0 {
+		dirtyPercent := float64(trackedDirtyBytes) / float64(maxBytes) * 100
+		s.mb.RecordMongodbCacheDirtyPercentDataPoint(now, dirtyPercent)
+	}
+
+	// Calculate used percentage
+	bytesInUse, err3 := collectMetric(cache, []string{"bytes currently in the cache"})
+	if err3 == nil && maxBytes > 0 {
+		usedPercent := float64(bytesInUse) / float64(maxBytes) * 100
+		s.mb.RecordMongodbCacheUsedPercentDataPoint(now, usedPercent)
+	}
+}
+
+func (s *mongodbScraper) recordPageFaults(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"extra_info", "page_faults"}
+	metricName := "mongodb.page_faults"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbPageFaultsDataPoint(now, val)
 }
 
 func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
