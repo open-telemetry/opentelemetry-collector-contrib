@@ -24,7 +24,6 @@ const (
 	AttributeVCSChangeStateClosed = "closed"
 	AttributeVCSChangeStateMerged = "merged"
 
-	// TODO: Eveluate whether or not this should be a head title attribute
 	// vcs.change.title
 	AttributeVCSChangeTitle = "vcs.change.title"
 
@@ -92,16 +91,20 @@ const (
 	AttributeCICDPipelineTaskRunStatusSkip         = "skip"
 
 	// The following attributes are not part of the semantic conventions yet.
-	AttributeCICDPipelineRunSenderLogin     = "cicd.pipeline.run.sender.login"      // GitHub's Run Sender Login
-	AttributeCICDPipelineTaskRunSenderLogin = "cicd.pipeline.task.run.sender.login" // GitHub's Task Sender Login
-	AttributeVCSVendorName                  = "vcs.vendor.name"                     // GitHub
-	AttributeVCSRepositoryOwner             = "vcs.repository.owner"                // GitHub's Owner Login
-	AttributeCICDPipelineFilePath           = "cicd.pipeline.file.path"             // GitHub's Path in workflow_run
+	AttributeCICDPipelineRunSenderLogin         = "cicd.pipeline.run.sender.login"      // GitHub's Run Sender Login
+	AttributeCICDPipelineTaskRunSenderLogin     = "cicd.pipeline.task.run.sender.login" // GitHub's Task Sender Login
+	AttributeVCSVendorName                      = "vcs.vendor.name"                     // GitHub
+	AttributeVCSRepositoryOwner                 = "vcs.repository.owner"                // GitHub's Owner Login
+	AttributeCICDPipelineFilePath               = "cicd.pipeline.file.path"             // GitHub's Path in workflow_run
+	AttributeCICDPipelinePreviousAttemptURLFull = "cicd.pipeline.run.previous_attempt.url.full"
 
 	AttributeGitHubAppInstallationID  = "github.app.installation.id"  // GitHub's Installation ID
 	AttributeGitHubWorkflowRunAttempt = "github.workflow.run.attempt" // GitHub's Run Attempt
 
-	// TODO: Evaluate whether or not these should be added. Always iffy on adding specific usernames and emails.
+	// SECURITY: This information will always exist on the repository, but may
+	// be considered private if the repository is set to private. Care should be
+	// taken in the data pipeline for sanitizing sensitive user information if
+	// the user deems it as such.
 	AttributeVCSRefHeadRevisionAuthorName  = "vcs.ref.head.revision.author.name"  // GitHub's Head Revision Author Name
 	AttributeVCSRefHeadRevisionAuthorEmail = "vcs.ref.head.revision.author.email" // GitHub's Head Revision Author Email
 
@@ -147,7 +150,7 @@ func (gtr *githubTracesReceiver) getWorkflowAttrs(resource pcommon.Resource, e *
 	attrs.PutStr(semconv.AttributeCicdPipelineName, e.GetWorkflowRun().GetName())
 	attrs.PutStr(AttributeCICDPipelineRunSenderLogin, e.GetSender().GetLogin())
 	attrs.PutStr(AttributeCICDPipelineRunURLFull, e.GetWorkflowRun().GetHTMLURL())
-	attrs.PutInt(semconv.AttributeCicdPipelineRunID, e.GetWorkflowRun().GetID()) // TODO: GitHub events have runIDs, but not available in the SDK??
+	attrs.PutInt(semconv.AttributeCicdPipelineRunID, e.GetWorkflowRun().GetID())
 	switch status := e.GetWorkflowRun().GetConclusion(); status {
 	case "success":
 		attrs.PutStr(AttributeCICDPipelineRunStatus, AttributeCICDPipelineRunStatusSuccess)
@@ -157,45 +160,62 @@ func (gtr *githubTracesReceiver) getWorkflowAttrs(resource pcommon.Resource, e *
 		attrs.PutStr(AttributeCICDPipelineRunStatus, AttributeCICDPipelineRunStatusSkip)
 	case "cancelled":
 		attrs.PutStr(AttributeCICDPipelineRunStatus, AttributeCICDPipelineRunStatusCancellation)
-	// Default sets to whatever is provided by the event. GitHub provides the following additional values:
-	// neutral, timed_out, action_required, stale, startup_failure, and null.
+	// Default sets to whatever is provided by the event. GitHub provides the
+	// following additional values: neutral, timed_out, action_required, stale,
+	// startup_failure, and null.
 	default:
 		attrs.PutStr(AttributeCICDPipelineRunStatus, status)
 	}
 
-	// TODO: Add function and put previous	run_attempt_url
-	// if e.GetWorkflowRun().GetPreviousAttemptURL() != "" {
-	// 	htmlURL := transformGitHubAPIURL(e.GetWorkflowRun().GetPreviousAttemptURL())
-	// 	attrs.PutStr("cicd.pipeline.run.previous_attempt_url", htmlURL)
-	// }
-
-	// TODO: This attribute is important for determining what shared workflows
-	// exist, and what versions (or shas). Previously, it would all get
-	// appended. But this should be a slice of values instead.
-	if len(e.GetWorkflowRun().ReferencedWorkflows) > 0 {
-		var referencedWorkflows []string
-		for _, w := range e.GetWorkflowRun().ReferencedWorkflows {
-			referencedWorkflows = append(referencedWorkflows, w.GetPath())
-			referencedWorkflows = append(referencedWorkflows, w.GetSHA())
-			referencedWorkflows = append(referencedWorkflows, w.GetRef())
-		}
-		attrs.PutStr("cicd.pipeline.run.referenced_workflows", strings.Join(referencedWorkflows, ";"))
+	if e.GetWorkflowRun().GetPreviousAttemptURL() != "" {
+		htmlURL := replaceAPIURL(e.GetWorkflowRun().GetPreviousAttemptURL())
+		attrs.PutStr(AttributeCICDPipelinePreviousAttemptURLFull, htmlURL)
 	}
 
-	// TODO: Convert this to the VCS Change Request.
-	// if len(e.GetWorkflowRun().PullRequests) > 0 {
-	// 	var prUrls []string
-	// 	for _, pr := range e.GetWorkflowRun().PullRequests {
-	// 		prUrls = append(prUrls, convertPRURL(pr.GetURL()))
-	// 	}
-	// 	attrs.PutStr("vcs.change.url", strings.Join(prUrls, ";"))
-	// }
+	// Determine if there are any referenced (shared) workflows imported by the
+	// Workflow run and generated the temmplated attributes for them.
+	if len(e.GetWorkflowRun().ReferencedWorkflows) > 0 {
+		for _, w := range e.GetWorkflowRun().ReferencedWorkflows {
+			var name string
+			name, err = splitRefWorkflowPath(w.GetPath())
+			if err != nil {
+				return err
+			}
+
+			template := AttributeGitHubReferenceWorkflow + "." + name
+			pathAttr := template + ".path"
+			revAttr := template + ".revision"
+			versionAttr := template + ".version"
+
+			attrs.PutStr(pathAttr, w.GetPath())
+			attrs.PutStr(revAttr, w.GetSHA())
+			attrs.PutStr(versionAttr, w.GetRef())
+		}
+	}
 
 	return err
 }
 
-func splitRefWorkflow(workflow string) (name string, version string, err error) {
-	return "", "", nil
+// splitRefWorkflowPath splits the reference workflow path into just the file
+// name normalized to lowercase without the file type.
+func splitRefWorkflowPath(path string) (fileName string, err error) {
+	parts := strings.Split(path, "@")
+	if len(parts) != 2 {
+		return "", errors.New("invalid reference workflow path")
+	}
+
+	parts = strings.Split(parts[0], "/")
+	if len(parts) == 0 {
+		return "", errors.New("invalid reference workflow path")
+	}
+
+	last := parts[len(parts)-1]
+	parts = strings.Split(last, ".")
+	if len(parts) == 0 {
+		return "", errors.New("invalid reference workflow path")
+	}
+
+	return strings.ToLower(parts[0]), nil
 }
 
 // getServiceName returns a generated service.name resource attribute derived
@@ -230,4 +250,10 @@ func (gtr *githubTracesReceiver) getServiceName(customProps any, repoName string
 // hyphens.
 func formatString(input string) string {
 	return strings.ToLower(strings.ReplaceAll(input, "_", "-"))
+}
+
+// replaceAPIURL replaces a GitHub API URL with the HTML URL version.
+func replaceAPIURL(apiURL string) (htmlURL string) {
+	// TODO: Support enterpise server configuration with custom domain.
+	return strings.Replace(apiURL, "api.github.com/repos", "github.com", 1)
 }

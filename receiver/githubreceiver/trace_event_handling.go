@@ -43,8 +43,8 @@ func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent) (
 // the proper root span and trace ID.
 // func (gtr *githubTracesReceiver) handleWorkflowJob(ctx context.Context, e *github.WorkflowJobEvent) (ptrace.Traces, error) {
 // 	t := ptrace.NewTraces()
-// 	// r := t.ResourceSpans().AppendEmpty()
-// 	// s := r.InstrumentationLibrarySpans().AppendEmpty()
+// 	r := t.ResourceSpans().AppendEmpty()
+// 	s := r.InstrumentationLibrarySpans().AppendEmpty()
 // 	return t, nil
 // }
 

@@ -164,7 +164,7 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
 			return
 		}
 		return
-		// TODO: Enable
+		// TODO: Enable when handleWorkflowJob is implemented
 		// td, err = gtr.handleWorkflowJob(ctx, e)
 	case *github.PingEvent:
 		w.Header().Add("Content-Type", "application/json")
