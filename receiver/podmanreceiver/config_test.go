@@ -24,9 +24,9 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id             component.ID
-		expected       component.Config
-		expectedErrMsg string
+		id              component.ID
+		expected        component.Config
+		expectedErrMsgs []string
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
@@ -55,12 +55,12 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:             component.NewIDWithName(metadata.Type, "empty_endpoint"),
-			expectedErrMsg: "config.Endpoint must be specified",
+			id:              component.NewIDWithName(metadata.Type, "empty_endpoint"),
+			expectedErrMsgs: []string{"config.Endpoint must be specified"},
 		},
 		{
-			id:             component.NewIDWithName(metadata.Type, "invalid_collection_interval"),
-			expectedErrMsg: `config.CollectionInterval must be specified; "collection_interval": requires positive value`,
+			id:              component.NewIDWithName(metadata.Type, "invalid_collection_interval"),
+			expectedErrMsgs: []string{`config.CollectionInterval must be specified`, `"collection_interval": requires positive value`},
 		},
 	}
 
@@ -73,8 +73,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			if tt.expectedErrMsg != "" {
-				assert.ErrorContains(t, component.ValidateConfig(cfg), tt.expectedErrMsg)
+			if len(tt.expectedErrMsgs) > 0 {
+				for _, msg := range tt.expectedErrMsgs {
+					assert.ErrorContains(t, component.ValidateConfig(cfg), msg)
+				}
 				return
 			}
 
