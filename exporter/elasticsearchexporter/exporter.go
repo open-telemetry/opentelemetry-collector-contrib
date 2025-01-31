@@ -24,11 +24,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
 )
 
-const (
-	// documentIDAttributeName is the attribute name used to specify the document ID.
-	documentIDAttributeName = "elasticsearch.document_id"
-)
-
 type elasticsearchExporter struct {
 	component.TelemetrySettings
 	userAgent string
@@ -471,7 +466,7 @@ func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string
 		return ""
 	}
 
-	v, ok := m.Get(documentIDAttributeName)
+	v, ok := m.Get(elasticsearch.DocumentIDAttributeName)
 	if !ok {
 		return ""
 	}

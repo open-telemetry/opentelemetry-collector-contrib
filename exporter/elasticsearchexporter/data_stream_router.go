@@ -62,8 +62,8 @@ func routeWithDefaults(defaultDSType string) func(
 		// 2. read elasticsearch.index.* from attributes
 		// 3. receiver-based routing
 		// 4. use default hardcoded data_stream.*
-		dataset, datasetExists := getFromAttributes(dataStreamDataset, defaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)
-		namespace, namespaceExists := getFromAttributes(dataStreamNamespace, defaultDataStreamNamespace, recordAttr, scopeAttr, resourceAttr)
+		dataset, datasetExists := getFromAttributes(elasticsearch.DataStreamDataset, defaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)
+		namespace, namespaceExists := getFromAttributes(elasticsearch.DataStreamNamespace, defaultDataStreamNamespace, recordAttr, scopeAttr, resourceAttr)
 		dataStreamMode := datasetExists || namespaceExists
 		if !dataStreamMode {
 			prefix, prefixExists := getFromAttributes(indexPrefix, "", resourceAttr, scopeAttr, recordAttr)
