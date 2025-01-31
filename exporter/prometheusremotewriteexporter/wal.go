@@ -18,10 +18,12 @@ import (
 	"github.com/tidwall/wal"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"github.com/ietxaniz/delock"
 )
 
 type prweWAL struct {
-	mu        sync.Mutex // mu protects the fields below.
+	mu        delock.Mutex // mu protects the fields below.
 	wal       *wal.Log
 	walConfig *WALConfig
 	walPath   string
@@ -94,8 +96,11 @@ var (
 
 // retrieveWALIndices queries the WriteAheadLog for its current first and last indices.
 func (prwe *prweWAL) retrieveWALIndices() (err error) {
-	prwe.mu.Lock()
-	defer prwe.mu.Unlock()
+	lockID, err := prwe.mu.Lock()
+	if err != nil {
+		panic(err)
+	}
+	defer prwe.mu.Unlock(lockID)
 
 	err = prwe.closeWAL()
 	if err != nil {
@@ -127,8 +132,11 @@ func (prwe *prweWAL) retrieveWALIndices() (err error) {
 func (prwe *prweWAL) stop() error {
 	err := errAlreadyClosed
 	prwe.stopOnce.Do(func() {
-		prwe.mu.Lock()
-		defer prwe.mu.Unlock()
+		lockID, err := prwe.mu.Lock()
+	if err != nil {
+		panic(err)
+	}
+	defer prwe.mu.Unlock(lockID)
 
 		close(prwe.stopChan)
 		err = prwe.closeWAL()
@@ -260,8 +268,11 @@ func (prwe *prweWAL) closeWAL() error {
 }
 
 func (prwe *prweWAL) syncAndTruncateFront() error {
-	prwe.mu.Lock()
-	defer prwe.mu.Unlock()
+	lockID, err := prwe.mu.Lock()
+	if err != nil {
+		panic(err)
+	}
+	defer prwe.mu.Unlock(lockID)
 
 	if prwe.wal == nil {
 		return errNilWAL
@@ -301,8 +312,11 @@ func (prwe *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*pro
 // write them to the Write-Ahead-Log so that shutdowns won't lose data, and that the routine that
 // reads from the WAL can then process the previously serialized requests.
 func (prwe *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
-	prwe.mu.Lock()
-	defer prwe.mu.Unlock()
+	lockID, err := prwe.mu.Lock()
+	if err != nil {
+		panic(err)
+	}
+	defer prwe.mu.Unlock(lockID)
 
 	// Write all the requests to the WAL in a batch.
 	batch := new(wal.Batch)
@@ -319,8 +333,11 @@ func (prwe *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
 }
 
 func (prwe *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wreq *prompb.WriteRequest, err error) {
-	prwe.mu.Lock()
-	defer prwe.mu.Unlock()
+	lockID, err := prwe.mu.Lock()
+	if err != nil {
+		panic(err)
+	}
+	defer prwe.mu.Unlock(lockID)
 
 	var protoBlob []byte
 	for i := 0; i < 12; i++ {
