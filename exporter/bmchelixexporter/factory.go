@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/bmchelixexporter/internal/metadata"
 )
@@ -27,20 +27,30 @@ func NewFactory() exporter.Factory {
 
 // creates the default configuration for the BMC Helix exporter
 func createDefaultConfig() component.Config {
+	httpClientConfig := confighttp.NewDefaultClientConfig()
+	httpClientConfig.Timeout = 10 * time.Second
+
 	return &Config{
-		Timeout:     10 * time.Second,
-		RetryConfig: configretry.NewDefaultBackOffConfig(),
+		ClientConfig: httpClientConfig,
+		RetryConfig:  configretry.NewDefaultBackOffConfig(),
 	}
 }
 
 // creates an exporter.Metrics that records observability metrics for BMC Helix
 func createMetricsExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
+	config := cfg.(*Config)
+	exporter, err := newBmcHelixExporter(config, set)
+	if err != nil {
+		return nil, err
+	}
+
 	return exporterhelper.NewMetrics(
 		ctx,
 		set,
-		cfg,
-		func(_ context.Context, _ pmetric.Metrics) error {
-			return nil
-		},
+		config,
+		exporter.pushMetrics,
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithRetry(config.RetryConfig),
+		exporterhelper.WithStart(exporter.start),
 	)
 }
