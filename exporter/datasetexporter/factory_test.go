@@ -161,7 +161,11 @@ func TestValidateConfigs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(*testing.T) {
 			err := component.ValidateConfig(tt.config)
-			assert.Equal(t, tt.expectedError, err)
+			if tt.expectedError != nil {
+				assert.ErrorContains(t, err, tt.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

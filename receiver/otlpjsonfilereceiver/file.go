@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -88,6 +89,17 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 			ctx = obsrecv.StartLogsOp(ctx)
 			var l plog.Logs
 			l, err = logsUnmarshaler.UnmarshalLogs(token.Body)
+			// Appends token.Attributes
+			for i := 0; i < l.ResourceLogs().Len(); i++ {
+				resourceLog := l.ResourceLogs().At(i)
+				for j := 0; j < resourceLog.ScopeLogs().Len(); j++ {
+					scopeLog := resourceLog.ScopeLogs().At(j)
+					for k := 0; k < scopeLog.LogRecords().Len(); k++ {
+						LogRecords := scopeLog.LogRecords().At(k)
+						appendToMap(token, LogRecords.Attributes())
+					}
+				}
+			}
 			if err != nil {
 				obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, err)
 			} else {
@@ -127,6 +139,17 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 			ctx = obsrecv.StartMetricsOp(ctx)
 			var m pmetric.Metrics
 			m, err = metricsUnmarshaler.UnmarshalMetrics(token.Body)
+			// Appends token.Attributes
+			for i := 0; i < m.ResourceMetrics().Len(); i++ {
+				resourceMetric := m.ResourceMetrics().At(i)
+				for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
+					ScopeMetric := resourceMetric.ScopeMetrics().At(j)
+					for k := 0; k < ScopeMetric.Metrics().Len(); k++ {
+						metric := ScopeMetric.Metrics().At(k)
+						appendToMap(token, metric.Metadata())
+					}
+				}
+			}
 			if err != nil {
 				obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
 			} else {
@@ -165,6 +188,17 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 			ctx = obsrecv.StartTracesOp(ctx)
 			var t ptrace.Traces
 			t, err = tracesUnmarshaler.UnmarshalTraces(token.Body)
+			// Appends token.Attributes
+			for i := 0; i < t.ResourceSpans().Len(); i++ {
+				resourceSpan := t.ResourceSpans().At(i)
+				for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
+					scopeSpan := resourceSpan.ScopeSpans().At(j)
+					for k := 0; k < scopeSpan.Spans().Len(); k++ {
+						spans := scopeSpan.Spans().At(k)
+						appendToMap(token, spans.Attributes())
+					}
+				}
+			}
 			if err != nil {
 				obsrecv.EndTracesOp(ctx, metadata.Type.String(), 0, err)
 			} else {
@@ -193,6 +227,7 @@ func createProfilesReceiver(_ context.Context, settings receiver.Settings, confi
 	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens []emit.Token) error {
 		for _, token := range tokens {
 			p, _ := profilesUnmarshaler.UnmarshalProfiles(token.Body)
+			// TODO Append token.Attributes
 			if p.ResourceProfiles().Len() != 0 {
 				_ = profiles.ConsumeProfiles(ctx, p)
 			}
@@ -204,4 +239,19 @@ func createProfilesReceiver(_ context.Context, settings receiver.Settings, confi
 	}
 
 	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
+}
+
+func appendToMap(token emit.Token, attr pcommon.Map) {
+	for key, value := range token.Attributes {
+		switch v := value.(type) {
+		case string:
+			attr.PutStr(key, v)
+		case int:
+			attr.PutInt(key, int64(v))
+		case float64:
+			attr.PutDouble(key, float64(v))
+		case bool:
+			attr.PutBool(key, v)
+		}
+	}
 }
