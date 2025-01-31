@@ -66,7 +66,12 @@ func TestValidate(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			tC.defaultConfigModifier(cfg)
 			actual := component.ValidateConfig(cfg)
-			require.Equal(t, tC.expected, actual)
+
+			if tC.expected != nil {
+				require.ErrorContains(t, actual, tC.expected.Error())
+			} else {
+				require.NoError(t, actual)
+			}
 		})
 	}
 }
