@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
@@ -39,6 +40,7 @@ func TestLoadConfig(t *testing.T) {
 				Providers: map[string]provider.Config{
 					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
 				},
+				Attributes: defaultAttributes,
 			},
 		},
 		{
@@ -48,6 +50,7 @@ func TestLoadConfig(t *testing.T) {
 				Providers: map[string]provider.Config{
 					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
 				},
+				Attributes: defaultAttributes,
 			},
 		},
 		{
@@ -57,6 +60,20 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:                    component.NewIDWithName(metadata.Type, "invalid_source"),
 			unmarshalErrorMessage: "unknown context not.an.otlp.context, available values: resource, record",
+		},
+		{
+			id:                   component.NewIDWithName(metadata.Type, "invalid_source_attributes"),
+			validateErrorMessage: "the attributes array must not be empty",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "custom_source_attributes"),
+			expected: &Config{
+				Context: resource,
+				Providers: map[string]provider.Config{
+					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
+				},
+				Attributes: []attribute.Key{"client.address", "source.address", "custom.address"},
+			},
 		},
 	}
 
