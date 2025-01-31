@@ -11,7 +11,7 @@ type Cache[V any] interface {
 	// If the key is not present, the zero value is returned.
 	Get(id pcommon.TraceID) (V, bool)
 	// Put sets the value for a given id
-	Put(id pcommon.TraceID, v V)
+	Put(id pcommon.TraceID, v V) bool
 	// Delete deletes the value for the given id
 	Delete(id pcommon.TraceID)
 }

@@ -36,8 +36,9 @@ func (c *lruDecisionCache[V]) Get(id pcommon.TraceID) (V, bool) {
 	return c.cache.Get(rightHalfTraceID(id))
 }
 
-func (c *lruDecisionCache[V]) Put(id pcommon.TraceID, v V) {
+func (c *lruDecisionCache[V]) Put(id pcommon.TraceID, v V) bool {
 	_ = c.cache.Add(rightHalfTraceID(id), v)
+	return true
 }
 
 // Delete is no-op since LRU relies on least recently used key being evicting automatically
