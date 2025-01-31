@@ -1,24 +1,24 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package zookeeperreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
+package zookeeperscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper"
 
 import (
 	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"regexp"
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper/internal/metadata"
 )
 
 var zookeeperFormatRE = regexp.MustCompile(`(^zk_\w+)\s+([\w\.\-]+)`)
@@ -29,6 +29,7 @@ const (
 )
 
 type zookeeperMetricsScraper struct {
+	component.StartFunc
 	logger *zap.Logger
 	config *Config
 	cancel context.CancelFunc
@@ -41,21 +42,8 @@ type zookeeperMetricsScraper struct {
 	sendCmd               func(net.Conn, string) (*bufio.Scanner, error)
 }
 
-func (z *zookeeperMetricsScraper) Name() string {
-	return metadata.Type.String()
-}
-
-func newZookeeperMetricsScraper(settings receiver.Settings, config *Config) (*zookeeperMetricsScraper, error) {
-	_, _, err := net.SplitHostPort(config.TCPAddrConfig.Endpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	if config.Timeout <= 0 {
-		return nil, errors.New("timeout must be a positive duration")
-	}
-
-	z := &zookeeperMetricsScraper{
+func newZookeeperMetricsScraper(settings scraper.Settings, config *Config) *zookeeperMetricsScraper {
+	return &zookeeperMetricsScraper{
 		logger:                settings.Logger,
 		config:                config,
 		rb:                    metadata.NewResourceBuilder(config.ResourceAttributes),
@@ -64,11 +52,9 @@ func newZookeeperMetricsScraper(settings receiver.Settings, config *Config) (*zo
 		setConnectionDeadline: setConnectionDeadline,
 		sendCmd:               sendCmd,
 	}
-
-	return z, nil
 }
 
-func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {
+func (z *zookeeperMetricsScraper) Shutdown(context.Context) error {
 	if z.cancel != nil {
 		z.cancel()
 		z.cancel = nil
@@ -76,7 +62,7 @@ func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (z *zookeeperMetricsScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
 	responseMntr, err := z.runCommand(ctx, "mntr")
 	if err != nil {
 		return pmetric.NewMetrics(), err

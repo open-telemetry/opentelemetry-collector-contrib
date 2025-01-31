@@ -219,7 +219,6 @@ func TestReceiveMessage(t *testing.T) {
 			if testCase.validation != nil {
 				testCase.validation(t, tt)
 			}
-			require.NoError(t, tt.Shutdown(context.Background()))
 		})
 	}
 }
@@ -284,7 +283,6 @@ func TestReceiveMessagesTerminateWithCtxDone(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp())
-	require.NoError(t, tt.Shutdown(context.Background()))
 }
 
 func TestReceiverLifecycle(t *testing.T) {
@@ -417,7 +415,6 @@ func TestReceiverLifecycle(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp())
-	require.NoError(t, tt.Shutdown(context.Background()))
 }
 
 func TestReceiverDialFailureContinue(t *testing.T) {
@@ -547,7 +544,6 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp())
-	require.NoError(t, tt.Shutdown(context.Background()))
 }
 
 func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
@@ -662,7 +658,6 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 	}, metricdatatest.IgnoreTimestamp())
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
-	require.NoError(t, tt.Shutdown(context.Background()))
 }
 
 func TestReceiverFlowControlDelayedRetry(t *testing.T) {
@@ -942,7 +937,6 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 					},
 				}, metricdatatest.IgnoreTimestamp())
 			}
-			require.NoError(t, tt.Shutdown(context.Background()))
 		})
 	}
 }
@@ -1161,7 +1155,6 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp())
-	require.NoError(t, tt.Shutdown(context.Background()))
 }
 
 func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *mockUnmarshaller, metadatatest.Telemetry) {
@@ -1171,6 +1164,7 @@ func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *m
 		return service
 	}
 	tel := metadatatest.SetupTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	receiver := &solaceTracesReceiver{
