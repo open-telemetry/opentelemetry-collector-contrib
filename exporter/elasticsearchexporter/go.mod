@@ -1,6 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter
 
-go 1.22.0
+go 1.22.2
+
+toolchain go1.23.5
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
