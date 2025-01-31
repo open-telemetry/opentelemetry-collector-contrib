@@ -1041,6 +1041,24 @@ func Test_e2e_converters(t *testing.T) {
 				m.PutInt("bar", 5)
 			},
 		},
+		{
+			statement: `set(
+	attributes["test"], 
+	ParseSeverity(severity_number, 
+		{
+			"error":[
+				"err",
+                { "min": 3, "max": 4 }
+			],
+			"info":[
+                { "min": 1, "max": 2 }
+			],
+		}
+	))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "info")
+			},
+		},
 	}
 
 	for _, tt := range tests {
