@@ -11,15 +11,15 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
+	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 )
 
 func containerResource(cm ecsutil.ContainerMetadata, logger *zap.Logger) pcommon.Resource {
 	resource := pcommon.NewResource()
 
-	image, err := docker.ParseImageName(cm.Image)
+	image, err := dcommon.ParseImageName(cm.Image)
 	if err != nil {
-		docker.LogParseError(err, cm.Image, logger)
+		dcommon.LogParseError(err, cm.Image, logger)
 	}
 
 	resource.Attributes().PutStr(conventions.AttributeContainerName, cm.ContainerName)
