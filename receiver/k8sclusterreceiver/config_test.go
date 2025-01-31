@@ -85,7 +85,7 @@ func TestInvalidConfig(t *testing.T) {
 	}
 	err := component.ValidateConfig(cfg)
 	assert.Error(t, err)
-	assert.Equal(t, "invalid authType for kubernetes: ", err.Error())
+	assert.ErrorContains(t, err, "invalid authType for kubernetes: ")
 
 	// Wrong distro
 	cfg = &Config{
