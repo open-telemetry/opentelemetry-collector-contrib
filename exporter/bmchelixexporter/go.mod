@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.24.1-0.20250130224751-50b76b95bf35
 	go.opentelemetry.io/collector/exporter v0.118.1-0.20250130220845-0276d781be89
 	go.opentelemetry.io/collector/exporter/exportertest v0.118.1-0.20250130220845-0276d781be89
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250130220845-0276d781be89
+	go.opentelemetry.io/collector/pdata v1.24.1-0.20250130224751-50b76b95bf35
 	go.uber.org/goleak v1.3.0
 )
 

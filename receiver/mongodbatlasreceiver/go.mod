@@ -21,7 +21,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.24.1-0.20250130224751-50b76b95bf35
 	go.opentelemetry.io/collector/extension v0.118.1-0.20250130220845-0276d781be89 // indirect
 	go.opentelemetry.io/collector/filter v0.118.1-0.20250130220845-0276d781be89
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250130220845-0276d781be89
+	go.opentelemetry.io/collector/pdata v1.24.1-0.20250130224751-50b76b95bf35
 	go.opentelemetry.io/collector/receiver v0.118.1-0.20250130220845-0276d781be89
 	go.opentelemetry.io/collector/semconv v0.118.1-0.20250130220845-0276d781be89 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
