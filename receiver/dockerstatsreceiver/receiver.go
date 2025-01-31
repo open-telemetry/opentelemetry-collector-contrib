@@ -6,6 +6,7 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,6 +45,32 @@ type metricsReceiver struct {
 	cancel   context.CancelFunc
 }
 
+const (
+	defaultEndpoint = "unix:///var/run/docker.sock"
+	dockerHostEnv   = "DOCKER_HOST"
+)
+
+// resolveDockerEndpoint determines the Docker endpoint using the following priority:
+// 1. Configuration specified endpoint
+// 2. DOCKER_HOST environment variable
+// 3. Default endpoint (unix:///var/run/docker.sock)
+
+func resolveDockerEndpoint(cfg *docker.Config) {
+	// If endpoint is explicitly set in config, respect it
+	if cfg.Endpoint != "" {
+		return
+	}
+
+	// Check DOCKER_HOST environment variable
+	if dockerHost := os.Getenv(dockerHostEnv); dockerHost != "" {
+		cfg.Endpoint = dockerHost
+		return
+	}
+
+	// Fall back to default endpoint
+	cfg.Endpoint = defaultEndpoint
+}
+
 func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver {
 	return &metricsReceiver{
 		config:   config,
@@ -53,6 +80,9 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
+	// Resolve the Docker endpoint before creating the client
+	resolveDockerEndpoint(&r.config.Config)
+
 	var err error
 	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger)
 	if err != nil {
