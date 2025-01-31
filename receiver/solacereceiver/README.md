@@ -19,7 +19,7 @@ To get started with the Solace receiver, a telemetry queue and authentication de
 ```yaml
 receivers:
   solace:
-    broker: [localhost:5671]
+    broker: localhost:5671
     auth:
       sasl_plain:
         username: otel
@@ -63,7 +63,7 @@ Simple single node configuration with SASL plain authentication (TLS enabled by 
 ```yaml
 receivers:
   solace:
-    broker: [localhost:5671]
+    broker: localhost:5671
     auth:
       sasl_plain:
         username: otel
@@ -80,7 +80,7 @@ High availability setup with SASL plain authentication (TLS enabled by default)
 ```yaml
 receivers:
   solace/primary:
-    broker: [myHost-primary:5671]
+    broker: myHost-primary:5671
     auth:
       sasl_plain:
         username: otel
@@ -88,7 +88,7 @@ receivers:
     queue: queue://#telemetry-profile123
 
   solace/backup:
-    broker: [myHost-backup:5671]
+    broker: myHost-backup:5671
     auth:
       sasl_plain:
         username: otel
