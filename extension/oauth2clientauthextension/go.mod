@@ -4,14 +4,14 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.118.1-0.20250130000211-c119b2a55eb4
-	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250130000211-c119b2a55eb4
-	go.opentelemetry.io/collector/config/configopaque v1.24.1-0.20250130000211-c119b2a55eb4
-	go.opentelemetry.io/collector/config/configtls v1.24.1-0.20250130000211-c119b2a55eb4
-	go.opentelemetry.io/collector/confmap v1.24.1-0.20250130000211-c119b2a55eb4
-	go.opentelemetry.io/collector/extension v0.118.1-0.20250130000211-c119b2a55eb4
-	go.opentelemetry.io/collector/extension/auth v0.118.1-0.20250130000211-c119b2a55eb4
-	go.opentelemetry.io/collector/extension/extensiontest v0.118.1-0.20250130000211-c119b2a55eb4
+	go.opentelemetry.io/collector/component v0.118.1-0.20250130224751-50b76b95bf35
+	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250130224751-50b76b95bf35
+	go.opentelemetry.io/collector/config/configopaque v1.24.1-0.20250130224751-50b76b95bf35
+	go.opentelemetry.io/collector/config/configtls v1.24.1-0.20250130224751-50b76b95bf35
+	go.opentelemetry.io/collector/confmap v1.24.1-0.20250130224751-50b76b95bf35
+	go.opentelemetry.io/collector/extension v0.118.1-0.20250130224751-50b76b95bf35
+	go.opentelemetry.io/collector/extension/auth v0.118.1-0.20250130224751-50b76b95bf35
+	go.opentelemetry.io/collector/extension/extensiontest v0.118.1-0.20250130224751-50b76b95bf35
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -35,8 +35,8 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250130000211-c119b2a55eb4 // indirect
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250130000211-c119b2a55eb4 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250130224751-50b76b95bf35 // indirect
+	go.opentelemetry.io/collector/pdata v1.24.1-0.20250130224751-50b76b95bf35 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect

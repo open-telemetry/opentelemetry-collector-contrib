@@ -13,7 +13,7 @@ import (
 )
 
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
@@ -33,7 +33,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualOtelarrowAdmissionInFlightBytes(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelarrowAdmissionInFlightBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelarrow_admission_in_flight_bytes",
 		Description: "Number of bytes that have started processing but are not finished.",
@@ -44,11 +44,12 @@ func AssertEqualOtelarrowAdmissionInFlightBytes(t *testing.T, tt componenttest.T
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelarrow_admission_in_flight_bytes")
+	got, err := tt.GetMetric("otelcol_otelarrow_admission_in_flight_bytes")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualOtelarrowAdmissionWaitingBytes(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelarrowAdmissionWaitingBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelarrow_admission_waiting_bytes",
 		Description: "Number of items waiting to start processing.",
@@ -59,14 +60,9 @@ func AssertEqualOtelarrowAdmissionWaitingBytes(t *testing.T, tt componenttest.Te
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelarrow_admission_waiting_bytes")
+	got, err := tt.GetMetric("otelcol_otelarrow_admission_waiting_bytes")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {

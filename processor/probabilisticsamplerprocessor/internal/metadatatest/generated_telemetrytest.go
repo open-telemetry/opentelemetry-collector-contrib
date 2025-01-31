@@ -16,7 +16,7 @@ import (
 )
 
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
@@ -43,7 +43,14 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualProcessorProbabilisticSamplerCountLogsSampled(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func NewSettings(tt *componenttest.Telemetry) processor.Settings {
+	set := processortest.NewNopSettings()
+	set.ID = component.NewID(component.MustNewType("probabilistic_sampler"))
+	set.TelemetrySettings = tt.NewTelemetrySettings()
+	return set
+}
+
+func AssertEqualProcessorProbabilisticSamplerCountLogsSampled(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_probabilistic_sampler_count_logs_sampled",
 		Description: "Count of logs that were sampled or not",
@@ -54,11 +61,12 @@ func AssertEqualProcessorProbabilisticSamplerCountLogsSampled(t *testing.T, tt c
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_probabilistic_sampler_count_logs_sampled")
+	got, err := tt.GetMetric("otelcol_processor_probabilistic_sampler_count_logs_sampled")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorProbabilisticSamplerCountTracesSampled(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorProbabilisticSamplerCountTracesSampled(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_probabilistic_sampler_count_traces_sampled",
 		Description: "Count of traces that were sampled or not",
@@ -69,14 +77,9 @@ func AssertEqualProcessorProbabilisticSamplerCountTracesSampled(t *testing.T, tt
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_probabilistic_sampler_count_traces_sampled")
+	got, err := tt.GetMetric("otelcol_processor_probabilistic_sampler_count_traces_sampled")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
