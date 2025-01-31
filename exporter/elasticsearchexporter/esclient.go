@@ -5,12 +5,16 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/elastic/go-elasticsearch/v7"
+	elasticsearchv7 "github.com/elastic/go-elasticsearch/v7"
+	elasticsearchv8 "github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -82,14 +86,14 @@ func (cl *clientLogger) ResponseBodyEnabled() bool {
 	return cl.logResponseBody
 }
 
-// newElasticsearchClient returns a new elasticsearch.Client
+// newElasticsearchClient returns a new esapi.Transport.
 func newElasticsearchClient(
 	ctx context.Context,
 	config *Config,
 	host component.Host,
 	telemetry component.TelemetrySettings,
 	userAgent string,
-) (*elasticsearch.Client, error) {
+) (esapi.Transport, error) {
 	httpClient, err := config.ClientConfig.ToClient(ctx, host, telemetry)
 	if err != nil {
 		return nil, err
@@ -105,19 +109,36 @@ func newElasticsearchClient(
 		return nil, err
 	}
 
-	esLogger := clientLogger{
+	esLogger := &clientLogger{
 		Logger:          telemetry.Logger,
 		logRequestBody:  config.LogRequestBody,
 		logResponseBody: config.LogResponseBody,
 	}
 
-	maxRetries := defaultMaxRetries
-	if config.Retry.MaxRetries != 0 {
-		maxRetries = config.Retry.MaxRetries
+	switch config.Version {
+	case 7:
+		return newElasticsearchClientV7(
+			config, endpoints, headers,
+			httpClient.Transport, esLogger,
+		)
+	case 8:
+		return newElasticsearchClientV8(
+			config, endpoints, headers,
+			httpClient.Transport, esLogger,
+		)
 	}
+	return nil, fmt.Errorf("unsupported version %d", config.Version)
+}
 
-	return elasticsearch.NewClient(elasticsearch.Config{
-		Transport: httpClient.Transport,
+func newElasticsearchClientV7(
+	config *Config,
+	endpoints []string,
+	headers http.Header,
+	httpTransport http.RoundTripper,
+	esLogger *clientLogger,
+) (esapi.Transport, error) {
+	return elasticsearchv7.NewClient(elasticsearchv7.Config{
+		Transport: httpTransport,
 
 		// configure connection setup
 		Addresses: endpoints,
@@ -130,8 +151,44 @@ func newElasticsearchClient(
 		RetryOnStatus:        config.Retry.RetryOnStatus,
 		DisableRetry:         !config.Retry.Enabled,
 		EnableRetryOnTimeout: config.Retry.Enabled,
-		// RetryOnError:  retryOnError, // should be used from esclient version 8 onwards
-		MaxRetries:   maxRetries,
+		MaxRetries:           min(defaultMaxRetries, config.Retry.MaxRetries),
+		RetryBackoff:         createElasticsearchBackoffFunc(&config.Retry),
+
+		// configure sniffing
+		DiscoverNodesOnStart:  config.Discovery.OnStart,
+		DiscoverNodesInterval: config.Discovery.Interval,
+
+		// configure internal metrics reporting and logging
+		EnableMetrics:     false, // TODO
+		EnableDebugLogger: false, // TODO
+		Logger:            esLogger,
+	})
+}
+
+func newElasticsearchClientV8(
+	config *Config,
+	endpoints []string,
+	headers http.Header,
+	httpTransport http.RoundTripper,
+	esLogger *clientLogger,
+) (*elasticsearchv8.Client, error) {
+	return elasticsearchv8.NewClient(elasticsearchv8.Config{
+		Transport: httpTransport,
+
+		// configure connection setup
+		Addresses: endpoints,
+		Username:  config.Authentication.User,
+		Password:  string(config.Authentication.Password),
+		APIKey:    string(config.Authentication.APIKey),
+		Header:    headers,
+
+		// configure retry behavior
+		RetryOnStatus: config.Retry.RetryOnStatus,
+		DisableRetry:  !config.Retry.Enabled,
+		RetryOnError: func(_ *http.Request, err error) bool {
+			return !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
+		},
+		MaxRetries:   min(defaultMaxRetries, config.Retry.MaxRetries),
 		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
 
 		// configure sniffing
@@ -141,7 +198,7 @@ func newElasticsearchClient(
 		// configure internal metrics reporting and logging
 		EnableMetrics:     false, // TODO
 		EnableDebugLogger: false, // TODO
-		Logger:            &esLogger,
+		Logger:            esLogger,
 	})
 }
 
