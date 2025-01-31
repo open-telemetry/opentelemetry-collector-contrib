@@ -47,6 +47,24 @@ func (d *Decoder) Decode(msgBuf []byte) ([]byte, error) {
 	}
 }
 
+// DecodeTo converts the bytes in msgBuf to UTF-8 from the configured encoding.
+// The resulting bytes are put in dst.
+// If dst is too small, a new buffer is allocated double the size and returned.
+func (d *Decoder) DecodeTo(dst, msgBuf []byte) ([]byte, error) {
+	for {
+		d.decoder.Reset()
+		nDst, _, err := d.decoder.Transform(dst, msgBuf, true)
+		if err == nil {
+			return dst[:nDst], nil
+		}
+		if errors.Is(err, transform.ErrShortDst) {
+			dst = make([]byte, len(dst)*2)
+			continue
+		}
+		return nil, fmt.Errorf("transform encoding: %w", err)
+	}
+}
+
 // LookupEncoding attempts to match the string name provided with a character set encoding.
 func LookupEncoding(enc string) (encoding.Encoding, error) {
 	if e, ok := textutils.EncodingOverridesMap.Get(strings.ToLower(enc)); ok {

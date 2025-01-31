@@ -13,5 +13,5 @@ import (
 )
 
 func TestNop(t *testing.T) {
-	require.NoError(t, Nop(context.Background(), emit.Token{}))
+	require.NoError(t, Nop(context.Background(), []emit.Token{}))
 }

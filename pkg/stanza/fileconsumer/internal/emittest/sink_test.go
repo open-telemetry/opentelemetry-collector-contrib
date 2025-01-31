@@ -204,7 +204,7 @@ func sinkTest(t *testing.T, opts ...SinkOpt) (*Sink, []*Call) {
 	}
 	go func() {
 		for _, c := range testCalls {
-			assert.NoError(t, s.Callback(context.Background(), emit.NewToken(c.Token, c.Attrs)))
+			assert.NoError(t, s.Callback(context.Background(), []emit.Token{emit.NewToken(c.Token, c.Attrs)}))
 		}
 	}()
 	return s, testCalls

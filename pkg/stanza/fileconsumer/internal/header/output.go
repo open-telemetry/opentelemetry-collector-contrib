@@ -30,6 +30,13 @@ func newPipelineOutput(set component.TelemetrySettings) *pipelineOutput {
 	}
 }
 
+func (e *pipelineOutput) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	for i := range entries {
+		_ = e.Process(ctx, entries[i])
+	}
+	return nil
+}
+
 // Drop the entry if logChan is full, in order to avoid this operator blocking.
 // This protects against a case where an operator could return an error, but continue propagating a log entry,
 // leaving an unexpected entry in the output channel.

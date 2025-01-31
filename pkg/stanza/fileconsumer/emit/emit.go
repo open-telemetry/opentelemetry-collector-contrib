@@ -7,7 +7,7 @@ import (
 	"context"
 )
 
-type Callback func(ctx context.Context, token Token) error
+type Callback func(ctx context.Context, tokens []Token) error
 
 type Token struct {
 	Body       []byte
