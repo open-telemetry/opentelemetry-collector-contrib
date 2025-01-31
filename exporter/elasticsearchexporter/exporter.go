@@ -4,6 +4,7 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
@@ -476,4 +478,62 @@ func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string
 		return ""
 	}
 	return v.AsString()
+}
+
+func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofile.Profiles) error {
+	e.wg.Add(1)
+	defer e.wg.Done()
+
+	session, err := e.bulkIndexer.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer session.End()
+
+	var errs []error
+	rps := pd.ResourceProfiles()
+	for i := 0; i < rps.Len(); i++ {
+		rp := rps.At(i)
+		resource := rp.Resource()
+		sps := rp.ScopeProfiles()
+		for j := 0; j < sps.Len(); j++ {
+			sp := sps.At(j)
+			scope := sp.Scope()
+			p := sp.Profiles()
+			for k := 0; k < p.Len(); k++ {
+				if err := e.pushProfileRecord(ctx, resource, p.At(k), scope, session); err != nil {
+					if cerr := ctx.Err(); cerr != nil {
+						return cerr
+					}
+
+					if errors.Is(err, ErrInvalidTypeForBodyMapMode) {
+						e.Logger.Warn("dropping log record", zap.Error(err))
+						continue
+					}
+
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+
+	if err := session.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
+	return errors.Join(errs...)
+}
+
+func (e *elasticsearchExporter) pushProfileRecord(
+	ctx context.Context,
+	resource pcommon.Resource,
+	record pprofile.Profile,
+	scope pcommon.InstrumentationScope,
+	bulkIndexerSession bulkIndexerSession,
+) error {
+	return e.model.encodeProfile(resource, scope, record, func(buf *bytes.Buffer, docID, index string) error {
+		return bulkIndexerSession.Add(ctx, index, docID, buf, nil)
+	})
 }
