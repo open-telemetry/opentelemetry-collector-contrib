@@ -3,6 +3,7 @@
 package solacereceiver
 
 import (
+	"context"
 	"strconv"
 	"testing"
 
@@ -955,6 +956,7 @@ func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
 
 func newTestEgressV1Unmarshaller(t *testing.T) (*brokerTraceEgressUnmarshallerV1, metadatatest.Telemetry) {
 	tt := metadatatest.SetupTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 	builder, err := metadata.NewTelemetryBuilder(tt.NewTelemetrySettings())
 	require.NoError(t, err)
 	metricAttr := attribute.NewSet(attribute.String("receiver_name", tt.NewSettings().ID.Name()))
