@@ -736,7 +736,11 @@ func Test_PushMetrics(t *testing.T) {
 					}
 
 					assert.NotNil(t, cfg)
-					tel := componenttest.NewTelemetry(
+					buildInfo := component.BuildInfo{
+						Description: "OpenTelemetry Collector",
+						Version:     "1.0",
+					}
+					tel := metadatatest.SetupTelemetry(
 						componenttest.WithMetricOptions(sdkmetric.WithView(
 							// Drop otelhttp metrics
 							sdkmetric.NewView(
@@ -748,12 +752,8 @@ func Test_PushMetrics(t *testing.T) {
 								},
 							))),
 					)
-					t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
-					set := metadatatest.NewSettings(tel)
-					set.BuildInfo = component.BuildInfo{
-						Description: "OpenTelemetry Collector",
-						Version:     "1.0",
-					}
+					set := tel.NewSettings()
+					set.BuildInfo = buildInfo
 
 					prwe, nErr := newPRWExporter(cfg, set)
 
@@ -769,22 +769,42 @@ func Test_PushMetrics(t *testing.T) {
 						assert.Error(t, err)
 						return
 					}
-					assert.NoError(t, err)
+					expectedMetrics := []metricdata.Metrics{}
 					if tt.expectedFailedTranslations > 0 {
-						metadatatest.AssertEqualExporterPrometheusremotewriteFailedTranslations(t, tel, []metricdata.DataPoint[int64]{
-							{
-								Value:      int64(tt.expectedFailedTranslations),
-								Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite")),
+						expectedMetrics = append(expectedMetrics, metricdata.Metrics{
+							Name:        "otelcol_exporter_prometheusremotewrite_failed_translations",
+							Description: "Number of translation operations that failed to translate metrics from Otel to Prometheus",
+							Unit:        "1",
+							Data: metricdata.Sum[int64]{
+								Temporality: metricdata.CumulativeTemporality,
+								IsMonotonic: true,
+								DataPoints: []metricdata.DataPoint[int64]{
+									{
+										Value:      int64(tt.expectedFailedTranslations),
+										Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite")),
+									},
+								},
 							},
-						}, metricdatatest.IgnoreTimestamp())
+						})
 					}
 
-					metadatatest.AssertEqualExporterPrometheusremotewriteTranslatedTimeSeries(t, tel, []metricdata.DataPoint[int64]{
-						{
-							Value:      int64(tt.expectedTimeSeries),
-							Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite")),
+					expectedMetrics = append(expectedMetrics, metricdata.Metrics{
+						Name:        "otelcol_exporter_prometheusremotewrite_translated_time_series",
+						Description: "Number of Prometheus time series that were translated from OTel metrics",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value:      int64(tt.expectedTimeSeries),
+									Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite")),
+								},
+							},
 						},
-					}, metricdatatest.IgnoreTimestamp())
+					})
+					tel.AssertMetrics(t, expectedMetrics, metricdatatest.IgnoreTimestamp())
+					assert.NoError(t, err)
 				})
 			}
 		})
@@ -1286,7 +1306,8 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 	endpointURL, err := url.Parse(mockServer.URL)
 	require.NoError(b, err)
 
-	set := exportertest.NewNopSettings()
+	tel := metadatatest.SetupTelemetry()
+	set := tel.NewSettings()
 	// Adjusted retry settings for faster testing
 	retrySettings := configretry.BackOffConfig{
 		Enabled:         true,
