@@ -156,3 +156,20 @@ type DispatchArtifactContent struct {
 	StatusCacheSize    string `json:"cached_job_status_status_csv_size_mb"`
 	CacheTotalEntries  string `json:"cached_job_status_total_entries"`
 }
+
+// '/services/server/info'
+type Info struct {
+	Host    string      `json:"origin"`
+	Entries []InfoEntry `json:"entry"`
+}
+
+type InfoEntry struct {
+	Content InfoContent `json:"content"`
+}
+
+type InfoContent struct {
+	Build   string `json:"build"`
+	Version string `json:"version"`
+}
+
+type infoDict map[any]Info
