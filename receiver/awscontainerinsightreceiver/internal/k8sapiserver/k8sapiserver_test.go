@@ -140,9 +140,9 @@ func assertMetricValueEqual(t *testing.T, m pmetric.Metrics, metricName string, 
 	assert.Fail(t, msg)
 }
 
-type MockClusterNameProvicer struct{}
+type MockClusterNameProvider struct{}
 
-func (m MockClusterNameProvicer) GetClusterName() string {
+func (m MockClusterNameProvider) GetClusterName() string {
 	return "cluster-name"
 }
 
@@ -150,7 +150,7 @@ func TestK8sAPIServer_New(t *testing.T) {
 	k8sClientOption := func(k *K8sAPIServer) {
 		k.k8sClient = nil
 	}
-	k8sAPIServer, err := New(MockClusterNameProvicer{}, zap.NewNop(), k8sClientOption)
+	k8sAPIServer, err := New(MockClusterNameProvider{}, zap.NewNop(), k8sClientOption)
 	assert.Nil(t, k8sAPIServer)
 	assert.Error(t, err)
 }
@@ -173,7 +173,7 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 
 	t.Setenv("HOST_NAME", hostName)
 	t.Setenv("K8S_NAMESPACE", "namespace")
-	k8sAPIServer, err := New(MockClusterNameProvicer{}, zap.NewNop(), k8sClientOption,
+	k8sAPIServer, err := New(MockClusterNameProvider{}, zap.NewNop(), k8sClientOption,
 		leadingOption, broadcasterOption, isLeadingCOption)
 
 	assert.NotNil(t, k8sAPIServer)
