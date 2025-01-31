@@ -4,7 +4,7 @@
 package filetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"testing"
@@ -43,7 +43,7 @@ func TokenWithLength(length int) []byte {
 	charset := "abcdefghijklmnopqrstuvwxyz"
 	b := make([]byte, length)
 	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
+		b[i] = charset[rand.IntN(len(charset))]
 	}
 	return b
 }
