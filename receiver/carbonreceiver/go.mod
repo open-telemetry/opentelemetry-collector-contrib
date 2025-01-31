@@ -8,11 +8,11 @@ require (
 	go.opentelemetry.io/collector/component v0.118.1-0.20250130224751-50b76b95bf35
 	go.opentelemetry.io/collector/component/componentstatus v0.118.1-0.20250130224751-50b76b95bf35
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250130224751-50b76b95bf35
-	go.opentelemetry.io/collector/config/confignet v1.24.1-0.20250130224751-50b76b95bf35
-	go.opentelemetry.io/collector/confmap v1.24.1-0.20250130224751-50b76b95bf35
-	go.opentelemetry.io/collector/consumer v1.24.1-0.20250130224751-50b76b95bf35
+	go.opentelemetry.io/collector/config/confignet v1.24.1-0.20250131104636-a737a48402e0
+	go.opentelemetry.io/collector/confmap v1.24.1-0.20250131104636-a737a48402e0
+	go.opentelemetry.io/collector/consumer v1.24.1-0.20250131104636-a737a48402e0
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250130224751-50b76b95bf35
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250130224751-50b76b95bf35
+	go.opentelemetry.io/collector/pdata v1.24.1-0.20250131104636-a737a48402e0
 	go.opentelemetry.io/collector/receiver v0.118.1-0.20250130224751-50b76b95bf35
 	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250130224751-50b76b95bf35
 	go.opentelemetry.io/otel/sdk v1.34.0
@@ -42,7 +42,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250130224751-50b76b95bf35 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.118.1-0.20250130224751-50b76b95bf35 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.118.1-0.20250130224751-50b76b95bf35 // indirect
-	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250130224751-50b76b95bf35 // indirect
+	go.opentelemetry.io/collector/featuregate v1.24.1-0.20250131104636-a737a48402e0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.118.1-0.20250130224751-50b76b95bf35 // indirect
 	go.opentelemetry.io/collector/pipeline v0.118.1-0.20250130224751-50b76b95bf35 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.118.1-0.20250130224751-50b76b95bf35 // indirect
