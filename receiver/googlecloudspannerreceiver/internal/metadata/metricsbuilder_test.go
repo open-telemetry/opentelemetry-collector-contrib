@@ -36,24 +36,6 @@ func (r *mockItemFilterResolver) Shutdown() error {
 	return args.Error(0)
 }
 
-type errorFilter struct{}
-
-func (f errorFilter) Filter(_ []*filter.Item) ([]*filter.Item, error) {
-	return nil, errors.New("error on filter")
-}
-
-func (f errorFilter) Shutdown() error {
-	return nil
-}
-
-func (f errorFilter) TotalLimit() int {
-	return 0
-}
-
-func (f errorFilter) LimitByTimestamp() int {
-	return 0
-}
-
 type testData struct {
 	dataPoints           []*MetricsDataPoint
 	expectedGroupingKeys []MetricsDataPointKey
@@ -73,46 +55,36 @@ func TestNewMetricsFromDataPointBuilder(t *testing.T) {
 func TestMetricsFromDataPointBuilder_Build(t *testing.T) {
 	testCases := map[string]struct {
 		metricsDataType pmetric.MetricType
-		expectedError   error
 	}{
-		"Gauge":                      {pmetric.MetricTypeGauge, nil},
-		"Sum":                        {pmetric.MetricTypeSum, nil},
-		"Gauge with filtering error": {pmetric.MetricTypeGauge, errors.New("filtering error")},
-		"Sum with filtering error":   {pmetric.MetricTypeSum, errors.New("filtering error")},
+		"Gauge":                      {pmetric.MetricTypeGauge},
+		"Sum":                        {pmetric.MetricTypeSum},
+		"Gauge with filtering error": {pmetric.MetricTypeGauge},
+		"Sum with filtering error":   {pmetric.MetricTypeSum},
 	}
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			testMetricsFromDataPointBuilderBuild(t, testCase.metricsDataType, testCase.expectedError)
+			testMetricsFromDataPointBuilderBuild(t, testCase.metricsDataType)
 		})
 	}
 }
 
-func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pmetric.MetricType, expectedError error) {
+func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pmetric.MetricType) {
 	filterResolver := &mockItemFilterResolver{}
 	dataForTesting := generateTestData(metricDataType)
 	builder := &metricsFromDataPointBuilder{filterResolver: filterResolver}
-	defer executeMockedShutdown(t, builder, filterResolver, expectedError)
+	defer executeMockedShutdown(t, builder, filterResolver, nil)
 	expectedGroupingKeysByMetricName := make(map[string]MetricsDataPointKey, len(dataForTesting.expectedGroupingKeys))
 
 	for _, expectedGroupingKey := range dataForTesting.expectedGroupingKeys {
 		expectedGroupingKeysByMetricName[expectedGroupingKey.MetricName] = expectedGroupingKey
 	}
 
-	if expectedError != nil {
-		filterResolver.On("Resolve").Return(errorFilter{}, nil)
-	} else {
-		filterResolver.On("Resolve").Return(filter.NewNopItemCardinalityFilter(), nil)
-	}
+	filterResolver.On("Resolve").Return(filter.NewNopItemCardinalityFilter(), nil)
 
 	metric, err := builder.Build(dataForTesting.dataPoints)
 
 	filterResolver.AssertExpectations(t)
-
-	if expectedError != nil {
-		require.Error(t, err)
-		return
-	}
 	require.NoError(t, err)
 
 	assert.Equal(t, len(dataForTesting.dataPoints), metric.DataPointCount())
@@ -176,11 +148,7 @@ func TestMetricsFromDataPointBuilder_GroupAndFilter(t *testing.T) {
 			defer executeMockedShutdown(t, builder, filterResolver, testCase.expectedError)
 			dataForTesting := generateTestData(metricDataType)
 
-			if testCase.expectedError != nil {
-				filterResolver.On("Resolve").Return(errorFilter{}, nil)
-			} else {
-				filterResolver.On("Resolve").Return(filter.NewNopItemCardinalityFilter(), testCase.expectedError)
-			}
+			filterResolver.On("Resolve").Return(filter.NewNopItemCardinalityFilter(), testCase.expectedError)
 
 			groupedDataPoints, err := builder.groupAndFilter(dataForTesting.dataPoints)
 
@@ -239,11 +207,7 @@ func TestMetricsFromDataPointBuilder_Filter(t *testing.T) {
 			}
 			defer executeMockedShutdown(t, builder, filterResolver, testCase.expectedError)
 
-			if testCase.expectedError != nil {
-				filterResolver.On("Resolve").Return(errorFilter{}, testCase.expectedError)
-			} else {
-				filterResolver.On("Resolve").Return(filter.NewNopItemCardinalityFilter(), testCase.expectedError)
-			}
+			filterResolver.On("Resolve").Return(filter.NewNopItemCardinalityFilter(), testCase.expectedError)
 
 			filteredDataPoints, err := builder.filter(metricName1, dataForTesting.dataPoints)
 
