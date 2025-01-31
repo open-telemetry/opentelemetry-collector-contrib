@@ -39,6 +39,7 @@ type TransformContext struct {
 	cache                pcommon.Map
 	scopeSpans           ptrace.ScopeSpans
 	resouceSpans         ptrace.ResourceSpans
+	eventIndex           *int64
 }
 
 func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
@@ -47,6 +48,9 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 	err = errors.Join(err, encoder.AddObject("span", logging.Span(tCtx.span)))
 	err = errors.Join(err, encoder.AddObject("spanevent", logging.SpanEvent(tCtx.spanEvent)))
 	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
+	if tCtx.eventIndex != nil {
+		encoder.AddInt64("eventindex", *tCtx.eventIndex)
+	}
 	return err
 }
 
@@ -79,6 +83,14 @@ func WithCache(cache *pcommon.Map) TransformContextOption {
 	}
 }
 
+// WithEventIndex sets the index of the SpanEvent within the span, to make it accessible via the event_index property of its context.
+// The index must be greater than or equal to zero, otherwise the given val will not be applied.
+func WithEventIndex(eventIndex int64) TransformContextOption {
+	return func(p *TransformContext) {
+		p.eventIndex = &eventIndex
+	}
+}
+
 func (tCtx TransformContext) GetSpanEvent() ptrace.SpanEvent {
 	return tCtx.spanEvent
 }
@@ -105,6 +117,16 @@ func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
 
 func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
 	return tCtx.resouceSpans
+}
+
+func (tCtx TransformContext) GetEventIndex() (int64, error) {
+	if tCtx.eventIndex != nil {
+		if *tCtx.eventIndex < 0 {
+			return 0, errors.New("found invalid value for 'event_index'")
+		}
+		return *tCtx.eventIndex, nil
+	}
+	return 0, errors.New("no 'event_index' property has been set")
 }
 
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
@@ -221,6 +243,8 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 		return accessSpanEventAttributesKey(path.Keys()), nil
 	case "dropped_attributes_count":
 		return accessSpanEventDroppedAttributeCount(), nil
+	case "event_index":
+		return accessSpanEventIndex(), nil
 	default:
 		return nil, internal.FormatDefaultErrorMessage(path.Name(), path.String(), contextNameDescription, internal.SpanEventRef)
 	}
@@ -345,6 +369,17 @@ func accessSpanEventDroppedAttributeCount() ottl.StandardGetSetter[TransformCont
 				tCtx.GetSpanEvent().SetDroppedAttributesCount(uint32(newCount))
 			}
 			return nil
+		},
+	}
+}
+
+func accessSpanEventIndex() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
+			return tCtx.GetEventIndex()
+		},
+		Setter: func(_ context.Context, _ TransformContext, _ any) error {
+			return errors.New("the 'event_index' path cannot be modified")
 		},
 	}
 }
