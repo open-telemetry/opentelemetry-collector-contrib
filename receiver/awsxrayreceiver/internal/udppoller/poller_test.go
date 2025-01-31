@@ -148,7 +148,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 		}
 	}, 10*time.Second, 5*time.Millisecond, "poller should return parsed segment")
 
-	assertReceiverTraces(t, tt, receiverID, Transport, 2, 0)
+	assertReceiverTraces(t, tt, receiverID, 2, 0)
 }
 
 func TestIncompletePacketNoSeparator(t *testing.T) {
@@ -178,7 +178,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 				fmt.Sprintf("unable to split incoming data as header and segment, incoming bytes: %v", rawData)) == 0
 	}, 10*time.Second, 5*time.Millisecond, "poller should reject segment")
 
-	assertReceiverTraces(t, tt, receiverID, Transport, 0, 1)
+	assertReceiverTraces(t, tt, receiverID, 0, 1)
 }
 
 func TestIncompletePacketNoBody(t *testing.T) {
@@ -203,7 +203,7 @@ func TestIncompletePacketNoBody(t *testing.T) {
 			lastEntry.Context[1].Integer == 1
 	}, 10*time.Second, 5*time.Millisecond, "poller should log missing body")
 
-	assertReceiverTraces(t, tt, receiverID, Transport, 0, 1)
+	assertReceiverTraces(t, tt, receiverID, 0, 1)
 }
 
 func TestNonJsonHeader(t *testing.T) {
@@ -233,7 +233,7 @@ func TestNonJsonHeader(t *testing.T) {
 				"invalid character 'o'")
 	}, 10*time.Second, 5*time.Millisecond, "poller should reject segment")
 
-	assertReceiverTraces(t, tt, receiverID, Transport, 0, 1)
+	assertReceiverTraces(t, tt, receiverID, 0, 1)
 }
 
 func TestJsonInvalidHeader(t *testing.T) {
@@ -269,7 +269,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 			)
 	}, 10*time.Second, 5*time.Millisecond, "poller should reject segment")
 
-	assertReceiverTraces(t, tt, receiverID, Transport, 0, 1)
+	assertReceiverTraces(t, tt, receiverID, 0, 1)
 }
 
 func TestSocketReadIrrecoverableNetError(t *testing.T) {
@@ -306,7 +306,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == randErrStr.String()
 	}, 10*time.Second, 5*time.Millisecond, "poller should exit due to irrecoverable net read error")
 
-	assertReceiverTraces(t, tt, receiverID, Transport, 0, 1)
+	assertReceiverTraces(t, tt, receiverID, 0, 1)
 }
 
 func TestSocketReadTimeOutNetError(t *testing.T) {
@@ -344,7 +344,7 @@ func TestSocketReadTimeOutNetError(t *testing.T) {
 			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == randErrStr.String()
 	}, 10*time.Second, 5*time.Millisecond, "poller should encounter net read error")
 
-	assertReceiverTraces(t, tt, receiverID, Transport, 0, 1)
+	assertReceiverTraces(t, tt, receiverID, 0, 1)
 }
 
 func TestSocketGenericReadError(t *testing.T) {
@@ -380,7 +380,7 @@ func TestSocketGenericReadError(t *testing.T) {
 			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == randErrStr.String()
 	}, 10*time.Second, 5*time.Millisecond, "poller should encounter generic socket read error")
 
-	assertReceiverTraces(t, tt, receiverID, Transport, 0, 1)
+	assertReceiverTraces(t, tt, receiverID, 0, 1)
 }
 
 type mockNetError struct {
@@ -490,7 +490,7 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 	return zap.New(core), recorded
 }
 
-func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id component.ID, transport string, accepted, refused int64) {
+func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id component.ID, accepted, refused int64) {
 	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
 	assert.NoError(t, err)
 	metricdatatest.AssertEqual(t,
@@ -505,7 +505,7 @@ func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id compo
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", transport)),
+							attribute.String("transport", Transport)),
 						Value: accepted,
 					},
 				},
@@ -526,7 +526,7 @@ func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id compo
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", transport)),
+							attribute.String("transport", Transport)),
 						Value: refused,
 					},
 				},

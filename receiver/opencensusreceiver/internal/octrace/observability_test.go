@@ -59,7 +59,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	assertReceiverTraces(t, tt, receiverID, "grpc", int64(n), 0)
+	assertReceiverTraces(t, tt, receiverID, int64(n), 0)
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
@@ -82,7 +82,7 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	}
 	flush(traceSvcDoneFn)
 
-	assertReceiverTraces(t, tt, receiverID, "grpc", 0, 0)
+	assertReceiverTraces(t, tt, receiverID, 0, 0)
 }
 
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
@@ -148,7 +148,7 @@ func flush(traceSvcDoneFn func()) {
 	<-time.After(40 * time.Millisecond)
 }
 
-func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id component.ID, transport string, accepted, refused int64) {
+func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id component.ID, accepted, refused int64) {
 	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
 	assert.NoError(t, err)
 	metricdatatest.AssertEqual(t,
@@ -163,7 +163,7 @@ func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id compo
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", transport)),
+							attribute.String("transport", "grpc")),
 						Value: accepted,
 					},
 				},
@@ -184,7 +184,7 @@ func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id compo
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", transport)),
+							attribute.String("transport", "grpc")),
 						Value: refused,
 					},
 				},

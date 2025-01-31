@@ -36,17 +36,17 @@ func TestReporterObservability(t *testing.T) {
 
 	reporter.OnMetricsProcessed(ctx, 17, nil)
 
-	assertReceiverMetrics(t, tt, receiverID, "tcp", 17, 0)
+	assertReceiverMetrics(t, tt, receiverID, 17, 0)
 
 	// Below just exercise the error paths.
 	err = errors.New("fake error for tests")
 	reporter.OnTranslationError(ctx, err)
 	reporter.OnMetricsProcessed(ctx, 10, err)
 
-	assertReceiverMetrics(t, tt, receiverID, "tcp", 17, 10)
+	assertReceiverMetrics(t, tt, receiverID, 17, 10)
 }
 
-func assertReceiverMetrics(t *testing.T, tt componenttest.TestTelemetry, id component.ID, transport string, accepted, refused int64) {
+func assertReceiverMetrics(t *testing.T, tt componenttest.TestTelemetry, id component.ID, accepted, refused int64) {
 	got, err := tt.GetMetric("otelcol_receiver_accepted_metric_points")
 	assert.NoError(t, err)
 	metricdatatest.AssertEqual(t,
@@ -61,7 +61,7 @@ func assertReceiverMetrics(t *testing.T, tt componenttest.TestTelemetry, id comp
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", transport)),
+							attribute.String("transport", "tcp")),
 						Value: accepted,
 					},
 				},
@@ -82,7 +82,7 @@ func assertReceiverMetrics(t *testing.T, tt componenttest.TestTelemetry, id comp
 					{
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
-							attribute.String("transport", transport)),
+							attribute.String("transport", "tcp")),
 						Value: refused,
 					},
 				},
