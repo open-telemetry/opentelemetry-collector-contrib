@@ -205,6 +205,108 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "flat_configuration"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "mixed_configuration_styles"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
+					},
+					{
+						Context: "span",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+					{
+						Statements: []string{`set(span.attributes["name"], "lion")`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(span.name, "lion") where span.attributes["http.path"] == "/animal"`},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+					{
+						Statements: []string{`set(metric.name, "lion")`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(metric.name, "lion") where resource.attributes["http.path"] == "/animal"`},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+					{
+						Statements: []string{`set(log.attributes["name"], "lion")`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(log.body, "lion") where log.attributes["http.path"] == "/animal"`},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.Name(), func(t *testing.T) {
