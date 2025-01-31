@@ -7,24 +7,24 @@ import (
 	"errors"
 )
 
-type metricType string
+type MetricType string
 
 const (
-	metricTypeGauge     = "Gauge"
-	metricTypeSum       = "Sum"
-	metricTypeHistogram = "Histogram"
+	MetricTypeGauge     MetricType = "Gauge"
+	MetricTypeSum       MetricType = "Sum"
+	MetricTypeHistogram MetricType = "Histogram"
 )
 
 // String is used both by fmt.Print and by Cobra in help text
-func (e *metricType) String() string {
+func (e *MetricType) String() string {
 	return string(*e)
 }
 
 // Set must have pointer receiver so it doesn't change the value of a copy
-func (e *metricType) Set(v string) error {
+func (e *MetricType) Set(v string) error {
 	switch v {
 	case "Gauge", "Sum", "Histogram":
-		*e = metricType(v)
+		*e = MetricType(v)
 		return nil
 	default:
 		return errors.New(`must be one of "Gauge", "Sum", "Histogram"`)
@@ -32,6 +32,6 @@ func (e *metricType) Set(v string) error {
 }
 
 // Type is only used in help text
-func (e *metricType) Type() string {
-	return "metricType"
+func (e *MetricType) Type() string {
+	return "MetricType"
 }
