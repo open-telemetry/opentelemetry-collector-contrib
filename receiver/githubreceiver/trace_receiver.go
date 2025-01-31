@@ -182,9 +182,8 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
 			http.Error(w, "failed to consume traces", http.StatusInternalServerError)
 			return
 		}
+		w.WriteHeader(http.StatusOK)
 	}
-
-	w.WriteHeader(http.StatusOK)
 
 	gtr.obsrecv.EndTracesOp(ctx, "protobuf", td.SpanCount(), err)
 }
