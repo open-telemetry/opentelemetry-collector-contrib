@@ -78,6 +78,7 @@ body:
       - exporter/pulsar
       - exporter/rabbitmq
       - exporter/sapm
+      - exporter/sematext
       - exporter/sentry
       - exporter/signalfx
       - exporter/splunkhec
@@ -134,7 +135,6 @@ body:
       - internal/filter
       - internal/grpcutil
       - internal/k8sconfig
-      - internal/k8stest
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
@@ -147,6 +147,7 @@ body:
       - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal
+      - pkg/core/xidutils
       - pkg/datadog
       - pkg/experimentalmetricmetadata
       - pkg/golden
@@ -170,6 +171,7 @@ body:
       - pkg/translator/skywalking
       - pkg/translator/zipkin
       - pkg/winperfcounters
+      - pkg/xk8stest
       - processor/attributes
       - processor/coralogix
       - processor/cumulativetodelta
@@ -310,6 +312,7 @@ body:
       - receiver/windowsperfcounters
       - receiver/zipkin
       - receiver/zookeeper
+      - scraper/zookeeperscraper
       - testbed
       - testbed/mockdatasenders/mockdatadogagentexporter
       # End Collector components list
