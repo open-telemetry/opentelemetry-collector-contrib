@@ -156,7 +156,7 @@ type ExemplarAppender interface {
 }
 ```
 
-*Note: the above code belongs to the Prometheus project, its license can be found [here](https://github.com/prometheus/prometheus/blob/v2.26.0/LICENSE)*
+*Note: the above code belongs to the Prometheus project, and is covered by the [Prometheus license](https://github.com/prometheus/prometheus/blob/v2.26.0/LICENSE)*
 
 One can see that the interface is very simple, it only has 4 methods (once we
 account for the embedded `ExemplarAppender` interface): `Append`, `AppendExemplar`,
