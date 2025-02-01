@@ -10,10 +10,10 @@ tests:              # generated_component_test.go looking for test.config from m
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [cpheps]
+    emeritus: [cpheps]
     seeking_new: true
 
 resource_attributes:

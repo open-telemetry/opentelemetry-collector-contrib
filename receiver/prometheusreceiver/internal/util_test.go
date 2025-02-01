@@ -105,7 +105,7 @@ func TestConvToMetricType(t *testing.T) {
 			wantMonotonic: false,
 		},
 		{
-			name:          "model.metric_gauge_hostogram",
+			name:          "model.metric_gauge_histogram",
 			mtype:         model.MetricTypeGaugeHistogram,
 			want:          pmetric.MetricTypeEmpty,
 			wantMonotonic: false,

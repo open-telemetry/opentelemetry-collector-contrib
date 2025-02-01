@@ -16,12 +16,13 @@ import (
 )
 
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
 	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
 }
+
 func (tt *Telemetry) NewSettings() exporter.Settings {
 	set := exportertest.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("loki"))
@@ -34,7 +35,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
 	// ensure all required metrics are present
 	for _, want := range expected {
-		got := getMetric(want.Name, md)
+		got := getMetricFromResource(want.Name, md)
 		metricdatatest.AssertEqual(t, want, got, opts...)
 	}
 
@@ -42,7 +43,30 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+func NewSettings(tt *componenttest.Telemetry) exporter.Settings {
+	set := exportertest.NewNopSettings()
+	set.ID = component.NewID(component.MustNewType("loki"))
+	set.TelemetrySettings = tt.NewTelemetrySettings()
+	return set
+}
+
+func AssertEqualLokiexporterSendFailedDueToMissingLabels(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_lokiexporter_send_failed_due_to_missing_labels",
+		Description: "Number of log records failed to send because labels were missing",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_lokiexporter_send_failed_due_to_missing_labels")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
 	for _, sm := range got.ScopeMetrics {
 		for _, m := range sm.Metrics {
 			if m.Name == name {

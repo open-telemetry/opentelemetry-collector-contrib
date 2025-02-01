@@ -177,8 +177,8 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			k8sNamespace.Str(),
 		)
 
-		watchEvenLogRecordtAttrs := logEntryFromWatchEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
-		eventType, ok := watchEvenLogRecordtAttrs.Get("event.name")
+		watchEvenLogRecordAttrs := logEntryFromWatchEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+		eventType, ok := watchEvenLogRecordAttrs.Get("event.name")
 		assert.True(t, ok)
 		assert.Equal(
 			t,
@@ -186,7 +186,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			eventType.AsString(),
 		)
 
-		eventDomain, ok := watchEvenLogRecordtAttrs.Get("event.domain")
+		eventDomain, ok := watchEvenLogRecordAttrs.Get("event.domain")
 		assert.True(t, ok)
 		assert.Equal(
 			t,
@@ -194,7 +194,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			eventDomain.AsString(),
 		)
 
-		k8sResourceName, ok := watchEvenLogRecordtAttrs.Get("k8s.resource.name")
+		k8sResourceName, ok := watchEvenLogRecordAttrs.Get("k8s.resource.name")
 		assert.True(t, ok)
 		assert.Equal(
 			t,

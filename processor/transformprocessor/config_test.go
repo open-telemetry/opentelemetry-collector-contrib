@@ -4,13 +4,13 @@
 package transformprocessor
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -23,7 +23,7 @@ func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		id       component.ID
 		expected component.Config
-		errorLen int
+		errors   []error
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
@@ -144,8 +144,12 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "unknown_function_log"),
 		},
 		{
-			id:       component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
-			errorLen: 3,
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
+			errors: []error{
+				errors.New("unexpected token \"where\""),
+				errors.New("unexpected token \"attributes\""),
+				errors.New("unexpected token \"none\""),
+			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "structured_configuration_with_path_context"),
@@ -218,14 +222,15 @@ func TestLoadConfig(t *testing.T) {
 				err = component.ValidateConfig(cfg)
 				assert.Error(t, err)
 
-				if tt.errorLen > 0 {
-					assert.Len(t, multierr.Errors(err), tt.errorLen)
+				if len(tt.errors) > 0 {
+					for _, expectedErr := range tt.errors {
+						assert.ErrorContains(t, err, expectedErr.Error())
+					}
 				}
-
-				return
+			} else {
+				assert.NoError(t, component.ValidateConfig(cfg))
+				assert.Equal(t, tt.expected, cfg)
 			}
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
