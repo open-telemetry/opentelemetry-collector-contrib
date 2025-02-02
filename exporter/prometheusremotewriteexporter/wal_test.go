@@ -164,7 +164,7 @@ func TestExportWithWALEnabled(t *testing.T) {
 		WAL: &WALConfig{
 			Directory: t.TempDir(),
 		},
-		TargetInfo: &TargetInfo{}, // Declared just to avoid nil pointer dereference.
+		TargetInfo:    &TargetInfo{},    // Declared just to avoid nil pointer dereference.
 		CreatedMetric: &CreatedMetric{}, // Declared just to avoid nil pointer dereference.
 	}
 	buildInfo := component.BuildInfo{
@@ -174,20 +174,19 @@ func TestExportWithWALEnabled(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	set.BuildInfo = buildInfo
 
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		require.NotNil(t, body)
+		assert.NoError(t, err)
+		assert.NotNil(t, body)
 		// Receives the http requests and unzip, unmarshalls, and extracts TimeSeries
 		writeReq := &prompb.WriteRequest{}
 		var unzipped []byte
 
 		dest, err := snappy.Decode(unzipped, body)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		ok := proto.Unmarshal(dest, writeReq)
-		require.NoError(t, ok)
+		assert.NoError(t, ok)
 
 		assert.Len(t, writeReq.Timeseries, 1)
 	}))
