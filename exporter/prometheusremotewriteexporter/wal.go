@@ -12,18 +12,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/tidwall/wal"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-
-	"github.com/ietxaniz/delock"
 )
 
 type prweWAL struct {
-	mu        delock.Mutex // mu protects the fields below.
+	mu        sync.Mutex // mu protects the fields below.
 	wal       *wal.Log
 	walConfig *WALConfig
 	walPath   string
@@ -32,6 +29,7 @@ type prweWAL struct {
 
 	stopOnce  sync.Once
 	stopChan  chan struct{}
+	rNotify   chan struct{}
 	rWALIndex *atomic.Uint64
 	wWALIndex *atomic.Uint64
 }
@@ -72,6 +70,7 @@ func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.Wri
 		exportSink: exportSink,
 		walConfig:  walConfig,
 		stopChan:   make(chan struct{}),
+		rNotify:    make(chan struct{}),
 		rWALIndex:  &atomic.Uint64{},
 		wWALIndex:  &atomic.Uint64{},
 	}
@@ -96,11 +95,8 @@ var (
 
 // retrieveWALIndices queries the WriteAheadLog for its current first and last indices.
 func (prwe *prweWAL) retrieveWALIndices() (err error) {
-	lockID, err := prwe.mu.Lock()
-	if err != nil {
-		panic(err)
-	}
-	defer prwe.mu.Unlock(lockID)
+	prwe.mu.Lock()
+	defer prwe.mu.Unlock()
 
 	err = prwe.closeWAL()
 	if err != nil {
@@ -132,11 +128,8 @@ func (prwe *prweWAL) retrieveWALIndices() (err error) {
 func (prwe *prweWAL) stop() error {
 	err := errAlreadyClosed
 	prwe.stopOnce.Do(func() {
-		lockID, err := prwe.mu.Lock()
-	if err != nil {
-		panic(err)
-	}
-	defer prwe.mu.Unlock(lockID)
+		prwe.mu.Lock()
+		defer prwe.mu.Unlock()
 
 		close(prwe.stopChan)
 		err = prwe.closeWAL()
@@ -268,11 +261,8 @@ func (prwe *prweWAL) closeWAL() error {
 }
 
 func (prwe *prweWAL) syncAndTruncateFront() error {
-	lockID, err := prwe.mu.Lock()
-	if err != nil {
-		panic(err)
-	}
-	defer prwe.mu.Unlock(lockID)
+	prwe.mu.Lock()
+	defer prwe.mu.Unlock()
 
 	if prwe.wal == nil {
 		return errNilWAL
@@ -312,11 +302,8 @@ func (prwe *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*pro
 // write them to the Write-Ahead-Log so that shutdowns won't lose data, and that the routine that
 // reads from the WAL can then process the previously serialized requests.
 func (prwe *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
-	lockID, err := prwe.mu.Lock()
-	if err != nil {
-		panic(err)
-	}
-	defer prwe.mu.Unlock(lockID)
+	prwe.mu.Lock()
+	defer prwe.mu.Unlock()
 
 	// Write all the requests to the WAL in a batch.
 	batch := new(wal.Batch)
@@ -329,16 +316,15 @@ func (prwe *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
 		batch.Write(wIndex, protoBlob)
 	}
 
+	// Notify reader go routine that is possibly waiting for writes.
+	select {
+	case prwe.rNotify <- struct{}{}:
+	default:
+	}
 	return prwe.wal.WriteBatch(batch)
 }
 
 func (prwe *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wreq *prompb.WriteRequest, err error) {
-	lockID, err := prwe.mu.Lock()
-	if err != nil {
-		panic(err)
-	}
-	defer prwe.mu.Unlock(lockID)
-
 	var protoBlob []byte
 	for i := 0; i < 12; i++ {
 		// Firstly check if we've been terminated, then exit if so.
@@ -354,10 +340,10 @@ func (prwe *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wreq 
 			index = 1
 		}
 
+		prwe.mu.Lock()
 		if prwe.wal == nil {
 			return nil, fmt.Errorf("attempt to read from closed WAL")
 		}
-
 		protoBlob, err = prwe.wal.Read(index)
 		if err == nil { // The read succeeded.
 			req := new(prompb.WriteRequest)
@@ -368,74 +354,24 @@ func (prwe *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wreq 
 			// Now increment the WAL's read index.
 			prwe.rWALIndex.Add(1)
 
+			prwe.mu.Unlock()
 			return req, nil
+		}
+		prwe.mu.Unlock()
+
+		// If WAL was empty, let's wait for a notification from
+		// the writer go routine.
+		if errors.Is(err, wal.ErrNotFound) {
+			select {
+			case <-prwe.rNotify:
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			}
 		}
 
 		if !errors.Is(err, wal.ErrNotFound) {
 			return nil, err
 		}
-
-		if index <= 1 {
-			// This could be the very first attempted read, so try again, after a small sleep.
-			time.Sleep(time.Duration(1<<i) * time.Millisecond)
-			continue
-		}
-
-		// Otherwise, we couldn't find the record, let's try watching
-		// the WAL file until perhaps there is a write to it.
-		walWatcher, werr := fsnotify.NewWatcher()
-		if werr != nil {
-			return nil, werr
-		}
-		if werr = walWatcher.Add(prwe.walPath); werr != nil {
-			return nil, werr
-		}
-
-		// Watch until perhaps there is a write to the WAL file.
-		watchCh := make(chan error)
-		wErr := err
-		go func() {
-			defer func() {
-				watchCh <- wErr
-				close(watchCh)
-				// Close the file watcher.
-				walWatcher.Close()
-			}()
-
-			select {
-			case <-ctx.Done(): // If the context was cancelled, bail out ASAP.
-				wErr = ctx.Err()
-				return
-
-			case event, ok := <-walWatcher.Events:
-				if !ok {
-					return
-				}
-				switch event.Op {
-				case fsnotify.Remove:
-					// The file got deleted.
-					// TODO: Add capabilities to search for the updated file.
-				case fsnotify.Rename:
-					// Renamed, we don't have information about the renamed file's new name.
-				case fsnotify.Write:
-					// Finally a write, let's try reading again, but after some watch.
-					wErr = nil
-				}
-
-			case eerr, ok := <-walWatcher.Errors:
-				if ok {
-					wErr = eerr
-				}
-			}
-		}()
-
-		if gerr := <-watchCh; gerr != nil {
-			return nil, gerr
-		}
-
-		// Otherwise a write occurred might have occurred,
-		// and we can sleep for a little bit then try again.
-		time.Sleep(time.Duration(1<<i) * time.Millisecond)
 	}
 	return nil, err
 }
