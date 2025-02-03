@@ -25,17 +25,17 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.64.0-devel
 	github.com/DataDog/datadog-agent/pkg/status/health v0.61.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.64.0-devel.0.20250124161229-3bfe342fadfd
+	github.com/DataDog/datadog-agent/pkg/trace v0.64.0-devel.0.20250129105959-38d8da25a3ad
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.61.0
 	github.com/DataDog/datadog-agent/pkg/util/startstop v0.61.0 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.34.0
 	github.com/DataDog/datadog-go/v5 v5.6.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.24.1-0.20250124131402-bcd6fd1617a6
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.24.1-0.20250124131402-bcd6fd1617a6
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.24.1-0.20250124131402-bcd6fd1617a6
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.24.1-0.20250124131402-bcd6fd1617a6
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.24.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.25.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.25.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.25.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.25.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.25.0
 	github.com/DataDog/sketches-go v1.4.6 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.25.0
 	github.com/aws/aws-sdk-go v1.55.6 // indirect
@@ -118,7 +118,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.64.0-devel // indirect
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/comp/def v0.61.0 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.64.0-devel.0.20250124161229-3bfe342fadfd // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.64.0-devel.0.20250129105959-38d8da25a3ad // indirect
 	github.com/DataDog/datadog-agent/comp/trace/compression/def v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.61.0 // indirect
@@ -132,7 +132,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/processor v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/sender v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/utils v0.61.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.0-devel.0.20250124163325-fc18e81037cd // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.0-devel.0.20250129111638-01c8fb06949e // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/telemetry v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/backoff v0.61.0 // indirect
@@ -141,7 +141,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/fxutil v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/http v0.61.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.64.0-devel.0.20250124163325-fc18e81037cd // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.64.0-devel.0.20250129111638-01c8fb06949e // indirect
 	github.com/DataDog/datadog-agent/pkg/util/optional v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.61.0 // indirect
@@ -405,7 +405,7 @@ require (
 	go.uber.org/fx v1.22.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
-	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8 // indirect
+	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/oauth2 v0.25.0 // indirect
@@ -418,7 +418,7 @@ require (
 	gonum.org/v1/gonum v0.15.1 // indirect
 	google.golang.org/api v0.188.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250124145028-65684f501c47 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250127172529-29210b9bc287 // indirect
 	google.golang.org/grpc v1.70.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
