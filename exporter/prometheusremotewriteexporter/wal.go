@@ -366,6 +366,8 @@ func (prwe *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wreq 
 			case <-prwe.rNotify:
 			case <-ctx.Done():
 				return nil, ctx.Err()
+			case <-prwe.stopChan:
+				return nil, fmt.Errorf("attempt to read from WAL after stopped")
 			}
 		}
 
