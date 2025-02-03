@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
@@ -120,8 +119,6 @@ func TestTraceIntegrity(t *testing.T) {
 	require.Len(t, spans, spanCount)
 
 	nextConsumer := new(consumertest.TracesSink)
-	s := metadatatest.SetupTelemetry()
-	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -138,7 +135,7 @@ func TestTraceIntegrity(t *testing.T) {
 			withPolicies(policies),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -400,8 +397,6 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	idb := newSyncIDBatcher()
 	msp := new(consumertest.TracesSink)
-	s := metadatatest.SetupTelemetry()
-	ct := s.NewSettings()
 
 	cfg := Config{
 		DecisionWait: defaultTestDecisionWait,
@@ -418,7 +413,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 			withDecisionBatcher(idb),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), ct, msp, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), msp, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -473,8 +468,6 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 }
 
 func TestSetSamplingPolicy(t *testing.T) {
-	s := metadatatest.SetupTelemetry()
-	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 	msp := new(consumertest.TracesSink)
 
@@ -493,7 +486,7 @@ func TestSetSamplingPolicy(t *testing.T) {
 			withDecisionBatcher(idb),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), ct, msp, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), msp, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))

@@ -504,7 +504,7 @@ func TestAMQPSubstituteVariables(t *testing.T) {
 
 // testFunctionEquality will check that the pointer names are the same for the two functions.
 // It is not a perfect comparison but will perform well differentiating between anonymous
-// functions and the amqp named functinos
+// functions and the amqp named functions
 func testFunctionEquality(t *testing.T, f1, f2 any) {
 	assert.Equal(t, (f1 == nil), (f2 == nil))
 	if f1 == nil {
@@ -654,7 +654,7 @@ func (c *connMock) Read(b []byte) (n int, err error) {
 		d := <-c.nextData
 		// the way this test fixture is designed, there is a race condition
 		// between write and read where data may be written to nextData on
-		// a call to Write and may be propogated prior to the return of Write.
+		// a call to Write and may be propagated prior to the return of Write.
 		time.Sleep(10 * time.Millisecond)
 		c.remaining = bytes.NewReader(d)
 	}

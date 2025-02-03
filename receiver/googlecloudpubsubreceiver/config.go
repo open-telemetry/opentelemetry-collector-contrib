@@ -35,51 +35,6 @@ type Config struct {
 	ClientID string `mapstructure:"client_id"`
 }
 
-func (config *Config) validateForLog() error {
-	err := config.validate()
-	if err != nil {
-		return err
-	}
-	switch config.Encoding {
-	case "":
-	case "otlp_proto_log":
-	case "raw_text":
-	case "raw_json":
-	case "cloud_logging":
-	default:
-		return fmt.Errorf("log encoding %v is not supported.  supported encoding formats include [otlp_proto_log,raw_text,raw_json,cloud_logging]", config.Encoding)
-	}
-	return nil
-}
-
-func (config *Config) validateForTrace() error {
-	err := config.validate()
-	if err != nil {
-		return err
-	}
-	switch config.Encoding {
-	case "":
-	case "otlp_proto_trace":
-	default:
-		return fmt.Errorf("trace encoding %v is not supported.  supported encoding formats include [otlp_proto_trace]", config.Encoding)
-	}
-	return nil
-}
-
-func (config *Config) validateForMetric() error {
-	err := config.validate()
-	if err != nil {
-		return err
-	}
-	switch config.Encoding {
-	case "":
-	case "otlp_proto_metric":
-	default:
-		return fmt.Errorf("metric encoding %v is not supported.  supported encoding formats include [otlp_proto_metric]", config.Encoding)
-	}
-	return nil
-}
-
 func (config *Config) validate() error {
 	if !subscriptionMatcher.MatchString(config.Subscription) {
 		return fmt.Errorf("subscription '%s' is not a valid format, use 'projects/<project_id>/subscriptions/<name>'", config.Subscription)
