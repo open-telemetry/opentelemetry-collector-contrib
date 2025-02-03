@@ -109,7 +109,7 @@ explicitly set `allow_all_keys` to true.
 If the value of an allowed key matches the regular expression for an allowed value, the matching
 part of the value is not masked even if it matches the regular expression for a blocked value.
 If the value matches the regular expression for a blocked value only, the matching
-part of the value is masked with a fixed lenght of asterisks.
+part of the value is masked with a fixed length of asterisks.
 
 For example, if `notes` is on the list of allowed keys, then the `notes`
 attribute is retained. However, if there is a value such as a credit card
