@@ -257,7 +257,7 @@ func TestRedactSummaryDebug(t *testing.T) {
 // of any attributes it deleted to the new redaction.redacted.count span
 // attribute (but not to redaction.redacted.keys) when set to the info level
 // of output
-func TestRedactSummaryInfo(t *testing.T) { //tu
+func TestRedactSummaryInfo(t *testing.T) {
 	config := &Config{
 		AllowedKeys:   []string{"id", "name", "group", "email"},
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
