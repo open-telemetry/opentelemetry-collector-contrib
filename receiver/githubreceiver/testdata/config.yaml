@@ -11,7 +11,7 @@ receivers:
       path: "some/path"
       health_path: "health/path"
       required_headers:
-        key: vault-present
+        key: value-present
 
   github/customname:
     initial_delay: 1s
@@ -25,7 +25,7 @@ receivers:
       path: "some/path"
       health_path: "health/path"
       required_headers:
-        key: vault-present
+        key: value-present
 
 processors:
   nop:

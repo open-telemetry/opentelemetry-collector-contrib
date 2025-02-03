@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 		Path:       "some/path",
 		HealthPath: "health/path",
 		RequiredHeaders: map[string]configopaque.String{
-			"key": "vault-present",
+			"key": "value-present",
 		},
 		GitHubHeaders: GitHubHeaders{
 			Customizable: map[string]string{
@@ -86,7 +86,7 @@ func TestLoadConfig(t *testing.T) {
 			Path:       "some/path",
 			HealthPath: "health/path",
 			RequiredHeaders: map[string]configopaque.String{
-				"key": "vault-present",
+				"key": "value-present",
 			},
 			GitHubHeaders: GitHubHeaders{
 				Customizable: map[string]string{
