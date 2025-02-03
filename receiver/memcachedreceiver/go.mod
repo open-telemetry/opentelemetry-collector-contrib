@@ -12,11 +12,11 @@ require (
 	github.com/testcontainers/testcontainers-go v0.35.0
 	go.opentelemetry.io/collector/component v0.118.1-0.20250131104636-a737a48402e0
 	go.opentelemetry.io/collector/component/componenttest v0.118.1-0.20250131104636-a737a48402e0
-	go.opentelemetry.io/collector/config/confignet v1.24.1-0.20250131104636-a737a48402e0
-	go.opentelemetry.io/collector/confmap v1.24.1-0.20250131104636-a737a48402e0
-	go.opentelemetry.io/collector/consumer v1.24.1-0.20250131104636-a737a48402e0
+	go.opentelemetry.io/collector/config/confignet v1.24.1-0.20250203014413-643a35ffbcea
+	go.opentelemetry.io/collector/confmap v1.24.1-0.20250203014413-643a35ffbcea
+	go.opentelemetry.io/collector/consumer v1.24.1-0.20250203014413-643a35ffbcea
 	go.opentelemetry.io/collector/consumer/consumertest v0.118.1-0.20250131104636-a737a48402e0
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250131104636-a737a48402e0
+	go.opentelemetry.io/collector/pdata v1.24.1-0.20250203014413-643a35ffbcea
 	go.opentelemetry.io/collector/receiver v0.118.1-0.20250131104636-a737a48402e0
 	go.opentelemetry.io/collector/receiver/receivertest v0.118.1-0.20250131104636-a737a48402e0
 	go.opentelemetry.io/collector/scraper v0.118.1-0.20250131104636-a737a48402e0
