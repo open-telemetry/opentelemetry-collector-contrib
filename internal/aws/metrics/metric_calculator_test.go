@@ -4,7 +4,7 @@
 package metrics
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -276,7 +276,7 @@ func TestSweep(t *testing.T) {
 		assert.LessOrEqual(t, time.Since(sweepTime), mwe.ttl)
 	}
 	require.NoError(t, mwe.Shutdown())
-	for range sweepEvent { // nolint
+	for range sweepEvent { //nolint:revive
 	}
 	assert.True(t, closed.Load(), "Sweeper did not terminate.")
 }
