@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
@@ -209,14 +210,14 @@ func TestSerializeMetricsConflict(t *testing.T) {
 	metrics := pmetric.NewMetrics()
 	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
-	var dataPoints []dataPoint
+	var dataPoints []datapoints.DataPoint
 	metric1 := scopeMetrics.Metrics().AppendEmpty()
 	metric2 := scopeMetrics.Metrics().AppendEmpty()
 	for _, m := range []pmetric.Metric{metric1, metric2} {
 		m.SetName("foo")
 		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 		dp.SetIntValue(42)
-		dataPoints = append(dataPoints, newNumberDataPoint(m, dp))
+		dataPoints = append(dataPoints, datapoints.NewNumber(m, dp))
 	}
 	metrics.MarkReadOnly()
 
