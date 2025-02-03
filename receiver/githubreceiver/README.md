@@ -181,6 +181,8 @@ To configure a GitHub App, you will need to create a new GitHub App within your
 organization. Refer to the general [GitHub App documentation][ghapp] for how to
 create a GitHub App. During the subscription phase, subscribe to `workflow_run` and `workflow_job` events.
 
+> NOTE: Only `workflow_run` events are supported in created traces at this time.
+
 [wjob]: https://docs.github.com/en/webhooks/webhook-events-and-payloads#workflow_job
 [wrun]: https://docs.github.com/en/webhooks/webhook-events-and-payloads#workflow_run
 [valid]: https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
