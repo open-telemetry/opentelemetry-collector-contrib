@@ -66,7 +66,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 			if tt.expectedErr != "" {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.expectedErr)
+				assert.ErrorContains(t, component.ValidateConfig(cfg), tt.expectedErr)
 				return
 			}
 			assert.NoError(t, component.ValidateConfig(cfg))
