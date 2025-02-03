@@ -4,7 +4,7 @@
 package metrics_test
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"path/filepath"
 	"testing"
 
@@ -133,8 +133,8 @@ func BenchmarkMergeManyIntoMany(b *testing.B) {
 func generateMetrics(t require.TestingT, rmCount int) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 
-	timeStamp := pcommon.Timestamp(rand.Intn(256))
-	value := int64(rand.Intn(256))
+	timeStamp := pcommon.Timestamp(rand.IntN(256))
+	value := rand.Int64N(256)
 
 	for i := 0; i < rmCount; i++ {
 		rm := md.ResourceMetrics().AppendEmpty()

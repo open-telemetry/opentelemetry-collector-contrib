@@ -571,8 +571,8 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	}
 
 	mockMetricsExporter := newMockMetricsExporter()
-	set := metadatatest.SetupTelemetry()
-	p, err := newConnector(set.NewTelemetrySettings(), cfg, mockMetricsExporter)
+	tel := componenttest.NewTelemetry()
+	p, err := newConnector(tel.NewTelemetrySettings(), cfg, mockMetricsExporter)
 	require.NoError(t, err)
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -594,21 +594,10 @@ func TestValidateOwnTelemetry(t *testing.T) {
 
 	// Shutdown the connector
 	assert.NoError(t, p.Shutdown(context.Background()))
-	set.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_connector_servicegraph_total_edges",
-			Description: "Total number of unique edges",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{Value: 2},
-				},
-			},
-		},
+	metadatatest.AssertEqualConnectorServicegraphTotalEdges(t, tel, []metricdata.DataPoint[int64]{
+		{Value: 2},
 	}, metricdatatest.IgnoreTimestamp())
-	require.NoError(t, set.Shutdown(context.Background()))
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestExtraDimensionsLabels(t *testing.T) {
