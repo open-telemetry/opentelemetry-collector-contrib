@@ -669,7 +669,8 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 			newServerConfig.TLSSetting.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
 		}
 	} else {
-		newServerConfig.TLSSetting = configtls.ClientConfig{Insecure: true}
+		newServerConfig.TLSSetting = configtls.NewDefaultClientConfig()
+		newServerConfig.TLSSetting.InsecureSkipVerify = true
 	}
 
 	if err := newServerConfig.Validate(); err != nil {
@@ -869,19 +870,16 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 	} else {
 		s.logger.Debug("Enabling own metrics pipeline in the config")
 
-		port, err := s.findRandomPort()
-		if err != nil {
-			s.logger.Error("Could not setup own metrics", zap.Error(err))
-			return
+		data := map[string]any{
+			"MetricsEndpoint": settings.DestinationEndpoint,
+			"MetricsHeaders":  []protobufs.Header{},
 		}
 
-		err = s.ownTelemetryTemplate.Execute(
-			&cfg,
-			map[string]any{
-				"PrometheusPort":  port,
-				"MetricsEndpoint": settings.DestinationEndpoint,
-			},
-		)
+		if settings.Headers != nil {
+			data["MetricsHeaders"] = settings.Headers.Headers
+		}
+
+		err := s.ownTelemetryTemplate.Execute(&cfg, data)
 		if err != nil {
 			s.logger.Error("Could not setup own metrics", zap.Error(err))
 			return

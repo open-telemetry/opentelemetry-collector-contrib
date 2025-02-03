@@ -48,7 +48,7 @@ func NewInMemoryClient(kind component.Kind, id component.ID, name string) *TestC
 func NewFileBackedClient(kind component.Kind, id component.ID, name string, storageDir string) *TestClient {
 	client := NewInMemoryClient(kind, id, name)
 
-	client.storageFile = filepath.Join(storageDir, fmt.Sprintf("%d_%s_%s_%s", kind, id.Type(), id.Name(), name))
+	client.storageFile = filepath.Join(storageDir, fmt.Sprintf("%s_%s_%s_%s", kind, id.Type(), id.Name(), name))
 
 	// Attempt to load previous storage content
 	contents, err := os.ReadFile(client.storageFile)

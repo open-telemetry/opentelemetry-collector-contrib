@@ -196,17 +196,30 @@ func TestFlushPeriodEOF(t *testing.T) {
 	_, err := temp.WriteString(string(content))
 	require.NoError(t, err)
 
-	// Make sure FlushPeriod is small, so it is guaranteed to expire
-	f, sink := testFactory(t, withFlushPeriod(5*time.Nanosecond))
+	flushPeriod := time.Millisecond
+	f, sink := testFactory(t, withFlushPeriod(flushPeriod))
 	fp, err := f.NewFingerprint(temp)
 	require.NoError(t, err)
 	r, err := f.NewReader(temp, fp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), r.Offset)
 
-	internaltime.Now = internaltime.NewAlwaysIncreasingClock().Now
-	defer func() { internaltime.Now = time.Now }()
+	clock := internaltime.NewAlwaysIncreasingClock()
+	internaltime.Now = clock.Now
+	internaltime.Since = clock.Since
+	defer func() {
+		internaltime.Now = time.Now
+		internaltime.Since = time.Since
+	}()
 
+	// First ReadToEnd should not emit only the terminated token
 	r.ReadToEnd(context.Background())
-	sink.ExpectTokens(t, content[0:aContentLength], []byte{'b'})
+	sink.ExpectToken(t, content[0:aContentLength])
+
+	// Advance time past the flush period
+	clock.Advance(2 * flushPeriod)
+
+	// Second ReadToEnd should emit the unterminated token because of flush timeout
+	r.ReadToEnd(context.Background())
+	sink.ExpectToken(t, []byte{'b'})
 }

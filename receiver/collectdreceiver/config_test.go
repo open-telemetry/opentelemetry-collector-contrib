@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 			if tt.wantErr == nil {
 				assert.NoError(t, component.ValidateConfig(cfg))
 			} else {
-				assert.Equal(t, tt.wantErr, component.ValidateConfig(cfg))
+				assert.ErrorContains(t, component.ValidateConfig(cfg), tt.wantErr.Error())
 			}
 			assert.Equal(t, tt.expected, cfg)
 		})
