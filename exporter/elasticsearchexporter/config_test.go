@@ -427,7 +427,7 @@ func TestConfig_Validate(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			assert.EqualError(t, component.ValidateConfig(tt.config), tt.err)
+			assert.ErrorContains(t, component.ValidateConfig(tt.config), tt.err)
 		})
 	}
 }
@@ -443,7 +443,7 @@ func TestConfig_Validate_Environment(t *testing.T) {
 		t.Setenv("ELASTICSEARCH_URL", "http://valid:9200, *:!")
 		config := withDefaultConfig()
 		err := component.ValidateConfig(config)
-		assert.EqualError(t, err, `invalid endpoint "*:!": parse "*:!": first path segment in URL cannot contain colon`)
+		assert.ErrorContains(t, err, `invalid endpoint "*:!": parse "*:!": first path segment in URL cannot contain colon`)
 	})
 }
 

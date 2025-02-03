@@ -209,7 +209,7 @@ func (jm *JobsMap) maybeGC() {
 
 func (jm *JobsMap) get(job, instance string) *timeseriesMap {
 	sig := job + ":" + instance
-	// a read locke is taken here as we will not need to modify jobsMap if the target timeseriesMap is available.
+	// a read lock is taken here as we will not need to modify jobsMap if the target timeseriesMap is available.
 	jm.RLock()
 	tsm, ok := jm.jobsMap[sig]
 	jm.RUnlock()

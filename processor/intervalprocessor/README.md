@@ -36,7 +36,7 @@ The following metric types will *not* be aggregated, and will instead be passed,
 The following settings can be optionally configured:
 
 ```yaml
-intervalprocessor:
+interval:
   # The interval in which the processor should export the aggregated metrics. 
   [ interval: <duration> | default = 60s ]
   

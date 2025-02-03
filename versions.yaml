@@ -67,6 +67,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter
@@ -133,7 +134,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
@@ -145,6 +145,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic
@@ -167,6 +168,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor
@@ -298,6 +300,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter
 
