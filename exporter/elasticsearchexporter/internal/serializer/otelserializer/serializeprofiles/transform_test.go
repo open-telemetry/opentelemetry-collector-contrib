@@ -202,13 +202,13 @@ func TestTransform(t *testing.T) {
 					Executables: []ExeMetadata{
 						NewExeMetadata(
 							buildIDBase64,
-							getStartOfWeekFromTime(time.Now()),
+							GetStartOfWeekFromTime(time.Now()),
 							buildIDBase64,
 							"firefox",
 						),
 						NewExeMetadata(
 							buildID2Base64,
-							getStartOfWeekFromTime(time.Now()),
+							GetStartOfWeekFromTime(time.Now()),
 							buildID2Base64,
 							"libc.so",
 						),
@@ -312,13 +312,13 @@ func TestStackPayloads(t *testing.T) {
 					Executables: []ExeMetadata{
 						NewExeMetadata(
 							buildIDBase64,
-							getStartOfWeekFromTime(time.Now()),
+							GetStartOfWeekFromTime(time.Now()),
 							buildIDBase64,
 							"firefox",
 						),
 						NewExeMetadata(
 							buildID2Base64,
-							getStartOfWeekFromTime(time.Now()),
+							GetStartOfWeekFromTime(time.Now()),
 							buildID2Base64,
 							"libc.so",
 						),
@@ -395,13 +395,13 @@ func TestStackPayloads(t *testing.T) {
 					Executables: []ExeMetadata{
 						NewExeMetadata(
 							buildIDBase64,
-							getStartOfWeekFromTime(time.Now()),
+							GetStartOfWeekFromTime(time.Now()),
 							buildIDBase64,
 							"firefox",
 						),
 						NewExeMetadata(
 							buildID2Base64,
-							getStartOfWeekFromTime(time.Now()),
+							GetStartOfWeekFromTime(time.Now()),
 							buildID2Base64,
 							"libc.so",
 						),

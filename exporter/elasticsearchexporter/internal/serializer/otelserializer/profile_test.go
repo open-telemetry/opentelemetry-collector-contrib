@@ -6,7 +6,9 @@ package otelserializer
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,7 +68,7 @@ func TestSerializeProfile(t *testing.T) {
 							"buildid":    "YA3K_koRAADyvzjEk_X7kg",
 							"ecsversion": "1.12.0",
 							"filename":   "samples",
-							"timestamp":  json.Number("1737936000"),
+							"timestamp":  json.Number(fmt.Sprintf("%d", serializeprofiles.GetStartOfWeekFromTime(time.Now()))),
 						},
 						"source": serializeprofiles.ExeMetadataUpsertScript,
 					},

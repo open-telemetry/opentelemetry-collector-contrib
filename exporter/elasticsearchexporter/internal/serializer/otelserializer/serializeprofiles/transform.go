@@ -321,7 +321,7 @@ func getBuildID(profile pprofile.Profile, mapping pprofile.Mapping) (libpf.FileI
 
 func executables(profile pprofile.Profile, mappings pprofile.MappingSlice) ([]ExeMetadata, error) {
 	metadata := make([]ExeMetadata, 0, mappings.Len())
-	lastSeen := getStartOfWeekFromTime(time.Now())
+	lastSeen := GetStartOfWeekFromTime(time.Now())
 
 	for i := 0; i < mappings.Len(); i++ {
 		mapping := mappings.At(i)
@@ -409,6 +409,6 @@ func getString(profile pprofile.Profile, index int) string {
 	return ""
 }
 
-func getStartOfWeekFromTime(t time.Time) uint32 {
+func GetStartOfWeekFromTime(t time.Time) uint32 {
 	return uint32(t.Truncate(time.Hour * 24 * 7).Unix())
 }
