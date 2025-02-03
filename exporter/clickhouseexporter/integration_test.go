@@ -9,7 +9,7 @@ package clickhouseexporter
 import (
 	"context"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"strconv"
 	"testing"
 	"time"
@@ -606,7 +606,5 @@ func verifySummaryMetric(t *testing.T, db *sqlx.DB) {
 }
 
 func randPort() string {
-	rs := rand.NewSource(time.Now().Unix())
-	r := rand.New(rs)
-	return strconv.Itoa(r.Intn(999) + 9000)
+	return strconv.Itoa(rand.IntN(999) + 9000)
 }
