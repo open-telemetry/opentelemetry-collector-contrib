@@ -198,7 +198,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 
 		strVal := value.Str()
 
-		// Allow any blocked values maching the allowed list regex
+		// Allow any values matching the allowed list regex
 		for _, compiledRE := range s.allowRegexList {
 			if match := compiledRE.MatchString(strVal); match {
 				allowed = append(allowed, k)

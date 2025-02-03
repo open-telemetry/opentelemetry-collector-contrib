@@ -22,7 +22,7 @@ redaction:
     - "4[0-9]{12}(?:[0-9]{3})?" ## Visa credit card number
     - "(5[1-5][0-9]{14})"       ## MasterCard number
   # AllowedValues is a list of regular expressions for allowing values of
-	# blocked span attributes. Values that match are not masked.
+  # blocked span attributes. Values that match are not masked.
   allowed_values:
     - ".+@mycompany.com"
   # Summary controls the verbosity level of the diagnostic attributes that
