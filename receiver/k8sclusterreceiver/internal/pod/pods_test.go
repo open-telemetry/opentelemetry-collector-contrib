@@ -40,7 +40,7 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	pod := testutils.NewPodWithContainer(
 		"1",
 		testutils.NewPodSpecWithContainer("container-name"),
-		testutils.NewPodStatusWithContainer("container-name", containerIDWithPreifx("container-id")),
+		testutils.NewPodStatusWithContainer("container-name", containerIDWithPrefix("container-id")),
 	)
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
@@ -63,7 +63,7 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	pod := testutils.NewPodWithContainer(
 		"1",
 		testutils.NewPodSpecWithContainer("container-name"),
-		testutils.NewEvictedTerminatedPodStatusWithContainer("container-name", containerIDWithPreifx("container-id")),
+		testutils.NewEvictedTerminatedPodStatusWithContainer("container-name", containerIDWithPrefix("container-id")),
 	)
 
 	mbc := metadata.DefaultMetricsBuilderConfig()
@@ -87,7 +87,7 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	)
 }
 
-var containerIDWithPreifx = func(containerID string) string {
+var containerIDWithPrefix = func(containerID string) string {
 	return "docker://" + containerID
 }
 

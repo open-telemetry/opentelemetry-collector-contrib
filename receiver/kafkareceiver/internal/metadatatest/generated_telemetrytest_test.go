@@ -15,11 +15,9 @@ import (
 
 func TestSetupTelemetry(t *testing.T) {
 	testTel := SetupTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(
-		testTel.NewTelemetrySettings(),
-	)
+	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
-	require.NotNil(t, tb)
+	defer tb.Shutdown()
 	tb.KafkaReceiverCurrentOffset.Record(context.Background(), 1)
 	tb.KafkaReceiverMessages.Add(context.Background(), 1)
 	tb.KafkaReceiverOffsetLag.Record(context.Background(), 1)
@@ -123,5 +121,30 @@ func TestSetupTelemetry(t *testing.T) {
 			},
 		},
 	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+	AssertEqualKafkaReceiverCurrentOffset(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaReceiverMessages(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaReceiverOffsetLag(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaReceiverPartitionClose(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaReceiverPartitionStart(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaReceiverUnmarshalFailedLogRecords(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaReceiverUnmarshalFailedMetricPoints(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualKafkaReceiverUnmarshalFailedSpans(t, testTel.Telemetry,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }
