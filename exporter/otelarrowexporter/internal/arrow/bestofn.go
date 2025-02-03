@@ -5,7 +5,7 @@ package arrow // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
-	"math/rand"
+	"math/rand/v2"
 	"runtime"
 	"sort"
 	"time"
@@ -100,7 +100,7 @@ func (lp *bestOfNPrioritizer) sendOne(item writeItem, rnd *rand.Rand, tmp []stre
 
 func (lp *bestOfNPrioritizer) run() {
 	tmp := make([]streamSorter, len(lp.state))
-	rnd := rand.New(rand.NewSource(rand.Int63()))
+	rnd := rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
 	for {
 		select {
 		case <-lp.done:
@@ -143,7 +143,7 @@ func (lp *bestOfNPrioritizer) streamFor(_ writeItem, rnd *rand.Rand, tmp []strea
 	// Select numChoices at random by shifting the selection into the start
 	// of the temporary slice.
 	for i := 0; i < lp.numChoices; i++ {
-		pick := rnd.Intn(lp.numChoices - i)
+		pick := rnd.IntN(lp.numChoices - i)
 		tmp[i], tmp[i+pick] = tmp[i+pick], tmp[i]
 	}
 	for i := 0; i < lp.numChoices; i++ {

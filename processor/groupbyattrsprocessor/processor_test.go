@@ -6,13 +6,14 @@ package groupbyattrsprocessor
 import (
 	"context"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -273,8 +274,10 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			inputMetrics := someComplexMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2)
 			inputHistogramMetrics := someComplexHistogramMetrics(tt.withResourceAttrIndex, tt.inputResourceCount, tt.inputInstrumentationLibraryCount, 2, 2)
 
-			tel := metadatatest.SetupTelemetry()
-			gap, err := createGroupByAttrsProcessor(tel.NewSettings(), tt.groupByKeys)
+			tel := componenttest.NewTelemetry()
+			t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+
+			gap, err := createGroupByAttrsProcessor(metadatatest.NewSettings(tel), tt.groupByKeys)
 			require.NoError(t, err)
 
 			processedLogs, err := gap.processLogs(context.Background(), inputLogs)
@@ -374,213 +377,105 @@ func TestComplexAttributeGrouping(t *testing.T) {
 					}
 				}
 			}
-			var want []metricdata.Metrics
 			if tt.shouldMoveCommonGroupedAttr {
-				want = []metricdata.Metrics{
+				metadatatest.AssertEqualProcessorGroupbyattrsNumGroupedLogs(t, tel, []metricdata.DataPoint[int64]{
 					{
-						Name:        "otelcol_processor_groupbyattrs_num_grouped_logs",
-						Description: "Number of logs that had attributes grouped",
-						Unit:        "1",
-						Data: metricdata.Sum[int64]{
-							Temporality: metricdata.CumulativeTemporality,
-							IsMonotonic: true,
-							DataPoints: []metricdata.DataPoint[int64]{
-								{
-									Value: int64(tt.outputTotalRecordsCount),
-								},
-							},
-						},
+						Value: int64(tt.outputTotalRecordsCount),
 					},
+				}, metricdatatest.IgnoreTimestamp())
+				metadatatest.AssertEqualProcessorGroupbyattrsNumGroupedMetrics(t, tel, []metricdata.DataPoint[int64]{
 					{
-						Name:        "otelcol_processor_groupbyattrs_num_grouped_metrics",
-						Description: "Number of metrics that had attributes grouped",
-						Unit:        "1",
-						Data: metricdata.Sum[int64]{
-							Temporality: metricdata.CumulativeTemporality,
-							IsMonotonic: true,
-							DataPoints: []metricdata.DataPoint[int64]{
-								{
-									Value: 4 * int64(tt.outputTotalRecordsCount),
-								},
-							},
-						},
+						Value: 4 * int64(tt.outputTotalRecordsCount),
 					},
+				}, metricdatatest.IgnoreTimestamp())
+				metadatatest.AssertEqualProcessorGroupbyattrsNumGroupedSpans(t, tel, []metricdata.DataPoint[int64]{
 					{
-						Name:        "otelcol_processor_groupbyattrs_num_grouped_spans",
-						Description: "Number of spans that had attributes grouped",
-						Unit:        "1",
-						Data: metricdata.Sum[int64]{
-							Temporality: metricdata.CumulativeTemporality,
-							IsMonotonic: true,
-							DataPoints: []metricdata.DataPoint[int64]{
-								{
-									Value: int64(tt.outputTotalRecordsCount),
-								},
-							},
-						},
+						Value: int64(tt.outputTotalRecordsCount),
 					},
+				}, metricdatatest.IgnoreTimestamp())
+				metadatatest.AssertEqualProcessorGroupbyattrsLogGroups(t, tel, []metricdata.HistogramDataPoint[int64]{
 					{
-						Name:        "otelcol_processor_groupbyattrs_log_groups",
-						Description: "Distribution of groups extracted for logs",
-						Unit:        "1",
-						Data: metricdata.Histogram[int64]{
-							Temporality: metricdata.CumulativeTemporality,
-							DataPoints: []metricdata.HistogramDataPoint[int64]{
-								{
-									Attributes:   *attribute.EmptySet(),
-									Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-									BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-									Count:        1,
-									Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
-									Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
-									Sum:          int64(tt.outputResourceCount),
-								},
-							},
-						},
+						Attributes:   *attribute.EmptySet(),
+						Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+						BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Count:        1,
+						Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+						Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+						Sum:          int64(tt.outputResourceCount),
 					},
+				}, metricdatatest.IgnoreTimestamp())
+				metadatatest.AssertEqualProcessorGroupbyattrsMetricGroups(t, tel, []metricdata.HistogramDataPoint[int64]{
 					{
-						Name:        "otelcol_processor_groupbyattrs_metric_groups",
-						Description: "Distribution of groups extracted for metrics",
-						Unit:        "1",
-						Data: metricdata.Histogram[int64]{
-							Temporality: metricdata.CumulativeTemporality,
-							DataPoints: []metricdata.HistogramDataPoint[int64]{
-								{
-									Attributes:   *attribute.EmptySet(),
-									Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-									BucketCounts: []uint64{0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-									Count:        2,
-									Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
-									Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
-									Sum:          2 * int64(tt.outputResourceCount),
-								},
-							},
-						},
+						Attributes:   *attribute.EmptySet(),
+						Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+						BucketCounts: []uint64{0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Count:        2,
+						Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+						Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+						Sum:          2 * int64(tt.outputResourceCount),
 					},
+				}, metricdatatest.IgnoreTimestamp())
+				metadatatest.AssertEqualProcessorGroupbyattrsSpanGroups(t, tel, []metricdata.HistogramDataPoint[int64]{
 					{
-						Name:        "otelcol_processor_groupbyattrs_span_groups",
-						Description: "Distribution of groups extracted for spans",
-						Unit:        "1",
-						Data: metricdata.Histogram[int64]{
-							Temporality: metricdata.CumulativeTemporality,
-							DataPoints: []metricdata.HistogramDataPoint[int64]{
-								{
-									Attributes:   *attribute.EmptySet(),
-									Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-									BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-									Count:        1,
-									Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
-									Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
-									Sum:          int64(tt.outputResourceCount),
-								},
-							},
-						},
+						Attributes:   *attribute.EmptySet(),
+						Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+						BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Count:        1,
+						Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+						Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+						Sum:          int64(tt.outputResourceCount),
 					},
-				}
+				}, metricdatatest.IgnoreTimestamp())
 			} else {
-				want = []metricdata.Metrics{
+				metadatatest.AssertEqualProcessorGroupbyattrsNumNonGroupedLogs(t, tel, []metricdata.DataPoint[int64]{
 					{
-						Name:        "otelcol_processor_groupbyattrs_num_non_grouped_logs",
-						Description: "Number of logs that did not have attributes grouped",
-						Unit:        "1",
-						Data: metricdata.Sum[int64]{
-							Temporality: metricdata.CumulativeTemporality,
-							IsMonotonic: true,
-							DataPoints: []metricdata.DataPoint[int64]{
-								{
-									Value: int64(tt.outputTotalRecordsCount),
-								},
-							},
-						},
+						Value: int64(tt.outputTotalRecordsCount),
 					},
+				}, metricdatatest.IgnoreTimestamp())
+				metadatatest.AssertEqualProcessorGroupbyattrsNumNonGroupedMetrics(t, tel, []metricdata.DataPoint[int64]{
 					{
-						Name:        "otelcol_processor_groupbyattrs_num_non_grouped_metrics",
-						Description: "Number of metrics that did not have attributes grouped",
-						Unit:        "1",
-						Data: metricdata.Sum[int64]{
-							Temporality: metricdata.CumulativeTemporality,
-							IsMonotonic: true,
-							DataPoints: []metricdata.DataPoint[int64]{
-								{
-									Value: 4 * int64(tt.outputTotalRecordsCount),
-								},
-							},
-						},
+						Value: 4 * int64(tt.outputTotalRecordsCount),
 					},
+				}, metricdatatest.IgnoreTimestamp())
+				metadatatest.AssertEqualProcessorGroupbyattrsNumNonGroupedSpans(t, tel, []metricdata.DataPoint[int64]{
 					{
-						Name:        "otelcol_processor_groupbyattrs_num_non_grouped_spans",
-						Description: "Number of spans that did not have attributes grouped",
-						Unit:        "1",
-						Data: metricdata.Sum[int64]{
-							Temporality: metricdata.CumulativeTemporality,
-							IsMonotonic: true,
-							DataPoints: []metricdata.DataPoint[int64]{
-								{
-									Value: int64(tt.outputTotalRecordsCount),
-								},
-							},
-						},
+						Value: int64(tt.outputTotalRecordsCount),
 					},
+				}, metricdatatest.IgnoreTimestamp())
+				metadatatest.AssertEqualProcessorGroupbyattrsLogGroups(t, tel, []metricdata.HistogramDataPoint[int64]{
 					{
-						Name:        "otelcol_processor_groupbyattrs_log_groups",
-						Description: "Distribution of groups extracted for logs",
-						Unit:        "1",
-						Data: metricdata.Histogram[int64]{
-							Temporality: metricdata.CumulativeTemporality,
-							DataPoints: []metricdata.HistogramDataPoint[int64]{
-								{
-									Attributes:   *attribute.EmptySet(),
-									Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-									BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-									Count:        1,
-									Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
-									Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
-									Sum:          int64(tt.outputResourceCount),
-								},
-							},
-						},
+						Attributes:   *attribute.EmptySet(),
+						Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+						BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Count:        1,
+						Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+						Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+						Sum:          int64(tt.outputResourceCount),
 					},
+				}, metricdatatest.IgnoreTimestamp())
+				metadatatest.AssertEqualProcessorGroupbyattrsMetricGroups(t, tel, []metricdata.HistogramDataPoint[int64]{
 					{
-						Name:        "otelcol_processor_groupbyattrs_metric_groups",
-						Description: "Distribution of groups extracted for metrics",
-						Unit:        "1",
-						Data: metricdata.Histogram[int64]{
-							Temporality: metricdata.CumulativeTemporality,
-							DataPoints: []metricdata.HistogramDataPoint[int64]{
-								{
-									Attributes:   *attribute.EmptySet(),
-									Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-									BucketCounts: []uint64{0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-									Count:        2,
-									Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
-									Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
-									Sum:          2 * int64(tt.outputResourceCount),
-								},
-							},
-						},
+						Attributes:   *attribute.EmptySet(),
+						Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+						BucketCounts: []uint64{0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Count:        2,
+						Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+						Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+						Sum:          2 * int64(tt.outputResourceCount),
 					},
+				}, metricdatatest.IgnoreTimestamp())
+				metadatatest.AssertEqualProcessorGroupbyattrsSpanGroups(t, tel, []metricdata.HistogramDataPoint[int64]{
 					{
-						Name:        "otelcol_processor_groupbyattrs_span_groups",
-						Description: "Distribution of groups extracted for spans",
-						Unit:        "1",
-						Data: metricdata.Histogram[int64]{
-							Temporality: metricdata.CumulativeTemporality,
-							DataPoints: []metricdata.HistogramDataPoint[int64]{
-								{
-									Attributes:   *attribute.EmptySet(),
-									Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
-									BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-									Count:        1,
-									Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
-									Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
-									Sum:          int64(tt.outputResourceCount),
-								},
-							},
-						},
+						Attributes:   *attribute.EmptySet(),
+						Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
+						BucketCounts: []uint64{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+						Count:        1,
+						Min:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+						Max:          metricdata.NewExtrema(int64(tt.outputResourceCount)),
+						Sum:          int64(tt.outputResourceCount),
 					},
-				}
+				}, metricdatatest.IgnoreTimestamp())
 			}
-			tel.AssertMetrics(t, want, metricdatatest.IgnoreTimestamp())
 		})
 	}
 }
