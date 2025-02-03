@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
+
 const (
 	euRegion          = "eu"
 	usRegion          = "us"
@@ -19,7 +20,7 @@ const (
 	usMetricsEndpoint = "https://spm-receiver.sematext.com"
 )
 
-type Config struct{
+type Config struct {
 	confighttp.ClientConfig   `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	// Region specifies the Sematext region the user is operating in
@@ -44,6 +45,7 @@ type MetricsConfig struct {
 	// PayloadMaxBytes is the maximum number of line protocol bytes to POST in a single request.
 	PayloadMaxBytes int `mapstructure:"payload_max_bytes"`
 }
+
 // Validate checks for invalid or missing entries in the configuration.
 func (cfg *Config) Validate() error {
 	if strings.ToLower(cfg.Region) != euRegion && strings.ToLower(cfg.Region) != usRegion {
@@ -62,6 +64,7 @@ func (cfg *Config) Validate() error {
 
 	return nil
 }
+
 func isValidUUID(uuid string) bool {
 	const uuidPattern = `^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`
 	return regexp.MustCompile(uuidPattern).MatchString(strings.ToLower(uuid))

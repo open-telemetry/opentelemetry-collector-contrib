@@ -12,10 +12,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/influxdata/influxdb-observability/common"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -24,6 +24,7 @@ import (
 )
 
 var metricsAppToken = uuid.NewString()
+
 // NewFactory creates a factory for the Sematext metrics exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(

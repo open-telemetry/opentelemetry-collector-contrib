@@ -15,5 +15,4 @@ sematext/override-config:
       queue_size: 10
     payload_max_lines: 72
     payload_max_bytes: 27
-  logs:
-    app_token: "<LOGS_APP_TOKEN>"
+
