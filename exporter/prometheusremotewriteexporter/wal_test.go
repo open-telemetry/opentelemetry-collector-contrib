@@ -209,4 +209,9 @@ func TestExportWithWALEnabled(t *testing.T) {
 	}
 	err = prwe.handleExport(context.Background(), metrics, nil)
 	assert.NoError(t, err)
+
+	// While on Unix systems, t.TempDir() would easily close the WAL files,
+	// on Windows, it doesn't. So we need to close it manually to avoid flaky tests.
+	err = prwe.Shutdown(context.Background())
+	assert.NoError(t, err)
 }
