@@ -1105,14 +1105,14 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 			name: "cache isolation",
 			statements: []common.ContextStatements{
 				{
-					Statements:  []string{`set(span.cache["shared"], "fail")`},
+					Statements:  []string{`set(span.cache["shared"], "pass")`},
 					SharedCache: true,
 				},
 				{
 					Statements: []string{
-						`set(span.cache["test"], "pass")`,
+						`set(span.cache["test"], "fail")`,
 						`set(span.attributes["test"], span.cache["test"])`,
-						`set(span.attributes["test"], span.cache["shared"])`,
+						`set(span.cache["shared"], "fail")`,
 					},
 					Conditions: []string{
 						`name == "operationA"`,
@@ -1121,17 +1121,17 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 				{
 					Context: common.Span,
 					Statements: []string{
-						`set(cache["test"], "pass")`,
-						`set(attributes["test"], cache["test"])`,
-						`set(attributes["test"], cache["shared"])`,
-						`set(attributes["test"], span.cache["shared"])`,
+						`set(cache["shared"], "fail")`,
+						`set(attributes["extra"], cache["test"]) where cache["test"] != nil`,
+						`set(cache["test"], "fail")`,
+						`set(attributes["test"], span.cache["test"])`,
 					},
 					Conditions: []string{
 						`name == "operationA"`,
 					},
 				},
 				{
-					Statements:  []string{`set(span.attributes["test"], "pass") where span.cache["shared"] == "fail"`},
+					Statements:  []string{`set(span.attributes["test"], "pass") where span.cache["shared"] == "pass"`},
 					SharedCache: true,
 					Conditions: []string{
 						`name == "operationA"`,

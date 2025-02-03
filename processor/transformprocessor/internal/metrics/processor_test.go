@@ -1713,14 +1713,14 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 			name: "cache isolation",
 			statements: []common.ContextStatements{
 				{
-					Statements:  []string{`set(datapoint.cache["shared"], "fail")`},
+					Statements:  []string{`set(datapoint.cache["shared"], "pass")`},
 					SharedCache: true,
 				},
 				{
 					Statements: []string{
-						`set(datapoint.cache["test"], "pass")`,
+						`set(datapoint.cache["test"], "fail")`,
 						`set(datapoint.attributes["test"], datapoint.cache["test"])`,
-						`set(datapoint.attributes["test"], datapoint.cache["shared"])`,
+						`set(datapoint.cache["shared"], "fail")`,
 					},
 					Conditions: []string{
 						`metric.name == "operationA"`,
@@ -1729,17 +1729,17 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 				{
 					Context: common.DataPoint,
 					Statements: []string{
-						`set(cache["test"], "pass")`,
+						`set(attributes["extra"], cache["test"]) where cache["test"] != nil`,
+						`set(cache["test"], "fail")`,
 						`set(attributes["test"], cache["test"])`,
-						`set(attributes["test"], cache["shared"])`,
-						`set(attributes["test"], datapoint.cache["shared"])`,
+						`set(cache["shared"], "fail")`,
 					},
 					Conditions: []string{
 						`metric.name == "operationA"`,
 					},
 				},
 				{
-					Statements:  []string{`set(datapoint.attributes["test"], "pass") where datapoint.cache["shared"] == "fail"`},
+					Statements:  []string{`set(datapoint.attributes["test"], "pass") where datapoint.cache["shared"] == "pass"`},
 					SharedCache: true,
 					Conditions: []string{
 						`metric.name == "operationA"`,
