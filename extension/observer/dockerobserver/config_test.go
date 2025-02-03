@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			cfg := loadConfig(t, tt.id)
 			if tt.expectedError != "" {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.expectedError)
+				assert.ErrorContains(t, component.ValidateConfig(cfg), tt.expectedError)
 			} else {
 				assert.NoError(t, component.ValidateConfig(cfg))
 			}
@@ -63,16 +63,16 @@ func TestLoadConfig(t *testing.T) {
 
 func TestValidateConfig(t *testing.T) {
 	cfg := &Config{Config: docker.Config{DockerAPIVersion: "1.24", Timeout: 5 * time.Second}, CacheSyncInterval: 5 * time.Second}
-	assert.Equal(t, "endpoint must be specified", component.ValidateConfig(cfg).Error())
+	assert.ErrorContains(t, component.ValidateConfig(cfg), "endpoint must be specified")
 
 	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: "1.23"}}
-	assert.Equal(t, `"api_version" 1.23 must be at least 1.24`, component.ValidateConfig(cfg).Error())
+	assert.ErrorContains(t, component.ValidateConfig(cfg), `"api_version" 1.23 must be at least 1.24`)
 
 	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: version}}
-	assert.Equal(t, "timeout must be specified", component.ValidateConfig(cfg).Error())
+	assert.ErrorContains(t, component.ValidateConfig(cfg), "timeout must be specified")
 
 	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: version, Timeout: 5 * time.Minute}}
-	assert.Equal(t, "cache_sync_interval must be specified", component.ValidateConfig(cfg).Error())
+	assert.ErrorContains(t, component.ValidateConfig(cfg), "cache_sync_interval must be specified")
 
 	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: version, Timeout: 5 * time.Minute}, CacheSyncInterval: 5 * time.Minute}
 	assert.NoError(t, component.ValidateConfig(cfg))
