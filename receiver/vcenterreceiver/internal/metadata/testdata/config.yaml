@@ -55,6 +55,8 @@ all_set:
       enabled: true
     vcenter.host.disk.throughput:
       enabled: true
+    vcenter.host.memory.capacity:
+      enabled: true
     vcenter.host.memory.usage:
       enabled: true
     vcenter.host.memory.utilization:
@@ -110,6 +112,8 @@ all_set:
     vcenter.vm.disk.utilization:
       enabled: true
     vcenter.vm.memory.ballooned:
+      enabled: true
+    vcenter.vm.memory.granted:
       enabled: true
     vcenter.vm.memory.swapped:
       enabled: true
@@ -214,6 +218,8 @@ none_set:
       enabled: false
     vcenter.host.disk.throughput:
       enabled: false
+    vcenter.host.memory.capacity:
+      enabled: false
     vcenter.host.memory.usage:
       enabled: false
     vcenter.host.memory.utilization:
@@ -269,6 +275,8 @@ none_set:
     vcenter.vm.disk.utilization:
       enabled: false
     vcenter.vm.memory.ballooned:
+      enabled: false
+    vcenter.vm.memory.granted:
       enabled: false
     vcenter.vm.memory.swapped:
       enabled: false

@@ -7,7 +7,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
@@ -65,14 +65,14 @@ func (c *couchdbScraper) recordCouchdbHttpdRequestsDataPoint(now pcommon.Timesta
 func (c *couchdbScraper) recordCouchdbHttpdResponsesDataPoint(now pcommon.Timestamp, stats map[string]any, errs *scrapererror.ScrapeErrors) {
 	codes := []string{"200", "201", "202", "204", "206", "301", "302", "304", "400", "401", "403", "404", "405", "406", "409", "412", "413", "414", "415", "416", "417", "500", "501", "503"}
 	for _, code := range codes {
-		httpdResponsetCodeKey := []string{"httpd_status_codes", code, "value"}
-		httpdResponsetCodeValue, err := getValueFromBody(httpdResponsetCodeKey, stats)
+		httpdResponseCodeKey := []string{"httpd_status_codes", code, "value"}
+		httpdResponseCodeValue, err := getValueFromBody(httpdResponseCodeKey, stats)
 		if err != nil {
 			errs.AddPartial(1, err)
 			continue
 		}
 
-		parsedValue, err := c.parseInt(httpdResponsetCodeValue)
+		parsedValue, err := c.parseInt(httpdResponseCodeValue)
 		if err != nil {
 			errs.AddPartial(1, err)
 			continue

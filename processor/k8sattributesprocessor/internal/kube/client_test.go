@@ -146,8 +146,7 @@ func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 
 func TestDefaultClientset(t *testing.T) {
 	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, nil, nil, nil, false, 10*time.Second)
-	assert.Error(t, err)
-	assert.Equal(t, "invalid authType for kubernetes: ", err.Error())
+	require.EqualError(t, err, "invalid authType for kubernetes: ")
 	assert.Nil(t, c)
 
 	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, nil, nil, nil, false, 10*time.Second)
@@ -194,8 +193,7 @@ func TestConstructorErrors(t *testing.T) {
 		}
 		c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, NewFakeInformer, NewFakeNamespaceInformer, nil, false, 10*time.Second)
 		assert.Nil(t, c)
-		assert.Error(t, err)
-		assert.Equal(t, "error creating k8s client", err.Error())
+		require.EqualError(t, err, "error creating k8s client")
 		assert.Equal(t, apiCfg, gotAPIConfig)
 	})
 }
@@ -430,7 +428,7 @@ func TestPodDelete(t *testing.T) {
 	// delete empty IP pod
 	c.handlePodDelete(&api_v1.Pod{})
 
-	// delete non-existent IP
+	// delete nonexistent IP
 	c.deleteQueue = c.deleteQueue[:0]
 	pod := &api_v1.Pod{}
 	pod.Status.PodIP = "9.9.9.9"
@@ -496,14 +494,14 @@ func TestNamespaceDelete(t *testing.T) {
 	// delete empty namespace
 	c.handleNamespaceDelete(&api_v1.Namespace{})
 
-	// delete non-existent namespace
+	// delete nonexistent namespace
 	namespace := &api_v1.Namespace{}
 	namespace.Name = "namespaceC"
 	c.handleNamespaceDelete(namespace)
 	assert.Len(t, c.Namespaces, 2)
 	got := c.Namespaces["namespaceA"]
 	assert.Equal(t, "namespaceA", got.Name)
-	// delete non-existent namespace when DeletedFinalStateUnknown
+	// delete nonexistent namespace when DeletedFinalStateUnknown
 	c.handleNamespaceDelete(cache.DeletedFinalStateUnknown{Obj: namespace})
 	assert.Len(t, c.Namespaces, 2)
 	got = c.Namespaces["namespaceA"]
@@ -531,14 +529,14 @@ func TestNodeDelete(t *testing.T) {
 	// delete empty node
 	c.handleNodeDelete(&api_v1.Node{})
 
-	// delete non-existent node
+	// delete nonexistent node
 	node := &api_v1.Node{}
 	node.Name = "nodeC"
 	c.handleNodeDelete(node)
 	assert.Len(t, c.Nodes, 2)
 	got := c.Nodes["nodeA"]
 	assert.Equal(t, "nodeA", got.Name)
-	// delete non-existent namespace when DeletedFinalStateUnknown
+	// delete nonexistent namespace when DeletedFinalStateUnknown
 	c.handleNodeDelete(cache.DeletedFinalStateUnknown{Obj: node})
 	assert.Len(t, c.Nodes, 2)
 	got = c.Nodes["nodeA"]
@@ -1834,9 +1832,7 @@ func Test_extractField(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.args.r.extractField(tt.args.v); got != tt.want {
-				t.Errorf("extractField() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, tt.args.r.extractField(tt.args.v), "extractField()")
 		})
 	}
 }

@@ -14,7 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
@@ -40,7 +41,7 @@ type sqlServerScraperHelper struct {
 	mb                 *metadata.MetricsBuilder
 }
 
-var _ scraperhelper.Scraper = (*sqlServerScraperHelper)(nil)
+var _ scraper.Metrics = (*sqlServerScraperHelper)(nil)
 
 func newSQLServerScraper(id component.ID,
 	query string,
@@ -80,7 +81,7 @@ func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *sqlServerScraperHelper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
 	var err error
 
 	switch s.sqlQuery {

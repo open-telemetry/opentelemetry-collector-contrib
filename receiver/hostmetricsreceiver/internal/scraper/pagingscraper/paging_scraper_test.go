@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
@@ -26,7 +26,7 @@ func TestScrape(t *testing.T) {
 		config            *Config
 		expectedStartTime pcommon.Timestamp
 		initializationErr string
-		mutateScraper     func(*scraper)
+		mutateScraper     func(*pagingScraper)
 	}
 
 	config := metadata.DefaultMetricsBuilderConfig()
@@ -44,7 +44,7 @@ func TestScrape(t *testing.T) {
 		{
 			name:   "Validate Start Time",
 			config: &Config{MetricsBuilderConfig: config},
-			mutateScraper: func(s *scraper) {
+			mutateScraper: func(s *pagingScraper) {
 				s.bootTime = func(context.Context) (uint64, error) { return 100, nil }
 			},
 			expectedStartTime: 100 * 1e9,
@@ -52,7 +52,7 @@ func TestScrape(t *testing.T) {
 		{
 			name:   "Boot Time Error",
 			config: &Config{MetricsBuilderConfig: config},
-			mutateScraper: func(s *scraper) {
+			mutateScraper: func(s *pagingScraper) {
 				s.bootTime = func(context.Context) (uint64, error) { return 0, errors.New("err1") }
 			},
 			initializationErr: "err1",
@@ -61,7 +61,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), receivertest.NewNopSettings(), test.config)
+			scraper := newPagingScraper(context.Background(), scrapertest.NewNopSettings(), test.config)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}

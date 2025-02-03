@@ -11,7 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 
-	telemetry "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/lineartelemetry"
+	telemetry "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/telemetry"
 )
 
 var _ component.ConfigValidator = (*Config)(nil)

@@ -20,12 +20,11 @@ func TestWithAPIConfig(t *testing.T) {
 	p := &kubernetesprocessor{}
 	apiConfig := k8sconfig.APIConfig{AuthType: "test-auth-type"}
 	err := withAPIConfig(apiConfig)(p)
-	assert.Error(t, err)
-	assert.Equal(t, "invalid authType for kubernetes: test-auth-type", err.Error())
+	require.EqualError(t, err, "invalid authType for kubernetes: test-auth-type")
 
 	apiConfig = k8sconfig.APIConfig{AuthType: "kubeConfig"}
 	err = withAPIConfig(apiConfig)(p)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, apiConfig, p.apiConfig)
 }
 
@@ -200,15 +199,12 @@ func TestWithExtractAnnotations(t *testing.T) {
 			p := &kubernetesprocessor{}
 			opt := withExtractAnnotations(tt.args...)
 			err := opt(p)
-			if tt.wantError == "" {
-				assert.NoError(t, err)
+			if tt.wantError != "" {
+				require.EqualError(t, err, tt.wantError)
 			} else {
-				assert.Error(t, err)
-				assert.Equal(t, tt.wantError, err.Error())
-				return
+				require.NoError(t, err)
+				assert.Equal(t, tt.want, p.rules.Annotations)
 			}
-			got := p.rules.Annotations
-			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -342,14 +338,12 @@ func TestWithExtractLabels(t *testing.T) {
 			p := &kubernetesprocessor{}
 			opt := withExtractLabels(tt.args...)
 			err := opt(p)
-			if tt.wantError == "" {
-				assert.NoError(t, err)
+			if tt.wantError != "" {
+				require.EqualError(t, err, tt.wantError)
 			} else {
-				assert.Error(t, err)
-				assert.Equal(t, tt.wantError, err.Error())
-				return
+				require.NoError(t, err)
+				assert.Equal(t, tt.want, p.rules.Labels)
 			}
-			assert.Equal(t, tt.want, p.rules.Labels)
 		})
 	}
 }

@@ -7,14 +7,14 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 )
 
 type ScraperFactory interface {
-	// Create the default configuration for the sub sccraper.
+	// Create the default configuration for the sub scraper.
 	CreateDefaultConfig() Config
 	// Create a scraper based on the configuration passed or return an error if not valid.
-	CreateMetricsScraper(ctx context.Context, params receiver.Settings, cfg Config) (scraperhelper.Scraper, error)
+	CreateMetricsScraper(ctx context.Context, params receiver.Settings, cfg Config) (scraper.Metrics, error)
 }
 
 type Config any

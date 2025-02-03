@@ -9,7 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testar/crlf"
+	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/testar/crlf"
 )
 
 func ExampleRead() {
@@ -71,16 +73,12 @@ func TestCRLF(t *testing.T) {
 	}
 
 	err := Read(data, &into)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	must(t, into.String, "foobar\n")
 }
 
 func must[T string | int](t *testing.T, v, want T) {
 	t.Helper()
-	if v != want {
-		t.Fatalf("got '%q' != '%q' want", v, want)
-	}
+	require.Equal(t, want, v, "got '%q' != '%q' want", v, want)
 }

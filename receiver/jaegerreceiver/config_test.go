@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 					ThriftHTTP: &confighttp.ServerConfig{
 						Endpoint: ":3456",
 					},
-					ThriftCompact: &ProtocolUDP{
+					ThriftCompactUDP: &ProtocolUDP{
 						Endpoint: "0.0.0.0:456",
 						ServerConfigUDP: ServerConfigUDP{
 							QueueSize:        100_000,
@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 							SocketBufferSize: 65_536,
 						},
 					},
-					ThriftBinary: &ProtocolUDP{
+					ThriftBinaryUDP: &ProtocolUDP{
 						Endpoint: "0.0.0.0:789",
 						ServerConfigUDP: ServerConfigUDP{
 							QueueSize:        1_000,
@@ -76,11 +76,11 @@ func TestLoadConfig(t *testing.T) {
 					ThriftHTTP: &confighttp.ServerConfig{
 						Endpoint: "localhost:14268",
 					},
-					ThriftCompact: &ProtocolUDP{
+					ThriftCompactUDP: &ProtocolUDP{
 						Endpoint:        "localhost:6831",
 						ServerConfigUDP: defaultServerConfigUDP(),
 					},
-					ThriftBinary: &ProtocolUDP{
+					ThriftBinaryUDP: &ProtocolUDP{
 						Endpoint:        "localhost:6832",
 						ServerConfigUDP: defaultServerConfigUDP(),
 					},
@@ -97,7 +97,7 @@ func TestLoadConfig(t *testing.T) {
 							Transport: confignet.TransportTypeTCP,
 						},
 					},
-					ThriftCompact: &ProtocolUDP{
+					ThriftCompactUDP: &ProtocolUDP{
 						Endpoint:        "localhost:6831",
 						ServerConfigUDP: defaultServerConfigUDP(),
 					},
@@ -183,7 +183,7 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "thrift-udp-compact-no-port",
 			apply: func(cfg *Config) {
-				cfg.ThriftCompact = &ProtocolUDP{
+				cfg.ThriftCompactUDP = &ProtocolUDP{
 					Endpoint: "localhost:",
 				}
 			},
@@ -192,7 +192,7 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "thrift-udp-binary-no-port",
 			apply: func(cfg *Config) {
-				cfg.ThriftBinary = &ProtocolUDP{
+				cfg.ThriftBinaryUDP = &ProtocolUDP{
 					Endpoint: "localhost:",
 				}
 			},
@@ -220,7 +220,7 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			desc: "port-outside-of-range",
 			apply: func(cfg *Config) {
-				cfg.ThriftBinary = &ProtocolUDP{
+				cfg.ThriftBinaryUDP = &ProtocolUDP{
 					Endpoint: "localhost:65536",
 				}
 			},

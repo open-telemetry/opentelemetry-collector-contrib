@@ -1,6 +1,0 @@
-change_type: enhancement
-component: tailsamplingprocessor
-note: Adds decision cache for non-sampled trace IDs
-issues: [31583]
-subtext:
-change_logs: []

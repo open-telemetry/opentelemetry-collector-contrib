@@ -4,8 +4,9 @@
 package fingerprint
 
 import (
+	"encoding/binary"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"os"
 	"testing"
 
@@ -114,7 +115,6 @@ func TestNewFromFile(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -223,20 +223,34 @@ func TestStartsWith(t *testing.T) {
 // the file, while each iteration of the growing file represents
 // a possible state of the same file at a previous time.
 func TestStartsWith_FromFile(t *testing.T) {
-	r := rand.New(rand.NewSource(112358))
+	r := rand.New(rand.NewPCG(112, 358))
 	fingerprintSize := 10
 	fileLength := 12 * fingerprintSize
+	fillRandomBytes := func(buf []byte) {
+		// TODO: when we upgrade to go1.23,
+		// use rand.ChaCha8.Read.
+		//
+		// NOTE: we can cheat here since know the
+		// buffer length is a multiple of 4, due to
+		// fileLength being a multiple of 12.
+		for i := range len(buf) / 4 {
+			binary.BigEndian.PutUint32(
+				buf[i*4:(i+1)*4],
+				r.Uint32(),
+			)
+		}
+	}
 
 	tempDir := t.TempDir()
 
 	// Make a []byte we can write one at a time
 	content := make([]byte, fileLength)
-	r.Read(content) // Fill slice with random bytes
+	fillRandomBytes(content)
 
 	// Overwrite some bytes with \n to ensure
 	// we are testing a file with multiple lines
 	newlineMask := make([]byte, fileLength)
-	r.Read(newlineMask) // Fill slice with random bytes
+	fillRandomBytes(newlineMask)
 	for i, b := range newlineMask {
 		if b == 0 && i != 0 { // 1/256 chance, but never first byte
 			content[i] = byte('\n')
@@ -279,7 +293,7 @@ func tokenWithLength(length int) []byte {
 	charset := "abcdefghijklmnopqrstuvwxyz"
 	b := make([]byte, length)
 	for i := range b {
-		b[i] = charset[rand.Intn(len(charset))]
+		b[i] = charset[rand.IntN(len(charset))]
 	}
 	return b
 }

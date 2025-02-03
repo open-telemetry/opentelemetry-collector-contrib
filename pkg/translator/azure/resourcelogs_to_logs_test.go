@@ -217,8 +217,25 @@ func TestAsTimestamp(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Less(t, pcommon.Timestamp(0), nanos)
 
+	timestamp = "11/20/2024 13:57:18"
+	nanos, err = asTimestamp(timestamp, "01/02/2006 15:04:05")
+	assert.NoError(t, err)
+	assert.Less(t, pcommon.Timestamp(0), nanos)
+
+	// time_format set, but fallback to iso8601 and succeeded to parse
+	timestamp = "2022-11-11T04:48:27.6767145Z"
+	nanos, err = asTimestamp(timestamp, "01/02/2006 15:04:05")
+	assert.NoError(t, err)
+	assert.Less(t, pcommon.Timestamp(0), nanos)
+
+	// time_format set, but all failed to parse
+	timestamp = "11/20/2024 13:57:18"
+	nanos, err = asTimestamp(timestamp, "2006-01-02 15:04:05")
+	assert.Error(t, err)
+	assert.Equal(t, pcommon.Timestamp(0), nanos)
+
 	timestamp = "invalid-time"
-	nanos, err = asTimestamp(timestamp)
+	nanos, err = asTimestamp(timestamp, nil...)
 	assert.Error(t, err)
 	assert.Equal(t, pcommon.Timestamp(0), nanos)
 }

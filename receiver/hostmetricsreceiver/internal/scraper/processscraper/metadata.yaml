@@ -1,6 +1,12 @@
-type: hostmetricsreceiver/process
+type: process
 
-parent: hostmetrics
+status:
+  class: scraper
+  stability:
+    beta: [metrics]
+  distributions: [core, contrib, k8s]
+  codeowners:
+    active: [dmitryax, braydonk]
 
 sem_conv_version: 1.9.0
 
@@ -201,3 +207,10 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [direction]
+  
+  process.uptime:
+    enabled: false
+    description: The time the process has been running.
+    unit: s
+    gauge:
+      value_type: double

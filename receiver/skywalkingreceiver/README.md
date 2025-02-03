@@ -32,7 +32,7 @@ object configuration parameter.
 - `grpc` (default `endpoint` = localhost:11800)
 - `http` (default `endpoint` = localhost:12800)
 
-You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change these to `0.0.0.0:11800` and `0.0.0.0:12800`. This feature gate will be removed in a future release.
+See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
 
 Examples:

@@ -4,22 +4,16 @@ package metadata
 
 import (
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer")
-}
-
-// Deprecated: [v0.114.0] use Meter instead.
-func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
-	return settings.LeveledMeterProvider(level).Meter("github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
@@ -30,6 +24,8 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	meter                    metric.Meter
+	mu                       sync.Mutex
+	registrations            []metric.Registration
 	FileconsumerOpenFiles    metric.Int64UpDownCounter
 	FileconsumerReadingFiles metric.Int64UpDownCounter
 }
@@ -45,6 +41,15 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
+// Shutdown unregister all registered callbacks for async instruments.
+func (builder *TelemetryBuilder) Shutdown() {
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	for _, reg := range builder.registrations {
+		reg.Unregister()
+	}
+}
+
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
@@ -54,24 +59,17 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.FileconsumerOpenFiles, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64UpDownCounter(
+	builder.FileconsumerOpenFiles, err = builder.meter.Int64UpDownCounter(
 		"otelcol_fileconsumer_open_files",
 		metric.WithDescription("Number of open files"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.FileconsumerReadingFiles, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64UpDownCounter(
+	builder.FileconsumerReadingFiles, err = builder.meter.Int64UpDownCounter(
 		"otelcol_fileconsumer_reading_files",
 		metric.WithDescription("Number of open files that are being read"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
-}
-
-func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
-	if cfgLevel <= srvLevel {
-		return meter
-	}
-	return noop.Meter{}
 }
