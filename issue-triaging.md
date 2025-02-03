@@ -78,9 +78,8 @@ Here is a diagram outlining the potential issue states and how issues move throu
 
 ```mermaid
 flowchart TD
-  subgraph graph1["**needs-triage**"]
-        n1(["Needs Triage"])
-  end
+    n0(["New issue has been opened"]) --> n1
+    n1(["Needs Triage"]) --> n2["Has good repro steps <br>and/or description?"]
   subgraph graph2["**waiting-for-codeowners**"]
         n3["Waiting for Codeowners<br>to further validate the issue"]
   end
@@ -91,24 +90,30 @@ flowchart TD
         n8["Mark as help-wanted"]
   end
   subgraph graph5["**closed**"]
-        n9(["Close the issue and provide details as needed"])
+        n10(["Close the issue and provide details as needed"])
   end
-    n1 --> n2["Has good repro steps <br>and/or description?"]
     n2 -- Yes --> n3
     n2 -- No/Need more details --> n4
-    n2 -- Invalid configuration/alternative available --> n9
-    n3 -- Invalid Issue --> n9
+    n2 -- Invalid configuration/alternative available --> n10
+    n3 -- Invalid Issue --> n10
     n3 -- Valid Issue -->  n6["Codeowner has time<br>to fix it?"]
-    n6 -- Yes --> n7["Valid issue and to be fixed <br>by a codeowner"]
+    n6 -- Assign it to codeowner --> n7["Issue in being worked upon"]
     n6 -- No --> n8
-    n7 --> n9
-    n8 --> n9
+    n7 -- Once PR is merged --> n10
+    n8 -- Wait for help from the community --> n9["Has someone volunteered?"]
+    n9 -- Yes --> n11["Assign it to the person"]
+    n12 -- Any activity? --> n9
+    n9 -. Stale issue .-> n12["Issue in inactive"]
+    n11 --> n7
+    n12 -- Closed automatically after 120 days due to lack of activity --> n10
     n4 -- Once enough details are available --> n2
 
     n3@{ shape: rect}
     n4@{ shape: rect}
     n2@{ shape: diam}
     n6@{ shape: diam}
+    n9@{ shape: diam}
+
      n1:::Aqua
      n3:::Ash
      n4:::Ash
@@ -117,7 +122,7 @@ flowchart TD
      n2:::Peach
      n6:::Peach
      n7:::Ash
-     n9:::Rose
+     n10:::Rose
     classDef Rose stroke-width:1px, stroke-dasharray:none, stroke:#FF5978, fill:#FFDFE5, color:#8E2236
     classDef Aqua stroke-width:1px, stroke-dasharray:none, stroke:#46EDC8, fill:#DEFFF8, color:#378E7A
     classDef Peach stroke-width:1px, stroke-dasharray:none, stroke:#FBB35A, fill:#FFEFDB, color:#8F632D
