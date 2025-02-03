@@ -87,7 +87,7 @@ flowchart TD
         n4["Waiting for author to provide more details"]
   end
   subgraph graph4["**help-wanted**"]
-        n8["Mark as help-wanted"]
+        n8["Waiting on community"]
   end
   subgraph graph5["**closed**"]
         n10(["Close the issue and provide details as needed"])
@@ -100,10 +100,9 @@ flowchart TD
     n6 -- Assign it to codeowner --> n7["Issue in being worked upon"]
     n6 -- No --> n8
     n7 -- Once PR is merged --> n10
-    n8 -- Wait for help from the community --> n9["Has someone volunteered?"]
-    n9 -- Yes --> n11["Assign it to the person"]
-    n12 -- Any activity? --> n9
-    n9 -. Stale issue .-> n12["Issue in inactive"]
+    n8 -- When someone volunteers to provide a fix --> n11["Assign it to the person"]
+    n12 -- Any activity? --> n8
+    n8 -. Stale issue .-> n12["Issue in inactive"]
     n11 --> n7
     n12 -- Closed automatically after 120 days due to lack of activity --> n10
     n4 -- Once enough details are available --> n2
@@ -112,7 +111,6 @@ flowchart TD
     n4@{ shape: rect}
     n2@{ shape: diam}
     n6@{ shape: diam}
-    n9@{ shape: diam}
 
      n1:::Aqua
      n3:::Ash
