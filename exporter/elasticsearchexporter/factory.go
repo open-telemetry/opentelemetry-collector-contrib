@@ -178,7 +178,7 @@ func createProfilesExporter(
 
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.ProfilesIndex, false)
+	exporter := newExporter(cf, set, "", false)
 
 	return xexporterhelper.NewProfilesExporter(
 		ctx,
