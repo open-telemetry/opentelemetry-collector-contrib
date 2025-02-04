@@ -700,7 +700,7 @@ type metricKafkaTopicMinInsyncReplicas struct {
 // init fills kafka.topic.min_insync_replicas metric with initial data.
 func (m *metricKafkaTopicMinInsyncReplicas) init() {
 	m.data.SetName("kafka.topic.min_insync_replicas")
-	m.data.SetDescription("minimum insync replicas of a topic.")
+	m.data.SetDescription("minimum in-sync replicas of a topic.")
 	m.data.SetUnit("{replicas}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
