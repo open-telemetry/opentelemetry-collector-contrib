@@ -30,18 +30,24 @@ func (e ErrOutOfOrder) Error() string {
 	return fmt.Sprintf("out of order: dropped sample from time=%s, because series is already at time=%s", e.Sample, e.Last)
 }
 
-type Type interface {
+type Type[Self any] interface {
 	pmetric.NumberDataPoint | pmetric.HistogramDataPoint | pmetric.ExponentialHistogramDataPoint
 
 	StartTimestamp() pcommon.Timestamp
 	Timestamp() pcommon.Timestamp
+
+	CopyTo(Self)
 }
 
 // AccumulateInto adds state and dp, storing the result in state
 //
 //	state = state + dp
-func AccumulateInto[T Type](state, dp T) error {
+func AccumulateInto[T Type[T]](state, dp T) error {
 	switch {
+	case state.Timestamp() == 0:
+		// first sample of series, no state to aggregate with
+		dp.CopyTo(state)
+		return nil
 	case dp.StartTimestamp() < state.StartTimestamp():
 		// belongs to older series
 		return ErrOlderStart{Start: state.StartTimestamp(), Sample: dp.StartTimestamp()}
