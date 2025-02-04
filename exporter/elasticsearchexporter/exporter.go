@@ -507,7 +507,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 					}
 
 					if errors.Is(err, ErrInvalidTypeForBodyMapMode) {
-						e.Logger.Warn("dropping log record", zap.Error(err))
+						e.Logger.Warn("dropping profile record", zap.Error(err))
 						continue
 					}
 
