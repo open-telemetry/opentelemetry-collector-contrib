@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
@@ -466,6 +467,20 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			assert.Equal(t, tt.expected, got)
 		})
 	}
+}
+
+func Test_newPathGetSetter_WithCache(t *testing.T) {
+	cacheValue := pcommon.NewMap()
+	cacheValue.PutStr("test", "pass")
+
+	ctx := NewTransformContext(
+		pcommon.NewInstrumentationScope(),
+		pcommon.NewResource(),
+		pmetric.NewResourceMetrics(),
+		WithCache(&cacheValue),
+	)
+
+	assert.Equal(t, cacheValue, ctx.getCache())
 }
 
 func createTelemetry() (pcommon.InstrumentationScope, pcommon.Resource) {

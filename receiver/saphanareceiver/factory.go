@@ -62,5 +62,5 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&c.ControllerConfig, set, consumer, scraperhelper.AddScraper(metadata.Type, s))
+	return scraperhelper.NewMetricsController(&c.ControllerConfig, set, consumer, scraperhelper.AddScraper(metadata.Type, s))
 }

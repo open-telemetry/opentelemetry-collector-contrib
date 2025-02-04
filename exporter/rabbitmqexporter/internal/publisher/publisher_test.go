@@ -293,7 +293,7 @@ func resetCall(t *testing.T, calls []*mock.Call, methodName string) {
 			return
 		}
 	}
-	t.Errorf("Faild to reset method %s", methodName)
+	t.Errorf("Failed to reset method %s", methodName)
 	t.FailNow()
 }
 

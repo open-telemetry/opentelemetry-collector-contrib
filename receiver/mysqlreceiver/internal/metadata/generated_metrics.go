@@ -152,9 +152,11 @@ type AttributeCommand int
 const (
 	_ AttributeCommand = iota
 	AttributeCommandDelete
+	AttributeCommandDeleteMulti
 	AttributeCommandInsert
 	AttributeCommandSelect
 	AttributeCommandUpdate
+	AttributeCommandUpdateMulti
 )
 
 // String returns the string representation of the AttributeCommand.
@@ -162,22 +164,28 @@ func (av AttributeCommand) String() string {
 	switch av {
 	case AttributeCommandDelete:
 		return "delete"
+	case AttributeCommandDeleteMulti:
+		return "delete_multi"
 	case AttributeCommandInsert:
 		return "insert"
 	case AttributeCommandSelect:
 		return "select"
 	case AttributeCommandUpdate:
 		return "update"
+	case AttributeCommandUpdateMulti:
+		return "update_multi"
 	}
 	return ""
 }
 
 // MapAttributeCommand is a helper map of string to AttributeCommand attribute value.
 var MapAttributeCommand = map[string]AttributeCommand{
-	"delete": AttributeCommandDelete,
-	"insert": AttributeCommandInsert,
-	"select": AttributeCommandSelect,
-	"update": AttributeCommandUpdate,
+	"delete":       AttributeCommandDelete,
+	"delete_multi": AttributeCommandDeleteMulti,
+	"insert":       AttributeCommandInsert,
+	"select":       AttributeCommandSelect,
+	"update":       AttributeCommandUpdate,
+	"update_multi": AttributeCommandUpdateMulti,
 }
 
 // AttributeConnectionError specifies the value connection_error attribute.
@@ -3532,7 +3540,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                             mbc,

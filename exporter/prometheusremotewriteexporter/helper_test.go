@@ -58,7 +58,7 @@ func Test_batchTimeSeries(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			state := newBatchTimeSericesState()
+			state := newBatchTimeServicesState()
 			requests, err := batchTimeSeries(tt.tsMap, tt.maxBatchByteSize, nil, state)
 			if tt.returnErr {
 				assert.Error(t, err)
@@ -96,7 +96,7 @@ func Test_batchTimeSeriesUpdatesStateForLargeBatches(t *testing.T) {
 
 	tsMap1 := getTimeseriesMap(tsArray)
 
-	state := newBatchTimeSericesState()
+	state := newBatchTimeServicesState()
 	requests, err := batchTimeSeries(tsMap1, 1000000, nil, state)
 
 	assert.NoError(t, err)
@@ -129,7 +129,7 @@ func Benchmark_batchTimeSeries(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	state := newBatchTimeSericesState()
+	state := newBatchTimeServicesState()
 	// Run batchTimeSeries 100 times with a 1mb max request size
 	for i := 0; i < b.N; i++ {
 		requests, err := batchTimeSeries(tsMap1, 1000000, nil, state)

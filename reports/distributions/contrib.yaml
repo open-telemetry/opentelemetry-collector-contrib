@@ -12,6 +12,7 @@ components:
         - roundrobin
         - routing
         - servicegraph
+        - signaltometrics
         - spanmetrics
         - sum
     exporter:
@@ -200,4 +201,16 @@ components:
         - windowseventlog
         - windowsperfcounters
         - zipkin
+        - zookeeper
+    scraper:
+        - cpu
+        - disk
+        - filesystem
+        - load
+        - memory
+        - network
+        - paging
+        - process
+        - processes
+        - system
         - zookeeper

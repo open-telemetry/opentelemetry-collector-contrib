@@ -48,14 +48,29 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 
 type Option func(*ottl.Parser[TransformContext])
 
-func NewTransformContext(span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSpans ptrace.ScopeSpans, resourceSpans ptrace.ResourceSpans) TransformContext {
-	return TransformContext{
+type TransformContextOption func(*TransformContext)
+
+func NewTransformContext(span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSpans ptrace.ScopeSpans, resourceSpans ptrace.ResourceSpans, options ...TransformContextOption) TransformContext {
+	tc := TransformContext{
 		span:                 span,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
 		cache:                pcommon.NewMap(),
 		scopeSpans:           scopeSpans,
 		resourceSpans:        resourceSpans,
+	}
+	for _, opt := range options {
+		opt(&tc)
+	}
+	return tc
+}
+
+// Experimental: *NOTE* this option is subject to change or removal in the future.
+func WithCache(cache *pcommon.Map) TransformContextOption {
+	return func(p *TransformContext) {
+		if cache != nil {
+			p.cache = *cache
+		}
 	}
 }
 
@@ -181,16 +196,16 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 		}
 		return accessCacheKey(path.Keys()), nil
 	default:
-		return internal.SpanPathGetSetter[TransformContext](path)
+		return internal.SpanPathGetSetter[TransformContext](ContextName, path)
 	}
 }
 
 func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	switch context {
 	case internal.ResourceContextName:
-		return internal.ResourcePathGetSetter[TransformContext](path)
+		return internal.ResourcePathGetSetter[TransformContext](ContextName, path)
 	case internal.InstrumentationScopeContextName:
-		return internal.ScopePathGetSetter[TransformContext](path)
+		return internal.ScopePathGetSetter[TransformContext](ContextName, path)
 	default:
 		var fullPath string
 		if path != nil {

@@ -21,8 +21,8 @@ Exports traces and/or metrics via gRPC using
 The following settings are required:
 
 - `endpoint` (no default): host:port to which the exporter is going to send Jaeger trace data,
-using the gRPC protocol. The valid syntax is described
-[here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
+using the gRPC protocol. The valid syntax is described in
+[grpc's naming.md](https://github.com/grpc/grpc/blob/master/doc/naming.md).
 
 By default, TLS is enabled and must be configured under `tls:`:
 

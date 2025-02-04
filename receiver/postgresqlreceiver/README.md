@@ -42,7 +42,7 @@ The following settings are also optional and nested under `tls` to help configur
 
 - `insecure` (default = `false`): Whether to enable client transport security for the postgresql connection.
 - `insecure_skip_verify` (default = `true`): Whether to validate server name and certificate if client transport security is enabled.
-- `cert_file` (default = `$HOME/.postgresql/postgresql.crt`): A cerficate used for client authentication, if necessary.
+- `cert_file` (default = `$HOME/.postgresql/postgresql.crt`): A certificate used for client authentication, if necessary.
 - `key_file` (default = `$HOME/.postgresql/postgresql.key`): An SSL key used for client authentication, if necessary.
 - `ca_file` (default = ""): A set of certificate authorities used to validate the database server's SSL certificate.
 
@@ -69,7 +69,7 @@ receivers:
       key_file: /home/otel/mypostgreskey.key
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
 
 ## Connection pool feature
 
@@ -83,7 +83,7 @@ When this feature gate is enabled, the following optional settings are available
 - `max_idle`: The maximum number of connections in the idle connection pool.
 - `max_open`: The maximum number of open connections to the database.
 
-Those settings and their defaults are further documented in the `sql/database` package [here](https://pkg.go.dev/database/sql#DB).
+Those settings and their defaults are further documented in the [`sql/database`](https://pkg.go.dev/database/sql#DB) package.
 
 ### Example Configuration
 
