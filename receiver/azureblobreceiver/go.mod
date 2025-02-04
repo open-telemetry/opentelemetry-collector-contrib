@@ -7,7 +7,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.119.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.119.0
 	go.opentelemetry.io/collector/component/componenttest v0.119.0
