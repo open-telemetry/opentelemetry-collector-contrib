@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/facebook/time v0.0.0-20240510113249-fa89cc575891
 	github.com/google/go-cmp v0.6.0
-	github.com/jonboulle/clockwork v0.4.0
+	github.com/jonboulle/clockwork v0.5.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.119.0
 	go.opentelemetry.io/collector/component/componenttest v0.119.0
