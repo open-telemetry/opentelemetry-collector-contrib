@@ -21,8 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
-	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
@@ -44,12 +44,12 @@ func TestFileProfilesReceiver(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.ProfilesSink)
-	receiver, err := factory.(receiverprofiles.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	receiver, err := factory.(xreceiver.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	require.NoError(t, err)
 
-	pd := testdata.GenerateProfiles(5)
+	pd := testdata.GenerateProfiles(1)
 	marshaler := &pprofile.JSONMarshaler{}
 	b, err := marshaler.MarshalProfiles(pd)
 	assert.NoError(t, err)
@@ -76,7 +76,7 @@ func TestFileTracesReceiver(t *testing.T) {
 	err = receiver.Start(context.Background(), nil)
 	require.NoError(t, err)
 
-	td := testdata.GenerateTraces(2)
+	td := testdata.GenerateTraces(1)
 	marshaler := &ptrace.JSONMarshaler{}
 	b, err := marshaler.MarshalTraces(td)
 	assert.NoError(t, err)
@@ -84,6 +84,9 @@ func TestFileTracesReceiver(t *testing.T) {
 	err = os.WriteFile(filepath.Join(tempFolder, "traces.json"), b, 0o600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
+
+	// include_file_name is true by default
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("log.file.name", "traces.json")
 
 	require.Len(t, sink.AllTraces(), 1)
 	assert.EqualValues(t, td, sink.AllTraces()[0])
@@ -103,7 +106,7 @@ func TestFileMetricsReceiver(t *testing.T) {
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
 
-	md := testdata.GenerateMetrics(5)
+	md := testdata.GenerateMetrics(1)
 	marshaler := &pmetric.JSONMarshaler{}
 	b, err := marshaler.MarshalMetrics(md)
 	assert.NoError(t, err)
@@ -111,6 +114,9 @@ func TestFileMetricsReceiver(t *testing.T) {
 	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0o600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
+
+	// include_file_name is true by default
+	md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Metadata().PutStr("log.file.name", "metrics.json")
 
 	require.Len(t, sink.AllMetrics(), 1)
 	assert.EqualValues(t, md, sink.AllMetrics()[0])
@@ -126,6 +132,7 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	cfg.Config.StartAt = "beginning"
 	cfg.ReplayFile = true
 	cfg.Config.PollInterval = 5 * time.Second
+	cfg.IncludeFileName = false
 
 	sink := new(consumertest.MetricsSink)
 	receiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, sink)
@@ -168,7 +175,7 @@ func TestFileLogsReceiver(t *testing.T) {
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
 
-	ld := testdata.GenerateLogs(5)
+	ld := testdata.GenerateLogs(1)
 	marshaler := &plog.JSONMarshaler{}
 	b, err := marshaler.MarshalLogs(ld)
 	assert.NoError(t, err)
@@ -176,6 +183,9 @@ func TestFileLogsReceiver(t *testing.T) {
 	err = os.WriteFile(filepath.Join(tempFolder, "logs.json"), b, 0o600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
+
+	// include_file_name is true by default
+	ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("log.file.name", "logs.json")
 
 	require.Len(t, sink.AllLogs(), 1)
 	assert.EqualValues(t, ld, sink.AllLogs()[0])
@@ -226,6 +236,7 @@ func TestFileMixedSignals(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
+	cfg.IncludeFileName = false
 	cs := receivertest.NewNopSettings()
 	ms := new(consumertest.MetricsSink)
 	mr, err := factory.CreateMetrics(context.Background(), cs, cfg, ms)
@@ -243,7 +254,7 @@ func TestFileMixedSignals(t *testing.T) {
 	err = lr.Start(context.Background(), nil)
 	assert.NoError(t, err)
 	ps := new(consumertest.ProfilesSink)
-	pr, err := factory.(receiverprofiles.Factory).CreateProfiles(context.Background(), cs, cfg, ps)
+	pr, err := factory.(xreceiver.Factory).CreateProfiles(context.Background(), cs, cfg, ps)
 	assert.NoError(t, err)
 	err = pr.Start(context.Background(), nil)
 	assert.NoError(t, err)

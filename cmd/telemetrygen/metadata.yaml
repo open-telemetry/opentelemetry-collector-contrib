@@ -6,4 +6,4 @@ status:
     alpha: [traces]
     development: [metrics, logs]
   codeowners:
-    active: [mx-psi, codeboten]
+    active: [mx-psi, codeboten, Erog38]

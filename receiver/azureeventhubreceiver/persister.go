@@ -9,7 +9,7 @@ import (
 
 	"github.com/Azure/azure-event-hubs-go/v3/persist"
 	jsoniter "github.com/json-iterator/go"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
 
 const (

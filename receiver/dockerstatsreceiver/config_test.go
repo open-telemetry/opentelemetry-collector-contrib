@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
@@ -101,7 +101,7 @@ func TestValidateErrors(t *testing.T) {
 	cfg := &Config{ControllerConfig: scraperhelper.NewDefaultControllerConfig(), Config: docker.Config{
 		DockerAPIVersion: "1.25",
 	}}
-	assert.Equal(t, "endpoint must be specified", component.ValidateConfig(cfg).Error())
+	assert.ErrorContains(t, component.ValidateConfig(cfg), "endpoint must be specified")
 
 	cfg = &Config{
 		Config: docker.Config{
@@ -110,7 +110,7 @@ func TestValidateErrors(t *testing.T) {
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 1 * time.Second},
 	}
-	assert.Equal(t, `"api_version" 1.21 must be at least 1.25`, component.ValidateConfig(cfg).Error())
+	assert.ErrorContains(t, component.ValidateConfig(cfg), `"api_version" 1.21 must be at least 1.25`)
 
 	cfg = &Config{
 		Config: docker.Config{
@@ -119,7 +119,7 @@ func TestValidateErrors(t *testing.T) {
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{},
 	}
-	assert.Equal(t, `"collection_interval": requires positive value`, component.ValidateConfig(cfg).Error())
+	assert.ErrorContains(t, component.ValidateConfig(cfg), `"collection_interval": requires positive value`)
 }
 
 func TestApiVersionCustomError(t *testing.T) {

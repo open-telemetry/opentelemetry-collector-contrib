@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeLeapStatus specifies the a value leap.status attribute.
+// AttributeLeapStatus specifies the value leap.status attribute.
 type AttributeLeapStatus int
 
 const (
@@ -432,7 +432,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                   mbc,

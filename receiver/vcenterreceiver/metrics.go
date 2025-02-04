@@ -217,6 +217,7 @@ func (v *vcenterMetricScraper) recordHostSystemStats(
 
 	cpuCapacity := float64(int32(h.NumCpuCores) * h.CpuMhz)
 	v.mb.RecordVcenterHostCPUCapacityDataPoint(ts, int64(cpuCapacity))
+	v.mb.RecordVcenterHostMemoryCapacityDataPoint(ts, float64(h.MemorySize>>20))
 	cpuUtilization := 100 * float64(z.OverallCpuUsage) / cpuCapacity
 	v.mb.RecordVcenterHostCPUUtilizationDataPoint(ts, cpuUtilization)
 }
@@ -276,6 +277,7 @@ func (v *vcenterMetricScraper) recordVMStats(
 	balloonedMem := vm.Summary.QuickStats.BalloonedMemory
 	swappedMem := vm.Summary.QuickStats.SwappedMemory
 	swappedSSDMem := vm.Summary.QuickStats.SsdSwappedMemory
+	grantedMem := vm.Summary.QuickStats.GrantedMemory
 
 	if totalMemory := vm.Summary.Config.MemorySizeMB; totalMemory > 0 && memUsage > 0 {
 		memoryUtilization := float64(memUsage) / float64(totalMemory) * 100
@@ -286,6 +288,7 @@ func (v *vcenterMetricScraper) recordVMStats(
 	v.mb.RecordVcenterVMMemoryBalloonedDataPoint(ts, int64(balloonedMem))
 	v.mb.RecordVcenterVMMemorySwappedDataPoint(ts, int64(swappedMem))
 	v.mb.RecordVcenterVMMemorySwappedSsdDataPoint(ts, swappedSSDMem)
+	v.mb.RecordVcenterVMMemoryGrantedDataPoint(ts, int64(grantedMem))
 
 	cpuUsage := vm.Summary.QuickStats.OverallCpuUsage
 	if cpuUsage == 0 {

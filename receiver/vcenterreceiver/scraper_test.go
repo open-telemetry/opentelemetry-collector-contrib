@@ -40,6 +40,8 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	defer mockServer.Close()
 
 	optConfigs := metadata.DefaultMetricsBuilderConfig()
+	optConfigs.Metrics.VcenterHostMemoryCapacity.Enabled = true
+	optConfigs.Metrics.VcenterVMMemoryGranted.Enabled = true
 	setResourcePoolMemoryUsageAttrFeatureGate(t, true)
 
 	cfg := &Config{

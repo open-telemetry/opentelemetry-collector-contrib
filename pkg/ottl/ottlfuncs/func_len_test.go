@@ -303,7 +303,7 @@ func dummyMap(size int) map[string]any {
 	return m
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_Len_Error(t *testing.T) {
 	exprFunc := computeLen[any](&ottl.StandardGetSetter[any]{
 		Getter: func(context.Context, any) (any, error) {

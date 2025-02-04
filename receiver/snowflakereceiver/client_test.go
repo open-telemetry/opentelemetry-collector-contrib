@@ -218,7 +218,7 @@ func TestMetricQueries(t *testing.T) {
 		{
 			desc:    "FetchSessionMetrics",
 			query:   sessionMetricsQuery,
-			columns: []string{"username", "disctinct_id"},
+			columns: []string{"username", "distinct_id"},
 			params:  []driver.Value{"t", 3.0},
 			expect: sessionMetric{
 				userName: sql.NullString{
@@ -256,8 +256,7 @@ func TestMetricQueries(t *testing.T) {
 		},
 	}
 
-	for i := range tests {
-		test := tests[i]
+	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 			if err != nil {
