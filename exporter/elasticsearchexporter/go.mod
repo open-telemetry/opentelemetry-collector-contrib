@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/elastic/go-docappender/v2 v2.3.3
+	github.com/elastic/go-docappender/v2 v2.4.0
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/elastic/go-structform v0.0.12
 	github.com/klauspost/compress v1.17.11
@@ -62,8 +62,8 @@ require (
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
-	go.elastic.co/apm/module/apmzap/v2 v2.6.2 // indirect
-	go.elastic.co/apm/v2 v2.6.2 // indirect
+	go.elastic.co/apm/module/apmzap/v2 v2.6.3 // indirect
+	go.elastic.co/apm/v2 v2.6.3 // indirect
 	go.elastic.co/fastjson v1.4.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.25.0 // indirect

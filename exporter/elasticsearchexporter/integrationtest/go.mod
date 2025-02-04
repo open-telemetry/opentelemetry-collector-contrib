@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasti
 go 1.22.7
 
 require (
-	github.com/elastic/go-docappender/v2 v2.3.3
+	github.com/elastic/go-docappender/v2 v2.4.0
 	github.com/gorilla/mux v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.119.0
@@ -131,10 +131,10 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.elastic.co/apm/module/apmelasticsearch/v2 v2.6.2 // indirect
-	go.elastic.co/apm/module/apmhttp/v2 v2.6.2 // indirect
-	go.elastic.co/apm/module/apmzap/v2 v2.6.2 // indirect
-	go.elastic.co/apm/v2 v2.6.2 // indirect
+	go.elastic.co/apm/module/apmelasticsearch/v2 v2.6.3 // indirect
+	go.elastic.co/apm/module/apmhttp/v2 v2.6.3 // indirect
+	go.elastic.co/apm/module/apmzap/v2 v2.6.3 // indirect
+	go.elastic.co/apm/v2 v2.6.3 // indirect
 	go.elastic.co/fastjson v1.4.0 // indirect
 	go.etcd.io/bbolt v1.3.11 // indirect
 	go.opencensus.io v0.24.0 // indirect
