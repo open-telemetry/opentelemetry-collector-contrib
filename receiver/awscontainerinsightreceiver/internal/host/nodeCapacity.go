@@ -43,8 +43,8 @@ func newNodeCapacity(logger *zap.Logger, options ...nodeCapacityOption) (nodeCap
 		opt(nc)
 	}
 
-	actualHostProc, ok := os.LookupEnv(string(common.HostProcEnvKey));
-	if  !ok {
+	actualHostProc, ok := os.LookupEnv(string(common.HostProcEnvKey))
+	if !ok {
 		actualHostProc = hostProc
 	}
 

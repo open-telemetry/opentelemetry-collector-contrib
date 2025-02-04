@@ -74,18 +74,8 @@ func TestNodeCapacity(t *testing.T) {
 }
 
 func TestNodeCapacity_ReadsHostProcEnvVar(t *testing.T) {
-	savedHostProc, hadHostProcEnvVar := os.LookupEnv(string(common.HostProcEnvKey))
-
 	const customHostProc = "/custom/host/proc"
-	os.Setenv(string(common.HostProcEnvKey), customHostProc)
-
-	defer func() {
-		if hadHostProcEnvVar {
-			os.Setenv(string(common.HostProcEnvKey), savedHostProc)
-		} else {
-			os.Unsetenv(string(common.HostProcEnvKey))
-		}
-	}()
+	t.Setenv(string(common.HostProcEnvKey), customHostProc)
 
 	lstatOption := func(nc *nodeCapacity) {
 		nc.osLstat = func(name string) (os.FileInfo, error) {
