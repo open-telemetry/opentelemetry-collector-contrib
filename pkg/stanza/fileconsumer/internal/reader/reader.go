@@ -16,7 +16,6 @@ import (
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
@@ -189,14 +188,8 @@ func (r *Reader) readContents(ctx context.Context) {
 
 	s := scanner.New(r, r.maxLogSize, bufferSize, r.Offset, r.contentSplitFunc)
 
-	tokens := make([]emit.Token, 0, r.maxBatchSize)
-
-	// Pre-allocate space in memory for r.maxBatchSize attribute maps, to avoid allocations inside the loop.
-	tokenAttributes := make([]map[string]any, r.maxBatchSize)
-	for i := range tokenAttributes {
-		tokenAttributes[i] = copyAttributes(r.FileAttributes)
-	}
-
+	tokenBodies := make([][]byte, r.maxBatchSize)
+	numTokensBatched := 0
 	// Iterate over the contents of the file.
 	for {
 		select {
@@ -213,8 +206,8 @@ func (r *Reader) readContents(ctx context.Context) {
 				r.delete()
 			}
 
-			if len(tokens) > 0 {
-				err := r.emitFunc(ctx, tokens)
+			if numTokensBatched > 0 {
+				err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum)
 				if err != nil {
 					r.set.Logger.Error("failed to emit token", zap.Error(err))
 				}
@@ -223,40 +216,28 @@ func (r *Reader) readContents(ctx context.Context) {
 			return
 		}
 
-		token, err := r.decoder.Bytes(s.Bytes())
+		var err error
+		tokenBodies[numTokensBatched], err = r.decoder.Bytes(s.Bytes())
 		if err != nil {
 			r.set.Logger.Error("failed to decode token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
 			continue
 		}
+		numTokensBatched++
 
 		if r.includeFileRecordNum {
 			r.RecordNum++
-			tokenAttributes[len(tokens)][attrs.LogFileRecordNumber] = r.RecordNum
 		}
 
-		tokens = append(tokens, emit.NewToken(token, tokenAttributes[len(tokens)]))
-
-		if r.maxBatchSize > 0 && len(tokens) >= r.maxBatchSize {
-			err := r.emitFunc(ctx, tokens)
+		if r.maxBatchSize > 0 && numTokensBatched >= r.maxBatchSize {
+			err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum)
 			if err != nil {
 				r.set.Logger.Error("failed to emit token", zap.Error(err))
 			}
-			tokens = tokens[:0]
+			numTokensBatched = 0
 			r.Offset = s.Pos()
 		}
 	}
-}
-
-func copyAttributes(attrs map[string]any) map[string]any {
-	if attrs == nil {
-		return nil
-	}
-	copied := make(map[string]any, len(attrs))
-	for k, v := range attrs {
-		copied[k] = v
-	}
-	return copied
 }
 
 // Delete will close and delete the file

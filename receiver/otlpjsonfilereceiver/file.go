@@ -20,7 +20,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver/internal/metadata"
 )
 
@@ -84,11 +83,11 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens []emit.Token) error {
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, lastRecordNumber int64) error {
 		for _, token := range tokens {
 			ctx = obsrecv.StartLogsOp(ctx)
 			var l plog.Logs
-			l, err = logsUnmarshaler.UnmarshalLogs(token.Body)
+			l, err = logsUnmarshaler.UnmarshalLogs(token)
 			// Appends token.Attributes
 			for i := 0; i < l.ResourceLogs().Len(); i++ {
 				resourceLog := l.ResourceLogs().At(i)
@@ -96,7 +95,7 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 					scopeLog := resourceLog.ScopeLogs().At(j)
 					for k := 0; k < scopeLog.LogRecords().Len(); k++ {
 						LogRecords := scopeLog.LogRecords().At(k)
-						appendToMap(token, LogRecords.Attributes())
+						appendToMap(attributes, LogRecords.Attributes())
 					}
 				}
 			}
@@ -134,11 +133,11 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens []emit.Token) error {
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, lastRecordNumber int64) error {
 		for _, token := range tokens {
 			ctx = obsrecv.StartMetricsOp(ctx)
 			var m pmetric.Metrics
-			m, err = metricsUnmarshaler.UnmarshalMetrics(token.Body)
+			m, err = metricsUnmarshaler.UnmarshalMetrics(token)
 			// Appends token.Attributes
 			for i := 0; i < m.ResourceMetrics().Len(); i++ {
 				resourceMetric := m.ResourceMetrics().At(i)
@@ -146,7 +145,7 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 					ScopeMetric := resourceMetric.ScopeMetrics().At(j)
 					for k := 0; k < ScopeMetric.Metrics().Len(); k++ {
 						metric := ScopeMetric.Metrics().At(k)
-						appendToMap(token, metric.Metadata())
+						appendToMap(attributes, metric.Metadata())
 					}
 				}
 			}
@@ -183,11 +182,11 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens []emit.Token) error {
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, lastRecordNumber int64) error {
 		for _, token := range tokens {
 			ctx = obsrecv.StartTracesOp(ctx)
 			var t ptrace.Traces
-			t, err = tracesUnmarshaler.UnmarshalTraces(token.Body)
+			t, err = tracesUnmarshaler.UnmarshalTraces(token)
 			// Appends token.Attributes
 			for i := 0; i < t.ResourceSpans().Len(); i++ {
 				resourceSpan := t.ResourceSpans().At(i)
@@ -195,7 +194,7 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 					scopeSpan := resourceSpan.ScopeSpans().At(j)
 					for k := 0; k < scopeSpan.Spans().Len(); k++ {
 						spans := scopeSpan.Spans().At(k)
-						appendToMap(token, spans.Attributes())
+						appendToMap(attributes, spans.Attributes())
 					}
 				}
 			}
@@ -224,9 +223,9 @@ func createProfilesReceiver(_ context.Context, settings receiver.Settings, confi
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens []emit.Token) error {
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens [][]byte, attributes map[string]any, lastRecordNumber int64) error {
 		for _, token := range tokens {
-			p, _ := profilesUnmarshaler.UnmarshalProfiles(token.Body)
+			p, _ := profilesUnmarshaler.UnmarshalProfiles(token)
 			// TODO Append token.Attributes
 			if p.ResourceProfiles().Len() != 0 {
 				_ = profiles.ConsumeProfiles(ctx, p)
@@ -241,8 +240,8 @@ func createProfilesReceiver(_ context.Context, settings receiver.Settings, confi
 	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }
 
-func appendToMap(token emit.Token, attr pcommon.Map) {
-	for key, value := range token.Attributes {
+func appendToMap(attributes map[string]any, attr pcommon.Map) {
+	for key, value := range attributes {
 		switch v := value.(type) {
 		case string:
 			attr.PutStr(key, v)

@@ -9,10 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 )
 
 func TestNextToken(t *testing.T) {
@@ -204,7 +203,7 @@ func sinkTest(t *testing.T, opts ...SinkOpt) (*Sink, []emit.Token) {
 	}
 	go func() {
 		for _, c := range testCalls {
-			assert.NoError(t, s.Callback(context.Background(), []emit.Token{emit.NewToken(c.Body, c.Attributes)}))
+			assert.NoError(t, s.Callback(context.Background(), [][]byte{c.Body}, c.Attributes, 0))
 		}
 	}()
 	return s, testCalls

@@ -54,8 +54,9 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	input := &Input{
-		InputOperator: inputOperator,
-		toBody:        toBody,
+		InputOperator:           inputOperator,
+		toBody:                  toBody,
+		includeFileRecordNumber: c.IncludeFileRecordNumber,
 	}
 
 	input.fileConsumer, err = c.Config.Build(set, input.emitBatch)
