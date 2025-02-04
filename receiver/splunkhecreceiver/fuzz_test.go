@@ -6,7 +6,6 @@ package splunkhecreceiver
 import (
 	"bytes"
 	"net/http"
-
 	"net/http/httptest"
 	"testing"
 
@@ -16,19 +15,19 @@ import (
 
 func FuzzHandleRawReq(f *testing.F) {
 	f.Fuzz(func(t *testing.T, reqBody []byte) {
-		req, err := http.NewRequest("POST", "http://example.com", bytes.NewReader(reqBody))
+		req, err := http.NewRequest(http.MethodPost, "http://example.com", bytes.NewReader(reqBody))
 		if err != nil {
 			t.Skip()
 		}
 		req.Header.Add("If-None-Match", `W/"wyzzy"`)
 		sink := new(consumertest.LogsSink)
 		defaultConfig := createDefaultConfig().(*Config)
-		rcv, err := newLogsReceiver(receivertest.NewNopSettings(), *defaultConfig, sink)
+		rcv, err := newReceiver(receivertest.NewNopSettings(), *defaultConfig)
+		rcv.logsConsumer = sink
 		if err != nil {
 			t.Fatal(err)
 		}
-		r := rcv.(*splunkReceiver)
 		w := httptest.NewRecorder()
-		r.handleRawReq(w, req)
+		rcv.handleRawReq(w, req)
 	})
 }

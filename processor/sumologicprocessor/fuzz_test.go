@@ -12,7 +12,7 @@ import (
 )
 
 func FuzzProcessTraces(f *testing.F) {
-	f.Fuzz(func(t *testing.T, data []byte, processorType uint8) {
+	f.Fuzz(func(_ *testing.T, data []byte, processorType uint8) {
 		ju := &ptrace.JSONUnmarshaler{}
 		traces, err := ju.UnmarshalTraces(data)
 		if err != nil {
@@ -21,22 +21,22 @@ func FuzzProcessTraces(f *testing.F) {
 		switch int(processorType) % 4 {
 		case 0:
 			proc := &aggregateAttributesProcessor{}
-			proc.processTraces(traces)
+			_ = proc.processTraces(traces)
 		case 1:
 			proc := &cloudNamespaceProcessor{}
-			proc.processTraces(traces)
+			_ = proc.processTraces(traces)
 		case 2:
 			proc := &NestingProcessor{}
-			proc.processTraces(traces)
+			_ = proc.processTraces(traces)
 		case 3:
 			proc := &translateAttributesProcessor{}
-			proc.processTraces(traces)
+			_ = proc.processTraces(traces)
 		}
 	})
 }
 
 func FuzzProcessLogs(f *testing.F) {
-	f.Fuzz(func(t *testing.T, data []byte, processorType uint8) {
+	f.Fuzz(func(_ *testing.T, data []byte, processorType uint8) {
 		ju := &plog.JSONUnmarshaler{}
 		logs, err := ju.UnmarshalLogs(data)
 		if err != nil {
@@ -45,22 +45,22 @@ func FuzzProcessLogs(f *testing.F) {
 		switch int(processorType) % 4 {
 		case 0:
 			proc := &aggregateAttributesProcessor{}
-			proc.processLogs(logs)
+			_ = proc.processLogs(logs)
 		case 1:
 			proc := &cloudNamespaceProcessor{}
-			proc.processLogs(logs)
+			_ = proc.processLogs(logs)
 		case 2:
 			proc := &NestingProcessor{}
-			proc.processLogs(logs)
+			_ = proc.processLogs(logs)
 		case 3:
 			proc := &translateAttributesProcessor{}
-			proc.processLogs(logs)
+			_ = proc.processLogs(logs)
 		}
 	})
 }
 
 func FuzzProcessMetrics(f *testing.F) {
-	f.Fuzz(func(t *testing.T, data []byte, processorType uint8) {
+	f.Fuzz(func(_ *testing.T, data []byte, processorType uint8) {
 		ju := &pmetric.JSONUnmarshaler{}
 		metrics, err := ju.UnmarshalMetrics(data)
 		if err != nil {
@@ -69,16 +69,16 @@ func FuzzProcessMetrics(f *testing.F) {
 		switch int(processorType) % 4 {
 		case 0:
 			proc := &aggregateAttributesProcessor{}
-			proc.processMetrics(metrics)
+			_ = proc.processMetrics(metrics)
 		case 1:
 			proc := &cloudNamespaceProcessor{}
-			proc.processMetrics(metrics)
+			_ = proc.processMetrics(metrics)
 		case 2:
 			proc := &NestingProcessor{}
-			proc.processMetrics(metrics)
+			_ = proc.processMetrics(metrics)
 		case 3:
 			proc := &translateAttributesProcessor{}
-			proc.processMetrics(metrics)
+			_ = proc.processMetrics(metrics)
 		}
 	})
 }

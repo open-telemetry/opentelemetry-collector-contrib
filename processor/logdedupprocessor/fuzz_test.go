@@ -5,10 +5,11 @@ package logdedupprocessor
 
 import (
 	"context"
+	"testing"
+
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
-	"testing"
 )
 
 func FuzzConsumeLogs(f *testing.F) {

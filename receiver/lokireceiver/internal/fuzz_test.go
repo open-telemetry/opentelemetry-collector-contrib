@@ -11,7 +11,7 @@ import (
 
 func FuzzParseRequest(f *testing.F) {
 	f.Fuzz(func(t *testing.T, data []byte, headerType uint8) {
-		req, err := http.NewRequest("POST", "http://example.com", bytes.NewReader(data))
+		req, err := http.NewRequest(http.MethodPost, "http://example.com", bytes.NewReader(data))
 		if err != nil {
 			t.Skip()
 		}

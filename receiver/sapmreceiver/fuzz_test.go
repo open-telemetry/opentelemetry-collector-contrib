@@ -13,7 +13,7 @@ import (
 
 func FuzzParseTraceV2Request(f *testing.F) {
 	f.Fuzz(func(t *testing.T, reqBody []byte, encoding uint8) {
-		req, err := http.NewRequest("POST", "http://example.com", bytes.NewReader(reqBody))
+		req, err := http.NewRequest(http.MethodPost, "http://example.com", bytes.NewReader(reqBody))
 		if err != nil {
 			t.Skip()
 		}
@@ -26,6 +26,6 @@ func FuzzParseTraceV2Request(f *testing.F) {
 		default:
 		}
 
-		sapmprotocol.ParseTraceV2Request(req)
+		_, _ = sapmprotocol.ParseTraceV2Request(req)
 	})
 }
