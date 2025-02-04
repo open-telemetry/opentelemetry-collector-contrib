@@ -219,7 +219,8 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "ecs"
-			cfg.Mapping.Dedot = true
+			// deduplication is always performed except in otel mapping mode -
+			// there is no other configuration that controls it
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{"attr.key": "value"},
@@ -233,7 +234,7 @@ func TestExporterLogs(t *testing.T) {
 	t.Run("publish with dedup", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			assert.JSONEq(t, `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Scope":{"name":"","value":"value","version":""},"SeverityNumber":0,"TraceFlags":0}`, string(docs[0].Document))
+			assert.JSONEq(t, `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Scope.name":"","Scope.value":"value","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`, string(docs[0].Document))
 			rec.Record(docs)
 			return itemsAllOK(docs)
 		})
@@ -664,6 +665,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
 			cfg.Flush.Interval = 50 * time.Millisecond
 			cfg.Retry.InitialInterval = 1 * time.Millisecond
 			cfg.Retry.MaxInterval = 10 * time.Millisecond

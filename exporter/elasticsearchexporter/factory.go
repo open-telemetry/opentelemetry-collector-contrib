@@ -75,8 +75,7 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Mapping: MappingsSettings{
-			Mode:  "none",
-			Dedot: true,
+			Mode: "none",
 		},
 		LogstashFormat: LogstashFormatSettings{
 			Enabled:         false,
