@@ -9,6 +9,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/mem"
 	"github.com/stretchr/testify/assert"
@@ -70,4 +71,30 @@ func TestNodeCapacity(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1024), nc.getMemoryCapacity())
 	assert.Equal(t, int64(2), nc.getNumCores())
+}
+
+func TestNodeCapacity_ReadsHostProcEnvVar(t *testing.T) {
+	savedHostProc, hadHostProcEnvVar := os.LookupEnv(string(common.HostProcEnvKey))
+
+	const customHostProc = "/custom/host/proc"
+	os.Setenv(string(common.HostProcEnvKey), customHostProc)
+
+	defer func() {
+		if hadHostProcEnvVar {
+			os.Setenv(string(common.HostProcEnvKey), savedHostProc)
+		} else {
+			os.Unsetenv(string(common.HostProcEnvKey))
+		}
+	}()
+
+	lstatOption := func(nc *nodeCapacity) {
+		nc.osLstat = func(name string) (os.FileInfo, error) {
+			assert.Equal(t, customHostProc, name)
+			return nil, nil
+		}
+	}
+
+	nc, err := newNodeCapacity(zap.NewNop(), lstatOption)
+	assert.NoError(t, err)
+	assert.NotNil(t, nc)
 }
