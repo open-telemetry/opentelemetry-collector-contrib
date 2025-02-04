@@ -195,3 +195,24 @@ transform/with_shared_cache_key:
     - statements:
         - set(resource.attributes["name"], "silent")
       shared_cache: true
+
+transform/context_statements_error_mode:
+  error_mode: ignore
+  trace_statements:
+    - error_mode: propagate
+      statements:
+        - set(resource.attributes["name"], "propagate")
+    - statements:
+        - set(resource.attributes["name"], "ignore")
+  metric_statements:
+    - error_mode: silent
+      statements:
+        - set(resource.attributes["name"], "silent")
+    - statements:
+        - set(resource.attributes["name"], "ignore")
+  log_statements:
+    - error_mode: propagate
+      statements:
+        - set(resource.attributes["name"], "propagate")
+    - statements:
+        - set(resource.attributes["name"], "ignore")
