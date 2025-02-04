@@ -4,7 +4,7 @@ go 1.22.1
 
 require (
 	github.com/Antonboom/testifylint v1.5.2
-	github.com/Khan/genqlient v0.7.0
+	github.com/Khan/genqlient v0.8.0
 	github.com/client9/misspell v0.3.4
 	github.com/daixiang0/gci v0.13.5
 	github.com/golangci/golangci-lint v1.63.4
