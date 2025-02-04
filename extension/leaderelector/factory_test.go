@@ -64,7 +64,7 @@ func TestNewFactory(t *testing.T) {
 				fakeClient := fake.NewClientset()
 
 				cfg := createDefaultConfig().(*Config)
-				cfg.makeClient = func(apiConfig k8sconfig.APIConfig) (kubernetes.Interface, error) {
+				cfg.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 					return fakeClient, nil
 				}
 

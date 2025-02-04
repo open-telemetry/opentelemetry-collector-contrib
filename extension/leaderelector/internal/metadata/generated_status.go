@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("leader_elector")
+	Type      = component.MustNewType("k8s_leader_elector")
 	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector"
 )
 

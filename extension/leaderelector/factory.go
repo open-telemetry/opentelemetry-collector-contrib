@@ -36,7 +36,7 @@ func createDefaultConfig() component.Config {
 
 // createExtension creates the extension instance based on the configuration.
 func createExtension(
-	ctx context.Context,
+	_ context.Context,
 	set extension.Settings,
 	cfg component.Config,
 ) (extension.Extension, error) {
@@ -61,14 +61,14 @@ func createExtension(
 		config:        baseCfg,
 		logger:        set.Logger,
 		client:        client,
-		leaseHolderId: leaseHolderID,
+		leaseHolderID: leaseHolderID,
 	}, nil
 }
 
 // NewFactory creates a new factory for your extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		component.MustNewType(metadata.Type.String()),
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
 		component.StabilityLevelDevelopment,

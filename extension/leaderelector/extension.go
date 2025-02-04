@@ -33,10 +33,9 @@ func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading StartCallbac
 // leaderElectionExtension is the main struct implementing the extension's behavior.
 type leaderElectionExtension struct {
 	config        *Config
-	cancel        context.CancelFunc
 	client        kubernetes.Interface
 	logger        *zap.Logger
-	leaseHolderId string
+	leaseHolderID string
 
 	onStartedLeading []StartCallback
 	onStoppedLeading []StopCallback

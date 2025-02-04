@@ -1,4 +1,4 @@
-type: leader_elector
+type: k8s_leader_elector
 
 status:
   class: extension
@@ -6,7 +6,7 @@ status:
     development: [extension]
   distributions: []
   codeowners:
-    active: [rakesh-garimella, k15r, skhalash, hisarbalik]
+    active: [rakesh-garimella]
 
 # Skip life cycle tests as we need a real kubeconfig to run the lifecycle tests, as the test needs to generate a kubeconfig client. Enable them once we have a proper solution for this
 tests:

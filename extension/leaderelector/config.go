@@ -4,9 +4,9 @@
 package leaderelector // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector"
 
 import (
+	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -30,4 +30,10 @@ func (cfg *Config) getK8sClient() (kubernetes.Interface, error) {
 	return cfg.makeClient(cfg.APIConfig)
 }
 
-var _ component.Config = (*Config)(nil)
+// Validate checks if the extension configuration is valid
+func (cfg *Config) Validate() error {
+	if cfg.LeaseName == "" || cfg.LeaseNamespace == "" {
+		return fmt.Errorf("lease name and namespace must be set")
+	}
+	return nil
+}

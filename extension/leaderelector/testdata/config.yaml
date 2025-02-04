@@ -1,8 +1,8 @@
-leader_elector/defaults:
+k8s_leader_elector/defaults:
   auth_type: kubeConfig
   lease_name: foo
   lease_namespace: default
-leader_elector/with_lease_duration:
+k8s_leader_elector/with_lease_duration:
   auth_type: kubeConfig
   lease_name: bar
   lease_namespace: default

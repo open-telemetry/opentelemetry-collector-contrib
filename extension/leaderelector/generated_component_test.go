@@ -10,7 +10,7 @@ import (
 )
 
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "leader_elector", NewFactory().Type().String())
+	require.Equal(t, "k8s_leader_elector", NewFactory().Type().String())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
