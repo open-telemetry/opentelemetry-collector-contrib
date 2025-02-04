@@ -11,14 +11,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+const (
+	ResourceContextName = "resource"
+)
+
 type ResourceContext interface {
 	GetResource() pcommon.Resource
 	GetResourceSchemaURLItem() SchemaURLItem
 }
 
-func ResourcePathGetSetter[K ResourceContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func ResourcePathGetSetter[K ResourceContext](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
-		return nil, FormatDefaultErrorMessage("resource", "resource", "Resource", ResourceContextRef)
+		return nil, FormatDefaultErrorMessage(ResourceContextName, ResourceContextName, "Resource", ResourceContextRef)
 	}
 	switch path.Name() {
 	case "attributes":
@@ -30,6 +34,8 @@ func ResourcePathGetSetter[K ResourceContext](path ottl.Path[K]) (ottl.GetSetter
 		return accessResourceDroppedAttributesCount[K](), nil
 	case "schema_url":
 		return accessResourceSchemaURLItem[K](), nil
+	case "cache":
+		return nil, FormatCacheErrorMessage(lowerContext, path.Context(), path.String())
 	default:
 		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Resource", ResourceContextRef)
 	}

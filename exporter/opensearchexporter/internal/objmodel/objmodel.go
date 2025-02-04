@@ -5,8 +5,8 @@
 // JSON documents.
 //
 // The JSON parsing in OpenSearch does not support parsing JSON documents
-// with duplicate fields. The fields in the docuemt can be sort and duplicate entries
-// can be removed before serializing. Deduplication ensures that ambigious
+// with duplicate fields. The fields in the document can be sort and duplicate entries
+// can be removed before serializing. Deduplication ensures that ambiguous
 // events can still be indexed.
 //
 // With attributes map encoded as a list of key value
@@ -29,7 +29,7 @@
 // Ingest Node is used. But either way, we try to present only well formed
 // document to OpenSearch.
 
-// nolint:errcheck
+//nolint:errcheck
 package objmodel // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/objmodel"
 
 import (

@@ -301,7 +301,7 @@ func TestArrowExporterTimeout(t *testing.T) {
 	}
 }
 
-// TestConnectError tests that if the connetions fail fast the
+// TestConnectError tests that if the connections fail fast the
 // stream object for some reason is nil.  This causes downgrade.
 func TestArrowExporterStreamConnectError(t *testing.T) {
 	for _, pname := range AllPrioritizers {

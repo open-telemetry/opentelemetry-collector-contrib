@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/daemonset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/deployment"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/hpa"
@@ -305,7 +305,7 @@ func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.R
 	case *appsv1.ReplicaSet:
 		return replicaset.GetMetadata(o)
 	case *appsv1.DaemonSet:
-		return demonset.GetMetadata(o)
+		return daemonset.GetMetadata(o)
 	case *appsv1.StatefulSet:
 		return statefulset.GetMetadata(o)
 	case *batchv1.Job:

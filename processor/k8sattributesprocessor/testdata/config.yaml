@@ -89,7 +89,7 @@ k8sattributes/4:
   auth_type: "kubeConfig"
   extract:
     metadata:
-      # the following metadata field has been depracated
+      # the following metadata field has been deprecated
       - k8s.cluster.name
 
 k8sattributes/too_many_sources:

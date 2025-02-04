@@ -4,26 +4,27 @@
 package elasticsearchexporter
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
 type routeTestCase struct {
 	name      string
 	otel      bool
 	scopeName string
-	want      string
+	want      elasticsearch.Index
 }
 
 func createRouteTests(dsType string) []routeTestCase {
-	renderWantRoute := func(dsType, dsDataset string, otel bool) string {
+	renderWantRoute := func(dsType, dsDataset string, otel bool) elasticsearch.Index {
 		if otel {
-			return fmt.Sprintf("%s-%s.otel-%s", dsType, dsDataset, defaultDataStreamNamespace)
+			dsDataset += ".otel"
 		}
-		return fmt.Sprintf("%s-%s-%s", dsType, dsDataset, defaultDataStreamNamespace)
+		return elasticsearch.NewDataStreamIndex(dsType, dsDataset, defaultDataStreamNamespace)
 	}
 
 	return []routeTestCase{

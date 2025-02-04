@@ -1,0 +1,53 @@
+signaltometrics:
+  spans:
+    - name: with_resource_foo_only
+      description: Spans with resource attribute including resource.foo as a histogram metric
+      unit: ms
+      include_resource_attributes:
+        - key: resource.foo
+      histogram:
+        count: "Int(AdjustedCount())"
+        value: Milliseconds(end_time - start_time)
+    - name: with_custom_count
+      description: Spans with custom count OTTL expression as a histogram metric
+      unit: ms
+      histogram:
+        count: "2" # count each span twice
+        value: Milliseconds(end_time - start_time)
+    - name: http.trace.span.duration
+      description: Span duration for HTTP spans as a histogram metric
+      unit: ms
+      attributes:
+        - key: http.response.status_code
+      histogram:
+        count: "Int(AdjustedCount())"
+        value: Milliseconds(end_time - start_time)
+    - name: db.trace.span.duration
+      description: Span duration for DB spans as a histogram metric
+      unit: ms
+      attributes:
+        - key: db.system
+      histogram:
+        count: "Int(AdjustedCount())"
+        value: Milliseconds(end_time - start_time)
+    - name: msg.trace.span.duration
+      description: Span duration for messaging spans as a histogram metric
+      unit: ms
+      conditions: # Will evaluate to true
+        - resource.attributes["404.attribute"] != nil
+        - resource.attributes["resource.foo"] != nil
+      attributes:
+        - key: messaging.system
+      histogram:
+        count: "Int(AdjustedCount())"
+        value: Milliseconds(end_time - start_time)
+    - name: ignored.histogram
+      description: Will be ignored due to conditions evaluating to false
+      unit: ms
+      conditions: # Will evaluate to false
+        - resource.attributes["404.attribute"] != nil
+      attributes:
+        - key: messaging.system
+      histogram:
+        count: "Int(AdjustedCount())"
+        value: Milliseconds(end_time - start_time)

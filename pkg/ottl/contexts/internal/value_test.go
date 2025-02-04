@@ -13,10 +13,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Test_SetIndexableValue_EmptyValueNoIndex(t *testing.T) {
+func Test_SetIndexableValue_InvalidValue(t *testing.T) {
 	keys := []ottl.Key[any]{
 		&TestKey[any]{},
 	}
-	err := setIndexableValue[any](context.Background(), nil, pcommon.NewValueEmpty(), nil, keys)
+	err := setIndexableValue[any](context.Background(), nil, pcommon.NewValueStr("str"), nil, keys)
 	assert.Error(t, err)
 }

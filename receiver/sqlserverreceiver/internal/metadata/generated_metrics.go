@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeDatabaseStatus specifies the a value database.status attribute.
+// AttributeDatabaseStatus specifies the value database.status attribute.
 type AttributeDatabaseStatus int
 
 const (
@@ -56,7 +56,7 @@ var MapAttributeDatabaseStatus = map[string]AttributeDatabaseStatus{
 	"offline":          AttributeDatabaseStatusOffline,
 }
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -82,7 +82,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"write": AttributeDirectionWrite,
 }
 
-// AttributePageOperations specifies the a value page.operations attribute.
+// AttributePageOperations specifies the value page.operations attribute.
 type AttributePageOperations int
 
 const (
@@ -1516,7 +1516,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                            mbc,

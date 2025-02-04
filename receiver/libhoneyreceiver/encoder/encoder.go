@@ -15,13 +15,13 @@ import (
 
 const (
 	PbContentType      = "application/x-protobuf"
-	JsonContentType    = "application/json"
+	JSONContentType    = "application/json"
 	MsgpackContentType = "application/x-msgpack"
 )
 
 var (
-	JsEncoder       = &JsonEncoder{}
-	JsonPbMarshaler = &jsonpb.Marshaler{}
+	JsEncoder       = &JSONEncoder{}
+	JSONPbMarshaler = &jsonpb.Marshaler{}
 	MpEncoder       = &msgpackEncoder{}
 )
 
@@ -39,46 +39,46 @@ type Encoder interface {
 	ContentType() string
 }
 
-type JsonEncoder struct{}
+type JSONEncoder struct{}
 
-func (JsonEncoder) UnmarshalTracesRequest(buf []byte) (ptraceotlp.ExportRequest, error) {
+func (JSONEncoder) UnmarshalTracesRequest(buf []byte) (ptraceotlp.ExportRequest, error) {
 	req := ptraceotlp.NewExportRequest()
 	err := req.UnmarshalJSON(buf)
 	return req, err
 }
 
-func (JsonEncoder) UnmarshalMetricsRequest(buf []byte) (pmetricotlp.ExportRequest, error) {
+func (JSONEncoder) UnmarshalMetricsRequest(buf []byte) (pmetricotlp.ExportRequest, error) {
 	req := pmetricotlp.NewExportRequest()
 	err := req.UnmarshalJSON(buf)
 	return req, err
 }
 
-func (JsonEncoder) UnmarshalLogsRequest(buf []byte) (plogotlp.ExportRequest, error) {
+func (JSONEncoder) UnmarshalLogsRequest(buf []byte) (plogotlp.ExportRequest, error) {
 	req := plogotlp.NewExportRequest()
 	err := req.UnmarshalJSON(buf)
 	return req, err
 }
 
-func (JsonEncoder) MarshalTracesResponse(resp ptraceotlp.ExportResponse) ([]byte, error) {
+func (JSONEncoder) MarshalTracesResponse(resp ptraceotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalJSON()
 }
 
-func (JsonEncoder) MarshalMetricsResponse(resp pmetricotlp.ExportResponse) ([]byte, error) {
+func (JSONEncoder) MarshalMetricsResponse(resp pmetricotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalJSON()
 }
 
-func (JsonEncoder) MarshalLogsResponse(resp plogotlp.ExportResponse) ([]byte, error) {
+func (JSONEncoder) MarshalLogsResponse(resp plogotlp.ExportResponse) ([]byte, error) {
 	return resp.MarshalJSON()
 }
 
-func (JsonEncoder) MarshalStatus(resp *spb.Status) ([]byte, error) {
+func (JSONEncoder) MarshalStatus(resp *spb.Status) ([]byte, error) {
 	buf := new(bytes.Buffer)
-	err := JsonPbMarshaler.Marshal(buf, resp)
+	err := JSONPbMarshaler.Marshal(buf, resp)
 	return buf.Bytes(), err
 }
 
-func (JsonEncoder) ContentType() string {
-	return JsonContentType
+func (JSONEncoder) ContentType() string {
+	return JSONContentType
 }
 
 // messagepack responses seem to work in JSON so leaving this alone for now.
@@ -116,7 +116,7 @@ func (msgpackEncoder) MarshalLogsResponse(resp plogotlp.ExportResponse) ([]byte,
 
 func (msgpackEncoder) MarshalStatus(resp *spb.Status) ([]byte, error) {
 	buf := new(bytes.Buffer)
-	err := JsonPbMarshaler.Marshal(buf, resp)
+	err := JSONPbMarshaler.Marshal(buf, resp)
 	return buf.Bytes(), err
 }
 

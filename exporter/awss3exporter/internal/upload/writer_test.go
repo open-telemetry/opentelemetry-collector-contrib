@@ -26,6 +26,7 @@ func TestNewS3Manager(t *testing.T) {
 		"my-bucket",
 		&PartitionKeyBuilder{},
 		s3.New(s3.Options{}),
+		"STANDARD",
 	)
 
 	assert.NotNil(t, sm, "Must have a valid client returned")
@@ -35,11 +36,12 @@ func TestS3ManagerUpload(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name        string
-		handler     func(t *testing.T) http.Handler
-		compression configcompression.Type
-		data        []byte
-		errVal      string
+		name         string
+		handler      func(t *testing.T) http.Handler
+		compression  configcompression.Type
+		data         []byte
+		errVal       string
+		storageClass string
 	}{
 		{
 			name: "successful upload",
@@ -115,6 +117,18 @@ func TestS3ManagerUpload(t *testing.T) {
 			data:   []byte("good payload"),
 			errVal: "operation error S3: PutObject, https response error StatusCode: 401, RequestID: , HostID: , api error Unauthorized: Unauthorized",
 		},
+		{
+			name: "STANDARD_IA storage class",
+			handler: func(t *testing.T) http.Handler {
+				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+					// Example of validating that the S3 storage class header is set correctly
+					assert.Equal(t, "STANDARD_IA", r.Header.Get("x-amz-storage-class"))
+				})
+			},
+			storageClass: "STANDARD_IA",
+			data:         []byte("some data"),
+			errVal:       "",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -139,10 +153,11 @@ func TestS3ManagerUpload(t *testing.T) {
 					BaseEndpoint: aws.String(s.URL),
 					Region:       "local",
 				}),
+				"STANDARD_IA",
 			)
 
 			// Using a mocked virtual clock to fix the timestamp used
-			// to reduce the potential of flakey tests
+			// to reduce the potential of flaky tests
 			mc := clock.NewMock(time.Date(2024, 0o1, 10, 10, 30, 40, 100, time.Local))
 
 			err := sm.Upload(

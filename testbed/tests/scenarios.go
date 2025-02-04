@@ -8,7 +8,7 @@ package tests // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -265,7 +265,7 @@ type TestCase struct {
 func genRandByteString(length int) string {
 	b := make([]byte, length)
 	for i := range b {
-		b[i] = byte(rand.Intn(128))
+		b[i] = byte(rand.IntN(128))
 	}
 	return string(b)
 }
@@ -273,9 +273,7 @@ func genRandByteString(length int) string {
 // Scenario1kSPSWithAttrs runs a performance test at 1k sps with specified span attributes
 // and test options.
 func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, processors []ProcessorNameAndConfigBody, extensions map[string]string) {
-	for i := range tests {
-		test := tests[i]
-
+	for _, test := range tests {
 		t.Run(fmt.Sprintf("%d*%dbytes", test.attrCount, test.attrSizeByte), func(t *testing.T) {
 			options := constructLoadOptions(test)
 
@@ -651,8 +649,8 @@ func constructLoadOptions(test TestCase) testbed.LoadOptions {
 
 	// Generate attributes.
 	for i := 0; i < test.attrCount; i++ {
-		attrName := genRandByteString(rand.Intn(199) + 1)
-		options.Attributes[attrName] = genRandByteString(rand.Intn(test.attrSizeByte*2-1) + 1)
+		attrName := genRandByteString(rand.IntN(199) + 1)
+		options.Attributes[attrName] = genRandByteString(rand.IntN(test.attrSizeByte*2-1) + 1)
 	}
 	return options
 }

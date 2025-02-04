@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 )
 
@@ -44,18 +43,18 @@ func TestLoadConfigRootPath(t *testing.T) {
 
 	expectedConfig := factory.CreateDefaultConfig().(*Config)
 	expectedConfig.RootPath = "testdata"
-	cpuScraperCfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
-	cpuScraperCfg.SetRootPath("testdata")
-	cpuScraperCfg.SetEnvMap(common.EnvMap{
+	f := cpuscraper.NewFactory()
+	cpuScraperCfg := f.CreateDefaultConfig()
+	expectedConfig.Scrapers = map[component.Type]component.Config{f.Type(): cpuScraperCfg}
+	assert.Equal(t, expectedConfig, cfg)
+	expectedEnvMap := common.EnvMap{
 		common.HostDevEnvKey: "testdata/dev",
 		common.HostEtcEnvKey: "testdata/etc",
 		common.HostRunEnvKey: "testdata/run",
 		common.HostSysEnvKey: "testdata/sys",
 		common.HostVarEnvKey: "testdata/var",
-	})
-	expectedConfig.Scrapers = map[string]internal.Config{cpuscraper.TypeStr: cpuScraperCfg}
-
-	assert.Equal(t, expectedConfig, cfg)
+	}
+	assert.Equal(t, expectedEnvMap, setGoPsutilEnvVars("testdata"))
 }
 
 func TestLoadInvalidConfig_RootPathNotExist(t *testing.T) {
