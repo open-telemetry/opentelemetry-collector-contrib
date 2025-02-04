@@ -22,10 +22,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/clientutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/hostmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/scrub"
 )
 
 const (

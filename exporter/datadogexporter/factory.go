@@ -34,9 +34,9 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
