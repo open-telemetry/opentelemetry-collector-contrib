@@ -7,6 +7,13 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.119.0
+
+### 🚀 New components 🚀
+
+- `metricstarttimeprocessor`: Add the initial skeleton for the metricsstarttimeprocessor (#37186)
+  The component is still in development and is not ready for use.
+
 ## v0.118.0
 
 ### 🛑 Breaking changes 🛑

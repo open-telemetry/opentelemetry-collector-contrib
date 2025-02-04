@@ -7,6 +7,124 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.119.0
+
+### 🛑 Breaking changes 🛑
+
+- `receiver/cloudfoundry`: Promote `cloudfoundry.resourceAttributes.allow` feature gate to beta (#34824)
+  The `cloudfoundry.resourceAttributes.allow` feature gate is now enabled by default.
+  
+- `datadogexporter`: Remove stable feature gate `exporter.datadog.hostname.preview` (#37561)
+- `exporter/prometheusremotewrite`: Change `exporter.prometheusremotewriteexporter.deprecateCreatedMetric` feature gate from Beta to Stable version. (#35003)
+  The `export_created_metric` configuration parameter is now permanently deprecated.
+- `elasticsearchexporter`: Consistently store the structured body of logs and events in `body.structured` in `otel` mode (#37387)
+- `solacereceiver`: Update validation step to allow only one auth method. (#36386)
+
+### 🚩 Deprecations 🚩
+
+- `signalfxreceiver`: `access_token_passthrough` is deprecated (#37575)
+  - "`access_token_passthrough` is deprecated."
+  - "Please enable include_metadata in the receiver and add the following config to the batch processor:"
+  ```yaml
+  batch:
+    metadata_keys: [X-Sf-Token]
+  ```
+  
+
+### 🚀 New components 🚀
+
+- `envoyalsreceiver`: Add a new receiver for the Envoy ALS (Access Log Service). (#36464)
+- `metricstarttimeprocessor`: Add the initial skeleton for the metricsstarttimeprocessor (#37186)
+  The component is still in development and is not ready for use.
+- `exporter/sematext`: Add a new component for exporting metrics and logs to Sematext (#36465)
+
+### 💡 Enhancements 💡
+
+- `awss3exporter`: Add support for S3 Storgeclass (#35173)
+- `processor/transformprocessor`: Add support for flat configuration style. (#29017)
+  The flat configuration style allows users to configure statements by providing a list of statements instead of a
+  structured configuration map. The statement's context is expressed by adding the context's name prefix to path names,
+  which are used to infer and to select the appropriate context for the statement.
+  
+- `httpcheckreceiver`: Added support for specifying multiple endpoints in the `httpcheckreceiver` using the `endpoints` field. Users can now monitor multiple URLs with a single configuration block, improving flexibility and reducing redundancy. (#37121)
+- `signaltometricsconnector`: Move signal to metrics connector to alpha stability (#35930)
+- `exporter/clickhouse`: Adding missing examples of DDL created by the clickhouse exporter (#35903)
+- `opampsupervisor`: add support for headers configuration for reporting own telemetry (#37353)
+- `opampsupervisor`: report own metrics via OTLP instead of prometheus receiver (#37346)
+- `resourcedetectionprocessor`: Expose additional configuration parameters for the AWS metadata client used by the EC2 detector (#35936)
+  In some cases, you might need to change the behavior of the AWS metadata client from the [standard retryer](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-retries-timeouts.html)
+  
+  By default, the client retries 3 times with a max backoff delay of 20s.
+  
+  We offer a limited set of options to override those defaults specifically, such that you can set the client to retry 10 times, for up to 5 minutes, for example:
+  ```yaml
+  processors:
+    resourcedetection/ec2:
+      detectors: ["ec2"]
+      ec2:
+        max_attempts: 10
+        max_backoff: 5m
+  ```
+  
+- `cumulativetodeltaprocessor`: Add metric type filter for cumulativetodelta processor (#33673)
+- `datadogconnector`: Support obfuscating sql queries in APM stats (#37457)
+  Ensure that feature flags "enable_receive_resource_spans_v2" and "enable_operation_and_resource_name_logic_v2"
+  are also enabled on both Datadog Exporter and Datadog Connector so that span attributes are properly
+  mapped to span type and span resource in Datadog APM; otherwise spans and apm stats may not be 
+  obfuscated and attributes on stats payloads may not match traces.
+  See https://docs.datadoghq.com/opentelemetry/schema_semantics/semantic_mapping/?tab=datadogexporter#mapping-opentelemetry-database-system-type-to-datadog-span-type
+  
+  NOTE: Long/complex SQL queries may cause a performance impact on APM Stats calculation in Datadog Connector.
+  Consider implementing sampling in your pipeline prior to sending traces to Datadog Connector if you experience this.
+  
+- `resourcedetectionprocessor`: Add `fail_on_missing_metadata` option on EC2 detector (#35936)
+  If the EC2 metadata endpoint is unavailable, the EC2 detector by default ignores the error.
+  By setting `fail_on_missing_metadata` to true on the detector, the user will now trigger an error explicitly,
+  which will stop the collector from starting.
+  
+- `elasticsearchexporter`: Group data points into a single document even if they are from different but equal resources (#37509)
+  This may prevent document rejections in case the same batch contains different resources or scopes that have the same set of attributes
+- `elasticsearchexporter`: Add config `logs_dynamic_id` to dynamically set the document ID of log records using log record attribute `elasticsearch.document_id` (#36882)
+- `elasticsearchexporter`: Declare MutatesData: false (#37234)
+  When multiple exporters are used, the collector doesn't need to clone the incoming data anymore
+- `resourcedetectionprocessor`: The `gcp` resource detector will now detect resource attributes identifying a GCE instance's managed instance group. (#36142)
+- `jaegerreceiver`: Log the endpoints of different servers started by jaegerreceiver (#36961)
+  This change logs the endpoints of different servers started by jaegerreceiver. It simplifies debugging by ensuring log messages match configuration settings.
+  
+- `githubgen`: Switch over all usages of githubgen to the new tool location, since the old tool was deprecated (#37412, #37294)
+- `hostmetrics/process`: Added support for tracking process.uptime (#36667)
+- `netflowreceiver`: Adds the implementation of the netflow receiver (#32732)
+  The receiver now supports receiving NetFlow v5, NetFow v9, IPFIX, and sFlow v5 logs.
+- `googlecloudpubsubreceiver`: Added support for encoding extensions. (#37109)
+- `processor/transformprocessor`: Replace parser collection implementations with `ottl.ParserCollection` and add initial support for expressing statement's context via path names. (#29017)
+- `prometheusreceiver`: Add `receiver.prometheusreceiver.UseCollectorStartTimeFallback` featuregate for the start time metric adjuster to use the collector start time as an approximation of process start time as a fallback. (#36364)
+- `tailsamplingprocessor`: Reworked the consume traces, sampling decision, and policy loading paths to improve performance and readability (#37560)
+
+### 🧰 Bug fixes 🧰
+
+- `deltatocumulativeprocessor`: In order to cap number of histogram buckets take the min of desired scale across negative and positive buckets instead of the max (#37416)
+- `filelogreceiver`: Fix issue where flushed tokens could be truncated. (#35042)
+- `connector/routing`: Fix config validation with context other than `resource` (#37410)
+- `k8sattributesprocessor`: Wait for the other informers to complete their initial sync before starting the pod informers (#37056)
+- `metricsgenerationprocessor`: Generated metric name may not match metric being scaled (#37474)
+- `otlpjsonfilereceiver`: Include file attributes and append it to the log record (#36641)
+- `routingconnector`: The connector splits the original payload so that it may be emitted in parts to each route. (#37390)
+- `pkg/stanza`: Fix default source identifier in recombine operator (#37210)
+  Its defualt value is now aligned with the semantic conventions: `attributes["log.file.path"]`
+  
+- `tailsamplingprocessor`: Fixed sampling decision metrics `otelcol_processor_tail_sampling_sampling_trace_dropped_too_early` and `otelcol_processor_tail_sampling_sampling_policy_evaluation_error_total`, these were sometimes overcounted. (#37212)
+  As a result of this change non-zero values of `otelcol_processor_tail_sampling_sampling_trace_dropped_too_early`
+  and `otelcol_processor_tail_sampling_sampling_policy_evaluation_error_total` metrics will be lower.
+  Before this fix, errors got counted several times depending on the amount of traces being processed
+  that tick and where in the batch the error happened.
+  Zero values are unaffected.
+  
+- `signalfxexporter`: Warn on dropping metric data points when they have more than allowed dimension count (#37484)
+  The SignalFx exporter drops metric data points if they have more than 36 dimensions.
+  Currently, the exporter logs at debug level when this occurs.
+  With this change, the exporter will log at the warning level.
+  
+
 ## v0.118.0
 
 ### 🛑 Breaking changes 🛑
