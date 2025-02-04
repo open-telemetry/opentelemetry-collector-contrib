@@ -69,9 +69,10 @@ type DNSResolver struct {
 
 // K8sSvcResolver defines the configuration for the DNS resolver
 type K8sSvcResolver struct {
-	Service string        `mapstructure:"service"`
-	Ports   []int32       `mapstructure:"ports"`
-	Timeout time.Duration `mapstructure:"timeout"`
+	Service         string        `mapstructure:"service"`
+	Ports           []int32       `mapstructure:"ports"`
+	Timeout         time.Duration `mapstructure:"timeout"`
+	ReturnHostnames bool          `mapstructure:"return_hostnames"`
 }
 
 type AWSCloudMapResolver struct {

@@ -21,10 +21,11 @@ import (
 
 func TestK8sResolve(t *testing.T) {
 	type args struct {
-		logger    *zap.Logger
-		service   string
-		ports     []int32
-		namespace string
+		logger          *zap.Logger
+		service         string
+		ports           []int32
+		namespace       string
+		returnHostnames bool
 	}
 	type suiteContext struct {
 		endpoint  *corev1.Endpoints
@@ -32,7 +33,7 @@ func TestK8sResolve(t *testing.T) {
 		resolver  *k8sResolver
 	}
 	setupSuite := func(t *testing.T, args args) (*suiteContext, func(*testing.T)) {
-		service, defaultNs, ports := args.service, args.namespace, args.ports
+		service, defaultNs, ports, returnHostnames := args.service, args.namespace, args.ports, args.returnHostnames
 		endpoint := &corev1.Endpoints{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      service,
@@ -41,7 +42,10 @@ func TestK8sResolve(t *testing.T) {
 			Subsets: []corev1.EndpointSubset{
 				{
 					Addresses: []corev1.EndpointAddress{
-						{IP: "192.168.10.100"},
+						{
+							Hostname: "pod-0",
+							IP:       "192.168.10.100",
+						},
 					},
 				},
 			},
@@ -50,14 +54,18 @@ func TestK8sResolve(t *testing.T) {
 		for _, subset := range endpoint.Subsets {
 			for _, address := range subset.Addresses {
 				for _, port := range args.ports {
-					expectInit = append(expectInit, fmt.Sprintf("%s:%d", address.IP, port))
+					if returnHostnames {
+						expectInit = append(expectInit, fmt.Sprintf("%s.%s.%s:%d", address.Hostname, service, defaultNs, port))
+					} else {
+						expectInit = append(expectInit, fmt.Sprintf("%s:%d", address.IP, port))
+					}
 				}
 			}
 		}
 
 		cl := fake.NewSimpleClientset(endpoint)
 		_, tb := getTelemetryAssets(t)
-		res, err := newK8sResolver(cl, zap.NewNop(), service, ports, defaultListWatchTimeout, tb)
+		res, err := newK8sResolver(cl, zap.NewNop(), service, ports, defaultListWatchTimeout, returnHostnames, tb)
 		require.NoError(t, err)
 
 		require.NoError(t, res.start(context.Background()))
@@ -81,7 +89,7 @@ func TestK8sResolve(t *testing.T) {
 		verifyFn   func(*suiteContext, args) error
 	}{
 		{
-			name: "simulate append the backend ip address",
+			name: "add new IP to existing backends",
 			args: args{
 				logger:    zap.NewNop(),
 				service:   "lb",
@@ -153,7 +161,45 @@ func TestK8sResolve(t *testing.T) {
 			},
 		},
 		{
-			name: "simulate change the backend ip address",
+			name: "add new hostname to existing backends",
+			args: args{
+				logger:          zap.NewNop(),
+				service:         "lb",
+				namespace:       "default",
+				ports:           []int32{8080, 9090},
+				returnHostnames: true,
+			},
+			simulateFn: func(suiteCtx *suiteContext, args args) error {
+				endpoint, exist := suiteCtx.endpoint.DeepCopy(), suiteCtx.endpoint.DeepCopy()
+				endpoint.Subsets = append(endpoint.Subsets, corev1.EndpointSubset{
+					Addresses: []corev1.EndpointAddress{{IP: "10.10.0.11", Hostname: "pod-1"}},
+				})
+				patch := client.MergeFrom(exist)
+				data, err := patch.Data(endpoint)
+				if err != nil {
+					return err
+				}
+				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
+					Patch(context.TODO(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
+				return err
+			},
+			verifyFn: func(ctx *suiteContext, _ args) error {
+				if _, err := ctx.resolver.resolve(context.Background()); err != nil {
+					return err
+				}
+
+				assert.Equal(t, []string{
+					"pod-0.lb.default:8080",
+					"pod-0.lb.default:9090",
+					"pod-1.lb.default:8080",
+					"pod-1.lb.default:9090",
+				}, ctx.resolver.Endpoints(), "resolver failed, endpoints not equal")
+
+				return nil
+			},
+		},
+		{
+			name: "change existing backend ip address",
 			args: args{
 				logger:    zap.NewNop(),
 				service:   "lb",
@@ -281,7 +327,7 @@ func Test_newK8sResolver(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, tb := getTelemetryAssets(t)
-			got, err := newK8sResolver(fake.NewSimpleClientset(), tt.args.logger, tt.args.service, tt.args.ports, defaultListWatchTimeout, tb)
+			got, err := newK8sResolver(fake.NewSimpleClientset(), tt.args.logger, tt.args.service, tt.args.ports, defaultListWatchTimeout, false, tb)
 			if tt.wantErr != nil {
 				require.ErrorIs(t, err, tt.wantErr)
 			} else {

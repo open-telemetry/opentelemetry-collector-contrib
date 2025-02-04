@@ -54,10 +54,18 @@ The following configuration options can also be configured:
 - `health_path` (default = '/services/collector/health'): The path reporting [health checks](https://docs.splunk.com/Documentation/Splunk/9.0.1/RESTREF/RESTinput#services.2Fcollector.2Fhealth).
 - `health_check_enabled` (default = false): Whether to perform Splunk HEC Health Check during the exporter's startup.
 - `export_raw` (default = false): send only the log's body, targeting a Splunk HEC raw endpoint.
+- `otel_attrs_to_hec_metadata/source` (default = 'com.splunk.source'): Specifies the mapping of a specific unified model attribute value to the standard source field of a HEC event.
+- `otel_attrs_to_hec_metadata/sourcetype` (default = 'com.splunk.sourcetype'): Specifies the mapping of a specific unified model attribute value to the standard sourcetype field of a HEC event.
+- `otel_attrs_to_hec_metadata/index` (default = 'com.splunk.index'):  Specifies the mapping of a specific unified model attribute value to the standard index field of a HEC event.
+- `otel_attrs_to_hec_metadata/host` (default = 'host.name'):  Specifies the mapping of a specific unified model attribute value to the standard host field and the `host.name` field of a HEC event.
 - `hec_metadata_to_otel_attrs/source` (default = 'com.splunk.source'): Specifies the mapping of a specific unified model attribute value to the standard source field of a HEC event.
+  **Deprecated** (v0.116.0): prefer `otel_attrs_to_hec_metadata/source`.
 - `hec_metadata_to_otel_attrs/sourcetype` (default = 'com.splunk.sourcetype'): Specifies the mapping of a specific unified model attribute value to the standard sourcetype field of a HEC event.
+  **Deprecated** (v0.116.0): prefer `otel_attrs_to_hec_metadata/sourcetype`.
 - `hec_metadata_to_otel_attrs/index` (default = 'com.splunk.index'):  Specifies the mapping of a specific unified model attribute value to the standard index field of a HEC event.
+  **Deprecated** (v0.116.0): prefer `otel_attrs_to_hec_metadata/index`.
 - `hec_metadata_to_otel_attrs/host` (default = 'host.name'):  Specifies the mapping of a specific unified model attribute value to the standard host field and the `host.name` field of a HEC event.
+  **Deprecated** (v0.116.0): prefer `otel_attrs_to_hec_metadata/host`.
 - `otel_to_hec_fields/severity_text` (default = `otel.log.severity.text`): Specifies the name of the field to map the severity text field of log events.
 - `otel_to_hec_fields/severity_number` (default = `otel.log.severity.number`): Specifies the name of the field to map the severity number field of log events.
 - `otel_to_hec_fields/name` (default = `"otel.log.name`): Specifies the name of the field to map the name field of log events.
@@ -66,11 +74,10 @@ The following configuration options can also be configured:
 - `telemetry/enabled` (default: false): Specifies whether to enable telemetry inside splunk hec exporter.
 - `telemetry/override_metrics_names` (default: empty map): Specifies the metrics name to overrides in splunk hec exporter.
 - `telemetry/extra_attributes` (default: empty map): Specifies the extra metrics attributes in splunk hec exporter.
-- `batcher`(Experimental, disabled by default): Specifies batching configuration on the exporter. Information about the configuration can be found [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
+- `batcher`(Experimental, disabled by default): Specifies [batching configuration on the exporter](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 
 In addition, this exporter offers queued retry which is enabled by default.
-Information about queued retry configuration parameters can be found
-[here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
+For more information, see the queued retry options in the [exporter documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 <br />
 If you are getting throttled due to high volume of events the collector might experience memory issues, in those cases it is recommended to change the queued retry [configuration](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration) to drop events more frequently, for example you can reduce the maximum amount of time spent trying to send a batch from 120s (default) to 60s:
 ```yaml
@@ -137,11 +144,10 @@ exporters:
         custom_key: custom_value
 ```
 
-The full list of settings exposed for this exporter are documented [here](config.go)
-with detailed sample configurations [here](testdata/config.yaml).
+The full list of settings exposed for this exporter are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
-This exporter also offers proxy support as documented
-[here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
+This exporter also offers [proxy support](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
 
 ## Advanced Configuration
 

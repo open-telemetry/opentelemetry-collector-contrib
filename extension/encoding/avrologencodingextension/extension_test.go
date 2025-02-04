@@ -41,9 +41,8 @@ func TestInvalidUnmarshal(t *testing.T) {
 	t.Parallel()
 
 	schema, err := loadAVROSchemaFromFile("testdata/schema1.avro")
-	if err != nil {
-		t.Fatalf("Failed to read avro schema file: %q", err.Error())
-	}
+
+	require.NoError(t, err, "Failed to read avro schema file")
 
 	e, err := newExtension(&Config{Schema: string(schema)})
 	assert.NoError(t, err)

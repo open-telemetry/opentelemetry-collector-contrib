@@ -54,8 +54,8 @@ setting is required.  The `tls` setting is required for insecure
 transport.
 
 - `endpoint` (no default): host:port to which the exporter is going to send OTLP trace data,
-using the gRPC protocol. The valid syntax is described
-[here](https://github.com/grpc/grpc/blob/master/doc/naming.md).
+using the gRPC protocol. The valid syntax is described in
+[grpc's naming.md](https://github.com/grpc/grpc/blob/master/doc/naming.md).
 If a scheme of `https` is used then client transport security is enabled and overrides the `insecure` setting.
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 
@@ -187,7 +187,7 @@ receivers:
 
 ### Exporter metrics
 
-In addition to the the standard
+In addition to the standard
 [exporterhelper](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 and
 [obsreport](https://pkg.go.dev/go.opentelemetry.io/collector/obsreport)
@@ -305,5 +305,4 @@ processors:
     send_batch_max_size: 1500
     send_batch_size: 1000
     timeout: 1s
-    max_in_flight_size_mib: 128
 ```

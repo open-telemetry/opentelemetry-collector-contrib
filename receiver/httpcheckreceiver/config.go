@@ -9,7 +9,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver/internal/metadata"
@@ -17,8 +17,8 @@ import (
 
 // Predefined error responses for configuration validation failures
 var (
-	errMissingEndpoint = errors.New(`"endpoint" must be specified`)
 	errInvalidEndpoint = errors.New(`"endpoint" must be in the form of <scheme>://<hostname>[:<port>]`)
+	errMissingEndpoint = errors.New("at least one of 'endpoint' or 'endpoints' must be specified")
 )
 
 // Config defines the configuration for the various elements of the receiver agent.
@@ -28,20 +28,32 @@ type Config struct {
 	Targets                        []*targetConfig `mapstructure:"targets"`
 }
 
+// targetConfig defines configuration for individual HTTP checks.
 type targetConfig struct {
 	confighttp.ClientConfig `mapstructure:",squash"`
-	Method                  string `mapstructure:"method"`
+	Method                  string   `mapstructure:"method"`
+	Endpoints               []string `mapstructure:"endpoints"` // Field for a list of endpoints
 }
 
-// Validate validates the configuration by checking for missing or invalid fields
+// Validate validates an individual targetConfig.
 func (cfg *targetConfig) Validate() error {
 	var err error
 
-	if cfg.Endpoint == "" {
+	// Ensure at least one of 'endpoint' or 'endpoints' is specified.
+	if cfg.ClientConfig.Endpoint == "" && len(cfg.Endpoints) == 0 {
 		err = multierr.Append(err, errMissingEndpoint)
-	} else {
-		_, parseErr := url.ParseRequestURI(cfg.Endpoint)
-		if parseErr != nil {
+	}
+
+	// Validate the single endpoint in ClientConfig.
+	if cfg.ClientConfig.Endpoint != "" {
+		if _, parseErr := url.ParseRequestURI(cfg.ClientConfig.Endpoint); parseErr != nil {
+			err = multierr.Append(err, fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr))
+		}
+	}
+
+	// Validate each endpoint in the Endpoints list.
+	for _, endpoint := range cfg.Endpoints {
+		if _, parseErr := url.ParseRequestURI(endpoint); parseErr != nil {
 			err = multierr.Append(err, fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr))
 		}
 	}
@@ -49,14 +61,16 @@ func (cfg *targetConfig) Validate() error {
 	return err
 }
 
-// Validate validates the configuration by checking for missing or invalid fields
+// Validate validates the top-level Config by checking each targetConfig.
 func (cfg *Config) Validate() error {
 	var err error
 
+	// Ensure at least one target is configured.
 	if len(cfg.Targets) == 0 {
 		err = multierr.Append(err, errors.New("no targets configured"))
 	}
 
+	// Validate each targetConfig.
 	for _, target := range cfg.Targets {
 		err = multierr.Append(err, target.Validate())
 	}

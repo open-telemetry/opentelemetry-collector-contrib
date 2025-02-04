@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -18,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
@@ -25,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
 
 type metricNameTest struct {
@@ -368,7 +371,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 }
 
 func TestFilterMetricProcessorTelemetry(t *testing.T) {
-	tel := setupTestTelemetry()
+	tel := componenttest.NewTelemetry()
 	cfg := &Config{
 		Metrics: MetricFilters{
 			MetricConditions: []string{
@@ -376,10 +379,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 			},
 		},
 	}
-	fmp, err := newFilterMetricProcessor(
-		tel.NewSettings(),
-		cfg,
-	)
+	fmp, err := newFilterMetricProcessor(metadatatest.NewSettings(tel), cfg)
 	assert.NotNil(t, fmp)
 	assert.NoError(t, err)
 
@@ -393,24 +393,12 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 	}))
 	assert.NoError(t, err)
 
-	want := []metricdata.Metrics{
+	metadatatest.AssertEqualProcessorFilterDatapointsFiltered(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_processor_filter_datapoints.filtered",
-			Description: "Number of metric data points dropped by the filter processor",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      1,
-						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
-					},
-				},
-			},
+			Value:      1,
+			Attributes: attribute.NewSet(attribute.String("filter", "filter")),
 		},
-	}
-	tel.assertMetrics(t, want)
+	}, metricdatatest.IgnoreTimestamp())
 	require.NoError(t, tel.Shutdown(context.Background()))
 }
 

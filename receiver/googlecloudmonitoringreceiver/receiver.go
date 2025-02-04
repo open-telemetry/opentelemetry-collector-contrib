@@ -271,14 +271,21 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 		}
 
 		// Set metadata (user and system labels)
-		if timeSeries.Metadata != nil {
-			for k, v := range timeSeries.Metadata.UserLabels {
+		if timeSeries.GetMetadata() != nil {
+			for k, v := range timeSeries.GetMetadata().GetUserLabels() {
 				resource.Attributes().PutStr(k, v)
 			}
-			if timeSeries.Metadata.SystemLabels != nil {
-				for k, v := range timeSeries.Metadata.SystemLabels.Fields {
+			if timeSeries.GetMetadata().GetSystemLabels() != nil {
+				for k, v := range timeSeries.GetMetadata().GetSystemLabels().GetFields() {
 					resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
 				}
+			}
+		}
+
+		// Add metric-specific labels if they are present
+		if len(timeSeries.GetMetric().Labels) > 0 {
+			for k, v := range timeSeries.GetMetric().GetLabels() {
+				resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
 			}
 		}
 

@@ -1,0 +1,39 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+  kafka:
+    encoding: skywalking_encoding
+    topic: skywalking-segments
+    brokers:
+      - "localhost:9092"
+    resolve_canonical_bootstrap_servers_only: true
+    client_id: otel-collector
+    group_id: otel-collector
+    metadata:
+      retry:
+        max: 10
+        backoff: 5s
+
+exporters:
+  debug:
+
+processors:
+  batch:
+
+extensions:
+  health_check:
+  pprof:
+    endpoint: :1888
+  zpages:
+    endpoint: :55679
+  skywalking_encoding:
+
+service:
+  extensions: [pprof, zpages, skywalking_encoding, health_check]
+  pipelines:
+    traces:
+      receivers: [kafka]
+      processors: [batch]
+      exporters: [debug]

@@ -17,8 +17,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
@@ -33,7 +33,7 @@ func TestScrape(t *testing.T) {
 	type testCase struct {
 		name         string
 		getMiscStats func(context.Context) (*load.MiscStat, error)
-		getProcesses func() ([]proc, error)
+		getProcesses func(context.Context) ([]proc, error)
 		expectedErr  string
 		validate     func(*testing.T, pmetric.MetricSlice)
 	}
@@ -44,7 +44,7 @@ func TestScrape(t *testing.T) {
 	}, {
 		name:         "FakeData",
 		getMiscStats: func(context.Context) (*load.MiscStat, error) { return &fakeData, nil },
-		getProcesses: func() ([]proc, error) { return fakeProcessesData, nil },
+		getProcesses: func(context.Context) ([]proc, error) { return fakeProcessesData, nil },
 		validate:     validateFakeData,
 	}, {
 		name:         "ErrorFromMiscStat",
@@ -52,11 +52,11 @@ func TestScrape(t *testing.T) {
 		expectedErr:  "err1",
 	}, {
 		name:         "ErrorFromProcesses",
-		getProcesses: func() ([]proc, error) { return nil, errors.New("err2") },
+		getProcesses: func(context.Context) ([]proc, error) { return nil, errors.New("err2") },
 		expectedErr:  "err2",
 	}, {
 		name:         "ErrorFromProcessShouldBeIgnored",
-		getProcesses: func() ([]proc, error) { return []proc{errProcess{}}, nil },
+		getProcesses: func(context.Context) ([]proc, error) { return []proc{errProcess{}}, nil },
 	}, {
 		name:     "Validate Start Time",
 		validate: validateStartTime,
@@ -64,7 +64,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newProcessesScraper(context.Background(), receivertest.NewNopSettings(), &Config{
+			scraper := newProcessesScraper(context.Background(), scrapertest.NewNopSettings(), &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())

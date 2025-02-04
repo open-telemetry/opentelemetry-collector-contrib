@@ -8,20 +8,17 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewAvroLogsUnmarshaler(t *testing.T) {
 	schema, data := createAVROTestData(t)
 
 	deserializer, err := newAVROStaticSchemaDeserializer(schema)
-	if err != nil {
-		t.Errorf("Did not expect an error, got %q", err.Error())
-	}
+	require.NoError(t, err, "Did not expect an error")
 
 	logMap, err := deserializer.Deserialize(data)
-	if err != nil {
-		t.Fatalf("Did not expect an error, got %q", err.Error())
-	}
+	require.NoError(t, err, "Did not expect an error")
 
 	assert.Equal(t, int64(1697187201488000000), logMap["timestamp"].(time.Time).UnixNano())
 	assert.Equal(t, "host1", logMap["hostname"])

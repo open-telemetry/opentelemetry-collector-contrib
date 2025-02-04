@@ -20,8 +20,8 @@ type T struct {
 	testing.TB
 }
 
-func New(t testing.TB) T {
-	return T{TB: t}
+func New(tb testing.TB) T {
+	return T{TB: tb}
 }
 
 // Equal reports whether want and got are deeply equal.
@@ -50,9 +50,9 @@ func (is T) Equalf(want, got any, name string) {
 	equal(is.TB, want, got, name)
 }
 
-func equal(t testing.TB, want, got any, name string) bool {
-	t.Helper()
-	require.IsType(t, want, got)
+func equal(tb testing.TB, want, got any, name string) bool {
+	tb.Helper()
+	require.IsType(tb, want, got)
 
 	vw := reflect.ValueOf(want)
 	vg := reflect.ValueOf(got)
@@ -60,7 +60,7 @@ func equal(t testing.TB, want, got any, name string) bool {
 	if vw.Kind() != reflect.Struct {
 		ok := compare.Equal(want, got)
 		if !ok {
-			t.Errorf("%s: %+v != %+v", name, want, got)
+			tb.Errorf("%s: %+v != %+v", name, want, got)
 		}
 		return ok
 	}
@@ -86,7 +86,7 @@ func equal(t testing.TB, want, got any, name string) bool {
 		rw := mw.Call(nil)[0].Interface()
 		rg := mg.Call(nil)[0].Interface()
 
-		ok = equal(t, rw, rg, fname) && ok
+		ok = equal(tb, rw, rg, fname) && ok
 	}
 
 	// compare all exported fields of the struct
@@ -97,7 +97,7 @@ func equal(t testing.TB, want, got any, name string) bool {
 		fname := name + "." + vw.Type().Field(i).Name
 		fw := vw.Field(i).Interface()
 		fg := vg.Field(i).Interface()
-		ok = equal(t, fw, fg, fname) && ok
+		ok = equal(tb, fw, fg, fname) && ok
 	}
 	if !ok {
 		return false
@@ -106,13 +106,13 @@ func equal(t testing.TB, want, got any, name string) bool {
 	if _, ok := want.(expo.DataPoint); ok {
 		err := pmetrictest.CompareExponentialHistogramDataPoint(want.(expo.DataPoint), got.(expo.DataPoint))
 		if err != nil {
-			t.Error(err)
+			tb.Error(err)
 		}
 	}
 
 	// fallback to a full deep-equal for rare cases (unexported fields, etc)
 	if diff := compare.Diff(want, got); diff != "" {
-		t.Error(diff)
+		tb.Error(diff)
 		return false
 	}
 

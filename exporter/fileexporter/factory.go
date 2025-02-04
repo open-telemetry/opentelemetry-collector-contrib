@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -52,13 +52,13 @@ type FileExporter interface {
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
-	return exporterprofiles.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporterprofiles.WithTraces(createTracesExporter, metadata.TracesStability),
-		exporterprofiles.WithMetrics(createMetricsExporter, metadata.MetricsStability),
-		exporterprofiles.WithLogs(createLogsExporter, metadata.LogsStability),
-		exporterprofiles.WithProfiles(createProfilesExporter, metadata.ProfilesStability))
+		xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		xexporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		xexporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -127,9 +127,9 @@ func createProfilesExporter(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
-) (exporterprofiles.Profiles, error) {
+) (xexporter.Profiles, error) {
 	fe := getOrCreateFileExporter(cfg, set.Logger)
-	return exporterhelperprofiles.NewProfilesExporter(
+	return xexporterhelper.NewProfilesExporter(
 		ctx,
 		set,
 		cfg,

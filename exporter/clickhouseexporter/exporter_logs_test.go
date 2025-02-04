@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/column/orderedmap"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -31,10 +32,7 @@ func TestLogsExporter_New(t *testing.T) {
 	_ = func(want error) validate {
 		return func(t *testing.T, exporter *logsExporter, err error) {
 			require.Nil(t, exporter)
-			require.Error(t, err)
-			if !errors.Is(err, want) {
-				t.Fatalf("Expected error '%v', but got '%v'", want, err)
-			}
+			require.ErrorIs(t, err, want, "Expected error '%v', but got '%v'", want, err)
 		}
 	}
 
@@ -93,9 +91,9 @@ func TestExporter_pushLogsData(t *testing.T) {
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
 				require.Equal(t, "https://opentelemetry.io/schemas/1.4.0", values[8])
-				require.Equal(t, map[string]string{
+				require.Equal(t, orderedmap.FromMap(map[string]string{
 					"service.name": "test-service",
-				}, values[9])
+				}), values[9])
 			}
 			return nil
 		})
@@ -108,9 +106,9 @@ func TestExporter_pushLogsData(t *testing.T) {
 				require.Equal(t, "https://opentelemetry.io/schemas/1.7.0", values[10])
 				require.Equal(t, "io.opentelemetry.contrib.clickhouse", values[11])
 				require.Equal(t, "1.0.0", values[12])
-				require.Equal(t, map[string]string{
+				require.Equal(t, orderedmap.FromMap(map[string]string{
 					"lib": "clickhouse",
-				}, values[13])
+				}), values[13])
 			}
 			return nil
 		})

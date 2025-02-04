@@ -96,7 +96,7 @@ func formatKeyValuePair(key []byte, value string) string {
 // stringsJoinAndSurround joins the strings in s slice using the separator adds front
 // to the front of the resulting string and back at the end.
 //
-// This has a benefit over using the strings.Join() of using just one strings.Buidler
+// This has a benefit over using the strings.Join() of using just one strings.Builder
 // instance and hence using less allocations to produce the final string.
 func stringsJoinAndSurround(s []string, separator, front, back string) string {
 	switch len(s) {

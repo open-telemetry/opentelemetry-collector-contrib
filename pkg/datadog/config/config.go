@@ -340,7 +340,10 @@ func CreateDefaultConfig() component.Config {
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 			TracesConfig: TracesConfig{
-				IgnoreResources: []string{},
+				IgnoreResources:        []string{},
+				PeerServiceAggregation: true,
+				PeerTagsAggregation:    true,
+				ComputeStatsBySpanKind: true,
 			},
 		},
 

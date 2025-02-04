@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeOperation specifies the a value operation attribute.
+// AttributeOperation specifies the value operation attribute.
 type AttributeOperation int
 
 const (
@@ -42,7 +42,7 @@ var MapAttributeOperation = map[string]AttributeOperation{
 	"delete": AttributeOperationDelete,
 }
 
-// AttributeRequest specifies the a value request attribute.
+// AttributeRequest specifies the value request attribute.
 type AttributeRequest int
 
 const (
@@ -415,7 +415,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                             mbc,

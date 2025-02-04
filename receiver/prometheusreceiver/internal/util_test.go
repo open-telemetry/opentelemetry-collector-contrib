@@ -105,7 +105,7 @@ func TestConvToMetricType(t *testing.T) {
 			wantMonotonic: false,
 		},
 		{
-			name:          "model.metric_gauge_hostogram",
+			name:          "model.metric_gauge_histogram",
 			mtype:         model.MetricTypeGaugeHistogram,
 			want:          pmetric.MetricTypeEmpty,
 			wantMonotonic: false,
@@ -113,7 +113,6 @@ func TestConvToMetricType(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			got, monotonic := convToMetricType(tt.mtype)
 			require.Equal(t, got.String(), tt.want.String())
@@ -169,7 +168,6 @@ func TestGetBoundary(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			value, err := getBoundary(tt.mtype, tt.labels)
 			if tt.wantErr != nil {
