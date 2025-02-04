@@ -8,7 +8,6 @@ OTEL_STABLE_VERSION=main
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 TRIMMED_VERSION=$(shell grep -o 'v[^-]*' <<< "$(VERSION)" | cut -c 2-)
 CORE_VERSIONS=$(SRC_PARENT_DIR)/opentelemetry-collector/versions.yaml
-GOMOD=$(SRC_ROOT)/cmd/otelcontribcol/go.mod
 
 COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
@@ -340,7 +339,8 @@ chlog-update: $(CHLOGGEN)
 
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
-	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml
+	./internal/buildscripts/ocb-add-replaces.sh otelcontribcol
+	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config-replaced.yaml
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
@@ -356,7 +356,8 @@ otelcontribcollite: genotelcontribcol
 
 .PHONY: genoteltestbedcol
 genoteltestbedcol: $(BUILDER)
-	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config.yaml
+	./internal/buildscripts/ocb-add-replaces.sh oteltestbedcol
+	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config-replaced.yaml
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
@@ -413,9 +414,13 @@ update-otel:$(MULTIMOD)
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
 	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
 	$(MAKE) gotidy
-	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/otelcontribcol/builder-config.yaml)
-	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/oteltestbedcol/builder-config.yaml)
+	# Ensure the otelcontribcol is generated, update deps, then
 	$(MAKE) genotelcontribcol
+	$(call updatehelper,$(CORE_VERSIONS),./cmd/otelcontribcol/go.mod,./cmd/otelcontribcol/builder-config.yaml)
+	$(MAKE) genotelcontribcol
+	# Ensure the otelcontribcol is generated.
+	$(MAKE) genoteltestbedcol
+	$(call updatehelper,$(CORE_VERSIONS),./cmd/oteltestbedcol/go.mod,./cmd/oteltestbedcol/builder-config.yaml)
 	$(MAKE) genoteltestbedcol
 	$(MAKE) generate
 	$(MAKE) crosslink

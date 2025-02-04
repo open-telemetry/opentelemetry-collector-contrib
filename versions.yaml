@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.118.0
+    version: v0.119.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
@@ -67,6 +67,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter
@@ -299,6 +300,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter
 

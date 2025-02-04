@@ -9,7 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -111,7 +111,7 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 				log.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 				log.Body().SetStr(key)
 				log.Attributes().PutStr("key", key)
-				log.Attributes().PutStr("p1", strings.Repeat("A", rand.Intn(2000)))
+				log.Attributes().PutStr("p1", strings.Repeat("A", rand.IntN(2000)))
 				expectedKeys[key] = 1
 			}
 			err = logs.ConsumeLogs(context.Background(), batch)
