@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -26,6 +27,8 @@ const TypeStr = "dynatrace"
 
 const dtHostMetadataJSON = "dt_host_metadata.json"
 const dtHostMetadataProperties = "dt_host_metadata.properties"
+
+var dtHostProperties = []string{"dt.entity.host", "host.name"}
 
 type Detector struct {
 	enrichmentDirectory string
@@ -81,11 +84,14 @@ func (d Detector) readPropertiesJSON(attributes pcommon.Map) error {
 	}
 
 	for key, value := range m {
+		if !slices.Contains(dtHostProperties, key) {
+			continue
+		}
 		stringVal, ok := value.(string)
 		if !ok {
 			continue
 		}
-		attributes.PutStr(key, stringVal)
+		attributes.PutStr(strings.TrimSpace(key), strings.TrimSpace(stringVal))
 	}
 	return nil
 }
@@ -116,6 +122,9 @@ func (d Detector) readPropertiesFile(attributes pcommon.Map) error {
 		key, value := split[0], split[1]
 
 		if key != "" && value != "" {
+			if !slices.Contains(dtHostProperties, key) {
+				continue
+			}
 			attributes.PutStr(strings.TrimSpace(key), strings.TrimSpace(value))
 		}
 	}

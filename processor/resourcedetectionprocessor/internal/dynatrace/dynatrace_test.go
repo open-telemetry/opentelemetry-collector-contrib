@@ -16,20 +16,21 @@ import (
 
 const testPropertiesFile = `
 dt.entity.host=my-host-from-properties
+host.name=my-host-from-properties
 dt.entity.host_group=my-host-group-from-properties
 dt.foo=bar
 `
 
 const testJSONFile = `{
   "dt.entity.host": "my-host-from-json",
+  "host.name": "my-host-from-json",
   "dt.entity.host_group": "my-host-group-from-json",
   "dt.bar": "foo"
 }`
 
 const testJSONFileWithObjects = `{
   "dt.entity.host": {"name":"my-host-from-json"},
-  "dt.entity.host_group": "my-host-group-from-json",
-  "dt.bar": "foo"
+  "host.name": "my-host-from-json"
 }`
 
 const testJSONFileInvalid = `invalid`
@@ -37,7 +38,7 @@ const testJSONFileInvalid = `invalid`
 const testPropertiesFileWithMalformedEntries = `
 dt.entity.host=my-host-from-properties
 dt.entity.host_group
-dt.foo=bar=
+host.name=bar=
 
 test = attr
 `
@@ -70,15 +71,18 @@ func TestDetector_DetectFromProperties(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, resource)
-	require.Equal(t, 3, resource.Attributes().Len())
+	require.Equal(t, 2, resource.Attributes().Len())
 
 	get, ok := resource.Attributes().Get("dt.entity.host")
 	require.True(t, ok)
 	require.Equal(t, "my-host-from-properties", get.Str())
 
-	get, ok = resource.Attributes().Get("dt.entity.host_group")
+	get, ok = resource.Attributes().Get("host.name")
 	require.True(t, ok)
-	require.Equal(t, "my-host-group-from-properties", get.Str())
+	require.Equal(t, "my-host-from-properties", get.Str())
+
+	get, ok = resource.Attributes().Get("dt.entity.host_group")
+	require.False(t, ok)
 }
 
 func TestDetector_DetectFromJSON(t *testing.T) {
@@ -95,15 +99,18 @@ func TestDetector_DetectFromJSON(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, resource)
-	require.Equal(t, 3, resource.Attributes().Len())
+	require.Equal(t, 2, resource.Attributes().Len())
 
 	get, ok := resource.Attributes().Get("dt.entity.host")
 	require.True(t, ok)
 	require.Equal(t, "my-host-from-json", get.Str())
 
-	get, ok = resource.Attributes().Get("dt.entity.host_group")
+	get, ok = resource.Attributes().Get("host.name")
 	require.True(t, ok)
-	require.Equal(t, "my-host-group-from-json", get.Str())
+	require.Equal(t, "my-host-from-json", get.Str())
+
+	get, ok = resource.Attributes().Get("dt.entity.host_group")
+	require.False(t, ok)
 }
 
 func TestDetector_DetectFromBothPropertiesTakesPrecedence(t *testing.T) {
@@ -121,23 +128,24 @@ func TestDetector_DetectFromBothPropertiesTakesPrecedence(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, resource)
-	require.Equal(t, 4, resource.Attributes().Len())
+	require.Equal(t, 2, resource.Attributes().Len())
 
 	get, ok := resource.Attributes().Get("dt.entity.host")
 	require.True(t, ok)
 	require.Equal(t, "my-host-from-properties", get.Str())
 
-	get, ok = resource.Attributes().Get("dt.entity.host_group")
+	get, ok = resource.Attributes().Get("host.name")
 	require.True(t, ok)
-	require.Equal(t, "my-host-group-from-properties", get.Str())
+	require.Equal(t, "my-host-from-properties", get.Str())
 
-	get, ok = resource.Attributes().Get("dt.foo")
-	require.True(t, ok)
-	require.Equal(t, "bar", get.Str())
+	_, ok = resource.Attributes().Get("dt.entity.host_group")
+	require.False(t, ok)
 
-	get, ok = resource.Attributes().Get("dt.bar")
-	require.True(t, ok)
-	require.Equal(t, "foo", get.Str())
+	_, ok = resource.Attributes().Get("dt.foo")
+	require.False(t, ok)
+
+	_, ok = resource.Attributes().Get("dt.bar")
+	require.False(t, ok)
 }
 
 func TestDetector_DetectNoFilesAvailable(t *testing.T) {
@@ -170,19 +178,18 @@ func TestDetector_DetectFromPropertiesWithMalformedEntries(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, resource)
-	require.Equal(t, 3, resource.Attributes().Len())
+	require.Equal(t, 2, resource.Attributes().Len())
 
 	get, ok := resource.Attributes().Get("dt.entity.host")
 	require.True(t, ok)
 	require.Equal(t, "my-host-from-properties", get.Str())
 
-	get, ok = resource.Attributes().Get("dt.foo")
+	get, ok = resource.Attributes().Get("host.name")
 	require.True(t, ok)
 	require.Equal(t, "bar=", get.Str())
 
-	get, ok = resource.Attributes().Get("test")
-	require.True(t, ok)
-	require.Equal(t, "attr", get.Str())
+	_, ok = resource.Attributes().Get("test")
+	require.False(t, ok)
 }
 
 func TestDetector_DetectFromJSONWithObjects(t *testing.T) {
@@ -200,12 +207,15 @@ func TestDetector_DetectFromJSONWithObjects(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, resource)
 
-	// expect only 2 attributes, as only string values are supported
-	require.Equal(t, 2, resource.Attributes().Len())
+	// expect only 1 attribute, as only string values are supported
+	require.Equal(t, 1, resource.Attributes().Len())
 
-	get, ok := resource.Attributes().Get("dt.entity.host_group")
+	get, ok := resource.Attributes().Get("host.name")
 	require.True(t, ok)
-	require.Equal(t, "my-host-group-from-json", get.Str())
+	require.Equal(t, "my-host-from-json", get.Str())
+
+	_, ok = resource.Attributes().Get("dt.entity.host")
+	require.False(t, ok)
 }
 
 func TestDetector_DetectFromJSONInvalid(t *testing.T) {
