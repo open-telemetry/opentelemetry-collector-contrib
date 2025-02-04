@@ -4,6 +4,6 @@ component: awscontainerinsightreceiver
 
 note: Fix race condition in shutdown of AWS Container Insight receiver
 
-issues: []
+issues: [37695]
 
 change_logs: [user]
