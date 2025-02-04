@@ -33,7 +33,6 @@ func NewStringFilter(items []string) (*StringFilter, error) {
 
 			reText := stripSlashes(m)
 			re, err = regexp.Compile(reText)
-
 			if err != nil {
 				return nil, err
 			}

@@ -45,7 +45,7 @@ type loadBalancer struct {
 func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory componentFactory, telemetry *metadata.TelemetryBuilder) (*loadBalancer, error) {
 	oCfg := cfg.(*Config)
 
-	var count = 0
+	count := 0
 	if oCfg.Resolver.DNS != nil {
 		count++
 	}
@@ -102,6 +102,7 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 			oCfg.Resolver.K8sSvc.Service,
 			oCfg.Resolver.K8sSvc.Ports,
 			oCfg.Resolver.K8sSvc.Timeout,
+			oCfg.Resolver.K8sSvc.ReturnHostnames,
 			telemetry,
 		)
 		if err != nil {

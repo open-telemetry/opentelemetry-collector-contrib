@@ -92,7 +92,7 @@ func NewStringAttributeFilter(settings component.TelemetrySettings, key string, 
 // The SamplingDecision is made by comparing the attribute values with the matching values,
 // which might be static strings or regular expressions.
 func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
-	saf.logger.Debug("Evaluting spans in string-tag filter")
+	saf.logger.Debug("Evaluating spans in string-tag filter")
 	trace.Lock()
 	defer trace.Unlock()
 	batches := trace.ReceivedBatches
@@ -111,8 +111,8 @@ func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID,
 			},
 			func(span ptrace.Span) bool {
 				if v, ok := span.Attributes().Get(saf.key); ok {
-					truncableStr := v.Str()
-					if len(truncableStr) > 0 {
+					truncatableStr := v.Str()
+					if len(truncatableStr) > 0 {
 						if ok := saf.matcher(v.Str()); ok {
 							return false
 						}
@@ -135,8 +135,8 @@ func (saf *stringAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID,
 		},
 		func(span ptrace.Span) bool {
 			if v, ok := span.Attributes().Get(saf.key); ok {
-				truncableStr := v.Str()
-				if len(truncableStr) > 0 {
+				truncatableStr := v.Str()
+				if len(truncatableStr) > 0 {
 					if ok := saf.matcher(v.Str()); ok {
 						return true
 					}

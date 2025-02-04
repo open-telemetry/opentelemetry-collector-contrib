@@ -27,6 +27,7 @@ func generateLogRecordWithNestedBody() plog.LogRecord {
 	fillLogOne(lr)
 	return lr
 }
+
 func generateLogRecordWithMultiTypeValues() plog.LogRecord {
 	lr := plog.NewLogRecord()
 	fillLogTwo(lr)
@@ -40,8 +41,9 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 		expected map[string]any
 	}
 
-	var convertLogRecordToJSONTests = []convertLogRecordToJSONTest{
-		{generateLogRecordWithNestedBody(),
+	convertLogRecordToJSONTests := []convertLogRecordToJSONTest{
+		{
+			generateLogRecordWithNestedBody(),
 			pcommon.NewResource(),
 			map[string]any{
 				"23":           float64(45),
@@ -56,7 +58,8 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 				"traceID":      "08040201000000000000000000000000",
 			},
 		},
-		{generateLogRecordWithMultiTypeValues(),
+		{
+			generateLogRecordWithMultiTypeValues(),
 			pcommon.NewResource(),
 			map[string]any{
 				"bool":       true,
@@ -108,10 +111,6 @@ func TestSetTimeStamp(t *testing.T) {
 	requests := strings.Split(string(decoded), "\n")
 	require.NoError(t, json.Unmarshal([]byte(requests[0]), &jsonLog))
 	require.NoError(t, json.Unmarshal([]byte(requests[1]), &jsonLogNoTimestamp))
-	if jsonLogNoTimestamp["@timestamp"] != nil {
-		t.Fatalf("did not expect @timestamp")
-	}
-	if jsonLog["@timestamp"] == nil {
-		t.Fatalf("@timestamp does not exist")
-	}
+	require.Nil(t, jsonLogNoTimestamp["@timestamp"], "did not expect @timestamp")
+	require.NotNil(t, jsonLog["@timestamp"], "@timestamp does not exist")
 }

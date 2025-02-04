@@ -27,7 +27,7 @@ The Remote Tap processor has two configurable fields: `endpoint` and `limit`:
 
 - `endpoint`: The endpoint on which the WebSocket processor listens. Optional. Defaults
   to `localhost:12001`.
-  You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:12001`. This feature gate will be removed in a future release.
+  See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
 - `limit`: The rate limit over the WebSocket in messages per second. Can be a
   float or an integer. Optional. Defaults to `1`.

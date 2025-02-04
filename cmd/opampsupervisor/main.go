@@ -35,7 +35,7 @@ func runInteractive() error {
 		return fmt.Errorf("failed to create logger: %w", err)
 	}
 
-	supervisor, err := supervisor.NewSupervisor(logger, cfg)
+	supervisor, err := supervisor.NewSupervisor(logger.Named("supervisor"), cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create supervisor: %w", err)
 	}

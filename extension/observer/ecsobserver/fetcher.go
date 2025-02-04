@@ -260,7 +260,7 @@ func (f *taskFetcher) attachContainerInstance(ctx context.Context, tasks []*task
 
 	// DescribeContainerInstance size limit is 100, do it in batch.
 	for i := 0; i < len(instanceList); i += describeContainerInstanceLimit {
-		end := minInt(i+describeContainerInstanceLimit, len(instanceList))
+		end := min(i+describeContainerInstanceLimit, len(instanceList))
 		if err := f.describeContainerInstances(ctx, instanceList[i:end], ciToEC2); err != nil {
 			return fmt.Errorf("describe container instanced failed offset=%d: %w", i, err)
 		}
@@ -289,7 +289,8 @@ func (f *taskFetcher) attachContainerInstance(ctx context.Context, tasks []*task
 
 // Run ecs.DescribeContainerInstances and ec2.DescribeInstances for a batch (less than 100 container instances).
 func (f *taskFetcher) describeContainerInstances(ctx context.Context, instanceList []*string,
-	ci2EC2 map[string]*ec2.Instance) error {
+	ci2EC2 map[string]*ec2.Instance,
+) error {
 	// Get container instances
 	res, err := f.ecs.DescribeContainerInstancesWithContext(ctx, &ecs.DescribeContainerInstancesInput{
 		Cluster:            aws.String(f.cluster),
@@ -364,7 +365,7 @@ func (f *taskFetcher) getAllServices(ctx context.Context) ([]*ecs.Service, error
 	// DescribeServices size limit is 10 so we need to do paging on client side.
 	var services []*ecs.Service
 	for i := 0; i < len(servicesToDescribe); i += describeServiceLimit {
-		end := minInt(i+describeServiceLimit, len(servicesToDescribe))
+		end := min(i+describeServiceLimit, len(servicesToDescribe))
 		desc := &ecs.DescribeServicesInput{
 			Cluster:  cluster,
 			Services: servicesToDescribe[i:end],
@@ -423,12 +424,3 @@ func sortStringPointers(ps []*string) {
 		ps[i] = aws.String(ss[i])
 	}
 }
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-// Util End

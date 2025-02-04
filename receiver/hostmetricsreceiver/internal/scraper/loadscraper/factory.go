@@ -6,42 +6,36 @@ package loadscraper // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/scraper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/internal/metadata"
 )
 
-// This file implements Factory for Load scraper.
+// NewFactory for Load scraper.
+func NewFactory() scraper.Factory {
+	return scraper.NewFactory(metadata.Type, createDefaultConfig, scraper.WithMetrics(createMetricsScraper, metadata.MetricsStability))
+}
 
-const (
-	// TypeStr the value of "type" key in configuration.
-	TypeStr = "load"
-)
-
-// Factory is the Factory for scraper.
-type Factory struct{}
-
-// CreateDefaultConfig creates the default configuration for the Scraper.
-func (f *Factory) CreateDefaultConfig() internal.Config {
+// createDefaultConfig creates the default configuration for the Scraper.
+func createDefaultConfig() component.Config {
 	return &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
-// CreateMetricsScraper creates a scraper based on provided config.
-func (f *Factory) CreateMetricsScraper(
+// createMetricsScraper creates a scraper based on provided config.
+func createMetricsScraper(
 	ctx context.Context,
-	settings receiver.Settings,
-	config internal.Config,
-) (scraperhelper.Scraper, error) {
+	settings scraper.Settings,
+	config component.Config,
+) (scraper.Metrics, error) {
 	cfg := config.(*Config)
 	s := newLoadScraper(ctx, settings, cfg)
 
-	return scraperhelper.NewScraperWithoutType(
+	return scraper.NewMetrics(
 		s.scrape,
-		scraperhelper.WithStart(s.start),
-		scraperhelper.WithShutdown(s.shutdown),
+		scraper.WithStart(s.start),
+		scraper.WithShutdown(s.shutdown),
 	)
 }

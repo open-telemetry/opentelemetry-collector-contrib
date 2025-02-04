@@ -61,7 +61,7 @@ type GenerationType string
 
 const (
 
-	// Generates a new metric applying an arithmatic operation with two operands
+	// Generates a new metric applying an arithmetic operation with two operands
 	calculate GenerationType = "calculate"
 
 	// Generates a new metric scaling the value of s given metric with a provided constant
@@ -160,6 +160,12 @@ func (config *Config) Validate() error {
 
 		if rule.Operation != "" && !rule.Operation.isValid() {
 			return fmt.Errorf("%q must be in %q", operationFieldName, operationTypeKeys())
+		}
+
+		if rule.Name == rule.Metric1 {
+			return fmt.Errorf("value of field %q may not match value of field %q", nameFieldName, metric1FieldName)
+		} else if rule.Name == rule.Metric2 {
+			return fmt.Errorf("value of field %q may not match value of field %q", nameFieldName, metric2FieldName)
 		}
 	}
 	return nil

@@ -8,9 +8,10 @@ package tests // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"path"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
@@ -22,7 +23,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-var performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
+var (
+	batchRegex                                           = regexp.MustCompile(` batch_index=(\S+) `)
+	itemRegex                                            = regexp.MustCompile(` item_index=(\S+) `)
+	performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
+)
 
 type ProcessorNameAndConfigBody struct {
 	Name string
@@ -137,15 +142,19 @@ func Scenario10kItemsPerSecond(
 	resultsSummary testbed.TestResultsSummary,
 	processors []ProcessorNameAndConfigBody,
 	extensions map[string]string,
+	loadOptions *testbed.LoadOptions,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
 
-	options := testbed.LoadOptions{
-		DataItemsPerSecond: 10_000,
-		ItemsPerBatch:      100,
-		Parallel:           1,
+	if loadOptions == nil {
+		loadOptions = &testbed.LoadOptions{
+			ItemsPerBatch: 100,
+			Parallel:      1,
+		}
 	}
+	loadOptions.DataItemsPerSecond = 10_000
+
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
@@ -153,7 +162,7 @@ func Scenario10kItemsPerSecond(
 	require.NoError(t, err)
 	defer configCleanup()
 
-	dataProvider := testbed.NewPerfTestDataProvider(options)
+	dataProvider := testbed.NewPerfTestDataProvider(*loadOptions)
 	tc := testbed.NewTestCase(
 		t,
 		dataProvider,
@@ -169,7 +178,7 @@ func Scenario10kItemsPerSecond(
 	tc.StartBackend()
 	tc.StartAgent()
 
-	tc.StartLoad(options)
+	tc.StartLoad(*loadOptions)
 
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 
@@ -256,7 +265,7 @@ type TestCase struct {
 func genRandByteString(length int) string {
 	b := make([]byte, length)
 	for i := range b {
-		b[i] = byte(rand.Intn(128))
+		b[i] = byte(rand.IntN(128))
 	}
 	return string(b)
 }
@@ -264,9 +273,7 @@ func genRandByteString(length int) string {
 // Scenario1kSPSWithAttrs runs a performance test at 1k sps with specified span attributes
 // and test options.
 func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, processors []ProcessorNameAndConfigBody, extensions map[string]string) {
-	for i := range tests {
-		test := tests[i]
-
+	for _, test := range tests {
 		t.Run(fmt.Sprintf("%d*%dbytes", test.attrCount, test.attrSizeByte), func(t *testing.T) {
 			options := constructLoadOptions(test)
 
@@ -642,8 +649,8 @@ func constructLoadOptions(test TestCase) testbed.LoadOptions {
 
 	// Generate attributes.
 	for i := 0; i < test.attrCount; i++ {
-		attrName := genRandByteString(rand.Intn(199) + 1)
-		options.Attributes[attrName] = genRandByteString(rand.Intn(test.attrSizeByte*2-1) + 1)
+		attrName := genRandByteString(rand.IntN(199) + 1)
+		options.Attributes[attrName] = genRandByteString(rand.IntN(test.attrSizeByte*2-1) + 1)
 	}
 	return options
 }
@@ -654,9 +661,8 @@ func getLogsID(logToRetry []plog.Logs) []string {
 		logRecord := logElement.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 		for index := 0; index < logRecord.Len(); index++ {
 			logObj := logRecord.At(index)
-			itemIndex, _ := logObj.Attributes().Get("item_index")
-			batchIndex, _ := logObj.Attributes().Get("batch_index")
-			result = append(result, fmt.Sprintf("%s%s", batchIndex.AsString(), itemIndex.AsString()))
+			itemIndex, batchIndex := extractIDFromLog(logObj)
+			result = append(result, fmt.Sprintf("%s%s", batchIndex, itemIndex))
 		}
 	}
 	return result
@@ -679,4 +685,26 @@ func allElementsExistInSlice(slice1, slice2 []string) bool {
 	}
 
 	return true
+}
+
+// in case of filelog receiver, the batch_index and item_index are a part of log body.
+// we use regex to extract them
+func extractIDFromLog(log plog.LogRecord) (string, string) {
+	var batch, item string
+	match := batchRegex.FindStringSubmatch(log.Body().AsString())
+	if len(match) == 2 {
+		batch = match[0]
+	}
+	match = itemRegex.FindStringSubmatch(log.Body().AsString())
+	if len(match) == 2 {
+		batch = match[0]
+	}
+	// in case of otlp receiver, batch_index and item_index are part of attributes.
+	if batchIndex, ok := log.Attributes().Get("batch_index"); ok {
+		batch = batchIndex.AsString()
+	}
+	if itemIndex, ok := log.Attributes().Get("item_index"); ok {
+		item = itemIndex.AsString()
+	}
+	return batch, item
 }

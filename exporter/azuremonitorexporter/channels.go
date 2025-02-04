@@ -7,4 +7,5 @@ import "github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 
 type transportChannel interface {
 	Send(*contracts.Envelope)
+	Flush()
 }

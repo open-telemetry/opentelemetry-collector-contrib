@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
@@ -82,7 +83,10 @@ func (mc *metricsConsumer) Consume(ctx context.Context, records [][]byte, common
 
 	err = mc.consumer.ConsumeMetrics(ctx, md)
 	if err != nil {
-		return http.StatusInternalServerError, err
+		if consumererror.IsPermanent(err) {
+			return http.StatusBadRequest, err
+		}
+		return http.StatusServiceUnavailable, err
 	}
 	return http.StatusOK, nil
 }

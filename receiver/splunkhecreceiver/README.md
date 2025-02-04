@@ -28,7 +28,7 @@ The following settings are required:
 * `endpoint` (default = `localhost:8088`): Address and port that the Splunk HEC
   receiver should bind to.
 
-You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:8088`. This feature gate will be removed in a future release.
+See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
 The following settings are optional:
 
@@ -75,7 +75,7 @@ receivers:
       extension: ack/in_memory
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls

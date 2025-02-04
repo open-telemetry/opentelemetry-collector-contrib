@@ -169,14 +169,14 @@ func isRange(value any) (int, int, bool) {
 		return 0, 0, false
 	}
 
-	min, minOK := rawMap["min"]
-	max, maxOK := rawMap["max"]
+	minVal, minOK := rawMap["min"]
+	maxVal, maxOK := rawMap["max"]
 	if !minOK || !maxOK {
 		return 0, 0, false
 	}
 
-	minInt, minOK := min.(int)
-	maxInt, maxOK := max.(int)
+	minInt, minOK := minVal.(int)
+	maxInt, maxOK := maxVal.(int)
 	if !minOK || !maxOK {
 		return 0, 0, false
 	}
@@ -184,13 +184,13 @@ func isRange(value any) (int, int, bool) {
 	return minInt, maxInt, true
 }
 
-func expandRange(min, max int) []string {
-	if min > max {
-		min, max = max, min
+func expandRange(minR, maxR int) []string {
+	if minR > maxR {
+		minR, maxR = maxR, minR
 	}
 
 	var rangeOfStrings []string
-	for i := min; i <= max; i++ {
+	for i := minR; i <= maxR; i++ {
 		rangeOfStrings = append(rangeOfStrings, strconv.Itoa(i))
 	}
 	return rangeOfStrings
@@ -216,9 +216,9 @@ func parseableValues(value any) ([]string, error) {
 	case []byte:
 		return []string{strings.ToLower(string(v))}, nil
 	default:
-		min, max, ok := isRange(v)
+		minVal, maxVal, ok := isRange(v)
 		if ok {
-			return expandRange(min, max), nil
+			return expandRange(minVal, maxVal), nil
 		}
 		return nil, fmt.Errorf("type %T cannot be parsed as a severity", v)
 	}

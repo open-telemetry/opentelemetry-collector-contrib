@@ -34,7 +34,7 @@ type Config struct {
 	// options: rfc5424, rfc3164
 	Protocol string `mapstructure:"protocol"`
 
-	// Wether or not to enable RFC 6587 Octet Counting.
+	// Whether or not to enable RFC 6587 Octet Counting.
 	EnableOctetCounting bool `mapstructure:"enable_octet_counting"`
 
 	// TLSSetting struct exposes TLS client configuration.

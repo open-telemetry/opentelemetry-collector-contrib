@@ -10,7 +10,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/chrony"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/metadata"
@@ -19,7 +20,7 @@ import (
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
-		newDefaultCongfig,
+		newDefaultConfig,
 		receiver.WithMetrics(newMetricsReceiver, metadata.MetricsStability),
 	)
 }
@@ -36,9 +37,8 @@ func newMetricsReceiver(
 	}
 
 	s := newScraper(ctx, cfg, set)
-	scraper, err := scraperhelper.NewScraperWithoutType(
-		s.scrape,
-		scraperhelper.WithStart(func(_ context.Context, _ component.Host) error {
+	sc, err := scraper.NewMetrics(s.scrape,
+		scraper.WithStart(func(_ context.Context, _ component.Host) error {
 			chronyc, err := chrony.New(cfg.Endpoint, cfg.Timeout)
 			s.client = chronyc
 			return err
@@ -48,10 +48,10 @@ func newMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewMetricsController(
 		&cfg.ControllerConfig,
 		set,
 		consumer,
-		scraperhelper.AddScraperWithType(metadata.Type, scraper),
+		scraperhelper.AddScraper(metadata.Type, sc),
 	)
 }

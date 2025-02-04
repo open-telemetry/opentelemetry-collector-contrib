@@ -47,12 +47,12 @@ func TestGenerateUrl(t *testing.T) {
 		region   string
 		expected string
 	}
-	var generateURLTests = []generateURLTest{
+	generateURLTests := []generateURLTest{
 		{"", "us", "https://listener.logz.io:8071/?token=token"},
 		{"", "", "https://listener.logz.io:8071/?token=token"},
-		{"https://doesnotexist.com", "", "https://doesnotexist.com"},
-		{"https://doesnotexist.com", "us", "https://doesnotexist.com"},
-		{"https://doesnotexist.com", "not-valid", "https://doesnotexist.com"},
+		{"https://nonexistent.com", "", "https://nonexistent.com"},
+		{"https://nonexistent.com", "us", "https://nonexistent.com"},
+		{"https://nonexistent.com", "not-valid", "https://nonexistent.com"},
 		{"", "not-valid", "https://listener.logz.io:8071/?token=token"},
 		{"", "US", "https://listener.logz.io:8071/?token=token"},
 		{"", "Us", "https://listener.logz.io:8071/?token=token"},
@@ -76,7 +76,7 @@ func TestGetListenerURL(t *testing.T) {
 		arg1     string
 		expected string
 	}
-	var getListenerURLTests = []getListenerURLTest{
+	getListenerURLTests := []getListenerURLTest{
 		{"us", "https://listener.logz.io:8071"},
 		{"eu", "https://listener-eu.logz.io:8071"},
 		{"au", "https://listener-au.logz.io:8071"},

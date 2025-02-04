@@ -22,9 +22,7 @@ import (
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
-var (
-	separatorString = string([]byte{model.SeparatorByte})
-)
+var separatorString = string([]byte{model.SeparatorByte})
 
 type collector struct {
 	accumulator accumulator

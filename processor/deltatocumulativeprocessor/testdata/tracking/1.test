@@ -374,3 +374,6 @@ resourceMetrics:
                 - {key: "67ef", value: {stringValue: "4299"}}
             name: 58a7
             version: 1cd0
+
+-- telemetry --
+# skip

@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2/lib/column/orderedmap"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -31,10 +32,7 @@ func TestLogsExporter_New(t *testing.T) {
 	_ = func(want error) validate {
 		return func(t *testing.T, exporter *logsExporter, err error) {
 			require.Nil(t, exporter)
-			require.Error(t, err)
-			if !errors.Is(err, want) {
-				t.Fatalf("Expected error '%v', but got '%v'", want, err)
-			}
+			require.ErrorIs(t, err, want, "Expected error '%v', but got '%v'", want, err)
 		}
 	}
 
@@ -93,9 +91,9 @@ func TestExporter_pushLogsData(t *testing.T) {
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
 				require.Equal(t, "https://opentelemetry.io/schemas/1.4.0", values[8])
-				require.Equal(t, map[string]string{
+				require.Equal(t, orderedmap.FromMap(map[string]string{
 					"service.name": "test-service",
-				}, values[9])
+				}), values[9])
 			}
 			return nil
 		})
@@ -108,9 +106,9 @@ func TestExporter_pushLogsData(t *testing.T) {
 				require.Equal(t, "https://opentelemetry.io/schemas/1.7.0", values[10])
 				require.Equal(t, "io.opentelemetry.contrib.clickhouse", values[11])
 				require.Equal(t, "1.0.0", values[12])
-				require.Equal(t, map[string]string{
+				require.Equal(t, orderedmap.FromMap(map[string]string{
 					"lib": "clickhouse",
-				}, values[13])
+				}), values[13])
 			}
 			return nil
 		})
@@ -127,6 +125,22 @@ func TestExporter_pushLogsData(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, defaultEndpoint)
 		mustPushLogsData(t, exporter, simpleLogsWithNoTimestamp(1))
+	})
+	t.Run("test with 2 log records with different service.name", func(t *testing.T) {
+		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+			if strings.HasPrefix(query, "INSERT") {
+				body, _ := values[7].(string)
+				if body == "empty ServiceName" {
+					require.Equal(t, "", values[6])
+				} else {
+					require.Equal(t, "test-service", values[6])
+				}
+			}
+			return nil
+		})
+
+		exporter := newTestLogsExporter(t, defaultEndpoint)
+		mustPushLogsData(t, exporter, multipleLogsWithDifferentServiceName(1))
 	})
 }
 
@@ -215,6 +229,30 @@ func simpleLogsWithNoTimestamp(count int) plog.Logs {
 	return logs
 }
 
+func multipleLogsWithDifferentServiceName(count int) plog.Logs {
+	logs := simpleLogs(count)
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.SetSchemaUrl("https://opentelemetry.io/schemas/1.4.0")
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.SetSchemaUrl("https://opentelemetry.io/schemas/1.7.0")
+	sl.Scope().SetName("io.opentelemetry.contrib.clickhouse")
+	sl.Scope().SetVersion("1.0.0")
+	sl.Scope().Attributes().PutStr("lib", "clickhouse")
+	timestamp := time.Unix(1703498029, 0)
+	for i := 0; i < count; i++ {
+		r := sl.LogRecords().AppendEmpty()
+		r.SetObservedTimestamp(pcommon.NewTimestampFromTime(timestamp))
+		r.SetSeverityNumber(plog.SeverityNumberError2)
+		r.SetSeverityText("error")
+		r.Body().SetStr("empty ServiceName")
+		r.Attributes().PutStr(conventions.AttributeServiceNamespace, "default")
+		r.SetFlags(plog.DefaultLogRecordFlags)
+		r.SetTraceID([16]byte{1, 2, 3, byte(i)})
+		r.SetSpanID([8]byte{1, 2, 3, byte(i)})
+	}
+	return logs
+}
+
 func mustPushLogsData(t *testing.T, exporter *logsExporter, ld plog.Logs) {
 	err := exporter.pushLogsData(context.TODO(), ld)
 	require.NoError(t, err)
@@ -283,8 +321,7 @@ func (t *testClickhouseDriverStmt) Query(_ []driver.Value) (driver.Rows, error) 
 	return nil, nil
 }
 
-type testClickhouseDriverTx struct {
-}
+type testClickhouseDriverTx struct{}
 
 func (*testClickhouseDriverTx) Commit() error {
 	return nil

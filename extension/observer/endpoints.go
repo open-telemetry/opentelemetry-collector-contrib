@@ -223,11 +223,11 @@ func (p *Pod) Type() EndpointType {
 // PodContainer is a discovered k8s pod's container
 type PodContainer struct {
 	// Name of the container
-	Name string
+	Name string `mapstructure:"container_name"`
 	// Image of the container
-	Image string
+	Image string `mapstructure:"container_image"`
 	// ContainerID is the id of the container exposing the Endpoint
-	ContainerID string
+	ContainerID string `mapstructure:"container_id"`
 	// Pod is the k8s pod in which the container is running
 	Pod Pod
 }
