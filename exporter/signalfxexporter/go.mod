@@ -14,7 +14,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.119.0
-	github.com/shirou/gopsutil/v4 v4.24.12
+	github.com/shirou/gopsutil/v4 v4.25.1
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.25.0
@@ -34,14 +34,14 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/sys v0.29.0
+	golang.org/x/sys v0.30.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/ebitengine/purego v0.8.1 // indirect
+	github.com/ebitengine/purego v0.8.2 // indirect
 	github.com/elastic/lunes v0.1.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
