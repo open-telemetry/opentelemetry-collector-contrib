@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package bmchelixexporter
+package operationsmanagement
 
 import (
 	"testing"
@@ -16,12 +16,12 @@ import (
 func TestProduceHelixPayload(t *testing.T) {
 	t.Parallel()
 
-	sample := BmcHelixSample{
+	sample := BMCHelixOMSample{
 		Value:     42,
 		Timestamp: 1634236000,
 	}
 
-	metric := BmcHelixMetric{
+	metric := BMCHelixOMMetric{
 		Labels: map[string]string{
 			"isDeviceMappingEnabled": "true",
 			"entityTypeId":           "test-entity-type-id",
@@ -37,10 +37,10 @@ func TestProduceHelixPayload(t *testing.T) {
 			"parentEntityTypeId":     "test-entity-type-id_container",
 			"host.name":              "test-hostname",
 		},
-		Samples: []BmcHelixSample{sample},
+		Samples: []BMCHelixOMSample{sample},
 	}
 
-	parent := BmcHelixMetric{
+	parent := BMCHelixOMMetric{
 		Labels: map[string]string{
 			"entityTypeId":           "test-entity-type-id_container",
 			"entityName":             "test-entity-type-id_container",
@@ -51,17 +51,17 @@ func TestProduceHelixPayload(t *testing.T) {
 			"entityId":               "OTEL:test-hostname:test-entity-type-id_container:test-entity-type-id_container",
 			"metricName":             "identity",
 		},
-		Samples: []BmcHelixSample{},
+		Samples: []BMCHelixOMSample{},
 	}
 
-	expectedPayload := []BmcHelixMetric{parent, metric}
+	expectedPayload := []BMCHelixOMMetric{parent, metric}
 
-	producer := newMetricsProducer(zap.NewExample())
+	producer := NewMetricsProducer(zap.NewExample())
 
 	tests := []struct {
 		name                string
 		generateMockMetrics func() pmetric.Metrics
-		expectedPayload     []BmcHelixMetric
+		expectedPayload     []BMCHelixOMMetric
 	}{
 		{
 			name: "SetGauge",
@@ -84,7 +84,7 @@ func TestProduceHelixPayload(t *testing.T) {
 		{
 			name:                "emptyPayload",
 			generateMockMetrics: pmetric.NewMetrics,
-			expectedPayload:     []BmcHelixMetric{},
+			expectedPayload:     []BMCHelixOMMetric{},
 		},
 	}
 

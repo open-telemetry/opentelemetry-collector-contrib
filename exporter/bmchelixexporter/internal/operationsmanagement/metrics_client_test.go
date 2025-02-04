@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package bmchelixexporter
+package operationsmanagement
 
 import (
 	"context"
@@ -33,11 +33,8 @@ func TestNewMetricsClient(t *testing.T) {
 	ctx := context.Background()
 	host := componenttest.NewNopHost()
 	settings := componenttest.NewNopTelemetrySettings()
-	config := &Config{
-		ClientConfig: cfg,
-		APIKey:       apiKey,
-	}
-	metricsClient, err := newMetricsClient(ctx, config, host, settings, zap.NewNop())
+
+	metricsClient, err := NewMetricsClient(ctx, cfg, apiKey, host, settings, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, metricsClient)
 
@@ -50,12 +47,12 @@ func TestSendHelixPayload200(t *testing.T) {
 	t.Parallel()
 
 	// Mock payload
-	sample := BmcHelixSample{
+	sample := BMCHelixOMSample{
 		Value:     42,
 		Timestamp: 1634236000,
 	}
 
-	metric := BmcHelixMetric{
+	metric := BMCHelixOMMetric{
 		Labels: map[string]string{
 			"isDeviceMappingEnabled": "true",
 			"entityTypeId":           "test-entity-type-id",
@@ -70,10 +67,10 @@ func TestSendHelixPayload200(t *testing.T) {
 			"parentEntityName":       "test-entity-type-id_container",
 			"parentEntityTypeId":     "test-entity-type-id_container",
 		},
-		Samples: []BmcHelixSample{sample},
+		Samples: []BMCHelixOMSample{sample},
 	}
 
-	parent := BmcHelixMetric{
+	parent := BMCHelixOMMetric{
 		Labels: map[string]string{
 			"entityTypeId":           "test-entity-type-id_container",
 			"entityName":             "test-entity-type-id_container",
@@ -84,10 +81,10 @@ func TestSendHelixPayload200(t *testing.T) {
 			"entityId":               "OTEL:test-hostname:test-entity-type-id_container:test-entity-type-id_container",
 			"metricName":             "identity",
 		},
-		Samples: []BmcHelixSample{},
+		Samples: []BMCHelixOMSample{},
 	}
 
-	payload := []BmcHelixMetric{parent, metric}
+	payload := []BMCHelixOMMetric{parent, metric}
 
 	var apiKey configopaque.String = "apiKey"
 
@@ -102,11 +99,8 @@ func TestSendHelixPayload200(t *testing.T) {
 	ctx := context.Background()
 	host := componenttest.NewNopHost()
 	settings := componenttest.NewNopTelemetrySettings()
-	config := &Config{
-		ClientConfig: cfg,
-		APIKey:       apiKey,
-	}
-	client, err := newMetricsClient(ctx, config, host, settings, zap.NewNop())
+
+	client, err := NewMetricsClient(ctx, cfg, apiKey, host, settings, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
 
@@ -125,16 +119,13 @@ func TestSendHelixPayloadEmpty(t *testing.T) {
 	ctx := context.Background()
 	host := componenttest.NewNopHost()
 	settings := componenttest.NewNopTelemetrySettings()
-	config := &Config{
-		ClientConfig: cfg,
-		APIKey:       "apiKey",
-	}
-	client, err := newMetricsClient(ctx, config, host, settings, zap.NewNop())
+
+	client, err := NewMetricsClient(ctx, cfg, "apiKey", host, settings, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
 
 	// Call SendHelixPayload
-	err = client.SendHelixPayload(ctx, []BmcHelixMetric{})
+	err = client.SendHelixPayload(ctx, []BMCHelixOMMetric{})
 	assert.NoError(t, err)
 }
 
@@ -142,10 +133,10 @@ func TestSendHelixPayload400(t *testing.T) {
 	t.Parallel()
 
 	var apiKey configopaque.String = "apiKey"
-	payload := []BmcHelixMetric{
+	payload := []BMCHelixOMMetric{
 		{
 			Labels:  map[string]string{},
-			Samples: []BmcHelixSample{},
+			Samples: []BMCHelixOMSample{},
 		},
 	}
 
@@ -160,11 +151,8 @@ func TestSendHelixPayload400(t *testing.T) {
 	ctx := context.Background()
 	host := componenttest.NewNopHost()
 	settings := componenttest.NewNopTelemetrySettings()
-	config := &Config{
-		ClientConfig: cfg,
-		APIKey:       apiKey,
-	}
-	client, err := newMetricsClient(ctx, config, host, settings, zap.NewNop())
+
+	client, err := NewMetricsClient(ctx, cfg, apiKey, host, settings, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
 
@@ -191,18 +179,15 @@ func TestSendHelixPayloadConnectionRefused(t *testing.T) {
 	ctx := context.Background()
 	host := componenttest.NewNopHost()
 	settings := componenttest.NewNopTelemetrySettings()
-	config := &Config{
-		ClientConfig: cfg,
-		APIKey:       "apiKey",
-	}
-	client, err := newMetricsClient(ctx, config, host, settings, zap.NewNop())
+
+	client, err := NewMetricsClient(ctx, cfg, "apiKey", host, settings, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
 
-	payload := []BmcHelixMetric{
+	payload := []BMCHelixOMMetric{
 		{
 			Labels:  map[string]string{},
-			Samples: []BmcHelixSample{},
+			Samples: []BMCHelixOMSample{},
 		},
 	}
 
@@ -212,14 +197,14 @@ func TestSendHelixPayloadConnectionRefused(t *testing.T) {
 }
 
 // mockHTTPServer creates a new mock HTTP server that verifies the request headers, body, and responds with the given status code
-func mockHTTPServer(t *testing.T, apiKey configopaque.String, payload []BmcHelixMetric, httpStatusCode int) *httptest.Server {
+func mockHTTPServer(t *testing.T, apiKey configopaque.String, payload []BMCHelixOMMetric, httpStatusCode int) *httptest.Server {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify the request headers
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 		assert.Equal(t, r.Header.Get("Authorization"), "Bearer "+string(apiKey))
 
 		// Verify the request body
-		var receivedPayload []BmcHelixMetric
+		var receivedPayload []BMCHelixOMMetric
 		err := json.NewDecoder(r.Body).Decode(&receivedPayload)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, receivedPayload)

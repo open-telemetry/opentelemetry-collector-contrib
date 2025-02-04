@@ -10,19 +10,19 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
-func TestNewBmcHelixExporterWithNilConfig(t *testing.T) {
+func TestNewMetricsExporterWithNilConfig(t *testing.T) {
 	t.Parallel()
 
-	exp, err := newBmcHelixExporter(nil, exportertest.NewNopSettings())
+	exp, err := newMetricsExporter(nil, exportertest.NewNopSettings())
 	assert.Nil(t, exp)
 	assert.Error(t, err)
 }
 
-func TestNewBmcHelixExporterWithDefaultConfig(t *testing.T) {
+func TestNewMetricsExporterWithDefaultConfig(t *testing.T) {
 	t.Parallel()
 
 	cfg := createDefaultConfig().(*Config)
-	exp, err := newBmcHelixExporter(cfg, exportertest.NewNopSettings())
+	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings())
 	assert.NotNil(t, exp)
 	assert.NoError(t, err)
 }

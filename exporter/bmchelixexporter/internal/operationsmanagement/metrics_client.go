@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package bmchelixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/bmchelixexporter"
+package operationsmanagement // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/bmchelixexporter/internal/operationsmanagement"
 
 import (
 	"bytes"
@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/zap"
 )
@@ -23,29 +24,29 @@ type MetricsClient struct {
 	logger     *zap.Logger
 }
 
-// newMetricsClient creates a new MetricsClient
-func newMetricsClient(ctx context.Context, config *Config, host component.Host, settings component.TelemetrySettings, logger *zap.Logger) (*MetricsClient, error) {
-	httpClient, err := config.ClientConfig.ToClient(ctx, host, settings)
+// NewMetricsClient creates a new MetricsClient
+func NewMetricsClient(ctx context.Context, clientConfig confighttp.ClientConfig, apiKey configopaque.String, host component.Host, settings component.TelemetrySettings, logger *zap.Logger) (*MetricsClient, error) {
+	httpClient, err := clientConfig.ToClient(ctx, host, settings)
 	if err != nil {
 		return nil, err
 	}
 	return &MetricsClient{
-		url:        config.Endpoint + "/metrics-gateway-service/api/v1.0/insert",
+		url:        clientConfig.Endpoint + "/metrics-gateway-service/api/v1.0/insert",
 		httpClient: httpClient,
-		apiKey:     config.APIKey,
+		apiKey:     apiKey,
 		logger:     logger,
 	}, nil
 }
 
-// SendHelixPayload sends the metrics payload to BMC Helix
-func (mc *MetricsClient) SendHelixPayload(ctx context.Context, payload []BmcHelixMetric) error {
+// SendHelixPayload sends the metrics payload to BMC Helix Operations Management
+func (mc *MetricsClient) SendHelixPayload(ctx context.Context, payload []BMCHelixOMMetric) error {
 	if len(payload) == 0 {
 		mc.logger.Warn("Payload is empty, nothing to send")
 		return nil
 	}
 
 	// Log the payload being sent
-	mc.logger.Debug("Sending payload to BMC Helix payload", zap.Any("payload", payload))
+	mc.logger.Debug("Sending payload to BMC Helix Operations Management", zap.Any("payload", payload))
 
 	// Get the JSON encoded payload
 	payloadBytes, err := json.Marshal(payload)
@@ -63,18 +64,18 @@ func (mc *MetricsClient) SendHelixPayload(ctx context.Context, payload []BmcHeli
 	// Send the request
 	resp, err := mc.httpClient.Do(req)
 	if err != nil {
-		mc.logger.Error("Failed to send request to BMC Helix", zap.Error(err))
+		mc.logger.Error("Failed to send request to BMC Helix Operations Management", zap.Error(err))
 		return fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Check the response status code
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		mc.logger.Error("Received non-2xx response from BMC Helix", zap.Int("status_code", resp.StatusCode))
+		mc.logger.Error("Received non-2xx response from BMC Helix Operations Management", zap.Int("status_code", resp.StatusCode))
 		return fmt.Errorf("received non-2xx response: %d", resp.StatusCode)
 	}
 
-	mc.logger.Debug("Successfully sent payload to BMC Helix", zap.String("url", mc.url))
+	mc.logger.Debug("Successfully sent payload to BMC Helix Operations Management", zap.String("url", mc.url))
 	return nil
 }
 

@@ -39,7 +39,7 @@ func createDefaultConfig() component.Config {
 // creates an exporter.Metrics that records observability metrics for BMC Helix
 func createMetricsExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
 	config := cfg.(*Config)
-	exporter, err := newBmcHelixExporter(config, set)
+	exporter, err := newMetricsExporter(config, set)
 	if err != nil {
 		return nil, err
 	}
