@@ -165,6 +165,7 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
 		}
 		return
 		// TODO: Enable when handleWorkflowJob is implemented
+		// See: https://github.com/open-telemetry/semantic-conventions/issues/1645
 		// td, err = gtr.handleWorkflowJob(ctx, e)
 	case *github.PingEvent:
 		w.Header().Add("Content-Type", "application/json")

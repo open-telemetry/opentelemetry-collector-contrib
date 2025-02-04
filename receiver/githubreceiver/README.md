@@ -148,13 +148,12 @@ receivers:
 ```
 
 For tracing, all configuration is set under the `webhook` key. The full set
-of exposed configuration values can be found in [`config.go`][config.go].
-
+of exposed configuration values can be found in [`config.go`](./config.go).
 
 ### Configuring Service Name
 
-The `service_name` configuration in the WebHook configuration can be used to set
-a pre-defined `service.name` for all traces emitted by the receiver. This takes
+The `service_name` option in the WebHook configuration can be used to set a
+pre-defined `service.name` for all traces emitted by the receiver. This takes
 priority over the internal generation of the `service.name`. In this
 configuration, it would be important to create a GitHub receiver per GitHub app
 configured for the set of repositories that match your `service.name`.
@@ -166,12 +165,12 @@ each repository and all events sent to the GitHub receiver will properly
 associate with that `service.name`. Alternatively, the `service_name` will be
 derived from the repository name.
 
-The order for creating the `service.name` is as follows:
+The precedence for `service.name` generation is as follows:
 
-* `service_name` configuration in the WebHook configuration.
-* `service_name` key in the repository's Custom Properties per repository.
-* `service_name` derived from the repository name.
-* `service.name` set to `unknown_service` per the semantic conventions as a fall back.
+1. `service_name` configuration in the WebHook configuration.
+2. `service_name` key in the repository's Custom Properties per repository.
+3. `service_name` derived from the repository name.
+4. `service.name` set to `unknown_service` per the semantic conventions as a fall back.
 
 ### Configuring A GitHub App
 
@@ -184,7 +183,6 @@ create a GitHub App. During the subscription phase, subscribe to `workflow_run` 
 [wjob]: https://docs.github.com/en/webhooks/webhook-events-and-payloads#workflow_job
 [wrun]: https://docs.github.com/en/webhooks/webhook-events-and-payloads#workflow_run
 [valid]: https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
-[config.go] ./config.go
 [cfghttp]: https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp#ServerConfig
 [cp]: https://docs.github.com/en/organizations/managing-organization-settings/managing-custom-properties-for-repositories-in-your-organization
 [vcsm]: https://opentelemetry.io/docs/specs/semconv/cicd/cicd-metrics/#vcs-metrics

@@ -28,12 +28,12 @@ func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent) (
 
 	traceID, err := newTraceID(e.GetWorkflowRun().GetID(), e.GetWorkflowRun().GetRunAttempt())
 	if err != nil {
-		gtr.logger.Sugar().Errorf("Failed to generate trace ID", zap.String("error", fmt.Sprint(err)))
+		gtr.logger.Sugar().Error("failed to generate trace ID", zap.Error(err))
 	}
 
 	err = gtr.createRootSpan(r, e, traceID)
 	if err != nil {
-		gtr.logger.Error("Failed to create root span", zap.Error(err))
+		gtr.logger.Sugar().Error("failed to create root span", zap.Error(err))
 		return ptrace.Traces{}, errors.New("failed to create root span")
 	}
 	return t, nil
@@ -41,20 +41,13 @@ func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent) (
 
 // TODO: Add and implement handleWorkflowJob, tying corresponding job spans to
 // the proper root span and trace ID.
-// func (gtr *githubTracesReceiver) handleWorkflowJob(ctx context.Context, e *github.WorkflowJobEvent) (ptrace.Traces, error) {
-// 	t := ptrace.NewTraces()
-// 	r := t.ResourceSpans().AppendEmpty()
-// 	s := r.InstrumentationLibrarySpans().AppendEmpty()
-// 	return t, nil
-// }
 
 // newTraceID creates a deterministic Trace ID based on the provided
 // inputs of runID and runAttempt.
 func newTraceID(runID int64, runAttempt int) (pcommon.TraceID, error) {
-	// Original implementation appended `t` to TraceId's and `s` to
-	// ParentSpanId's This was done to separate the two types of IDs eventhough
-	// SpanID's are only 8 bytes, while TraceID's are 16 bytes.
-	// TODO: Determine if there is a better way to handle this.
+	// Original implementation appended `t` to TraceIds and `s` to ParentSpanIds
+	// This was done to separate the two types of IDs even though SpanIDs are
+	// only 8 bytes, while TraceIDs are 16 bytes.
 	input := fmt.Sprintf("%d%dt", runID, runAttempt)
 	// TODO: Determine if this is the best hashing algorithm to use. This is
 	// more likely to generate a unique hash compared to MD5 or SHA1. Could
