@@ -47,7 +47,7 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 	allowRegexList, err := makeRegexList(ctx, config.AllowedValues)
 	if err != nil {
 		// TODO: Placeholder for an error metric in the next PR
-		return nil, fmt.Errorf("failed to process block list: %w", err)
+		return nil, fmt.Errorf("failed to process allow list: %w", err)
 	}
 
 	return &redaction{
