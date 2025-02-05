@@ -1,20 +1,17 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package elasticsearchexporter
+package otelserializer
 
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
@@ -34,7 +31,7 @@ func TestSerializeLog(t *testing.T) {
 			record.Attributes().PutDouble("double", 42.0)
 			record.Attributes().PutInt("int", 42)
 			record.Attributes().PutEmptyBytes("bytes").Append(42)
-			record.Attributes().PutStr(documentIDAttributeName, "my_id")
+			record.Attributes().PutStr(elasticsearch.DocumentIDAttributeName, "my_id")
 			_ = record.Attributes().PutEmptySlice("slice").FromRaw([]any{42, "foo"})
 			record.Attributes().PutEmptySlice("map_slice").AppendEmpty().SetEmptyMap().PutStr("foo.bar", "baz")
 			mapAttr := record.Attributes().PutEmptyMap("map")
@@ -188,9 +185,9 @@ func TestSerializeLog(t *testing.T) {
 			logs.MarkReadOnly()
 
 			var buf bytes.Buffer
-			err := serializeLog(resourceLogs.Resource(), "", scopeLogs.Scope(), "", record, elasticsearch.Index{}, &buf)
+			err := SerializeLog(resourceLogs.Resource(), "", scopeLogs.Scope(), "", record, elasticsearch.Index{}, &buf)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("serializeLog() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Log() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			logBytes := buf.Bytes()
 			eventAsJSON := string(logBytes)
@@ -204,47 +201,4 @@ func TestSerializeLog(t *testing.T) {
 			assert.Equal(t, tt.expected, result, eventAsJSON)
 		})
 	}
-}
-
-func TestSerializeMetricsConflict(t *testing.T) {
-	metrics := pmetric.NewMetrics()
-	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
-	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
-	var dataPoints []datapoints.DataPoint
-	metric1 := scopeMetrics.Metrics().AppendEmpty()
-	metric2 := scopeMetrics.Metrics().AppendEmpty()
-	for _, m := range []pmetric.Metric{metric1, metric2} {
-		m.SetName("foo")
-		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-		dp.SetIntValue(42)
-		dataPoints = append(dataPoints, datapoints.NewNumber(m, dp))
-	}
-	metrics.MarkReadOnly()
-
-	var validationErrors []error
-	var buf bytes.Buffer
-	_, err := serializeMetrics(resourceMetrics.Resource(), "", scopeMetrics.Scope(), "", dataPoints, &validationErrors, elasticsearch.Index{}, &buf)
-	if err != nil {
-		t.Errorf("serializeMetrics() error = %v", err)
-	}
-	b := buf.Bytes()
-	eventAsJSON := string(b)
-	var result any
-	decoder := json.NewDecoder(bytes.NewBuffer(b))
-	decoder.UseNumber()
-	if err := decoder.Decode(&result); err != nil {
-		t.Error(err)
-	}
-
-	assert.Len(t, validationErrors, 1)
-	assert.Equal(t, fmt.Errorf("metric with name 'foo' has already been serialized in document with timestamp 1970-01-01T00:00:00.000000000Z"), validationErrors[0])
-
-	assert.Equal(t, map[string]any{
-		"@timestamp": "0.0",
-		"resource":   map[string]any{},
-		"scope":      map[string]any{},
-		"metrics": map[string]any{
-			"foo": json.Number("42"),
-		},
-	}, result, eventAsJSON)
 }

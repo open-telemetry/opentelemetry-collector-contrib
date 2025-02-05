@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -109,7 +110,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL str
 	case MappingECS:
 		document = m.encodeLogECSMode(resource, record, scope, idx)
 	case MappingOTel:
-		return serializeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, record, idx, buf)
+		return otelserializer.SerializeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, record, idx, buf)
 	case MappingBodyMap:
 		return m.encodeLogBodyMapMode(record, buf)
 	default:
@@ -147,7 +148,7 @@ func (m *encodeModel) encodeLogBodyMapMode(record plog.LogRecord, buf *bytes.Buf
 		return fmt.Errorf("%w: %q", ErrInvalidTypeForBodyMapMode, body.Type())
 	}
 
-	serializeMap(body.Map(), buf)
+	serializer.Map(body.Map(), buf)
 	return nil
 }
 
@@ -247,7 +248,7 @@ func addDataStreamAttributes(document *objmodel.Document, key string, idx elasti
 func (m *encodeModel) encodeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx elasticsearch.Index, buf *bytes.Buffer) (map[string]string, error) {
 	switch m.mode {
 	case MappingOTel:
-		return serializeMetrics(resource, resourceSchemaURL, scope, scopeSchemaURL, dataPoints, validationErrors, idx, buf)
+		return otelserializer.SerializeMetrics(resource, resourceSchemaURL, scope, scopeSchemaURL, dataPoints, validationErrors, idx, buf)
 	default:
 		return m.encodeDataPointsECSMode(resource, dataPoints, validationErrors, idx, buf)
 	}
@@ -257,7 +258,7 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL st
 	var document objmodel.Document
 	switch m.mode {
 	case MappingOTel:
-		return serializeSpan(resource, resourceSchemaURL, scope, scopeSchemaURL, span, idx, buf)
+		return otelserializer.SerializeSpan(resource, resourceSchemaURL, scope, scopeSchemaURL, span, idx, buf)
 	default:
 		document = m.encodeSpanDefaultMode(resource, span, scope, idx)
 	}
@@ -292,7 +293,7 @@ func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaU
 		// In other modes, they are stored within the span document.
 		return
 	}
-	serializeSpanEvent(resource, resourceSchemaURL, scope, scopeSchemaURL, span, spanEvent, idx, buf)
+	otelserializer.SerializeSpanEvent(resource, resourceSchemaURL, scope, scopeSchemaURL, span, spanEvent, idx, buf)
 }
 
 func (m *encodeModel) encodeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, record pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
@@ -503,7 +504,7 @@ func metricOTelHash(dp datapoints.DataPoint, unit string) uint32 {
 func mapHashExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extra ...string) {
 	m.Range(func(k string, v pcommon.Value) bool {
 		switch k {
-		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+		case elasticsearch.DataStreamType, elasticsearch.DataStreamDataset, elasticsearch.DataStreamNamespace:
 			return true
 		}
 		if slices.Contains(extra, k) {
