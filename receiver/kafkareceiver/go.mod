@@ -5,6 +5,7 @@ go 1.22.0
 require (
 	github.com/IBM/sarama v1.43.3
 	github.com/apache/thrift v0.21.0
+	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.62.0
 	github.com/json-iterator/go v1.1.12
@@ -18,6 +19,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/component/componenttest v0.116.1-0.20241220212031-7c2639723f67
+	go.opentelemetry.io/collector/config/configretry v1.22.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/config/configtelemetry v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/config/configtls v1.22.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/confmap v1.22.1-0.20241220212031-7c2639723f67
@@ -51,7 +53,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.14.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.19.3 // indirect
 	github.com/aws/smithy-go v1.13.5 // indirect
-	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect
@@ -92,7 +93,6 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.22.1-0.20241220212031-7c2639723f67 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.22.1-0.20241220212031-7c2639723f67 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.116.1-0.20241220212031-7c2639723f67 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.116.1-0.20241220212031-7c2639723f67 // indirect
 	go.opentelemetry.io/collector/exporter v0.116.1-0.20241220212031-7c2639723f67 // indirect

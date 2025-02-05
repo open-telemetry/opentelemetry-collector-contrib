@@ -350,7 +350,7 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 		{
 			name:            "memory limiter data refused error",
 			err:             errMemoryLimiterDataRefused,
-			expectedError:   nil,
+			expectedError:   errMemoryLimiterDataRefused,
 			expectedBackoff: backoff.DefaultInitialInterval,
 		},
 		{
@@ -728,7 +728,7 @@ func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 		{
 			name:            "memory limiter data refused error",
 			err:             errMemoryLimiterDataRefused,
-			expectedError:   nil,
+			expectedError:   errMemoryLimiterDataRefused,
 			expectedBackoff: backoff.DefaultInitialInterval,
 		},
 		{
@@ -1121,7 +1121,7 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 		{
 			name:            "memory limiter data refused error",
 			err:             errMemoryLimiterDataRefused,
-			expectedError:   nil,
+			expectedError:   errMemoryLimiterDataRefused,
 			expectedBackoff: backoff.DefaultInitialInterval,
 		},
 		{
