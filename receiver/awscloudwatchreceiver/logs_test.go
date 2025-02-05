@@ -45,7 +45,7 @@ func TestPrefixedConfig(t *testing.T) {
 	cfg.Logs.Groups = GroupConfig{
 		NamedConfigs: map[string]StreamConfig{
 			testLogGroupName: {
-				Names: []string{testLogStreamName},
+				Names: []*string{&testLogStreamName},
 			},
 		},
 	}
@@ -77,7 +77,7 @@ func TestPrefixedNamedStreamsConfig(t *testing.T) {
 	cfg.Logs.Groups = GroupConfig{
 		NamedConfigs: map[string]StreamConfig{
 			testLogGroupName: {
-				Prefixes: []string{testLogStreamPrefix},
+				Prefixes: []*string{&testLogStreamPrefix},
 			},
 		},
 	}
@@ -148,8 +148,8 @@ func TestDiscovery(t *testing.T) {
 		AutodiscoverConfig: &AutodiscoverConfig{
 			Limit: 1,
 			Streams: StreamConfig{
-				Prefixes: []string{testLogStreamPrefix},
-				Names:    []string{testLogStreamMessage},
+				Prefixes: []*string{&testLogStreamPrefix},
+				Names:    []*string{&testLogStreamMessage},
 			},
 		},
 	}
@@ -175,7 +175,7 @@ func TestShutdownWhileCollecting(t *testing.T) {
 	cfg.Logs.Groups = GroupConfig{
 		NamedConfigs: map[string]StreamConfig{
 			testLogGroupName: {
-				Names: []string{testLogStreamName},
+				Names: []*string{&testLogStreamName},
 			},
 		},
 	}
