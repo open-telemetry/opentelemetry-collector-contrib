@@ -28,10 +28,8 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 	}
 
 	for _, payload := range data {
-		event := payload.StackTraceEvent
-
-		if event.StackTraceID != "" {
-			c, err := toJSON(event)
+		if payload.StackTraceEvent.StackTraceID != "" {
+			c, err := toJSON(payload.StackTraceEvent)
 			if err != nil {
 				return err
 			}
