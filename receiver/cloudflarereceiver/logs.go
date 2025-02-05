@@ -272,19 +272,39 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 			}
 
 			attrs := logRecord.Attributes()
-			for field, attribute := range l.cfg.Attributes {
-				if v, ok := log[field]; ok {
+			if len(l.cfg.Attributes) != 0 {
+				for field, attribute := range l.cfg.Attributes {
+					if v, ok := log[field]; ok {
+						switch v := v.(type) {
+						case string:
+							attrs.PutStr(attribute, v)
+						case int:
+							attrs.PutInt(attribute, int64(v))
+						case int64:
+							attrs.PutInt(attribute, v)
+						case float64:
+							attrs.PutDouble(attribute, v)
+						case bool:
+							attrs.PutBool(attribute, v)
+						default:
+							l.logger.Warn("unable to translate field to attribute, unsupported type", zap.String("field", field), zap.Any("value", v), zap.String("type", fmt.Sprintf("%T", v)))
+						}
+					}
+				}
+			// If no attributes were specified, receive them all
+			} else {
+				for field, v := range log {
 					switch v := v.(type) {
 					case string:
-						attrs.PutStr(attribute, v)
+						attrs.PutStr(field, v)
 					case int:
-						attrs.PutInt(attribute, int64(v))
+						attrs.PutInt(field, int64(v))
 					case int64:
-						attrs.PutInt(attribute, v)
+						attrs.PutInt(field, v)
 					case float64:
-						attrs.PutDouble(attribute, v)
+						attrs.PutDouble(field, v)
 					case bool:
-						attrs.PutBool(attribute, v)
+						attrs.PutBool(field, v)
 					default:
 						l.logger.Warn("unable to translate field to attribute, unsupported type", zap.String("field", field), zap.Any("value", v), zap.String("type", fmt.Sprintf("%T", v)))
 					}
