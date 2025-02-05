@@ -1,8 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog
 
-go 1.23.0
-
-toolchain go1.23.6
+go 1.22.0
 
 require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.62.1
@@ -42,8 +40,8 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
-	k8s.io/apimachinery v0.32.1
-	k8s.io/client-go v0.32.1
+	k8s.io/apimachinery v0.31.3
+	k8s.io/client-go v0.31.3
 )
 
 require (
@@ -109,6 +107,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/hashicorp/hcl v1.0.1-vault-5 // indirect
 	github.com/hectane/go-acl v0.0.0-20230122075934-ca0b05cb1adb // indirect
+	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
@@ -133,7 +132,6 @@ require (
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
@@ -184,11 +182,10 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241223144023-3abc09e42ca8 // indirect
 	google.golang.org/grpc v1.70.0 // indirect
 	google.golang.org/protobuf v1.36.4 // indirect
-	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.32.1 // indirect
+	k8s.io/api v0.31.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
