@@ -35,7 +35,8 @@ func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
 	return &Unmarshaler{logger}
 }
 
-// Unmarshal deserializes the records into pmetric.Metrics
+// UnmarshalMetrics deserializes the recordsas a length-delimited sequence of
+// OTLP metrics into pmetric.Metrics.
 func (u Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 	dataLen, pos := len(record), 0

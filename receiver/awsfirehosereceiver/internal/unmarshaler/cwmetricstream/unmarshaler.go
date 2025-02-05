@@ -42,9 +42,9 @@ func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
 	return &Unmarshaler{logger}
 }
 
-// Unmarshal deserializes the records into cWMetrics and uses the
-// resourceMetricsBuilder to group them into a single pmetric.Metrics.
-// Skips invalid cWMetrics received in the record and
+// UnmarshalMetrics deserializes the record in CloudWatch Metric Stream JSON
+// format into a pmetric.Metrics, grouping metrics by resource and metric
+// name and unit.
 func (u Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 	type metricKey struct {
 		name string
