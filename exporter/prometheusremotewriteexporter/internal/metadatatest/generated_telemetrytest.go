@@ -15,21 +15,29 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
+// Deprecated: [v0.119.0] Use componenttest.Telemetry
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
+// Deprecated: [v0.119.0] Use componenttest.NewTelemetry
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
 	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.NewSettings
 func (tt *Telemetry) NewSettings() exporter.Settings {
+	return NewSettings(tt.Telemetry)
+}
+
+func NewSettings(tt *componenttest.Telemetry) exporter.Settings {
 	set := exportertest.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("prometheusremotewrite"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.AssertEqual*
 func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
 	var md metricdata.ResourceMetrics
 	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
@@ -43,7 +51,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualExporterPrometheusremotewriteFailedTranslations(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterPrometheusremotewriteFailedTranslations(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_failed_translations",
 		Description: "Number of translation operations that failed to translate metrics from Otel to Prometheus",
@@ -54,11 +62,12 @@ func AssertEqualExporterPrometheusremotewriteFailedTranslations(t *testing.T, tt
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_prometheusremotewrite_failed_translations")
+	got, err := tt.GetMetric("otelcol_exporter_prometheusremotewrite_failed_translations")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterPrometheusremotewriteTranslatedTimeSeries(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterPrometheusremotewriteTranslatedTimeSeries(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_translated_time_series",
 		Description: "Number of Prometheus time series that were translated from OTel metrics",
@@ -69,14 +78,9 @@ func AssertEqualExporterPrometheusremotewriteTranslatedTimeSeries(t *testing.T, 
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_exporter_prometheusremotewrite_translated_time_series")
+	got, err := tt.GetMetric("otelcol_exporter_prometheusremotewrite_translated_time_series")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {

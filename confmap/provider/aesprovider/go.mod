@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/confmap v1.24.1-0.20250130000211-c119b2a55eb4
+	go.opentelemetry.io/collector/confmap v1.25.0
 	go.uber.org/zap v1.27.0
 
 )

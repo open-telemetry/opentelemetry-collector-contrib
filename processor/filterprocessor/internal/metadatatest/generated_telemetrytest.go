@@ -15,21 +15,29 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
+// Deprecated: [v0.119.0] Use componenttest.Telemetry
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
+// Deprecated: [v0.119.0] Use componenttest.NewTelemetry
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
 	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.NewSettings
 func (tt *Telemetry) NewSettings() processor.Settings {
+	return NewSettings(tt.Telemetry)
+}
+
+func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 	set := processortest.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("filter"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.AssertEqual*
 func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
 	var md metricdata.ResourceMetrics
 	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
@@ -43,7 +51,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualProcessorFilterDatapointsFiltered(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorFilterDatapointsFiltered(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_filter_datapoints.filtered",
 		Description: "Number of metric data points dropped by the filter processor",
@@ -54,11 +62,12 @@ func AssertEqualProcessorFilterDatapointsFiltered(t *testing.T, tt componenttest
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_filter_datapoints.filtered")
+	got, err := tt.GetMetric("otelcol_processor_filter_datapoints.filtered")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorFilterLogsFiltered(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorFilterLogsFiltered(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_filter_logs.filtered",
 		Description: "Number of logs dropped by the filter processor",
@@ -69,11 +78,12 @@ func AssertEqualProcessorFilterLogsFiltered(t *testing.T, tt componenttest.Telem
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_filter_logs.filtered")
+	got, err := tt.GetMetric("otelcol_processor_filter_logs.filtered")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorFilterSpansFiltered(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorFilterSpansFiltered(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_filter_spans.filtered",
 		Description: "Number of spans dropped by the filter processor",
@@ -84,14 +94,9 @@ func AssertEqualProcessorFilterSpansFiltered(t *testing.T, tt componenttest.Tele
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_filter_spans.filtered")
+	got, err := tt.GetMetric("otelcol_processor_filter_spans.filtered")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
