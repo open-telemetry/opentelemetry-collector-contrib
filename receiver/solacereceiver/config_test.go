@@ -71,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expectedErr != nil {
-				assert.ErrorIs(t, component.ValidateConfig(cfg), tt.expectedErr)
+				assert.ErrorContains(t, component.ValidateConfig(cfg), tt.expectedErr.Error())
 				return
 			}
 			assert.NoError(t, component.ValidateConfig(cfg))
@@ -84,7 +84,7 @@ func TestConfigValidateMissingAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "someQueue"
 	err := component.ValidateConfig(cfg)
-	assert.Equal(t, errMissingAuthDetails, err)
+	assert.ErrorContains(t, err, errMissingAuthDetails.Error())
 }
 
 func TestConfigValidateMultipleAuth(t *testing.T) {
@@ -93,14 +93,14 @@ func TestConfigValidateMultipleAuth(t *testing.T) {
 	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
 	cfg.Auth.XAuth2 = &SaslXAuth2Config{"Username", "Bearer"}
 	err := component.ValidateConfig(cfg)
-	assert.Equal(t, errTooManyAuthDetails, err)
+	assert.ErrorContains(t, err, errTooManyAuthDetails.Error())
 }
 
 func TestConfigValidateMissingQueue(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
 	err := component.ValidateConfig(cfg)
-	assert.Equal(t, errMissingQueueName, err)
+	assert.ErrorContains(t, err, errMissingQueueName.Error())
 }
 
 func TestConfigValidateMissingFlowControl(t *testing.T) {
@@ -110,7 +110,7 @@ func TestConfigValidateMissingFlowControl(t *testing.T) {
 	// this should never happen in reality, test validation anyway
 	cfg.Flow.DelayedRetry = nil
 	err := cfg.Validate()
-	assert.Equal(t, errMissingFlowControl, err)
+	assert.ErrorContains(t, err, errMissingFlowControl.Error())
 }
 
 func TestConfigValidateInvalidFlowControlDelayedRetryDelay(t *testing.T) {
@@ -121,7 +121,7 @@ func TestConfigValidateInvalidFlowControlDelayedRetryDelay(t *testing.T) {
 		Delay: -30 * time.Second,
 	}
 	err := cfg.Validate()
-	assert.Equal(t, errInvalidDelayedRetryDelay, err)
+	assert.ErrorContains(t, err, errInvalidDelayedRetryDelay.Error())
 }
 
 func TestConfigValidateSuccess(t *testing.T) {

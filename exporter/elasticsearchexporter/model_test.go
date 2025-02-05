@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
@@ -104,7 +105,7 @@ func TestEncodeMetric(t *testing.T) {
 		mode:  MappingECS,
 	}
 
-	groupedDataPoints := make(map[uint32][]dataPoint)
+	groupedDataPoints := make(map[uint32][]datapoints.DataPoint)
 
 	var docsBytes [][]byte
 	rm := metrics.ResourceMetrics().At(0)
@@ -112,11 +113,11 @@ func TestEncodeMetric(t *testing.T) {
 	m := sm.Metrics().At(0)
 	dps := m.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
-		dp := newNumberDataPoint(m, dps.At(i))
+		dp := datapoints.NewNumber(m, dps.At(i))
 		dpHash := model.hashDataPoint(dp)
 		dataPoints, ok := groupedDataPoints[dpHash]
 		if !ok {
-			groupedDataPoints[dpHash] = []dataPoint{dp}
+			groupedDataPoints[dpHash] = []datapoints.DataPoint{dp}
 		} else {
 			groupedDataPoints[dpHash] = append(dataPoints, dp)
 		}
