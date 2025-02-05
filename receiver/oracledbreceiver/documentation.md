@@ -257,6 +257,14 @@ Number of times a current block was requested from the buffer cache.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {gets} | Sum | Int | Cumulative | true |
 
+### oracledb.physical_reads_direct
+
+Number of reads directly from disk, bypassing the buffer cache
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {reads} | Sum | Int | Cumulative | true |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |

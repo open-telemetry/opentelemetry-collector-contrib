@@ -45,6 +45,7 @@ type MetricsConfig struct {
 	OracledbParseCalls            MetricConfig `mapstructure:"oracledb.parse_calls"`
 	OracledbPgaMemory             MetricConfig `mapstructure:"oracledb.pga_memory"`
 	OracledbPhysicalReads         MetricConfig `mapstructure:"oracledb.physical_reads"`
+	OracledbPhysicalReadsDirect   MetricConfig `mapstructure:"oracledb.physical_reads_direct"`
 	OracledbProcessesLimit        MetricConfig `mapstructure:"oracledb.processes.limit"`
 	OracledbProcessesUsage        MetricConfig `mapstructure:"oracledb.processes.usage"`
 	OracledbSessionsLimit         MetricConfig `mapstructure:"oracledb.sessions.limit"`
@@ -109,6 +110,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		OracledbPhysicalReads: MetricConfig{
 			Enabled: true,
+		},
+		OracledbPhysicalReadsDirect: MetricConfig{
+			Enabled: false,
 		},
 		OracledbProcessesLimit: MetricConfig{
 			Enabled: true,

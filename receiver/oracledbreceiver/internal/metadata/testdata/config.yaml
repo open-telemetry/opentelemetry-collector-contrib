@@ -35,6 +35,8 @@ all_set:
       enabled: true
     oracledb.physical_reads:
       enabled: true
+    oracledb.physical_reads_direct:
+      enabled: true
     oracledb.processes.limit:
       enabled: true
     oracledb.processes.usage:
@@ -93,6 +95,8 @@ none_set:
     oracledb.pga_memory:
       enabled: false
     oracledb.physical_reads:
+      enabled: false
+    oracledb.physical_reads_direct:
       enabled: false
     oracledb.processes.limit:
       enabled: false
