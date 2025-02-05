@@ -343,7 +343,6 @@ kubectl apply -f config.yaml
 | ClusterName        |
 | NodeName           |
 | Type               |
-| Timestamp          |
 | Version            |
 | Sources            |
 
@@ -362,7 +361,6 @@ kubectl apply -f config.yaml
 | NodeName           |
 | Namespace          |
 | Type               |
-| Timestamp          |
 | Version            |
 | Sources            |
 | kubernete          |
@@ -384,7 +382,6 @@ kubectl apply -f config.yaml
 | Namespace          |
 | Service            |
 | Type               |
-| Timestamp          |
 | Version            |
 | Sources            |
 | kubernete          |
@@ -437,7 +434,6 @@ kubectl apply -f config.yaml
 | ClusterName          |
 | InstanceType         |
 | NodeName             |
-| Timestamp            |
 | Type                 |
 | Version              |
 | Sources              |
@@ -468,7 +464,6 @@ kubectl apply -f config.yaml
 | InstanceId           |
 | InstanceType         |
 | NodeName             |
-| Timestamp            |
 | EBSVolumeId          |
 | device               |
 | Type                 |
@@ -496,7 +491,6 @@ kubectl apply -f config.yaml
 | InstanceId           |
 | InstanceType         |
 | NodeName             |
-| Timestamp            |
 | EBSVolumeId          |
 | device               |
 | fstype               |
@@ -528,7 +522,6 @@ kubectl apply -f config.yaml
 | InstanceId           |
 | InstanceType         |
 | NodeName             |
-| Timestamp            |
 | Type                 |
 | Version              |
 | interface            |
@@ -588,7 +581,6 @@ kubectl apply -f config.yaml
 | Namespace            |
 | NodeName             |
 | PodId                |
-| Timestamp            |
 | Type                 |
 | Version              |
 | Sources              |
@@ -621,7 +613,6 @@ kubectl apply -f config.yaml
 | Namespace            |
 | NodeName             |
 | PodId                |
-| Timestamp            |
 | Type                 |
 | Version              |
 | interface            |
@@ -672,7 +663,6 @@ kubectl apply -f config.yaml
 | Namespace                         |
 | NodeName                          |
 | PodId                             |
-| Timestamp                         |
 | Type                              |
 | Version                           |
 | Sources                           |
@@ -779,7 +769,6 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | ClusterName          |
 | InstanceType         |
 | AutoScalingGroupName |
-| Timestamp            |
 | Type                 |
 | Version              |
 | Sources              |
@@ -810,7 +799,6 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | ClusterName          |
 | InstanceType         |
 | AutoScalingGroupName |
-| Timestamp            |
 | Type                 |
 | Version              |
 | Sources              |
@@ -837,7 +825,6 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | ClusterName          |
 | InstanceType         |
 | AutoScalingGroupName |
-| Timestamp            |
 | Type                 |
 | Version              |
 | Sources              |
@@ -866,7 +853,6 @@ To deploy to an ECS cluster check this [doc](https://aws-otel.github.io/docs/set
 | ClusterName          |
 | InstanceType         |
 | AutoScalingGroupName |
-| Timestamp            |
 | Type                 |
 | Version              |
 | Sources              |
