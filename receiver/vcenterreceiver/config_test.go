@@ -50,7 +50,7 @@ func TestConfigValidation(t *testing.T) {
 			expectedErr: errors.New("url scheme must be http or https"),
 		},
 		{
-			desc: "unparseable URL",
+			desc: "unparsable URL",
 			cfg: Config{
 				Endpoint:         "h" + string(rune(0x7f)),
 				ClientConfig:     configtls.ClientConfig{},

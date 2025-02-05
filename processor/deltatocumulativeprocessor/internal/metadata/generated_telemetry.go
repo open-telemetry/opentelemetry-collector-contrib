@@ -5,8 +5,10 @@ package metadata
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
@@ -23,16 +25,19 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                        metric.Meter
-	DeltatocumulativeDatapointsDropped           metric.Int64Counter
-	DeltatocumulativeDatapointsLinear            metric.Int64Counter
-	DeltatocumulativeDatapointsProcessed         metric.Int64Counter
-	DeltatocumulativeGapsLength                  metric.Int64Counter
-	DeltatocumulativeStreamsEvicted              metric.Int64Counter
-	DeltatocumulativeStreamsLimit                metric.Int64Gauge
-	DeltatocumulativeStreamsMaxStale             metric.Int64Gauge
-	DeltatocumulativeStreamsTracked              metric.Int64UpDownCounter
-	DeltatocumulativeStreamsTrackedLinear        metric.Int64ObservableUpDownCounter
+	meter                                 metric.Meter
+	mu                                    sync.Mutex
+	registrations                         []metric.Registration
+	DeltatocumulativeDatapointsDropped    metric.Int64Counter
+	DeltatocumulativeDatapointsLinear     metric.Int64Counter
+	DeltatocumulativeDatapointsProcessed  metric.Int64Counter
+	DeltatocumulativeGapsLength           metric.Int64Counter
+	DeltatocumulativeStreamsEvicted       metric.Int64Counter
+	DeltatocumulativeStreamsLimit         metric.Int64Gauge
+	DeltatocumulativeStreamsMaxStale      metric.Int64Gauge
+	DeltatocumulativeStreamsTracked       metric.Int64UpDownCounter
+	DeltatocumulativeStreamsTrackedLinear metric.Int64ObservableUpDownCounter
+	// TODO: Remove in v0.119.0 when remove deprecated funcs.
 	observeDeltatocumulativeStreamsTrackedLinear func(context.Context, metric.Observer) error
 }
 
@@ -47,7 +52,7 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
-// WithDeltatocumulativeStreamsTrackedLinearCallback sets callback for observable DeltatocumulativeStreamsTrackedLinear metric.
+// Deprecated: [v0.119.0] use RegisterDeltatocumulativeStreamsTrackedLinearCallback.
 func WithDeltatocumulativeStreamsTrackedLinearCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
 	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
 		builder.observeDeltatocumulativeStreamsTrackedLinear = func(_ context.Context, o metric.Observer) error {
@@ -55,6 +60,40 @@ func WithDeltatocumulativeStreamsTrackedLinearCallback(cb func() int64, opts ...
 			return nil
 		}
 	})
+}
+
+// RegisterDeltatocumulativeStreamsTrackedLinearCallback sets callback for observable DeltatocumulativeStreamsTrackedLinear metric.
+func (builder *TelemetryBuilder) RegisterDeltatocumulativeStreamsTrackedLinearCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.DeltatocumulativeStreamsTrackedLinear, obs: o})
+		return nil
+	}, builder.DeltatocumulativeStreamsTrackedLinear)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+type observerInt64 struct {
+	embedded.Int64Observer
+	inst metric.Int64Observable
+	obs  metric.Observer
+}
+
+func (oi *observerInt64) Observe(value int64, opts ...metric.ObserveOption) {
+	oi.obs.ObserveInt64(oi.inst, value, opts...)
+}
+
+// Shutdown unregister all registered callbacks for async instruments.
+func (builder *TelemetryBuilder) Shutdown() {
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	for _, reg := range builder.registrations {
+		reg.Unregister()
+	}
 }
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
@@ -120,7 +159,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{dps}"),
 	)
 	errs = errors.Join(errs, err)
-	_, err = builder.meter.RegisterCallback(builder.observeDeltatocumulativeStreamsTrackedLinear, builder.DeltatocumulativeStreamsTrackedLinear)
-	errs = errors.Join(errs, err)
+	if builder.observeDeltatocumulativeStreamsTrackedLinear != nil {
+		reg, err := builder.meter.RegisterCallback(builder.observeDeltatocumulativeStreamsTrackedLinear, builder.DeltatocumulativeStreamsTrackedLinear)
+		errs = errors.Join(errs, err)
+		if err == nil {
+			builder.registrations = append(builder.registrations, reg)
+		}
+	}
 	return &builder, errs
 }
