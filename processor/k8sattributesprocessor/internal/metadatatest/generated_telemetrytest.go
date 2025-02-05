@@ -15,21 +15,29 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
+// Deprecated: [v0.119.0] Use componenttest.Telemetry
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
+// Deprecated: [v0.119.0] Use componenttest.NewTelemetry
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
 	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.NewSettings
 func (tt *Telemetry) NewSettings() processor.Settings {
+	return NewSettings(tt.Telemetry)
+}
+
+func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 	set := processortest.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("k8sattributes"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.AssertEqual*
 func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
 	var md metricdata.ResourceMetrics
 	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
@@ -43,7 +51,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualOtelsvcK8sIPLookupMiss(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelsvcK8sIPLookupMiss(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelsvc_k8s_ip_lookup_miss",
 		Description: "Number of times pod by IP lookup failed.",
@@ -54,11 +62,12 @@ func AssertEqualOtelsvcK8sIPLookupMiss(t *testing.T, tt componenttest.Telemetry,
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelsvc_k8s_ip_lookup_miss")
+	got, err := tt.GetMetric("otelcol_otelsvc_k8s_ip_lookup_miss")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualOtelsvcK8sNamespaceAdded(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelsvcK8sNamespaceAdded(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelsvc_k8s_namespace_added",
 		Description: "Number of namespace add events received",
@@ -69,11 +78,12 @@ func AssertEqualOtelsvcK8sNamespaceAdded(t *testing.T, tt componenttest.Telemetr
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelsvc_k8s_namespace_added")
+	got, err := tt.GetMetric("otelcol_otelsvc_k8s_namespace_added")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualOtelsvcK8sNamespaceDeleted(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelsvcK8sNamespaceDeleted(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelsvc_k8s_namespace_deleted",
 		Description: "Number of namespace delete events received",
@@ -84,11 +94,12 @@ func AssertEqualOtelsvcK8sNamespaceDeleted(t *testing.T, tt componenttest.Teleme
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelsvc_k8s_namespace_deleted")
+	got, err := tt.GetMetric("otelcol_otelsvc_k8s_namespace_deleted")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualOtelsvcK8sNamespaceUpdated(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelsvcK8sNamespaceUpdated(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelsvc_k8s_namespace_updated",
 		Description: "Number of namespace update events received",
@@ -99,11 +110,12 @@ func AssertEqualOtelsvcK8sNamespaceUpdated(t *testing.T, tt componenttest.Teleme
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelsvc_k8s_namespace_updated")
+	got, err := tt.GetMetric("otelcol_otelsvc_k8s_namespace_updated")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualOtelsvcK8sNodeAdded(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelsvcK8sNodeAdded(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelsvc_k8s_node_added",
 		Description: "Number of node add events received",
@@ -114,11 +126,12 @@ func AssertEqualOtelsvcK8sNodeAdded(t *testing.T, tt componenttest.Telemetry, dp
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelsvc_k8s_node_added")
+	got, err := tt.GetMetric("otelcol_otelsvc_k8s_node_added")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualOtelsvcK8sNodeDeleted(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelsvcK8sNodeDeleted(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelsvc_k8s_node_deleted",
 		Description: "Number of node delete events received",
@@ -129,11 +142,12 @@ func AssertEqualOtelsvcK8sNodeDeleted(t *testing.T, tt componenttest.Telemetry, 
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelsvc_k8s_node_deleted")
+	got, err := tt.GetMetric("otelcol_otelsvc_k8s_node_deleted")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualOtelsvcK8sNodeUpdated(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelsvcK8sNodeUpdated(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelsvc_k8s_node_updated",
 		Description: "Number of node update events received",
@@ -144,11 +158,12 @@ func AssertEqualOtelsvcK8sNodeUpdated(t *testing.T, tt componenttest.Telemetry, 
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelsvc_k8s_node_updated")
+	got, err := tt.GetMetric("otelcol_otelsvc_k8s_node_updated")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualOtelsvcK8sPodAdded(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelsvcK8sPodAdded(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelsvc_k8s_pod_added",
 		Description: "Number of pod add events received",
@@ -159,11 +174,12 @@ func AssertEqualOtelsvcK8sPodAdded(t *testing.T, tt componenttest.Telemetry, dps
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelsvc_k8s_pod_added")
+	got, err := tt.GetMetric("otelcol_otelsvc_k8s_pod_added")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualOtelsvcK8sPodDeleted(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelsvcK8sPodDeleted(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelsvc_k8s_pod_deleted",
 		Description: "Number of pod delete events received",
@@ -174,11 +190,12 @@ func AssertEqualOtelsvcK8sPodDeleted(t *testing.T, tt componenttest.Telemetry, d
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelsvc_k8s_pod_deleted")
+	got, err := tt.GetMetric("otelcol_otelsvc_k8s_pod_deleted")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualOtelsvcK8sPodTableSize(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelsvcK8sPodTableSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelsvc_k8s_pod_table_size",
 		Description: "Size of table containing pod info",
@@ -187,11 +204,12 @@ func AssertEqualOtelsvcK8sPodTableSize(t *testing.T, tt componenttest.Telemetry,
 			DataPoints: dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelsvc_k8s_pod_table_size")
+	got, err := tt.GetMetric("otelcol_otelsvc_k8s_pod_table_size")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualOtelsvcK8sPodUpdated(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelsvcK8sPodUpdated(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelsvc_k8s_pod_updated",
 		Description: "Number of pod update events received",
@@ -202,11 +220,12 @@ func AssertEqualOtelsvcK8sPodUpdated(t *testing.T, tt componenttest.Telemetry, d
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelsvc_k8s_pod_updated")
+	got, err := tt.GetMetric("otelcol_otelsvc_k8s_pod_updated")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualOtelsvcK8sReplicasetAdded(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelsvcK8sReplicasetAdded(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelsvc_k8s_replicaset_added",
 		Description: "Number of ReplicaSet add events received",
@@ -217,11 +236,12 @@ func AssertEqualOtelsvcK8sReplicasetAdded(t *testing.T, tt componenttest.Telemet
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelsvc_k8s_replicaset_added")
+	got, err := tt.GetMetric("otelcol_otelsvc_k8s_replicaset_added")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualOtelsvcK8sReplicasetDeleted(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelsvcK8sReplicasetDeleted(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelsvc_k8s_replicaset_deleted",
 		Description: "Number of ReplicaSet delete events received",
@@ -232,11 +252,12 @@ func AssertEqualOtelsvcK8sReplicasetDeleted(t *testing.T, tt componenttest.Telem
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelsvc_k8s_replicaset_deleted")
+	got, err := tt.GetMetric("otelcol_otelsvc_k8s_replicaset_deleted")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualOtelsvcK8sReplicasetUpdated(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualOtelsvcK8sReplicasetUpdated(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_otelsvc_k8s_replicaset_updated",
 		Description: "Number of ReplicaSet update events received",
@@ -247,14 +268,9 @@ func AssertEqualOtelsvcK8sReplicasetUpdated(t *testing.T, tt componenttest.Telem
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_otelsvc_k8s_replicaset_updated")
+	got, err := tt.GetMetric("otelcol_otelsvc_k8s_replicaset_updated")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {

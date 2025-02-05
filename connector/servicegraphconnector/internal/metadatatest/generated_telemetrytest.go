@@ -15,21 +15,29 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
+// Deprecated: [v0.119.0] Use componenttest.Telemetry
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
+// Deprecated: [v0.119.0] Use componenttest.NewTelemetry
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
 	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.NewSettings
 func (tt *Telemetry) NewSettings() connector.Settings {
+	return NewSettings(tt.Telemetry)
+}
+
+func NewSettings(tt *componenttest.Telemetry) connector.Settings {
 	set := connectortest.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("servicegraph"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.AssertEqual*
 func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
 	var md metricdata.ResourceMetrics
 	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
@@ -43,7 +51,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualConnectorServicegraphDroppedSpans(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualConnectorServicegraphDroppedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_connector_servicegraph_dropped_spans",
 		Description: "Number of spans dropped when trying to add edges",
@@ -54,11 +62,12 @@ func AssertEqualConnectorServicegraphDroppedSpans(t *testing.T, tt componenttest
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_connector_servicegraph_dropped_spans")
+	got, err := tt.GetMetric("otelcol_connector_servicegraph_dropped_spans")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualConnectorServicegraphExpiredEdges(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualConnectorServicegraphExpiredEdges(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_connector_servicegraph_expired_edges",
 		Description: "Number of edges that expired before finding its matching span",
@@ -69,11 +78,12 @@ func AssertEqualConnectorServicegraphExpiredEdges(t *testing.T, tt componenttest
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_connector_servicegraph_expired_edges")
+	got, err := tt.GetMetric("otelcol_connector_servicegraph_expired_edges")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualConnectorServicegraphTotalEdges(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualConnectorServicegraphTotalEdges(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_connector_servicegraph_total_edges",
 		Description: "Total number of unique edges",
@@ -84,14 +94,9 @@ func AssertEqualConnectorServicegraphTotalEdges(t *testing.T, tt componenttest.T
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_connector_servicegraph_total_edges")
+	got, err := tt.GetMetric("otelcol_connector_servicegraph_total_edges")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {

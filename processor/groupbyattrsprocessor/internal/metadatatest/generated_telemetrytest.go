@@ -15,21 +15,29 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
+// Deprecated: [v0.119.0] Use componenttest.Telemetry
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
+// Deprecated: [v0.119.0] Use componenttest.NewTelemetry
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
 	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.NewSettings
 func (tt *Telemetry) NewSettings() processor.Settings {
+	return NewSettings(tt.Telemetry)
+}
+
+func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 	set := processortest.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("groupbyattrs"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.AssertEqual*
 func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
 	var md metricdata.ResourceMetrics
 	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
@@ -43,7 +51,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualProcessorGroupbyattrsLogGroups(t *testing.T, tt componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorGroupbyattrsLogGroups(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_log_groups",
 		Description: "Distribution of groups extracted for logs",
@@ -53,11 +61,12 @@ func AssertEqualProcessorGroupbyattrsLogGroups(t *testing.T, tt componenttest.Te
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_groupbyattrs_log_groups")
+	got, err := tt.GetMetric("otelcol_processor_groupbyattrs_log_groups")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorGroupbyattrsMetricGroups(t *testing.T, tt componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorGroupbyattrsMetricGroups(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_metric_groups",
 		Description: "Distribution of groups extracted for metrics",
@@ -67,11 +76,12 @@ func AssertEqualProcessorGroupbyattrsMetricGroups(t *testing.T, tt componenttest
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_groupbyattrs_metric_groups")
+	got, err := tt.GetMetric("otelcol_processor_groupbyattrs_metric_groups")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorGroupbyattrsNumGroupedLogs(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorGroupbyattrsNumGroupedLogs(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_num_grouped_logs",
 		Description: "Number of logs that had attributes grouped",
@@ -82,11 +92,12 @@ func AssertEqualProcessorGroupbyattrsNumGroupedLogs(t *testing.T, tt componentte
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_groupbyattrs_num_grouped_logs")
+	got, err := tt.GetMetric("otelcol_processor_groupbyattrs_num_grouped_logs")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorGroupbyattrsNumGroupedMetrics(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorGroupbyattrsNumGroupedMetrics(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_num_grouped_metrics",
 		Description: "Number of metrics that had attributes grouped",
@@ -97,11 +108,12 @@ func AssertEqualProcessorGroupbyattrsNumGroupedMetrics(t *testing.T, tt componen
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_groupbyattrs_num_grouped_metrics")
+	got, err := tt.GetMetric("otelcol_processor_groupbyattrs_num_grouped_metrics")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorGroupbyattrsNumGroupedSpans(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorGroupbyattrsNumGroupedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_num_grouped_spans",
 		Description: "Number of spans that had attributes grouped",
@@ -112,11 +124,12 @@ func AssertEqualProcessorGroupbyattrsNumGroupedSpans(t *testing.T, tt componentt
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_groupbyattrs_num_grouped_spans")
+	got, err := tt.GetMetric("otelcol_processor_groupbyattrs_num_grouped_spans")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorGroupbyattrsNumNonGroupedLogs(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorGroupbyattrsNumNonGroupedLogs(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_num_non_grouped_logs",
 		Description: "Number of logs that did not have attributes grouped",
@@ -127,11 +140,12 @@ func AssertEqualProcessorGroupbyattrsNumNonGroupedLogs(t *testing.T, tt componen
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_groupbyattrs_num_non_grouped_logs")
+	got, err := tt.GetMetric("otelcol_processor_groupbyattrs_num_non_grouped_logs")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorGroupbyattrsNumNonGroupedMetrics(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorGroupbyattrsNumNonGroupedMetrics(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_num_non_grouped_metrics",
 		Description: "Number of metrics that did not have attributes grouped",
@@ -142,11 +156,12 @@ func AssertEqualProcessorGroupbyattrsNumNonGroupedMetrics(t *testing.T, tt compo
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_groupbyattrs_num_non_grouped_metrics")
+	got, err := tt.GetMetric("otelcol_processor_groupbyattrs_num_non_grouped_metrics")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorGroupbyattrsNumNonGroupedSpans(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorGroupbyattrsNumNonGroupedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_num_non_grouped_spans",
 		Description: "Number of spans that did not have attributes grouped",
@@ -157,11 +172,12 @@ func AssertEqualProcessorGroupbyattrsNumNonGroupedSpans(t *testing.T, tt compone
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_groupbyattrs_num_non_grouped_spans")
+	got, err := tt.GetMetric("otelcol_processor_groupbyattrs_num_non_grouped_spans")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualProcessorGroupbyattrsSpanGroups(t *testing.T, tt componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualProcessorGroupbyattrsSpanGroups(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_groupbyattrs_span_groups",
 		Description: "Distribution of groups extracted for spans",
@@ -171,14 +187,9 @@ func AssertEqualProcessorGroupbyattrsSpanGroups(t *testing.T, tt componenttest.T
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_processor_groupbyattrs_span_groups")
+	got, err := tt.GetMetric("otelcol_processor_groupbyattrs_span_groups")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
