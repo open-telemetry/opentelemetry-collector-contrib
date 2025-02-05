@@ -189,6 +189,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 func TestFlushPeriodEOF(t *testing.T) {
 	tempDir := t.TempDir()
 	temp := filetest.OpenTemp(t, tempDir)
+
 	// Create a long enough initial token, so the scanner can't read the whole file at once
 	aContentLength := 2 * 16 * 1024
 	content := []byte(strings.Repeat("a", aContentLength))
@@ -196,17 +197,128 @@ func TestFlushPeriodEOF(t *testing.T) {
 	_, err := temp.WriteString(string(content))
 	require.NoError(t, err)
 
-	// Make sure FlushPeriod is small, so it is guaranteed to expire
-	f, sink := testFactory(t, withFlushPeriod(5*time.Nanosecond))
+	flushPeriod := time.Millisecond
+	f, sink := testFactory(t, withFlushPeriod(flushPeriod))
 	fp, err := f.NewFingerprint(temp)
 	require.NoError(t, err)
 	r, err := f.NewReader(temp, fp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), r.Offset)
 
-	internaltime.Now = internaltime.NewAlwaysIncreasingClock().Now
-	defer func() { internaltime.Now = time.Now }()
+	clock := internaltime.NewAlwaysIncreasingClock()
+	internaltime.Now = clock.Now
+	internaltime.Since = clock.Since
+	defer func() {
+		internaltime.Now = time.Now
+		internaltime.Since = time.Since
+	}()
+
+	// First ReadToEnd should not emit only the terminated token
+	r.ReadToEnd(context.Background())
+	sink.ExpectToken(t, content[0:aContentLength])
+
+	// Advance time past the flush period
+	clock.Advance(2 * flushPeriod)
+
+	// Second ReadToEnd should emit the unterminated token because of flush timeout
+	r.ReadToEnd(context.Background())
+	sink.ExpectToken(t, []byte{'b'})
+}
+
+func TestUntermintedLongLogEntry(t *testing.T) {
+	tempDir := t.TempDir()
+	temp := filetest.OpenTemp(t, tempDir)
+
+	// Create a log entry longer than DefaultBufferSize (16KB) but shorter than maxLogSize
+	content := filetest.TokenWithLength(20 * 1024) // 20KB
+	_, err := temp.WriteString(string(content))    // no newline
+	require.NoError(t, err)
+
+	// Use a controlled clock. It advances by 1ns each time Now() is called, which may happen
+	// a few times during a call to ReadToEnd.
+	clock := internaltime.NewAlwaysIncreasingClock()
+	internaltime.Now = clock.Now
+	internaltime.Since = clock.Since
+	defer func() {
+		internaltime.Now = time.Now
+		internaltime.Since = time.Since
+	}()
+
+	// Use a long flush period to ensure it does not expire DURING a ReadToEnd
+	flushPeriod := time.Second
+
+	f, sink := testFactory(t, withFlushPeriod(flushPeriod))
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err := f.NewReader(temp, fp)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), r.Offset)
+
+	// First ReadToEnd should not emit anything as flush period hasn't expired
+	r.ReadToEnd(context.Background())
+	sink.ExpectNoCalls(t)
+
+	// Advance time past the flush period to test behavior after timer is expired
+	clock.Advance(2 * flushPeriod)
+
+	// Second ReadToEnd should emit the full untruncated token
+	r.ReadToEnd(context.Background())
+	sink.ExpectToken(t, content)
+
+	sink.ExpectNoCalls(t)
+}
+
+func TestUntermintedLogEntryGrows(t *testing.T) {
+	tempDir := t.TempDir()
+	temp := filetest.OpenTemp(t, tempDir)
+
+	// Create a log entry longer than DefaultBufferSize (16KB) but shorter than maxLogSize
+	content := filetest.TokenWithLength(20 * 1024) // 20KB
+	_, err := temp.WriteString(string(content))    // no newline
+	require.NoError(t, err)
+
+	// Use a controlled clock. It advances by 1ns each time Now() is called, which may happen
+	// a few times during a call to ReadToEnd.
+	clock := internaltime.NewAlwaysIncreasingClock()
+	internaltime.Now = clock.Now
+	internaltime.Since = clock.Since
+	defer func() {
+		internaltime.Now = time.Now
+		internaltime.Since = time.Since
+	}()
+
+	// Use a long flush period to ensure it does not expire DURING a ReadToEnd
+	flushPeriod := time.Second
+
+	f, sink := testFactory(t, withFlushPeriod(flushPeriod))
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err := f.NewReader(temp, fp)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), r.Offset)
+
+	// First ReadToEnd should not emit anything as flush period hasn't expired
+	r.ReadToEnd(context.Background())
+	sink.ExpectNoCalls(t)
+
+	// Advance time past the flush period to test behavior after timer is expired
+	clock.Advance(2 * flushPeriod)
+
+	// Write additional unterminated content to ensure all is picked up in the same token
+	// The flusher should notice new data and not return anything on the next call
+	additionalContext := filetest.TokenWithLength(1024)
+	_, err = temp.WriteString(string(additionalContext)) // no newline
+	require.NoError(t, err)
 
 	r.ReadToEnd(context.Background())
-	sink.ExpectTokens(t, content[0:aContentLength], []byte{'b'})
+	sink.ExpectNoCalls(t)
+
+	// Advance time past the flush period to test behavior after timer is expired
+	clock.Advance(2 * flushPeriod)
+
+	// Finally, since we haven't seen new data, flusher should emit the token
+	r.ReadToEnd(context.Background())
+	sink.ExpectToken(t, append(content, additionalContext...))
+
+	sink.ExpectNoCalls(t)
 }

@@ -61,7 +61,7 @@ func newTracesConnector(
 }
 
 func (*tracesConnector) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	return consumer.Capabilities{MutatesData: true}
 }
 
 func (c *tracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
