@@ -21,7 +21,7 @@ MEMBERS_STATS_RESPONSE_FILE_SUFFIX='_pool_members_stats_response.json'
 LOGIN_RESPONSE=$(curl -sk POST $ENDPOINT/mgmt/shared/authn/login -H $JSON_HEADER -d '{"username":"'$USER'","password":"'$PASSWORD'"}')
 echo $LOGIN_RESPONSE | jq . > $LOGIN_RESPONSE_FILE
 
-# Retrieve token from the respons and create header with it
+# Retrieve token from the response and create header with it
 TOKEN=$(echo $LOGIN_RESPONSE | jq -r '.token.token')
 TOKEN_HEADER='X-F5-Auth-Token:'$TOKEN''
 
