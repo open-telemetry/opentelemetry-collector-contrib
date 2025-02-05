@@ -150,8 +150,10 @@ func (exp *logsExporter) exportUsageMetrics(ctx context.Context, hosts map[strin
 	if exp.metricsAPI != nil {
 		series := make([]datadogV2.MetricSeries, 0, len(hosts))
 		timestamp := uint64(now)
-		for host := range hosts {
-			series = append(series, metrics.GatewayUsageGauge(timestamp, host, buildTags, exp.gatewayUsage))
+		if exp.gatewayUsage != nil {
+			for host := range hosts {
+				series = append(series, metrics.GatewayUsageGauge(timestamp, host, buildTags, exp.gatewayUsage))
+			}
 		}
 
 		_, err = exp.retrier.DoWithRetries(ctx, func(context.Context) error {

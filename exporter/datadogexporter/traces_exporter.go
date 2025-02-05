@@ -162,7 +162,9 @@ func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[stri
 		timestamp := uint64(now)
 		for host := range hosts {
 			series = append(series, metrics.DefaultMetrics("traces", host, timestamp, buildTags)...)
-			series = append(series, metrics.GatewayUsageGauge(timestamp, host, buildTags, exp.gatewayUsage))
+			if exp.gatewayUsage != nil {
+				series = append(series, metrics.GatewayUsageGauge(timestamp, host, buildTags, exp.gatewayUsage))
+			}
 		}
 		for tag := range tags {
 			ms := metrics.DefaultMetrics("traces", "", timestamp, buildTags)

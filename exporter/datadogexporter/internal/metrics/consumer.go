@@ -61,7 +61,9 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 	for host := range c.seenHosts {
 		// Report the host as running
 		runningMetric := DefaultMetrics("metrics", host, timestamp, buildTags)
-		series = append(series, GatewayUsageGauge(timestamp, host, buildTags, c.gatewayUsage))
+		if c.gatewayUsage != nil {
+			series = append(series, GatewayUsageGauge(timestamp, host, buildTags, c.gatewayUsage))
+		}
 		series = append(series, runningMetric...)
 	}
 
