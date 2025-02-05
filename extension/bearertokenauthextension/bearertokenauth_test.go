@@ -30,7 +30,7 @@ func TestPerRPCAuth(t *testing.T) {
 	expectedMetadata := map[string]string{
 		"authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
 	}
-	assert.Equal(t, md, expectedMetadata)
+	assert.Equal(t, expectedMetadata, md)
 
 	// always true
 	ok := perRPCAuth.RequireTransportSecurity()
