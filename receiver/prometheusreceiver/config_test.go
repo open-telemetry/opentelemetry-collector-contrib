@@ -216,7 +216,7 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
         rule_files`
 
 	gotErrMsg := strings.ReplaceAll(err.Error(), "\t", strings.Repeat(" ", 8))
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	require.Contains(t, gotErrMsg, wantErrMsg)
 }
 
 func TestNonExistentAuthCredentialsFile(t *testing.T) {

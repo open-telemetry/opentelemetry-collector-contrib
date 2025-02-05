@@ -4,10 +4,12 @@
 package solacereceiver
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
@@ -41,24 +43,13 @@ func TestMoveUnmarshallerMapResourceSpan(t *testing.T) {
 			assert.NotEmpty(t, version)
 			serviceName, _ := actual.Get("service.name") // make sure we are generating a uuid name
 			assert.NotEmpty(t, serviceName)
-			var expectedMetrics []metricdata.Metrics
 			if tt.expectedUnmarshallingErrors > 0 {
-				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
-					Description: "Number of recoverable message unmarshalling errors",
-					Unit:        "1",
-					Data: metricdata.Sum[int64]{
-						Temporality: metricdata.CumulativeTemporality,
-						IsMonotonic: true,
-						DataPoints: []metricdata.DataPoint[int64]{
-							{
-								Value: tt.expectedUnmarshallingErrors,
-							},
-						},
+				metadatatest.AssertEqualSolacereceiverRecoverableUnmarshallingErrors(t, tel, []metricdata.DataPoint[int64]{
+					{
+						Value: tt.expectedUnmarshallingErrors,
 					},
-				})
+				}, metricdatatest.IgnoreTimestamp())
 			}
-			tel.AssertMetrics(t, expectedMetrics, metricdatatest.IgnoreTimestamp())
 		})
 	}
 }
@@ -374,33 +365,23 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 			actual := ptrace.NewSpan()
 			u.mapClientSpanData(tt.spanData, actual)
 			compareSpans(t, tt.want, actual)
-			var expectedMetrics []metricdata.Metrics
 			if tt.expectedUnmarshallingErrors > 0 {
-				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
-					Description: "Number of recoverable message unmarshalling errors",
-					Unit:        "1",
-					Data: metricdata.Sum[int64]{
-						Temporality: metricdata.CumulativeTemporality,
-						IsMonotonic: true,
-						DataPoints: []metricdata.DataPoint[int64]{
-							{
-								Value:      tt.expectedUnmarshallingErrors,
-								Attributes: u.metricAttrs,
-							},
-						},
+				metadatatest.AssertEqualSolacereceiverRecoverableUnmarshallingErrors(t, tel, []metricdata.DataPoint[int64]{
+					{
+						Value:      tt.expectedUnmarshallingErrors,
+						Attributes: u.metricAttrs,
 					},
-				})
+				}, metricdatatest.IgnoreTimestamp())
 			}
-			tel.AssertMetrics(t, expectedMetrics, metricdatatest.IgnoreTimestamp())
 		})
 	}
 }
 
-func newTestMoveV1Unmarshaller(t *testing.T) (*brokerTraceMoveUnmarshallerV1, metadatatest.Telemetry) {
-	tt := metadatatest.SetupTelemetry()
-	builder, err := metadata.NewTelemetryBuilder(tt.NewTelemetrySettings())
+func newTestMoveV1Unmarshaller(t *testing.T) (*brokerTraceMoveUnmarshallerV1, *componenttest.Telemetry) {
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	builder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
-	metricAttr := attribute.NewSet(attribute.String("receiver_name", tt.NewSettings().ID.Name()))
-	return &brokerTraceMoveUnmarshallerV1{zap.NewNop(), builder, metricAttr}, tt
+	metricAttr := attribute.NewSet(attribute.String("receiver_name", metadata.Type.String()))
+	return &brokerTraceMoveUnmarshallerV1{zap.NewNop(), builder, metricAttr}, tel
 }

@@ -111,6 +111,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordProcessThreadsDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordProcessUptimeDataPoint(ts, 1)
+
 			rb := mb.NewResourceBuilder()
 			rb.SetProcessCgroup("process.cgroup-val")
 			rb.SetProcessCommand("process.command-val")
@@ -338,6 +341,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "process.uptime":
+					assert.False(t, validatedMetrics["process.uptime"], "Found a duplicate in the metrics slice: process.uptime")
+					validatedMetrics["process.uptime"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The time the process has been running.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				}
 			}
 		})
