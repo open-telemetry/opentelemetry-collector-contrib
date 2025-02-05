@@ -21,7 +21,7 @@ type InstrumentationScopeContext interface {
 	GetScopeSchemaURLItem() SchemaURLItem
 }
 
-func ScopePathGetSetter[K InstrumentationScopeContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func ScopePathGetSetter[K InstrumentationScopeContext](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
 		return nil, FormatDefaultErrorMessage(InstrumentationScopeContextName, InstrumentationScopeContextName, "Instrumentation Scope", InstrumentationScopeRef)
 	}
@@ -40,6 +40,8 @@ func ScopePathGetSetter[K InstrumentationScopeContext](path ottl.Path[K]) (ottl.
 		return accessInstrumentationScopeDroppedAttributesCount[K](), nil
 	case "schema_url":
 		return accessInstrumentationScopeSchemaURLItem[K](), nil
+	case "cache":
+		return nil, FormatCacheErrorMessage(lowerContext, path.Context(), path.String())
 	default:
 		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Instrumentation Scope", InstrumentationScopeRef)
 	}

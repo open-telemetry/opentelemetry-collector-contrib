@@ -38,8 +38,10 @@ type TransformContext struct {
 
 type Option func(*ottl.Parser[TransformContext])
 
-func NewTransformContext(metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) TransformContext {
-	return TransformContext{
+type TransformContextOption func(*TransformContext)
+
+func NewTransformContext(metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics, options ...TransformContextOption) TransformContext {
+	tc := TransformContext{
 		metric:               metric,
 		metrics:              metrics,
 		instrumentationScope: instrumentationScope,
@@ -47,6 +49,19 @@ func NewTransformContext(metric pmetric.Metric, metrics pmetric.MetricSlice, ins
 		cache:                pcommon.NewMap(),
 		scopeMetrics:         scopeMetrics,
 		resourceMetrics:      resourceMetrics,
+	}
+	for _, opt := range options {
+		opt(&tc)
+	}
+	return tc
+}
+
+// Experimental: *NOTE* this option is subject to change or removal in the future.
+func WithCache(cache *pcommon.Map) TransformContextOption {
+	return func(p *TransformContext) {
+		if cache != nil {
+			p.cache = *cache
+		}
 	}
 }
 
@@ -185,9 +200,9 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	switch context {
 	case internal.ResourceContextName:
-		return internal.ResourcePathGetSetter(path)
+		return internal.ResourcePathGetSetter(ContextName, path)
 	case internal.InstrumentationScopeContextName:
-		return internal.ScopePathGetSetter(path)
+		return internal.ScopePathGetSetter(ContextName, path)
 	default:
 		var fullPath string
 		if path != nil {

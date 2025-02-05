@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenlen"
 )
 
 type Metadata struct {
@@ -30,6 +31,7 @@ type Metadata struct {
 	FileAttributes  map[string]any
 	HeaderFinalized bool
 	FlushState      *flush.State
+	TokenLenState   *tokenlen.State
 }
 
 // Reader manages a single file
@@ -177,7 +179,14 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 
 func (r *Reader) readContents(ctx context.Context) {
 	// Create the scanner to read the contents of the file.
-	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.contentSplitFunc)
+	bufferSize := r.initialBufferSize
+	if r.TokenLenState.MinimumLength > bufferSize {
+		// If we previously saw a potential token larger than the default buffer,
+		// size the buffer to be at least one byte larger so we can see if there's more data
+		bufferSize = r.TokenLenState.MinimumLength + 1
+	}
+
+	s := scanner.New(r, r.maxLogSize, bufferSize, r.Offset, r.contentSplitFunc)
 
 	// Iterate over the contents of the file.
 	for {

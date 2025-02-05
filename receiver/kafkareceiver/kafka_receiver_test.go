@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -34,6 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadatatest"
 )
 
 func TestNewTracesReceiver_version_err(t *testing.T) {
@@ -151,8 +153,9 @@ func TestTracesReceiver_error(t *testing.T) {
 }
 
 func TestTracesConsumerGroupHandler(t *testing.T) {
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
@@ -190,12 +193,12 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	close(groupClaim.messageChan)
 	wg.Wait()
-	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
@@ -235,14 +238,14 @@ func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	cancelFunc()
 	wg.Wait()
-	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	c := tracesConsumerGroupHandler{
 		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
@@ -267,74 +270,39 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: []byte("!@#")}
 	close(groupClaim.messageChan)
 	wg.Wait()
-	tel.assertMetrics(t, []metricdata.Metrics{
+	metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_kafka_receiver_offset_lag",
-			Unit:        "1",
-			Description: "Current offset lag",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value: 3,
-						Attributes: attribute.NewSet(
-							attribute.String("name", ""),
-							attribute.String("partition", "5"),
-						),
-					},
-				},
-			},
+			Value: 3,
+			Attributes: attribute.NewSet(
+				attribute.String("name", ""),
+				attribute.String("partition", "5"),
+			),
 		},
+	}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_kafka_receiver_current_offset",
-			Unit:        "1",
-			Description: "Current message offset",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value: 0,
-						Attributes: attribute.NewSet(
-							attribute.String("name", ""),
-							attribute.String("partition", "5"),
-						),
-					},
-				},
-			},
+			Value: 0,
+			Attributes: attribute.NewSet(
+				attribute.String("name", ""),
+				attribute.String("partition", "5"),
+			),
 		},
+	}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_kafka_receiver_messages",
-			Unit:        "1",
-			Description: "Number of received messages",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value: 1,
-						Attributes: attribute.NewSet(
-							attribute.String("name", ""),
-							attribute.String("partition", "5"),
-						),
-					},
-				},
-			},
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("name", ""),
+				attribute.String("partition", "5"),
+			),
 		},
+	}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualKafkaReceiverUnmarshalFailedSpans(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_kafka_receiver_unmarshal_failed_spans",
-			Unit:        "1",
-			Description: "Number of spans failed to be unmarshaled",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      1,
-						Attributes: attribute.NewSet(attribute.String("name", "")),
-					},
-				},
-			},
+			Value:      1,
+			Attributes: attribute.NewSet(attribute.String("name", "")),
 		},
-	})
-	require.NoError(t, tel.Shutdown(context.Background()))
+	}, metricdatatest.IgnoreTimestamp())
 }
 
 func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
@@ -530,8 +498,9 @@ func TestMetricsReceiver_error(t *testing.T) {
 }
 
 func TestMetricsConsumerGroupHandler(t *testing.T) {
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
@@ -569,12 +538,12 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	close(groupClaim.messageChan)
 	wg.Wait()
-	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
@@ -613,14 +582,14 @@ func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	cancelFunc()
 	wg.Wait()
-	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	c := metricsConsumerGroupHandler{
 		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
@@ -645,74 +614,39 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: []byte("!@#")}
 	close(groupClaim.messageChan)
 	wg.Wait()
-	tel.assertMetrics(t, []metricdata.Metrics{
+	metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_kafka_receiver_offset_lag",
-			Unit:        "1",
-			Description: "Current offset lag",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value: 3,
-						Attributes: attribute.NewSet(
-							attribute.String("name", ""),
-							attribute.String("partition", "5"),
-						),
-					},
-				},
-			},
+			Value: 3,
+			Attributes: attribute.NewSet(
+				attribute.String("name", ""),
+				attribute.String("partition", "5"),
+			),
 		},
+	}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_kafka_receiver_current_offset",
-			Unit:        "1",
-			Description: "Current message offset",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value: 0,
-						Attributes: attribute.NewSet(
-							attribute.String("name", ""),
-							attribute.String("partition", "5"),
-						),
-					},
-				},
-			},
+			Value: 0,
+			Attributes: attribute.NewSet(
+				attribute.String("name", ""),
+				attribute.String("partition", "5"),
+			),
 		},
+	}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_kafka_receiver_messages",
-			Unit:        "1",
-			Description: "Number of received messages",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value: 1,
-						Attributes: attribute.NewSet(
-							attribute.String("name", ""),
-							attribute.String("partition", "5"),
-						),
-					},
-				},
-			},
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("name", ""),
+				attribute.String("partition", "5"),
+			),
 		},
+	}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualKafkaReceiverUnmarshalFailedMetricPoints(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_kafka_receiver_unmarshal_failed_metric_points",
-			Unit:        "1",
-			Description: "Number of metric points failed to be unmarshaled",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      1,
-						Attributes: attribute.NewSet(attribute.String("name", "")),
-					},
-				},
-			},
+			Value:      1,
+			Attributes: attribute.NewSet(attribute.String("name", "")),
 		},
-	})
-	require.NoError(t, tel.Shutdown(context.Background()))
+	}, metricdatatest.IgnoreTimestamp())
 }
 
 func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
@@ -923,8 +857,9 @@ func TestLogsReceiver_error(t *testing.T) {
 }
 
 func TestLogsConsumerGroupHandler(t *testing.T) {
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
@@ -962,12 +897,12 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	close(groupClaim.messageChan)
 	wg.Wait()
-	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
@@ -1006,14 +941,14 @@ func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	cancelFunc()
 	wg.Wait()
-	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
-	tel := setupTestTelemetry()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
 		unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
@@ -1038,74 +973,41 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: []byte("!@#")}
 	close(groupClaim.messageChan)
 	wg.Wait()
-	tel.assertMetrics(t, []metricdata.Metrics{
+	metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_kafka_receiver_offset_lag",
-			Unit:        "1",
-			Description: "Current offset lag",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value: 3,
-						Attributes: attribute.NewSet(
-							attribute.String("name", ""),
-							attribute.String("partition", "5"),
-						),
-					},
-				},
-			},
+			Value: 3,
+			Attributes: attribute.NewSet(
+				attribute.String("name", ""),
+				attribute.String("partition", "5"),
+			),
 		},
+	}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_kafka_receiver_current_offset",
-			Unit:        "1",
-			Description: "Current message offset",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value: 0,
-						Attributes: attribute.NewSet(
-							attribute.String("name", ""),
-							attribute.String("partition", "5"),
-						),
-					},
-				},
-			},
+			Value: 0,
+			Attributes: attribute.NewSet(
+				attribute.String("name", ""),
+				attribute.String("partition", "5"),
+			),
 		},
+	}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_kafka_receiver_messages",
-			Unit:        "1",
-			Description: "Number of received messages",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value: 1,
-						Attributes: attribute.NewSet(
-							attribute.String("name", ""),
-							attribute.String("partition", "5"),
-						),
-					},
-				},
-			},
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("name", ""),
+				attribute.String("partition", "5"),
+			),
 		},
+	}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualKafkaReceiverUnmarshalFailedLogRecords(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_kafka_receiver_unmarshal_failed_log_records",
-			Unit:        "1",
-			Description: "Number of log records failed to be unmarshaled",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      1,
-						Attributes: attribute.NewSet(attribute.String("name", "")),
-					},
-				},
-			},
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("name", ""),
+			),
 		},
-	})
-	require.NoError(t, tel.Shutdown(context.Background()))
+	}, metricdatatest.IgnoreTimestamp())
 }
 
 func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
@@ -1184,7 +1086,7 @@ func TestLogsConsumerGroupHandler_unmarshal_text(t *testing.T) {
 		enc  string
 	}{
 		{
-			name: "unmarshal test for Englist (ASCII characters) with text_utf8",
+			name: "unmarshal test for English (ASCII characters) with text_utf8",
 			text: "ASCII characters test",
 			enc:  "utf8",
 		},
@@ -1454,42 +1356,21 @@ func (t *testConsumerGroup) ResumeAll() {
 	panic("implement me")
 }
 
-func assertInternalTelemetry(t *testing.T, tel componentTestTelemetry, partitionClose int64) {
-	wantMetrics := []metricdata.Metrics{
+func assertInternalTelemetry(t *testing.T, tel *componenttest.Telemetry, partitionClose int64) {
+	metadatatest.AssertEqualKafkaReceiverPartitionStart(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_kafka_receiver_partition_start",
-			Unit:        "1",
-			Description: "Number of started partitions",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      1,
-						Attributes: attribute.NewSet(attribute.String("name", "")),
-					},
-				},
-			},
+			Value:      1,
+			Attributes: attribute.NewSet(attribute.String("name", "")),
 		},
-	}
+	}, metricdatatest.IgnoreTimestamp())
 	if partitionClose > 0 {
-		wantMetrics = append(wantMetrics, metricdata.Metrics{
-			Name:        "otelcol_kafka_receiver_partition_close",
-			Unit:        "1",
-			Description: "Number of finished partitions",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      partitionClose,
-						Attributes: attribute.NewSet(attribute.String("name", "")),
-					},
-				},
+		metadatatest.AssertEqualKafkaReceiverPartitionClose(t, tel, []metricdata.DataPoint[int64]{
+			{
+				Value:      partitionClose,
+				Attributes: attribute.NewSet(attribute.String("name", "")),
 			},
-		})
+		}, metricdatatest.IgnoreTimestamp())
 	}
-	tel.assertMetrics(t, wantMetrics)
 }
 
 func nopTelemetryBuilder(t *testing.T) *metadata.TelemetryBuilder {

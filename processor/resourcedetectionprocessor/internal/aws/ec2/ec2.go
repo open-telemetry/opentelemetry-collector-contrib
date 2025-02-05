@@ -9,10 +9,11 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -32,34 +33,41 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type ec2ifaceBuilder interface {
-	buildClient(region string, client *http.Client) (ec2iface.EC2API, error)
+	buildClient(ctx context.Context, region string, client *http.Client) (ec2.DescribeTagsAPIClient, error)
 }
 
 type ec2ClientBuilder struct{}
 
-func (e *ec2ClientBuilder) buildClient(region string, client *http.Client) (ec2iface.EC2API, error) {
-	sess, err := session.NewSession(&aws.Config{
-		Region:     aws.String(region),
-		HTTPClient: client,
-	},
+func (e *ec2ClientBuilder) buildClient(ctx context.Context, region string, client *http.Client) (ec2.DescribeTagsAPIClient, error) {
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion(region),
+		config.WithHTTPClient(client),
 	)
 	if err != nil {
 		return nil, err
 	}
-	return ec2.New(sess), nil
+
+	return ec2.NewFromConfig(cfg), nil
 }
 
 type Detector struct {
-	metadataProvider ec2provider.Provider
-	tagKeyRegexes    []*regexp.Regexp
-	logger           *zap.Logger
-	rb               *metadata.ResourceBuilder
-	ec2ClientBuilder ec2ifaceBuilder
+	metadataProvider      ec2provider.Provider
+	tagKeyRegexes         []*regexp.Regexp
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	ec2ClientBuilder      ec2ifaceBuilder
+	failOnMissingMetadata bool
 }
 
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	sess, err := session.NewSession()
+	awsConfig, err := config.LoadDefaultConfig(context.Background())
+	awsConfig.Retryer = func() aws.Retryer {
+		return retry.NewStandard(func(options *retry.StandardOptions) {
+			options.MaxAttempts = cfg.MaxAttempts
+			options.MaxBackoff = cfg.MaxBackoff
+		})
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -69,17 +77,21 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 	}
 
 	return &Detector{
-		metadataProvider: ec2provider.NewProvider(sess),
-		tagKeyRegexes:    tagKeyRegexes,
-		logger:           set.Logger,
-		rb:               metadata.NewResourceBuilder(cfg.ResourceAttributes),
-		ec2ClientBuilder: &ec2ClientBuilder{},
+		metadataProvider:      ec2provider.NewProvider(awsConfig),
+		tagKeyRegexes:         tagKeyRegexes,
+		logger:                set.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		ec2ClientBuilder:      &ec2ClientBuilder{},
+		failOnMissingMetadata: cfg.FailOnMissingMetadata,
 	}, nil
 }
 
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	if _, err = d.metadataProvider.InstanceID(ctx); err != nil {
 		d.logger.Debug("EC2 metadata unavailable", zap.Error(err))
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", err
+		}
 		return pcommon.NewResource(), "", nil
 	}
 
@@ -106,12 +118,12 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	if len(d.tagKeyRegexes) != 0 {
 		httpClient := getClientConfig(ctx, d.logger)
-		ec2Client, err := d.ec2ClientBuilder.buildClient(meta.Region, httpClient)
+		ec2Client, err := d.ec2ClientBuilder.buildClient(ctx, meta.Region, httpClient)
 		if err != nil {
 			d.logger.Warn("failed to build ec2 client", zap.Error(err))
 			return res, conventions.SchemaURL, nil
 		}
-		tags, err := fetchEC2Tags(ec2Client, meta.InstanceID, d.tagKeyRegexes)
+		tags, err := fetchEC2Tags(ctx, ec2Client, meta.InstanceID, d.tagKeyRegexes)
 		if err != nil {
 			d.logger.Warn("failed fetching ec2 instance tags", zap.Error(err))
 		} else {
@@ -132,13 +144,11 @@ func getClientConfig(ctx context.Context, logger *zap.Logger) *http.Client {
 	return client
 }
 
-func fetchEC2Tags(svc ec2iface.EC2API, instanceID string, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {
-	ec2Tags, err := svc.DescribeTags(&ec2.DescribeTagsInput{
-		Filters: []*ec2.Filter{{
-			Name: aws.String("resource-id"),
-			Values: []*string{
-				aws.String(instanceID),
-			},
+func fetchEC2Tags(ctx context.Context, svc ec2.DescribeTagsAPIClient, instanceID string, tagKeyRegexes []*regexp.Regexp) (map[string]string, error) {
+	ec2Tags, err := svc.DescribeTags(ctx, &ec2.DescribeTagsInput{
+		Filters: []types.Filter{{
+			Name:   aws.String("resource-id"),
+			Values: []string{instanceID},
 		}},
 	})
 	if err != nil {
