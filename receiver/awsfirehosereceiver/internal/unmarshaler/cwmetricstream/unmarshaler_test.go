@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
-	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	"go.uber.org/zap"
 )
 
@@ -108,9 +107,9 @@ func TestUnmarshal_SingleRecord(t *testing.T) {
 	// Check one resource attribute to check things are wired up.
 	// Remaining resource attributes are checked in TestSetResourceAttributes.
 	res := rm.Resource()
-	cloudProvider, ok := res.Attributes().Get(semconv.AttributeCloudProvider)
+	cloudProvider, ok := res.Attributes().Get(conventions.AttributeCloudProvider)
 	require.True(t, ok)
-	assert.Equal(t, semconv.AttributeCloudProviderAWS, cloudProvider.Str())
+	assert.Equal(t, conventions.AttributeCloudProviderAWS, cloudProvider.Str())
 	require.Equal(t, 1, rm.ScopeMetrics().Len())
 	sm := rm.ScopeMetrics().At(0)
 
@@ -163,7 +162,7 @@ func TestSetResourceAttributes(t *testing.T) {
 				attributeAWSCloudWatchMetricStreamName: testStreamName,
 				conventions.AttributeCloudAccountID:    testAccountID,
 				conventions.AttributeCloudRegion:       testRegion,
-				conventions.AttributeCloudProvider:     semconv.AttributeCloudProviderAWS,
+				conventions.AttributeCloudProvider:     conventions.AttributeCloudProviderAWS,
 				conventions.AttributeServiceName:       "EC2",
 				conventions.AttributeServiceNamespace:  "AWS",
 			},
@@ -174,7 +173,7 @@ func TestSetResourceAttributes(t *testing.T) {
 				attributeAWSCloudWatchMetricStreamName: testStreamName,
 				conventions.AttributeCloudAccountID:    testAccountID,
 				conventions.AttributeCloudRegion:       testRegion,
-				conventions.AttributeCloudProvider:     semconv.AttributeCloudProviderAWS,
+				conventions.AttributeCloudProvider:     conventions.AttributeCloudProviderAWS,
 				conventions.AttributeServiceName:       "CustomNamespace",
 			},
 		},
