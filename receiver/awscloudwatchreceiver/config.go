@@ -48,8 +48,8 @@ type AutodiscoverConfig struct {
 
 // StreamConfig represents the configuration for the log stream filtering
 type StreamConfig struct {
-	Prefixes []string `mapstructure:"prefixes"`
-	Names    []string `mapstructure:"names"`
+	Prefixes []*string `mapstructure:"prefixes"`
+	Names    []*string `mapstructure:"names"`
 }
 
 var (

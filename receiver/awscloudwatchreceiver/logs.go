@@ -49,7 +49,7 @@ type client interface {
 
 type streamNames struct {
 	group string
-	names []string
+	names []*string
 }
 
 func (sn *streamNames) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
@@ -60,7 +60,7 @@ func (sn *streamNames) request(limit int, nextToken string, st, et *time.Time) *
 		Limit:        aws.Int32(int32(limit)),
 	}
 	if len(sn.names) > 0 {
-		base.LogStreamNames = sn.names
+		base.LogStreamNames = aws.ToStringSlice(sn.names)
 	}
 	if nextToken != "" {
 		base.NextToken = aws.String(nextToken)
@@ -74,7 +74,7 @@ func (sn *streamNames) groupName() string {
 
 type streamPrefix struct {
 	group  string
-	prefix string
+	prefix *string
 }
 
 func (sp *streamPrefix) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
@@ -83,7 +83,7 @@ func (sp *streamPrefix) request(limit int, nextToken string, st, et *time.Time) 
 		StartTime:           aws.Int64(st.UnixMilli()),
 		EndTime:             aws.Int64(et.UnixMilli()),
 		Limit:               aws.Int32(int32(limit)),
-		LogStreamNamePrefix: &sp.prefix,
+		LogStreamNamePrefix: sp.prefix,
 	}
 	if nextToken != "" {
 		base.NextToken = aws.String(nextToken)
@@ -351,14 +351,19 @@ func (l *logsReceiver) ensureSession() error {
 		return nil
 	}
 
-	cfg, err := config.LoadDefaultConfig(context.Background(),
+	cfgOptions := []func(*config.LoadOptions) error{
 		config.WithRegion(l.region),
-		config.WithEC2IMDSEndpoint(l.imdsEndpoint),
-		config.WithSharedConfigProfile(l.profile))
-	if err != nil {
-		return err
 	}
 
+	if l.imdsEndpoint != "" {
+		cfgOptions = append(cfgOptions, config.WithEC2IMDSEndpoint(l.imdsEndpoint))
+	}
+
+	if l.profile != "" {
+		cfgOptions = append(cfgOptions, config.WithSharedConfigProfile(l.profile))
+	}
+
+	cfg, err := config.LoadDefaultConfig(context.Background(), cfgOptions...)
 	l.client = cloudwatchlogs.NewFromConfig(cfg)
-	return nil
+	return err
 }
