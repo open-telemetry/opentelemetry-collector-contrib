@@ -688,9 +688,9 @@ CREATE TABLE "otel"."metric_summary_scope_attribute"
 
 ```
 
-# Kinetica Opentelemetry Exporter
+# Kinetica OpenTelemetry Exporter
 
- This exporter could be used to as part of an `Opentelemetry` collector to persist data related to
+ This exporter could be used to as part of an `OpenTelemetry` collector to persist data related to
  `logs`, `traces` and `metrics` to the `Kinetica` database.
 
  This component is under `development` status.

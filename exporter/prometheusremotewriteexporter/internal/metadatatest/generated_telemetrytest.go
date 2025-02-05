@@ -7,29 +7,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
 type Telemetry struct {
-	reader        *sdkmetric.ManualReader
-	meterProvider *sdkmetric.MeterProvider
+	componenttest.Telemetry
 }
 
-func SetupTelemetry() Telemetry {
-	reader := sdkmetric.NewManualReader()
-	return Telemetry{
-		reader:        reader,
-		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
-	}
+func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
+	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
 }
+
 func (tt *Telemetry) NewSettings() exporter.Settings {
 	set := exportertest.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("prometheusremotewrite"))
@@ -37,19 +30,12 @@ func (tt *Telemetry) NewSettings() exporter.Settings {
 	return set
 }
 
-func (tt *Telemetry) NewTelemetrySettings() component.TelemetrySettings {
-	set := componenttest.NewNopTelemetrySettings()
-	set.MeterProvider = tt.meterProvider
-	set.MetricsLevel = configtelemetry.LevelDetailed
-	return set
-}
-
 func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
 	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.reader.Collect(context.Background(), &md))
+	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
 	// ensure all required metrics are present
 	for _, want := range expected {
-		got := getMetric(want.Name, md)
+		got := getMetricFromResource(want.Name, md)
 		metricdatatest.AssertEqual(t, want, got, opts...)
 	}
 
@@ -57,11 +43,43 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func (tt *Telemetry) Shutdown(ctx context.Context) error {
-	return tt.meterProvider.Shutdown(ctx)
+func AssertEqualExporterPrometheusremotewriteFailedTranslations(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_prometheusremotewrite_failed_translations",
+		Description: "Number of translation operations that failed to translate metrics from Otel to Prometheus",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_exporter_prometheusremotewrite_failed_translations")
+	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
+func AssertEqualExporterPrometheusremotewriteTranslatedTimeSeries(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_prometheusremotewrite_translated_time_series",
+		Description: "Number of Prometheus time series that were translated from OTel metrics",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got := getMetric(t, tt, "otelcol_exporter_prometheusremotewrite_translated_time_series")
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
+	var md metricdata.ResourceMetrics
+	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
+	return getMetricFromResource(name, md)
+}
+
+func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
 	for _, sm := range got.ScopeMetrics {
 		for _, m := range sm.Metrics {
 			if m.Name == name {

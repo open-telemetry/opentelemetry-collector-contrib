@@ -116,7 +116,7 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 		Authentication: kafka.Authentication{
 			TLS: &configtls.ClientConfig{
 				Config: configtls.Config{
-					CAFile: "/doesnotexist",
+					CAFile: "/nonexistent",
 				},
 			},
 		},

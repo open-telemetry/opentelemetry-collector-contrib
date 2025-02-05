@@ -32,6 +32,7 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"google.golang.org/protobuf/proto"
 
+	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
@@ -114,11 +115,11 @@ func TestTracesSource(t *testing.T) {
 }
 
 func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-			t.Fatal(err)
-		}
-	}
+	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
+	}()
 
 	reqs := make(chan []byte, 1)
 	metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -229,7 +230,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	} {
 		t.Run("", func(t *testing.T) {
 			ctx := context.Background()
-			err = exporter.ConsumeTraces(ctx, simpleTracesWithResAttributes(tt.attrs))
+			err = exporter.ConsumeTraces(ctx, simpleTraces(tt.attrs, nil, ptrace.SpanKindInternal))
 			assert.NoError(err)
 			timeout := time.After(time.Second)
 			select {
@@ -261,11 +262,11 @@ func TestTraceExporter(t *testing.T) {
 }
 
 func testTraceExporter(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-			t.Fatal(err)
-		}
-	}
+	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
+	}()
 	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
@@ -307,7 +308,7 @@ func testTraceExporter(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	assert.NoError(t, err)
 
 	ctx := context.Background()
-	err = exporter.ConsumeTraces(ctx, simpleTraces())
+	err = exporter.ConsumeTraces(ctx, simpleTraces(nil, nil, ptrace.SpanKindInternal))
 	assert.NoError(t, err)
 	timeout := time.After(2 * time.Second)
 	select {
@@ -346,11 +347,11 @@ func TestPushTraceData(t *testing.T) {
 }
 
 func testPushTraceData(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-			t.Fatal(err)
-		}
-	}
+	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
+	}()
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 	cfg := &Config{
@@ -398,11 +399,11 @@ func TestPushTraceDataNewEnvConvention(t *testing.T) {
 }
 
 func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-			t.Fatal(err)
-		}
-	}
+	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
+	}()
 
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
@@ -428,7 +429,7 @@ func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
-	err = exp.ConsumeTraces(context.Background(), simpleTracesWithResAttributes(map[string]any{conventions127.AttributeDeploymentEnvironmentName: "new_env"}))
+	err = exp.ConsumeTraces(context.Background(), simpleTraces(map[string]any{conventions127.AttributeDeploymentEnvironmentName: "new_env"}, nil, ptrace.SpanKindInternal))
 	assert.NoError(t, err)
 
 	reqBytes := <-tracesRec.ReqChan
@@ -443,10 +444,57 @@ func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV
 	assert.Equal(t, "new_env", traces.TracerPayloads[0].GetEnv())
 }
 
-func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *testing.T) {
-	if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
+func TestPushTraceData_OperationAndResourceNameV2(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", true)
+	if err != nil {
 		t.Fatal(err)
 	}
+	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
+	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
+	defer server.Close()
+	cfg := &Config{
+		API: APIConfig{
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+		TagsConfig: TagsConfig{
+			Hostname: "test-host",
+		},
+		Metrics: MetricsConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
+		},
+		Traces: TracesConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
+		},
+	}
+	cfg.Traces.SetFlushInterval(0.1)
+
+	params := exportertest.NewNopSettings()
+	f := NewFactory()
+	exp, err := f.CreateTraces(context.Background(), params, cfg)
+	assert.NoError(t, err)
+
+	err = exp.ConsumeTraces(context.Background(), simpleTraces(map[string]any{conventions127.AttributeDeploymentEnvironmentName: "new_env"}, nil, ptrace.SpanKindServer))
+	assert.NoError(t, err)
+
+	reqBytes := <-tracesRec.ReqChan
+	buf := bytes.NewBuffer(reqBytes)
+	reader, err := gzip.NewReader(buf)
+	require.NoError(t, err)
+	slurp, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	var traces pb.AgentPayload
+	require.NoError(t, proto.Unmarshal(slurp, &traces))
+	assert.Len(t, traces.TracerPayloads, 1)
+	assert.Equal(t, "new_env", traces.TracerPayloads[0].GetEnv())
+	assert.Equal(t, "server.request", traces.TracerPayloads[0].Chunks[0].Spans[0].Name)
+}
+
+func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *testing.T) {
+	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
+	}()
 
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
@@ -480,7 +528,7 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 		"service.name":                "do-not-use",
 		"service.version":             "do-not-use",
 	}
-	err = exp.ConsumeTraces(context.Background(), simpleTracesWithResAndSpanAttributes(nil, sattr))
+	err = exp.ConsumeTraces(context.Background(), simpleTraces(nil, sattr, ptrace.SpanKindInternal))
 	assert.NoError(t, err)
 
 	reqBytes := <-tracesRec.ReqChan
@@ -501,24 +549,17 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 	assert.Empty(t, span.Meta["version"])
 }
 
-func simpleTraces() ptrace.Traces {
-	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, nil, nil)
+func simpleTraces(rattrs map[string]any, sattrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {
+	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, rattrs, sattrs, kind)
 }
 
-func simpleTracesWithResAttributes(rattrs map[string]any) ptrace.Traces {
-	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, rattrs, nil)
-}
-
-func simpleTracesWithResAndSpanAttributes(rattrs map[string]any, sattrs map[string]any) ptrace.Traces {
-	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, rattrs, sattrs)
-}
-
-func genTraces(traceID pcommon.TraceID, rattrs map[string]any, sattrs map[string]any) ptrace.Traces {
+func genTraces(traceID pcommon.TraceID, rattrs map[string]any, sattrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
 	span := rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4})
+	span.SetKind(kind)
 	if rattrs == nil {
 		return traces
 	}

@@ -71,7 +71,7 @@ func TestConsumeMetricsWithNaNValues(t *testing.T) {
 		generateFunc func(string) pmetric.Metrics
 	}{
 		{
-			"histograme-with-nan",
+			"histogram-with-nan",
 			generateTestHistogramMetricWithNaNs,
 		}, {
 			"gauge-with-nan",
@@ -110,7 +110,7 @@ func TestConsumeMetricsWithInfValues(t *testing.T) {
 		generateFunc func(string) pmetric.Metrics
 	}{
 		{
-			"histograme-with-inf",
+			"histogram-with-inf",
 			generateTestHistogramMetricWithInfs,
 		}, {
 			"gauge-with-inf",
