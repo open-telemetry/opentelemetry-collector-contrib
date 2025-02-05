@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
 func TestExporterLogs(t *testing.T) {
@@ -350,12 +352,12 @@ func TestExporterLogs(t *testing.T) {
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
-				dataStreamDataset: "record.dataset.\\/*?\"<>| ,#:",
+				elasticsearch.DataStreamDataset: "record.dataset.\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
-				dataStreamDataset:   "resource.dataset",
-				dataStreamNamespace: "resource.namespace.-\\/*?\"<>| ,#:",
+				elasticsearch.DataStreamDataset:   "resource.dataset",
+				elasticsearch.DataStreamNamespace: "resource.namespace.-\\/*?\"<>| ,#:",
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
@@ -752,14 +754,14 @@ func TestExporterLogs(t *testing.T) {
 				name:          "empty document id attribute should not set _id",
 				expectedDocID: "",
 				recordAttrs: map[string]any{
-					documentIDAttributeName: "",
+					elasticsearch.DocumentIDAttributeName: "",
 				},
 			},
 			{
 				name:          "record attributes",
 				expectedDocID: exampleDocID,
 				recordAttrs: map[string]any{
-					documentIDAttributeName: exampleDocID,
+					elasticsearch.DocumentIDAttributeName: exampleDocID,
 				},
 			},
 		}
@@ -790,7 +792,7 @@ func TestExporterLogs(t *testing.T) {
 						}
 
 						// Ensure the document id attribute is removed from the final document.
-						assert.NotContains(t, string(docs[0].Document), documentIDAttributeName, "expected document id attribute to be removed")
+						assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
 						return itemsAllOK(docs)
 					})
 
@@ -912,12 +914,12 @@ func TestExporterMetrics(t *testing.T) {
 		})
 		metrics := newMetricsWithAttributes(
 			map[string]any{
-				dataStreamNamespace: "data.point.namespace.-\\/*?\"<>| ,#:",
+				elasticsearch.DataStreamNamespace: "data.point.namespace.-\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
-				dataStreamDataset:   "resource.dataset.\\/*?\"<>| ,#:",
-				dataStreamNamespace: "resource.namespace",
+				elasticsearch.DataStreamDataset:   "resource.dataset.\\/*?\"<>| ,#:",
+				elasticsearch.DataStreamNamespace: "resource.namespace",
 			},
 		)
 		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
@@ -962,8 +964,8 @@ func TestExporterMetrics(t *testing.T) {
 			barOtherDp.SetDoubleValue(1.0)
 			barOtherIndexDp := barDps.AppendEmpty()
 			fillAttributeMap(barOtherIndexDp.Attributes(), map[string]any{
-				"dp.attribute":      "dp.attribute.value",
-				dataStreamNamespace: "bar",
+				"dp.attribute":                    "dp.attribute.value",
+				elasticsearch.DataStreamNamespace: "bar",
 			})
 			barOtherIndexDp.SetDoubleValue(1.0)
 
@@ -978,14 +980,14 @@ func TestExporterMetrics(t *testing.T) {
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 		fillAttributeMap(resourceMetrics.Resource().Attributes(), map[string]any{
-			dataStreamNamespace: "resource.namespace",
+			elasticsearch.DataStreamNamespace: "resource.namespace",
 		})
 		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
 		addToMetricSlice(scopeA.Metrics())
 
 		scopeB := resourceMetrics.ScopeMetrics().AppendEmpty()
 		fillAttributeMap(scopeB.Scope().Attributes(), map[string]any{
-			dataStreamDataset: "scope.b",
+			elasticsearch.DataStreamDataset: "scope.b",
 		})
 		addToMetricSlice(scopeB.Metrics())
 
@@ -1638,11 +1640,11 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
 			map[string]any{
-				dataStreamDataset: "span.dataset.\\/*?\"<>| ,#:",
+				elasticsearch.DataStreamDataset: "span.dataset.\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
-				dataStreamDataset: "resource.dataset",
+				elasticsearch.DataStreamDataset: "resource.dataset",
 			},
 		))
 
