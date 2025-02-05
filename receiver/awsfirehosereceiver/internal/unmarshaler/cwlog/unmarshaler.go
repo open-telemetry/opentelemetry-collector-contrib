@@ -105,7 +105,8 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return plog.Logs{}, err
+		// Treat this as a non-fatal error, and handle the data below.
+		u.logger.Error("Error scanning for newline-delimited JSON", zap.Error(err))
 	}
 	if len(byResource) == 0 {
 		return plog.Logs{}, errInvalidRecords

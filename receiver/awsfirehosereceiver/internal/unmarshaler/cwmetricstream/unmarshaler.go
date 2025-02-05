@@ -110,7 +110,8 @@ func (u Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 		maxQ.SetValue(cwMetric.Value.Max)
 	}
 	if err := scanner.Err(); err != nil {
-		return pmetric.Metrics{}, err
+		// Treat this as a non-fatal error, and handle the data below.
+		u.logger.Error("Error scanning for newline-delimited JSON", zap.Error(err))
 	}
 	if len(byResource) == 0 {
 		return pmetric.Metrics{}, errInvalidRecords
