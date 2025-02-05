@@ -370,6 +370,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				&testutil.MockSourceProvider{Src: tt.source},
 				reporter,
 				nil,
+				nil,
 			)
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")
@@ -813,6 +814,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				attributesTranslator,
 				&testutil.MockSourceProvider{Src: tt.source},
 				reporter,
+				nil,
 				nil,
 			)
 			if tt.expectedErr == nil {
