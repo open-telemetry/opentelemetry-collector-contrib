@@ -145,6 +145,7 @@ func TestBasicTranslation(t *testing.T) {
 						"service.name":                "test-service",
 						"resource.name":               "test-resource",
 						"deployment.environment.name": "spanenv2",
+						"service.version":             "v2",
 					},
 					Spans: []*testutil.OTLPSpan{
 						{
@@ -169,20 +170,24 @@ func TestBasicTranslation(t *testing.T) {
 				require.Equal(t, "test-operation", ddname.AsString())
 				ddresource, _ := span.Attributes().Get("datadog.resource")
 				require.Equal(t, "test-resource", ddresource.AsString())
-				ddTraceID, _ := span.Attributes().Get("datadog.trace_id")
-				require.Equal(t, "579005069656919567", ddTraceID.AsString())
-				ddSpanID, _ := span.Attributes().Get("datadog.span_id")
-				require.Equal(t, "283686952306183", ddSpanID.AsString())
-				ddParentID, _ := span.Attributes().Get("datadog.parent_id")
-				require.Equal(t, "1", ddParentID.AsString())
 				ddType, _ := span.Attributes().Get("datadog.type")
 				require.Equal(t, "web", ddType.AsString())
-				meta, _ := span.Attributes().Get("datadog.meta")
-				env, _ := meta.Map().Get("env")
+				ddSpanKind, _ := span.Attributes().Get("datadog.span.kind")
+				require.Equal(t, "server", ddSpanKind.AsString())
+				env, _ := span.Attributes().Get("datadog.env")
 				require.Equal(t, "spanenv2", env.AsString())
-				metrics, _ := span.Attributes().Get("datadog.metrics")
-				statusCode, _ := metrics.Map().Get(semconv.AttributeHTTPStatusCode)
-				require.Equal(t, 200.0, statusCode.Double())
+				version, _ := span.Attributes().Get("datadog.version")
+				require.Equal(t, "v2", version.AsString())
+				statusCode, _ := span.Attributes().Get("datadog.status_code")
+				require.Equal(t, "200", statusCode.AsString())
+				ddError, _ := span.Attributes().Get("datadog.error")
+				require.Equal(t, int64(0), ddError.Int())
+				_, ok := span.Attributes().Get("datadog.error.msg")
+				require.False(t, ok)
+				_, ok = span.Attributes().Get("datadog.error.type")
+				require.False(t, ok)
+				_, ok = span.Attributes().Get("datadog.error.stack")
+				require.False(t, ok)
 			},
 		},
 		{
@@ -199,20 +204,37 @@ func TestBasicTranslation(t *testing.T) {
 					},
 					Spans: []*testutil.OTLPSpan{
 						{
-							TraceID:  [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
-							SpanID:   [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
-							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
-							Kind:     ptrace.SpanKindServer,
+							Events: []testutil.OTLPSpanEvent{
+								{
+									Timestamp: 66,
+									Name:      "exception",
+									Attributes: map[string]interface{}{
+										semconv.AttributeExceptionMessage:    "overridden-msg",
+										semconv.AttributeExceptionType:       "overridden-type",
+										semconv.AttributeExceptionStacktrace: "overridden-stack",
+									},
+									Dropped: 4,
+								},
+							},
+							StatusCode: ptrace.StatusCodeError,
+							StatusMsg:  "overridden-error-msg",
+							TraceID:    [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+							SpanID:     [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+							ParentID:   [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
+							Kind:       ptrace.SpanKindServer,
 							Attributes: map[string]interface{}{
 								"datadog.service":               "specified-service",
 								"datadog.resource":              "specified-resource",
 								"datadog.name":                  "specified-operation",
-								"datadog.trace_id":              "123456789",
-								"datadog.span_id":               "987654321",
-								"datadog.parent_id":             "123456789",
 								"datadog.type":                  "specified-type",
-								"datadog.meta":                  map[string]interface{}{"env": "specified-env"},
-								"datadog.metrics":               map[string]interface{}{semconv.AttributeHTTPStatusCode: 500},
+								"datadog.span.kind":             "specified-span-kind",
+								"datadog.env":                   "specified-env",
+								"datadog.version":               "specified-version",
+								"datadog.status_code":           "500",
+								"datadog.error":                 1,
+								"datadog.error.msg":             "specified-error-msg",
+								"datadog.error.type":            "specified-error-type",
+								"datadog.error.stack":           "specified-error-stack",
 								"operation.name":                "test-operation",
 								semconv.AttributeHTTPStatusCode: 200,
 							},
@@ -229,27 +251,25 @@ func TestBasicTranslation(t *testing.T) {
 				require.Equal(t, "test-operation", ddname.AsString())
 				ddresource, _ := span.Attributes().Get("datadog.resource")
 				require.Equal(t, "test-resource", ddresource.AsString())
-				ddTraceID, _ := span.Attributes().Get("datadog.trace_id")
-				require.Equal(t, "579005069656919567", ddTraceID.AsString())
-				ddSpanID, _ := span.Attributes().Get("datadog.span_id")
-				require.Equal(t, "283686952306183", ddSpanID.AsString())
-				ddParentID, _ := span.Attributes().Get("datadog.parent_id")
-				require.Equal(t, "1", ddParentID.AsString())
 				ddType, _ := span.Attributes().Get("datadog.type")
 				require.Equal(t, "web", ddType.AsString())
-				meta, _ := span.Attributes().Get("datadog.meta")
-				env, _ := meta.Map().Get("env")
+				env, _ := span.Attributes().Get("datadog.env")
 				require.Equal(t, "spanenv2", env.AsString())
-				metrics, _ := span.Attributes().Get("datadog.metrics")
-				statusCode, _ := metrics.Map().Get(semconv.AttributeHTTPStatusCode)
-				require.Equal(t, 200.0, statusCode.Double())
+				statusCode, _ := span.Attributes().Get("datadog.status_code")
+				require.Equal(t, "200", statusCode.AsString())
+				ddError, _ := span.Attributes().Get("datadog.error")
+				require.Equal(t, int64(1), ddError.Int())
+				ddErrorMsg, _ := span.Attributes().Get("datadog.error.msg")
+				require.Equal(t, "overridden-msg", ddErrorMsg.AsString())
+				ddErrorType, _ := span.Attributes().Get("datadog.error.type")
+				require.Equal(t, "overridden-type", ddErrorType.AsString())
+				ddErrorStack, _ := span.Attributes().Get("datadog.error.stack")
+				require.Equal(t, "overridden-stack", ddErrorStack.AsString())
 			},
 		},
 		{
-			name:                          "don't overrideIncomingDatadogFields",
+			name:                          "dont override incoming Datadog fields",
 			overrideIncomingDatadogFields: false,
-			metaOverride:                  map[string]string{"env": "specified-env"},
-			metricsOverride:               map[string]float64{semconv.AttributeHTTPStatusCode: 500.0},
 			in: []testutil.OTLPResourceSpan{
 				{
 					LibName:    "libname",
@@ -261,18 +281,37 @@ func TestBasicTranslation(t *testing.T) {
 					},
 					Spans: []*testutil.OTLPSpan{
 						{
-							TraceID:  [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
-							SpanID:   [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
-							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
-							Kind:     ptrace.SpanKindServer,
+							Events: []testutil.OTLPSpanEvent{
+								{
+									Timestamp: 66,
+									Name:      "exception",
+									Attributes: map[string]interface{}{
+										semconv.AttributeExceptionMessage:    "overridden-msg",
+										semconv.AttributeExceptionType:       "overridden-type",
+										semconv.AttributeExceptionStacktrace: "overridden-stack",
+									},
+									Dropped: 4,
+								},
+							},
+							StatusCode: ptrace.StatusCodeError,
+							StatusMsg:  "overridden-error-msg",
+							TraceID:    [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+							SpanID:     [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
+							ParentID:   [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
+							Kind:       ptrace.SpanKindServer,
 							Attributes: map[string]interface{}{
 								"datadog.service":               "specified-service",
 								"datadog.resource":              "specified-resource",
 								"datadog.name":                  "specified-operation",
-								"datadog.trace_id":              "123456789",
-								"datadog.span_id":               "987654321",
-								"datadog.parent_id":             "123456789",
 								"datadog.type":                  "specified-type",
+								"datadog.span.kind":             "specified-span-kind",
+								"datadog.env":                   "specified-env",
+								"datadog.version":               "specified-version",
+								"datadog.status_code":           "500",
+								"datadog.error":                 1,
+								"datadog.error.msg":             "specified-error-msg",
+								"datadog.error.type":            "specified-error-type",
+								"datadog.error.stack":           "specified-error-stack",
 								"operation.name":                "test-operation",
 								semconv.AttributeHTTPStatusCode: 200,
 							},
@@ -289,20 +328,20 @@ func TestBasicTranslation(t *testing.T) {
 				require.Equal(t, "specified-operation", ddname.AsString())
 				ddresource, _ := span.Attributes().Get("datadog.resource")
 				require.Equal(t, "specified-resource", ddresource.AsString())
-				ddTraceID, _ := span.Attributes().Get("datadog.trace_id")
-				require.Equal(t, "123456789", ddTraceID.AsString())
-				ddSpanID, _ := span.Attributes().Get("datadog.span_id")
-				require.Equal(t, "987654321", ddSpanID.AsString())
-				ddParentID, _ := span.Attributes().Get("datadog.parent_id")
-				require.Equal(t, "123456789", ddParentID.AsString())
 				ddType, _ := span.Attributes().Get("datadog.type")
 				require.Equal(t, "specified-type", ddType.AsString())
-				meta, _ := span.Attributes().Get("datadog.meta")
-				env, _ := meta.Map().Get("env")
+				env, _ := span.Attributes().Get("datadog.env")
 				require.Equal(t, "specified-env", env.AsString())
-				metrics, _ := span.Attributes().Get("datadog.metrics")
-				statusCode, _ := metrics.Map().Get(semconv.AttributeHTTPStatusCode)
-				require.Equal(t, 500.0, statusCode.Double())
+				statusCode, _ := span.Attributes().Get("datadog.status_code")
+				require.Equal(t, "500", statusCode.AsString())
+				ddError, _ := span.Attributes().Get("datadog.error")
+				require.Equal(t, int64(1), ddError.Int())
+				ddErrorMsg, _ := span.Attributes().Get("datadog.error.msg")
+				require.Equal(t, "specified-error-msg", ddErrorMsg.AsString())
+				ddErrorType, _ := span.Attributes().Get("datadog.error.type")
+				require.Equal(t, "specified-error-type", ddErrorType.AsString())
+				ddErrorStack, _ := span.Attributes().Get("datadog.error.stack")
+				require.Equal(t, "specified-error-stack", ddErrorStack.AsString())
 			},
 		},
 	}
@@ -317,23 +356,6 @@ func TestBasicTranslation(t *testing.T) {
 		)
 
 		traces := testutil.NewOTLPTracesRequest(tt.in)
-
-		// TODO: Update testutil.NewOTLPTracesRequest to support map[string]interface{}, then update this test to
-		//  specify meta and metrics along with other attributes instead of using separate fields.
-		sattr := traces.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
-		if tt.metaOverride != nil {
-			meta := sattr.PutEmptyMap("datadog.meta")
-			for k, v := range tt.metaOverride {
-				meta.PutStr(k, v)
-			}
-		}
-		if tt.metricsOverride != nil {
-			metrics := sattr.PutEmptyMap("datadog.metrics")
-			for k, v := range tt.metricsOverride {
-				metrics.PutDouble(k, v)
-			}
-		}
-
 		m.testConsume(context.Background(),
 			traces.Traces(),
 			nil,
