@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +22,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
@@ -1129,9 +1129,9 @@ func initSpanWithAttribute(key string, value pcommon.Value, dest ptrace.Span) {
 
 // genRandomTestData generates a slice of ptrace.Traces with the numBatches elements which one with
 // numTracesPerBatch spans (ie.: each span has a different trace ID). All spans belong to the specified
-// serviceName.
+// serviceName. A fixed-seed random generator is used to ensure tests are repeatable.
 func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, resourceSpanCount int) (tdd []ptrace.Traces) {
-	r := rand.New(rand.NewSource(1))
+	r := rand.New(rand.NewPCG(123, 456))
 	var traceBatches []ptrace.Traces
 	for i := 0; i < numBatches; i++ {
 		traces := ptrace.NewTraces()
