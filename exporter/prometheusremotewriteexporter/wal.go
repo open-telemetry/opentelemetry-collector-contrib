@@ -20,7 +20,8 @@ import (
 )
 
 type prweWAL struct {
-	mu        sync.Mutex // mu protects the fields below.
+	wg        sync.WaitGroup // wg waits for the go routines to finish.
+	mu        sync.Mutex     // mu protects the fields below.
 	wal       *wal.Log
 	walConfig *WALConfig
 	walPath   string
@@ -128,10 +129,8 @@ func (prwe *prweWAL) retrieveWALIndices() (err error) {
 func (prwe *prweWAL) stop() error {
 	err := errAlreadyClosed
 	prwe.stopOnce.Do(func() {
-		prwe.mu.Lock()
-		defer prwe.mu.Unlock()
-
 		close(prwe.stopChan)
+		prwe.wg.Wait()
 		err = prwe.closeWAL()
 	})
 	return err
@@ -154,9 +153,12 @@ func (prwe *prweWAL) run(ctx context.Context) (err error) {
 
 	// Start the process of exporting but wait until the exporting has started.
 	waitUntilStartedCh := make(chan bool)
+	prwe.wg.Add(1)
 	go func() {
-		signalStart := func() { close(waitUntilStartedCh) }
+		defer prwe.wg.Done()
 		defer cancel()
+
+		signalStart := func() { close(waitUntilStartedCh) }
 		for {
 			select {
 			case <-runCtx.Done():
