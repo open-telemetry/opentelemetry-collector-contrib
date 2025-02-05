@@ -259,6 +259,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterVMCPUReadinessDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordVcenterVMCPUTimeDataPoint(ts, 1, AttributeCPUStateIdle, "object_name-val")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMCPUUsageDataPoint(ts, 1)
@@ -309,6 +312,12 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMMemoryUtilizationDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordVcenterVMNetworkBroadcastPacketRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
+
+			allMetricsCount++
+			mb.RecordVcenterVMNetworkMulticastPacketRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -1105,6 +1114,24 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.vm.cpu.time":
+					assert.False(t, validatedMetrics["vcenter.vm.cpu.time"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.time")
+					validatedMetrics["vcenter.vm.cpu.time"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "CPU time spent in idle, ready or wait state.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("cpu_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "idle", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("object")
+					assert.True(t, ok)
+					assert.EqualValues(t, "object_name-val", attrVal.Str())
 				case "vcenter.vm.cpu.usage":
 					assert.False(t, validatedMetrics["vcenter.vm.cpu.usage"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.usage")
 					validatedMetrics["vcenter.vm.cpu.usage"] = true
@@ -1296,6 +1323,42 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "vcenter.vm.network.broadcast.packet.rate":
+					assert.False(t, validatedMetrics["vcenter.vm.network.broadcast.packet.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.broadcast.packet.rate")
+					validatedMetrics["vcenter.vm.network.broadcast.packet.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The rate of broadcast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", ms.At(i).Description())
+					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "transmitted", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("object")
+					assert.True(t, ok)
+					assert.EqualValues(t, "object_name-val", attrVal.Str())
+				case "vcenter.vm.network.multicast.packet.rate":
+					assert.False(t, validatedMetrics["vcenter.vm.network.multicast.packet.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.multicast.packet.rate")
+					validatedMetrics["vcenter.vm.network.multicast.packet.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The rate of multicast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", ms.At(i).Description())
+					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "transmitted", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("object")
+					assert.True(t, ok)
+					assert.EqualValues(t, "object_name-val", attrVal.Str())
 				case "vcenter.vm.network.packet.drop.rate":
 					assert.False(t, validatedMetrics["vcenter.vm.network.packet.drop.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.packet.drop.rate")
 					validatedMetrics["vcenter.vm.network.packet.drop.rate"] = true

@@ -18,15 +18,19 @@ import (
 )
 
 func TestPerRPCAuth(t *testing.T) {
-	metadata := map[string]string{
-		"authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.BearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
 	// test meta data is properly
-	perRPCAuth := &PerRPCAuth{metadata: metadata}
+	bauth := newBearerTokenAuth(cfg, nil)
+	assert.NotNil(t, bauth)
+	perRPCAuth := &PerRPCAuth{auth: bauth}
 	md, err := perRPCAuth.GetRequestMetadata(context.Background())
 	assert.NoError(t, err)
-	assert.Equal(t, md, metadata)
+	expectedMetadata := map[string]string{
+		"authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+	}
+	assert.Equal(t, expectedMetadata, md)
 
 	// always true
 	ok := perRPCAuth.RequireTransportSecurity()
@@ -200,6 +204,34 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	authHeaderValue = resp.Header.Get("Authorization")
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(token)))
+}
+
+func TestBearerTokenUpdateForGrpc(t *testing.T) {
+	// prepare
+	cfg := createDefaultConfig().(*Config)
+	cfg.BearerToken = "1234"
+
+	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	assert.NotNil(t, bauth)
+
+	perRPCAuth, err := bauth.PerRPCCredentials()
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+	assert.NoError(t, bauth.Start(ctx, componenttest.NewNopHost()))
+
+	// initial token, OK
+	md, err := perRPCAuth.GetRequestMetadata(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]string{"authorization": "Bearer " + "1234"}, md)
+
+	// update the token
+	bauth.setAuthorizationValue("5678")
+	md, err = perRPCAuth.GetRequestMetadata(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]string{"authorization": "Bearer " + "5678"}, md)
+
+	assert.NoError(t, bauth.Shutdown(context.Background()))
 }
 
 func TestBearerServerAuthenticateWithScheme(t *testing.T) {
