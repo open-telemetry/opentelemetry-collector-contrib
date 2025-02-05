@@ -552,9 +552,6 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 	if !c.autocommitEnabled {
 		defer session.Commit()
 	}
-	if c.backOff != nil {
-		c.backOff.Reset()
-	}
 	for {
 		select {
 		case message, ok := <-claim.Messages():
@@ -600,6 +597,11 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 						case <-session.Context().Done():
 							return nil
 						case <-time.After(backOffDelay):
+							if !c.messageMarking.After {
+								// Unmark the message so it can be retried
+								session.ResetOffset(claim.Topic(), claim.Partition(), message.Offset, "")
+							}
+							return err
 						}
 					}
 				}
@@ -627,10 +629,6 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 	}
 }
 
-func errorRequiresBackoff(err error) bool {
-	return errors.Is(err, errMemoryLimiterDataRefused)
-}
-
 func (c *metricsConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
 	c.readyCloser.Do(func() {
 		close(c.ready)
@@ -648,9 +646,6 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 	c.logger.Info("Starting consumer group", zap.Int32("partition", claim.Partition()))
 	if !c.autocommitEnabled {
 		defer session.Commit()
-	}
-	if c.backOff != nil {
-		c.backOff.Reset()
 	}
 	for {
 		select {
@@ -697,6 +692,11 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 						case <-session.Context().Done():
 							return nil
 						case <-time.After(backOffDelay):
+							if !c.messageMarking.After {
+								// Unmark the message so it can be retried
+								session.ResetOffset(claim.Topic(), claim.Partition(), message.Offset, "")
+							}
+							return err
 						}
 					}
 				}
@@ -786,6 +786,11 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 						case <-session.Context().Done():
 							return nil
 						case <-time.After(backOffDelay):
+							if !c.messageMarking.After {
+								// Unmark the message so it can be retried
+								session.ResetOffset(claim.Topic(), claim.Partition(), message.Offset, "")
+							}
+							return err
 						}
 					}
 				}
@@ -865,4 +870,8 @@ func encodingToComponentID(encoding string) (*component.ID, error) {
 	}
 	id := component.NewID(componentType)
 	return &id, nil
+}
+
+func errorRequiresBackoff(err error) bool {
+	return err.Error() == errMemoryLimiterDataRefused.Error()
 }
