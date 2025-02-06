@@ -253,6 +253,7 @@ In some cases, you might need to change the behavior of the AWS metadata client 
 By default, the client retries 3 times with a max backoff delay of 20s.
 
 We offer a limited set of options to override those defaults specifically, such that you can set the client to retry 10 times, for up to 5 minutes, for example:
+
 ```yaml
 processors:
   resourcedetection/ec2:
@@ -260,6 +261,16 @@ processors:
     ec2:
       max_attempts: 10
       max_backoff: 5m
+```
+
+The EC2 detector will report an error in logs if the EC2 metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/ec2:
+    detectors: ["ec2"]
+    ec2:
+      fail_on_missing_metadata: true
 ```
 
 ### Amazon ECS

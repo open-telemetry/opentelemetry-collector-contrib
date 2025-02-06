@@ -18,7 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 )
 
-// Config defines configuration for Elastic exporter.
+// Config defines configuration for clickhouse exporter.
 type Config struct {
 	// collectorVersion is the build version of the collector. This is overridden when an exporter is initialized.
 	collectorVersion string

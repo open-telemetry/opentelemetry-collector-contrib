@@ -935,6 +935,137 @@ func Test_ProcessLogs_ErrorMode(t *testing.T) {
 	}
 }
 
+func Test_ProcessLogs_CacheAccess(t *testing.T) {
+	tests := []struct {
+		name       string
+		statements []common.ContextStatements
+		want       func(td plog.Logs)
+	}{
+		{
+			name: "resource:resource.cache",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["test"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(resource.attributes["test"], resource.cache["test"])`}, SharedCache: true},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).Resource().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "resource:cache",
+			statements: []common.ContextStatements{
+				{
+					Context: common.Resource,
+					Statements: []string{
+						`set(cache["test"], "pass")`,
+						`set(attributes["test"], cache["test"])`,
+					},
+				},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).Resource().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "scope:scope.cache",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.cache["test"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(scope.attributes["test"], scope.cache["test"])`}, SharedCache: true},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "scope:cache",
+			statements: []common.ContextStatements{{
+				Context: common.Scope,
+				Statements: []string{
+					`set(cache["test"], "pass")`,
+					`set(attributes["test"], cache["test"])`,
+				},
+			}},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "log:log.cache",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(log.cache["test"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(log.attributes["test"], log.cache["test"])`}, SharedCache: true},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "log:cache",
+			statements: []common.ContextStatements{{
+				Context: common.Log,
+				Statements: []string{
+					`set(cache["test"], "pass")`,
+					`set(attributes["test"], cache["test"])`,
+				},
+			}},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "cache isolation",
+			statements: []common.ContextStatements{
+				{
+					Statements:  []string{`set(log.cache["shared"], "fail")`},
+					SharedCache: true,
+				},
+				{
+					Statements: []string{
+						`set(log.cache["test"], "pass")`,
+						`set(log.attributes["test"], log.cache["test"])`,
+						`set(log.attributes["test"], log.cache["shared"])`,
+					},
+				},
+				{
+					Context: common.Log,
+					Statements: []string{
+						`set(cache["test"], "pass")`,
+						`set(attributes["test"], cache["test"])`,
+						`set(attributes["test"], cache["shared"])`,
+						`set(attributes["test"], log.cache["shared"])`,
+					},
+				},
+				{
+					Statements:  []string{`set(log.attributes["test"], "pass") where log.cache["shared"] == "fail"`},
+					SharedCache: true,
+				},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructLogs()
+			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessLogs(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructLogs()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func constructLogs() plog.Logs {
 	td := plog.NewLogs()
 	rs0 := td.ResourceLogs().AppendEmpty()

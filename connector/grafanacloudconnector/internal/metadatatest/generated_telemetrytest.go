@@ -15,21 +15,29 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
+// Deprecated: [v0.119.0] Use componenttest.Telemetry
 type Telemetry struct {
-	componenttest.Telemetry
+	*componenttest.Telemetry
 }
 
+// Deprecated: [v0.119.0] Use componenttest.NewTelemetry
 func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
 	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.NewSettings
 func (tt *Telemetry) NewSettings() connector.Settings {
+	return NewSettings(tt.Telemetry)
+}
+
+func NewSettings(tt *componenttest.Telemetry) connector.Settings {
 	set := connectortest.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("grafanacloud"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
 
+// Deprecated: [v0.119.0] Use metadatatest.AssertEqual*
 func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
 	var md metricdata.ResourceMetrics
 	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
@@ -43,7 +51,7 @@ func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, 
 	require.Equal(t, len(expected), lenMetrics(md))
 }
 
-func AssertEqualGrafanacloudDatapointCount(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualGrafanacloudDatapointCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_grafanacloud_datapoint_count",
 		Description: "Number of datapoints sent to Grafana Cloud",
@@ -54,11 +62,12 @@ func AssertEqualGrafanacloudDatapointCount(t *testing.T, tt componenttest.Teleme
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_grafanacloud_datapoint_count")
+	got, err := tt.GetMetric("otelcol_grafanacloud_datapoint_count")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualGrafanacloudFlushCount(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualGrafanacloudFlushCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_grafanacloud_flush_count",
 		Description: "Number of metrics flushes",
@@ -69,11 +78,12 @@ func AssertEqualGrafanacloudFlushCount(t *testing.T, tt componenttest.Telemetry,
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_grafanacloud_flush_count")
+	got, err := tt.GetMetric("otelcol_grafanacloud_flush_count")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualGrafanacloudHostCount(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualGrafanacloudHostCount(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_grafanacloud_host_count",
 		Description: "Number of unique hosts",
@@ -82,14 +92,9 @@ func AssertEqualGrafanacloudHostCount(t *testing.T, tt componenttest.Telemetry, 
 			DataPoints: dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_grafanacloud_host_count")
+	got, err := tt.GetMetric("otelcol_grafanacloud_host_count")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
 }
 
 func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
