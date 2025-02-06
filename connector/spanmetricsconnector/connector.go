@@ -85,8 +85,6 @@ type resourceMetrics struct {
 	sums       metrics.SumMetrics
 	events     metrics.SumMetrics
 	attributes pcommon.Map
-	// startTimestamp captures when the first data points for this resource are recorded.
-	startTimestamp pcommon.Timestamp
 	// lastSeen captures when the last data points for this resource were recorded.
 	lastSeen time.Time
 }
