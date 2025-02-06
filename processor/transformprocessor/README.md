@@ -55,7 +55,7 @@ transform:
   error_mode: ignore
   <trace|metric|log>_statements:
     - context: string
-      error_mode:
+      error_mode: propagate
       conditions: 
         - string
         - string
@@ -64,7 +64,7 @@ transform:
         - string
         - string
     - context: string
-      error_mode:
+      error_mode: silent
       statements:
         - string
         - string
