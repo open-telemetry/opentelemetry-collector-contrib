@@ -5,8 +5,11 @@ package transformprocessor // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"errors"
+	"fmt"
+	"reflect"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -42,6 +45,86 @@ type Config struct {
 
 	FlattenData bool `mapstructure:"flatten_data"`
 	logger      *zap.Logger
+}
+
+// Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
+// adding support to structured and flat configuration styles.
+// When the flat configuration style is used, each statement becomes a new common.ContextStatements
+// object, with empty [common.ContextStatements.Context] value.
+// On the other hand, structured configurations are parsed following the mapstructure Config format.
+// Mixed configuration styles are also supported.
+//
+// Example of flat configuration:
+//
+//	log_statements:
+//	  - set(attributes["service.new_name"], attributes["service.name"])
+//	  - delete_key(attributes, "service.name")
+//
+// Example of structured configuration:
+//
+//	log_statements:
+//	  - context: "span"
+//	    statements:
+//	      - set(attributes["service.new_name"], attributes["service.name"])
+//	      - delete_key(attributes, "service.name")
+func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	if conf == nil {
+		return nil
+	}
+
+	contextStatementsFields := map[string]*[]common.ContextStatements{
+		"trace_statements":  &c.TraceStatements,
+		"metric_statements": &c.MetricStatements,
+		"log_statements":    &c.LogStatements,
+	}
+
+	flatContextStatements := map[string][]int{}
+	contextStatementsPatch := map[string]any{}
+	for fieldName := range contextStatementsFields {
+		if !conf.IsSet(fieldName) {
+			continue
+		}
+		rawVal := conf.Get(fieldName)
+		values, ok := rawVal.([]any)
+		if !ok {
+			return fmt.Errorf("invalid %s type, expected: array, got: %t", fieldName, rawVal)
+		}
+		if len(values) == 0 {
+			continue
+		}
+
+		stmts := make([]any, 0, len(values))
+		for i, value := range values {
+			// Array of strings means it's a flat configuration style
+			if reflect.TypeOf(value).Kind() == reflect.String {
+				stmts = append(stmts, map[string]any{"statements": []any{value}})
+				flatContextStatements[fieldName] = append(flatContextStatements[fieldName], i)
+			} else {
+				stmts = append(stmts, value)
+			}
+		}
+		contextStatementsPatch[fieldName] = stmts
+	}
+
+	if len(contextStatementsPatch) > 0 {
+		err := conf.Merge(confmap.NewFromStringMap(contextStatementsPatch))
+		if err != nil {
+			return err
+		}
+	}
+
+	err := conf.Unmarshal(c)
+	if err != nil {
+		return err
+	}
+
+	for fieldName, indexes := range flatContextStatements {
+		for _, i := range indexes {
+			(*contextStatementsFields[fieldName])[i].SharedCache = true
+		}
+	}
+
+	return err
 }
 
 var _ component.Config = (*Config)(nil)

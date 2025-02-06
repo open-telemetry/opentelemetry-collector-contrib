@@ -19,6 +19,9 @@ import (
 )
 
 func TestValidate(t *testing.T) {
+	tlsConfig := configtls.NewDefaultClientConfig()
+	tlsConfig.InsecureSkipVerify = true
+
 	testCases := []struct {
 		name          string
 		config        Supervisor
@@ -32,9 +35,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -57,9 +58,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -83,9 +82,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -109,9 +106,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -165,9 +160,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "",
@@ -192,9 +185,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "./path/does/not/exist",
@@ -219,9 +210,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -245,9 +234,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -273,9 +260,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -300,9 +285,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -327,9 +310,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
@@ -403,9 +384,7 @@ func TestValidate(t *testing.T) {
 					Headers: http.Header{
 						"Header1": []string{"HeaderValue"},
 					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
+					TLSSetting: tlsConfig,
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",

@@ -95,11 +95,6 @@ type HeaderConfig struct {
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
 }
 
-// Deprecated [v0.97.0] Use Build and WithSplitFunc option instead
-func (c Config) BuildWithSplitFunc(set component.TelemetrySettings, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
-	return c.Build(set, emit, WithSplitFunc(splitFunc))
-}
-
 func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts ...Option) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err

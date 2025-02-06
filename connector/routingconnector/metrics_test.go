@@ -54,7 +54,7 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 
 	rtConn := conn.(*metricsConnector)
 	require.NoError(t, err)
@@ -435,7 +435,7 @@ func TestMetricsConnectorCapabilities(t *testing.T) {
 	)
 
 	require.NoError(t, err)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 }
 
 func TestMetricsConnectorDetailed(t *testing.T) {
@@ -465,13 +465,13 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 	isResourceBFromLowerContext := `resource.attributes["resourceName"] == "resourceB"`
 
 	testCases := []struct {
-		name        string
-		cfg         *Config
 		ctx         context.Context
 		input       pmetric.Metrics
 		expectSink0 pmetric.Metrics
 		expectSink1 pmetric.Metrics
 		expectSinkD pmetric.Metrics
+		cfg         *Config
+		name        string
 	}{
 		{
 			name: "request/no_request_values",

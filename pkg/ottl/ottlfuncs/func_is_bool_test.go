@@ -59,7 +59,7 @@ func Test_IsBool(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_IsBool_Error(t *testing.T) {
 	exprFunc := isBool[any](&ottl.StandardBoolGetter[any]{
 		Getter: func(context.Context, any) (any, error) {
