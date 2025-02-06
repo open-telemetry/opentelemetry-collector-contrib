@@ -296,9 +296,9 @@ func (f *field) accept(v grammarVisitor) {
 }
 
 type key struct {
-	String     *string          `parser:"'[' (@String "`
-	Int        *int64           `parser:"| @Int"`
-	Expression *mathExprLiteral `parser:"| @@ ) ']'"`
+	String     *string `parser:"'[' (@String "`
+	Int        *int64  `parser:"| @Int"`
+	Expression *value  `parser:"| @@ ) ']'"`
 }
 
 func (k *key) accept(v grammarVisitor) {

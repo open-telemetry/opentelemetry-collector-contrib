@@ -366,6 +366,24 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(body, attributes["things"][Len(attributes["things"]) - 1]["name"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("bar")
+			},
+		},
+		{
+			statement: `set(body, attributes["things"][attributes["int_value"] + 1]["name"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("bar")
+			},
+		},
+		{
+			statement: `set(body, attributes[attributes["foo"][attributes["slice"]][attributes["int_value"] + 1 - 1]])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("val2")
+			},
+		},
+		{
 			statement: `set(body, attributes[attributes["foo"][attributes["slice"]][attributes["int_value"]]])`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Body().SetStr("val2")

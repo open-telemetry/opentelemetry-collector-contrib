@@ -54,14 +54,16 @@ func buildOriginalKeysText(keys []key) string {
 				builder.WriteString(*k.String)
 			}
 			if k.Expression != nil {
-				if k.Expression.Path != nil {
-					builder.WriteString(buildOriginalText(k.Expression.Path))
-				}
-				if k.Expression.Float != nil {
-					builder.WriteString(strconv.FormatFloat(*k.Expression.Float, 'f', 10, 64))
-				}
-				if k.Expression.Int != nil {
-					builder.WriteString(strconv.FormatInt(*k.Expression.Int, 10))
+				if k.Expression.Literal != nil {
+					if k.Expression.Literal.Path != nil {
+						builder.WriteString(buildOriginalText(k.Expression.Literal.Path))
+					}
+					if k.Expression.Literal.Float != nil {
+						builder.WriteString(strconv.FormatFloat(*k.Expression.Literal.Float, 'f', 10, 64))
+					}
+					if k.Expression.Literal.Int != nil {
+						builder.WriteString(strconv.FormatInt(*k.Expression.Literal.Int, 10))
+					}
 				}
 			}
 			builder.WriteString("]")
@@ -226,15 +228,24 @@ func (p *Parser[K]) newKeys(keys []key) ([]Key[K], error) {
 	for i := range keys {
 		var getter Getter[K]
 		if keys[i].Expression != nil {
-			if keys[i].Expression.Path != nil {
-				g, err := p.buildGetSetterFromPath(keys[i].Expression.Path)
-				if err != nil {
-					return nil, err
+			if keys[i].Expression.Literal != nil {
+				if keys[i].Expression.Literal.Path != nil {
+					g, err := p.buildGetSetterFromPath(keys[i].Expression.Literal.Path)
+					if err != nil {
+						return nil, err
+					}
+					getter = g
 				}
-				getter = g
+				if keys[i].Expression.Literal.Converter != nil {
+					g, err := p.newGetterFromConverter(*keys[i].Expression.Literal.Converter)
+					if err != nil {
+						return nil, err
+					}
+					getter = g
+				}
 			}
-			if keys[i].Expression.Converter != nil {
-				g, err := p.newGetterFromConverter(*keys[i].Expression.Converter)
+			if keys[i].Expression.MathExpression != nil {
+				g, err := p.evaluateMathExpression(keys[i].Expression.MathExpression)
 				if err != nil {
 					return nil, err
 				}
