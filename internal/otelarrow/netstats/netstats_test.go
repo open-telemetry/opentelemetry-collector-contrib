@@ -307,7 +307,6 @@ func testNetStatsReceiver(t *testing.T, level configtelemetry.Level, expect map[
 				ID: component.NewID(component.MustNewType("test")),
 				TelemetrySettings: component.TelemetrySettings{
 					MeterProvider: mp,
-					MetricsLevel:  level,
 				},
 			})
 			require.NoError(t, err)
