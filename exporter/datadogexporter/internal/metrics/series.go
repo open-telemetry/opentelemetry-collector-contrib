@@ -8,9 +8,8 @@ import (
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
-	"go.opentelemetry.io/collector/component"
-
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
+	"go.opentelemetry.io/collector/component"
 )
 
 // newMetricSeries creates a new Datadog metric series given a name, a Unix nanoseconds timestamp
@@ -76,7 +75,8 @@ func GatewayUsageGauge(timestamp uint64, hostname string, tags []string, gateway
 		{
 			Name: datadog.PtrString(hostname),
 			Type: datadog.PtrString("host"),
-		}})
+		},
+	})
 	return series
 }
 
