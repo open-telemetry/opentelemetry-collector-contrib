@@ -135,6 +135,7 @@ receiver/otelarrowreceiver
 exporter/pulsarexporter
 internal/rabbitmq
 exporter/rabbitmqexporter
+exporter/sematextexporter
 exporter/sentryexporter
 exporter/stefexporter
 extension/sumologicextension
@@ -300,4 +301,5 @@ receiver/wavefrontreceiver
 receiver/webhookeventreceiver
 receiver/windowseventlogreceiver
 receiver/windowsperfcountersreceiver
+scraper/zookeeperscraper
 receiver/zookeeperreceiver
