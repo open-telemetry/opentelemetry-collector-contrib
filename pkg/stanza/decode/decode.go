@@ -16,7 +16,6 @@ import (
 )
 
 type Decoder struct {
-	encoding     encoding.Encoding
 	decoder      *encoding.Decoder
 	decodeBuffer []byte
 }
@@ -25,7 +24,6 @@ type Decoder struct {
 // Decoder is not thread-safe and must not be used in multiple goroutines.
 func New(enc encoding.Encoding) *Decoder {
 	return &Decoder{
-		encoding:     enc,
 		decoder:      enc.NewDecoder(),
 		decodeBuffer: make([]byte, 1<<12),
 	}
