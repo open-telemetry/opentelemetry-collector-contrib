@@ -148,6 +148,8 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
       enabled: false
     sending_queue:
       enabled: true
+    mapping:
+      mode: otel
     retry:
       enabled: true
       initial_interval: 100ms

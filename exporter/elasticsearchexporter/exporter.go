@@ -31,10 +31,10 @@ type elasticsearchExporter struct {
 	component.TelemetrySettings
 	userAgent string
 
-	config       *Config
-	index        string
-	dynamicIndex bool
-	model        mappingModel
+	config         *Config
+	index          string
+	dynamicIndex   bool
+	logstashFormat LogstashFormatSettings
 
 	wg          sync.WaitGroup // active sessions
 	bulkIndexer bulkIndexer
@@ -58,10 +58,6 @@ func newExporter(
 	index string,
 	dynamicIndex bool,
 ) *elasticsearchExporter {
-	model := &encodeModel{
-		mode: cfg.MappingMode(),
-	}
-
 	userAgent := fmt.Sprintf(
 		"%s/%s (%s/%s)",
 		set.BuildInfo.Description,
@@ -74,11 +70,11 @@ func newExporter(
 		TelemetrySettings: set.TelemetrySettings,
 		userAgent:         userAgent,
 
-		config:       cfg,
-		index:        index,
-		dynamicIndex: dynamicIndex,
-		model:        model,
-		bufferPool:   pool.NewBufferPool(),
+		config:         cfg,
+		index:          index,
+		dynamicIndex:   dynamicIndex,
+		logstashFormat: cfg.LogstashFormat,
+		bufferPool:     pool.NewBufferPool(),
 	}
 }
 
@@ -159,6 +155,10 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	mappingMode := e.config.MappingMode()
 	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
+	encoder, err := newEncoder(mappingMode)
+	if err != nil {
+		return err
+	}
 
 	e.wg.Add(1)
 	defer e.wg.Done()
@@ -178,9 +178,16 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 		for j := 0; j < ills.Len(); j++ {
 			ill := ills.At(j)
 			scope := ill.Scope()
+			ec := encodingContext{
+				resource:          resource,
+				resourceSchemaURL: rl.SchemaUrl(),
+				scope:             scope,
+				scopeSchemaURL:    ill.SchemaUrl(),
+			}
+
 			logs := ill.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				if err := e.pushLogRecord(ctx, router, resource, rl.SchemaUrl(), logs.At(k), scope, ill.SchemaUrl(), session); err != nil {
+				if err := e.pushLogRecord(ctx, router, encoder, ec, logs.At(k), session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -208,21 +215,19 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 func (e *elasticsearchExporter) pushLogRecord(
 	ctx context.Context,
 	router documentRouter,
-	resource pcommon.Resource,
-	resourceSchemaURL string,
+	encoder documentEncoder,
+	ec encodingContext,
 	record plog.LogRecord,
-	scope pcommon.InstrumentationScope,
-	scopeSchemaURL string,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
-	index, err := router.routeLogRecord(resource, scope, record.Attributes())
+	index, err := router.routeLogRecord(ec.resource, ec.scope, record.Attributes())
 	if err != nil {
 		return err
 	}
 
 	buf := e.bufferPool.NewPooledBuffer()
 	docID := e.extractDocumentIDAttribute(record.Attributes())
-	if err := e.model.encodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL, index, buf.Buffer); err != nil {
+	if err := encoder.encodeLog(ec, record, index, buf.Buffer); err != nil {
 		buf.Recycle()
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
@@ -250,6 +255,10 @@ func (e *elasticsearchExporter) pushMetricsData(
 	mappingMode := e.config.MappingMode()
 	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
 	hasher := newDataPointHasher(mappingMode)
+	encoder, err := newEncoder(mappingMode)
+	if err != nil {
+		return err
+	}
 
 	e.wg.Add(1)
 	defer e.wg.Done()
@@ -361,10 +370,17 @@ func (e *elasticsearchExporter) pushMetricsData(
 	for index, groupedDataPoints := range groupedDataPointsByIndex {
 		for _, dpGroup := range groupedDataPoints {
 			buf := e.bufferPool.NewPooledBuffer()
-			dynamicTemplates, err := e.model.encodeMetrics(
-				dpGroup.resource, dpGroup.resourceSchemaURL,
-				dpGroup.scope, dpGroup.scopeSchemaURL,
-				dpGroup.dataPoints, &validationErrs, index, buf.Buffer,
+			dynamicTemplates, err := encoder.encodeMetrics(
+				encodingContext{
+					resource:          dpGroup.resource,
+					resourceSchemaURL: dpGroup.resourceSchemaURL,
+					scope:             dpGroup.scope,
+					scopeSchemaURL:    dpGroup.scopeSchemaURL,
+				},
+				dpGroup.dataPoints,
+				&validationErrs,
+				index,
+				buf.Buffer,
 			)
 			if err != nil {
 				buf.Recycle()
@@ -399,6 +415,10 @@ func (e *elasticsearchExporter) pushTraceData(
 ) error {
 	mappingMode := e.config.MappingMode()
 	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
+	encoder, err := newEncoder(mappingMode)
+	if err != nil {
+		return err
+	}
 
 	e.wg.Add(1)
 	defer e.wg.Done()
@@ -418,10 +438,17 @@ func (e *elasticsearchExporter) pushTraceData(
 		for j := 0; j < scopeSpans.Len(); j++ {
 			scopeSpan := scopeSpans.At(j)
 			scope := scopeSpan.Scope()
+			ec := encodingContext{
+				resource:          resource,
+				resourceSchemaURL: il.SchemaUrl(),
+				scope:             scope,
+				scopeSchemaURL:    scopeSpan.SchemaUrl(),
+			}
+
 			spans := scopeSpan.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if err := e.pushTraceRecord(ctx, router, resource, il.SchemaUrl(), span, scope, scopeSpan.SchemaUrl(), session); err != nil {
+				if err := e.pushTraceRecord(ctx, router, encoder, ec, span, session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -429,7 +456,7 @@ func (e *elasticsearchExporter) pushTraceData(
 				}
 				for ii := 0; ii < span.Events().Len(); ii++ {
 					spanEvent := span.Events().At(ii)
-					if err := e.pushSpanEvent(ctx, router, resource, il.SchemaUrl(), span, spanEvent, scope, scopeSpan.SchemaUrl(), session); err != nil {
+					if err := e.pushSpanEvent(ctx, router, encoder, ec, span, spanEvent, session); err != nil {
 						errs = append(errs, err)
 					}
 				}
@@ -449,20 +476,18 @@ func (e *elasticsearchExporter) pushTraceData(
 func (e *elasticsearchExporter) pushTraceRecord(
 	ctx context.Context,
 	router documentRouter,
-	resource pcommon.Resource,
-	resourceSchemaURL string,
+	encoder documentEncoder,
+	ec encodingContext,
 	span ptrace.Span,
-	scope pcommon.InstrumentationScope,
-	scopeSchemaURL string,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
-	index, err := router.routeSpan(resource, scope, span.Attributes())
+	index, err := router.routeSpan(ec.resource, ec.scope, span.Attributes())
 	if err != nil {
 		return err
 	}
 
 	buf := e.bufferPool.NewPooledBuffer()
-	if err := e.model.encodeSpan(resource, resourceSchemaURL, span, scope, scopeSchemaURL, index, buf.Buffer); err != nil {
+	if err := encoder.encodeSpan(ec, span, index, buf.Buffer); err != nil {
 		buf.Recycle()
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
@@ -473,24 +498,21 @@ func (e *elasticsearchExporter) pushTraceRecord(
 func (e *elasticsearchExporter) pushSpanEvent(
 	ctx context.Context,
 	router documentRouter,
-	resource pcommon.Resource,
-	resourceSchemaURL string,
+	encoder documentEncoder,
+	ec encodingContext,
 	span ptrace.Span,
 	spanEvent ptrace.SpanEvent,
-	scope pcommon.InstrumentationScope,
-	scopeSchemaURL string,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
-	index, err := router.routeSpanEvent(resource, scope, spanEvent.Attributes())
+	index, err := router.routeSpanEvent(ec.resource, ec.scope, spanEvent.Attributes())
 	if err != nil {
 		return err
 	}
 
 	buf := e.bufferPool.NewPooledBuffer()
-	e.model.encodeSpanEvent(resource, resourceSchemaURL, span, spanEvent, scope, scopeSchemaURL, index, buf.Buffer)
-	if buf.Buffer.Len() == 0 {
+	if err := encoder.encodeSpanEvent(ec, span, spanEvent, index, buf.Buffer); err != nil || buf.Buffer.Len() == 0 {
 		buf.Recycle()
-		return nil
+		return err
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
 	return bulkIndexerSession.Add(ctx, index.Index, "", buf, nil, docappender.ActionCreate)
@@ -509,6 +531,13 @@ func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string
 }
 
 func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofile.Profiles) error {
+	// TODO add support for routing profiles to different data_stream.namespaces?
+	mappingMode := e.config.MappingMode()
+	encoder, err := newEncoder(mappingMode)
+	if err != nil {
+		return err
+	}
+
 	e.wg.Add(1)
 	defer e.wg.Done()
 
@@ -549,7 +578,16 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 			scope := sp.Scope()
 			p := sp.Profiles()
 			for k := 0; k < p.Len(); k++ {
-				if err := e.pushProfileRecord(ctx, resource, p.At(k), scope, defaultSession, eventsSession, stackTracesSession, stackFramesSession, executablesSession); err != nil {
+				ec := encodingContext{
+					resource:          resource,
+					resourceSchemaURL: rp.SchemaUrl(),
+					scope:             scope,
+					scopeSchemaURL:    sp.SchemaUrl(),
+				}
+				if err := e.pushProfileRecord(
+					ctx, encoder, ec, p.At(k), defaultSession, eventsSession,
+					stackTracesSession, stackFramesSession, executablesSession,
+				); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -601,12 +639,12 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 
 func (e *elasticsearchExporter) pushProfileRecord(
 	ctx context.Context,
-	resource pcommon.Resource,
-	record pprofile.Profile,
-	scope pcommon.InstrumentationScope,
+	encoder documentEncoder,
+	ec encodingContext,
+	profile pprofile.Profile,
 	defaultSession, eventsSession, stackTracesSession, stackFramesSession, executablesSession bulkIndexerSession,
 ) error {
-	return e.model.encodeProfile(resource, scope, record, func(buf *bytes.Buffer, docID, index string) error {
+	return encoder.encodeProfile(ec, profile, func(buf *bytes.Buffer, docID, index string) error {
 		switch index {
 		case otelserializer.StackTraceIndex:
 			return stackTracesSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
