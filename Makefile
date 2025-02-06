@@ -197,6 +197,14 @@ for-all:
 	 	$${CMD} ); \
 	done
 
+.PHONY: for-generated
+for-generated:
+	@set -e; for dir in $(GENERATED_MODS); do \
+	  (cd "$${dir}" && \
+	  	echo "running $${CMD} in $${dir}" && \
+	 	$${CMD} ); \
+	done
+
 COMMIT?=HEAD
 MODSET?=contrib-core
 REMOTE?=git@github.com:open-telemetry/opentelemetry-collector-contrib.git
