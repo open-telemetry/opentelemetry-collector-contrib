@@ -57,7 +57,7 @@ func TestFixedNumberOfMetrics(t *testing.T) {
 			WorkerCount: 1,
 		},
 		NumMetrics: 5,
-		MetricType: metricTypeSum,
+		MetricType: MetricTypeSum,
 	}
 	m := &mockExporter{}
 	expFunc := func() (sdkmetric.Exporter, error) {
@@ -66,7 +66,7 @@ func TestFixedNumberOfMetrics(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 	time.Sleep(1 * time.Second)
 
 	// assert
@@ -81,7 +81,7 @@ func TestRateOfMetrics(t *testing.T) {
 			TotalDuration: time.Second / 2,
 			WorkerCount:   1,
 		},
-		MetricType: metricTypeSum,
+		MetricType: MetricTypeSum,
 	}
 	m := &mockExporter{}
 	expFunc := func() (sdkmetric.Exporter, error) {
@@ -89,7 +89,7 @@ func TestRateOfMetrics(t *testing.T) {
 	}
 
 	// act
-	require.NoError(t, Run(cfg, expFunc, zap.NewNop()))
+	require.NoError(t, run(cfg, expFunc, zap.NewNop()))
 
 	// assert
 	// the minimum acceptable number of metrics for the rate of 10/sec for half a second
@@ -105,7 +105,7 @@ func TestUnthrottled(t *testing.T) {
 			TotalDuration: 1 * time.Second,
 			WorkerCount:   1,
 		},
-		MetricType: metricTypeSum,
+		MetricType: MetricTypeSum,
 	}
 	m := &mockExporter{}
 	expFunc := func() (sdkmetric.Exporter, error) {
@@ -114,7 +114,7 @@ func TestUnthrottled(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	// assert
 	assert.Greater(t, len(m.rms), 100, "there should have been more than 100 metrics, had %d", len(m.rms))
@@ -123,7 +123,7 @@ func TestUnthrottled(t *testing.T) {
 func TestSumNoTelemetryAttrs(t *testing.T) {
 	// arrange
 	qty := 2
-	cfg := configWithNoAttributes(metricTypeSum, qty)
+	cfg := configWithNoAttributes(MetricTypeSum, qty)
 	m := &mockExporter{}
 	expFunc := func() (sdkmetric.Exporter, error) {
 		return m, nil
@@ -131,7 +131,7 @@ func TestSumNoTelemetryAttrs(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -151,7 +151,7 @@ func TestSumNoTelemetryAttrs(t *testing.T) {
 func TestGaugeNoTelemetryAttrs(t *testing.T) {
 	// arrange
 	qty := 2
-	cfg := configWithNoAttributes(metricTypeGauge, qty)
+	cfg := configWithNoAttributes(MetricTypeGauge, qty)
 	m := &mockExporter{}
 	expFunc := func() (sdkmetric.Exporter, error) {
 		return m, nil
@@ -159,7 +159,7 @@ func TestGaugeNoTelemetryAttrs(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -179,7 +179,7 @@ func TestGaugeNoTelemetryAttrs(t *testing.T) {
 func TestSumSingleTelemetryAttr(t *testing.T) {
 	// arrange
 	qty := 2
-	cfg := configWithOneAttribute(metricTypeSum, qty)
+	cfg := configWithOneAttribute(MetricTypeSum, qty)
 	m := &mockExporter{}
 	expFunc := func() (sdkmetric.Exporter, error) {
 		return m, nil
@@ -187,7 +187,7 @@ func TestSumSingleTelemetryAttr(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -209,7 +209,7 @@ func TestSumSingleTelemetryAttr(t *testing.T) {
 func TestGaugeSingleTelemetryAttr(t *testing.T) {
 	// arrange
 	qty := 2
-	cfg := configWithOneAttribute(metricTypeGauge, qty)
+	cfg := configWithOneAttribute(MetricTypeGauge, qty)
 	m := &mockExporter{}
 	expFunc := func() (sdkmetric.Exporter, error) {
 		return m, nil
@@ -217,7 +217,7 @@ func TestGaugeSingleTelemetryAttr(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -239,7 +239,7 @@ func TestGaugeSingleTelemetryAttr(t *testing.T) {
 func TestSumMultipleTelemetryAttr(t *testing.T) {
 	// arrange
 	qty := 2
-	cfg := configWithMultipleAttributes(metricTypeSum, qty)
+	cfg := configWithMultipleAttributes(MetricTypeSum, qty)
 	m := &mockExporter{}
 	expFunc := func() (sdkmetric.Exporter, error) {
 		return m, nil
@@ -247,7 +247,7 @@ func TestSumMultipleTelemetryAttr(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -271,7 +271,7 @@ func TestSumMultipleTelemetryAttr(t *testing.T) {
 func TestGaugeMultipleTelemetryAttr(t *testing.T) {
 	// arrange
 	qty := 2
-	cfg := configWithMultipleAttributes(metricTypeGauge, qty)
+	cfg := configWithMultipleAttributes(MetricTypeGauge, qty)
 	m := &mockExporter{}
 	expFunc := func() (sdkmetric.Exporter, error) {
 		return m, nil
@@ -279,7 +279,7 @@ func TestGaugeMultipleTelemetryAttr(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -312,7 +312,7 @@ func TestValidate(t *testing.T) {
 				Config: common.Config{
 					WorkerCount: 1,
 				},
-				MetricType: metricTypeSum,
+				MetricType: MetricTypeSum,
 				TraceID:    "123",
 			},
 			wantErrMessage: "either `metrics` or `duration` must be greater than 0",
@@ -324,7 +324,7 @@ func TestValidate(t *testing.T) {
 					WorkerCount: 1,
 				},
 				NumMetrics: 5,
-				MetricType: metricTypeSum,
+				MetricType: MetricTypeSum,
 				TraceID:    "123",
 			},
 			wantErrMessage: "TraceID must be a 32 character hex string, like: 'ae87dadd90e9935a4bc9660628efd569'",
@@ -336,7 +336,7 @@ func TestValidate(t *testing.T) {
 					WorkerCount: 1,
 				},
 				NumMetrics: 5,
-				MetricType: metricTypeSum,
+				MetricType: MetricTypeSum,
 				TraceID:    "ae87dadd90e9935a4bc9660628efd569",
 				SpanID:     "123",
 			},
@@ -350,12 +350,12 @@ func TestValidate(t *testing.T) {
 				return m, nil
 			}
 			logger, _ := zap.NewDevelopment()
-			require.EqualError(t, Run(tt.cfg, expFunc, logger), tt.wantErrMessage)
+			require.EqualError(t, run(tt.cfg, expFunc, logger), tt.wantErrMessage)
 		})
 	}
 }
 
-func configWithNoAttributes(metric metricType, qty int) *Config {
+func configWithNoAttributes(metric MetricType, qty int) *Config {
 	return &Config{
 		Config: common.Config{
 			WorkerCount:         1,
@@ -367,7 +367,7 @@ func configWithNoAttributes(metric metricType, qty int) *Config {
 	}
 }
 
-func configWithOneAttribute(metric metricType, qty int) *Config {
+func configWithOneAttribute(metric MetricType, qty int) *Config {
 	return &Config{
 		Config: common.Config{
 			WorkerCount:         1,
@@ -379,7 +379,7 @@ func configWithOneAttribute(metric metricType, qty int) *Config {
 	}
 }
 
-func configWithMultipleAttributes(metric metricType, qty int) *Config {
+func configWithMultipleAttributes(metric MetricType, qty int) *Config {
 	kvs := common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne, telemetryAttrKeyTwo: telemetryAttrValueTwo}
 	return &Config{
 		Config: common.Config{
