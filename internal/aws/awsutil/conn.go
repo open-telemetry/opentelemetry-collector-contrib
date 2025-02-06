@@ -500,7 +500,6 @@ const (
 //
 // See https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html#cross-service-confused-deputy-prevention
 func newStsClient(p client.ConfigProvider, cfgs ...*aws.Config) *sts.STS {
-
 	sourceAccount := os.Getenv(AmzSourceAccount)
 	sourceArn := os.Getenv(AmzSourceArn)
 
