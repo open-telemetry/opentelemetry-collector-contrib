@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -187,8 +188,17 @@ type RetrySettings struct {
 }
 
 type MappingsSettings struct {
-	// Mode configures the field mappings.
+	// Mode configures the default document mapping mode.
+	//
+	// The mode may be overridden by the client metadata key
+	// X-Elastic-Mapping-Mode, if specified.
 	Mode string `mapstructure:"mode"`
+
+	// AllowedModes controls the allowed document mapping modes
+	// specified through X-Elastic-Mapping-Mode client metadata.
+	//
+	// If unspecified, all mapping modes are allowed.
+	AllowedModes []string `mapstructure:"allowed_modes"`
 }
 
 type MappingMode int
@@ -200,17 +210,15 @@ const (
 	MappingOTel
 	MappingRaw
 	MappingBodyMap
-)
 
-var (
-	errConfigEndpointRequired = errors.New("exactly one of [endpoint, endpoints, cloudid] must be specified")
-	errConfigEmptyEndpoint    = errors.New("endpoint must not be empty")
+	// NumMappingModes remain last, it is used for sizing arrays.
+	NumMappingModes
 )
 
 func (m MappingMode) String() string {
 	switch m {
 	case MappingNone:
-		return ""
+		return "none"
 	case MappingECS:
 		return "ecs"
 	case MappingOTel:
@@ -219,29 +227,14 @@ func (m MappingMode) String() string {
 		return "raw"
 	case MappingBodyMap:
 		return "bodymap"
-	default:
-		return ""
 	}
+	return ""
 }
 
-var mappingModes = func() map[string]MappingMode {
-	table := map[string]MappingMode{}
-	for _, m := range []MappingMode{
-		MappingNone,
-		MappingECS,
-		MappingOTel,
-		MappingRaw,
-		MappingBodyMap,
-	} {
-		table[strings.ToLower(m.String())] = m
-	}
-
-	// config aliases
-	table["no"] = MappingNone
-	table["none"] = MappingNone
-
-	return table
-}()
+var (
+	errConfigEndpointRequired = errors.New("exactly one of [endpoint, endpoints, cloudid] must be specified")
+	errConfigEmptyEndpoint    = errors.New("endpoint must not be empty")
+)
 
 const defaultElasticsearchEnvName = "ELASTICSEARCH_URL"
 
@@ -257,8 +250,16 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if _, ok := mappingModes[cfg.Mapping.Mode]; !ok {
-		return fmt.Errorf("unknown mapping mode %q", cfg.Mapping.Mode)
+	canonicalAllowedModes := make([]string, len(cfg.Mapping.AllowedModes))
+	for i, name := range cfg.Mapping.AllowedModes {
+		canonicalName := canonicalMappingModeName(name)
+		if _, ok := canonicalMappingModes[canonicalName]; !ok {
+			return fmt.Errorf("unknown allowed mapping mode name %q", name)
+		}
+		canonicalAllowedModes[i] = canonicalName
+	}
+	if !slices.Contains(canonicalAllowedModes, canonicalMappingModeName(cfg.Mapping.Mode)) {
+		return fmt.Errorf("invalid or disallowed default mapping mode %q", cfg.Mapping.Mode)
 	}
 
 	if cfg.Compression != "none" && cfg.Compression != configcompression.TypeGzip {
@@ -276,6 +277,34 @@ func (cfg *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// allowedMappingModes returns a map from canonical mapping mode names to MappingModes.
+func (cfg *Config) allowedMappingModes() map[string]MappingMode {
+	modes := make(map[string]MappingMode)
+	for _, name := range cfg.Mapping.AllowedModes {
+		canonical := canonicalMappingModeName(name)
+		modes[canonical] = canonicalMappingModes[canonical]
+	}
+	return modes
+}
+
+var canonicalMappingModes = map[string]MappingMode{
+	MappingNone.String():    MappingNone,
+	MappingRaw.String():     MappingRaw,
+	MappingECS.String():     MappingECS,
+	MappingOTel.String():    MappingOTel,
+	MappingBodyMap.String(): MappingBodyMap,
+}
+
+func canonicalMappingModeName(name string) string {
+	lower := strings.ToLower(name)
+	switch lower {
+	case "", "no": // aliases for "none"
+		return "none"
+	default:
+		return lower
+	}
 }
 
 func (cfg *Config) endpoints() ([]string, error) {
@@ -348,13 +377,6 @@ func parseCloudID(input string) (*url.URL, error) {
 		return nil, fmt.Errorf("invalid decoded CloudID %q", string(decoded))
 	}
 	return url.Parse(fmt.Sprintf("https://%s.%s", after, before))
-}
-
-// MappingMode returns the mapping.mode defined in the given cfg
-// object. This method must be called after cfg.Validate() has been
-// called without returning an error.
-func (cfg *Config) MappingMode() MappingMode {
-	return mappingModes[cfg.Mapping.Mode]
 }
 
 func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
