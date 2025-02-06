@@ -156,12 +156,13 @@ func (exp *logsExporter) exportUsageMetrics(ctx context.Context, hosts map[strin
 				series = append(series, metrics.GatewayUsageGauge(timestamp, host, buildTags, exp.gatewayUsage))
 			}
 		}
-
-		_, err = exp.retrier.DoWithRetries(ctx, func(context.Context) error {
-			ctx2 := clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
-			_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx2, datadogV2.MetricPayload{Series: series}, *clientutil.GZipSubmitMetricsOptionalParameters)
-			return clientutil.WrapError(merr, httpresp)
-		})
+		if len(series) > 0 {
+			_, err = exp.retrier.DoWithRetries(ctx, func(context.Context) error {
+				ctx2 := clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
+				_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx2, datadogV2.MetricPayload{Series: series}, *clientutil.GZipSubmitMetricsOptionalParameters)
+				return clientutil.WrapError(merr, httpresp)
+			})
+		}
 	}
 
 	if err != nil {
