@@ -62,8 +62,6 @@ type exponentialHistogram struct {
 	startTimestamp pcommon.Timestamp
 }
 
-type generateStartTimestamp = func(Key) pcommon.Timestamp
-
 func NewExponentialHistogramMetrics(maxSize int32, maxExemplarCount *int) HistogramMetrics {
 	return &exponentialHistogramMetrics{
 		metrics:          make(map[Key]*exponentialHistogram),
@@ -256,7 +254,7 @@ func (s *Sum) Add(value uint64) {
 	s.count += value
 }
 
-func NewSumMetrics(maxExemplarCount *int, startTimeStamp pcommon.Timestamp) SumMetrics {
+func NewSumMetrics(maxExemplarCount *int) SumMetrics {
 	return SumMetrics{
 		metrics:          make(map[Key]*Sum),
 		maxExemplarCount: maxExemplarCount,

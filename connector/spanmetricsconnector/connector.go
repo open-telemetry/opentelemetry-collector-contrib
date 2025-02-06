@@ -376,7 +376,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 			continue
 		}
 
-		rm := p.getOrCreateResourceMetrics(resourceAttr, startTimestamp)
+		rm := p.getOrCreateResourceMetrics(resourceAttr)
 		sums := rm.sums
 		histograms := rm.histograms
 		events := rm.events
@@ -472,16 +472,15 @@ func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
 	return pdatautil.MapHash(m)
 }
 
-func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map, startTimestamp pcommon.Timestamp) *resourceMetrics {
+func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMetrics {
 	key := p.createResourceKey(attr)
 	v, ok := p.resourceMetrics.Get(key)
 	if !ok {
 		v = &resourceMetrics{
-			histograms:     initHistogramMetrics(p.config),
-			sums:           metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint, startTimestamp),
-			events:         metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint, startTimestamp),
-			attributes:     attr,
-			startTimestamp: startTimestamp,
+			histograms: initHistogramMetrics(p.config),
+			sums:       metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
+			events:     metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
+			attributes: attr,
 		}
 		p.resourceMetrics.Add(key, v)
 	}
