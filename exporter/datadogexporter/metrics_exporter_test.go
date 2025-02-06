@@ -343,6 +343,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			},
 		},
 	}
+	gatewayUsage := attributes.NewGatewayUsage()
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("kind=%s,histogramMode=%s", tt.source.Kind, tt.histogramMode), func(t *testing.T) {
 			seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.MetricV2Endpoint}
@@ -370,7 +371,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				&testutil.MockSourceProvider{Src: tt.source},
 				reporter,
 				nil,
-				nil,
+				gatewayUsage,
 			)
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")
