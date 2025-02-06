@@ -210,7 +210,7 @@ receiver/awss3receiver/                                          @open-telemetry
 receiver/awsxrayreceiver/                                        @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 receiver/azureblobreceiver/                                      @open-telemetry/collector-contrib-approvers @eedorenko @mx-psi
 receiver/azureeventhubreceiver/                                  @open-telemetry/collector-contrib-approvers @atoulme @cparkins
-receiver/azuremonitorreceiver/                                   @open-telemetry/collector-contrib-approvers @nslaughter
+receiver/azuremonitorreceiver/                                   @open-telemetry/collector-contrib-approvers @nslaughter @celian-garcia
 receiver/bigipreceiver/                                          @open-telemetry/collector-contrib-approvers @StefanKurek
 receiver/carbonreceiver/                                         @open-telemetry/collector-contrib-approvers @aboguszewski-sumo
 receiver/chronyreceiver/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @jamesmoessis
