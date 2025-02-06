@@ -23,6 +23,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
+// This mimics the original translation_rules config option (now deleted), but is not reachable
+// by user configuration. It's only used by defaultTranslationRules to parse the
+// YAML into a []translation.Rule object.
 type translationRulesConfig struct {
 	TranslationRules []translation.Rule `mapstructure:"translation_rules"`
 }
