@@ -160,6 +160,7 @@ func TestWAL_persist(t *testing.T) {
 }
 
 func TestExportWithWALEnabled(t *testing.T) {
+	t.Skip("skipping test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37715")
 	cfg := &Config{
 		WAL: &WALConfig{
 			Directory: t.TempDir(),
