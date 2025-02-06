@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenlen"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
@@ -56,7 +57,11 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 	if err != nil {
 		return nil, err
 	}
-	m := &Metadata{Fingerprint: fp, FileAttributes: attributes}
+	m := &Metadata{
+		Fingerprint:    fp,
+		FileAttributes: attributes,
+		TokenLenState:  &tokenlen.State{},
+	}
 	if f.FlushTimeout > 0 {
 		m.FlushState = &flush.State{LastDataChange: time.Now()}
 	}
@@ -64,6 +69,11 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 }
 
 func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
+	// Ensure TokenLenState is initialized
+	if m.TokenLenState == nil {
+		m.TokenLenState = &tokenlen.State{}
+	}
+
 	r = &Reader{
 		Metadata:             m,
 		set:                  f.TelemetrySettings,
@@ -77,6 +87,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		includeFileRecordNum: f.IncludeFileRecordNumber,
 		compression:          f.Compression,
 		acquireFSLock:        f.AcquireFSLock,
+		emitFunc:             f.EmitFunc,
 	}
 	r.set.Logger = r.set.Logger.With(zap.String("path", r.fileName))
 
@@ -100,9 +111,10 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		r.Offset = info.Size()
 	}
 
-	flushFunc := m.FlushState.Func(f.SplitFunc, f.FlushTimeout)
+	tokenLenFunc := m.TokenLenState.Func(f.SplitFunc)
+	flushFunc := m.FlushState.Func(tokenLenFunc, f.FlushTimeout)
 	r.contentSplitFunc = trim.WithFunc(trim.ToLength(flushFunc, f.MaxLogSize), f.TrimFunc)
-	r.emitFunc = f.EmitFunc
+
 	if f.HeaderConfig != nil && !m.HeaderFinalized {
 		r.headerSplitFunc = f.HeaderConfig.SplitFunc
 		r.headerReader, err = header.NewReader(f.TelemetrySettings, *f.HeaderConfig)
