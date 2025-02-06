@@ -72,6 +72,7 @@ func Start(cfg *Config) error {
 		ssp = sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
 		defer func() {
 			logger.Info("stop the batch span processor")
+
 			if tempError := ssp.Shutdown(context.Background()); tempError != nil {
 				logger.Error("failed to stop the batch span processor", zap.Error(tempError))
 			}
@@ -90,9 +91,10 @@ func Start(cfg *Config) error {
 	if cfg.Batch {
 		tracerProvider.RegisterSpanProcessor(ssp)
 	}
+
 	otel.SetTracerProvider(tracerProvider)
 
-	if err = Run(cfg, logger); err != nil {
+	if err = run(cfg, logger); err != nil {
 		logger.Error("failed to execute the test scenario.", zap.Error(err))
 		return err
 	}
@@ -100,8 +102,8 @@ func Start(cfg *Config) error {
 	return nil
 }
 
-// Run executes the test scenario.
-func Run(c *Config, logger *zap.Logger) error {
+// run executes the test scenario.
+func run(c *Config, logger *zap.Logger) error {
 	if err := c.Validate(); err != nil {
 		return err
 	}
