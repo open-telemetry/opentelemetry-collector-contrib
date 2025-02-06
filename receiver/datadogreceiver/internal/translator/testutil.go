@@ -33,7 +33,7 @@ func requireResourceAttributes(t *testing.T, attrs, expectedAttrs pcommon.Map) {
 	})
 }
 
-// nolint:unparam
+//nolint:unparam
 func requireScopeMetrics(t *testing.T, result pmetric.Metrics, expectedScopeMetricsLen, expectedMetricsLen int) {
 	require.Equal(t, expectedScopeMetricsLen, result.ResourceMetrics().At(0).ScopeMetrics().Len())
 	require.Equal(t, expectedMetricsLen, result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())

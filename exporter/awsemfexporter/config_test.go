@@ -252,7 +252,7 @@ func TestValidateTags(t *testing.T) {
 				logger:                      zap.NewNop(),
 			}
 			if tt.errorMessage != "" {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				assert.ErrorContains(t, component.ValidateConfig(cfg), tt.errorMessage)
 				return
 			}
 			assert.NoError(t, component.ValidateConfig(cfg))

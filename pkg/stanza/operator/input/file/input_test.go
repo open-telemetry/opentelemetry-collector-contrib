@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -62,7 +63,7 @@ func TestAddFileResolvedFields(t *testing.T) {
 
 	e := waitForOne(t, logReceived)
 	require.Equal(t, filepath.Base(symLinkPath), e.Attributes["log.file.name"])
-	require.Equal(t, symLinkPath, e.Attributes["log.file.path"])
+	require.Equal(t, symLinkPath, e.Attributes[attrs.LogFilePath])
 	require.Equal(t, filepath.Base(resolved), e.Attributes["log.file.name_resolved"])
 	require.Equal(t, resolved, e.Attributes["log.file.path_resolved"])
 	if runtime.GOOS != "windows" {
