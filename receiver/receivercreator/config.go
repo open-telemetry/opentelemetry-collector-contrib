@@ -35,6 +35,12 @@ type receiverConfig struct {
 // userConfigMap is an arbitrary map of string keys to arbitrary values as specified by the user
 type userConfigMap map[string]any
 
+type receiverSignals struct {
+	metrics bool
+	logs    bool
+	traces  bool
+}
+
 // receiverTemplate is the configuration of a single subreceiver.
 type receiverTemplate struct {
 	receiverConfig
@@ -46,6 +52,7 @@ type receiverTemplate struct {
 	// It can contain expr expressions for endpoint env value expansion
 	ResourceAttributes map[string]any `mapstructure:"resource_attributes"`
 	rule               rule
+	signals            receiverSignals
 }
 
 // resourceAttributes holds a map of default resource attributes for each Endpoint type.
@@ -60,6 +67,7 @@ func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, erro
 	}
 
 	return receiverTemplate{
+		signals: receiverSignals{metrics: true, logs: true, traces: true},
 		receiverConfig: receiverConfig{
 			id:         id,
 			config:     cfg,
@@ -78,6 +86,12 @@ type Config struct {
 	// ResourceAttributes is a map of default resource attributes to add to each resource
 	// object received by this receiver from dynamically created receivers.
 	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`
+	Discovery          DiscoveryConfig    `mapstructure:"discovery"`
+}
+
+type DiscoveryConfig struct {
+	Enabled         bool     `mapstructure:"enabled"`
+	IgnoreReceivers []string `mapstructure:"ignore_receivers"`
 }
 
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {

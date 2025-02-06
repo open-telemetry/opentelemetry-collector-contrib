@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
@@ -43,10 +43,10 @@ func createMetricsReceiver(
 	recv := newMongoDBAtlasReceiver(params, cfg)
 	ms, err := newMongoDBAtlasScraper(recv)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create a MongoDB Atlas Scaper instance: %w", err)
+		return nil, fmt.Errorf("unable to create a MongoDB Atlas Scraper instance: %w", err)
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraperWithType(metadata.Type, ms))
+	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, ms))
 }
 
 func createCombinedLogReceiver(

@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"net"
 	"os"
 	"path/filepath"
@@ -24,14 +24,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"gopkg.in/yaml.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -290,9 +287,6 @@ func TestSplitMetrics(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		// Purposely make a copy since we're running in a goroutine due to t.Parallel()
-		tc := tc
-
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -337,9 +331,6 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		// Purposely make a copy since we're running in a goroutine due to t.Parallel()
-		tc := tc
-
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -446,9 +437,6 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		// Purposely make a copy since we're running in a goroutine due to t.Parallel()
-		tc := tc
-
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -553,14 +541,14 @@ func TestConsumeMetrics_ConcurrentResolverChange(t *testing.T) {
 	consumeStarted := make(chan struct{})
 	consumeDone := make(chan struct{})
 
-	// imitate a slow exporter
-	te := &mockMetricsExporter{Component: mockComponent{}}
-	te.ConsumeMetricsFn = func(_ context.Context, _ pmetric.Metrics) error {
-		close(consumeStarted)
-		time.Sleep(50 * time.Millisecond)
-		return te.consumeErr
-	}
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		// imitate a slow exporter
+		te := &mockMetricsExporter{Component: mockComponent{}}
+		te.ConsumeMetricsFn = func(_ context.Context, _ pmetric.Metrics) error {
+			close(consumeStarted)
+			time.Sleep(50 * time.Millisecond)
+			return te.consumeErr
+		}
 		return te, nil
 	}
 	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
@@ -671,35 +659,6 @@ func TestConsumeMetricsUnexpectedExporterType(t *testing.T) {
 	// verify
 	assert.Error(t, res)
 	assert.EqualError(t, res, fmt.Sprintf("unable to export metrics, unexpected exporter type: expected exporter.Metrics but got %T", newNopMockExporter()))
-}
-
-func TestBuildExporterConfigUnknown(t *testing.T) {
-	// prepare
-	factories, err := otelcoltest.NopFactories()
-	require.NoError(t, err)
-
-	factories.Exporters[metadata.Type] = NewFactory()
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
-	// nolint:staticcheck
-	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "test-build-exporter-config.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	c := cfg.Exporters[component.NewID(metadata.Type)]
-	require.NotNil(t, c)
-
-	// test
-	defaultCfg := otlpexporter.NewFactory().CreateDefaultConfig().(*otlpexporter.Config)
-	exporterCfg := buildExporterConfig(c.(*Config), "the-endpoint")
-
-	// verify
-	grpcSettings := defaultCfg.ClientConfig
-	grpcSettings.Endpoint = "the-endpoint"
-	assert.Equal(t, grpcSettings, exporterCfg.ClientConfig)
-
-	assert.Equal(t, defaultCfg.TimeoutConfig, exporterCfg.TimeoutConfig)
-	assert.Equal(t, defaultCfg.QueueConfig, exporterCfg.QueueConfig)
-	assert.Equal(t, defaultCfg.RetryConfig, exporterCfg.RetryConfig)
 }
 
 func TestBatchWithTwoMetrics(t *testing.T) {
@@ -876,13 +835,13 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 func randomMetrics(t require.TestingT, rmCount int, smCount int, mCount int, dpCount int) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 
-	timeStamp := pcommon.Timestamp(rand.Intn(256))
-	value := int64(rand.Intn(256))
+	timeStamp := pcommon.Timestamp(rand.IntN(256))
+	value := rand.Int64N(256)
 
 	for i := 0; i < rmCount; i++ {
 		rm := md.ResourceMetrics().AppendEmpty()
 		err := rm.Resource().Attributes().FromRaw(map[string]any{
-			conventions.AttributeServiceName: fmt.Sprintf("service-%d", rand.Intn(512)),
+			conventions.AttributeServiceName: fmt.Sprintf("service-%d", rand.IntN(512)),
 		})
 		require.NoError(t, err)
 
@@ -892,13 +851,13 @@ func randomMetrics(t require.TestingT, rmCount int, smCount int, mCount int, dpC
 			scope.SetName("MyTestInstrument")
 			scope.SetVersion("1.2.3")
 			err = scope.Attributes().FromRaw(map[string]any{
-				"scope.key": fmt.Sprintf("scope-%d", rand.Intn(512)),
+				"scope.key": fmt.Sprintf("scope-%d", rand.IntN(512)),
 			})
 			require.NoError(t, err)
 
 			for k := 0; k < mCount; k++ {
 				m := sm.Metrics().AppendEmpty()
-				m.SetName(fmt.Sprintf("metric.%d.test", rand.Intn(512)))
+				m.SetName(fmt.Sprintf("metric.%d.test", rand.IntN(512)))
 
 				sum := m.SetEmptySum()
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -914,7 +873,7 @@ func randomMetrics(t require.TestingT, rmCount int, smCount int, mCount int, dpC
 					value += 15
 
 					err = dp.Attributes().FromRaw(map[string]any{
-						"datapoint.key": fmt.Sprintf("dp-%d", rand.Intn(512)),
+						"datapoint.key": fmt.Sprintf("dp-%d", rand.IntN(512)),
 					})
 					require.NoError(t, err)
 				}

@@ -46,7 +46,6 @@ func createMetricsExporter(
 	config component.Config,
 ) (exporter.Metrics, error) {
 	exp, err := newCarbonExporter(ctx, config.(*Config), params)
-
 	if err != nil {
 		return nil, err
 	}

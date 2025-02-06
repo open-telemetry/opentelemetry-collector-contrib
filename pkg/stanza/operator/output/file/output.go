@@ -6,9 +6,9 @@ package file // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"encoding/json"
-	"html/template"
 	"os"
 	"sync"
+	"text/template"
 
 	"go.uber.org/zap"
 

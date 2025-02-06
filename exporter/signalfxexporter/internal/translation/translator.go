@@ -46,7 +46,7 @@ const (
 
 	// ActionCopyMetrics copies metrics using Rule.Mapping.
 	// Rule.DimensionKey and Rule.DimensionValues can be used to filter datapoints that must be copied,
-	// if these fields are set, only metics having a dimension with key == Rule.DimensionKey and
+	// if these fields are set, only metrics having a dimension with key == Rule.DimensionKey and
 	// value in Rule.DimensionValues will be copied.
 	ActionCopyMetrics Action = "copy_metrics"
 
@@ -177,7 +177,7 @@ type Rule struct {
 	// DimensionKey is used by "split_metric" translation rule action to specify dimension key
 	// that will be used to translate the metric datapoints. Datapoints that don't have
 	// the specified dimension key will not be translated.
-	// DimensionKey is also used by "copy_metrics" for filterring.
+	// DimensionKey is also used by "copy_metrics" for filtering.
 	DimensionKey string `mapstructure:"dimension_key"`
 
 	// DimensionValues is used by "copy_metrics" to filter out datapoints with dimensions values
@@ -748,7 +748,7 @@ func aggregateDatapoints(
 // generate map keys.
 func stringifyDimensions(dimensions []*sfxpb.Dimension, exclusions []string) string {
 	const aggregationKeyDelimiter = "//"
-	var aggregationKeyParts = make([]string, 0, len(dimensions))
+	aggregationKeyParts := make([]string, 0, len(dimensions))
 	for _, d := range dimensions {
 		if !dimensionIn(d, exclusions) {
 			aggregationKeyParts = append(aggregationKeyParts, fmt.Sprintf("%s:%s", d.Key, d.Value))
@@ -823,7 +823,7 @@ func convertMetricValue(logger *zap.Logger, dp *sfxpb.DataPoint, newType MetricV
 				zap.String("metric", dp.Metric))
 			return
 		}
-		var intVal = int64(*val)
+		intVal := int64(*val)
 		dp.Value = sfxpb.Datum{IntValue: &intVal}
 	case MetricValueTypeDouble:
 		val := dp.GetValue().IntValue
@@ -832,7 +832,7 @@ func convertMetricValue(logger *zap.Logger, dp *sfxpb.DataPoint, newType MetricV
 				zap.String("metric", dp.Metric))
 			return
 		}
-		var floatVal = float64(*val)
+		floatVal := float64(*val)
 		dp.Value = sfxpb.Datum{DoubleValue: &floatVal}
 	}
 }
@@ -869,7 +869,8 @@ func dropDimensions(dp *sfxpb.DataPoint, rule Rule) {
 
 func filterDimensionsByValues(
 	dimensions []*sfxpb.Dimension,
-	dimensionPairs map[string]map[string]bool) []*sfxpb.Dimension {
+	dimensionPairs map[string]map[string]bool,
+) []*sfxpb.Dimension {
 	if len(dimensions) == 0 {
 		return nil
 	}

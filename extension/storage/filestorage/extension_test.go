@@ -18,8 +18,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -551,9 +551,9 @@ func TestDirectoryCreation(t *testing.T) {
 				require.NoError(t, err)
 				var expectedFileMode os.FileMode
 				if runtime.GOOS == "windows" { // on Windows, we get 0777 for writable directories
-					expectedFileMode = os.FileMode(0777)
+					expectedFileMode = os.FileMode(0o777)
 				} else {
-					expectedFileMode = os.FileMode(0750)
+					expectedFileMode = os.FileMode(0o750)
 				}
 				require.Equal(t, expectedFileMode, s.Mode()&os.ModePerm)
 			},
@@ -576,9 +576,9 @@ func TestDirectoryCreation(t *testing.T) {
 				require.NoError(t, err)
 				var expectedFileMode os.FileMode
 				if runtime.GOOS == "windows" { // on Windows, we get 0777 for writable directories
-					expectedFileMode = os.FileMode(0777)
+					expectedFileMode = os.FileMode(0o777)
 				} else {
-					expectedFileMode = os.FileMode(0700)
+					expectedFileMode = os.FileMode(0o700)
 				}
 				require.Equal(t, expectedFileMode, s.Mode()&os.ModePerm)
 			},

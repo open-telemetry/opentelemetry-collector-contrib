@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -80,9 +81,14 @@ func TestMetricsConsumer(t *testing.T) {
 			wantStatus:     http.StatusBadRequest,
 			wantErr:        testErr,
 		},
+		"WithConsumerErrorPermanent": {
+			consumerErr: consumererror.NewPermanent(testErr),
+			wantStatus:  http.StatusBadRequest,
+			wantErr:     consumererror.NewPermanent(testErr),
+		},
 		"WithConsumerError": {
 			consumerErr: testErr,
-			wantStatus:  http.StatusInternalServerError,
+			wantStatus:  http.StatusServiceUnavailable,
 			wantErr:     testErr,
 		},
 		"WithNoError": {

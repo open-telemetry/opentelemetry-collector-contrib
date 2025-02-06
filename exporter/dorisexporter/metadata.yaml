@@ -4,8 +4,8 @@ scope_name: otelcol/doris
 status:
   class: exporter
   stability:
-    development: [traces, metrics, logs]
-  distributions: []
+    alpha: [traces, metrics, logs]
+  distributions: [contrib]
   codeowners:
     active: [atoulme, joker-star-l]
 

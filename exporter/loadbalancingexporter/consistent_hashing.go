@@ -8,8 +8,10 @@ import (
 	"sort"
 )
 
-const maxPositions uint32 = 36000 // 360 degrees with two decimal places
-const defaultWeight int = 100     // the number of points in the ring for each entry. For better results, it should be higher than 100.
+const (
+	maxPositions  uint32 = 36000 // 360 degrees with two decimal places
+	defaultWeight int    = 100   // the number of points in the ring for each entry. For better results, it should be greater than 100.
+)
 
 // position represents a specific angle in the ring.
 // Each entry in the ring is positioned at an angle in a hypothetical circle, meaning that it ranges from 0 to 360.
@@ -77,7 +79,7 @@ func bsearch(pos position, left []ringItem, right []ringItem) ringItem {
 		return left[0]
 	}
 
-	// if the requested position is higher than the highest in the left, the item is in the right side
+	// if the requested position is greater than the highest in the left, the item is in the right side
 	if pos > left[len(left)-1].pos {
 		size := len(right)
 		if size == 1 {

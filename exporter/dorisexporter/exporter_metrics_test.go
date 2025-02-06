@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -27,11 +28,11 @@ func TestPushMetricData(t *testing.T) {
 	err = config.Validate()
 	require.NoError(t, err)
 
-	exporter := newMetricsExporter(nil, config, testTelemetrySettings)
+	exporter := newMetricsExporter(nil, config, componenttest.NewNopTelemetrySettings())
 
 	ctx := context.Background()
 
-	client, err := createDorisHTTPClient(ctx, config, nil, testTelemetrySettings)
+	client, err := createDorisHTTPClient(ctx, config, nil, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, client)
 

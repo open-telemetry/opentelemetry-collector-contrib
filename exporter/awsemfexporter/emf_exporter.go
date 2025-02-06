@@ -76,7 +76,6 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 		cwlogs.WithUserAgentExtras(userAgentExtras...),
 	)
 	collectorIdentifier, err := uuid.NewRandom()
-
 	if err != nil {
 		return nil, err
 	}

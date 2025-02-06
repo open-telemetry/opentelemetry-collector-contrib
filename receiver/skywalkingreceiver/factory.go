@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metadata"
 )
@@ -29,9 +28,9 @@ const (
 	protoGRPC = "grpc"
 	protoHTTP = "http"
 
-	// Default ports to bind to.
-	defaultGRPCPort = 11800
-	defaultHTTPPort = 12800
+	// Default endpoints to bind to.
+	defaultGRPCEndpoint = "localhost:11800"
+	defaultHTTPEndpoint = "localhost:12800"
 )
 
 // NewFactory creates a new Skywalking receiver factory.
@@ -49,12 +48,12 @@ func createDefaultConfig() component.Config {
 		Protocols: Protocols{
 			GRPC: &configgrpc.ServerConfig{
 				NetAddr: confignet.AddrConfig{
-					Endpoint:  testutil.EndpointForPort(defaultGRPCPort),
+					Endpoint:  defaultGRPCEndpoint,
 					Transport: confignet.TransportTypeTCP,
 				},
 			},
 			HTTP: &confighttp.ServerConfig{
-				Endpoint: testutil.EndpointForPort(defaultHTTPPort),
+				Endpoint: defaultHTTPEndpoint,
 			},
 		},
 	}

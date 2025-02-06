@@ -12,7 +12,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 )
@@ -61,17 +62,17 @@ func createMetricsReceiver(
 	cfg := baseCfg.(*Config)
 	splunkScraper := newSplunkMetricsScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraperWithoutType(
+	s, err := scraper.NewMetrics(
 		splunkScraper.scrape,
-		scraperhelper.WithStart(splunkScraper.start))
+		scraper.WithStart(splunkScraper.start))
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewMetricsController(
 		&cfg.ControllerConfig,
 		params,
 		consumer,
-		scraperhelper.AddScraperWithType(metadata.Type, scraper),
+		scraperhelper.AddScraper(metadata.Type, s),
 	)
 }

@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -38,12 +39,17 @@ func (m *testMarshaller) MarshalMetrics(pmetric.Metrics) ([]byte, error) {
 	return m.content, nil
 }
 
+func (m *testMarshaller) MarshalProfiles(pprofile.Profiles) ([]byte, error) {
+	return m.content, nil
+}
+
 type groupingExporterTestCase struct {
-	name              string
-	conf              *Config
-	traceUnmarshaler  ptrace.Unmarshaler
-	logUnmarshaler    plog.Unmarshaler
-	metricUnmarshaler pmetric.Unmarshaler
+	name               string
+	conf               *Config
+	traceUnmarshaler   ptrace.Unmarshaler
+	logUnmarshaler     plog.Unmarshaler
+	metricUnmarshaler  pmetric.Unmarshaler
+	profileUnmarshaler pprofile.Unmarshaler
 }
 
 func groupingExporterTestCases() []groupingExporterTestCase {
@@ -60,9 +66,10 @@ func groupingExporterTestCases() []groupingExporterTestCase {
 					MaxOpenFiles:      defaultMaxOpenFiles,
 				},
 			},
-			traceUnmarshaler:  &ptrace.JSONUnmarshaler{},
-			logUnmarshaler:    &plog.JSONUnmarshaler{},
-			metricUnmarshaler: &pmetric.JSONUnmarshaler{},
+			traceUnmarshaler:   &ptrace.JSONUnmarshaler{},
+			logUnmarshaler:     &plog.JSONUnmarshaler{},
+			metricUnmarshaler:  &pmetric.JSONUnmarshaler{},
+			profileUnmarshaler: &pprofile.JSONUnmarshaler{},
 		},
 		{
 			name: "json: compression configuration",
@@ -77,9 +84,10 @@ func groupingExporterTestCases() []groupingExporterTestCase {
 					MaxOpenFiles:      defaultMaxOpenFiles,
 				},
 			},
-			traceUnmarshaler:  &ptrace.JSONUnmarshaler{},
-			logUnmarshaler:    &plog.JSONUnmarshaler{},
-			metricUnmarshaler: &pmetric.JSONUnmarshaler{},
+			traceUnmarshaler:   &ptrace.JSONUnmarshaler{},
+			logUnmarshaler:     &plog.JSONUnmarshaler{},
+			metricUnmarshaler:  &pmetric.JSONUnmarshaler{},
+			profileUnmarshaler: &pprofile.JSONUnmarshaler{},
 		},
 		{
 			name: "Proto: default configuration",
@@ -92,9 +100,10 @@ func groupingExporterTestCases() []groupingExporterTestCase {
 					MaxOpenFiles:      defaultMaxOpenFiles,
 				},
 			},
-			traceUnmarshaler:  &ptrace.ProtoUnmarshaler{},
-			logUnmarshaler:    &plog.ProtoUnmarshaler{},
-			metricUnmarshaler: &pmetric.ProtoUnmarshaler{},
+			traceUnmarshaler:   &ptrace.ProtoUnmarshaler{},
+			logUnmarshaler:     &plog.ProtoUnmarshaler{},
+			metricUnmarshaler:  &pmetric.ProtoUnmarshaler{},
+			profileUnmarshaler: &pprofile.JSONUnmarshaler{},
 		},
 		{
 			name: "Proto: compression configuration",
@@ -109,9 +118,10 @@ func groupingExporterTestCases() []groupingExporterTestCase {
 					MaxOpenFiles:      defaultMaxOpenFiles,
 				},
 			},
-			traceUnmarshaler:  &ptrace.ProtoUnmarshaler{},
-			logUnmarshaler:    &plog.ProtoUnmarshaler{},
-			metricUnmarshaler: &pmetric.ProtoUnmarshaler{},
+			traceUnmarshaler:   &ptrace.ProtoUnmarshaler{},
+			logUnmarshaler:     &plog.ProtoUnmarshaler{},
+			metricUnmarshaler:  &pmetric.ProtoUnmarshaler{},
+			profileUnmarshaler: &pprofile.JSONUnmarshaler{},
 		},
 		{
 			name: "json: max_open_files=1",
@@ -125,9 +135,10 @@ func groupingExporterTestCases() []groupingExporterTestCase {
 					ResourceAttribute: defaultResourceAttribute,
 				},
 			},
-			traceUnmarshaler:  &ptrace.JSONUnmarshaler{},
-			logUnmarshaler:    &plog.JSONUnmarshaler{},
-			metricUnmarshaler: &pmetric.JSONUnmarshaler{},
+			traceUnmarshaler:   &ptrace.JSONUnmarshaler{},
+			logUnmarshaler:     &plog.JSONUnmarshaler{},
+			metricUnmarshaler:  &pmetric.JSONUnmarshaler{},
+			profileUnmarshaler: &pprofile.JSONUnmarshaler{},
 		},
 	}
 }

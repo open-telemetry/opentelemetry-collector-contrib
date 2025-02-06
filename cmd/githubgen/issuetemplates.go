@@ -31,8 +31,7 @@ func folderToShortName(folder string) string {
 	return strings.Join(path, "/")
 }
 
-type issueTemplatesGenerator struct {
-}
+type issueTemplatesGenerator struct{}
 
 func (itg issueTemplatesGenerator) generate(data *githubData) error {
 	keys := map[string]struct{}{}
@@ -59,7 +58,7 @@ func (itg issueTemplatesGenerator) generate(data *githubData) error {
 		oldContent := matchOldContent.FindSubmatch(templateContents)
 		if len(oldContent) > 0 {
 			templateContents = bytes.ReplaceAll(templateContents, oldContent[0], replacement)
-			err = os.WriteFile(filepath.Join(issuesFolder, e.Name()), templateContents, 0600)
+			err = os.WriteFile(filepath.Join(issuesFolder, e.Name()), templateContents, 0o600)
 			if err != nil {
 				return err
 			}

@@ -17,7 +17,7 @@ By default, two listeners are made available:
 - `localhost:5778`, following the legacy remote sampling endpoint as defined by Jaeger
 - `localhost:14250`, following the gRPC remote sampling endpoint, also defined by Jaeger
 
-You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:5778` and `0.0.0.0:14250` respectively. This feature gate will be removed in a future release.
+See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
 
 Note that the port `14250` will clash with the Jaeger Receiver. When both are used, it's recommended to change this extension to use another port.

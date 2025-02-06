@@ -4,21 +4,16 @@ package metadata
 
 import (
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
-// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector")
-}
-
-func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
-	return settings.LeveledMeterProvider(level).Meter("github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
@@ -29,10 +24,11 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	meter                             metric.Meter
+	mu                                sync.Mutex
+	registrations                     []metric.Registration
 	ConnectorServicegraphDroppedSpans metric.Int64Counter
 	ConnectorServicegraphExpiredEdges metric.Int64Counter
 	ConnectorServicegraphTotalEdges   metric.Int64Counter
-	meters                            map[configtelemetry.Level]metric.Meter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -46,28 +42,37 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
+// Shutdown unregister all registered callbacks for async instruments.
+func (builder *TelemetryBuilder) Shutdown() {
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	for _, reg := range builder.registrations {
+		reg.Unregister()
+	}
+}
+
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{meters: map[configtelemetry.Level]metric.Meter{}}
+	builder := TelemetryBuilder{}
 	for _, op := range options {
 		op.apply(&builder)
 	}
-	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
+	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ConnectorServicegraphDroppedSpans, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	builder.ConnectorServicegraphDroppedSpans, err = builder.meter.Int64Counter(
 		"otelcol_connector_servicegraph_dropped_spans",
 		metric.WithDescription("Number of spans dropped when trying to add edges"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ConnectorServicegraphExpiredEdges, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	builder.ConnectorServicegraphExpiredEdges, err = builder.meter.Int64Counter(
 		"otelcol_connector_servicegraph_expired_edges",
 		metric.WithDescription("Number of edges that expired before finding its matching span"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ConnectorServicegraphTotalEdges, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	builder.ConnectorServicegraphTotalEdges, err = builder.meter.Int64Counter(
 		"otelcol_connector_servicegraph_total_edges",
 		metric.WithDescription("Total number of unique edges"),
 		metric.WithUnit("1"),

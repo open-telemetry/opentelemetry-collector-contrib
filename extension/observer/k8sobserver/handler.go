@@ -15,8 +15,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
-var _ cache.ResourceEventHandler = (*handler)(nil)
-var _ observer.EndpointsLister = (*handler)(nil)
+var (
+	_ cache.ResourceEventHandler = (*handler)(nil)
+	_ observer.EndpointsLister   = (*handler)(nil)
+)
 
 // handler handles k8s cache informer callbacks.
 type handler struct {

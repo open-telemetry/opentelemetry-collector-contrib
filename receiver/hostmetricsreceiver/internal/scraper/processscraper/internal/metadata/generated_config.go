@@ -26,7 +26,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for hostmetricsreceiver/process metrics.
+// MetricsConfig provides config for process metrics.
 type MetricsConfig struct {
 	ProcessContextSwitches     MetricConfig `mapstructure:"process.context_switches"`
 	ProcessCPUTime             MetricConfig `mapstructure:"process.cpu.time"`
@@ -41,6 +41,7 @@ type MetricsConfig struct {
 	ProcessPagingFaults        MetricConfig `mapstructure:"process.paging.faults"`
 	ProcessSignalsPending      MetricConfig `mapstructure:"process.signals_pending"`
 	ProcessThreads             MetricConfig `mapstructure:"process.threads"`
+	ProcessUptime              MetricConfig `mapstructure:"process.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -84,6 +85,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		ProcessThreads: MetricConfig{
 			Enabled: false,
 		},
+		ProcessUptime: MetricConfig{
+			Enabled: false,
+		},
 	}
 }
 
@@ -113,7 +117,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for hostmetricsreceiver/process resource attributes.
+// ResourceAttributesConfig provides config for process resource attributes.
 type ResourceAttributesConfig struct {
 	ProcessCgroup         ResourceAttributeConfig `mapstructure:"process.cgroup"`
 	ProcessCommand        ResourceAttributeConfig `mapstructure:"process.command"`
@@ -154,7 +158,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for hostmetricsreceiver/process metrics builder.
+// MetricsBuilderConfig is a configuration for process metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

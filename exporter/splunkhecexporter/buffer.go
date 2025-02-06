@@ -11,9 +11,7 @@ import (
 	"sync"
 )
 
-var (
-	errOverCapacity = errors.New("over capacity")
-)
+var errOverCapacity = errors.New("over capacity")
 
 type buffer interface {
 	io.Writer

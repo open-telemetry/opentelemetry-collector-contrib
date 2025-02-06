@@ -130,6 +130,15 @@ func Test_lexer(t *testing.T) {
 			{"String", `"bar"`},
 			{"RBrace", "}"},
 		}},
+		{"Dynamic path", `attributes[attributes["foo"]]`, false, []result{
+			{"Lowercase", "attributes"},
+			{"Punct", "["},
+			{"Lowercase", "attributes"},
+			{"Punct", "["},
+			{"String", `"foo"`},
+			{"Punct", "]"},
+			{"Punct", "]"},
+		}},
 	}
 
 	for _, tt := range tests {

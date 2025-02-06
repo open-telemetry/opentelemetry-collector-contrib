@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -78,7 +78,7 @@ func TestScraperStart(t *testing.T) {
 	}
 }
 
-func TestScaperScrape(t *testing.T) {
+func TestScraperScrape(t *testing.T) {
 	testCases := []struct {
 		desc              string
 		setupMockClient   func(t *testing.T) client

@@ -26,10 +26,12 @@ func TestType(t *testing.T) {
 	assert.Equal(t, pType, metadata.Type)
 }
 
-var defaultMaxIdleConns = http.DefaultTransport.(*http.Transport).MaxIdleConns
-var defaultMaxIdleConnsPerHost = http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
-var defaultMaxConnsPerHost = http.DefaultTransport.(*http.Transport).MaxConnsPerHost
-var defaultIdleConnTimeout = http.DefaultTransport.(*http.Transport).IdleConnTimeout
+var (
+	defaultMaxIdleConns        = http.DefaultTransport.(*http.Transport).MaxIdleConns
+	defaultMaxIdleConnsPerHost = http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
+	defaultMaxConnsPerHost     = http.DefaultTransport.(*http.Transport).MaxConnsPerHost
+	defaultIdleConnTimeout     = http.DefaultTransport.(*http.Transport).IdleConnTimeout
+)
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()

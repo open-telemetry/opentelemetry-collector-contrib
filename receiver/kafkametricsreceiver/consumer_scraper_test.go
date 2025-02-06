@@ -59,7 +59,7 @@ func TestConsumerScraper_scrape_handles_client_error(t *testing.T) {
 	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, cs)
-	_, err = cs.Scrape(context.Background())
+	_, err = cs.ScrapeMetrics(context.Background())
 	assert.Error(t, err)
 }
 
@@ -89,7 +89,7 @@ func TestConsumerScraper_scrape_handles_clusterAdmin_error(t *testing.T) {
 	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, cs)
-	_, err = cs.Scrape(context.Background())
+	_, err = cs.ScrapeMetrics(context.Background())
 	assert.Error(t, err)
 }
 

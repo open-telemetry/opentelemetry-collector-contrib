@@ -17,7 +17,7 @@ to be enabled for the receiver to be able to collect metrics.
 
 ## Configuration
 
-- `endpoint`: (default = `localhost:2181`) Endpoint to connect to collect metrics. Takes the form `host:port`. You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:2181`. This feature gate will be removed in a future release.
+- `endpoint`: (default = `localhost:2181`) Endpoint to connect to collect metrics. Takes the form `host:port`. See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 - `timeout`: (default = `10s`) Timeout within which requests should be completed.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
@@ -31,10 +31,6 @@ receivers:
     initial_delay: 1s
 ```
 
-## Metrics
+## Scraper
 
-Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
-
-## Limitations
-
-This receiver does not support scraping metrics from Zookeeper's [New Metric System](https://zookeeper.apache.org/doc/r3.6.3/zookeeperMonitor.html#Metrics-System).
+Details about the scraper in [README.md](../../scraper/zookeeperscraper/README.md)

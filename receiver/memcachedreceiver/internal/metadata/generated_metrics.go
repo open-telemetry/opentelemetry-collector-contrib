@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeCommand specifies the a value command attribute.
+// AttributeCommand specifies the value command attribute.
 type AttributeCommand int
 
 const (
@@ -45,7 +45,7 @@ var MapAttributeCommand = map[string]AttributeCommand{
 	"touch": AttributeCommandTouch,
 }
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -71,7 +71,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"received": AttributeDirectionReceived,
 }
 
-// AttributeOperation specifies the a value operation attribute.
+// AttributeOperation specifies the value operation attribute.
 type AttributeOperation int
 
 const (
@@ -101,7 +101,7 @@ var MapAttributeOperation = map[string]AttributeOperation{
 	"get":       AttributeOperationGet,
 }
 
-// AttributeState specifies the a value state attribute.
+// AttributeState specifies the value state attribute.
 type AttributeState int
 
 const (
@@ -127,7 +127,7 @@ var MapAttributeState = map[string]AttributeState{
 	"user":   AttributeStateUser,
 }
 
-// AttributeType specifies the a value type attribute.
+// AttributeType specifies the value type attribute.
 type AttributeType int
 
 const (
@@ -759,7 +759,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                            mbc,

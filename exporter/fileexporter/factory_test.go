@@ -103,6 +103,33 @@ func TestCreateLogsError(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestCreateProfiles(t *testing.T) {
+	cfg := &Config{
+		FormatType: formatTypeJSON,
+		Path:       tempFileName(t),
+	}
+	exp, err := createProfilesExporter(
+		context.Background(),
+		exportertest.NewNopSettings(),
+		cfg)
+	assert.NoError(t, err)
+	require.NotNil(t, exp)
+	assert.NoError(t, exp.Shutdown(context.Background()))
+}
+
+func TestCreateProfilesError(t *testing.T) {
+	cfg := &Config{
+		FormatType: formatTypeJSON,
+	}
+	e, err := createProfilesExporter(
+		context.Background(),
+		exportertest.NewNopSettings(),
+		cfg)
+	require.NoError(t, err)
+	err = e.Start(context.Background(), componenttest.NewNopHost())
+	assert.Error(t, err)
+}
+
 func TestNewFileWriter(t *testing.T) {
 	type args struct {
 		cfg *Config

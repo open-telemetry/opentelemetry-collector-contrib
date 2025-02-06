@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -29,6 +30,9 @@ const (
 	prometheusReceiver        = "prometheus"
 	attributeReceiver         = "receiver"
 	fieldPrometheusMetricType = "prom_metric_type"
+
+	// metric attributes for AWS EMF, not to be treated as metric labels
+	emfStorageResolutionAttribute = "aws.emf.storage_resolution"
 )
 
 var fieldPrometheusTypes = map[pmetric.MetricType]string{
@@ -45,10 +49,16 @@ type cWMetrics struct {
 	fields       map[string]any
 }
 
+type cWMetricInfo struct {
+	Name              string
+	Unit              string
+	StorageResolution int
+}
+
 type cWMeasurement struct {
 	Namespace  string
 	Dimensions [][]string
-	Metrics    []map[string]string
+	Metrics    []cWMetricInfo
 }
 
 type cWMetricStats struct {
@@ -75,6 +85,7 @@ type groupedMetricMetadata struct {
 	logGroup                   string
 	logStream                  string
 	metricDataType             pmetric.MetricType
+	batchIndex                 int
 	retainInitialValueForDelta bool
 }
 
@@ -140,6 +151,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 					logGroup:                   logGroup,
 					logStream:                  logStream,
 					metricDataType:             metric.Type(),
+					batchIndex:                 0,
 					retainInitialValueForDelta: deltaInitialValue,
 				},
 				instrumentationScopeName: instrumentationScopeName,
@@ -156,7 +168,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 
 // translateGroupedMetricToCWMetric converts Grouped Metric format to CloudWatch Metric format.
 func translateGroupedMetricToCWMetric(groupedMetric *groupedMetric, config *Config) *cWMetrics {
-	labels := groupedMetric.labels
+	labels := filterAWSEMFAttributes(groupedMetric.labels)
 	fieldsLength := len(labels) + len(groupedMetric.metrics)
 
 	isPrometheusMetric := groupedMetric.metadata.receiver == prometheusReceiver
@@ -198,7 +210,7 @@ func translateGroupedMetricToCWMetric(groupedMetric *groupedMetric, config *Conf
 
 // groupedMetricToCWMeasurement creates a single CW Measurement from a grouped metric.
 func groupedMetricToCWMeasurement(groupedMetric *groupedMetric, config *Config) cWMeasurement {
-	labels := groupedMetric.labels
+	labels := filterAWSEMFAttributes(groupedMetric.labels)
 	dimensionRollupOption := config.DimensionRollupOption
 
 	// Create a dimension set containing list of label names
@@ -208,6 +220,7 @@ func groupedMetricToCWMeasurement(groupedMetric *groupedMetric, config *Config) 
 		dimSet[idx] = labelName
 		idx++
 	}
+
 	dimensions := [][]string{dimSet}
 
 	// Apply single/zero dimension rollup to labels
@@ -228,14 +241,20 @@ func groupedMetricToCWMeasurement(groupedMetric *groupedMetric, config *Config) 
 	// Add on rolled-up dimensions
 	dimensions = append(dimensions, rollupDimensionArray...)
 
-	metrics := make([]map[string]string, len(groupedMetric.metrics))
+	metrics := make([]cWMetricInfo, len(groupedMetric.metrics))
 	idx = 0
 	for metricName, metricInfo := range groupedMetric.metrics {
-		metrics[idx] = map[string]string{
-			"Name": metricName,
+		metrics[idx] = cWMetricInfo{
+			Name:              metricName,
+			StorageResolution: 60,
 		}
 		if metricInfo.unit != "" {
-			metrics[idx]["Unit"] = metricInfo.unit
+			metrics[idx].Unit = metricInfo.unit
+		}
+		if storRes, ok := groupedMetric.labels[emfStorageResolutionAttribute]; ok {
+			if storResInt, err := strconv.Atoi(storRes); err == nil {
+				metrics[idx].StorageResolution = storResInt
+			}
 		}
 		idx++
 	}
@@ -250,7 +269,7 @@ func groupedMetricToCWMeasurement(groupedMetric *groupedMetric, config *Config) 
 // groupedMetricToCWMeasurementsWithFilters filters the grouped metric using the given list of metric
 // declarations and returns the corresponding list of CW Measurements.
 func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, config *Config) (cWMeasurements []cWMeasurement) {
-	labels := groupedMetric.labels
+	labels := filterAWSEMFAttributes(groupedMetric.labels)
 
 	// Filter metric declarations by labels
 	metricDeclarations := make([]*MetricDeclaration, 0, len(config.MetricDeclarations))
@@ -278,7 +297,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 	// Group metrics by matched metric declarations
 	type metricDeclarationGroup struct {
 		metricDeclIdxList []int
-		metrics           []map[string]string
+		metrics           []cWMetricInfo
 	}
 
 	metricDeclGroups := make(map[string]*metricDeclarationGroup)
@@ -299,11 +318,17 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 			continue
 		}
 
-		metric := map[string]string{
-			"Name": metricName,
+		metric := cWMetricInfo{
+			Name:              metricName,
+			StorageResolution: 60,
 		}
 		if metricInfo.unit != "" {
-			metric["Unit"] = metricInfo.unit
+			metric.Unit = metricInfo.unit
+		}
+		if storRes, ok := groupedMetric.labels[emfStorageResolutionAttribute]; ok {
+			if storResInt, err := strconv.Atoi(storRes); err == nil {
+				metric.StorageResolution = storResInt
+			}
 		}
 		metricDeclKey := fmt.Sprint(metricDeclIdx)
 		if group, ok := metricDeclGroups[metricDeclKey]; ok {
@@ -311,7 +336,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 		} else {
 			metricDeclGroups[metricDeclKey] = &metricDeclarationGroup{
 				metricDeclIdxList: metricDeclIdx,
-				metrics:           []map[string]string{metric},
+				metrics:           []cWMetricInfo{metric},
 			}
 		}
 	}
@@ -449,7 +474,6 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) (*cwlogs.Event,
 func translateGroupedMetricToEmf(groupedMetric *groupedMetric, config *Config, defaultLogStream string) (*cwlogs.Event, error) {
 	cWMetric := translateGroupedMetricToCWMetric(groupedMetric, config)
 	event, err := translateCWMetricToEMF(cWMetric, config)
-
 	if err != nil {
 		return nil, err
 	}
@@ -465,4 +489,15 @@ func translateGroupedMetricToEmf(groupedMetric *groupedMetric, config *Config, d
 	event.LogStreamName = logStream
 
 	return event, nil
+}
+
+func filterAWSEMFAttributes(labels map[string]string) map[string]string {
+	// remove any labels that are attributes specific to AWS EMF Exporter
+	filteredLabels := make(map[string]string)
+	for labelName := range labels {
+		if labelName != emfStorageResolutionAttribute {
+			filteredLabels[labelName] = labels[labelName]
+		}
+	}
+	return filteredLabels
 }

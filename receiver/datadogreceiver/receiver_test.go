@@ -111,7 +111,6 @@ func TestDatadogServer(t *testing.T) {
 			expectContent: "{}",
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -142,12 +141,12 @@ func TestDatadogResponse(t *testing.T) {
 	}{
 		{
 			name:           "non-permanent error",
-			err:            errors.New("non-permanenet error"),
+			err:            errors.New("non-permanent error"),
 			expectedStatus: http.StatusServiceUnavailable,
 		},
 		{
 			name:           "permanent error",
-			err:            consumererror.NewPermanent(errors.New("non-permanenet error")),
+			err:            consumererror.NewPermanent(errors.New("non-permanent error")),
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -277,7 +276,6 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 }`,
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = "localhost:0" // Using a randomly assigned address

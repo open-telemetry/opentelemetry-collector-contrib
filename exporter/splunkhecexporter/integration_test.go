@@ -105,7 +105,7 @@ func startSplunk() SplunkContainerConfig {
 			{
 				HostFilePath:      filepath.Join("testdata", "splunk.yaml"),
 				ContainerFilePath: "/tmp/defaults/default.yml",
-				FileMode:          0644,
+				FileMode:          0o644,
 			},
 		},
 		WaitingFor: wait.ForHealthCheck().WithStartupTimeout(5 * time.Minute),
@@ -115,7 +115,6 @@ func startSplunk() SplunkContainerConfig {
 		ContainerRequest: req,
 		Started:          true,
 	})
-
 	if err != nil {
 		logger.Info("Error while creating container")
 		panic(err)
@@ -223,9 +222,11 @@ type cfg struct {
 
 type telemetryType string
 
-var metricsType = telemetryType("metrics")
-var logsType = telemetryType("logs")
-var tracesType = telemetryType("traces")
+var (
+	metricsType = telemetryType("metrics")
+	logsType    = telemetryType("logs")
+	tracesType  = telemetryType("traces")
+)
 
 type testCfg struct {
 	name      string

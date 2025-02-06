@@ -5,6 +5,7 @@ package kafka
 
 import (
 	"context"
+	"crypto/tls"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -50,6 +51,16 @@ func TestAuthentication(t *testing.T) {
 	tlscfg, err := tlsClient.LoadTLSConfig(context.Background())
 	require.NoError(t, err)
 	saramaTLSCfg.Net.TLS.Config = tlscfg
+
+	ctx := context.Background()
+	saramaSASLAWSIAMOATUHConfig := &sarama.Config{}
+	saramaSASLAWSIAMOATUHConfig.Net.SASL.Enable = true
+	saramaSASLAWSIAMOATUHConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
+	saramaSASLAWSIAMOATUHConfig.Net.SASL.TokenProvider = &AWSMSKConfig{Region: "region", ctx: ctx}
+
+	tlsConfig := tls.Config{}
+	saramaSASLAWSIAMOATUHConfig.Net.TLS.Enable = true
+	saramaSASLAWSIAMOATUHConfig.Net.TLS.Config = &tlsConfig
 
 	saramaKerberosCfg := &sarama.Config{}
 	saramaKerberosCfg.Net.SASL.Mechanism = sarama.SASLTypeGSSAPI
@@ -130,6 +141,10 @@ func TestAuthentication(t *testing.T) {
 			saramaConfig: saramaSASLPLAINConfig,
 		},
 		{
+			auth:         Authentication{SASL: &SASLConfig{Username: "", Password: "", Mechanism: "AWS_MSK_IAM_OAUTHBEARER", AWSMSK: AWSMSKConfig{Region: "region"}}},
+			saramaConfig: saramaSASLAWSIAMOATUHConfig,
+		},
+		{
 			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-222"}},
 			saramaConfig: saramaSASLSCRAM512Config,
 			err:          "invalid SASL Mechanism",
@@ -153,7 +168,7 @@ func TestAuthentication(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			config := &sarama.Config{}
-			err := ConfigureAuthentication(test.auth, config)
+			err := ConfigureAuthentication(context.Background(), test.auth, config)
 			if test.err != "" {
 				assert.ErrorContains(t, err, test.err)
 			} else {

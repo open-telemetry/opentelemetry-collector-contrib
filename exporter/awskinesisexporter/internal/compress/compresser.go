@@ -33,7 +33,6 @@ func flateCompressor(in []byte) ([]byte, error) {
 	w, _ := flate.NewWriter(&buf, flate.BestSpeed)
 
 	_, err := w.Write(in)
-
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +55,6 @@ func gzipCompressor(in []byte) ([]byte, error) {
 	w, _ := gzip.NewWriterLevel(&buf, gzip.BestSpeed)
 
 	_, err := w.Write(in)
-
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +77,6 @@ func zlibCompressor(in []byte) ([]byte, error) {
 	w, _ := zlib.NewWriterLevel(&buf, zlib.BestSpeed)
 
 	_, err := w.Write(in)
-
 	if err != nil {
 		return nil, err
 	}

@@ -49,8 +49,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow/mock"
 )
 
-var noopTelemetry = componenttest.NewNopTelemetrySettings()
-var testingID = component.MustNewID("testing")
+var (
+	noopTelemetry = componenttest.NewNopTelemetrySettings()
+	testingID     = component.MustNewID("testing")
+)
 
 func defaultBQ() admission2.Queue {
 	bq, _ := admission2.NewBoundedQueue(testingID, noopTelemetry, 100000, 10)
