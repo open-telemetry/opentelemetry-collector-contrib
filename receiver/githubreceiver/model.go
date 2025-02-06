@@ -93,13 +93,29 @@ const (
 	// The following attributes are not part of the semantic conventions yet.
 	AttributeCICDPipelineRunSenderLogin         = "cicd.pipeline.run.sender.login"      // GitHub's Run Sender Login
 	AttributeCICDPipelineTaskRunSenderLogin     = "cicd.pipeline.task.run.sender.login" // GitHub's Task Sender Login
-	AttributeVCSVendorName                      = "vcs.vendor.name"                     // GitHub
-	AttributeVCSRepositoryOwner                 = "vcs.repository.owner"                // GitHub's Owner Login
 	AttributeCICDPipelineFilePath               = "cicd.pipeline.file.path"             // GitHub's Path in workflow_run
 	AttributeCICDPipelinePreviousAttemptURLFull = "cicd.pipeline.run.previous_attempt.url.full"
 
-	AttributeGitHubAppInstallationID  = "github.app.installation.id"  // GitHub's Installation ID
-	AttributeGitHubWorkflowRunAttempt = "github.workflow.run.attempt" // GitHub's Run Attempt
+	// The following attributes are exclusive to GitHub but not listed under
+	// Vendor Extensions within Semantic Conventions yet.
+	AttributeGitHubAppInstallationID            = "github.app.installation.id"             // GitHub's Installation ID
+	AttributeGitHubWorkflowRunAttempt           = "github.workflow.run.attempt"            // GitHub's Run Attempt
+	AttributeGitHubWorkflowTriggerActorUsername = "github.workflow.trigger.actor.username" // GitHub's Triggering Actor Username
+
+	// github.reference.workflow acts as a template attribute where it'll be
+	// joined with a `name` and a `version` value. There is an unknown amount of
+	// reference workflows that are sent as a list of strings by GitHub making
+	// it necessary to leverage template attributes. One key thing to note is
+	// the length of the names. Evaluate if this causes issues.
+	// WARNING: Extremely long workflow file names could create extremely long
+	// attribute keys which could lead to unknown issues in the backend and
+	// create additional memory usage overhead when processing data (though
+	// unlikely).
+	// TODO: Evaluate if there is a need to truncate long workflow files names.
+	// eg. github.reference.workflow.my-great-workflow.path
+	// eg. github.reference.workflow.my-great-workflow.version
+	// eg. github.reference.workflow.my-great-workflow.revision
+	AttributeGitHubReferenceWorkflow = "github.reference.workflow"
 
 	// SECURITY: This information will always exist on the repository, but may
 	// be considered private if the repository is set to private. Care should be
@@ -107,20 +123,8 @@ const (
 	// the user deems it as such.
 	AttributeVCSRefHeadRevisionAuthorName  = "vcs.ref.head.revision.author.name"  // GitHub's Head Revision Author Name
 	AttributeVCSRefHeadRevisionAuthorEmail = "vcs.ref.head.revision.author.email" // GitHub's Head Revision Author Email
-
-	// The following attributes are exclusive to GitHub but not listed under
-	// Vendor Extensions within Semantic Conventions yet.
-	AttributeGitHubWorkflowTriggerActorUsername = "github.workflow.trigger.actor.username" // GitHub's Triggering Actor Username
-
-	// github.reference.workflow acts as a template attribute where it'll be
-	// joined with a `name` and a `version` value. There is an unknown amount of
-	// reference workflows that are sent as a list of string by GitHub making it
-	// necessary to leverage template attributes. One key thing to note is the
-	// length of the names. Evaluate if this causes issues.
-	// eg. github.reference.workflow.my-great-workflow.path
-	// eg. github.reference.workflow.my-great-workflow.version
-	// eg. github.reference.workflow.my-great-workflow.revision
-	AttributeGitHubReferenceWorkflow = "github.reference.workflow"
+	AttributeVCSRepositoryOwner            = "vcs.repository.owner"               // GitHub's Owner Login
+	AttributeVCSVendorName                 = "vcs.vendor.name"                    // GitHub
 )
 
 // getWorkflowAttrs returns a pcommon.Map of attributes for the Workflow Run
@@ -172,8 +176,8 @@ func (gtr *githubTracesReceiver) getWorkflowAttrs(resource pcommon.Resource, e *
 		attrs.PutStr(AttributeCICDPipelinePreviousAttemptURLFull, htmlURL)
 	}
 
-	// Determine if there are any referenced (shared) workflows imported by the
-	// Workflow run and generated the temmplated attributes for them.
+	// Determine if there are any referenced (shared) workflows listed in the
+	// Workflow Run event and generate the templated attributes for them.
 	if len(e.GetWorkflowRun().ReferencedWorkflows) > 0 {
 		for _, w := range e.GetWorkflowRun().ReferencedWorkflows {
 			var name string
@@ -224,8 +228,8 @@ func splitRefWorkflowPath(path string) (fileName string, err error) {
 // 3) the repository name. The value returned in those cases will always be a
 // formatted string; where the string will be lowercase and underscores will be
 // replaced by hyphens. If none of these are set, it returns "unknown_service"
-// and an error.
-// func (gtr *githubTracesReceiver) getServiceName(customProps map[string]interface{}, repoName string) (string, error) {
+// according to the semantic conventions for service.name and an error.
+// https://opentelemetry.io/docs/specs/semconv/attributes-registry/service/#service-attributes
 func (gtr *githubTracesReceiver) getServiceName(customProps any, repoName string) (string, error) {
 	switch {
 	case gtr.cfg.WebHook.ServiceName != "":

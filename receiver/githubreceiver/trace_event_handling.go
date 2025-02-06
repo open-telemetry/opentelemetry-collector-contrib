@@ -42,12 +42,10 @@ func (gtr *githubTracesReceiver) handleWorkflowRun(e *github.WorkflowRunEvent) (
 // TODO: Add and implement handleWorkflowJob, tying corresponding job spans to
 // the proper root span and trace ID.
 
-// newTraceID creates a deterministic Trace ID based on the provided
-// inputs of runID and runAttempt.
+// newTraceID creates a deterministic Trace ID based on the provided inputs of
+// runID and runAttempt. `t` is appended to the end of the input to
+// differentiate between a deterministic traceID and the parentSpanID.
 func newTraceID(runID int64, runAttempt int) (pcommon.TraceID, error) {
-	// Original implementation appended `t` to TraceIds and `s` to ParentSpanIds
-	// This was done to separate the two types of IDs even though SpanIDs are
-	// only 8 bytes, while TraceIDs are 16 bytes.
 	input := fmt.Sprintf("%d%dt", runID, runAttempt)
 	// TODO: Determine if this is the best hashing algorithm to use. This is
 	// more likely to generate a unique hash compared to MD5 or SHA1. Could
