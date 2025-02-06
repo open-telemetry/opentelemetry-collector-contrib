@@ -60,6 +60,7 @@ type tailSamplingSpanProcessor struct {
 	nonSampledIDCache cache.Cache[bool]
 	deleteChan        chan pcommon.TraceID
 	numTracesOnMap    *atomic.Uint64
+	usingDropPolicy   bool
 
 	setPolicyMux  sync.Mutex
 	pendingPolicy []PolicyCfg
@@ -77,10 +78,9 @@ var (
 	attrSampledTrue     = metric.WithAttributes(attribute.String("sampled", "true"))
 	attrSampledFalse    = metric.WithAttributes(attribute.String("sampled", "false"))
 	decisionToAttribute = map[sampling.Decision]metric.MeasurementOption{
-		sampling.Sampled:          attrSampledTrue,
-		sampling.NotSampled:       attrSampledFalse,
-		sampling.InvertNotSampled: attrSampledFalse,
-		sampling.InvertSampled:    attrSampledTrue,
+		sampling.Sampled:    attrSampledTrue,
+		sampling.NotSampled: attrSampledFalse,
+		sampling.Dropped:    attrSampledFalse,
 	}
 )
 
@@ -194,6 +194,8 @@ func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg) (s
 		return getNewCompositePolicy(settings, &cfg.CompositeCfg)
 	case And:
 		return getNewAndPolicy(settings, &cfg.AndCfg)
+	case Drop:
+		return getNewDropPolicy(settings, &cfg.DropCfg)
 	default:
 		return getSharedPolicyEvaluator(settings, &cfg.sharedPolicyCfg)
 	}
@@ -252,6 +254,7 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 	cLen := len(cfgs)
 	policies := make([]*policy, 0, cLen)
 	policyNames := make(map[string]struct{}, cLen)
+	usingDropPolicy := false
 
 	for _, cfg := range cfgs {
 		if cfg.Name == "" {
@@ -262,6 +265,10 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 			return fmt.Errorf("duplicate policy name %q", cfg.Name)
 		}
 		policyNames[cfg.Name] = struct{}{}
+
+		if cfg.Type == Drop {
+			usingDropPolicy = true
+		}
 
 		eval, err := getPolicyEvaluator(telemetrySettings, &cfg)
 		if err != nil {
@@ -280,6 +287,7 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 		})
 	}
 
+	tsp.usingDropPolicy = usingDropPolicy
 	tsp.policies = policies
 
 	tsp.logger.Debug("Loaded sampling policy", zap.Int("policies.len", len(policies)))
@@ -375,11 +383,11 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 }
 
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sampling.TraceData, metrics *policyMetrics) sampling.Decision {
-	var decisions [8]bool
+	var decisions [6]bool
 	ctx := context.Background()
 	startTime := time.Now()
 
-	// Check all policies before making a final decision.
+	// Evaluate each policy.
 	for _, p := range tsp.policies {
 		decision, err := p.evaluator.Evaluate(ctx, id, trace)
 		latency := time.Since(startTime)
@@ -399,24 +407,24 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		}
 
 		decisions[decision] = true
+
+		// Break early if dropped or on the first sampled decision when not
+		// using drop policy. This reduces tick/decision latency.
+		if decision == sampling.Dropped || (!tsp.usingDropPolicy && decision == sampling.Sampled) {
+			break
+		}
 	}
 
 	var finalDecision sampling.Decision
 	switch {
-	case decisions[sampling.InvertNotSampled]: // InvertNotSampled takes precedence
+	case decisions[sampling.Dropped]: // Dropped takes precedence
 		finalDecision = sampling.NotSampled
 	case decisions[sampling.Sampled]:
-		finalDecision = sampling.Sampled
-	case decisions[sampling.InvertSampled] && !decisions[sampling.NotSampled]:
+		metrics.decisionSampled++
 		finalDecision = sampling.Sampled
 	default:
-		finalDecision = sampling.NotSampled
-	}
-
-	if finalDecision == sampling.Sampled {
-		metrics.decisionSampled++
-	} else {
 		metrics.decisionNotSampled++
+		finalDecision = sampling.NotSampled
 	}
 
 	return finalDecision

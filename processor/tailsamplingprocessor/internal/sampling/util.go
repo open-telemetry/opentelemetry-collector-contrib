@@ -42,14 +42,14 @@ func invertHasResourceOrSpanWithCondition(
 
 		resource := rs.Resource()
 		if !shouldSampleResource(resource) {
-			return InvertNotSampled
+			return NotSampled
 		}
 
 		if !invertHasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSampleSpan) {
-			return InvertNotSampled
+			return NotSampled
 		}
 	}
-	return InvertSampled
+	return Sampled
 }
 
 // hasSpanWithCondition iterates through all the instrumentation library spans until any callback returns true.

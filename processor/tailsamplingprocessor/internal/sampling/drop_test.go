@@ -14,12 +14,12 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestAndEvaluatorNotSampled(t *testing.T) {
+func TestDropEvaluatorNotSampled(t *testing.T) {
 	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "name", []string{"value"}, false, 0, false)
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	and := NewDrop(zap.NewNop(), []PolicyEvaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -38,12 +38,12 @@ func TestAndEvaluatorNotSampled(t *testing.T) {
 	assert.Equal(t, NotSampled, decision)
 }
 
-func TestAndEvaluatorSampled(t *testing.T) {
+func TestDropEvaluatorSampled(t *testing.T) {
 	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "attribute_name", []string{"attribute_value"}, false, 0, false)
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	and := NewDrop(zap.NewNop(), []PolicyEvaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -60,15 +60,15 @@ func TestAndEvaluatorSampled(t *testing.T) {
 	}
 	decision, err := and.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
-	assert.Equal(t, Sampled, decision)
+	assert.Equal(t, Dropped, decision)
 }
 
-func TestAndEvaluatorStringInvertMatch(t *testing.T) {
+func TestDropEvaluatorStringInvertMatch(t *testing.T) {
 	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "attribute_name", []string{"no_match"}, false, 0, true)
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	and := NewDrop(zap.NewNop(), []PolicyEvaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
@@ -85,15 +85,15 @@ func TestAndEvaluatorStringInvertMatch(t *testing.T) {
 	}
 	decision, err := and.Evaluate(context.Background(), traceID, trace)
 	require.NoError(t, err, "Failed to evaluate and policy: %v", err)
-	assert.Equal(t, Sampled, decision)
+	assert.Equal(t, Dropped, decision)
 }
 
-func TestAndEvaluatorStringInvertNotMatch(t *testing.T) {
+func TestDropEvaluatorStringInvertNotMatch(t *testing.T) {
 	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "attribute_name", []string{"attribute_value"}, false, 0, true)
 	n2, err := NewStatusCodeFilter(componenttest.NewNopTelemetrySettings(), []string{"ERROR"})
 	require.NoError(t, err)
 
-	and := NewAnd(zap.NewNop(), []PolicyEvaluator{n1, n2})
+	and := NewDrop(zap.NewNop(), []PolicyEvaluator{n1, n2})
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()

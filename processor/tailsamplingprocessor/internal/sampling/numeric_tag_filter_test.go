@@ -99,47 +99,47 @@ func TestNumericTagFilterInverted(t *testing.T) {
 		{
 			Desc:     "nonmatching span attribute",
 			Trace:    newTraceIntAttrs(empty, "non_matching", math.MinInt32),
-			Decision: InvertSampled,
+			Decision: Sampled,
 		},
 		{
 			Desc:     "span attribute at the lower limit",
 			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32),
-			Decision: InvertNotSampled,
+			Decision: NotSampled,
 		},
 		{
 			Desc:     "resource attribute at the lower limit",
 			Trace:    newTraceIntAttrs(map[string]any{"example": math.MinInt32}, "non_matching", math.MinInt32),
-			Decision: InvertNotSampled,
+			Decision: NotSampled,
 		},
 		{
 			Desc:     "span attribute at the upper limit",
 			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32),
-			Decision: InvertNotSampled,
+			Decision: NotSampled,
 		},
 		{
 			Desc:     "resource attribute at the upper limit",
 			Trace:    newTraceIntAttrs(map[string]any{"example": math.MaxInt32}, "non_matching", math.MaxInt32),
-			Decision: InvertNotSampled,
+			Decision: NotSampled,
 		},
 		{
 			Desc:     "span attribute below min limit",
 			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32-1),
-			Decision: InvertSampled,
+			Decision: Sampled,
 		},
 		{
 			Desc:     "resource attribute below min limit",
 			Trace:    newTraceIntAttrs(map[string]any{"example": math.MinInt32 - 1}, "non_matching", math.MinInt32),
-			Decision: InvertSampled,
+			Decision: Sampled,
 		},
 		{
 			Desc:     "span attribute above max limit",
 			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32+1),
-			Decision: InvertSampled,
+			Decision: Sampled,
 		},
 		{
 			Desc:     "resource attribute above max limit",
 			Trace:    newTraceIntAttrs(map[string]any{"example": math.MaxInt32 + 1}, "non_matching", math.MaxInt32+1),
-			Decision: InvertSampled,
+			Decision: Sampled,
 		},
 	}
 
