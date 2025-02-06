@@ -29,7 +29,7 @@ Each condition and statement can access and transform telemetry using functions 
 ## Config
 
 The transform processor allows configuring multiple context statements for traces, metrics, and logs.
-The value of `context` specifies which [OTTL Context](#contexts) to use when interpreting the associated statements.
+The value of `context` specifies which [OTTL Context](#contexts) to use when interpreting the associated statements, and can be either explicitly set or [inferred](#context-inference).
 The global conditions and statement strings, which must be OTTL compatible, will be passed to OTTL and interpreted using the associated context.
 The condition string should contain a Where clause body without the `where` keyword at the beginning.
 
@@ -153,6 +153,52 @@ transform:
         - set(body, attributes["http.route"])
 ```
 
+### Context inferred configurations
+
+The transform processor can automatically infer the `context` value from the statements, removing 
+the need for explicit specification. This inference leverages the path names, functions, and enums 
+present in the statements to efficiently determine the most appropriate context. 
+For more details, see [context inference](#context-inference).
+
+The following example takes advantage of context inference by suppressing the `context` value,
+and using statements with fully qualified paths:
+
+```yaml
+transform:
+  error_mode: ignore
+  metric_statements:
+    - statements:
+      - keep_keys(resource.attributes, ["host.name"])
+      - truncate_all(resource.attributes, 4096)
+      - set(metric.description, "Sum") where metric.type == "Sum"
+      - convert_sum_to_gauge() where metric.name == "system.processes.count"
+      - convert_gauge_to_sum("cumulative", false) where metric.name == "prometheus_metric"
+```
+
+This configuration can be further simplified by using the flat configuration style:
+
+```yaml
+transform:
+  error_mode: ignore
+  <trace|metric|log>_statements:
+    - string
+    - string
+    - string
+```
+
+Example:
+
+```yaml
+transform:
+  error_mode: ignore
+  metric_statements:
+    - keep_keys(resource.attributes, ["host.name"])
+    - truncate_all(resource.attributes, 4096)
+    - set(metric.description, "Sum") where metric.type == "Sum"
+    - convert_sum_to_gauge() where metric.name == "system.processes.count"
+    - convert_gauge_to_sum("cumulative", false) where metric.name == "prometheus_metric"
+```
+
 ## Grammar
 
 You can learn more in-depth details on the capabilities and limitations of the OpenTelemetry Transformation Language used by the transform processor by reading about its [grammar](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl#grammar).
@@ -207,6 +253,69 @@ metric_statements:
 Whenever possible, associate your statements to the context that the statement intend to transform.
 Although you can modify resource attributes associated to a span using the `span` context, it is more efficient to use the `resource` context.
 This is because contexts are nested: the efficiency comes because higher-level contexts can avoid iterating through any of the contexts at a lower level. 
+
+### Context inference
+
+The transform processor can automatically infer the `context` value from statements, eliminating 
+the need to specify it explicitly. This inference is based on the path names, functions, and 
+enums present in the statements.
+
+To enable this inference, path names must be prefixed with the `context` names. For example:
+
+```yaml
+metric_statements:
+  - statements:
+    - set(metric.description, "test passed") where datapoint.attributes["test"] == "pass"
+```
+
+In this configuration, the inferred `context` value is `datapoint`, as it is the only context 
+that supports parsing both `datapoint` and `metric` data.
+
+Updating the configuration as shown below will result in the `metric` context being inferred, 
+as `metric` is the context capable of parsing both `metric` and `resource` data.
+
+```yaml
+metric_statements:
+  - statements:
+    - set(resource.attributes["test"], "passed")
+    - set(metric.description, "test passed")
+```
+
+The primary benefit of context inference is that it enhances the efficiency of statement processing 
+by linking them to the most suitable context. This optimization ensures that data transformations 
+are both accurate and performant, leveraging the hierarchical structure of contexts to avoid unnecessary 
+iterations and improve overall processing efficiency.
+
+In some situations, automatic inference might not be possible. For example:
+
+```yaml
+metric_statements:
+  - statements:
+    - convert_sum_to_gauge() where metric.name == "system.processes.count"
+    - limit(datapoint.attributes, 100, ["host.name"])
+```
+
+In this configuration, while the `datapoint` context appears suitable for parsing both `metric` 
+and `datapoint` data, it does not fulfill the function requirement since `convert_sum_to_gauge` is 
+a specific `metric` function. Conversely, the `metric` context cannot parse `datapoint`, as it 
+cannot access "lower" items in the protobuf definition. Therefore, the conflicting statements must 
+be placed into separate statement groups:
+
+```yaml
+metric_statements:
+  - statements:
+    - limit(datapoint.attributes, 100, ["host.name"])
+  - statements:
+    - convert_sum_to_gauge() where metric.name == "system.processes.count" 
+```
+
+Alternatively, for simplicity, you can use the [flat configuration](#context-inferred-configurations) style:
+
+```yaml
+metric_statements:
+  - limit(datapoint.attributes, 100, ["host.name"])
+  - convert_sum_to_gauge() where metric.name == "system.processes.count" 
+```
 
 ## Supported functions:
 
