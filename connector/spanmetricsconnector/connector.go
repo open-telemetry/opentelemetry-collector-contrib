@@ -279,6 +279,16 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		 * - For delta metrics: (T1, T2), (T2, T3), (T3, T4) ...
 		 */
 		deltaMetricKeys := make(map[metrics.Key]bool)
+		timeStampGenerator := func(mk metrics.Key, startTime pcommon.Timestamp) pcommon.Timestamp {
+			if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
+				if lastTimestamp, ok := p.lastDeltaTimestamps.Get(mk); ok {
+					startTime = lastTimestamp
+				}
+				// Collect lastDeltaTimestamps keys that need to be updated. Metrics can share the same key, so defer the update.
+				deltaMetricKeys[mk] = true
+			}
+			return startTime
+		}
 
 		metricsNamespace := p.config.Namespace
 		if legacyMetricNamesFeatureGate.IsEnabled() && metricsNamespace == DefaultNamespace {
@@ -288,21 +298,21 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		sums := rawMetrics.sums
 		metric := sm.Metrics().AppendEmpty()
 		metric.SetName(buildMetricName(metricsNamespace, metricNameCalls))
-		sums.BuildMetrics(metric, timestamp, p.config.GetAggregationTemporality())
+		sums.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
 
 		if !p.config.Histogram.Disable {
 			histograms := rawMetrics.histograms
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(metricsNamespace, metricNameDuration))
 			metric.SetUnit(p.config.Histogram.Unit.String())
-			histograms.BuildMetrics(metric, timestamp, p.config.GetAggregationTemporality())
+			histograms.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
 		}
 
 		events := rawMetrics.events
 		if p.events.Enabled {
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(metricsNamespace, metricNameEvents))
-			events.BuildMetrics(metric, timestamp, p.config.GetAggregationTemporality())
+			events.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
 		}
 
 		for mk := range deltaMetricKeys {
