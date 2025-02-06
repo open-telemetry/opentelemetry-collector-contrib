@@ -19,10 +19,6 @@ func TestReplacePatternValidTaskId(t *testing.T) {
 
 	input := "{TaskId}"
 
-	//attrMap := pcommon.NewMap()
-	//attrMap.PutStr("aws.ecs.cluster.name", "test-cluster-name")
-	//attrMap.PutStr("aws.ecs.task.id", "test-task-id")
-
 	attrMap := map[string]any{
 		"aws.ecs.cluster.name": "test-cluster-name",
 		"aws.ecs.task.id":      "test-task-id",
@@ -39,9 +35,6 @@ func TestReplacePatternValidServiceName(t *testing.T) {
 
 	input := "{ServiceName}"
 
-	//attrMap := pcommon.NewMap()
-	//attrMap.PutStr("service.name", "some-test-service")
-
 	attrMap := map[string]any{
 		"service.name": "some-test-service",
 	}
@@ -56,10 +49,6 @@ func TestReplacePatternValidClusterName(t *testing.T) {
 	logger := zap.NewNop()
 
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
-
-	//attrMap := pcommon.NewMap()
-	//attrMap.PutStr("aws.ecs.cluster.name", "test-cluster-name")
-	//attrMap.PutStr("aws.ecs.task.id", "test-task-id")
 
 	attrMap := map[string]any{
 		"aws.ecs.cluster.name": "test-cluster-name",
@@ -77,9 +66,6 @@ func TestReplacePatternMissingAttribute(t *testing.T) {
 
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
-	//attrMap := pcommon.NewMap()
-	//attrMap.PutStr("aws.ecs.task.id", "test-task-id")
-
 	attrMap := map[string]any{
 		"aws.ecs.task.id": "test-task-id",
 	}
@@ -94,10 +80,6 @@ func TestReplacePatternValidPodName(t *testing.T) {
 	logger := zap.NewNop()
 
 	input := "/aws/eks/containerinsights/{PodName}/performance"
-
-	//attrMap := pcommon.NewMap()
-	//attrMap.PutStr("aws.eks.cluster.name", "test-cluster-name")
-	//attrMap.PutStr("PodName", "test-pod-001")
 
 	attrMap := map[string]any{
 		"aws.eks.cluster.name": "test-cluster-name",
@@ -115,10 +97,6 @@ func TestReplacePatternValidPod(t *testing.T) {
 
 	input := "/aws/eks/containerinsights/{PodName}/performance"
 
-	//attrMap := pcommon.NewMap()
-	//attrMap.PutStr("aws.eks.cluster.name", "test-cluster-name")
-	//attrMap.PutStr("pod", "test-pod-001")
-
 	attrMap := map[string]any{
 		"aws.eks.cluster.name": "test-cluster-name",
 		"PodName":              "test-pod-001",
@@ -135,9 +113,6 @@ func TestReplacePatternMissingPodName(t *testing.T) {
 
 	input := "/aws/eks/containerinsights/{PodName}/performance"
 
-	//attrMap := pcommon.NewMap()
-	//attrMap.PutStr("aws.eks.cluster.name", "test-cluster-name")
-
 	attrMap := map[string]any{
 		"aws.eks.cluster.name": "test-cluster-name",
 	}
@@ -152,9 +127,6 @@ func TestReplacePatternAttrPlaceholderClusterName(t *testing.T) {
 	logger := zap.NewNop()
 
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
-
-	//attrMap := pcommon.NewMap()
-	//attrMap.PutStr("ClusterName", "test-cluster-name")
 
 	attrMap := map[string]any{
 		"ClusterName": "test-cluster-name",
@@ -171,9 +143,6 @@ func TestReplacePatternWrongKey(t *testing.T) {
 
 	input := "/aws/ecs/containerinsights/{WrongKey}/performance"
 
-	//attrMap := pcommon.NewMap()
-	//attrMap.PutStr("ClusterName", "test-task-id")
-
 	attrMap := map[string]any{
 		"ClusterName": "test-task-id",
 	}
@@ -189,9 +158,6 @@ func TestReplacePatternNilAttrValue(t *testing.T) {
 
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
-	//attrMap := pcommon.NewMap()
-	//attrMap.PutEmpty("ClusterName")
-
 	attrMap := map[string]any{
 		"ClusterName": "",
 	}
@@ -206,10 +172,6 @@ func TestReplacePatternValidTaskDefinitionFamily(t *testing.T) {
 	logger := zap.NewNop()
 
 	input := "{TaskDefinitionFamily}"
-
-	//attrMap := pcommon.NewMap()
-	//attrMap.PutStr("aws.ecs.cluster.name", "test-cluster-name")
-	//attrMap.PutStr("aws.ecs.task.family", "test-task-definition-family")
 
 	attrMap := map[string]any{
 		"aws.ecs.cluster.name": "test-cluster-name",
