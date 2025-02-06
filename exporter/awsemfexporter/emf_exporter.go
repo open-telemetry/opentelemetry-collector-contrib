@@ -12,7 +12,6 @@ import (
 	"sync"
 
 	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
@@ -204,8 +203,6 @@ func (emf *emfExporter) start(_ context.Context, host component.Host) error {
 	if err != nil {
 		return err
 	}
-
-	awsConfig.LogLevel = aws.LogLevel(aws.LogDebugWithHTTPBody)
 
 	var userAgentExtras []string
 	if emf.config.IsAppSignalsEnabled() {
