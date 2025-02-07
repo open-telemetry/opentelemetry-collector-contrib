@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/google/go-github/v68/github"
@@ -151,14 +152,14 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
 	var td ptrace.Traces
 	switch e := event.(type) {
 	case *github.WorkflowRunEvent:
-		if e.GetWorkflowRun().GetStatus() != "completed" {
+		if strings.ToLower(e.GetWorkflowRun().GetStatus()) != "completed" {
 			gtr.logger.Debug("workflow run not complete, skipping...", zap.String("status", e.GetWorkflowRun().GetStatus()))
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 		td, err = gtr.handleWorkflowRun(e)
 	case *github.WorkflowJobEvent:
-		if e.GetWorkflowJob().GetStatus() != "completed" {
+		if strings.ToLower(e.GetWorkflowJob().GetStatus()) != "completed" {
 			gtr.logger.Debug("workflow job not complete, skipping...", zap.String("status", e.GetWorkflowJob().GetStatus()))
 			w.WriteHeader(http.StatusNoContent)
 			return

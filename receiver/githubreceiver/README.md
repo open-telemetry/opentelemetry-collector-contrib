@@ -116,7 +116,7 @@ success, and failure rates.
 
 ### Receiver Configuration
 
-**IMPORTANT** - Ensure to secure your WebHook endpoint with a secret and a Web
+**IMPORTANT** - Ensure your WebHook endpoint is secured with a secret and a Web
 Application Firewall (WAF) or other security measure.
 
 The WebHook configuration exposes the following settings:
@@ -153,10 +153,11 @@ of exposed configuration values can be found in [`config.go`](./config.go).
 ### Configuring Service Name
 
 The `service_name` option in the WebHook configuration can be used to set a
-pre-defined `service.name` for all traces emitted by the receiver. This takes
-priority over the internal generation of the `service.name`. In this
-configuration, it would be important to create a GitHub receiver per GitHub app
-configured for the set of repositories that match your `service.name`.
+pre-defined `service.name` resource attribute for all traces emitted by the
+receiver. This takes priority over the internal generation of the
+`service.name`. In this configuration, it would be important to create a GitHub
+receiver per GitHub app configured for the set of repositories that match your
+`service.name`.
 
 However, a more efficient approach would be to leverage the default generation
 of `service.name` by configuring [Custom Properties][cp] in each GitHub
@@ -165,7 +166,7 @@ each repository and all events sent to the GitHub receiver will properly
 associate with that `service.name`. Alternatively, the `service_name` will be
 derived from the repository name.
 
-The precedence for `service.name` generation is as follows:
+The precedence for setting the `service.name` resource attribute is as follows:
 
 1. `service_name` configuration in the WebHook configuration.
 2. `service_name` key in the repository's Custom Properties per repository.

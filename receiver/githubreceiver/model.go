@@ -155,7 +155,7 @@ func (gtr *githubTracesReceiver) getWorkflowAttrs(resource pcommon.Resource, e *
 	attrs.PutStr(AttributeCICDPipelineRunSenderLogin, e.GetSender().GetLogin())
 	attrs.PutStr(AttributeCICDPipelineRunURLFull, e.GetWorkflowRun().GetHTMLURL())
 	attrs.PutInt(semconv.AttributeCicdPipelineRunID, e.GetWorkflowRun().GetID())
-	switch status := e.GetWorkflowRun().GetConclusion(); status {
+	switch status := strings.ToLower(e.GetWorkflowRun().GetConclusion()); status {
 	case "success":
 		attrs.PutStr(AttributeCICDPipelineRunStatus, AttributeCICDPipelineRunStatusSuccess)
 	case "failure":

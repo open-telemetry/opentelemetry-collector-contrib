@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/go-github/v68/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -102,7 +103,7 @@ func (gtr *githubTracesReceiver) createRootSpan(
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowRun().GetRunStartedAt().Time))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowRun().GetUpdatedAt().Time))
 
-	switch event.WorkflowRun.GetConclusion() {
+	switch strings.ToLower(event.WorkflowRun.GetConclusion()) {
 	case "success":
 		span.Status().SetCode(ptrace.StatusCodeOk)
 	case "failure":
