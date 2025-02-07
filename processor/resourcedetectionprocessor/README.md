@@ -559,9 +559,9 @@ See: [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetr
 
 ### Dynatrace
 
-Loads resource information from the `dt_host_metadata.json` and `dt_host_metadata.properties` files which are located in
+Loads resource information from the `dt_host_metadata.properties` file which is located in
 the `/var/lib/dynatrace/enrichment` (on *nix systems) or `%ProgramData%\dynatrace\enrichment` (on Windows) directories.
-If present in either of the files, the following attributes will be added:
+If present in the file, the following attributes will be added:
 
 - `dt.entity.host`
 - `host.name`

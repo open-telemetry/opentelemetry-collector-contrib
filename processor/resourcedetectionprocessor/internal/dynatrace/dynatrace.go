@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package dynatrace provides a detector that loads resource information from
-// the dt_host_metadata.json and dt_host_metadata.properties files which are located in
+// the dt_host_metadata.properties file which is located in
 // the /var/lib/dynatrace/enrichment (on *nix systems) and %ProgramData%\dynatrace\enrichment
 // (on Windows) directories.
 
@@ -10,7 +10,6 @@ package dynatrace // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -25,7 +24,6 @@ import (
 
 const TypeStr = "dynatrace"
 
-const dtHostMetadataJSON = "dt_host_metadata.json"
 const dtHostMetadataProperties = "dt_host_metadata.properties"
 
 var dtHostProperties = []string{"dt.entity.host", "host.name"}
@@ -56,44 +54,10 @@ func NewDetector(_ processor.Settings, _ internal.DetectorConfig) (internal.Dete
 func (d Detector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 	res := pcommon.NewResource()
 
-	if err := d.readPropertiesJSON(res.Attributes()); err != nil {
-		return res, "", err
-	}
-
 	if err := d.readPropertiesFile(res.Attributes()); err != nil {
 		return res, "", err
 	}
 	return res, "", nil
-}
-
-func (d Detector) readPropertiesJSON(attributes pcommon.Map) error {
-	filePath := filepath.Join(d.enrichmentDirectory, dtHostMetadataJSON)
-
-	fileContent, err := os.ReadFile(filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-
-	m := map[string]any{}
-
-	if err := json.Unmarshal(fileContent, &m); err != nil {
-		return err
-	}
-
-	for key, value := range m {
-		if !slices.Contains(dtHostProperties, key) {
-			continue
-		}
-		stringVal, ok := value.(string)
-		if !ok {
-			continue
-		}
-		attributes.PutStr(strings.TrimSpace(key), strings.TrimSpace(stringVal))
-	}
-	return nil
 }
 
 func (d Detector) readPropertiesFile(attributes pcommon.Map) error {
