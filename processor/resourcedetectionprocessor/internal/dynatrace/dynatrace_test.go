@@ -38,7 +38,7 @@ func TestDetectorNewDetector(t *testing.T) {
 func TestDetector_DetectFromProperties(t *testing.T) {
 	d, err := NewDetector(processor.Settings{}, nil)
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	tempDir := t.TempDir()
 
@@ -59,14 +59,15 @@ func TestDetector_DetectFromProperties(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "my-host-from-properties", get.Str())
 
-	get, ok = resource.Attributes().Get("dt.entity.host_group")
+	// verify that we do not take any additional properties
+	_, ok = resource.Attributes().Get("dt.entity.host_group")
 	require.False(t, ok)
 }
 
 func TestDetector_DetectNoFileAvailable(t *testing.T) {
 	d, err := NewDetector(processor.Settings{}, nil)
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	tempDir := t.TempDir()
 
@@ -80,5 +81,5 @@ func TestDetector_DetectNoFileAvailable(t *testing.T) {
 }
 
 func createTestFile(directory, name, content string) error {
-	return os.WriteFile(filepath.Join(directory, name), []byte(content), os.ModePerm)
+	return os.WriteFile(filepath.Join(directory, name), []byte(content), 0600)
 }
