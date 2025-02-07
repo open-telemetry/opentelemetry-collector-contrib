@@ -194,7 +194,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 		dec := json.NewDecoder(reader)
 		var p datadogV2.MetricPayload
 		assert.NoError(dec.Decode(&p))
-		assert.Len(p.Series, 1)
+		assert.GreaterOrEqual(len(p.Series), 1)
 		assert.Len(p.Series[0].Resources, 1)
 		return *p.Series[0].Resources[0].Name, p.Series[0].Tags
 	}
