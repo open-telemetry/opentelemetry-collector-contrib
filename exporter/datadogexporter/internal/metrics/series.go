@@ -68,7 +68,7 @@ func DefaultMetrics(exporterType string, hostname string, timestamp uint64, tags
 	return metrics
 }
 
-// GatewayUsageGauge creates a gauge metric to report is there is a gateway
+// GatewayUsageGauge creates a gauge metric to report if there is a gateway
 func GatewayUsageGauge(timestamp uint64, hostname string, tags []string, gatewayUsage *attributes.GatewayUsage) datadogV2.MetricSeries {
 	series := NewGauge("datadog.otel.gateway", timestamp, gatewayUsage.Gauge(), tags)
 	series.SetResources([]datadogV2.MetricResource{
