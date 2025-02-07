@@ -46,7 +46,10 @@ func TestProxyCreationFailed(t *testing.T) {
 	assert.NoError(t, err, "there should be address available")
 
 	sink := new(consumertest.TracesSink)
-	_, err = newReceiver(
+
+	client, err := newXRayClient(context.Background(), mockRegion)
+	assert.NoError(t, err, "Failed to create AWS X-Ray client")
+	rcvr, err := newReceiver(
 		&Config{
 			AddrConfig: confignet.AddrConfig{
 				Endpoint:  addr,
@@ -60,13 +63,17 @@ func TestProxyCreationFailed(t *testing.T) {
 		},
 		sink,
 		receivertest.NewNopSettings(),
+		client,
 	)
 	assert.Error(t, err, "receiver creation should fail due to failure to create TCP proxy")
+	assert.Nil(t, rcvr, "Receiver should be nil when proxy creation fails")
 }
 
 func TestPollerCreationFailed(t *testing.T) {
 	sink := new(consumertest.TracesSink)
-	_, err := newReceiver(
+	client, err := newXRayClient(context.Background(), mockRegion)
+	assert.NoError(t, err, "Failed to create AWS X-Ray client")
+	rcvr, err := newReceiver(
 		&Config{
 			AddrConfig: confignet.AddrConfig{
 				Endpoint:  "dontCare",
@@ -75,8 +82,12 @@ func TestPollerCreationFailed(t *testing.T) {
 		},
 		sink,
 		receivertest.NewNopSettings(),
+		client,
 	)
 	assert.Error(t, err, "receiver creation should fail due to failure to create UCP poller")
+	if rcvr != nil {
+		_ = rcvr.Shutdown(context.Background())
+	}
 }
 
 // TODO: Update this test to assert on the format of traces
@@ -281,6 +292,9 @@ func createAndOptionallyStartReceiver(
 
 	logger, recorded := logSetup()
 	set.Logger = logger
+
+	client, err := newXRayClient(context.Background(), mockRegion)
+	assert.NoError(t, err, "Failed to create AWS X-Ray client")
 	rcvr, err := newReceiver(
 		&Config{
 			AddrConfig: confignet.AddrConfig{
@@ -295,6 +309,7 @@ func createAndOptionallyStartReceiver(
 		},
 		sink,
 		set,
+		client,
 	)
 	assert.NoError(t, err, "receiver should be created")
 
