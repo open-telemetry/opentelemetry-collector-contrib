@@ -47,7 +47,10 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 				if err != nil {
 					return nil, err
 				}
-				dbPool.SetMaxOpenConns(sqlCfg.MaxOpenConn)
+
+				if dbPool != nil {
+					dbPool.SetMaxOpenConns(sqlCfg.MaxOpenConn)
+				}
 				return dbPool, nil
 			}
 			mp := sqlquery.NewScraper(id, query, sqlCfg.ControllerConfig, settings.TelemetrySettings.Logger, sqlCfg.Config.Telemetry, dbProviderFunc, clientProviderFunc)
