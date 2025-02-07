@@ -205,6 +205,9 @@ func (e *elasticsearchExporter) pushMetricsData(
 	ctx context.Context,
 	metrics pmetric.Metrics,
 ) error {
+	mappingMode := e.config.MappingMode()
+	hasher := newDataPointHasher(mappingMode)
+
 	e.wg.Add(1)
 	defer e.wg.Done()
 
@@ -239,7 +242,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 						groupedDataPoints = make(map[uint32]*dataPointsGroup)
 						groupedDataPointsByIndex[fIndex] = groupedDataPoints
 					}
-					dpHash := e.model.hashDataPoint(dp)
+					dpHash := hasher.hashDataPoint(dp)
 					dpGroup, ok := groupedDataPoints[dpHash]
 					if !ok {
 						groupedDataPoints[dpHash] = &dataPointsGroup{

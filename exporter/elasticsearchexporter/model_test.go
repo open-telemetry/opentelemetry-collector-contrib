@@ -104,6 +104,7 @@ func TestEncodeMetric(t *testing.T) {
 		dedot: true,
 		mode:  MappingECS,
 	}
+	hasher := newDataPointHasher(model.mode)
 
 	groupedDataPoints := make(map[uint32][]datapoints.DataPoint)
 
@@ -114,7 +115,7 @@ func TestEncodeMetric(t *testing.T) {
 	dps := m.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dp := datapoints.NewNumber(m, dps.At(i))
-		dpHash := model.hashDataPoint(dp)
+		dpHash := hasher.hashDataPoint(dp)
 		dataPoints, ok := groupedDataPoints[dpHash]
 		if !ok {
 			groupedDataPoints[dpHash] = []datapoints.DataPoint{dp}
