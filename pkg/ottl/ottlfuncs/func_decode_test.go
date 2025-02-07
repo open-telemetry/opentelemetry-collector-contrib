@@ -145,7 +145,7 @@ func TestDecode(t *testing.T) {
 			value:         "test string",
 			encoding:      "GB2312",
 			want:          nil,
-			expectedError: "no decoder available for encoding: GB2312",
+			expectedError: "no charmap defined for encoding 'GB2312'",
 		},
 		{
 			name:          "non-string",
