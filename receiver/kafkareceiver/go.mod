@@ -6,7 +6,8 @@ require (
 	github.com/IBM/sarama v1.45.0
 	github.com/apache/thrift v0.21.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.66.0
+	github.com/jaegertracing/jaeger v1.65.1-0.20250203121426-384203d31442
+	github.com/jaegertracing/jaeger-idl v0.5.0
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.119.0
@@ -111,7 +112,8 @@ require (
 	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/net v0.34.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.70.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect

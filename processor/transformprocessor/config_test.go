@@ -307,42 +307,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
-		{
-			id: component.NewIDWithName(metadata.Type, "context_statements_error_mode"),
-			expected: &Config{
-				ErrorMode: ottl.IgnoreError,
-				TraceStatements: []common.ContextStatements{
-					{
-						Statements: []string{`set(resource.attributes["name"], "propagate")`},
-						ErrorMode:  ottl.PropagateError,
-					},
-					{
-						Statements: []string{`set(resource.attributes["name"], "ignore")`},
-						ErrorMode:  "",
-					},
-				},
-				MetricStatements: []common.ContextStatements{
-					{
-						Statements: []string{`set(resource.attributes["name"], "silent")`},
-						ErrorMode:  ottl.SilentError,
-					},
-					{
-						Statements: []string{`set(resource.attributes["name"], "ignore")`},
-						ErrorMode:  "",
-					},
-				},
-				LogStatements: []common.ContextStatements{
-					{
-						Statements: []string{`set(resource.attributes["name"], "propagate")`},
-						ErrorMode:  ottl.PropagateError,
-					},
-					{
-						Statements: []string{`set(resource.attributes["name"], "ignore")`},
-						ErrorMode:  "",
-					},
-				},
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.Name(), func(t *testing.T) {

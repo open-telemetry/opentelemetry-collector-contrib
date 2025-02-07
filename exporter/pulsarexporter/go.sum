@@ -99,8 +99,8 @@ github.com/hashicorp/go-multierror v1.1.1 h1:H5DkEtf6CXdFp0N0Em5UCwQpXMWke8IA0+l
 github.com/hashicorp/go-multierror v1.1.1/go.mod h1:iw975J/qwKPdAO1clOe2L8331t/9/fmwbPZ6JB6eMoM=
 github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKeRZfjY=
 github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
-github.com/jaegertracing/jaeger v1.66.0 h1:tmgkukU+YMdrhXyKC7O96GshvuSl9+6fB8ZzucLKKdM=
-github.com/jaegertracing/jaeger v1.66.0/go.mod h1:BVwtpsjm+8rky99h+dJ0fAb5OSl4vbCgAKgTV2WGlmU=
+github.com/jaegertracing/jaeger v1.65.0 h1:phDrZzaPUbomlN8VfxGWuPwkipYh7cU6V9q6Obf+7Fc=
+github.com/jaegertracing/jaeger v1.65.0/go.mod h1:EkEqyIzI0xCjexVHURWJmZZxjswTUKSriW57eVG44yo=
 github.com/jaegertracing/jaeger-idl v0.5.0 h1:zFXR5NL3Utu7MhPg8ZorxtCBjHrL3ReM1VoB65FOFGE=
 github.com/jaegertracing/jaeger-idl v0.5.0/go.mod h1:ON90zFo9eoyXrt9F/KN8YeF3zxcnujaisMweFY/rg5k=
 github.com/jawher/mow.cli v1.0.4/go.mod h1:5hQj2V8g+qYmLUVWqu4Wuja1pI57M83EChYLVZ0sMKk=

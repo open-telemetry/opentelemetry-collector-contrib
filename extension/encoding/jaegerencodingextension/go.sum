@@ -20,8 +20,8 @@ github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/jaegertracing/jaeger v1.66.0 h1:tmgkukU+YMdrhXyKC7O96GshvuSl9+6fB8ZzucLKKdM=
-github.com/jaegertracing/jaeger v1.66.0/go.mod h1:BVwtpsjm+8rky99h+dJ0fAb5OSl4vbCgAKgTV2WGlmU=
+github.com/jaegertracing/jaeger v1.65.0 h1:phDrZzaPUbomlN8VfxGWuPwkipYh7cU6V9q6Obf+7Fc=
+github.com/jaegertracing/jaeger v1.65.0/go.mod h1:EkEqyIzI0xCjexVHURWJmZZxjswTUKSriW57eVG44yo=
 github.com/jaegertracing/jaeger-idl v0.5.0 h1:zFXR5NL3Utu7MhPg8ZorxtCBjHrL3ReM1VoB65FOFGE=
 github.com/jaegertracing/jaeger-idl v0.5.0/go.mod h1:ON90zFo9eoyXrt9F/KN8YeF3zxcnujaisMweFY/rg5k=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=

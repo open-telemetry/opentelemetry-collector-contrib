@@ -11,7 +11,7 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
-	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
 	jaegerconvert "github.com/jaegertracing/jaeger/model/converter/thrift/jaeger"
 	"github.com/jaegertracing/jaeger/thrift-gen/agent"
 	jaegerthrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"

@@ -35,8 +35,8 @@ github.com/hashicorp/go-hclog v1.6.3 h1:Qr2kF+eVWjTiYmU7Y31tYlP1h0q/X3Nl3tPGdaB1
 github.com/hashicorp/go-hclog v1.6.3/go.mod h1:W4Qnvbt70Wk/zYJryRzDRU/4r0kIg0PVHBcfoyhpF5M=
 github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKeRZfjY=
 github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
-github.com/jaegertracing/jaeger v1.66.0 h1:tmgkukU+YMdrhXyKC7O96GshvuSl9+6fB8ZzucLKKdM=
-github.com/jaegertracing/jaeger v1.66.0/go.mod h1:BVwtpsjm+8rky99h+dJ0fAb5OSl4vbCgAKgTV2WGlmU=
+github.com/jaegertracing/jaeger v1.65.0 h1:phDrZzaPUbomlN8VfxGWuPwkipYh7cU6V9q6Obf+7Fc=
+github.com/jaegertracing/jaeger v1.65.0/go.mod h1:EkEqyIzI0xCjexVHURWJmZZxjswTUKSriW57eVG44yo=
 github.com/jaegertracing/jaeger-idl v0.5.0 h1:zFXR5NL3Utu7MhPg8ZorxtCBjHrL3ReM1VoB65FOFGE=
 github.com/jaegertracing/jaeger-idl v0.5.0/go.mod h1:ON90zFo9eoyXrt9F/KN8YeF3zxcnujaisMweFY/rg5k=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=

@@ -5,9 +5,10 @@ go 1.22.7
 require (
 	github.com/apache/thrift v0.21.0
 	github.com/gorilla/mux v1.8.1
-	github.com/jaegertracing/jaeger v1.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.119.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.119.0
+	github.com/jaegertracing/jaeger v1.65.1-0.20250203121426-384203d31442
+	github.com/jaegertracing/jaeger-idl v0.5.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.118.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.119.0
 	go.opentelemetry.io/collector/component/componentstatus v0.119.0

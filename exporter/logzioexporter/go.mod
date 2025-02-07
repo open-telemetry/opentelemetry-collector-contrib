@@ -5,8 +5,9 @@ go 1.22.7
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/jaegertracing/jaeger v1.66.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.119.0
+	github.com/jaegertracing/jaeger v1.65.0
+	github.com/jaegertracing/jaeger-idl v0.5.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.118.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.119.0
 	go.opentelemetry.io/collector/component/componenttest v0.119.0
