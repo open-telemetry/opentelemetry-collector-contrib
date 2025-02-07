@@ -81,5 +81,5 @@ func TestDetector_DetectNoFileAvailable(t *testing.T) {
 }
 
 func createTestFile(directory, name, content string) error {
-	return os.WriteFile(filepath.Join(directory, name), []byte(content), 0600)
+	return os.WriteFile(filepath.Join(directory, name), []byte(content), 0o600)
 }
