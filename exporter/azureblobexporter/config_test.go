@@ -7,11 +7,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter/internal/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -41,18 +42,11 @@ func TestLoadConfig(t *testing.T) {
 					Traces:  "test",
 				},
 				BlobNameFormat: &BlobNameFormat{
-					FormatType: "{{.Year}}/{{.Month}}/{{.Day}}/{{.BlobName}}_{{.Hour}}_{{.Minute}}_{{.Second}}_{{.SerialNum}}.{{.FileExtension}}",
-					BlobName: &BlobName{
-						Metrics: "metrics",
-						Logs:    "logs",
-						Traces:  "traces",
-					},
-					Year:   "2006",
-					Month:  "01",
-					Day:    "02",
-					Hour:   "15",
-					Minute: "04",
-					Second: "05",
+					MetricsFormat:  "2006/01/02/metrics_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					LogsFormat:     "2006/01/02/logs_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					TracesFormat:   "2006/01/02/traces_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					SerialNumRange: 10000,
+					Params:         map[string]string{},
 				},
 				FormatType: "json",
 			},
@@ -70,18 +64,11 @@ func TestLoadConfig(t *testing.T) {
 					Traces:  "test",
 				},
 				BlobNameFormat: &BlobNameFormat{
-					FormatType: "{{.Year}}/{{.Month}}/{{.Day}}/{{.BlobName}}_{{.Hour}}_{{.Minute}}_{{.Second}}_{{.SerialNum}}.{{.FileExtension}}",
-					BlobName: &BlobName{
-						Metrics: "metrics",
-						Logs:    "logs",
-						Traces:  "traces",
-					},
-					Year:   "2006",
-					Month:  "01",
-					Day:    "02",
-					Hour:   "15",
-					Minute: "04",
-					Second: "05",
+					MetricsFormat:  "2006/01/02/metrics_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					LogsFormat:     "2006/01/02/logs_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					TracesFormat:   "2006/01/02/traces_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					SerialNumRange: 10000,
+					Params:         map[string]string{},
 				},
 				FormatType: "proto",
 			},
@@ -100,18 +87,11 @@ func TestLoadConfig(t *testing.T) {
 					Traces:  "test",
 				},
 				BlobNameFormat: &BlobNameFormat{
-					FormatType: "{{.Year}}/{{.Month}}/{{.Day}}/{{.BlobName}}_{{.Hour}}_{{.Minute}}_{{.Second}}_{{.SerialNum}}.{{.FileExtension}}",
-					BlobName: &BlobName{
-						Metrics: "metrics",
-						Logs:    "logs",
-						Traces:  "traces",
-					},
-					Year:   "2006",
-					Month:  "01",
-					Day:    "02",
-					Hour:   "15",
-					Minute: "04",
-					Second: "05",
+					MetricsFormat:  "2006/01/02/metrics_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					LogsFormat:     "2006/01/02/logs_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					TracesFormat:   "2006/01/02/traces_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					SerialNumRange: 10000,
+					Params:         map[string]string{},
 				},
 				FormatType: "json",
 			},
@@ -129,18 +109,11 @@ func TestLoadConfig(t *testing.T) {
 					Traces:  "test",
 				},
 				BlobNameFormat: &BlobNameFormat{
-					FormatType: "{{.Year}}/{{.Month}}/{{.Day}}/{{.BlobName}}_{{.Hour}}_{{.Minute}}_{{.Second}}_{{.SerialNum}}.{{.FileExtension}}",
-					BlobName: &BlobName{
-						Metrics: "metrics",
-						Logs:    "logs",
-						Traces:  "traces",
-					},
-					Year:   "2006",
-					Month:  "01",
-					Day:    "02",
-					Hour:   "15",
-					Minute: "04",
-					Second: "05",
+					MetricsFormat:  "2006/01/02/metrics_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					LogsFormat:     "2006/01/02/logs_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					TracesFormat:   "2006/01/02/traces_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					SerialNumRange: 10000,
+					Params:         map[string]string{},
 				},
 				FormatType: "json",
 			},

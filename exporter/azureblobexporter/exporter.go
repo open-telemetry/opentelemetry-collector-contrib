@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/zap"
 )
 
@@ -25,6 +26,7 @@ type azureBlobExporter struct {
 	config           *Config
 	logger           *zap.Logger
 	client           *azblob.Client
+	signal           pipeline.Signal
 	marshaller       *marshaller
 	blobNameTemplate *template.Template
 }
@@ -34,10 +36,11 @@ var fileExtensionMap = map[string]string{
 	formatTypeProto: "pb",
 }
 
-func newAzureBlobExporter(config *Config, logger *zap.Logger) *azureBlobExporter {
+func newAzureBlobExporter(config *Config, logger *zap.Logger, signal pipeline.Signal) *azureBlobExporter {
 	azBlobExporter := &azureBlobExporter{
 		config: config,
 		logger: logger,
+		signal: signal,
 	}
 	return azBlobExporter
 }
@@ -56,8 +59,17 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 	}
 
 	// create blob name template
-	// Parse the template
-	e.blobNameTemplate, err = template.New("blobName").Parse(e.config.BlobNameFormat.FormatType)
+	switch e.signal {
+	case pipeline.SignalMetrics:
+		e.blobNameTemplate, err = template.New("blobName").Parse(e.config.BlobNameFormat.MetricsFormat)
+	case pipeline.SignalLogs:
+		e.blobNameTemplate, err = template.New("blobName").Parse(e.config.BlobNameFormat.LogsFormat)
+	case pipeline.SignalTraces:
+		e.blobNameTemplate, err = template.New("blobName").Parse(e.config.BlobNameFormat.TracesFormat)
+	default:
+		return fmt.Errorf("unsupported signal type: %v", e.signal)
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to parse template: %w", err)
 	}
@@ -114,14 +126,12 @@ func (e *azureBlobExporter) generateBlobName(data map[string]interface{}) (strin
 	now := time.Now()
 
 	// Add formatted date and time to the data map
-	data["Year"] = now.Format(e.config.BlobNameFormat.Year)
-	data["Month"] = now.Format(e.config.BlobNameFormat.Month)
-	data["Day"] = now.Format(e.config.BlobNameFormat.Day)
-	data["Hour"] = now.Format(e.config.BlobNameFormat.Hour)
-	data["Minute"] = now.Format(e.config.BlobNameFormat.Minute)
-	data["Second"] = now.Format(e.config.BlobNameFormat.Second)
-
-	data["SerialNum"] = randomInRange(1, 1000000)
+	// data["Year"] = now.Format(e.config.BlobNameFormat.Year)
+	// data["Month"] = now.Format(e.config.BlobNameFormat.Month)
+	// data["Day"] = now.Format(e.config.BlobNameFormat.Day)
+	// data["Hour"] = now.Format(e.config.BlobNameFormat.Hour)
+	// data["Minute"] = now.Format(e.config.BlobNameFormat.Minute)
+	// data["Second"] = now.Format(e.config.BlobNameFormat.Second)
 
 	// Execute the template
 	var result bytes.Buffer
@@ -129,7 +139,8 @@ func (e *azureBlobExporter) generateBlobName(data map[string]interface{}) (strin
 		return "", fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	return result.String(), nil
+	blobStr := result.String()
+	return now.Format(blobStr), nil
 }
 
 func (e *azureBlobExporter) Capabilities() consumer.Capabilities {
@@ -145,8 +156,8 @@ func (e *azureBlobExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 
 	// Generate a unique blob name
 	params := map[string]interface{}{
-		"BlobName":      e.config.BlobNameFormat.BlobName.Metrics,
 		"FileExtension": fileExtensionMap[e.config.FormatType],
+		"SerialNum":     randomInRange(1, int(e.config.BlobNameFormat.SerialNumRange)),
 	}
 	blobName, err := e.generateBlobName(params)
 	if err != nil {
@@ -154,7 +165,6 @@ func (e *azureBlobExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	}
 
 	_, err = e.client.UploadStream(ctx, e.config.Container.Metrics, blobName, bytes.NewReader(data), nil)
-
 	if err != nil {
 		return fmt.Errorf("failed to upload metrics data: %w", err)
 	}
@@ -176,8 +186,8 @@ func (e *azureBlobExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error
 
 	// Generate a unique blob name
 	params := map[string]interface{}{
-		"BlobName":      e.config.BlobNameFormat.BlobName.Logs,
 		"FileExtension": fileExtensionMap[e.config.FormatType],
+		"SerialNum":     randomInRange(1, int(e.config.BlobNameFormat.SerialNumRange)),
 	}
 	blobName, err := e.generateBlobName(params)
 	if err != nil {
@@ -185,7 +195,6 @@ func (e *azureBlobExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error
 	}
 
 	_, err = e.client.UploadStream(ctx, e.config.Container.Logs, blobName, bytes.NewReader(data), nil)
-
 	if err != nil {
 		return fmt.Errorf("failed to upload logs data: %w", err)
 	}
@@ -207,8 +216,8 @@ func (e *azureBlobExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 
 	// Generate a unique blob name
 	params := map[string]interface{}{
-		"BlobName":      e.config.BlobNameFormat.BlobName.Traces,
 		"FileExtension": fileExtensionMap[e.config.FormatType],
+		"SerialNum":     randomInRange(1, int(e.config.BlobNameFormat.SerialNumRange)),
 	}
 	blobName, err := e.generateBlobName(params)
 	if err != nil {
@@ -217,7 +226,6 @@ func (e *azureBlobExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 
 	blobContentReader := bytes.NewReader(data)
 	_, err = e.client.UploadStream(context.TODO(), e.config.Container.Traces, blobName, blobContentReader, nil)
-
 	if err != nil {
 		return fmt.Errorf("failed to upload traces data: %w", err)
 	}

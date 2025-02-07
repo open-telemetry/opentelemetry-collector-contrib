@@ -15,18 +15,17 @@ type TelemetryConfig struct {
 	Traces  string `mapstructure:"traces"`
 }
 
-type Container TelemetryConfig
-type BlobName TelemetryConfig
+type (
+	Container TelemetryConfig
+	BlobName  TelemetryConfig
+)
 
 type BlobNameFormat struct {
-	FormatType string    `mapstructure:"format"`
-	BlobName   *BlobName `mapstructure:"blob_name"`
-	Year       string    `mapstructure:"year"`
-	Month      string    `mapstructure:"month"`
-	Day        string    `mapstructure:"day"`
-	Hour       string    `mapstructure:"hour"`
-	Minute     string    `mapstructure:"minute"`
-	Second     string    `mapstructure:"second"`
+	MetricsFormat  string            `mapstructure:"metrics_format"`
+	LogsFormat     string            `mapstructure:"logs_format"`
+	TracesFormat   string            `mapstructure:"traces_format"`
+	SerialNumRange int64             `mapstructure:"serial_num_range"`
+	Params         map[string]string `mapstructure:"params"`
 }
 
 type Authentication struct {
