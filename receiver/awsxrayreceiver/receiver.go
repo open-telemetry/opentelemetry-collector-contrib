@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
@@ -30,20 +32,28 @@ const (
 // xrayReceiver implements the receiver.Traces interface for converting
 // AWS X-Ray segment document into the OT internal trace format.
 type xrayReceiver struct {
-	poller   udppoller.Poller
-	server   proxy.Server
-	settings receiver.Settings
-	consumer consumer.Traces
-	obsrecv  *receiverhelper.ObsReport
-	registry telemetry.Registry
+	poller     udppoller.Poller
+	server     proxy.Server
+	settings   receiver.Settings
+	consumer   consumer.Traces
+	obsrecv    *receiverhelper.ObsReport
+	registry   telemetry.Registry
+	xrayClient *xray.Client
+	region     string
 }
 
-func newReceiver(config *Config,
-	consumer consumer.Traces,
-	set receiver.Settings,
-) (receiver.Traces, error) {
+func newXRayClient(ctx context.Context, region string) (*xray.Client, error) {
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+	if err != nil {
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+	}
+	return xray.NewFromConfig(cfg), nil
+}
+
+func newReceiver(config *Config, consumer consumer.Traces, set receiver.Settings, client *xray.Client) (receiver.Traces, error) {
 	set.Logger.Info("Going to listen on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
+
 	poller, err := udppoller.New(&udppoller.Config{
 		Transport:          string(config.Transport),
 		Endpoint:           config.Endpoint,
@@ -71,12 +81,14 @@ func newReceiver(config *Config,
 	}
 
 	return &xrayReceiver{
-		poller:   poller,
-		server:   srv,
-		settings: set,
-		consumer: consumer,
-		obsrecv:  obsrecv,
-		registry: telemetry.GlobalRegistry(),
+		poller:     poller,
+		server:     srv,
+		settings:   set,
+		consumer:   consumer,
+		obsrecv:    obsrecv,
+		registry:   telemetry.GlobalRegistry(),
+		xrayClient: client,
+		region:     config.Region,
 	}, nil
 }
 
