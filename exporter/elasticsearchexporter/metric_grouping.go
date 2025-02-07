@@ -27,7 +27,7 @@ func newDataPointHasher(mode MappingMode) dataPointHasher {
 	case MappingOTel:
 		return otelDataPointHasher{}
 	default:
-		// // Defaults to ECS for backward compatibility
+		// Defaults to ECS for backward compatibility
 		return ecsDataPointHasher{}
 	}
 }
