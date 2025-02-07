@@ -109,7 +109,7 @@ func TestValidateConfig(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, sub.Unmarshal(cfg))
 
-				assert.EqualError(t, component.ValidateConfig(cfg), tc.err.Error())
+				assert.ErrorContains(t, component.ValidateConfig(cfg), tc.err.Error())
 			})
 		})
 	}

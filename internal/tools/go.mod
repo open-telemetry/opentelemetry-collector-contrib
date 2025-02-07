@@ -11,14 +11,14 @@ require (
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	go.opentelemetry.io/build-tools/checkfile v0.17.0
-	go.opentelemetry.io/build-tools/chloggen v0.17.0
-	go.opentelemetry.io/build-tools/crosslink v0.17.0
-	go.opentelemetry.io/build-tools/githubgen v0.17.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.17.0
-	go.opentelemetry.io/build-tools/multimod v0.17.0
-	go.opentelemetry.io/collector/cmd/builder v0.118.1-0.20250130000211-c119b2a55eb4
-	go.opentelemetry.io/collector/cmd/mdatagen v0.118.1-0.20250130000211-c119b2a55eb4
+	go.opentelemetry.io/build-tools/checkfile v0.18.0
+	go.opentelemetry.io/build-tools/chloggen v0.18.0
+	go.opentelemetry.io/build-tools/crosslink v0.18.0
+	go.opentelemetry.io/build-tools/githubgen v0.18.0
+	go.opentelemetry.io/build-tools/issuegenerator v0.18.0
+	go.opentelemetry.io/build-tools/multimod v0.18.0
+	go.opentelemetry.io/collector/cmd/builder v0.119.0
+	go.opentelemetry.io/collector/cmd/mdatagen v0.119.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.29.0
 	golang.org/x/vuln v1.1.4
@@ -41,7 +41,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/OpenPeeDeeP/depguard/v2 v2.2.0 // indirect
-	github.com/ProtonMail/go-crypto v1.1.3 // indirect
+	github.com/ProtonMail/go-crypto v1.1.5 // indirect
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/alecthomas/go-check-sumtype v0.3.1 // indirect
 	github.com/alexflint/go-arg v1.5.0 // indirect
@@ -84,8 +84,8 @@ require (
 	github.com/ghostiam/protogetter v0.3.8 // indirect
 	github.com/go-critic/go-critic v0.11.5 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
-	github.com/go-git/go-billy/v5 v5.6.1 // indirect
-	github.com/go-git/go-git/v5 v5.13.1 // indirect
+	github.com/go-git/go-billy/v5 v5.6.2 // indirect
+	github.com/go-git/go-git/v5 v5.13.2 // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
 	github.com/go-toolsmith/astcopy v1.1.0 // indirect
 	github.com/go-toolsmith/astequal v1.2.0 // indirect
@@ -173,7 +173,7 @@ require (
 	github.com/nunnatsa/ginkgolinter v0.18.4 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
-	github.com/pjbgf/sha1cd v0.3.0 // indirect
+	github.com/pjbgf/sha1cd v0.3.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/polyfloyd/go-errorlint v1.7.0 // indirect
 	github.com/prometheus/client_golang v1.20.3 // indirect
@@ -209,7 +209,7 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/spf13/cobra v1.8.1 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/spf13/viper v1.19.0 // indirect
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect
 	github.com/stbenjam/no-sprintf-host-port v0.2.0 // indirect
@@ -235,13 +235,13 @@ require (
 	gitlab.com/bosi/decorder v0.4.2 // indirect
 	go-simpler.org/musttag v0.13.0 // indirect
 	go-simpler.org/sloglint v0.7.2 // indirect
-	go.opentelemetry.io/build-tools v0.17.0 // indirect
-	go.opentelemetry.io/collector/component v0.118.1-0.20250130000211-c119b2a55eb4 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.118.1-0.20250130000211-c119b2a55eb4 // indirect
-	go.opentelemetry.io/collector/confmap v1.24.1-0.20250130000211-c119b2a55eb4 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.24.1-0.20250130000211-c119b2a55eb4 // indirect
-	go.opentelemetry.io/collector/filter v0.118.1-0.20250130000211-c119b2a55eb4 // indirect
-	go.opentelemetry.io/collector/pdata v1.24.1-0.20250130000211-c119b2a55eb4 // indirect
+	go.opentelemetry.io/build-tools v0.18.0 // indirect
+	go.opentelemetry.io/collector/component v0.119.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.119.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.25.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.25.0 // indirect
+	go.opentelemetry.io/collector/filter v0.119.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.25.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect

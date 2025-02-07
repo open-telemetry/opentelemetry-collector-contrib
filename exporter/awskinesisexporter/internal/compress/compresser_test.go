@@ -10,7 +10,7 @@ import (
 	"compress/zlib"
 	"fmt"
 	"io"
-	"math/rand"
+	"math/rand/v2"
 	"sync"
 	"testing"
 	"time"
@@ -77,7 +77,7 @@ func createRandomString(length int) string {
 
 	b := make([]byte, length)
 	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+		b[i] = letterBytes[rand.IntN(len(letterBytes))]
 	}
 
 	return string(b)
@@ -118,16 +118,13 @@ func BenchmarkGzipCompressor_1Mb(b *testing.B) {
 func benchmarkCompressor(b *testing.B, format string, length int) {
 	b.Helper()
 
-	source := rand.NewSource(time.Now().UnixMilli())
-	genRand := rand.New(source)
-
 	compressor, err := compress.NewCompressor(format)
 	require.NoError(b, err, "Must not error when given a valid format")
 	require.NotNil(b, compressor, "Must have a valid compressor")
 
 	data := make([]byte, length)
 	for i := 0; i < length; i++ {
-		data[i] = byte(genRand.Int31())
+		data[i] = byte(rand.Int32())
 	}
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -185,12 +182,9 @@ func concurrentCompressFunc(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			source := rand.NewSource(time.Now().UnixMilli())
-			genRand := rand.New(source)
-
 			data := make([]byte, dataLength)
 			for i := 0; i < dataLength; i++ {
-				data[i] = byte(genRand.Int31())
+				data[i] = byte(rand.Int32())
 			}
 
 			result, localErr := compressFunc(data)
