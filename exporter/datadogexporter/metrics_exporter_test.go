@@ -164,7 +164,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"metric":    "datadog.otel.gateway",
 						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(0)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []any{map[string]interface{}{"name": "test-host", "type": "host"}},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"version:latest", "command:otelcol"},
 					},
 					map[string]any{
@@ -229,7 +229,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"metric":    "datadog.otel.gateway",
 						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(0)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []any{map[string]interface{}{"name": "test-host", "type": "host"}},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"version:latest", "command:otelcol"},
 					},
 					map[string]any{
@@ -277,7 +277,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"metric":    "datadog.otel.gateway",
 						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(0)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []any{map[string]interface{}{"name": "test-host", "type": "host"}},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"version:latest", "command:otelcol"},
 					},
 					map[string]any{
@@ -357,7 +357,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"metric":    "datadog.otel.gateway",
 						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(0)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
-						"resources": []any{map[string]interface{}{"name": "test-host", "type": "host"}},
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"version:latest", "command:otelcol", "key1:value1", "key2:value2"},
 					},
 					map[string]any{
