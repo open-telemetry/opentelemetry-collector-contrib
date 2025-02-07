@@ -1,0 +1,42 @@
+version: "3.8"
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:latest
+    platform: linux/amd64
+    container_name: sqlserver
+    hostname: sqlserver
+    ports:
+      - 1433:1433
+    env_file:
+      - sqlserver.env
+
+
+  otel-collector:
+    container_name: otel
+    image: otelcontribcol
+    restart: always
+    command: ["--config=/etc/otel.yml"]
+    volumes:
+      - ./otel.yml:/etc/otel.yml
+    ports:
+      - 9091:9091
+    depends_on:
+      - sqlserver
+
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    container_name: es
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.15.2
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://es:9200
+    ports:
+      - "5601:5601"

@@ -1,0 +1,75 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: sqlserver.instance.name
+          value:
+            stringValue: sqlserver
+    scopeMetrics:
+      - metrics:
+          - description: Number of executions of the query
+            name: sqlserver.query.execution_count
+            sum:
+              dataPoints:
+                - asDouble: 5
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{executions}'
+          - description: The total time taken by the query
+            name: sqlserver.query.total_elapsed_time
+            sum:
+              dataPoints:
+                - asDouble: 5
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: s
+          - description: The total memory granted to the query
+            name: sqlserver.query.total_grant_kb
+            sum:
+              dataPoints:
+                - asDouble: 2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: kb
+          - description: The total logical reads performed by the query
+            gauge:
+              dataPoints:
+                - asInt: "2"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.query.total_logical_reads
+            unit: '{operations}'
+          - description: The total logical writes performed by the query
+            gauge:
+              dataPoints:
+                - asInt: "2"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.query.total_logical_writes
+            unit: '{operations}'
+          - description: The total physical reads performed by the query
+            gauge:
+              dataPoints:
+                - asInt: "2"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.query.total_physical_reads
+            unit: '{operations}'
+          - description: The total rows returned by the query
+            gauge:
+              dataPoints:
+                - asInt: "7"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.query.total_rows
+            unit: '{rows}'
+          - description: The total CPU time taken by the query
+            name: sqlserver.query.total_worker_time
+            sum:
+              dataPoints:
+                - asDouble: 10
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: latest

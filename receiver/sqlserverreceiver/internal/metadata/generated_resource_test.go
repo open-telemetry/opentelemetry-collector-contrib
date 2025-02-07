@@ -16,6 +16,8 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
 			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
+			rb.SetSqlserverQueryHash("sqlserver.query.hash-val")
+			rb.SetSqlserverQueryPlanHash("sqlserver.query_plan.hash-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
@@ -24,7 +26,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 1, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 3, res.Attributes().Len())
+				assert.Equal(t, 5, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -46,6 +48,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "sqlserver.instance.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("sqlserver.query.hash")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "sqlserver.query.hash-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("sqlserver.query_plan.hash")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "sqlserver.query_plan.hash-val", val.Str())
 			}
 		})
 	}

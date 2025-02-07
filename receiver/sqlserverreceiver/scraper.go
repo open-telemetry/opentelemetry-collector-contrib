@@ -6,11 +6,14 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -28,23 +31,30 @@ const (
 )
 
 type sqlServerScraperHelper struct {
-	id                 component.ID
-	sqlQuery           string
-	instanceName       string
-	scrapeCfg          scraperhelper.ControllerConfig
-	clientProviderFunc sqlquery.ClientProviderFunc
-	dbProviderFunc     sqlquery.DbProviderFunc
-	logger             *zap.Logger
-	telemetry          sqlquery.TelemetryConfig
-	client             sqlquery.DbClient
-	db                 *sql.DB
-	mb                 *metadata.MetricsBuilder
+	id                  component.ID
+	sqlQuery            string
+	maxQuerySampleCount uint
+	granularity         uint
+	topQueryCount       uint
+	instanceName        string
+	scrapeCfg           scraperhelper.ControllerConfig
+	clientProviderFunc  sqlquery.ClientProviderFunc
+	dbProviderFunc      sqlquery.DbProviderFunc
+	logger              *zap.Logger
+	telemetry           sqlquery.TelemetryConfig
+	client              sqlquery.DbClient
+	db                  *sql.DB
+	mb                  *metadata.MetricsBuilder
+	cache               *lru.Cache[string, float64]
 }
 
 var _ scraper.Metrics = (*sqlServerScraperHelper)(nil)
 
 func newSQLServerScraper(id component.ID,
 	query string,
+	maxQuerySampleCount uint,
+	granularity uint,
+	topQueryCount uint,
 	instanceName string,
 	scrapeCfg scraperhelper.ControllerConfig,
 	logger *zap.Logger,
@@ -52,17 +62,22 @@ func newSQLServerScraper(id component.ID,
 	dbProviderFunc sqlquery.DbProviderFunc,
 	clientProviderFunc sqlquery.ClientProviderFunc,
 	mb *metadata.MetricsBuilder,
+	cache *lru.Cache[string, float64],
 ) *sqlServerScraperHelper {
 	return &sqlServerScraperHelper{
-		id:                 id,
-		sqlQuery:           query,
-		instanceName:       instanceName,
-		scrapeCfg:          scrapeCfg,
-		logger:             logger,
-		telemetry:          telemetry,
-		dbProviderFunc:     dbProviderFunc,
-		clientProviderFunc: clientProviderFunc,
-		mb:                 mb,
+		id:                  id,
+		sqlQuery:            query,
+		maxQuerySampleCount: maxQuerySampleCount,
+		granularity:         granularity,
+		topQueryCount:       topQueryCount,
+		instanceName:        instanceName,
+		scrapeCfg:           scrapeCfg,
+		logger:              logger,
+		telemetry:           telemetry,
+		dbProviderFunc:      dbProviderFunc,
+		clientProviderFunc:  clientProviderFunc,
+		mb:                  mb,
+		cache:               cache,
 	}
 }
 
@@ -91,6 +106,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 		err = s.recordDatabasePerfCounterMetrics(ctx)
 	case getSQLServerPropertiesQuery(s.instanceName):
 		err = s.recordDatabaseStatusMetrics(ctx)
+	case getSQLServerQueryMetricsQuery(s.instanceName, s.maxQuerySampleCount, s.granularity):
+		err = s.recordDatabaseQueryMetrics(ctx, s.topQueryCount)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -299,4 +316,187 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	}
 
 	return errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) recordDatabaseQueryMetrics(ctx context.Context, topQueryCount uint) error {
+	// Constants are the column names of the database status
+	const totalElapsedTime = "total_elapsed_time"
+	const rowsReturned = "total_rows"
+	const totalWorkerTime = "total_worker_time"
+	const queryHash = "query_hash"
+	const queryPlanHash = "query_plan_hash"
+	const logicalReads = "total_logical_reads"
+	const logicalWrites = "total_logical_writes"
+	const physicalReads = "total_physical_reads"
+	const executionCount = "execution_count"
+	const totalGrant = "total_grant_kb"
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if errors.Is(err, sqlquery.ErrNullValueWarning) {
+			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+		} else {
+			return fmt.Errorf("sqlServerScraperHelper failed getting metric rows: %w", err)
+		}
+	}
+	var errs []error
+
+	totalElapsedTimeDiffs := make([]int64, len(rows))
+
+	for i, row := range rows {
+		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
+		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
+
+		elapsedTime, err := strconv.ParseFloat(row[totalElapsedTime], 64)
+		if err != nil {
+			s.logger.Info(fmt.Sprintf("sqlServerScraperHelper failed getting metric rows: %s", err))
+			errs = append(errs, err)
+		} else {
+			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalElapsedTime, elapsedTime); cached && diff > 0 {
+				totalElapsedTimeDiffs[i] = int64(diff)
+			}
+		}
+	}
+
+	rows = sortRows(rows, totalElapsedTimeDiffs)
+
+	sort.Slice(totalElapsedTimeDiffs, func(i, j int) bool { return totalElapsedTimeDiffs[i] > totalElapsedTimeDiffs[j] })
+
+	for i, row := range rows {
+		if i >= int(topQueryCount) {
+			break
+		}
+
+		if totalElapsedTimeDiffs[i] == 0 {
+			continue
+		}
+
+		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
+		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
+
+		rb := s.mb.NewResourceBuilder()
+		rb.SetSqlserverComputerName(row[computerNameKey])
+		rb.SetSqlserverInstanceName(row[instanceNameKey])
+		rb.SetSqlserverQueryHash(queryHashVal)
+		rb.SetSqlserverQueryPlanHash(queryPlanHashVal)
+		s.logger.Debug(fmt.Sprintf("DataRow: %v, PlanHash: %v, Hash: %v", row, queryPlanHashVal, queryHashVal))
+
+		timeStamp := pcommon.NewTimestampFromTime(time.Now())
+
+		s.mb.RecordSqlserverQueryTotalElapsedTimeDataPoint(timeStamp, float64(totalElapsedTimeDiffs[i]))
+
+		rowsReturnVal, err := strconv.ParseInt(row[rowsReturned], 10, 64)
+		if err != nil {
+			err = fmt.Errorf("row %d: %w", i, err)
+			errs = append(errs, err)
+		}
+		if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, rowsReturned, float64(rowsReturnVal)); cached && diff > 0 {
+			s.mb.RecordSqlserverQueryTotalRowsDataPoint(timeStamp, int64(diff))
+		}
+
+		logicalReadsVal, err := strconv.ParseInt(row[logicalReads], 10, 64)
+		if err != nil {
+			err = fmt.Errorf("row %d: %w", i, err)
+			errs = append(errs, err)
+		}
+		if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, logicalReads, float64(logicalReadsVal)); cached && diff > 0 {
+			s.mb.RecordSqlserverQueryTotalLogicalReadsDataPoint(timeStamp, int64(diff))
+		}
+
+		logicalWritesVal, err := strconv.ParseInt(row[logicalWrites], 10, 64)
+		if err != nil {
+			err = fmt.Errorf("row %d: %w", i, err)
+			errs = append(errs, err)
+		}
+		if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, logicalWrites, float64(logicalWritesVal)); cached && diff > 0 {
+			s.mb.RecordSqlserverQueryTotalLogicalWritesDataPoint(timeStamp, int64(diff))
+		}
+
+		physicalReadsVal, err := strconv.ParseInt(row[physicalReads], 10, 64)
+		if err != nil {
+			err = fmt.Errorf("row %d: %w", i, err)
+			errs = append(errs, err)
+		}
+		if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, physicalReads, float64(physicalReadsVal)); cached && diff > 0 {
+			s.mb.RecordSqlserverQueryTotalPhysicalReadsDataPoint(timeStamp, int64(diff))
+		}
+
+		totalExecutionCount, err := strconv.ParseFloat(row[executionCount], 64)
+		if err != nil {
+			s.logger.Info(fmt.Sprintf("sqlServerScraperHelper failed getting metric rows: %s", err))
+		} else {
+			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, executionCount, totalExecutionCount); cached && diff > 0 {
+				s.mb.RecordSqlserverQueryExecutionCountDataPoint(timeStamp, diff)
+			}
+		}
+
+		workerTime, err := strconv.ParseFloat(row[totalWorkerTime], 64)
+		if err != nil {
+			s.logger.Info(fmt.Sprintf("sqlServerScraperHelper failed parsing metric total_worker_time: %s", err))
+			errs = append(errs, err)
+		} else {
+			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTime, workerTime); cached && diff > 0 {
+				s.mb.RecordSqlserverQueryTotalWorkerTimeDataPoint(timeStamp, diff)
+			}
+		}
+
+		memoryGranted, err := strconv.ParseFloat(row[totalGrant], 64)
+		if err != nil {
+			s.logger.Info(fmt.Sprintf("sqlServerScraperHelper failed parsing metric total_grant_kb: %s", err))
+			errs = append(errs, err)
+		} else {
+			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalGrant, memoryGranted); cached && diff > 0 {
+				s.mb.RecordSqlserverQueryTotalGrantKbDataPoint(timeStamp, diff)
+			}
+		}
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+	return errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) cacheAndDiff(queryHash string, queryPlanHash string, column string, val float64) (bool, float64) {
+	if s.cache == nil {
+		s.logger.Error("LRU cache is not successfully initialized, skipping caching and diffing")
+		return false, 0
+	}
+
+	if val < 0 {
+		return false, 0
+	}
+
+	key := queryHash + "-" + queryPlanHash + "-" + column
+
+	cached, ok := s.cache.Get(key)
+	if !ok {
+		s.cache.Add(key, val)
+		return false, val
+	}
+
+	if val > cached {
+		s.cache.Add(key, val)
+		return true, val - cached
+	}
+
+	return true, 0
+}
+
+func sortRows(rows []sqlquery.StringMap, values []int64) []sqlquery.StringMap {
+	// Create an index slice to track the original indices of rows
+	indices := make([]int, len(values))
+	for i := range indices {
+		indices[i] = i
+	}
+
+	// Sort the indices based on the values slice
+	sort.Slice(indices, func(i, j int) bool {
+		return values[indices[i]] > values[indices[j]]
+	})
+
+	// Create a new sorted slice for rows based on the sorted indices
+	sorted := make([]sqlquery.StringMap, len(rows))
+	for i, idx := range indices {
+		sorted[i] = rows[idx]
+	}
+
+	return sorted
 }
