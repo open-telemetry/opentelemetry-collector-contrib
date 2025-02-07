@@ -579,6 +579,7 @@ func TestMysqlIntegrationMetrics(t *testing.T) {
 				rCfg.Driver = "mysql"
 				rCfg.DataSource = fmt.Sprintf("otel:otel@tcp(%s:%s)/otel",
 					ci.Host(t), ci.MappedPort(t, mysqlPort))
+				rCfg.MaxOpenConn = 5
 				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
