@@ -21,7 +21,9 @@ EX_COMPONENTS=-not -path "./receiver/*" -not -path "./processor/*" -not -path ".
 EX_INTERNAL=-not -path "./internal/*"
 EX_PKG=-not -path "./pkg/*"
 EX_CMD=-not -path "./cmd/*"
-ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST)))) # This includes a final slash
+
+# This includes a final slash
+ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 
 RECEIVER_MODS_0 := $(shell find ./receiver/[a-f]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 RECEIVER_MODS_1 := $(shell find ./receiver/[g-o]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
