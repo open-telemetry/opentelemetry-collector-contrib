@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
-	"github.com/jaegertracing/jaeger/model"
 	jaegerconvert "github.com/jaegertracing/jaeger/model/converter/thrift/jaeger"
 	"github.com/jaegertracing/jaeger/thrift-gen/agent"
 	jaegerthrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
