@@ -31,17 +31,10 @@ The following settings can be optionally configured and have default values:
   - logs (default `logs`): container to store logs. default value is `logs`.
   - traces (default `traces`): container to store traces. default value is `traces`.
 - blob_name_format:
-  - format (default `{{.Year}}/{{.Month}}/{{.Day}}/{{.BlobName}}_{{.Hour}}_{{.Minute}}_{{.Second}}_{{.SerialNum}}.{{.FileExtension}}`): blob name format.
-  - blob_name: value of `BlobName`.
-    - metrics (default `metrics`): default is `metrics`.
-    - traces (default is `traces`): default is `traces`.
-    - logs (default is `logs`): default is `logs`.
-  - year (default `2006`): The date format follows constants in Golang, refer [here](https://go.dev/src/time/format.go).
-  - month (default `01`): similar as year.
-  - day (default `02`): similar as year.
-  - hour (default `15`): similar as year.
-  - minute (default `04`): similar as year.
-  - second (default `05`): similar as year.
+  - metrics_format (default `2006/01/02/metrics_15_04_05_{{.SerialNum}}.{{.FileExtension}}`): blob name format. The date format follows constants in Golang, refer [here](https://go.dev/src/time/format.go).
+  - logs_format (default `2006/01/02/logs_15_04_05_{{.SerialNum}}.{{.FileExtension}}`): blob name format.
+  - traces_format (default `2006/01/02/traces_15_04_05_{{.SerialNum}}.{{.FileExtension}}`): blob name format.
+  - serial_num_range (default `10000`): a range of random number for SerialNum.
 - format (default `json`): `json` or `proto`. which present otel json or otel protobuf format, the file extension will be `json` or `pb`.
 - encoding (default none): if specified, uses an encoding extension to encode telemetry data. Overrides format.
 
