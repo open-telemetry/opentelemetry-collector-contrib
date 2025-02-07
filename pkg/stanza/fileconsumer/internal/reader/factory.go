@@ -14,7 +14,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -82,7 +81,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		fingerprintSize:      f.FingerprintSize,
 		initialBufferSize:    f.InitialBufferSize,
 		maxLogSize:           f.MaxLogSize,
-		decoder:              decode.New(f.Encoding),
+		decoder:              f.Encoding.NewDecoder(),
 		deleteAtEOF:          f.DeleteAtEOF,
 		includeFileRecordNum: f.IncludeFileRecordNumber,
 		compression:          f.Compression,
