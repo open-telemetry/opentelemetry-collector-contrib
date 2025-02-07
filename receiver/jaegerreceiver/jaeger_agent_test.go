@@ -11,10 +11,10 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger-idl/model/v1"
+	"github.com/jaegertracing/jaeger-idl/thrift-gen/agent"
+	jaegerthrift "github.com/jaegertracing/jaeger-idl/thrift-gen/jaeger"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
 	jaegerconvert "github.com/jaegertracing/jaeger/model/converter/thrift/jaeger"
-	"github.com/jaegertracing/jaeger/thrift-gen/agent"
-	jaegerthrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"

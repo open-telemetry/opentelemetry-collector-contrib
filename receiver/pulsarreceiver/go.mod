@@ -6,7 +6,6 @@ require (
 	github.com/apache/pulsar-client-go v0.14.0
 	github.com/apache/thrift v0.21.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.66.0
 	github.com/jaegertracing/jaeger-idl v0.5.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.119.0
@@ -50,6 +49,7 @@ require (
 	github.com/hamba/avro/v2 v2.25.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/jaegertracing/jaeger v1.66.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
