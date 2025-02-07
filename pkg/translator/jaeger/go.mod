@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.22.7
 
 require (
-	github.com/jaegertracing/jaeger v1.65.0
+	github.com/jaegertracing/jaeger v1.66.0
 	github.com/jaegertracing/jaeger-idl v0.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.118.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.118.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.119.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.119.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/pdata v1.25.0
 	go.opentelemetry.io/collector/semconv v0.119.0
@@ -17,7 +17,6 @@ require (
 	github.com/apache/thrift v0.21.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/jaegertracing/jaeger-idl v0.5.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
