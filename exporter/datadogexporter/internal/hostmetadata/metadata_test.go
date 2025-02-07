@@ -171,7 +171,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			metadata := metadataFromAttributes(testInstance.attrs)
+			metadata := metadataFromAttributes(testInstance.attrs, nil)
 			assert.Equal(t, testInstance.expected.InternalHostname, metadata.InternalHostname)
 			assert.Equal(t, testInstance.expected.Meta, metadata.Meta)
 			assert.ElementsMatch(t, testInstance.expected.Tags.GCP, metadata.Tags.GCP)
