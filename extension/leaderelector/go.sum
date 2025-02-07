@@ -262,8 +262,8 @@ go.opentelemetry.io/collector/component/componenttest v0.119.0 h1:nVlBmKSu56zO/q
 go.opentelemetry.io/collector/component/componenttest v0.119.0/go.mod h1:H6KVzLkNhB/deEijLcq91Kjgs9Oshx2ZsFAwaMcuTLs=
 go.opentelemetry.io/collector/config/configtelemetry v0.119.0 h1:gAgMUEVXZKgpASxOrhS55DyA/aYatq0U6gitZI8MLXw=
 go.opentelemetry.io/collector/config/configtelemetry v0.119.0/go.mod h1:SlBEwQg0qly75rXZ6W1Ig8jN25KBVBkFIIAUI1GiAAE=
-go.opentelemetry.io/collector/confmap v1.23.0 h1:EY+auc0kbyZ4HIfkLYeJyLDCZIFzMA1u8QRGW4bC1Ag=
-go.opentelemetry.io/collector/confmap v1.23.0/go.mod h1:Rrhs+MWoaP6AswZp+ReQ2VO9dfOfcUjdjiSHBsG+nec=
+go.opentelemetry.io/collector/confmap v1.25.0 h1:dLqd6hF4JqcDHl5GWWhc2jXsHs3hkq3KPvU/2Nw5aN4=
+go.opentelemetry.io/collector/confmap v1.25.0/go.mod h1:Rrhs+MWoaP6AswZp+ReQ2VO9dfOfcUjdjiSHBsG+nec=
 go.opentelemetry.io/collector/extension v0.119.0 h1:Itkt3jqYLjkhoX4kWhICuhXQEQz332W7UL6DpmaNHMc=
 go.opentelemetry.io/collector/extension v0.119.0/go.mod h1:yMpvs58Z9F3UpSoE4w/1q/EEKlLFZBOQ2muzzikRvO8=
 go.opentelemetry.io/collector/extension/extensiontest v0.119.0 h1:sAdIBRJ6Df7jdkHWY/pSEYTersxURkUz9pENKl73n6s=
@@ -563,8 +563,8 @@ k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738/go.mod h1:OLgZIPagt7ERELqWJFomSt
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
-sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 h1:/Rv+M11QRah1itp8VhT6HoVx1Ray9eB4DBr+K+/sCJ8=
-sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3/go.mod h1:18nIHnGi6636UCz6m8i4DhaJ65T6EruyzmoQqI2BVDo=
+sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd h1:EDPBXCAspyGV4jQlpZSudPeMmr1bNJefnuqLsRAsHZo=
+sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd/go.mod h1:B8JuhiUyNFVKdsE8h686QcCxMaH6HrOAZj4vswFpcB0=
 sigs.k8s.io/structured-merge-diff/v4 v4.0.2/go.mod h1:bJZC9H9iH24zzfZ/41RGcq60oK1F7G282QMXDPYydCw=
 sigs.k8s.io/structured-merge-diff/v4 v4.1.0/go.mod h1:bJZC9H9iH24zzfZ/41RGcq60oK1F7G282QMXDPYydCw=
 sigs.k8s.io/structured-merge-diff/v4 v4.4.3 h1:sCP7Vv3xx/CWIuTPVN38lUPx0uw0lcLfzaiDa8Ja01A=
