@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -93,9 +91,4 @@ func anyMaptoStringMap(resourceAttrs map[string]any) map[string]string {
 		}
 	}
 	return strMap
-}
-
-// unixNanoToMilliseconds converts a timestamp in nanoseconds to milliseconds.
-func unixNanoToMilliseconds(timestamp pcommon.Timestamp) int64 {
-	return int64(uint64(timestamp) / uint64(time.Millisecond))
 }
