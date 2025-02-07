@@ -183,7 +183,7 @@ func Test_onMessage(t *testing.T) {
 			cfgState:                     &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
-			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
+			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop(), "opamp-client")),
 		}
 		require.NoError(t, s.createTemplates())
 
@@ -339,7 +339,7 @@ func Test_onMessage(t *testing.T) {
 			cfgState:                     &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
-			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
+			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop(), "opamp-client")),
 		}
 		require.NoError(t, s.createTemplates())
 
@@ -357,19 +357,23 @@ func Test_onMessage(t *testing.T) {
 				},
 			},
 			OwnMetricsConnSettings: &protobufs.TelemetryConnectionSettings{
-				DestinationEndpoint: "http://localhost:4318",
+				DestinationEndpoint: "http://127.0.0.1:4318",
+				Headers: &protobufs.Headers{
+					Headers: []*protobufs.Header{
+						{Key: "testkey", Value: "testval"},
+						{Key: "testkey2", Value: "testval2"},
+					},
+				},
 			},
 		})
 
 		require.Equal(t, newID, s.persistentState.InstanceID)
 		t.Log(s.cfgState.Load())
 		mergedCfg := s.cfgState.Load().(*configState).mergedConfig
-		require.Contains(t, mergedCfg, "prometheus/own_metrics")
 		require.Contains(t, mergedCfg, newID.String())
 		require.Contains(t, mergedCfg, "runtime.type: test")
 	})
 	t.Run("RemoteConfig - Remote Config message is processed and merged into local config", func(t *testing.T) {
-
 		const testConfigMessage = `receivers:
   debug:`
 
@@ -417,7 +421,7 @@ service:
 					t,
 					&protobufs.RemoteConfigStatus{
 						LastRemoteConfigHash: remoteConfig.ConfigHash,
-						Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+						Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING,
 					},
 					rcs,
 				)
@@ -468,7 +472,6 @@ service:
 		assert.True(t, remoteConfigStatusUpdated)
 	})
 	t.Run("RemoteConfig - Remote Config message is processed but OpAmp Client fails", func(t *testing.T) {
-
 		const testConfigMessage = `receivers:
   debug:`
 
@@ -516,7 +519,7 @@ service:
 					t,
 					&protobufs.RemoteConfigStatus{
 						LastRemoteConfigHash: remoteConfig.ConfigHash,
-						Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+						Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING,
 					},
 					rcs,
 				)
@@ -567,7 +570,6 @@ service:
 		assert.True(t, remoteConfigStatusUpdated)
 	})
 	t.Run("RemoteConfig - Invalid Remote Config message is detected and status is set appropriately", func(t *testing.T) {
-
 		const testConfigMessage = `invalid`
 
 		remoteConfig := &protobufs.AgentRemoteConfig{
@@ -635,7 +637,6 @@ service:
 		assert.Nil(t, s.cfgState.Load())
 		assert.True(t, remoteConfigStatusUpdated)
 	})
-
 }
 
 func Test_handleAgentOpAMPMessage(t *testing.T) {
@@ -1037,6 +1038,8 @@ func (m mockOpAMPClient) SendCustomMessage(message *protobufs.CustomMessage) (me
 	return msgChan, nil
 }
 
+func (m mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) {}
+
 type mockConn struct {
 	sendFunc func(ctx context.Context, message *protobufs.ServerToAgent) error
 }
@@ -1044,12 +1047,14 @@ type mockConn struct {
 func (mockConn) Connection() net.Conn {
 	return nil
 }
+
 func (m mockConn) Send(ctx context.Context, message *protobufs.ServerToAgent) error {
 	if m.sendFunc != nil {
 		return m.sendFunc(ctx, message)
 	}
 	return nil
 }
+
 func (mockConn) Disconnect() error {
 	return nil
 }
@@ -1126,30 +1131,28 @@ func TestSupervisor_setupOwnMetrics(t *testing.T) {
 		require.NoError(t, err)
 
 		configChanged := s.setupOwnMetrics(context.Background(), &protobufs.TelemetryConnectionSettings{
-			DestinationEndpoint: "localhost",
+			DestinationEndpoint: "http://127.0.0.1:4318",
+			Headers: &protobufs.Headers{
+				Headers: []*protobufs.Header{
+					{Key: "testkey", Value: "testval"},
+					{Key: "testkey2", Value: "testval2"},
+				},
+			},
 		})
 
-		expectedOwnMetricsSection := `receivers:
-  # Collect own metrics
-  prometheus/own_metrics:
-    config:
-      scrape_configs:
-        - job_name: 'otel-collector'
-          scrape_interval: 10s
-          static_configs:
-            - targets: ['0.0.0.0:55555']  
-exporters:
-  otlphttp/own_metrics:
-    metrics_endpoint: "localhost"
-
+		expectedOwnMetricsSection := `
 service:
   telemetry:
     metrics:
-      address: ":55555"
-  pipelines:
-    metrics/own_metrics:
-      receivers: [prometheus/own_metrics]
-      exporters: [otlphttp/own_metrics]
+      readers:
+        - periodic:
+            exporter:
+              otlp:
+                protocol: http/protobuf
+                endpoint: http://127.0.0.1:4318
+                headers:
+                  "testkey": "testval"
+                  "testkey2": "testval2"
 `
 
 		assert.True(t, configChanged)
@@ -1165,7 +1168,6 @@ service:
 }
 
 func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
-
 	t.Run("empty config", func(t *testing.T) {
 		s := Supervisor{
 			effectiveConfig: &atomic.Value{},
@@ -1200,23 +1202,17 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 
 		assert.Equal(t, []byte("merged"), got.ConfigMap.ConfigMap[""].Body)
 	})
-
 }
 
 func TestSupervisor_loadAndWriteInitialMergedConfig(t *testing.T) {
-
 	t.Run("load initial config", func(t *testing.T) {
-
 		configDir := t.TempDir()
 
 		const testLastReceivedRemoteConfig = `receiver:
   debug/remote:
 `
 
-		const expectedMergedConfig = `exporters:
-    otlphttp/own_metrics:
-        metrics_endpoint: localhost
-extensions:
+		const expectedMergedConfig = `extensions:
     health_check:
         endpoint: ""
     opamp:
@@ -1230,30 +1226,20 @@ extensions:
                     insecure: true
 receiver:
     debug/remote: null
-receivers:
-    prometheus/own_metrics:
-        config:
-            scrape_configs:
-                - job_name: otel-collector
-                  scrape_interval: 10s
-                  static_configs:
-                    - targets:
-                        - 0.0.0.0:55555
 service:
     extensions:
         - health_check
         - opamp
-    pipelines:
-        metrics/own_metrics:
-            exporters:
-                - otlphttp/own_metrics
-            receivers:
-                - prometheus/own_metrics
     telemetry:
         logs:
             encoding: json
         metrics:
-            address: :55555
+            readers:
+                - periodic:
+                    exporter:
+                        otlp:
+                            endpoint: localhost
+                            protocol: http/protobuf
         resource:
             service.name: otelcol
 `
@@ -1279,8 +1265,8 @@ service:
 		marshalledOwnMetricsCfg, err := proto.Marshal(ownMetricsCfg)
 		require.NoError(t, err)
 
-		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvRemoteConfigFile), marshalledRemoteCfg, 0600))
-		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvOwnMetricsConfigFile), marshalledOwnMetricsCfg, 0600))
+		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvRemoteConfigFile), marshalledRemoteCfg, 0o600))
+		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvOwnMetricsConfigFile), marshalledOwnMetricsCfg, 0o600))
 
 		s := Supervisor{
 			logger: zap.NewNop(),
@@ -1328,11 +1314,9 @@ service:
 		replacedMergedConfig := portRegex.ReplaceAll([]byte(gotMergedConfig), []byte(":55555"))
 		assert.Equal(t, expectedMergedConfig, string(replacedMergedConfig))
 	})
-
 }
 
 func TestSupervisor_composeNoopConfig(t *testing.T) {
-
 	const expectedConfig = `exporters:
     nop: null
 extensions:
@@ -1371,4 +1355,33 @@ service:
 
 	require.NoError(t, err)
 	require.Equal(t, expectedConfig, noopConfig)
+}
+
+func TestSupervisor_configStrictUnmarshal(t *testing.T) {
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "*")
+	require.NoError(t, err)
+
+	configuration := `
+server:
+  endpoint: ws://localhost/v1/opamp
+  tls:
+    insecure: true
+
+capabilities:
+  reports_effective_config: true
+  invalid_key: invalid_value
+`
+
+	cfgPath := filepath.Join(tmpDir, "config.yaml")
+	err = os.WriteFile(cfgPath, []byte(configuration), 0o600)
+	require.NoError(t, err)
+
+	_, err = config.Load(cfgPath)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "decoding failed")
+
+	t.Cleanup(func() {
+		require.NoError(t, os.Chmod(tmpDir, 0o700))
+		require.NoError(t, os.RemoveAll(tmpDir))
+	})
 }

@@ -38,9 +38,7 @@ const (
 	metricNamePattern = "^metric_name:([A-Za-z\\.:][A-Za-z0-9_\\.:]*)$"
 )
 
-var (
-	metricNameRegexp = regexp.MustCompile(metricNamePattern)
-)
+var metricNameRegexp = regexp.MustCompile(metricNamePattern)
 
 // AccessTokenPassthroughConfig configures passing through access tokens.
 type AccessTokenPassthroughConfig struct {
@@ -139,6 +137,16 @@ type HecToOtelAttrs struct {
 	Index string `mapstructure:"index"`
 	// Host indicates the mapping of the host field to a specific unified model attribute.
 	Host string `mapstructure:"host"`
+}
+
+func (h HecToOtelAttrs) Equal(o HecToOtelAttrs) bool {
+	if h.Host != o.Host ||
+		h.Source != o.Source ||
+		h.SourceType != o.SourceType ||
+		h.Index != o.Index {
+		return false
+	}
+	return true
 }
 
 type AckRequest struct {

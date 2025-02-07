@@ -158,13 +158,13 @@ func Test_influxHTTPWriterBatch_EnqueuePoint_emptyTagValue(t *testing.T) {
 	t.Cleanup(noopHTTPServer.Close)
 
 	nowTime := time.Unix(1000, 2000)
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = noopHTTPServer.URL
 
 	influxWriter, err := newInfluxHTTPWriter(
 		new(common.NoopLogger),
 		&Config{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: noopHTTPServer.URL,
-			},
+			ClientConfig: clientConfig,
 		},
 		componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)

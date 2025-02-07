@@ -23,7 +23,6 @@ type TestStringAttributeCfg struct {
 }
 
 func TestStringTagFilter(t *testing.T) {
-
 	cases := []struct {
 		Desc      string
 		Trace     *TraceData

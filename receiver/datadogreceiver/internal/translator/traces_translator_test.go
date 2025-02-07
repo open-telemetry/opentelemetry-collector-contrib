@@ -75,7 +75,6 @@ func getTraces(t *testing.T) (traces pb.Traces) {
 		t.Fatal(err)
 	}
 	return traces
-
 }
 
 func TestTracePayloadV05Unmarshalling(t *testing.T) {
@@ -179,11 +178,11 @@ func agentPayloadFromTraces(traces *pb.Traces) (agentPayload pb.AgentPayload) {
 	var tracerPayloads []*pb.TracerPayload
 	for i := 0; i < numberOfTraces; i++ {
 		payload := &pb.TracerPayload{
-			LanguageName:    fmt.Sprintf("%d", i),
-			LanguageVersion: fmt.Sprintf("%d", i),
-			ContainerID:     fmt.Sprintf("%d", i),
+			LanguageName:    strconv.Itoa(i),
+			LanguageVersion: strconv.Itoa(i),
+			ContainerID:     strconv.Itoa(i),
 			Chunks:          traceChunksFromTraces(*traces),
-			TracerVersion:   fmt.Sprintf("%d", i),
+			TracerVersion:   strconv.Itoa(i),
 		}
 		tracerPayloads = append(tracerPayloads, payload)
 	}

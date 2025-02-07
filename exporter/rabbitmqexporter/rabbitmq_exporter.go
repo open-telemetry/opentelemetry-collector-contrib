@@ -28,8 +28,10 @@ type rabbitmqExporter struct {
 	publisher publisher.Publisher
 }
 
-type publisherFactory = func(publisher.DialConfig) (publisher.Publisher, error)
-type tlsFactory = func(context.Context) (*tls.Config, error)
+type (
+	publisherFactory = func(publisher.DialConfig) (publisher.Publisher, error)
+	tlsFactory       = func(context.Context) (*tls.Config, error)
+)
 
 func newRabbitmqExporter(cfg *Config, set component.TelemetrySettings, publisherFactory publisherFactory, tlsFactory tlsFactory, routingKey string, connectionName string) *rabbitmqExporter {
 	exporter := &rabbitmqExporter{

@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeCacheName specifies the a value cache_name attribute.
+// AttributeCacheName specifies the value cache_name attribute.
 type AttributeCacheName int
 
 const (
@@ -38,7 +38,7 @@ var MapAttributeCacheName = map[string]AttributeCacheName{
 	"query":     AttributeCacheNameQuery,
 }
 
-// AttributeClusterPublishedDifferenceState specifies the a value cluster_published_difference_state attribute.
+// AttributeClusterPublishedDifferenceState specifies the value cluster_published_difference_state attribute.
 type AttributeClusterPublishedDifferenceState int
 
 const (
@@ -64,7 +64,7 @@ var MapAttributeClusterPublishedDifferenceState = map[string]AttributeClusterPub
 	"compatible":   AttributeClusterPublishedDifferenceStateCompatible,
 }
 
-// AttributeClusterStateQueueState specifies the a value cluster_state_queue_state attribute.
+// AttributeClusterStateQueueState specifies the value cluster_state_queue_state attribute.
 type AttributeClusterStateQueueState int
 
 const (
@@ -90,7 +90,7 @@ var MapAttributeClusterStateQueueState = map[string]AttributeClusterStateQueueSt
 	"committed": AttributeClusterStateQueueStateCommitted,
 }
 
-// AttributeClusterStateUpdateType specifies the a value cluster_state_update_type attribute.
+// AttributeClusterStateUpdateType specifies the value cluster_state_update_type attribute.
 type AttributeClusterStateUpdateType int
 
 const (
@@ -132,7 +132,7 @@ var MapAttributeClusterStateUpdateType = map[string]AttributeClusterStateUpdateT
 	"notification":         AttributeClusterStateUpdateTypeNotification,
 }
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -158,7 +158,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"sent":     AttributeDirectionSent,
 }
 
-// AttributeDocumentState specifies the a value document_state attribute.
+// AttributeDocumentState specifies the value document_state attribute.
 type AttributeDocumentState int
 
 const (
@@ -184,7 +184,7 @@ var MapAttributeDocumentState = map[string]AttributeDocumentState{
 	"deleted": AttributeDocumentStateDeleted,
 }
 
-// AttributeGetResult specifies the a value get_result attribute.
+// AttributeGetResult specifies the value get_result attribute.
 type AttributeGetResult int
 
 const (
@@ -210,7 +210,7 @@ var MapAttributeGetResult = map[string]AttributeGetResult{
 	"miss": AttributeGetResultMiss,
 }
 
-// AttributeHealthStatus specifies the a value health_status attribute.
+// AttributeHealthStatus specifies the value health_status attribute.
 type AttributeHealthStatus int
 
 const (
@@ -240,7 +240,7 @@ var MapAttributeHealthStatus = map[string]AttributeHealthStatus{
 	"red":    AttributeHealthStatusRed,
 }
 
-// AttributeIndexAggregationType specifies the a value index_aggregation_type attribute.
+// AttributeIndexAggregationType specifies the value index_aggregation_type attribute.
 type AttributeIndexAggregationType int
 
 const (
@@ -266,7 +266,7 @@ var MapAttributeIndexAggregationType = map[string]AttributeIndexAggregationType{
 	"total":          AttributeIndexAggregationTypeTotal,
 }
 
-// AttributeIndexingPressureStage specifies the a value indexing_pressure_stage attribute.
+// AttributeIndexingPressureStage specifies the value indexing_pressure_stage attribute.
 type AttributeIndexingPressureStage int
 
 const (
@@ -296,7 +296,7 @@ var MapAttributeIndexingPressureStage = map[string]AttributeIndexingPressureStag
 	"replica":      AttributeIndexingPressureStageReplica,
 }
 
-// AttributeMemoryState specifies the a value memory_state attribute.
+// AttributeMemoryState specifies the value memory_state attribute.
 type AttributeMemoryState int
 
 const (
@@ -322,7 +322,7 @@ var MapAttributeMemoryState = map[string]AttributeMemoryState{
 	"used": AttributeMemoryStateUsed,
 }
 
-// AttributeOperation specifies the a value operation attribute.
+// AttributeOperation specifies the value operation attribute.
 type AttributeOperation int
 
 const (
@@ -384,7 +384,7 @@ var MapAttributeOperation = map[string]AttributeOperation{
 	"warmer":  AttributeOperationWarmer,
 }
 
-// AttributeQueryCacheCountType specifies the a value query_cache_count_type attribute.
+// AttributeQueryCacheCountType specifies the value query_cache_count_type attribute.
 type AttributeQueryCacheCountType int
 
 const (
@@ -410,7 +410,7 @@ var MapAttributeQueryCacheCountType = map[string]AttributeQueryCacheCountType{
 	"miss": AttributeQueryCacheCountTypeMiss,
 }
 
-// AttributeSegmentsMemoryObjectType specifies the a value segments_memory_object_type attribute.
+// AttributeSegmentsMemoryObjectType specifies the value segments_memory_object_type attribute.
 type AttributeSegmentsMemoryObjectType int
 
 const (
@@ -444,7 +444,7 @@ var MapAttributeSegmentsMemoryObjectType = map[string]AttributeSegmentsMemoryObj
 	"fixed_bit_set": AttributeSegmentsMemoryObjectTypeFixedBitSet,
 }
 
-// AttributeShardState specifies the a value shard_state attribute.
+// AttributeShardState specifies the value shard_state attribute.
 type AttributeShardState int
 
 const (
@@ -486,7 +486,7 @@ var MapAttributeShardState = map[string]AttributeShardState{
 	"unassigned_delayed": AttributeShardStateUnassignedDelayed,
 }
 
-// AttributeTaskState specifies the a value task_state attribute.
+// AttributeTaskState specifies the value task_state attribute.
 type AttributeTaskState int
 
 const (
@@ -512,7 +512,7 @@ var MapAttributeTaskState = map[string]AttributeTaskState{
 	"completed": AttributeTaskStateCompleted,
 }
 
-// AttributeThreadState specifies the a value thread_state attribute.
+// AttributeThreadState specifies the value thread_state attribute.
 type AttributeThreadState int
 
 const (
@@ -5416,7 +5416,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:        mbc,

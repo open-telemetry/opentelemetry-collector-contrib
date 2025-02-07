@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
@@ -19,8 +18,8 @@ import (
 )
 
 type ottlConditionFilter struct {
-	sampleSpanExpr      expr.BoolExpr[ottlspan.TransformContext]
-	sampleSpanEventExpr expr.BoolExpr[ottlspanevent.TransformContext]
+	sampleSpanExpr      *ottl.ConditionSequence[ottlspan.TransformContext]
+	sampleSpanEventExpr *ottl.ConditionSequence[ottlspanevent.TransformContext]
 	errorMode           ottl.ErrorMode
 	logger              *zap.Logger
 }

@@ -157,7 +157,6 @@ func (m *MapWithExpiry) Shutdown() error {
 		return errors.New("shutdown called on an already closed channel")
 	default:
 		close(m.doneChan)
-
 	}
 	return nil
 }

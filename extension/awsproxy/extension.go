@@ -27,7 +27,6 @@ var _ extension.Extension = (*xrayProxy)(nil)
 
 func (x *xrayProxy) Start(_ context.Context, host component.Host) error {
 	srv, err := proxy.NewServer(&x.config.ProxyConfig, x.settings.Logger)
-
 	if err != nil {
 		return err
 	}

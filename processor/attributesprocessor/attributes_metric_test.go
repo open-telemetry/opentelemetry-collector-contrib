@@ -347,6 +347,7 @@ func TestMetricAttributes_Hash(t *testing.T) {
 		runIndividualMetricTestCase(t, tc, mp)
 	}
 }
+
 func TestMetricAttributes_Convert(t *testing.T) {
 	testCases := []metricTestCase{
 		{

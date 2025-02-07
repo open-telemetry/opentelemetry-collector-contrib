@@ -46,7 +46,6 @@ func (*provider) Shutdown(context.Context) error {
 }
 
 func (p *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
-
 	if !strings.HasPrefix(uri, schemaName+":") {
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemaName)
 	}
@@ -76,7 +75,6 @@ func (p *provider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc
 }
 
 func (p *provider) decrypt(cipherText string) (string, error) {
-
 	cipherBytes, err := base64.StdEncoding.DecodeString(cipherText)
 	if err != nil {
 		return "", err

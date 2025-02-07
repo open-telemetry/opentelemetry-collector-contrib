@@ -6,7 +6,6 @@ package sshcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"os"
@@ -49,7 +48,7 @@ func (s *sshServer) runSSHServer(t *testing.T) string {
 			if c.User() == "otelu" && string(pass) == "otelp" {
 				return nil, nil
 			}
-			return nil, fmt.Errorf("wrong username or password")
+			return nil, errors.New("wrong username or password")
 		},
 	}
 
@@ -93,7 +92,7 @@ func (s *sshServer) shutdown() {
 func handleChannels(chans <-chan ssh.NewChannel) {
 	for newChannel := range chans {
 		if t := newChannel.ChannelType(); t != "session" {
-			if err := newChannel.Reject(ssh.UnknownChannelType, fmt.Sprintf("unknown channel type: %s", t)); err != nil {
+			if err := newChannel.Reject(ssh.UnknownChannelType, "unknown channel type: "+t); err != nil {
 				return
 			}
 			continue
@@ -314,7 +313,6 @@ func TestCancellation(t *testing.T) {
 	_, err := scrpr.scrape(ctx)
 	require.Error(t, err, "should have returned error on canceled context")
 	require.EqualValues(t, err.Error(), ctx.Err().Error(), "scrape should return context's error")
-
 }
 
 // issue # 18193

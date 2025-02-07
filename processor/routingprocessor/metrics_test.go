@@ -187,7 +187,6 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 			"metric should not be routed to non default exporter",
 		)
 	})
-
 }
 
 func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {

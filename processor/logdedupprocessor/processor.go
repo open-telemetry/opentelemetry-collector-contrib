@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
@@ -24,7 +24,7 @@ import (
 // logDedupProcessor is a logDedupProcessor that counts duplicate instances of logs.
 type logDedupProcessor struct {
 	emitInterval time.Duration
-	conditions   expr.BoolExpr[ottllog.TransformContext]
+	conditions   *ottl.ConditionSequence[ottllog.TransformContext]
 	aggregator   *logAggregator
 	remover      *fieldRemover
 	nextConsumer consumer.Logs
@@ -48,7 +48,7 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 
 	return &logDedupProcessor{
 		emitInterval: cfg.Interval,
-		aggregator:   newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder),
+		aggregator:   newLogAggregator(cfg.LogCountAttribute, timezone, telemetryBuilder, cfg.IncludeFields),
 		remover:      newFieldRemover(cfg.ExcludeFields),
 		nextConsumer: nextConsumer,
 		logger:       settings.Logger,

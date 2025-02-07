@@ -88,10 +88,10 @@ func TestMetric10kDPS(t *testing.T) {
 				performanceResultsSummary,
 				nil,
 				nil,
+				nil,
 			)
 		})
 	}
-
 }
 
 func TestMetricsFromFile(t *testing.T) {

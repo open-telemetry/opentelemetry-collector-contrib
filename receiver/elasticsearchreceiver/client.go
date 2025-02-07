@@ -63,7 +63,7 @@ func newElasticsearchClient(ctx context.Context, settings component.TelemetrySet
 	if c.Username != "" && c.Password != "" {
 		userPass := fmt.Sprintf("%s:%s", c.Username, string(c.Password))
 		authb64 := base64.StdEncoding.EncodeToString([]byte(userPass))
-		authHeader = fmt.Sprintf("Basic %s", authb64)
+		authHeader = "Basic " + authb64
 	}
 
 	esClient := defaultElasticsearchClient{
@@ -78,12 +78,10 @@ func newElasticsearchClient(ctx context.Context, settings component.TelemetrySet
 	return &esClient, nil
 }
 
-var (
-	es7_9 = func() *version.Version {
-		v, _ := version.NewVersion("7.9")
-		return v
-	}()
-)
+var es7_9 = func() *version.Version {
+	v, _ := version.NewVersion("7.9")
+	return v
+}()
 
 const (
 	// A comma separated list of metrics that will be gathered from NodeStats.
@@ -204,7 +202,7 @@ func (c defaultElasticsearchClient) ClusterStats(ctx context.Context, nodes []st
 		nodesSpec = "_all"
 	}
 
-	clusterStatsPath := fmt.Sprintf("_cluster/stats/nodes/%s", nodesSpec)
+	clusterStatsPath := "_cluster/stats/nodes/" + nodesSpec
 
 	body, err := c.doRequest(ctx, clusterStatsPath)
 	if err != nil {

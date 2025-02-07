@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/mocks"
@@ -472,7 +472,7 @@ func TestGetScalarData(t *testing.T) {
 				var scraperErrors scrapererror.ScrapeErrors
 				oidSlice := []string{"1"}
 				returnedSNMPData := client.GetScalarData(oidSlice, &scraperErrors)
-				expectedErr := fmt.Errorf("problem with getting scalar data: data for OID '1' not a supported type")
+				expectedErr := errors.New("problem with getting scalar data: data for OID '1' not a supported type")
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
 				require.Nil(t, returnedSNMPData)
 			},
@@ -495,7 +495,7 @@ func TestGetScalarData(t *testing.T) {
 				var scraperErrors scrapererror.ScrapeErrors
 				oidSlice := []string{"1"}
 				returnedSNMPData := client.GetScalarData(oidSlice, &scraperErrors)
-				expectedErr := fmt.Errorf("problem with getting scalar data: data for OID '1' not a supported type")
+				expectedErr := errors.New("problem with getting scalar data: data for OID '1' not a supported type")
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
 				require.Nil(t, returnedSNMPData)
 			},
@@ -518,7 +518,7 @@ func TestGetScalarData(t *testing.T) {
 				var scraperErrors scrapererror.ScrapeErrors
 				oidSlice := []string{"1"}
 				returnedSNMPData := client.GetScalarData(oidSlice, &scraperErrors)
-				expectedErr := fmt.Errorf("problem with getting scalar data: data for OID '1' not a supported type")
+				expectedErr := errors.New("problem with getting scalar data: data for OID '1' not a supported type")
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
 				require.Nil(t, returnedSNMPData)
 			},
@@ -833,7 +833,7 @@ func TestGetIndexedData(t *testing.T) {
 				}
 				var scraperErrors scrapererror.ScrapeErrors
 				returnedSNMPData := client.GetIndexedData([]string{"1"}, &scraperErrors)
-				expectedErr := fmt.Errorf("problem with getting indexed data: data for OID '1.1' not a supported type")
+				expectedErr := errors.New("problem with getting indexed data: data for OID '1.1' not a supported type")
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
 				require.Nil(t, returnedSNMPData)
 			},
@@ -855,7 +855,7 @@ func TestGetIndexedData(t *testing.T) {
 				}
 				var scraperErrors scrapererror.ScrapeErrors
 				returnedSNMPData := client.GetIndexedData([]string{"1"}, &scraperErrors)
-				expectedErr := fmt.Errorf("problem with getting indexed data: data for OID '1.1' not a supported type")
+				expectedErr := errors.New("problem with getting indexed data: data for OID '1.1' not a supported type")
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
 				require.Nil(t, returnedSNMPData)
 			},
@@ -877,7 +877,7 @@ func TestGetIndexedData(t *testing.T) {
 				}
 				var scraperErrors scrapererror.ScrapeErrors
 				returnedSNMPData := client.GetIndexedData([]string{"1"}, &scraperErrors)
-				expectedErr := fmt.Errorf("problem with getting indexed data: data for OID '1.1' not a supported type")
+				expectedErr := errors.New("problem with getting indexed data: data for OID '1.1' not a supported type")
 				require.EqualError(t, scraperErrors.Combine(), expectedErr.Error())
 				require.Nil(t, returnedSNMPData)
 			},

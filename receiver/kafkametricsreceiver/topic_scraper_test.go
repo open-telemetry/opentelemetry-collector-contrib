@@ -5,7 +5,7 @@ package kafkametricsreceiver
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"regexp"
 	"testing"
 
@@ -56,19 +56,19 @@ func TestTopicScraper_createsScraper(t *testing.T) {
 
 func TestTopicScraper_ScrapeHandlesError(t *testing.T) {
 	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
-		return nil, fmt.Errorf("no scraper here")
+		return nil, errors.New("no scraper here")
 	}
 	sc := sarama.NewConfig()
 	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
 	assert.NotNil(t, ms)
 	assert.NoError(t, err)
-	_, err = ms.Scrape(context.Background())
+	_, err = ms.ScrapeMetrics(context.Background())
 	assert.Error(t, err)
 }
 
 func TestTopicScraper_ShutdownHandlesNilClient(t *testing.T) {
 	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
-		return nil, fmt.Errorf("no scraper here")
+		return nil, errors.New("no scraper here")
 	}
 	sc := sarama.NewConfig()
 	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())

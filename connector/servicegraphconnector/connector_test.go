@@ -25,8 +25,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -441,7 +443,6 @@ func TestUpdateDurationMetrics(t *testing.T) {
 		caseStr  string
 		duration float64
 	}{
-
 		{
 			caseStr:  "index 0 latency",
 			duration: 0,
@@ -570,8 +571,8 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	}
 
 	mockMetricsExporter := newMockMetricsExporter()
-	set := setupTestTelemetry()
-	p, err := newConnector(set.NewSettings().TelemetrySettings, cfg, mockMetricsExporter)
+	tel := componenttest.NewTelemetry()
+	p, err := newConnector(tel.NewTelemetrySettings(), cfg, mockMetricsExporter)
 	require.NoError(t, err)
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -593,20 +594,10 @@ func TestValidateOwnTelemetry(t *testing.T) {
 
 	// Shutdown the connector
 	assert.NoError(t, p.Shutdown(context.Background()))
-	set.assertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_connector_servicegraph_total_edges",
-			Description: "Total number of unique edges",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{Value: 2},
-				},
-			},
-		},
-	})
+	metadatatest.AssertEqualConnectorServicegraphTotalEdges(t, tel, []metricdata.DataPoint[int64]{
+		{Value: 2},
+	}, metricdatatest.IgnoreTimestamp())
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestExtraDimensionsLabels(t *testing.T) {

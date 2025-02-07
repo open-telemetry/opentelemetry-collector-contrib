@@ -52,7 +52,7 @@ func (dd *ddExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 			ils := resSpans.ScopeSpans().At(i)
 			for s := 0; s < ils.Spans().Len(); s++ {
 				span := ils.Spans().At(s)
-				var newSpan = pb.Span{
+				newSpan := pb.Span{
 					Service:  "test",
 					Name:     "test",
 					Resource: "test",

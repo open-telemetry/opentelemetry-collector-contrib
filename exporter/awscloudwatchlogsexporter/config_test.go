@@ -73,11 +73,11 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_queue_size"),
-			errorMessage: "queue size must be positive",
+			errorMessage: "`queue_size` must be positive",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_num_consumers"),
-			errorMessage: "number of queue consumers must be positive",
+			errorMessage: "`num_consumers` must be positive",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_required_field_stream"),
@@ -125,7 +125,6 @@ func TestRetentionValidateCorrect(t *testing.T) {
 		},
 	}
 	assert.NoError(t, component.ValidateConfig(cfg))
-
 }
 
 func TestRetentionValidateWrong(t *testing.T) {
@@ -143,7 +142,6 @@ func TestRetentionValidateWrong(t *testing.T) {
 		},
 	}
 	assert.Error(t, component.ValidateConfig(wrongcfg))
-
 }
 
 func TestValidateTags(t *testing.T) {
@@ -228,7 +226,7 @@ func TestValidateTags(t *testing.T) {
 				},
 			}
 			if tt.errorMessage != "" {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				assert.ErrorContains(t, component.ValidateConfig(cfg), tt.errorMessage)
 				return
 			}
 			assert.NoError(t, component.ValidateConfig(cfg))

@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -17,10 +18,12 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
 
 // All the data we need to test the Span filter
@@ -273,7 +276,6 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
 			} else {
-
 				exTd := constructTraces()
 				tt.want(exTd)
 				assert.Equal(t, exTd, got)
@@ -283,8 +285,9 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 }
 
 func TestFilterTraceProcessorTelemetry(t *testing.T) {
-	tel := setupTestTelemetry()
-	processor, err := newFilterSpansProcessor(tel.NewSettings(), &Config{
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	processor, err := newFilterSpansProcessor(metadatatest.NewSettings(tel), &Config{
 		Traces: TraceFilters{
 			SpanConditions: []string{
 				`name == "operationA"`,
@@ -296,25 +299,12 @@ func TestFilterTraceProcessorTelemetry(t *testing.T) {
 	_, err = processor.processTraces(context.Background(), constructTraces())
 	assert.NoError(t, err)
 
-	want := []metricdata.Metrics{
+	metadatatest.AssertEqualProcessorFilterSpansFiltered(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_processor_filter_spans.filtered",
-			Description: "Number of spans dropped by the filter processor",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      2,
-						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
-					},
-				},
-			},
+			Value:      2,
+			Attributes: attribute.NewSet(attribute.String("filter", "filter")),
 		},
-	}
-
-	tel.assertMetrics(t, want)
+	}, metricdatatest.IgnoreTimestamp())
 }
 
 func constructTraces() ptrace.Traces {

@@ -14,9 +14,7 @@ import (
 	"github.com/jonboulle/clockwork"
 )
 
-var (
-	errBadRequest = errors.New("bad request")
-)
+var errBadRequest = errors.New("bad request")
 
 type Client interface {
 	// GetTrackingData will connection the configured chronyd endpoint

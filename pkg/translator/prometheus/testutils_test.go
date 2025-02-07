@@ -10,11 +10,9 @@ import (
 var ilm pmetric.ScopeMetrics
 
 func init() {
-
 	metrics := pmetric.NewMetrics()
 	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 	ilm = resourceMetrics.ScopeMetrics().AppendEmpty()
-
 }
 
 // Returns a new Metric of type "Gauge" with specified name and unit

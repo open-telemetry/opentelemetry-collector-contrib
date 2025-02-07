@@ -12,8 +12,7 @@ import (
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
-type MockExporter struct {
-}
+type MockExporter struct{}
 
 func (m MockExporter) Start(context.Context, component.Host) error {
 	return nil

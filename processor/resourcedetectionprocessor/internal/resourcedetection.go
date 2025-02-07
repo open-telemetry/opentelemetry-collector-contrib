@@ -45,7 +45,8 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 	timeout time.Duration,
 	attributes []string,
 	detectorConfigs ResourceDetectorConfig,
-	detectorTypes ...DetectorType) (*ResourceProvider, error) {
+	detectorTypes ...DetectorType,
+) (*ResourceProvider, error) {
 	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes)
 	if err != nil {
 		return nil, err

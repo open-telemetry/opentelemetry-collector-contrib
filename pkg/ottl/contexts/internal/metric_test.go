@@ -14,7 +14,6 @@ import (
 )
 
 func Test_MetricPathGetSetter(t *testing.T) {
-
 	refMetric := createMetricTelemetry()
 
 	newMetric := pmetric.NewMetric()

@@ -8,7 +8,7 @@
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fprometheus%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fprometheus) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fprometheus%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fprometheus) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@dashpole](https://www.github.com/dashpole) |
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [k8s]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s
@@ -67,7 +67,17 @@ prometheus --config.file=prom.yaml
 ```shell
 "--feature-gates=receiver.prometheusreceiver.UseCreatedMetric"
 ```
+- `receiver.prometheusreceiver.UseCollectorStartTimeFallback`:  enables using
+  the collector start time as the metric start time if the
+  process_start_time_seconds metric yields no result (for example if targets
+  expose no process_start_time_seconds metric). This is useful when the collector
+  start time is a good approximation of the process start time - for example in
+  serverless workloads when the collector is deployed as a sidecar. To enable it,
+  use the following feature gate option:
 
+```shell
+"--feature-gates=receiver.prometheusreceiver.UseCollectorStartTimeFallback"
+```
 - `receiver.prometheusreceiver.EnableNativeHistograms`: process and turn native histogram metrics into OpenTelemetry exponential histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
 
 ```shell

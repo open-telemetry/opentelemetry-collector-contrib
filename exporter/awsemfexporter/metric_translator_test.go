@@ -120,13 +120,6 @@ func stringSlicesEqual(expected, actual []string) bool {
 	return true
 }
 
-func min(i, j int) int {
-	if i < j {
-		return i
-	}
-	return j
-}
-
 type dimensionality [][]string
 
 func (d dimensionality) Len() int {
@@ -163,11 +156,11 @@ func normalizeDimensionality(dims [][]string) [][]string {
 }
 
 // hashMetricSlice hashes a metrics slice for equality checking.
-func hashMetricSlice(metricSlice []map[string]string) []string {
+func hashMetricSlice(metricSlice []cWMetricInfo) []string {
 	// Convert to string for easier sorting
 	stringified := make([]string, len(metricSlice))
 	for i, v := range metricSlice {
-		stringified[i] = v["Name"] + "," + v["Unit"]
+		stringified[i] = fmt.Sprint(v.Name) + "," + fmt.Sprint(v.Unit) + "," + fmt.Sprint(v.StorageResolution)
 	}
 	// Sort across metrics for equality checking
 	sort.Strings(stringified)
@@ -347,7 +340,6 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-
 			groupedMetrics := make(map[any]*groupedMetric)
 			err := translator.translateOTelToGroupedMetric(tc.metric, groupedMetrics, config)
 			assert.NoError(t, err)
@@ -398,24 +390,26 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 			measurements: []cWMeasurement{{
 				Namespace:  "test-emf",
 				Dimensions: [][]string{{oTellibDimensionKey}, {oTellibDimensionKey, "spanName"}},
-				Metrics: []map[string]string{{
-					"Name": "spanCounter",
-					"Unit": "Count",
+				Metrics: []cWMetricInfo{{
+					Name:              "spanCounter",
+					Unit:              "Count",
+					StorageResolution: 1,
 				}},
 			}},
-			expectedEMFLogEvent: "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Version\":\"1\",\"_aws\":{\"CloudWatchMetrics\":[{\"Namespace\":\"test-emf\",\"Dimensions\":[[\"OTelLib\"],[\"OTelLib\",\"spanName\"]],\"Metrics\":[{\"Name\":\"spanCounter\",\"Unit\":\"Count\"}]}],\"Timestamp\":1596151098037},\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
+			expectedEMFLogEvent: "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Version\":\"1\",\"_aws\":{\"CloudWatchMetrics\":[{\"Namespace\":\"test-emf\",\"Dimensions\":[[\"OTelLib\"],[\"OTelLib\",\"spanName\"]],\"Metrics\":[{\"Name\":\"spanCounter\",\"Unit\":\"Count\",\"StorageResolution\":1}]}],\"Timestamp\":1596151098037},\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
 		},
 		"WithMeasurementAndEMFV0": {
 			emfVersion: "0",
 			measurements: []cWMeasurement{{
 				Namespace:  "test-emf",
 				Dimensions: [][]string{{oTellibDimensionKey}, {oTellibDimensionKey, "spanName"}},
-				Metrics: []map[string]string{{
-					"Name": "spanCounter",
-					"Unit": "Count",
+				Metrics: []cWMetricInfo{{
+					Name:              "spanCounter",
+					Unit:              "Count",
+					StorageResolution: 60,
 				}},
 			}},
-			expectedEMFLogEvent: "{\"CloudWatchMetrics\":[{\"Namespace\":\"test-emf\",\"Dimensions\":[[\"OTelLib\"],[\"OTelLib\",\"spanName\"]],\"Metrics\":[{\"Name\":\"spanCounter\",\"Unit\":\"Count\"}]}],\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Timestamp\":\"1596151098037\",\"Version\":\"0\",\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
+			expectedEMFLogEvent: "{\"CloudWatchMetrics\":[{\"Namespace\":\"test-emf\",\"Dimensions\":[[\"OTelLib\"],[\"OTelLib\",\"spanName\"]],\"Metrics\":[{\"Name\":\"spanCounter\",\"Unit\":\"Count\",\"StorageResolution\":60}]}],\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Timestamp\":\"1596151098037\",\"Version\":\"0\",\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
 		},
 		"WithNoMeasurementAndEMFV1": {
 			emfVersion:          "1",
@@ -432,7 +426,6 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(_ *testing.T) {
 			config := &Config{
-
 				// include valid json string, a non-existing key, and keys whose value are not json/string
 				ParseJSONEncodedAttributeValues: []string{"kubernetes", "Sources", "NonExistingAttributeKey", "spanName", "spanCounter"},
 				Version:                         tc.emfVersion,
@@ -459,7 +452,6 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 			assert.Equal(t, tc.expectedEMFLogEvent, *emfLogEvent.InputLogEvent.Message)
 		})
 	}
-
 }
 
 func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
@@ -496,10 +488,11 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					{
 						Namespace:  namespace,
 						Dimensions: [][]string{{"label1"}},
-						Metrics: []map[string]string{
+						Metrics: []cWMetricInfo{
 							{
-								"Name": "metric1",
-								"Unit": "Count",
+								Name:              "metric1",
+								Unit:              "Count",
+								StorageResolution: 60,
 							},
 						},
 					},
@@ -541,10 +534,11 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					{
 						Namespace:  namespace,
 						Dimensions: [][]string{{"label1"}},
-						Metrics: []map[string]string{
+						Metrics: []cWMetricInfo{
 							{
-								"Name": "metric1",
-								"Unit": "Count",
+								Name:              "metric1",
+								Unit:              "Count",
+								StorageResolution: 60,
 							},
 						},
 					},
@@ -590,18 +584,21 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					{
 						Namespace:  namespace,
 						Dimensions: [][]string{{"label1", "label2"}},
-						Metrics: []map[string]string{
+						Metrics: []cWMetricInfo{
 							{
-								"Name": "metric1",
-								"Unit": "Count",
+								Name:              "metric1",
+								Unit:              "Count",
+								StorageResolution: 60,
 							},
 							{
-								"Name": "metric2",
-								"Unit": "Count",
+								Name:              "metric2",
+								Unit:              "Count",
+								StorageResolution: 60,
 							},
 							{
-								"Name": "metric3",
-								"Unit": "Seconds",
+								Name:              "metric3",
+								Unit:              "Seconds",
+								StorageResolution: 60,
 							},
 						},
 					},
@@ -665,20 +662,22 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					{
 						Namespace:  namespace,
 						Dimensions: [][]string{{"label1"}},
-						Metrics: []map[string]string{
+						Metrics: []cWMetricInfo{
 							{
-								"Name": "metric1",
-								"Unit": "Count",
+								Name:              "metric1",
+								Unit:              "Count",
+								StorageResolution: 60,
 							},
 						},
 					},
 					{
 						Namespace:  namespace,
 						Dimensions: [][]string{{"label1", "label2"}},
-						Metrics: []map[string]string{
+						Metrics: []cWMetricInfo{
 							{
-								"Name": "metric2",
-								"Unit": "Count",
+								Name:              "metric2",
+								Unit:              "Count",
+								StorageResolution: 60,
 							},
 						},
 					},
@@ -749,10 +748,11 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					{
 						Namespace:  namespace,
 						Dimensions: [][]string{{"label1"}},
-						Metrics: []map[string]string{
+						Metrics: []cWMetricInfo{
 							{
-								"Name": "metric1",
-								"Unit": "Count",
+								Name:              "metric1",
+								Unit:              "Count",
+								StorageResolution: 60,
 							},
 						},
 					},
@@ -819,10 +819,11 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 			cWMeasurement{
 				Namespace:  namespace,
 				Dimensions: [][]string{{"label1"}},
-				Metrics: []map[string]string{
+				Metrics: []cWMetricInfo{
 					{
-						"Name": "metric1",
-						"Unit": "Count",
+						Name:              "metric1",
+						Unit:              "Count",
+						StorageResolution: 60,
 					},
 				},
 			},
@@ -859,18 +860,21 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 			cWMeasurement{
 				Namespace:  namespace,
 				Dimensions: [][]string{{"label1", "label2"}},
-				Metrics: []map[string]string{
+				Metrics: []cWMetricInfo{
 					{
-						"Name": "metric1",
-						"Unit": "Count",
+						Name:              "metric1",
+						Unit:              "Count",
+						StorageResolution: 60,
 					},
 					{
-						"Name": "metric2",
-						"Unit": "Count",
+						Name:              "metric2",
+						Unit:              "Count",
+						StorageResolution: 60,
 					},
 					{
-						"Name": "metric3",
-						"Unit": "Seconds",
+						Name:              "metric3",
+						Unit:              "Seconds",
+						StorageResolution: 60,
 					},
 				},
 			},
@@ -898,10 +902,11 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 			cWMeasurement{
 				Namespace:  namespace,
 				Dimensions: [][]string{{"label1"}},
-				Metrics: []map[string]string{
+				Metrics: []cWMetricInfo{
 					{
-						"Name": "metric1",
-						"Unit": "Count",
+						Name:              "metric1",
+						Unit:              "Count",
+						StorageResolution: 60,
 					},
 				},
 			},
@@ -943,18 +948,21 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 					{"label2"},
 					{},
 				},
-				Metrics: []map[string]string{
+				Metrics: []cWMetricInfo{
 					{
-						"Name": "metric1",
-						"Unit": "Count",
+						Name:              "metric1",
+						Unit:              "Count",
+						StorageResolution: 60,
 					},
 					{
-						"Name": "metric2",
-						"Unit": "Count",
+						Name:              "metric2",
+						Unit:              "Count",
+						StorageResolution: 60,
 					},
 					{
-						"Name": "metric3",
-						"Unit": "Seconds",
+						Name:              "metric3",
+						Unit:              "Seconds",
+						StorageResolution: 60,
 					},
 				},
 			},
@@ -1186,18 +1194,21 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"a"}, {"a", "c"}},
-					Metrics: []map[string]string{
+					Metrics: []cWMetricInfo{
 						{
-							"Name": "metric1",
-							"Unit": "Count",
+							Name:              "metric1",
+							Unit:              "Count",
+							StorageResolution: 60,
 						},
 						{
-							"Name": "metric2",
-							"Unit": "Count",
+							Name:              "metric2",
+							Unit:              "Count",
+							StorageResolution: 60,
 						},
 						{
-							"Name": "metric3",
-							"Unit": "Seconds",
+							Name:              "metric3",
+							Unit:              "Seconds",
+							StorageResolution: 60,
 						},
 					},
 				},
@@ -1223,30 +1234,33 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"a"}, {"b"}, {"a", "c"}},
-					Metrics: []map[string]string{
+					Metrics: []cWMetricInfo{
 						{
-							"Name": "metric1",
-							"Unit": "Count",
+							Name:              "metric1",
+							Unit:              "Count",
+							StorageResolution: 60,
 						},
 					},
 				},
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"a"}, {"b"}},
-					Metrics: []map[string]string{
+					Metrics: []cWMetricInfo{
 						{
-							"Name": "metric2",
-							"Unit": "Count",
+							Name:              "metric2",
+							Unit:              "Count",
+							StorageResolution: 60,
 						},
 					},
 				},
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"a"}},
-					Metrics: []map[string]string{
+					Metrics: []cWMetricInfo{
 						{
-							"Name": "metric3",
-							"Unit": "Seconds",
+							Name:              "metric3",
+							Unit:              "Seconds",
+							StorageResolution: 60,
 						},
 					},
 				},
@@ -1268,24 +1282,27 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"a"}, {"b"}},
-					Metrics: []map[string]string{
+					Metrics: []cWMetricInfo{
 						{
-							"Name": "metric1",
-							"Unit": "Count",
+							Name:              "metric1",
+							Unit:              "Count",
+							StorageResolution: 60,
 						},
 						{
-							"Name": "metric2",
-							"Unit": "Count",
+							Name:              "metric2",
+							Unit:              "Count",
+							StorageResolution: 60,
 						},
 					},
 				},
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"a"}},
-					Metrics: []map[string]string{
+					Metrics: []cWMetricInfo{
 						{
-							"Name": "metric3",
-							"Unit": "Seconds",
+							Name:              "metric3",
+							Unit:              "Seconds",
+							StorageResolution: 60,
 						},
 					},
 				},
@@ -1307,14 +1324,16 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"a"}, {"b"}},
-					Metrics: []map[string]string{
+					Metrics: []cWMetricInfo{
 						{
-							"Name": "metric1",
-							"Unit": "Count",
+							Name:              "metric1",
+							Unit:              "Count",
+							StorageResolution: 60,
 						},
 						{
-							"Name": "metric2",
-							"Unit": "Count",
+							Name:              "metric2",
+							Unit:              "Count",
+							StorageResolution: 60,
 						},
 					},
 				},
@@ -1337,18 +1356,21 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 					Dimensions:          [][]string{{}},
 					MetricNameSelectors: []string{"metric(1|3)"},
 				},
-			}, []cWMeasurement{
+			},
+			[]cWMeasurement{
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{}},
-					Metrics: []map[string]string{
+					Metrics: []cWMetricInfo{
 						{
-							"Name": "metric1",
-							"Unit": "Count",
+							Name:              "metric1",
+							Unit:              "Count",
+							StorageResolution: 60,
 						},
 						{
-							"Name": "metric3",
-							"Unit": "Seconds",
+							Name:              "metric3",
+							Unit:              "Seconds",
+							StorageResolution: 60,
 						},
 					},
 				},
@@ -1382,18 +1404,21 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"b"}},
-					Metrics: []map[string]string{
+					Metrics: []cWMetricInfo{
 						{
-							"Name": "metric1",
-							"Unit": "Count",
+							Name:              "metric1",
+							Unit:              "Count",
+							StorageResolution: 60,
 						},
 						{
-							"Name": "metric2",
-							"Unit": "Count",
+							Name:              "metric2",
+							Unit:              "Count",
+							StorageResolution: 60,
 						},
 						{
-							"Name": "metric3",
-							"Unit": "Seconds",
+							Name:              "metric3",
+							Unit:              "Seconds",
+							StorageResolution: 60,
 						},
 					},
 				},
@@ -2156,9 +2181,9 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 	cwMeasurement := cWMeasurement{
 		Namespace:  "test-emf",
 		Dimensions: [][]string{{oTellibDimensionKey}, {oTellibDimensionKey, "spanName"}},
-		Metrics: []map[string]string{{
-			"Name": "spanCounter",
-			"Unit": "Count",
+		Metrics: []cWMetricInfo{{
+			Name: "spanCounter",
+			Unit: "Count",
 		}},
 	}
 	timestamp := int64(1596151098037)
@@ -2196,123 +2221,121 @@ type logGroupStreamTest struct {
 	outLogStreamName string
 }
 
-var (
-	logGroupStreamTestCases = []logGroupStreamTest{
-		{
-			name: "log_group_stream_expect_same",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-			}),
-			inLogGroupName:   "test-log-group",
-			inLogStreamName:  "test-log-stream",
-			outLogGroupName:  "test-log-group",
-			outLogStreamName: "test-log-stream",
-		},
-		{
-			name: "log_group_pattern_from_resource",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				resourceAttributeMap: map[string]any{
-					"ClusterName": "test-cluster",
-					"PodName":     "test-pod",
-				},
-			}),
-			inLogGroupName:   "test-log-group-{ClusterName}",
-			inLogStreamName:  "test-log-stream",
-			outLogGroupName:  "test-log-group-test-cluster",
-			outLogStreamName: "test-log-stream",
-		},
-		{
-			name: "log_stream_pattern_from_resource",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				resourceAttributeMap: map[string]any{
-					"ClusterName": "test-cluster",
-					"PodName":     "test-pod",
-				},
-			}),
-			inLogGroupName:   "test-log-group",
-			inLogStreamName:  "test-log-stream-{PodName}",
-			outLogGroupName:  "test-log-group",
-			outLogStreamName: "test-log-stream-test-pod",
-		},
-		{
-			name: "log_group_pattern_from_label",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				attributeMap: map[string]any{
-					"ClusterName": "test-cluster",
-					"PodName":     "test-pod",
-				},
-			}),
-			inLogGroupName:   "test-log-group-{ClusterName}",
-			inLogStreamName:  "test-log-stream",
-			outLogGroupName:  "test-log-group-test-cluster",
-			outLogStreamName: "test-log-stream",
-		},
-		{
-			name: "log_stream_pattern_from_label",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				attributeMap: map[string]any{
-					"ClusterName": "test-cluster",
-					"PodName":     "test-pod",
-				},
-			}),
-			inLogGroupName:   "test-log-group",
-			inLogStreamName:  "test-log-stream-{PodName}",
-			outLogGroupName:  "test-log-group",
-			outLogStreamName: "test-log-stream-test-pod",
-		},
-		{
-			name: "config_pattern_from_both_attributes",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				resourceAttributeMap: map[string]any{
-					"ClusterName": "test-cluster",
-				},
-				attributeMap: map[string]any{
-					"PodName": "test-pod",
-				},
-			}),
-			inLogGroupName:   "test-log-group-{ClusterName}",
-			inLogStreamName:  "test-log-stream-{PodName}",
-			outLogGroupName:  "test-log-group-test-cluster",
-			outLogStreamName: "test-log-stream-test-pod",
-		},
-		{
-			name: "config_pattern_missing_from_both_attributes",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-			}),
-			inLogGroupName:   "test-log-group-{ClusterName}",
-			inLogStreamName:  "test-log-stream-{PodName}",
-			outLogGroupName:  "test-log-group-undefined",
-			outLogStreamName: "test-log-stream-undefined",
-		},
-		{
-			name: "config_pattern_group_missing_stream_present",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				attributeMap: map[string]any{
-					"PodName": "test-pod",
-				},
-			}),
-			inLogGroupName:   "test-log-group-{ClusterName}",
-			inLogStreamName:  "test-log-stream-{PodName}",
-			outLogGroupName:  "test-log-group-undefined",
-			outLogStreamName: "test-log-stream-test-pod",
-		},
-	}
-)
+var logGroupStreamTestCases = []logGroupStreamTest{
+	{
+		name: "log_group_stream_expect_same",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+		}),
+		inLogGroupName:   "test-log-group",
+		inLogStreamName:  "test-log-stream",
+		outLogGroupName:  "test-log-group",
+		outLogStreamName: "test-log-stream",
+	},
+	{
+		name: "log_group_pattern_from_resource",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			resourceAttributeMap: map[string]any{
+				"ClusterName": "test-cluster",
+				"PodName":     "test-pod",
+			},
+		}),
+		inLogGroupName:   "test-log-group-{ClusterName}",
+		inLogStreamName:  "test-log-stream",
+		outLogGroupName:  "test-log-group-test-cluster",
+		outLogStreamName: "test-log-stream",
+	},
+	{
+		name: "log_stream_pattern_from_resource",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			resourceAttributeMap: map[string]any{
+				"ClusterName": "test-cluster",
+				"PodName":     "test-pod",
+			},
+		}),
+		inLogGroupName:   "test-log-group",
+		inLogStreamName:  "test-log-stream-{PodName}",
+		outLogGroupName:  "test-log-group",
+		outLogStreamName: "test-log-stream-test-pod",
+	},
+	{
+		name: "log_group_pattern_from_label",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			attributeMap: map[string]any{
+				"ClusterName": "test-cluster",
+				"PodName":     "test-pod",
+			},
+		}),
+		inLogGroupName:   "test-log-group-{ClusterName}",
+		inLogStreamName:  "test-log-stream",
+		outLogGroupName:  "test-log-group-test-cluster",
+		outLogStreamName: "test-log-stream",
+	},
+	{
+		name: "log_stream_pattern_from_label",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			attributeMap: map[string]any{
+				"ClusterName": "test-cluster",
+				"PodName":     "test-pod",
+			},
+		}),
+		inLogGroupName:   "test-log-group",
+		inLogStreamName:  "test-log-stream-{PodName}",
+		outLogGroupName:  "test-log-group",
+		outLogStreamName: "test-log-stream-test-pod",
+	},
+	{
+		name: "config_pattern_from_both_attributes",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			resourceAttributeMap: map[string]any{
+				"ClusterName": "test-cluster",
+			},
+			attributeMap: map[string]any{
+				"PodName": "test-pod",
+			},
+		}),
+		inLogGroupName:   "test-log-group-{ClusterName}",
+		inLogStreamName:  "test-log-stream-{PodName}",
+		outLogGroupName:  "test-log-group-test-cluster",
+		outLogStreamName: "test-log-stream-test-pod",
+	},
+	{
+		name: "config_pattern_missing_from_both_attributes",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+		}),
+		inLogGroupName:   "test-log-group-{ClusterName}",
+		inLogStreamName:  "test-log-stream-{PodName}",
+		outLogGroupName:  "test-log-group-undefined",
+		outLogStreamName: "test-log-stream-undefined",
+	},
+	{
+		name: "config_pattern_group_missing_stream_present",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			attributeMap: map[string]any{
+				"PodName": "test-pod",
+			},
+		}),
+		inLogGroupName:   "test-log-group-{ClusterName}",
+		inLogStreamName:  "test-log-stream-{PodName}",
+		outLogGroupName:  "test-log-group-undefined",
+		outLogStreamName: "test-log-stream-test-pod",
+	},
+}
 
 func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 	for _, test := range logGroupStreamTestCases {

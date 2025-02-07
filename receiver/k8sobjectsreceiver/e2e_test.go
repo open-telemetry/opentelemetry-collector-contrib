@@ -22,14 +22,16 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	k8stest "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest"
 )
 
-const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
-const testObjectsDir = "./testdata/e2e/testobjects/"
-const expectedDir = "./testdata/e2e/expected/"
+const (
+	testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
+	testObjectsDir = "./testdata/e2e/testobjects/"
+	expectedDir    = "./testdata/e2e/expected/"
+)
 
 type objAction int
 
@@ -40,7 +42,6 @@ const (
 )
 
 func TestE2E(t *testing.T) {
-
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
 
@@ -59,7 +60,7 @@ func TestE2E(t *testing.T) {
 	}()
 
 	// startup collector in k8s cluster
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, "")
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, "", map[string]string{}, "")
 
 	defer func() {
 		for _, obj := range collectorObjs {
@@ -143,6 +144,8 @@ func TestE2E(t *testing.T) {
 				return len(logsConsumer.AllLogs()) > 0
 			}, time.Duration(tc.timeoutMinutes)*time.Minute, 1*time.Second,
 				"Timeout: failed to receive logs in %d minutes", tc.timeoutMinutes)
+
+			// golden.WriteLogs(t, expectedFile, logsConsumer.AllLogs()[0])
 
 			require.NoErrorf(t, plogtest.CompareLogs(expected, logsConsumer.AllLogs()[0],
 				plogtest.IgnoreObservedTimestamp(),

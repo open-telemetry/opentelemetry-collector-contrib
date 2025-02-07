@@ -83,7 +83,6 @@ func encrypt(data []byte, encryptionKey []byte) ([]byte, error) {
 	}
 
 	ret, err := f(_getHasher(), data, encryptionKey)
-
 	if err != nil {
 		return ret, err
 	}
@@ -115,7 +114,6 @@ func decrypt(data []byte, encryptionKey []byte) ([]byte, error) {
 	}
 
 	ret, err := f(_getHasher(), data, encryptionKey)
-
 	if err != nil {
 		return ret, err
 	}

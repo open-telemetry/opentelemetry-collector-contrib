@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
@@ -60,7 +60,6 @@ func (dp *perfTestDataProvider) GenerateTraces() (ptrace.Traces, bool) {
 
 	traceID := dp.traceIDSequence.Add(1)
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
-
 		startTime := time.Now().Add(time.Duration(i+int(traceID)*1000) * time.Second)
 		endTime := startTime.Add(time.Millisecond)
 

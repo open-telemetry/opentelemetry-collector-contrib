@@ -3143,5 +3143,4 @@ func TestConfig(t *testing.T) {
 			assert.Equal(t, tc.expectedBody, body)
 		})
 	}
-
 }

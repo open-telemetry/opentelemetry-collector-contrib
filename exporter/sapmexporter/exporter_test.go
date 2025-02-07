@@ -232,7 +232,7 @@ func TestSAPMClientTokenAccess(t *testing.T) {
 			accessTokenPassthrough: true,
 		},
 		{
-			name:                   "Token in config wihout passthrough",
+			name:                   "Token in config without passthrough",
 			inContext:              false,
 			accessTokenPassthrough: false,
 		},
@@ -353,7 +353,6 @@ func TestCompression(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(
 			tt.name, func(t *testing.T) {
 				tracesReceived := false

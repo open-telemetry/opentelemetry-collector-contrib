@@ -63,7 +63,7 @@ func (s *sshcheckScraper) scrapeSFTP(now pcommon.Timestamp) error {
 	return err
 }
 
-// timeout chooses the shorter between between a given deadline and timeout
+// timeout chooses the shorter duration between a given deadline and timeout
 func timeout(deadline time.Time, timeout time.Duration) time.Duration {
 	timeToDeadline := time.Until(deadline)
 	if timeToDeadline < timeout {
@@ -76,9 +76,7 @@ func timeout(deadline time.Time, timeout time.Duration) time.Duration {
 // is a bit awkward here, because the SFTP checks are not enabled by default and they would panic on nil
 // ref to the underlying Conn when SSH checks failed.
 func (s *sshcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err error) {
-	var (
-		to time.Duration
-	)
+	var to time.Duration
 	// check cancellation
 	select {
 	case <-ctx.Done():

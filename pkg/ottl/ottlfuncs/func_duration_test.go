@@ -28,7 +28,8 @@ func Test_Duration(t *testing.T) {
 				},
 			},
 			expected: time.Duration(100000000),
-		}, {
+		},
+		{
 			name: "234 microseconds",
 			duration: &ottl.StandardStringGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
@@ -36,7 +37,8 @@ func Test_Duration(t *testing.T) {
 				},
 			},
 			expected: time.Duration(234000),
-		}, {
+		},
+		{
 			name: "777 nanoseconds",
 			duration: &ottl.StandardStringGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {

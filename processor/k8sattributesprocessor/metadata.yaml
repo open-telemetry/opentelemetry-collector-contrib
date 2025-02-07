@@ -4,9 +4,10 @@ status:
   class: processor
   stability:
     beta: [logs, metrics, traces]
+    development: [profiles]
   distributions: [contrib, k8s]
   codeowners:
-    active: [dmitryax, fatsheep9146, TylerHelmuth]
+    active: [dmitryax, fatsheep9146, TylerHelmuth, ChrsMark]
     emeritus: [rmfitzpatrick]
 # resource attributes are exposed through a different configuration interface (extract::metadata).
 resource_attributes:
@@ -107,12 +108,13 @@ resource_attributes:
     type: slice
     enabled: false
   container.image.tag:
-    description: Container image tag. Requires container.id or k8s.container.name.
+    description: Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name.
     type: string
     enabled: true
 
 tests:
   config:
+  skip_lifecycle: true
   goleak:
     skip: true
 

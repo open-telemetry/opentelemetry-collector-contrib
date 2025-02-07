@@ -24,7 +24,6 @@ type azureBlobClient struct {
 var _ blobClient = (*azureBlobClient)(nil)
 
 func (bc *azureBlobClient) readBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error) {
-
 	defer func() {
 		_, blobDeleteErr := bc.serviceClient.DeleteBlob(ctx, containerName, blobName, nil)
 		if blobDeleteErr != nil {

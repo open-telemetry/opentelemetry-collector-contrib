@@ -4,21 +4,16 @@ package metadata
 
 import (
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
-// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor")
-}
-
-func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
-	return settings.LeveledMeterProvider(level).Meter("github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
@@ -29,10 +24,11 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	meter                             metric.Meter
+	mu                                sync.Mutex
+	registrations                     []metric.Registration
 	ProcessorFilterDatapointsFiltered metric.Int64Counter
 	ProcessorFilterLogsFiltered       metric.Int64Counter
 	ProcessorFilterSpansFiltered      metric.Int64Counter
-	meters                            map[configtelemetry.Level]metric.Meter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -46,28 +42,37 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
+// Shutdown unregister all registered callbacks for async instruments.
+func (builder *TelemetryBuilder) Shutdown() {
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	for _, reg := range builder.registrations {
+		reg.Unregister()
+	}
+}
+
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{meters: map[configtelemetry.Level]metric.Meter{}}
+	builder := TelemetryBuilder{}
 	for _, op := range options {
 		op.apply(&builder)
 	}
-	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
+	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ProcessorFilterDatapointsFiltered, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	builder.ProcessorFilterDatapointsFiltered, err = builder.meter.Int64Counter(
 		"otelcol_processor_filter_datapoints.filtered",
 		metric.WithDescription("Number of metric data points dropped by the filter processor"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorFilterLogsFiltered, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	builder.ProcessorFilterLogsFiltered, err = builder.meter.Int64Counter(
 		"otelcol_processor_filter_logs.filtered",
 		metric.WithDescription("Number of logs dropped by the filter processor"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorFilterSpansFiltered, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+	builder.ProcessorFilterSpansFiltered, err = builder.meter.Int64Counter(
 		"otelcol_processor_filter_spans.filtered",
 		metric.WithDescription("Number of spans dropped by the filter processor"),
 		metric.WithUnit("1"),

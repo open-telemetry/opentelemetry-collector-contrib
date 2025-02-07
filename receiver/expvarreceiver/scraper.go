@@ -6,6 +6,7 @@ package expvarreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -70,7 +71,7 @@ func (e *expVarScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 	memStats := result.MemStats
 	if memStats == nil {
-		return emptyMetrics, fmt.Errorf("unmarshalled memstats data is nil")
+		return emptyMetrics, errors.New("unmarshalled memstats data is nil")
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())

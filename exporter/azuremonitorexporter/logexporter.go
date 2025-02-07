@@ -35,7 +35,8 @@ func (exporter *logExporter) onLogData(_ context.Context, logData plog.Logs) err
 			}
 		}
 	}
-
+	// Flush the transport channel to force the telemetry to be sent
+	exporter.transportChannel.Flush()
 	return nil
 }
 

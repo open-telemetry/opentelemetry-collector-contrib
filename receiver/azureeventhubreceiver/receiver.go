@@ -88,7 +88,6 @@ func (receiver *eventhubReceiver) consume(ctx context.Context, event *eventhub.E
 }
 
 func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *eventhub.Event) error {
-
 	if receiver.nextLogsConsumer == nil {
 		return nil
 	}
@@ -112,7 +111,6 @@ func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *eventh
 }
 
 func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *eventhub.Event) error {
-
 	if receiver.nextMetricsConsumer == nil {
 		return nil
 	}
@@ -137,7 +135,6 @@ func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *eve
 }
 
 func (receiver *eventhubReceiver) consumeTraces(ctx context.Context, event *eventhub.Event) error {
-
 	if receiver.nextTracesConsumer == nil {
 		return nil
 	}
@@ -169,7 +166,6 @@ func newReceiver(
 	eventHandler *eventhubHandler,
 	settings receiver.Settings,
 ) (component.Component, error) {
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              "event",

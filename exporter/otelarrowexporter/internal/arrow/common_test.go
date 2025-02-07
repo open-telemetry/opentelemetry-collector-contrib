@@ -51,8 +51,10 @@ type commonTestCase struct {
 
 type noisyTest bool
 
-const Noisy noisyTest = true
-const NotNoisy noisyTest = false
+const (
+	Noisy    noisyTest = true
+	NotNoisy noisyTest = false
+)
 
 func newTestTelemetry(t zaptest.TestingT, noisy noisyTest) (component.TelemetrySettings, *observer.ObservedLogs) {
 	telset := componenttest.NewNopTelemetrySettings()
@@ -279,8 +281,7 @@ func (tc *unresponsiveTestChannel) unblock() {
 
 // unsupportedTestChannel mimics gRPC's behavior when there is no
 // arrow stream service registered with the server.
-type arrowUnsupportedTestChannel struct {
-}
+type arrowUnsupportedTestChannel struct{}
 
 func newArrowUnsupportedTestChannel() *arrowUnsupportedTestChannel {
 	return &arrowUnsupportedTestChannel{}
@@ -314,8 +315,7 @@ func (tc *arrowUnsupportedTestChannel) onRecv(_ context.Context) func() (*arrowp
 }
 
 // disconnectedTestChannel allows the connection to time out.
-type disconnectedTestChannel struct {
-}
+type disconnectedTestChannel struct{}
 
 func newDisconnectedTestChannel() *disconnectedTestChannel {
 	return &disconnectedTestChannel{}
@@ -383,8 +383,7 @@ func (tc *sendErrorTestChannel) onRecv(_ context.Context) func() (*arrowpb.Batch
 }
 
 // connectErrorTestChannel returns an error from the ArrowTraces() call
-type connectErrorTestChannel struct {
-}
+type connectErrorTestChannel struct{}
 
 func newConnectErrorTestChannel() *connectErrorTestChannel {
 	return &connectErrorTestChannel{}

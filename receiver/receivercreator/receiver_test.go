@@ -34,8 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-type mockObserver struct {
-}
+type mockObserver struct{}
 
 func (m *mockObserver) Start(_ context.Context, _ component.Host) error {
 	return nil

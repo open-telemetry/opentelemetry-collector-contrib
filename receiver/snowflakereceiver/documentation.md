@@ -26,7 +26,7 @@ Average bytes scanned in a database over the last 24 hour window.
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -46,7 +46,7 @@ Total query count for database over the last 24 hour window.
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -80,7 +80,7 @@ Average bytes deleted in database over the last 24 hour window.
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -100,7 +100,7 @@ Average bytes written by database over the last 24 hour window.
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -120,7 +120,7 @@ Average time taken to compile query over the last 24 hour window.
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -154,7 +154,7 @@ Average time spent executing queries in database over the last 24 hour window.
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -202,7 +202,7 @@ Average time spent in warehouse queue due to warehouse being overloaded over the
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -222,7 +222,7 @@ Average time spent in warehouse queue waiting for resources to provision over th
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -242,7 +242,7 @@ Average time spent in warehouse queue waiting for compute resources to be repair
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -278,7 +278,7 @@ Average elapsed time over the last 24 hour window.
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -306,7 +306,7 @@ Reported total credits used in the cloud service over the last 24 hour window.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| service_type | Service type associateed with metric query | Any Str |
+| service_type | Service type associated with metric query. | Any Str |
 
 ### snowflake.billing.total_credit.total
 
@@ -320,7 +320,7 @@ Reported total credits used across account over the last 24 hour window.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| service_type | Service type associateed with metric query | Any Str |
+| service_type | Service type associated with metric query. | Any Str |
 
 ### snowflake.billing.virtual_warehouse.total
 
@@ -334,7 +334,7 @@ Reported total credits used by virtual warehouse service over the last 24 hour w
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| service_type | Service type associateed with metric query | Any Str |
+| service_type | Service type associated with metric query. | Any Str |
 
 ### snowflake.billing.warehouse.cloud_service.total
 
@@ -390,8 +390,8 @@ Total login attempts for account over the last 24 hour window.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| error_message | Error message reported by query if present | Any Str |
-| reported_client_type | Client type used for attempt | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
+| reported_client_type | Client type used for attempt. | Any Str |
 | is_success | Login status (success or failure). | Any Str |
 
 ### snowflake.pipe.credits_used.total
@@ -410,7 +410,7 @@ Snow pipe credits contotaled over the last 24 hour window.
 
 ### snowflake.query.bytes_spilled.local.avg
 
-Avergae bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.
+Average bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -422,7 +422,7 @@ Avergae bytes spilled (intermediate results do not fit in memory) by local stora
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -430,7 +430,7 @@ Avergae bytes spilled (intermediate results do not fit in memory) by local stora
 
 ### snowflake.query.bytes_spilled.remote.avg
 
-Avergae bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.
+Average bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -442,7 +442,7 @@ Avergae bytes spilled (intermediate results do not fit in memory) by remote stor
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -462,7 +462,7 @@ Average percentage of data scanned from cache over the last 24 hour window.
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -482,7 +482,7 @@ Number of partitions scanned during query so far over the last 24 hour window.
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -502,7 +502,7 @@ Number of rows deleted from a table (or tables) over the last 24 hour window.
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -522,7 +522,7 @@ Number of rows inserted into a table (or tables) over the last 24 hour window.
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -542,7 +542,7 @@ Average number of rows produced by statement over the last 24 hour window.
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -562,7 +562,7 @@ Average number of rows unloaded during data export over the last 24 hour window.
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |
@@ -582,7 +582,7 @@ Average number of rows updated in a table over the last 24 hour window.
 | ---- | ----------- | ------ |
 | schema_name | Name of schema associated with query result. | Any Str |
 | execution_status | Execution status of query being reported. | Any Str |
-| error_message | Error message reported by query if present | Any Str |
+| error_message | Error message reported by query if present. | Any Str |
 | query_type | Type of query performed. | Any Str |
 | warehouse_name | Name of warehouse in query being reported on. | Any Str |
 | database_name | Name of database being queried (default is snowflake). | Any Str |

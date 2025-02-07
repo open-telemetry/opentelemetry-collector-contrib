@@ -47,7 +47,6 @@ type Status struct {
 }
 
 func mapToAdxTrace(resource pcommon.Resource, scope pcommon.InstrumentationScope, spanData ptrace.Span) *AdxTrace {
-
 	traceAttrib := spanData.Attributes().AsRaw()
 	clonedTraceAttrib := cloneMap(traceAttrib)
 	copyMap(clonedTraceAttrib, getScopeMap(scope))

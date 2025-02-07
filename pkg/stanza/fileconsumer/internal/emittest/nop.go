@@ -5,8 +5,10 @@ package emittest // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 )
 
-func Nop(_ context.Context, _ []byte, _ map[string]any) error {
+func Nop(_ context.Context, _ emit.Token) error {
 	return nil
 }

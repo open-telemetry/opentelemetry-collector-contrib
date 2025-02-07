@@ -18,9 +18,11 @@ type FakehostInfo struct{}
 func (hi *FakehostInfo) GetInstanceIP() string {
 	return "host-ip-address"
 }
+
 func (hi *FakehostInfo) GetClusterName() string {
 	return ""
 }
+
 func (hi *FakehostInfo) GetInstanceIPReadyC() chan bool {
 	readyC := make(chan bool)
 	close(readyC)
@@ -35,6 +37,7 @@ type MockInstanceInfo struct {
 func (ii *MockInstanceInfo) GetClusterName() string {
 	return ii.clusterName
 }
+
 func (ii *MockInstanceInfo) GetContainerInstanceID() string {
 	return ii.instanceID
 }
@@ -47,8 +50,8 @@ type MockTaskInfo struct {
 func (ii *MockTaskInfo) getRunningTaskCount() int64 {
 	return ii.runningTaskCount
 }
-func (ii *MockTaskInfo) getRunningTasksInfo() []ECSTask {
 
+func (ii *MockTaskInfo) getRunningTasksInfo() []ECSTask {
 	return ii.tasks
 }
 
@@ -76,7 +79,6 @@ func (c *MockCgroupScanner) getMEMReservedInTask(_ string, _ string, _ []ECSCont
 func TestNewECSInfo(t *testing.T) {
 	// test the case when containerInstanceInfor fails to initialize
 	containerInstanceInfoCreatorOpt := func(ei *EcsInfo) {
-
 		ei.containerInstanceInfoCreator = func(context.Context, hostIPProvider, time.Duration, *zap.Logger, doer, chan bool) containerInstanceInfoProvider {
 			return &MockInstanceInfo{
 				clusterName: "Cluster-name",
@@ -87,7 +89,8 @@ func TestNewECSInfo(t *testing.T) {
 
 	taskinfoCreatorOpt := func(ei *EcsInfo) {
 		ei.ecsTaskInfoCreator = func(context.Context, hostIPProvider, time.Duration, *zap.Logger, doer,
-			chan bool) ecsTaskInfoProvider {
+			chan bool,
+		) ecsTaskInfoProvider {
 			var tasks []ECSTask
 			return &MockTaskInfo{
 				tasks:            tasks,
@@ -98,7 +101,8 @@ func TestNewECSInfo(t *testing.T) {
 
 	cgroupScannerCreatorOpt := func(ei *EcsInfo) {
 		ei.cgroupScannerCreator = func(context.Context, *zap.Logger, ecsTaskInfoProvider, containerInstanceInfoProvider,
-			time.Duration) cgroupScannerProvider {
+			time.Duration,
+		) cgroupScannerProvider {
 			return &MockCgroupScanner{
 				cpuReserved: int64(20),
 				memReserved: int64(1024),
@@ -131,5 +135,4 @@ func TestNewECSInfo(t *testing.T) {
 
 	assert.Equal(t, int64(1024), ecsinfo.GetCPUReserved())
 	assert.Equal(t, int64(1024), ecsinfo.GetMemReserved())
-
 }

@@ -234,7 +234,7 @@ func TestPartiallyFailed(t *testing.T) {
 	assert.Equal(t, logsExpected, partial.Data())
 }
 
-func TestInvalidHTTPCLient(t *testing.T) {
+func TestInvalidHTTPClient(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "test_endpoint"
 	clientConfig.TLSSetting = configtls.ClientConfig{

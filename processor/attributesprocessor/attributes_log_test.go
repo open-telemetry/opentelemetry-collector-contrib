@@ -84,8 +84,7 @@ func TestLogProcessor_NilEmptyData(t *testing.T) {
 		context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
-	for i := range testCases {
-		tt := testCases[i]
+	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.NoError(t, tp.ConsumeLogs(context.Background(), tt.input))
 			assert.EqualValues(t, tt.output, tt.input)
@@ -136,7 +135,7 @@ func TestAttributes_FilterLogs(t *testing.T) {
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^[^i].*"}},
-		//Libraries: []filterconfig.InstrumentationLibrary{{Name: "^[^i].*"}},
+		// Libraries: []filterconfig.InstrumentationLibrary{{Name: "^[^i].*"}},
 		Config: *createConfig(filterset.Regexp),
 	}
 	oCfg.Exclude = &filterconfig.MatchProperties{

@@ -47,3 +47,13 @@ resourceMetrics:
                 - {timeUnixNano: 2, asDouble: 2, attributes: [{key: series, value: {stringValue: "8"}}]}
                 - {timeUnixNano: 2, asDouble: 2, attributes: [{key: series, value: {stringValue: "9"}}]}
               # - {timeUnixNano: 2, asDouble: 2, attributes: [{key: series, value: {stringValue: "x"}}]} # dropped
+
+-- telemetry --
+counter otelcol_deltatocumulative.datapoints.linear:
+  - int: 20
+    attr: {}
+  - int: 1
+    attr: {error: "limit"}
+
+updown otelcol_deltatocumulative.streams.tracked.linear:
+  - int: 10

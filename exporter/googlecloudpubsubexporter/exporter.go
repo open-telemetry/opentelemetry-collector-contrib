@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"time"
 
-	pubsub "cloud.google.com/go/pubsub/apiv1"
 	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
@@ -18,16 +17,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	"google.golang.org/api/option"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
-
-const name = "googlecloudpubsub"
 
 type pubsubExporter struct {
 	logger               *zap.Logger
-	client               *pubsub.PublisherClient
+	client               publisherClient
 	cancel               context.CancelFunc
 	userAgent            string
 	ceSource             string
@@ -39,10 +33,10 @@ type pubsubExporter struct {
 	metricsWatermarkFunc metricsWatermarkFunc
 	logsMarshaler        plog.Marshaler
 	logsWatermarkFunc    logsWatermarkFunc
-}
 
-func (*pubsubExporter) Name() string {
-	return name
+	// To be overridden in tests
+	makeUUID   func() (uuid.UUID, error)
+	makeClient func(ctx context.Context, cfg *Config, userAgent string) (publisherClient, error)
 }
 
 type encoding int
@@ -71,8 +65,7 @@ func (ex *pubsubExporter) start(ctx context.Context, _ component.Host) error {
 	ctx, ex.cancel = context.WithCancel(ctx)
 
 	if ex.client == nil {
-		copts := ex.generateClientOptions()
-		client, err := pubsub.NewPublisherClient(ctx, copts...)
+		client, err := ex.makeClient(ctx, ex.config, ex.userAgent)
 		if err != nil {
 			return fmt.Errorf("failed creating the gRPC client to Pubsub: %w", err)
 		}
@@ -82,35 +75,22 @@ func (ex *pubsubExporter) start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (ex *pubsubExporter) shutdown(context.Context) error {
-	if ex.client != nil {
-		ex.client.Close()
-		ex.client = nil
+func (ex *pubsubExporter) shutdown(_ context.Context) error {
+	if ex.client == nil {
+		return nil
 	}
-	return nil
-}
 
-func (ex *pubsubExporter) generateClientOptions() (copts []option.ClientOption) {
-	if ex.userAgent != "" {
-		copts = append(copts, option.WithUserAgent(ex.userAgent))
-	}
-	if ex.config.Endpoint != "" {
-		if ex.config.Insecure {
-			var dialOpts []grpc.DialOption
-			if ex.userAgent != "" {
-				dialOpts = append(dialOpts, grpc.WithUserAgent(ex.userAgent))
-			}
-			conn, _ := grpc.NewClient(ex.config.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
-			copts = append(copts, option.WithGRPCConn(conn))
-		} else {
-			copts = append(copts, option.WithEndpoint(ex.config.Endpoint))
-		}
-	}
-	return copts
+	client := ex.client
+	ex.client = nil
+	return client.Close()
 }
 
 func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding encoding, data []byte, watermark time.Time) error {
-	id, err := uuid.NewRandom()
+	if len(data) == 0 {
+		return nil
+	}
+
+	id, err := ex.makeUUID()
 	if err != nil {
 		return err
 	}

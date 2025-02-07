@@ -13,7 +13,8 @@ import (
 )
 
 func getContainerResource(rb *metadata.ResourceBuilder, sPod stats.PodStats, sContainer stats.ContainerStats,
-	k8sMetadata Metadata) (pcommon.Resource, error) {
+	k8sMetadata Metadata,
+) (pcommon.Resource, error) {
 	rb.SetK8sPodUID(sPod.PodRef.UID)
 	rb.SetK8sPodName(sPod.PodRef.Name)
 	rb.SetK8sNamespaceName(sPod.PodRef.Namespace)
@@ -28,7 +29,8 @@ func getContainerResource(rb *metadata.ResourceBuilder, sPod stats.PodStats, sCo
 }
 
 func getVolumeResourceOptions(rb *metadata.ResourceBuilder, sPod stats.PodStats, vs stats.VolumeStats,
-	k8sMetadata Metadata) (pcommon.Resource, error) {
+	k8sMetadata Metadata,
+) (pcommon.Resource, error) {
 	rb.SetK8sPodUID(sPod.PodRef.UID)
 	rb.SetK8sPodName(sPod.PodRef.Name)
 	rb.SetK8sNamespaceName(sPod.PodRef.Namespace)

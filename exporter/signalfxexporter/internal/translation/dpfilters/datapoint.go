@@ -51,5 +51,4 @@ func (f *dataPointFilter) Matches(dp *sfxpb.DataPoint) bool {
 		return f.dimensionsFilter == nil || f.dimensionsFilter.Matches(dp.Dimensions)
 	}
 	return false
-
 }

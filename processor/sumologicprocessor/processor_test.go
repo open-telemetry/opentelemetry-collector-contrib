@@ -86,7 +86,7 @@ func TestAddCloudNamespaceForLogs(t *testing.T) {
 			},
 		},
 		{
-			name:              "does not add cloud.namespce attribute when disabled",
+			name:              "does not add cloud.namespace attribute when disabled",
 			addCloudNamespace: false,
 			createLogs: func() plog.Logs {
 				inputLogs := plog.NewLogs()
@@ -212,7 +212,7 @@ func TestAddCloudNamespaceForMetrics(t *testing.T) {
 			},
 		},
 		{
-			name:              "does not add cloud.namespce attribute when disabled",
+			name:              "does not add cloud.namespace attribute when disabled",
 			addCloudNamespace: false,
 			createMetrics: func() pmetric.Metrics {
 				inputMetrics := pmetric.NewMetrics()
@@ -338,7 +338,7 @@ func TestAddCloudNamespaceForTraces(t *testing.T) {
 			},
 		},
 		{
-			name:              "does not add cloud.namespce attribute when disabled",
+			name:              "does not add cloud.namespace attribute when disabled",
 			addCloudNamespace: false,
 			createTraces: func() ptrace.Traces {
 				inputTraces := ptrace.NewTraces()
@@ -1299,9 +1299,9 @@ func TestLogFieldsConversionLogs(t *testing.T) {
 				log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 				log.SetSeverityNumber(plog.SeverityNumberInfo)
 				log.SetSeverityText("severity")
-				var spanIDBytes = [8]byte{1, 1, 1, 1, 1, 1, 1, 1}
+				spanIDBytes := [8]byte{1, 1, 1, 1, 1, 1, 1, 1}
 				log.SetSpanID(spanIDBytes)
-				var traceIDBytes = [16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+				traceIDBytes := [16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 				log.SetTraceID(traceIDBytes)
 				return logs
 			},
@@ -1318,7 +1318,6 @@ func TestLogFieldsConversionLogs(t *testing.T) {
 				attribute4, found := outputLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("traceid")
 				assert.True(t, found)
 				assert.Equal(t, "01010101010101010101010101010101", attribute4.Str())
-
 			},
 		},
 	}

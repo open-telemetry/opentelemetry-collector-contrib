@@ -27,7 +27,7 @@ func (p pdataLogsMarshaler) Marshal(ld plog.Logs, topic string) ([]*sarama.Produ
 
 		for i := 0; i < logs.Len(); i++ {
 			resourceMetrics := logs.At(i)
-			var hash = pdatautil.MapHash(resourceMetrics.Resource().Attributes())
+			hash := pdatautil.MapHash(resourceMetrics.Resource().Attributes())
 
 			newLogs := plog.NewLogs()
 			resourceMetrics.CopyTo(newLogs.ResourceLogs().AppendEmpty())
@@ -80,7 +80,7 @@ func (p pdataMetricsMarshaler) Marshal(ld pmetric.Metrics, topic string) ([]*sar
 
 		for i := 0; i < metrics.Len(); i++ {
 			resourceMetrics := metrics.At(i)
-			var hash = pdatautil.MapHash(resourceMetrics.Resource().Attributes())
+			hash := pdatautil.MapHash(resourceMetrics.Resource().Attributes())
 
 			newMetrics := pmetric.NewMetrics()
 			resourceMetrics.CopyTo(newMetrics.ResourceMetrics().AppendEmpty())
@@ -140,7 +140,6 @@ func (p *pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*saram
 				Value: sarama.ByteEncoder(bts),
 				Key:   sarama.ByteEncoder(traceutil.TraceIDToHexOrEmptyString(trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())),
 			})
-
 		}
 	} else {
 		bts, err := p.marshaler.MarshalTraces(td)

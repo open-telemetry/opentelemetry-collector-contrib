@@ -23,7 +23,7 @@ func TestNewProcessorFactory(t *testing.T) {
 }
 
 func TestCreateLogs(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		name        string
 		cfg         component.Config
 		expectedErr string

@@ -178,3 +178,49 @@ func TestLogsToTraces(t *testing.T) {
 		})
 	}
 }
+
+// This benchmark looks at how performance is affected when all three connectors are consuming logs (at the same time)
+func BenchmarkConsumeLogs(b *testing.B) {
+	inputlogs := "input-log.yaml"
+	inputTraces := "input-trace.yaml"
+	inputMetrics := "input-metric.yaml"
+
+	factory := NewFactory()
+	// initialize log -> log connector
+	logsink := &consumertest.LogsSink{}
+	logscon, _ := factory.CreateLogsToLogs(context.Background(),
+		connectortest.NewNopSettings(), createDefaultConfig(), logsink)
+
+	require.NoError(b, logscon.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(b, logscon.Shutdown(context.Background()))
+	}()
+
+	// initialize log -> traces connector
+	tracesink := &consumertest.TracesSink{}
+	traceconn, _ := factory.CreateLogsToTraces(context.Background(),
+		connectortest.NewNopSettings(), createDefaultConfig(), tracesink)
+	require.NoError(b, traceconn.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(b, traceconn.Shutdown(context.Background()))
+	}()
+
+	// initialize log -> metric connector
+	metricsink := &consumertest.MetricsSink{}
+	metricconn, _ := factory.CreateLogsToMetrics(context.Background(),
+		connectortest.NewNopSettings(), createDefaultConfig(), metricsink)
+	require.NoError(b, metricconn.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(b, metricconn.Shutdown(context.Background()))
+	}()
+
+	testLogs, _ := golden.ReadLogs(filepath.Join("testdata", "logsToLogs", inputlogs))
+	testTraces, _ := golden.ReadLogs(filepath.Join("testdata", "logsToTraces", inputTraces))
+	testMetrics, _ := golden.ReadLogs(filepath.Join("testdata", "logsToMetrics", inputMetrics))
+
+	for i := 0; i < b.N; i++ {
+		assert.NoError(b, logscon.ConsumeLogs(context.Background(), testLogs))
+		assert.NoError(b, traceconn.ConsumeLogs(context.Background(), testTraces))
+		assert.NoError(b, metricconn.ConsumeLogs(context.Background(), testMetrics))
+	}
+}

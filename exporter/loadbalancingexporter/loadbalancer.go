@@ -45,7 +45,7 @@ type loadBalancer struct {
 func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory componentFactory, telemetry *metadata.TelemetryBuilder) (*loadBalancer, error) {
 	oCfg := cfg.(*Config)
 
-	var count = 0
+	count := 0
 	if oCfg.Resolver.DNS != nil {
 		count++
 	}
@@ -102,6 +102,7 @@ func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory component
 			oCfg.Resolver.K8sSvc.Service,
 			oCfg.Resolver.K8sSvc.Ports,
 			oCfg.Resolver.K8sSvc.Timeout,
+			oCfg.Resolver.K8sSvc.ReturnHostnames,
 			telemetry,
 		)
 		if err != nil {
@@ -220,6 +221,10 @@ func endpointFound(endpoint string, endpoints []string) bool {
 func (lb *loadBalancer) Shutdown(ctx context.Context) error {
 	err := lb.res.shutdown(ctx)
 	lb.stopped = true
+
+	for _, e := range lb.exporters {
+		err = errors.Join(err, e.Shutdown(ctx))
+	}
 	return err
 }
 

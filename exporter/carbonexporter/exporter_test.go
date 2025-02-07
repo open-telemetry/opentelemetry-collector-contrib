@@ -247,7 +247,6 @@ func TestConnPoolWithIdleMaxConnections(t *testing.T) {
 		if i != 0 {
 			assert.NotSame(t, conn, conns[i-1])
 		}
-
 	}
 	for _, conn := range conns {
 		cp.put(conn)

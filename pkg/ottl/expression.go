@@ -120,6 +120,26 @@ func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 				if err != nil {
 					return nil, err
 				}
+			case []bool:
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
+				}
+			case []float64:
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
+				}
+			case []int64:
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
+				}
+			case []byte:
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
+				}
 			default:
 				return nil, fmt.Errorf("type, %T, does not support int indexing", result)
 			}
@@ -172,7 +192,6 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		default:
 			evaluated[k] = t
 		}
-
 	}
 	result := pcommon.NewMap()
 	if err := result.FromRaw(evaluated); err != nil {

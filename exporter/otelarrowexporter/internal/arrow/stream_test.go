@@ -141,7 +141,6 @@ func (tc *streamTestCase) mustSendAndWait() error {
 func TestStreamNoMaxLifetime(t *testing.T) {
 	for _, pname := range AllPrioritizers {
 		t.Run(string(pname), func(t *testing.T) {
-
 			tc := newStreamTestCase(t, pname)
 
 			tc.fromTracesCall.Times(1).Return(oneBatch, nil)

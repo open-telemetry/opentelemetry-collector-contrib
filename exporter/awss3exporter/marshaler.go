@@ -21,9 +21,7 @@ type marshaler interface {
 	format() string
 }
 
-var (
-	ErrUnknownMarshaler = errors.New("unknown marshaler")
-)
+var ErrUnknownMarshaler = errors.New("unknown marshaler")
 
 func newMarshalerFromEncoding(encoding *component.ID, fileFormat string, host component.Host, logger *zap.Logger) (marshaler, error) {
 	marshaler := &s3Marshaler{logger: logger}

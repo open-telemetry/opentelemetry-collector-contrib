@@ -76,7 +76,7 @@ func TestScraperStart(t *testing.T) {
 	}
 }
 
-func TestScaperScrape(t *testing.T) {
+func TestScraperScrape(t *testing.T) {
 	testCases := []struct {
 		desc              string
 		setupMockClient   func(t *testing.T) client
@@ -101,7 +101,6 @@ func TestScaperScrape(t *testing.T) {
 				return &mockClient
 			},
 			expectedMetricGen: func(*testing.T) pmetric.Metrics {
-
 				return pmetric.NewMetrics()
 			},
 			expectedErr: errors.New("some api error"),

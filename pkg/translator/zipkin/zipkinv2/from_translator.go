@@ -16,9 +16,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
 
@@ -27,9 +27,7 @@ const (
 	spanLinkDataFormat  = "%s|%s|%s|%s|%d"
 )
 
-var (
-	sampled = true
-)
+var sampled = true
 
 // FromTranslator converts from pdata to Zipkin data model.
 type FromTranslator struct{}
@@ -98,7 +96,6 @@ func spanToZipkinSpan(
 	localServiceName string,
 	zTags map[string]string,
 ) (*zipkinmodel.SpanModel, error) {
-
 	tags := aggregateSpanTags(span, zTags)
 
 	zs := &zipkinmodel.SpanModel{}
@@ -318,7 +315,6 @@ func zipkinEndpointFromTags(
 	remoteEndpoint bool,
 	redundantKeys map[string]bool,
 ) (endpoint *zipkinmodel.Endpoint) {
-
 	serviceName := localServiceName
 	if peerSvc, ok := zTags[conventions.AttributePeerService]; ok && remoteEndpoint {
 		serviceName = peerSvc

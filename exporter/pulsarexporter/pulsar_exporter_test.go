@@ -29,7 +29,6 @@ func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
 	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(), metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
-
 }
 
 func TestNewLogsExporter_err_encoding(t *testing.T) {
@@ -95,7 +94,6 @@ func (c *mockProducer) Send(context.Context, *pulsar.ProducerMessage) (pulsar.Me
 }
 
 func (c *mockProducer) SendAsync(context.Context, *pulsar.ProducerMessage, func(pulsar.MessageID, *pulsar.ProducerMessage, error)) {
-
 }
 
 func (c *mockProducer) LastSequenceID() int64 {

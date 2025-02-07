@@ -4,7 +4,7 @@
 package udp
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"net"
 	"strconv"
 	"testing"
@@ -168,7 +168,7 @@ func TestFailToBind(t *testing.T) {
 	minPort := 30000
 	maxPort := 40000
 	for i := 1; 1 < 10; i++ {
-		port = minPort + rand.Intn(maxPort-minPort+1)
+		port = minPort + rand.IntN(maxPort-minPort+1)
 		_, err := net.DialTimeout("tcp", net.JoinHostPort(ip, strconv.Itoa(port)), time.Second*2)
 		if err != nil {
 			// a failed connection indicates that the port is available for use
@@ -179,7 +179,7 @@ func TestFailToBind(t *testing.T) {
 		t.Errorf("failed to find a free port between %d and %d", minPort, maxPort)
 	}
 
-	var startUDP = func(int) (*Input, error) {
+	startUDP := func(int) (*Input, error) {
 		cfg := NewConfigWithID("test_input")
 		cfg.ListenAddress = net.JoinHostPort(ip, strconv.Itoa(port))
 

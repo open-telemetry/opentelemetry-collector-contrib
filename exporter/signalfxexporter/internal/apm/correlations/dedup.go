@@ -21,7 +21,7 @@ type deduplicator struct {
 }
 
 func (d *deduplicator) purgeCreates() {
-	var elem = d.pendingCreates.Front()
+	elem := d.pendingCreates.Front()
 	for {
 		if elem == nil {
 			return
@@ -38,7 +38,7 @@ func (d *deduplicator) purgeCreates() {
 }
 
 func (d *deduplicator) purgeDeletes() {
-	var elem = d.pendingDeletes.Front()
+	elem := d.pendingDeletes.Front()
 	for {
 		if elem == nil {
 			return
@@ -60,7 +60,7 @@ func (d *deduplicator) purge() {
 }
 
 func (d *deduplicator) evictPendingDelete() {
-	var elem = d.pendingDeletes.Back()
+	elem := d.pendingDeletes.Back()
 	if elem != nil {
 		req, ok := elem.Value.(*request)
 		if ok {
@@ -72,14 +72,13 @@ func (d *deduplicator) evictPendingDelete() {
 }
 
 func (d *deduplicator) evictPendingCreate() {
-	var elem = d.pendingCreates.Back()
+	elem := d.pendingCreates.Back()
 	if elem != nil {
 		req, ok := elem.Value.(*request)
 		if ok {
 			req.cancel()
 			d.pendingCreates.Remove(elem)
 			delete(d.pendingCreateKeys, *req.Correlation)
-
 		}
 	}
 }
@@ -102,8 +101,8 @@ func (d *deduplicator) dedupCorrelate(r *request) bool {
 	d.pendingCreateKeys[*r.Correlation] = elem
 
 	// cancel any pending delete operations
-	deleteElem, pendindgDelete := d.pendingDeleteKeys[*r.Correlation]
-	if pendindgDelete {
+	deleteElem, pendingDelete := d.pendingDeleteKeys[*r.Correlation]
+	if pendingDelete {
 		deleteElem.Value.(*request).cancel()
 		d.pendingDeletes.Remove(deleteElem)
 		delete(d.pendingDeleteKeys, *deleteElem.Value.(*request).Correlation)
@@ -130,8 +129,8 @@ func (d *deduplicator) dedupDelete(r *request) bool {
 	d.pendingDeleteKeys[*r.Correlation] = elem
 
 	// cancel any pending create operations
-	createElem, pendindgCreate := d.pendingCreateKeys[*r.Correlation]
-	if pendindgCreate {
+	createElem, pendingCreate := d.pendingCreateKeys[*r.Correlation]
+	if pendingCreate {
 		createElem.Value.(*request).cancel()
 		d.pendingCreates.Remove(createElem)
 		delete(d.pendingCreateKeys, *createElem.Value.(*request).Correlation)

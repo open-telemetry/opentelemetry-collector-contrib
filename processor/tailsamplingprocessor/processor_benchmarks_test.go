@@ -37,7 +37,7 @@ func BenchmarkSampling(b *testing.B) {
 	for i := 0; i < len(batches); i++ {
 		sampleBatches = append(sampleBatches, &sampling.TraceData{
 			ArrivalTime: time.Now(),
-			//SpanCount:       spanCount,
+			// SpanCount:       spanCount,
 			ReceivedBatches: ptrace.NewTraces(),
 		})
 	}

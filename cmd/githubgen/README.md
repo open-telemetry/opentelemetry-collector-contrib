@@ -1,3 +1,7 @@
+⚠️ This executable has moved to [opentelemetry-go-build-tools](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/githubgen).
+
+This code is deprecated and will be removed soon. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37294.
+
 # githubgen
 
 This executable is used to generate the `.github/CODEOWNERS` and `.github/ALLOWLIST` files.
@@ -19,7 +23,7 @@ $> GITHUB_TOKEN=<mypattoken> githubgen --folder . [--allowlist cmd/githubgen/all
 
 ## Checking codeowners against OpenTelemetry membership via Github API
 
-To authenticate, set the environment variable `GITHUB_TOKEN` to a PAT token.
+To authenticate, set the environment variable `GITHUB_TOKEN` to a PAT token.  If a PAT is not available you can use the `--skipgithub` flag to avoid checking for membership in the GitHub organization.
 
 For each codeowner, the script will check if the user is registered as a member of the OpenTelemetry organization.
 

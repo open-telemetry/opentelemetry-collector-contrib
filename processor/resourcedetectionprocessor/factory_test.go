@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -37,6 +38,10 @@ func TestCreateProcessor(t *testing.T) {
 	lp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
+
+	pp, err := factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, pp)
 }
 
 func TestCreateConfigProcessors(t *testing.T) {
@@ -82,4 +87,8 @@ func TestInvalidConfig(t *testing.T) {
 	lp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, lp)
+
+	pp, err := factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	assert.Error(t, err)
+	assert.Nil(t, pp)
 }

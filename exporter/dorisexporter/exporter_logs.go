@@ -115,16 +115,14 @@ func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 
 				logs = append(logs, log)
 			}
-
 		}
-
 	}
 
 	return e.pushLogDataInternal(ctx, logs)
 }
 
 func (e *logsExporter) pushLogDataInternal(ctx context.Context, logs []*dLog) error {
-	marshal, err := json.Marshal(logs)
+	marshal, err := toJSONLines(logs)
 	if err != nil {
 		return err
 	}

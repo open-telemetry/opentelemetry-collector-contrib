@@ -166,7 +166,7 @@ func (th *hashingSampler) randomnessFromLogRecord(logRec plog.LogRecord) (random
 }
 
 // randomnessFromLogRecord (hashingSampler) uses OTEP 235 semantic
-// conventions basing its deicsion only on the TraceID.
+// conventions basing its decision only on the TraceID.
 func (ctc *consistentTracestateCommon) randomnessFromLogRecord(logRec plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
 	lrc, err := newLogRecordCarrier(logRec)
 	rnd := newMissingRandomnessMethod()
@@ -268,7 +268,6 @@ func (lsp *logsProcessor) logRecordToPriorityThreshold(logRec plog.LogRecord) sa
 				// The record has supplied a valid alternative sampling probability
 				return th
 			}
-
 		}
 	}
 	return sampling.NeverSampleThreshold

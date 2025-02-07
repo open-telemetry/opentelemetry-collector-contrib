@@ -44,7 +44,6 @@ func TestRoundTripper(t *testing.T) {
 	assert.Equal(t, cfg.Service, si.service)
 	assert.Equal(t, awsSDKInfo, si.awsSDKInfo)
 	assert.Equal(t, cfg.credsProvider, si.credsProvider)
-
 }
 
 func TestPerRPCCredentials(t *testing.T) {

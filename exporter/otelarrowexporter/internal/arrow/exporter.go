@@ -6,7 +6,7 @@ package arrow // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"context"
 	"errors"
-	"math/rand"
+	"math/rand/v2"
 	"runtime"
 	"strconv"
 	"sync"
@@ -255,7 +255,7 @@ func addJitter(v time.Duration) time.Duration {
 	if v == 0 {
 		return 0
 	}
-	return v - time.Duration(rand.Int63n(int64(v/20)))
+	return v - time.Duration(rand.Int64N(int64(v/20)))
 }
 
 // runArrowStream begins one gRPC stream using a child of the background context.
@@ -362,7 +362,6 @@ func (e *Exporter) SendAndWait(ctx context.Context, data any) (bool, error) {
 		err := writer.sendAndWait(ctx, errCh, wri)
 		if err != nil && errors.Is(err, ErrStreamRestarting) {
 			continue // an internal retry
-
 		}
 		// result from arrow server (may be nil, may be
 		// permanent, etc.)

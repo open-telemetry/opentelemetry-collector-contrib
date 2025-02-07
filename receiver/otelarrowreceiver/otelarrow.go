@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow"
@@ -45,7 +45,7 @@ type otelArrowReceiver struct {
 
 	obsrepGRPC   *receiverhelper.ObsReport
 	netReporter  *netstats.NetworkReporter
-	boundedQueue admission.Queue
+	boundedQueue admission2.Queue
 
 	settings receiver.Settings
 }
@@ -66,11 +66,14 @@ func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceive
 	if err != nil {
 		return nil, err
 	}
-	var bq admission.Queue
+	var bq admission2.Queue
 	if cfg.Admission.RequestLimitMiB == 0 {
-		bq = admission.NewUnboundedQueue()
+		bq = admission2.NewUnboundedQueue()
 	} else {
-		bq = admission.NewBoundedQueue(set.TelemetrySettings, int64(cfg.Admission.RequestLimitMiB<<20), cfg.Admission.WaiterLimit)
+		bq, err = admission2.NewBoundedQueue(set.ID, set.TelemetrySettings, cfg.Admission.RequestLimitMiB<<20, cfg.Admission.WaitingLimitMiB<<20)
+		if err != nil {
+			return nil, err
+		}
 	}
 	r := &otelArrowReceiver{
 		cfg:          cfg,
@@ -139,11 +142,12 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 			opts = append(opts, arrowRecord.WithMemoryLimit(r.cfg.Arrow.MemoryLimitMiB<<20))
 		}
 		if r.settings.TelemetrySettings.MeterProvider != nil {
-			opts = append(opts, arrowRecord.WithMeterProvider(r.settings.TelemetrySettings.MeterProvider, r.settings.TelemetrySettings.MetricsLevel))
+			// This alt method call should be replaced once https://github.com/open-telemetry/otel-arrow/issues/280 is resolved.
+			// The WithMeterProvider function will be updated in a future release cycle.
+			opts = append(opts, arrowRecord.WithMeterProviderAlt(r.settings.TelemetrySettings.MeterProvider))
 		}
 		return arrowRecord.NewConsumer(opts...)
 	}, r.boundedQueue, r.netReporter)
-
 	if err != nil {
 		return err
 	}

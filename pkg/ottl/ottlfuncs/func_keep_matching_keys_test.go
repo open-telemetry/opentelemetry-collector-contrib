@@ -14,7 +14,6 @@ import (
 )
 
 func Test_keepMatchingKeys(t *testing.T) {
-
 	in := pcommon.NewMap()
 	in.PutStr("foo", "bar")
 	in.PutStr("foo1", "bar")

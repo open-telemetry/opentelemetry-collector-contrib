@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -313,7 +314,7 @@ func (c *flinkClient) getSubtasksMetricsByIDs(ctx context.Context, jobsResponse 
 						TaskmanagerID: getTaskmanagerID(subtask.TaskmanagerID),
 						JobName:       jobsWithIDResponse.Name,
 						TaskName:      vertex.Name,
-						SubtaskIndex:  fmt.Sprintf("%v", subtask.Subtask),
+						SubtaskIndex:  strconv.Itoa(subtask.Subtask),
 						Metrics:       *subtaskMetrics,
 					})
 			}

@@ -1589,7 +1589,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 
 	for _, tt := range tests {
 		for _, enableNativeHistograms := range []bool{true, false} {
-			// None of the histograms above have native histogram versions, so enabling native hisotgrams has no effect.
+			// None of the histograms above have native histogram versions, so enabling native histograms has no effect.
 			t.Run(fmt.Sprintf("%s/enableNativeHistograms=%v", tt.name, enableNativeHistograms), func(t *testing.T) {
 				tt.run(t, enableNativeHistograms)
 			})
@@ -1742,7 +1742,6 @@ func TestMetricBuilderSummary(t *testing.T) {
 			})
 		}
 	}
-
 }
 
 func TestMetricBuilderNativeHistogram(t *testing.T) {
@@ -2003,5 +2002,4 @@ func assertEquivalentMetrics(t *testing.T, want, got pmetric.Metrics) {
 			assert.EqualValues(t, wmap, gmap)
 		}
 	}
-
 }

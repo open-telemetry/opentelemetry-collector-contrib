@@ -14,7 +14,6 @@ import (
 )
 
 func TestNewTracesExporter(t *testing.T) {
-
 	got, err := newTracesExporter(exportertest.NewNopSettings(), &Config{
 		Endpoint: "cn-hangzhou.log.aliyuncs.com",
 		Project:  "demo-project",
@@ -35,7 +34,6 @@ func TestNewTracesExporter(t *testing.T) {
 }
 
 func TestNewFailsWithEmptyTracesExporterName(t *testing.T) {
-
 	got, err := newTracesExporter(exportertest.NewNopSettings(), &Config{})
 	assert.Error(t, err)
 	require.Nil(t, got)

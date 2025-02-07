@@ -69,11 +69,10 @@ func newAMQPMessagingServiceFactory(cfg *Config, logger *zap.Logger) (messagingS
 			logger:         logger,
 		}
 	}, nil
-
 }
 
 type amqpConnectConfig struct {
-	// conenct config
+	// connect config
 	addr       string
 	saslConfig amqp.SASLType
 	tlsConfig  *tls.Config

@@ -61,7 +61,6 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"https://elastic.example.com:9200"},
-				Index:     "",
 				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -72,6 +71,9 @@ func TestConfig(t *testing.T) {
 				},
 				TracesIndex: "trace_index",
 				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
@@ -93,7 +95,8 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Flush: FlushSettings{
-					Bytes: 10485760,
+					Bytes:    10485760,
+					Interval: 30 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -117,7 +120,7 @@ func TestConfig(t *testing.T) {
 						MinSizeItems: 5000,
 					},
 					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 10000,
+						MaxSizeItems: 0,
 					},
 				},
 			},
@@ -132,7 +135,6 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
-				Index:     "",
 				LogsIndex: "my_log_index",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -143,6 +145,9 @@ func TestConfig(t *testing.T) {
 				},
 				TracesIndex: "traces-generic-default",
 				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
@@ -164,7 +169,8 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Flush: FlushSettings{
-					Bytes: 10485760,
+					Bytes:    10485760,
+					Interval: 30 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -188,7 +194,7 @@ func TestConfig(t *testing.T) {
 						MinSizeItems: 5000,
 					},
 					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 10000,
+						MaxSizeItems: 0,
 					},
 				},
 			},
@@ -203,7 +209,6 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
-				Index:     "",
 				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -214,6 +219,9 @@ func TestConfig(t *testing.T) {
 				},
 				TracesIndex: "traces-generic-default",
 				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
@@ -235,7 +243,8 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Flush: FlushSettings{
-					Bytes: 10485760,
+					Bytes:    10485760,
+					Interval: 30 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -259,7 +268,7 @@ func TestConfig(t *testing.T) {
 						MinSizeItems: 5000,
 					},
 					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 10000,
+						MaxSizeItems: 0,
 					},
 				},
 			},
@@ -279,14 +288,6 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.CloudID = "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY="
-			}),
-		},
-		{
-			id:         component.NewIDWithName(metadata.Type, "deprecated_index"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoints = []string{"https://elastic.example.com:9200"}
-				cfg.Index = "my_log_index"
 			}),
 		},
 		{
@@ -327,7 +328,6 @@ func TestConfig(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(strings.ReplaceAll(tt.id.String(), "/", "_"), func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
@@ -427,7 +427,7 @@ func TestConfig_Validate(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			assert.EqualError(t, component.ValidateConfig(tt.config), tt.err)
+			assert.ErrorContains(t, component.ValidateConfig(tt.config), tt.err)
 		})
 	}
 }
@@ -443,7 +443,7 @@ func TestConfig_Validate_Environment(t *testing.T) {
 		t.Setenv("ELASTICSEARCH_URL", "http://valid:9200, *:!")
 		config := withDefaultConfig()
 		err := component.ValidateConfig(config)
-		assert.EqualError(t, err, `invalid endpoint "*:!": parse "*:!": first path segment in URL cannot contain colon`)
+		assert.ErrorContains(t, err, `invalid endpoint "*:!": parse "*:!": first path segment in URL cannot contain colon`)
 	})
 }
 

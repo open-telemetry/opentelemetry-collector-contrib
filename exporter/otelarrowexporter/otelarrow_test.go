@@ -932,10 +932,9 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 		},
 	}
 	// Arrow client is enabled, but the server doesn't support it.
-	cfg.Arrow = ArrowConfig{
-		NumStreams:        1,
-		MaxStreamLifetime: 100 * time.Second,
-	}
+	cfg.Arrow.NumStreams = 1
+	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
+	cfg.QueueSettings.Enabled = false
 
 	set := exportertest.NewNopSettings()
 	set.TelemetrySettings.Logger = zaptest.NewLogger(t)
@@ -1082,7 +1081,6 @@ func (r *mockTracesReceiver) startStreamMockArrowTraces(t *testing.T, statusFor 
 		MockArrowTracesServiceServer: svc,
 	})
 	svc.EXPECT().ArrowTraces(gomock.Any()).Times(1).DoAndReturn(doer)
-
 }
 
 func TestSendArrowFailedTraces(t *testing.T) {

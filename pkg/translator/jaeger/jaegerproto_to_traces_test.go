@@ -17,9 +17,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.16.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 )
 
 // Use timespamp with microsecond granularity to work well with jaeger thrift translation
@@ -178,7 +178,6 @@ func TestJTagsToInternalAttributes(t *testing.T) {
 }
 
 func TestProtoToTraces(t *testing.T) {
-
 	tests := []struct {
 		name string
 		jb   []*model.Batch
@@ -195,7 +194,8 @@ func TestProtoToTraces(t *testing.T) {
 			jb: []*model.Batch{
 				{
 					Process: generateProtoProcess(),
-				}},
+				},
+			},
 			td: generateTracesResourceOnly(),
 		},
 
@@ -206,7 +206,8 @@ func TestProtoToTraces(t *testing.T) {
 					Process: &model.Process{
 						ServiceName: tracetranslator.ResourceNoServiceName,
 					},
-				}},
+				},
+			},
 			td: generateTracesResourceOnlyWithNoAttrs(),
 		},
 
@@ -220,7 +221,8 @@ func TestProtoToTraces(t *testing.T) {
 					Spans: []*model.Span{
 						generateProtoSpanWithTraceState(),
 					},
-				}},
+				},
+			},
 			td: generateTracesOneSpanNoResourceWithTraceState(),
 		},
 		{
@@ -234,7 +236,8 @@ func TestProtoToTraces(t *testing.T) {
 						generateProtoSpan(),
 						generateProtoChildSpan(),
 					},
-				}},
+				},
+			},
 			td: generateTracesTwoSpansChildParent(),
 		},
 
@@ -249,7 +252,8 @@ func TestProtoToTraces(t *testing.T) {
 						generateProtoSpan(),
 						generateProtoFollowerSpan(),
 					},
-				}},
+				},
+			},
 			td: generateTracesTwoSpansWithFollower(),
 		},
 		{
@@ -264,7 +268,8 @@ func TestProtoToTraces(t *testing.T) {
 						generateProtoFollowerSpan(),
 						generateProtoTwoParentsSpan(),
 					},
-				}},
+				},
+			},
 			td: generateTracesSpanWithTwoParents(),
 		},
 		{
@@ -292,7 +297,8 @@ func TestProtoToTraces(t *testing.T) {
 							},
 						},
 					},
-				}},
+				},
+			},
 			td: func() ptrace.Traces {
 				traces := ptrace.NewTraces()
 				span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -379,7 +385,6 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 }
 
 func TestSetInternalSpanStatus(t *testing.T) {
-
 	emptyStatus := ptrace.NewStatus()
 
 	okStatus := ptrace.NewStatus()
@@ -795,6 +800,7 @@ func generateProtoSpanWithLibraryInfo(libraryName string) *model.Span {
 
 	return span
 }
+
 func generateProtoSpanWithTraceState() *model.Span {
 	return &model.Span{
 		TraceID: model.NewTraceID(
@@ -1051,7 +1057,8 @@ func BenchmarkProtoBatchToInternalTraces(b *testing.B) {
 				generateProtoSpan(),
 				generateProtoChildSpan(),
 			},
-		}}
+		},
+	}
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

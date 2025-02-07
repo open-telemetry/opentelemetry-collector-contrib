@@ -20,7 +20,6 @@ const (
 
 // Config defines configuration for file exporter.
 type Config struct {
-
 	// Path of the file to write to. Path is relative to current directory.
 	Path string `mapstructure:"path"`
 
@@ -120,7 +119,7 @@ func (cfg *Config) Validate() error {
 	if cfg.GroupBy != nil && cfg.GroupBy.Enabled {
 		pathParts := strings.Split(cfg.Path, "*")
 		if len(pathParts) != 2 {
-			return errors.New("path must contain exatcly one * when group_by is enabled")
+			return errors.New("path must contain exactly one * when group_by is enabled")
 		}
 
 		if len(pathParts[0]) == 0 {

@@ -18,7 +18,8 @@ type metricValueDataType struct {
 }
 
 func NewMetricType(dataType pmetric.MetricType, aggregationTemporality pmetric.AggregationTemporality,
-	isMonotonic bool) MetricType {
+	isMonotonic bool,
+) MetricType {
 	return metricValueDataType{
 		dataType:               dataType,
 		aggregationTemporality: aggregationTemporality,

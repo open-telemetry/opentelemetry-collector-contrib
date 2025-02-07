@@ -144,7 +144,6 @@ func validateHTTPClientConfig(cfg *commonconfig.HTTPClientConfig) error {
 		return err
 	}
 	return nil
-
 }
 
 func checkFile(fn string) error {

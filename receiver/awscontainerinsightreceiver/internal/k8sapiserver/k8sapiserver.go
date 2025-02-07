@@ -246,7 +246,6 @@ func (k *K8sAPIServer) Shutdown() error {
 }
 
 func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourcelock.Interface) {
-
 	for {
 		leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 			Lock: lock,
@@ -261,7 +260,7 @@ func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourceloc
 			RetryPeriod:   5 * time.Second,
 			Callbacks: leaderelection.LeaderCallbacks{
 				OnStartedLeading: func(ctx context.Context) {
-					k.logger.Info(fmt.Sprintf("k8sapiserver OnStartedLeading: %s", k.nodeName))
+					k.logger.Info("k8sapiserver OnStartedLeading: " + k.nodeName)
 					// we're notified when we start
 					k.mu.Lock()
 					k.leading = true
@@ -293,7 +292,7 @@ func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourceloc
 					}
 				},
 				OnStoppedLeading: func() {
-					k.logger.Info(fmt.Sprintf("k8sapiserver OnStoppedLeading: %s", k.nodeName))
+					k.logger.Info("k8sapiserver OnStoppedLeading: " + k.nodeName)
 					// we can do cleanup here, or after the RunOrDie method returns
 					k.mu.Lock()
 					defer k.mu.Unlock()
@@ -303,14 +302,14 @@ func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourceloc
 					k.k8sClient.ShutdownPodClient()
 				},
 				OnNewLeader: func(identity string) {
-					k.logger.Info(fmt.Sprintf("k8sapiserver Switch New Leader: %s", identity))
+					k.logger.Info("k8sapiserver Switch New Leader: " + identity)
 				},
 			},
 		})
 
 		select {
 		case <-ctx.Done(): // when leader election ends, the channel ctx.Done() will be closed
-			k.logger.Info(fmt.Sprintf("k8sapiserver shutdown Leader Election: %s", k.nodeName))
+			k.logger.Info("k8sapiserver shutdown Leader Election: " + k.nodeName)
 			return
 		default:
 		}

@@ -253,6 +253,7 @@ func TestParserInvalidTimeParseSend(t *testing.T) {
 	fakeOut.ExpectEntry(t, testEntry)
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
+
 func TestParserInvalidSeverityParseDrop(t *testing.T) {
 	writer, fakeOut := writerWithFakeOut(t)
 	parser := ParserOperator{

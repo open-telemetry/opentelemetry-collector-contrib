@@ -27,8 +27,7 @@ type JobClient interface {
 	JobToCronJob() map[string]string
 }
 
-type noOpJobClient struct {
-}
+type noOpJobClient struct{}
 
 func (nc *noOpJobClient) JobToCronJob() map[string]string {
 	return map[string]string{}

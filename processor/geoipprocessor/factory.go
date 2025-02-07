@@ -77,7 +77,6 @@ func createGeoIPProviders(
 		}
 
 		providers = append(providers, provider)
-
 	}
 
 	return providers, nil

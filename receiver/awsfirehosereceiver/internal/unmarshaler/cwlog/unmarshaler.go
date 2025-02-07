@@ -20,9 +20,7 @@ const (
 	recordDelimiter = "\n"
 )
 
-var (
-	errInvalidRecords = errors.New("record format invalid")
-)
+var errInvalidRecords = errors.New("record format invalid")
 
 // Unmarshaler for the CloudWatch Log JSON record format.
 type Unmarshaler struct {
@@ -84,7 +82,6 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (plog.Logs, error) {
 					builders[attrs] = lb
 				}
 				lb.AddLog(log)
-
 			}
 		}
 	}

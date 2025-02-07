@@ -9,8 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.16.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 )
 
 // ProtoFromTraces translates internal trace data into the Jaeger Proto for GRPC.
@@ -90,7 +90,6 @@ func resourceToJaegerProtoProcess(resource pcommon.Resource) *model.Process {
 	tags := make([]model.KeyValue, 0, attrsCount)
 	process.Tags = appendTagsFromResourceAttributes(tags, attrs)
 	return process
-
 }
 
 func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pcommon.Map) []model.KeyValue {
@@ -355,7 +354,6 @@ func getErrorTagFromStatusCode(statusCode ptrace.StatusCode) (model.KeyValue, bo
 		}, true
 	}
 	return model.KeyValue{}, false
-
 }
 
 func getTagFromStatusMsg(statusMsg string) (model.KeyValue, bool) {

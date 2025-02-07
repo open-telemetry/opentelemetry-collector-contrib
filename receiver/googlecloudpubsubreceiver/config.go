@@ -13,7 +13,6 @@ import (
 var subscriptionMatcher = regexp.MustCompile(`projects/[a-z][a-z0-9\-]*/subscriptions/`)
 
 type Config struct {
-
 	// Google Cloud Project ID where the Pubsub client will connect to
 	ProjectID string `mapstructure:"project"`
 	// User agent that will be used by the Pubsub client to connect to the service
@@ -34,51 +33,6 @@ type Config struct {
 
 	// The client id that will be used by Pubsub to make load balancing decisions
 	ClientID string `mapstructure:"client_id"`
-}
-
-func (config *Config) validateForLog() error {
-	err := config.validate()
-	if err != nil {
-		return err
-	}
-	switch config.Encoding {
-	case "":
-	case "otlp_proto_log":
-	case "raw_text":
-	case "raw_json":
-	case "cloud_logging":
-	default:
-		return fmt.Errorf("log encoding %v is not supported.  supported encoding formats include [otlp_proto_log,raw_text,raw_json,cloud_logging]", config.Encoding)
-	}
-	return nil
-}
-
-func (config *Config) validateForTrace() error {
-	err := config.validate()
-	if err != nil {
-		return err
-	}
-	switch config.Encoding {
-	case "":
-	case "otlp_proto_trace":
-	default:
-		return fmt.Errorf("trace encoding %v is not supported.  supported encoding formats include [otlp_proto_trace]", config.Encoding)
-	}
-	return nil
-}
-
-func (config *Config) validateForMetric() error {
-	err := config.validate()
-	if err != nil {
-		return err
-	}
-	switch config.Encoding {
-	case "":
-	case "otlp_proto_metric":
-	default:
-		return fmt.Errorf("metric encoding %v is not supported.  supported encoding formats include [otlp_proto_metric]", config.Encoding)
-	}
-	return nil
 }
 
 func (config *Config) validate() error {

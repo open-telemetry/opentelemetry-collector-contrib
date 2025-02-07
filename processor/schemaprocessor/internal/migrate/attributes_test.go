@@ -27,7 +27,7 @@ func TestNewAttributeChangeSet(t *testing.T) {
 			"hello": "world",
 		})
 
-		expect := &AttributeChangeSet{
+		expect := AttributeChangeSet{
 			updates: map[string]string{
 				"hello": "world",
 			},
@@ -45,7 +45,7 @@ func TestAttributeChangeSetApply(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		acs    *AttributeChangeSet
+		acs    AttributeChangeSet
 		attrs  pcommon.Map
 		expect pcommon.Map
 		errVal string
@@ -100,11 +100,10 @@ func TestAttributeChangeSetApply(t *testing.T) {
 			errVal: "value \"service.name\" already exists",
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := tc.acs.Apply(tc.attrs)
+			err := tc.acs.Do(StateSelectorApply, tc.attrs)
 			if tc.errVal == "" {
 				assert.NoError(t, err, "Must not return an error")
 			} else {
@@ -120,7 +119,7 @@ func TestAttributeChangeSetRollback(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		acs    *AttributeChangeSet
+		acs    AttributeChangeSet
 		attrs  pcommon.Map
 		expect pcommon.Map
 		errVal string
@@ -175,112 +174,16 @@ func TestAttributeChangeSetRollback(t *testing.T) {
 			errVal: "value \"application.name\" already exists",
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := tc.acs.Rollback(tc.attrs)
+			err := tc.acs.Do(StateSelectorRollback, tc.attrs)
 			if tc.errVal == "" {
 				assert.NoError(t, err, "Must not return an error")
 			} else {
 				assert.EqualError(t, err, tc.errVal, "Must match the expected error string")
 			}
 			assert.EqualValues(t, tc.expect.AsRaw(), tc.attrs.AsRaw(), "Must match the expected values")
-		})
-	}
-}
-
-func TestNewAttributeChangeSetSliceApply(t *testing.T) {
-	t.Parallel()
-
-	for _, tc := range []struct {
-		name    string
-		changes *AttributeChangeSetSlice
-		attr    pcommon.Map
-		expect  pcommon.Map
-	}{
-		{
-			name:    "no changes listed",
-			changes: NewAttributeChangeSetSlice(),
-			attr: testHelperBuildMap(func(m pcommon.Map) {
-				m.PutStr("service.version", "v0.0.1")
-			}),
-			expect: testHelperBuildMap(func(m pcommon.Map) {
-				m.PutStr("service.version", "v0.0.1")
-			}),
-		},
-		{
-			name: "changes defined",
-			changes: NewAttributeChangeSetSlice(
-				NewAttributeChangeSet(map[string]string{
-					"service_version": "service.version",
-				}),
-				NewAttributeChangeSet(map[string]string{
-					"service.version": "application.service.version",
-				}),
-			),
-			attr: testHelperBuildMap(func(m pcommon.Map) {
-				m.PutStr("service_version", "v0.0.1")
-			}),
-			expect: testHelperBuildMap(func(m pcommon.Map) {
-				m.PutStr("application.service.version", "v0.0.1")
-			}),
-		},
-	} {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			assert.NoError(t, tc.changes.Apply(tc.attr))
-			assert.Equal(t, tc.expect.AsRaw(), tc.attr.AsRaw(), "Must match the expected attributes")
-		})
-	}
-}
-
-func TestNewAttributeChangeSetSliceApplyRollback(t *testing.T) {
-	t.Parallel()
-
-	for _, tc := range []struct {
-		name    string
-		changes *AttributeChangeSetSlice
-		attr    pcommon.Map
-		expect  pcommon.Map
-	}{
-		{
-			name:    "no changes listed",
-			changes: NewAttributeChangeSetSlice(),
-			attr: testHelperBuildMap(func(m pcommon.Map) {
-				m.PutStr("service.version", "v0.0.1")
-			}),
-			expect: testHelperBuildMap(func(m pcommon.Map) {
-				m.PutStr("service.version", "v0.0.1")
-			}),
-		},
-		{
-			name: "changes defined",
-			changes: NewAttributeChangeSetSlice(
-				NewAttributeChangeSet(map[string]string{
-					"service_version": "service.version",
-				}),
-				NewAttributeChangeSet(map[string]string{
-					"service.version": "application.service.version",
-				}),
-			),
-			attr: testHelperBuildMap(func(m pcommon.Map) {
-				m.PutStr("application.service.version", "v0.0.1")
-
-			}),
-			expect: testHelperBuildMap(func(m pcommon.Map) {
-				m.PutStr("service_version", "v0.0.1")
-			}),
-		},
-	} {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			assert.NoError(t, tc.changes.Rollback(tc.attr))
-			assert.Equal(t, tc.expect.AsRaw(), tc.attr.AsRaw(), "Must match the expected attributes")
 		})
 	}
 }

@@ -141,8 +141,8 @@ func newNullFloat64MetricValue(metadata MetricValueMetadata, valueHolder any) Me
 }
 
 func NewMetricValueMetadata(name string, columnName string, dataType MetricType, unit string,
-	valueType ValueType) (MetricValueMetadata, error) {
-
+	valueType ValueType,
+) (MetricValueMetadata, error) {
 	var newMetricValueFunc newMetricValueFunction
 	var valueHolderFunc valueHolderFunction
 

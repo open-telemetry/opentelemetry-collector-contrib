@@ -46,7 +46,7 @@ func (suite *SubprocessIntegrationSuite) SetupSuite() {
 
 	_, err = scriptFile.Write([]byte(scriptContents))
 	require.NoError(t, err)
-	require.NoError(t, scriptFile.Chmod(0700))
+	require.NoError(t, scriptFile.Chmod(0o700))
 	scriptFile.Close()
 
 	suite.scriptPath = scriptFile.Name()

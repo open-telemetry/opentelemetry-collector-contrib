@@ -29,7 +29,6 @@ var defaultTestingHecConfig = &Config{
 }
 
 func Test_SplunkHecToLogData(t *testing.T) {
-
 	time := 0.123
 	nanoseconds := 123000000
 

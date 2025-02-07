@@ -57,13 +57,13 @@ func NewSink(opts ...SinkOpt) *Sink {
 	return &Sink{
 		emitChan: emitChan,
 		timeout:  cfg.timeout,
-		Callback: func(ctx context.Context, token []byte, attrs map[string]any) error {
-			copied := make([]byte, len(token))
-			copy(copied, token)
+		Callback: func(ctx context.Context, token emit.Token) error {
+			copied := make([]byte, len(token.Body))
+			copy(copied, token.Body)
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
-			case emitChan <- &Call{copied, attrs}:
+			case emitChan <- &Call{copied, token.Attributes}:
 			}
 			return nil
 		},

@@ -52,7 +52,6 @@ type metricsExporter struct {
 }
 
 func (e *metricsExporter) start(ctx context.Context, host component.Host) (err error) {
-
 	switch {
 	case !isEmpty(e.config.Metrics.Endpoint):
 		if e.clientConn, err = e.config.Metrics.ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
@@ -78,7 +77,6 @@ func (e *metricsExporter) start(ctx context.Context, host component.Host) (err e
 }
 
 func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
-
 	rss := md.ResourceMetrics()
 	for i := 0; i < rss.Len(); i++ {
 		resourceMetric := rss.At(i)

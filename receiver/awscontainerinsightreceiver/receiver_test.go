@@ -17,8 +17,7 @@ import (
 )
 
 // Mock cadvisor
-type mockCadvisor struct {
-}
+type mockCadvisor struct{}
 
 func (c *mockCadvisor) GetMetrics() []pmetric.Metrics {
 	md := pmetric.NewMetrics()
@@ -30,8 +29,7 @@ func (c *mockCadvisor) Shutdown() error {
 }
 
 // Mock k8sapiserver
-type mockK8sAPIServer struct {
-}
+type mockK8sAPIServer struct{}
 
 func (m *mockK8sAPIServer) Shutdown() error {
 	return nil

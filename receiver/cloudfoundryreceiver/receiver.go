@@ -7,10 +7,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"sync"
 	"time"
 
 	"code.cloudfoundry.org/go-loggregator"
+	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
@@ -28,8 +30,10 @@ const (
 	dataFormat = "cloudfoundry"
 )
 
-var _ receiver.Metrics = (*cloudFoundryReceiver)(nil)
-var _ receiver.Logs = (*cloudFoundryReceiver)(nil)
+var (
+	_ receiver.Metrics = (*cloudFoundryReceiver)(nil)
+	_ receiver.Logs    = (*cloudFoundryReceiver)(nil)
+)
 
 // newCloudFoundryReceiver implements the receiver.Metrics and receiver.Logs for the Cloud Foundry protocol.
 type cloudFoundryReceiver struct {
@@ -47,8 +51,8 @@ type cloudFoundryReceiver struct {
 func newCloudFoundryMetricsReceiver(
 	settings receiver.Settings,
 	config Config,
-	nextConsumer consumer.Metrics) (*cloudFoundryReceiver, error) {
-
+	nextConsumer consumer.Metrics,
+) (*cloudFoundryReceiver, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
@@ -71,8 +75,8 @@ func newCloudFoundryMetricsReceiver(
 func newCloudFoundryLogsReceiver(
 	settings receiver.Settings,
 	config Config,
-	nextConsumer consumer.Logs) (*cloudFoundryReceiver, error) {
-
+	nextConsumer consumer.Logs,
+) (*cloudFoundryReceiver, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
@@ -151,8 +155,8 @@ func (cfr *cloudFoundryReceiver) Shutdown(_ context.Context) error {
 func (cfr *cloudFoundryReceiver) streamMetrics(
 	ctx context.Context,
 	stream loggregator.EnvelopeStream,
-	host component.Host) {
-
+	host component.Host,
+) {
 	for {
 		// Blocks until non-empty result or context is cancelled (returns nil in that case)
 		envelopes := stream()
@@ -169,15 +173,12 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 			break
 		}
 		metrics := pmetric.NewMetrics()
-		libraryMetrics := createLibraryMetricsSlice(metrics)
 		for _, envelope := range envelopes {
 			if envelope != nil {
-				// There is no concept of startTime in CF loggregator, and we do not know the uptime of the component
-				// from which the metric originates, so just provide receiver start time as metric start time
-				convertEnvelopeToMetrics(envelope, libraryMetrics, cfr.receiverStartTime)
+				buildMetrics(metrics, envelope, cfr.receiverStartTime)
 			}
 		}
-		if libraryMetrics.Len() > 0 {
+		if metrics.ResourceMetrics().Len() > 0 {
 			obsCtx := cfr.obsrecv.StartMetricsOp(ctx)
 			err := cfr.nextMetrics.ConsumeMetrics(ctx, metrics)
 			if err != nil {
@@ -191,8 +192,8 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 func (cfr *cloudFoundryReceiver) streamLogs(
 	ctx context.Context,
 	stream loggregator.EnvelopeStream,
-	host component.Host) {
-
+	host component.Host,
+) {
 	for {
 		envelopes := stream()
 		if envelopes == nil {
@@ -207,14 +208,13 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 			break
 		}
 		logs := plog.NewLogs()
-		libraryLogs := createLibraryLogsSlice(logs)
 		observedTime := time.Now()
 		for _, envelope := range envelopes {
 			if envelope != nil {
-				_ = convertEnvelopeToLogs(envelope, libraryLogs, observedTime)
+				buildLogs(logs, envelope, observedTime)
 			}
 		}
-		if libraryLogs.Len() > 0 {
+		if logs.ResourceLogs().Len() > 0 {
 			obsCtx := cfr.obsrecv.StartLogsOp(ctx)
 			err := cfr.nextLogs.ConsumeLogs(ctx, logs)
 			if err != nil {
@@ -225,16 +225,60 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 	}
 }
 
-func createLibraryMetricsSlice(metrics pmetric.Metrics) pmetric.MetricSlice {
-	resourceMetric := metrics.ResourceMetrics().AppendEmpty()
-	libraryMetrics := resourceMetric.ScopeMetrics().AppendEmpty()
-	libraryMetrics.Scope().SetName(metadata.ScopeName)
-	return libraryMetrics.Metrics()
+func buildLogs(logs plog.Logs, envelope *loggregator_v2.Envelope, observedTime time.Time) {
+	resourceLogs := getResourceLogs(logs, envelope)
+	setupLogsScope(resourceLogs)
+	_ = convertEnvelopeToLogs(envelope, resourceLogs.ScopeLogs().At(0).LogRecords(), observedTime)
 }
 
-func createLibraryLogsSlice(logs plog.Logs) plog.LogRecordSlice {
-	resourceLog := logs.ResourceLogs().AppendEmpty()
-	libraryLogs := resourceLog.ScopeLogs().AppendEmpty()
-	libraryLogs.Scope().SetName(metadata.ScopeName)
-	return libraryLogs.LogRecords()
+func buildMetrics(metrics pmetric.Metrics, envelope *loggregator_v2.Envelope, observedTime time.Time) {
+	resourceMetrics := getResourceMetrics(metrics, envelope)
+	setupMetricsScope(resourceMetrics)
+	convertEnvelopeToMetrics(envelope, resourceMetrics.ScopeMetrics().At(0).Metrics(), observedTime)
+}
+
+func setupMetricsScope(resourceMetrics pmetric.ResourceMetrics) {
+	if resourceMetrics.ScopeMetrics().Len() == 0 {
+		libraryMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
+		libraryMetrics.Scope().SetName(metadata.ScopeName)
+	}
+}
+
+func getResourceMetrics(metrics pmetric.Metrics, envelope *loggregator_v2.Envelope) pmetric.ResourceMetrics {
+	if !allowResourceAttributes.IsEnabled() {
+		return metrics.ResourceMetrics().AppendEmpty()
+	}
+
+	attrs := getEnvelopeResourceAttributes(envelope)
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		if reflect.DeepEqual(metrics.ResourceMetrics().At(i).Resource().Attributes().AsRaw(), attrs.AsRaw()) {
+			return metrics.ResourceMetrics().At(i)
+		}
+	}
+	resource := metrics.ResourceMetrics().AppendEmpty()
+	attrs.CopyTo(resource.Resource().Attributes())
+	return resource
+}
+
+func setupLogsScope(resourceLogs plog.ResourceLogs) {
+	if resourceLogs.ScopeLogs().Len() == 0 {
+		libraryLogs := resourceLogs.ScopeLogs().AppendEmpty()
+		libraryLogs.Scope().SetName(metadata.ScopeName)
+	}
+}
+
+func getResourceLogs(logs plog.Logs, envelope *loggregator_v2.Envelope) plog.ResourceLogs {
+	if !allowResourceAttributes.IsEnabled() {
+		return logs.ResourceLogs().AppendEmpty()
+	}
+
+	attrs := getEnvelopeResourceAttributes(envelope)
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		if reflect.DeepEqual(logs.ResourceLogs().At(i).Resource().Attributes().AsRaw(), attrs.AsRaw()) {
+			return logs.ResourceLogs().At(i)
+		}
+	}
+	resource := logs.ResourceLogs().AppendEmpty()
+	attrs.CopyTo(resource.Resource().Attributes())
+	return resource
 }

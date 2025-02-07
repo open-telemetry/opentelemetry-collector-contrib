@@ -40,7 +40,6 @@ func TestLoadConfig(t *testing.T) {
 		id       component.ID
 		expected component.Config
 	}{
-
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: defaultCfg,
@@ -506,7 +505,6 @@ func TestConfig_buildDSN(t *testing.T) {
 				}
 				assert.Equalf(t, tt.want, dsn, "buildDSN()")
 			}
-
 		})
 	}
 }

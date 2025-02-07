@@ -29,6 +29,4 @@ type Kinesis interface {
 	PutRecords(ctx context.Context, params *kinesis.PutRecordsInput, optFns ...func(*kinesis.Options)) (*kinesis.PutRecordsOutput, error)
 }
 
-var (
-	_ Kinesis = (*kinesis.Client)(nil)
-)
+var _ Kinesis = (*kinesis.Client)(nil)

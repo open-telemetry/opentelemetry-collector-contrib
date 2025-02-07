@@ -5,7 +5,7 @@ package store
 
 import (
 	"encoding/hex"
-	"math/rand"
+	"math/rand/v2"
 	"testing"
 	"time"
 
@@ -146,7 +146,7 @@ func TestStoreConcurrency(t *testing.T) {
 	}
 
 	go accessor(func() {
-		key := NewKey(pcommon.TraceID([16]byte{byte(rand.Intn(32))}), pcommon.SpanID([8]byte{1, 2, 3}))
+		key := NewKey(pcommon.TraceID([16]byte{byte(rand.IntN(32))}), pcommon.SpanID([8]byte{1, 2, 3}))
 
 		_, err := s.UpsertEdge(key, func(e *Edge) {
 			e.ClientService = hex.EncodeToString(key.tid[:])

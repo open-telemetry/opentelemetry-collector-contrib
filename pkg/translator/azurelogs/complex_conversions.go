@@ -9,8 +9,10 @@ import (
 	"strings"
 )
 
-type ComplexConversion func(string, any, map[string]any) bool
-type TypeConversion func(string, any, map[string]any, string) bool
+type (
+	ComplexConversion func(string, any, map[string]any) bool
+	TypeConversion    func(string, any, map[string]any, string) bool
+)
 
 var conversions = map[string]ComplexConversion{
 	"AzureCdnAccessLog:SecurityProtocol":               azureCdnAccessLogSecurityProtocol,

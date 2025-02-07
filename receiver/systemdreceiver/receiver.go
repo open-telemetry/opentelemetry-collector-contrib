@@ -8,8 +8,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-type systemdReceiver struct {
-}
+type systemdReceiver struct{}
 
 func (s systemdReceiver) Start(_ context.Context, _ component.Host) error {
 	return nil

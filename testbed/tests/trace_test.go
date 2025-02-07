@@ -20,7 +20,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -149,6 +149,7 @@ func TestTrace10kSPS(t *testing.T) {
 				performanceResultsSummary,
 				processors,
 				nil,
+				nil,
 			)
 		})
 	}
@@ -180,7 +181,6 @@ func TestTrace10kSPSJaegerGRPC(t *testing.T) {
 }
 
 func TestTraceNoBackend10kSPS(t *testing.T) {
-
 	limitProcessors := []ProcessorNameAndConfigBody{
 		{
 			Name: "memory_limiter",
@@ -194,7 +194,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 
 	noLimitProcessors := []ProcessorNameAndConfigBody{}
 
-	var processorsConfig = []processorConfig{
+	processorsConfig := []processorConfig{
 		{
 			Name:                "NoMemoryLimit",
 			Processor:           noLimitProcessors,
@@ -277,7 +277,6 @@ func verifySingleSpan(
 	spanName string,
 	verifyReceived func(span ptrace.Span),
 ) {
-
 	// Clear previously received traces.
 	tc.MockBackend.ClearReceivedItems()
 	startCounter := tc.MockBackend.DataItemsReceived()

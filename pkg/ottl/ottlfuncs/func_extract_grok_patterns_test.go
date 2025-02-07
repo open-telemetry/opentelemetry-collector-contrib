@@ -15,7 +15,6 @@ import (
 )
 
 func Test_extractGrokPatterns_patterns(t *testing.T) {
-
 	tests := []struct {
 		name              string
 		targetString      string

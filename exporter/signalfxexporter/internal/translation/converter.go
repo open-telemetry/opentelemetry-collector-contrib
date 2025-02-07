@@ -49,7 +49,8 @@ func NewMetricsConverter(
 	includes []dpfilters.MetricFilter,
 	nonAlphanumericDimChars string,
 	dropHistogramBuckets bool,
-	processHistograms bool) (*MetricsConverter, error) {
+	processHistograms bool,
+) (*MetricsConverter, error) {
 	fs, err := dpfilters.NewFilterSet(excludes, includes)
 	if err != nil {
 		return nil, err
@@ -253,7 +254,7 @@ func (dpv *datapointValidator) isValidMetricName(name string) bool {
 
 func (dpv *datapointValidator) isValidNumberOfDimension(dp *sfxpb.DataPoint) bool {
 	if len(dp.Dimensions) > maxNumberOfDimensions {
-		dpv.logger.Debug("dropping datapoint",
+		dpv.logger.Warn("dropping datapoint",
 			zap.String("reason", invalidNumberOfDimensions),
 			zap.Stringer("datapoint", dp),
 			zap.Int("number_of_dimensions", len(dp.Dimensions)),

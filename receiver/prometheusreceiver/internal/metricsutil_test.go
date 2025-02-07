@@ -6,6 +6,7 @@ package internal
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 type kv struct {
@@ -21,6 +22,28 @@ func metrics(metrics ...pmetric.Metric) pmetric.Metrics {
 	}
 
 	return md
+}
+
+func metricsFromResourceMetrics(metrics ...pmetric.ResourceMetrics) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	for _, metric := range metrics {
+		mr := md.ResourceMetrics().AppendEmpty()
+		metric.CopyTo(mr)
+	}
+	return md
+}
+
+func resourceMetrics(job, instance string, metrics ...pmetric.Metric) pmetric.ResourceMetrics {
+	mr := pmetric.NewResourceMetrics()
+	mr.Resource().Attributes().PutStr(semconv.AttributeServiceName, job)
+	mr.Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
+	ms := mr.ScopeMetrics().AppendEmpty().Metrics()
+
+	for _, metric := range metrics {
+		destMetric := ms.AppendEmpty()
+		metric.CopyTo(destMetric)
+	}
+	return mr
 }
 
 func histogramPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.HistogramDataPoint {

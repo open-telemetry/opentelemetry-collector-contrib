@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/session"
 	"github.com/vmware/govmomi/simulator"
@@ -80,12 +79,10 @@ func TestIntegration(t *testing.T) {
 		s := session.NewManager(c)
 		newVcenterClient = func(l *zap.Logger, cfg *Config) *vcenterClient {
 			client := &vcenterClient{
-				logger: l,
-				cfg:    cfg,
-				moClient: &govmomi.Client{
-					Client:         c,
-					SessionManager: s,
-				},
+				logger:         l,
+				cfg:            cfg,
+				sessionManager: s,
+				vimDriver:      c,
 			}
 			require.NoError(t, client.EnsureConnection(context.Background()))
 			client.vimDriver = c

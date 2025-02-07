@@ -81,7 +81,6 @@ func TestDetectTruePartialMissingDynoId(t *testing.T) {
 }
 
 func TestDetectFalse(t *testing.T) {
-
 	detector, err := NewDetector(processortest.NewNopSettings(), CreateDefaultConfig())
 	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(context.Background())

@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
@@ -61,7 +61,7 @@ func (c *Config) Validate() error {
 
 func (c *Config) ClientOptions() *options.ClientOptions {
 	clientOptions := options.Client()
-	connString := fmt.Sprintf("mongodb://%s", strings.Join(c.hostlist(), ","))
+	connString := "mongodb://" + strings.Join(c.hostlist(), ",")
 	clientOptions.ApplyURI(connString)
 
 	if c.Timeout > 0 {

@@ -33,16 +33,18 @@ const (
 	defaultNumTraces        = 100
 )
 
-var testPolicy = []PolicyCfg{{sharedPolicyCfg: sharedPolicyCfg{Name: "test-policy", Type: AlwaysSample}}}
-var testLatencyPolicy = []PolicyCfg{
-	{
-		sharedPolicyCfg: sharedPolicyCfg{
-			Name:       "test-policy",
-			Type:       Latency,
-			LatencyCfg: LatencyCfg{ThresholdMs: 1},
+var (
+	testPolicy        = []PolicyCfg{{sharedPolicyCfg: sharedPolicyCfg{Name: "test-policy", Type: AlwaysSample}}}
+	testLatencyPolicy = []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name:       "test-policy",
+				Type:       Latency,
+				LatencyCfg: LatencyCfg{ThresholdMs: 1},
+			},
 		},
-	},
-}
+	}
+)
 
 type TestPolicyEvaluator struct {
 	Started       chan struct{}
@@ -121,8 +123,6 @@ func TestTraceIntegrity(t *testing.T) {
 		NumTraces:    defaultNumTraces,
 	}
 	nextConsumer := new(consumertest.TracesSink)
-	s := setupTestTelemetry()
-	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
@@ -131,7 +131,7 @@ func TestTraceIntegrity(t *testing.T) {
 		{name: "mock-policy-1", evaluator: mpe1, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
 	}
 
-	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies))
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies))
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -388,12 +388,10 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 			},
 		},
 	}
-	s := setupTestTelemetry()
-	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 	msp := new(consumertest.TracesSink)
 
-	p, err := newTracesProcessor(context.Background(), ct, msp, cfg, withDecisionBatcher(idb))
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), msp, cfg, withDecisionBatcher(idb))
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -447,6 +445,91 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	}
 }
 
+func TestSetSamplingPolicy(t *testing.T) {
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "always",
+					Type: AlwaysSample,
+				},
+			},
+		},
+	}
+	idb := newSyncIDBatcher()
+	msp := new(consumertest.TracesSink)
+
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), msp, cfg, withDecisionBatcher(idb))
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	tsp := p.(*tailSamplingSpanProcessor)
+
+	assert.Len(t, tsp.policies, 1)
+
+	tsp.policyTicker.OnTick()
+
+	assert.Len(t, tsp.policies, 1)
+
+	cfgs := []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "always",
+				Type: AlwaysSample,
+			},
+		},
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "everything",
+				Type: AlwaysSample,
+			},
+		},
+	}
+	tsp.SetSamplingPolicy(cfgs)
+
+	assert.Len(t, tsp.policies, 1)
+
+	tsp.policyTicker.OnTick()
+
+	assert.Len(t, tsp.policies, 2)
+
+	// Duplicate policy name.
+	cfgs = []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "always",
+				Type: AlwaysSample,
+			},
+		},
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "everything",
+				Type: AlwaysSample,
+			},
+		},
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "everything",
+				Type: AlwaysSample,
+			},
+		},
+	}
+	tsp.SetSamplingPolicy(cfgs)
+
+	assert.Len(t, tsp.policies, 2)
+
+	tsp.policyTicker.OnTick()
+
+	// Should revert sampling policy.
+	assert.Len(t, tsp.policies, 2)
+}
+
 func TestSubSecondDecisionTime(t *testing.T) {
 	// prepare
 	msp := new(consumertest.TracesSink)
@@ -472,7 +555,6 @@ func TestSubSecondDecisionTime(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return len(msp.AllTraces()) == 1
 	}, time.Second, 10*time.Millisecond)
-
 }
 
 func TestPolicyLoggerAddsPolicyName(t *testing.T) {
@@ -519,6 +601,46 @@ func TestDuplicatePolicyName(t *testing.T) {
 
 	// verify
 	assert.Equal(t, err, errors.New(`duplicate policy name "always_sample"`))
+}
+
+func TestDecisionPolicyMetrics(t *testing.T) {
+	traceIDs, batches := generateIDsAndBatches(10)
+	policy := []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name:             "test-policy",
+				Type:             Probabilistic,
+				ProbabilisticCfg: ProbabilisticCfg{SamplingPercentage: 50},
+			},
+		},
+	}
+	cfg := Config{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(2 * len(traceIDs)),
+		ExpectedNewTracesPerSec: 64,
+		PolicyCfgs:              policy,
+	}
+	sp, _ := newTracesProcessor(context.Background(), processortest.NewNopSettings(), consumertest.NewNop(), cfg)
+	tsp := sp.(*tailSamplingSpanProcessor)
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
+	metrics := &policyMetrics{}
+
+	for i, id := range traceIDs {
+		sb := &sampling.TraceData{
+			ArrivalTime:     time.Now(),
+			ReceivedBatches: batches[i],
+		}
+
+		_ = tsp.makeDecision(id, sb, metrics)
+	}
+
+	assert.EqualValues(t, 5, metrics.decisionSampled)
+	assert.EqualValues(t, 5, metrics.decisionNotSampled)
+	assert.EqualValues(t, 0, metrics.idNotFoundOnMapCount)
+	assert.EqualValues(t, 0, metrics.evaluateErrorCount)
 }
 
 func collectSpanIDs(trace ptrace.Traces) []pcommon.SpanID {

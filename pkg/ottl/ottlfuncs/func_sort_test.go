@@ -14,7 +14,6 @@ import (
 )
 
 func Test_Sort(t *testing.T) {
-
 	pMap := pcommon.NewValueMap().SetEmptyMap()
 	pMap.PutStr("k", "v")
 	emptySlice := pcommon.NewValueSlice().SetEmptySlice()

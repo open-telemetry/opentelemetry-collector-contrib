@@ -216,7 +216,7 @@ func Test_stringToTraceID_Unique(t *testing.T) {
 	}
 
 	var results [2][16]byte
-	for i := 0; i < 2; i++ {
+	for i := 0; i < len(tests); i++ {
 		tt := tests[i]
 		t.Run(tt.name, func(_ *testing.T) {
 			got := swTraceIDToTraceID(tt.segmentObject.traceID)
@@ -317,7 +317,8 @@ func Test_swSpanToSpan_ParentSpanId(t *testing.T) {
 				Refs: []*agentV3.SegmentReference{{
 					ParentTraceSegmentId: "4f2f27748b8e44ecaf18fe0347194e86.33.16560607369950066",
 					ParentSpanId:         123,
-				}}}},
+				}},
+			}},
 			want: [8]byte{233, 196, 85, 168, 37, 66, 48, 106},
 		},
 		{

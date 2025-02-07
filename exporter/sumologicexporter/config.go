@@ -73,7 +73,6 @@ func createDefaultClientConfig() confighttp.ClientConfig {
 }
 
 func (cfg *Config) Validate() error {
-
 	if cfg.CompressEncoding != nil {
 		return errors.New("support for compress_encoding configuration has been removed, in favor of compression")
 	}

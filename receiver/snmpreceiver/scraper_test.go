@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -42,7 +42,6 @@ func (_m *MockClient) Close() error {
 
 // Connect provides a mock function with given fields:
 func (_m *MockClient) Connect() error {
-
 	ret := _m.Called()
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -101,7 +100,6 @@ func TestStart(t *testing.T) {
 		{
 			desc: "Valid Config",
 			testFunc: func(t *testing.T) {
-
 				scraper := &snmpScraper{
 					cfg:      createDefaultConfig().(*Config),
 					settings: receivertest.NewNopSettings(),

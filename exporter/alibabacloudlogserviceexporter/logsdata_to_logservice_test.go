@@ -29,7 +29,7 @@ func createLogData(numberOfLogs int) plog.Logs {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
 	rl := logs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutStr("resouceKey", "resourceValue")
+	rl.Resource().Attributes().PutStr("resourceKey", "resourceValue")
 	rl.Resource().Attributes().PutStr(conventions.AttributeServiceName, "test-log-service-exporter")
 	rl.Resource().Attributes().PutStr(conventions.AttributeHostName, "test-host")
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -88,7 +88,6 @@ func TestLogsDataToLogService(t *testing.T) {
 			})
 		}
 		gotLogPairs = append(gotLogPairs, pairs)
-
 	}
 
 	wantLogs := make([][]logKeyValuePair, 0, validLogCount)
@@ -98,7 +97,6 @@ func TestLogsDataToLogService(t *testing.T) {
 		return
 	}
 	for j := 0; j < validLogCount; j++ {
-
 		sort.Sort(logKeyValuePairs(gotLogPairs[j]))
 		sort.Sort(logKeyValuePairs(wantLogs[j]))
 		assert.Equal(t, wantLogs[j], gotLogPairs[j])

@@ -1636,7 +1636,6 @@ func TestStatsDParser_Mappings(t *testing.T) {
 }
 
 func TestStatsDParser_ScopeIsIncluded(t *testing.T) {
-
 	const devVersion = "dev-0.0.1"
 
 	p := &StatsDParser{
@@ -1671,7 +1670,6 @@ func TestStatsDParser_ScopeIsIncluded(t *testing.T) {
 		assert.Equal(t, receiverName, scope.Name())
 		assert.Equal(t, devVersion, scope.Version())
 	}
-
 }
 
 func TestTimeNowFunc(t *testing.T) {
@@ -1963,5 +1961,4 @@ func TestStatsDParser_IPOnlyAggregation(t *testing.T) {
 		Metrics().At(0).Sum().DataPoints().At(0).IntValue()
 
 	assert.Equal(t, int64(4), value)
-
 }
