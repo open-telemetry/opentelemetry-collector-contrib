@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.22.7
 
 require (
-	github.com/jaegertracing/jaeger v1.65.0
+	github.com/jaegertracing/jaeger v1.66.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.119.0
 	github.com/stretchr/testify v1.10.0
