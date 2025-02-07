@@ -28,8 +28,8 @@ func TestDetectorNewDetector(t *testing.T) {
 	require.NotNil(t, d)
 
 	if runtime.GOOS == "windows" {
-		t.Setenv("ProgramData", "C:\\\\ProgramData")
-		require.Equal(t, "C:\\\\ProgramData\\dynatrace\\enrichment", d.(*Detector).enrichmentDirectory)
+		t.Setenv("ProgramData", "C:\\ProgramData")
+		require.Equal(t, "C:\\ProgramData\\dynatrace\\enrichment", d.(*Detector).enrichmentDirectory)
 	} else {
 		require.Equal(t, "/var/lib/dynatrace/enrichment", d.(*Detector).enrichmentDirectory)
 	}
