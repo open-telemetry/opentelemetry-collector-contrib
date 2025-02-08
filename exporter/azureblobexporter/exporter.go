@@ -5,10 +5,7 @@ package azureblobexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"math/rand"
-	"text/template"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -19,17 +16,9 @@ import (
 )
 
 type azureBlobExporter struct {
-	config           *Config
-	logger           *zap.Logger
-	client           *azblob.Client
-	signal           pipeline.Signal
-	marshaller       *marshaller
-	blobNameTemplate *template.Template
-}
-
-var fileExtensionMap = map[string]string{
-	formatTypeJSON:  "json",
-	formatTypeProto: "pb",
+	config *Config
+	logger *zap.Logger
+	signal pipeline.Signal
 }
 
 func newAzureBlobExporter(config *Config, logger *zap.Logger, signal pipeline.Signal) *azureBlobExporter {
@@ -41,30 +30,22 @@ func newAzureBlobExporter(config *Config, logger *zap.Logger, signal pipeline.Si
 	return azBlobExporter
 }
 
-func randomInRange(low, hi int) int {
-	return low + rand.Intn(hi-low)
-}
-
-func (e *azureBlobExporter) start(_ context.Context, host component.Host) error {
+func (e *azureBlobExporter) start(_ context.Context, _ component.Host) error {
 	return nil
-}
-
-func (e *azureBlobExporter) generateBlobName(data map[string]interface{}) (string, error) {
-	return "", nil
 }
 
 func (e *azureBlobExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (e *azureBlobExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (e *azureBlobExporter) ConsumeMetrics(_ context.Context, _ pmetric.Metrics) error {
 	return nil
 }
 
-func (e *azureBlobExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (e *azureBlobExporter) ConsumeLogs(_ context.Context, _ plog.Logs) error {
 	return nil
 }
 
-func (e *azureBlobExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (e *azureBlobExporter) ConsumeTraces(_ context.Context, _ ptrace.Traces) error {
 	return nil
 }
