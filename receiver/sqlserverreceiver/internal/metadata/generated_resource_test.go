@@ -24,7 +24,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 1, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 5, res.Attributes().Len())
 			case "none_set":
@@ -35,7 +35,7 @@ func TestResourceBuilder(t *testing.T) {
 			}
 
 			val, ok := res.Attributes().Get("server.address")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "server.address-val", val.Str())
 			}

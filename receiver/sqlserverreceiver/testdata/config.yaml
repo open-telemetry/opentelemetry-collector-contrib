@@ -12,3 +12,5 @@ sqlserver/named:
       enabled: true
     server.port:
       enabled: true
+    server.address:
+      enabled: true

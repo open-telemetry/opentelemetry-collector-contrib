@@ -181,7 +181,7 @@ type ResourceAttributesConfig struct {
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		ServerAddress: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		ServerPort: ResourceAttributeConfig{
 			Enabled: false,

@@ -17,7 +17,7 @@ issues: [35183]
 # Use pipe (|) for multiline entries.
 subtext: |
   The new resource attributes are added to the SQL server receiver to distinguish metrics coming from different SQL server instances.
-    - `server.address`: The address of the SQL server host, enabled by default.
+    - `server.address`: The address of the SQL server host, disabled by default.
     - `server.port`: The port of the SQL server host, disabled by default.
 
 # If your change doesn't affect end users or the exported elements of any package,
