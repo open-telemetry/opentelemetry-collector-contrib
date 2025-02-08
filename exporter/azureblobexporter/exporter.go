@@ -125,14 +125,6 @@ func (e *azureBlobExporter) generateBlobName(data map[string]interface{}) (strin
 	// Get current time
 	now := time.Now()
 
-	// Add formatted date and time to the data map
-	// data["Year"] = now.Format(e.config.BlobNameFormat.Year)
-	// data["Month"] = now.Format(e.config.BlobNameFormat.Month)
-	// data["Day"] = now.Format(e.config.BlobNameFormat.Day)
-	// data["Hour"] = now.Format(e.config.BlobNameFormat.Hour)
-	// data["Minute"] = now.Format(e.config.BlobNameFormat.Minute)
-	// data["Second"] = now.Format(e.config.BlobNameFormat.Second)
-
 	// Execute the template
 	var result bytes.Buffer
 	if err := e.blobNameTemplate.Execute(&result, data); err != nil {
