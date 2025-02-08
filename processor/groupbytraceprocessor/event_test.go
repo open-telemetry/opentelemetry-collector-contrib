@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -567,7 +566,6 @@ func setupTestTelemetry() testTelemetry {
 func (tt *testTelemetry) newTelemetrySettings() component.TelemetrySettings {
 	set := componenttest.NewNopTelemetrySettings()
 	set.MeterProvider = tt.meterProvider
-	set.MetricsLevel = configtelemetry.LevelDetailed
 	return set
 }
 

@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
 func TestExporterLogs(t *testing.T) {
@@ -350,12 +352,12 @@ func TestExporterLogs(t *testing.T) {
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
-				dataStreamDataset: "record.dataset.\\/*?\"<>| ,#:",
+				elasticsearch.DataStreamDataset: "record.dataset.\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
-				dataStreamDataset:   "resource.dataset",
-				dataStreamNamespace: "resource.namespace.-\\/*?\"<>| ,#:",
+				elasticsearch.DataStreamDataset:   "resource.dataset",
+				elasticsearch.DataStreamNamespace: "resource.namespace.-\\/*?\"<>| ,#:",
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
@@ -438,7 +440,7 @@ func TestExporterLogs(t *testing.T) {
 					m.PutEmptyMap("inner").PutStr("foo", "bar")
 					return vm
 				}(),
-				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"flattened":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
+				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
 			},
 			{
 				body: func() pcommon.Value {
@@ -461,7 +463,7 @@ func TestExporterLogs(t *testing.T) {
 					s.AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
 					return vs
 				}(),
-				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"flattened":{"value":["foo",false,{"foo":"bar"}]}}}`),
+				wantDocument: []byte(`{"@timestamp":"0.0","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"0.0","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
 			},
 			{
 				body: func() pcommon.Value {
@@ -736,6 +738,82 @@ func TestExporterLogs(t *testing.T) {
 		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 
+	t.Run("publish logs with dynamic id", func(t *testing.T) {
+		t.Parallel()
+		exampleDocID := "abc123"
+		tableTests := []struct {
+			name          string
+			expectedDocID string // "" means the _id will not be set
+			recordAttrs   map[string]any
+		}{
+			{
+				name:          "missing document id attribute should not set _id",
+				expectedDocID: "",
+			},
+			{
+				name:          "empty document id attribute should not set _id",
+				expectedDocID: "",
+				recordAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: "",
+				},
+			},
+			{
+				name:          "record attributes",
+				expectedDocID: exampleDocID,
+				recordAttrs: map[string]any{
+					elasticsearch.DocumentIDAttributeName: exampleDocID,
+				},
+			},
+		}
+
+		cfgs := map[string]func(*Config){
+			"async": func(cfg *Config) {
+				batcherEnabled := false
+				cfg.Batcher.Enabled = &batcherEnabled
+			},
+			"sync": func(cfg *Config) {
+				batcherEnabled := true
+				cfg.Batcher.Enabled = &batcherEnabled
+				cfg.Batcher.FlushTimeout = 10 * time.Millisecond
+			},
+		}
+		for _, tt := range tableTests {
+			for cfgName, cfgFn := range cfgs {
+				t.Run(tt.name+"/"+cfgName, func(t *testing.T) {
+					t.Parallel()
+					rec := newBulkRecorder()
+					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+						rec.Record(docs)
+
+						if tt.expectedDocID == "" {
+							assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
+						} else {
+							assert.Equal(t, tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+						}
+
+						// Ensure the document id attribute is removed from the final document.
+						assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
+						return itemsAllOK(docs)
+					})
+
+					exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+						cfg.Mapping.Mode = "otel"
+						cfg.LogsDynamicID.Enabled = true
+						cfgFn(cfg)
+					})
+					logs := newLogsWithAttributes(
+						tt.recordAttrs,
+						map[string]any{},
+						map[string]any{},
+					)
+					logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
+					mustSendLogs(t, exporter, logs)
+
+					rec.WaitItems(1)
+				})
+			}
+		}
+	})
 	t.Run("otel mode attribute complex value", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -836,12 +914,12 @@ func TestExporterMetrics(t *testing.T) {
 		})
 		metrics := newMetricsWithAttributes(
 			map[string]any{
-				dataStreamNamespace: "data.point.namespace.-\\/*?\"<>| ,#:",
+				elasticsearch.DataStreamNamespace: "data.point.namespace.-\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
-				dataStreamDataset:   "resource.dataset.\\/*?\"<>| ,#:",
-				dataStreamNamespace: "resource.namespace",
+				elasticsearch.DataStreamDataset:   "resource.dataset.\\/*?\"<>| ,#:",
+				elasticsearch.DataStreamNamespace: "resource.namespace",
 			},
 		)
 		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
@@ -886,8 +964,8 @@ func TestExporterMetrics(t *testing.T) {
 			barOtherDp.SetDoubleValue(1.0)
 			barOtherIndexDp := barDps.AppendEmpty()
 			fillAttributeMap(barOtherIndexDp.Attributes(), map[string]any{
-				"dp.attribute":      "dp.attribute.value",
-				dataStreamNamespace: "bar",
+				"dp.attribute":                    "dp.attribute.value",
+				elasticsearch.DataStreamNamespace: "bar",
 			})
 			barOtherIndexDp.SetDoubleValue(1.0)
 
@@ -902,14 +980,14 @@ func TestExporterMetrics(t *testing.T) {
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 		fillAttributeMap(resourceMetrics.Resource().Attributes(), map[string]any{
-			dataStreamNamespace: "resource.namespace",
+			elasticsearch.DataStreamNamespace: "resource.namespace",
 		})
 		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
 		addToMetricSlice(scopeA.Metrics())
 
 		scopeB := resourceMetrics.ScopeMetrics().AppendEmpty()
 		fillAttributeMap(scopeB.Scope().Attributes(), map[string]any{
-			dataStreamDataset: "scope.b",
+			elasticsearch.DataStreamDataset: "scope.b",
 		})
 		addToMetricSlice(scopeB.Metrics())
 
@@ -1285,6 +1363,40 @@ func TestExporterMetrics(t *testing.T) {
 		assertRecordedItems(t, expected, rec, false)
 	})
 
+	t.Run("otel mode grouping of equal resources", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		metrics := pmetric.NewMetrics()
+		for _, n := range []string{"m1", "m2"} {
+			resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+			scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+
+			sumMetric := scopeMetric.Metrics().AppendEmpty()
+			sumMetric.SetName(n)
+			sumDP := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
+			sumDP.SetIntValue(0)
+		}
+
+		mustSendMetrics(t, exporter, metrics)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.m1":"gauge_long","metrics.m2":"gauge_long"}}}`),
+				Document: []byte(`{"@timestamp":"0.0","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"m1":0,"m2":0},"resource":{},"scope":{}}`),
+			},
+		}
+
+		assertRecordedItems(t, expected, rec, false)
+	})
+
 	t.Run("otel mode aggregate_metric_double hint", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -1528,11 +1640,11 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
 			map[string]any{
-				dataStreamDataset: "span.dataset.\\/*?\"<>| ,#:",
+				elasticsearch.DataStreamDataset: "span.dataset.\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
-				dataStreamDataset: "resource.dataset",
+				elasticsearch.DataStreamDataset: "resource.dataset",
 			},
 		))
 
@@ -1942,4 +2054,15 @@ func actionJSONToIndex(t *testing.T, actionJSON json.RawMessage) string {
 	err := json.Unmarshal(actionJSON, &action)
 	require.NoError(t, err)
 	return action.Create.Index
+}
+
+func actionJSONToID(t *testing.T, actionJSON json.RawMessage) string {
+	action := struct {
+		Create struct {
+			ID string `json:"_id"`
+		} `json:"create"`
+	}{}
+	err := json.Unmarshal(actionJSON, &action)
+	require.NoError(t, err)
+	return action.Create.ID
 }

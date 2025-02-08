@@ -148,40 +148,59 @@ func (c *Config) GetHeaders() map[string]string {
 
 // CommonFlags registers common config flags.
 func (c *Config) CommonFlags(fs *pflag.FlagSet) {
-	fs.IntVar(&c.WorkerCount, "workers", 1, "Number of workers (goroutines) to run")
-	fs.Float64Var(&c.Rate, "rate", 0, "Approximately how many metrics/spans/logs per second each worker should generate. Zero means no throttling.")
-	fs.DurationVar(&c.TotalDuration, "duration", 0, "For how long to run the test")
-	fs.DurationVar(&c.ReportingInterval, "interval", 1*time.Second, "Reporting interval")
+	fs.IntVar(&c.WorkerCount, "workers", c.WorkerCount, "Number of workers (goroutines) to run")
+	fs.Float64Var(&c.Rate, "rate", c.Rate, "Approximately how many metrics/spans/logs per second each worker should generate. Zero means no throttling.")
+	fs.DurationVar(&c.TotalDuration, "duration", c.TotalDuration, "For how long to run the test")
+	fs.DurationVar(&c.ReportingInterval, "interval", c.ReportingInterval, "Reporting interval")
 
-	fs.StringVar(&c.CustomEndpoint, "otlp-endpoint", "", "Destination endpoint for exporting logs, metrics and traces")
-	fs.BoolVar(&c.Insecure, "otlp-insecure", false, "Whether to enable client transport security for the exporter's grpc or http connection")
-	fs.BoolVar(&c.InsecureSkipVerify, "otlp-insecure-skip-verify", false, "Whether a client verifies the server's certificate chain and host name")
-	fs.BoolVar(&c.UseHTTP, "otlp-http", false, "Whether to use HTTP exporter rather than a gRPC one")
+	fs.StringVar(&c.CustomEndpoint, "otlp-endpoint", c.CustomEndpoint, "Destination endpoint for exporting logs, metrics and traces")
+	fs.BoolVar(&c.Insecure, "otlp-insecure", c.Insecure, "Whether to enable client transport security for the exporter's grpc or http connection")
+	fs.BoolVar(&c.InsecureSkipVerify, "otlp-insecure-skip-verify", c.InsecureSkipVerify, "Whether a client verifies the server's certificate chain and host name")
+	fs.BoolVar(&c.UseHTTP, "otlp-http", c.UseHTTP, "Whether to use HTTP exporter rather than a gRPC one")
 
 	// custom headers
-	c.Headers = make(KeyValue)
 	fs.Var(&c.Headers, "otlp-header", "Custom header to be passed along with each OTLP request. The value is expected in the format key=\"value\". "+
 		"Note you may need to escape the quotes when using the tool from a cli. "+
 		`Flag may be repeated to set multiple headers (e.g --otlp-header key1=\"value1\" --otlp-header key2=\"value2\")`)
 
 	// custom resource attributes
-	c.ResourceAttributes = make(KeyValue)
 	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom resource attributes to use. The value is expected in the format key=\"value\". "+
 		"You can use key=true or key=false. to set boolean attribute."+
 		"Note you may need to escape the quotes when using the tool from a cli. "+
 		`Flag may be repeated to set multiple attributes (e.g --otlp-attributes key1=\"value1\" --otlp-attributes key2=\"value2\" --telemetry-attributes key3=true)`)
 
-	c.TelemetryAttributes = make(KeyValue)
 	fs.Var(&c.TelemetryAttributes, "telemetry-attributes", "Custom telemetry attributes to use. The value is expected in the format key=\"value\". "+
 		"You can use key=true or key=false. to set boolean attribute."+
 		"Note you may need to escape the quotes when using the tool from a cli. "+
 		`Flag may be repeated to set multiple attributes (e.g --telemetry-attributes key1=\"value1\" --telemetry-attributes key2=\"value2\" --telemetry-attributes key3=true)`)
 
 	// TLS CA configuration
-	fs.StringVar(&c.CaFile, "ca-cert", "", "Trusted Certificate Authority to verify server certificate")
+	fs.StringVar(&c.CaFile, "ca-cert", c.CaFile, "Trusted Certificate Authority to verify server certificate")
 
 	// mTLS configuration
-	fs.BoolVar(&c.ClientAuth.Enabled, "mtls", false, "Whether to require client authentication for mTLS")
-	fs.StringVar(&c.ClientAuth.ClientCertFile, "client-cert", "", "Client certificate file")
-	fs.StringVar(&c.ClientAuth.ClientKeyFile, "client-key", "", "Client private key file")
+	fs.BoolVar(&c.ClientAuth.Enabled, "mtls", c.ClientAuth.Enabled, "Whether to require client authentication for mTLS")
+	fs.StringVar(&c.ClientAuth.ClientCertFile, "client-cert", c.ClientAuth.ClientCertFile, "Client certificate file")
+	fs.StringVar(&c.ClientAuth.ClientKeyFile, "client-key", c.ClientAuth.ClientKeyFile, "Client private key file")
+}
+
+// SetDefaults is here to mirror the defaults for flags above,
+// This allows for us to have a single place to change the defaults
+// while exposing the API for use.
+func (c *Config) SetDefaults() {
+	c.WorkerCount = 1
+	c.Rate = 0
+	c.TotalDuration = 0
+	c.ReportingInterval = 1 * time.Second
+	c.CustomEndpoint = ""
+	c.Insecure = false
+	c.InsecureSkipVerify = false
+	c.UseHTTP = false
+	c.HTTPPath = ""
+	c.Headers = make(KeyValue)
+	c.ResourceAttributes = make(KeyValue)
+	c.TelemetryAttributes = make(KeyValue)
+	c.CaFile = ""
+	c.ClientAuth.Enabled = false
+	c.ClientAuth.ClientCertFile = ""
+	c.ClientAuth.ClientKeyFile = ""
 }

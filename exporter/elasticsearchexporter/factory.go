@@ -62,6 +62,9 @@ func createDefaultConfig() component.Config {
 		TracesDynamicIndex: DynamicIndexSetting{
 			Enabled: false,
 		},
+		LogsDynamicID: DynamicIDSettings{
+			Enabled: false,
+		},
 		Retry: RetrySettings{
 			Enabled:         true,
 			MaxRetries:      0, // default is set in exporter code

@@ -8,7 +8,6 @@ OTEL_STABLE_VERSION=main
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 TRIMMED_VERSION=$(shell grep -o 'v[^-]*' <<< "$(VERSION)" | cut -c 2-)
 CORE_VERSIONS=$(SRC_PARENT_DIR)/opentelemetry-collector/versions.yaml
-GOMOD=$(SRC_ROOT)/cmd/otelcontribcol/go.mod
 
 COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
@@ -115,9 +114,23 @@ stability-tests: otelcontribcol
 gogci:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="gci"
 
+.PHONY: tidylist
+tidylist: $(CROSSLINK)
+	cd internal/tidylist && \
+	$(CROSSLINK) tidylist \
+		--validate \
+		--allow-circular allow-circular.txt \
+		--skip cmd/otelcontribcol/go.mod \
+		--skip cmd/oteltestbedcol/go.mod \
+		tidylist.txt
+
+# internal/tidylist/tidylist.txt lists modules in topological order, to ensure `go mod tidy` converges.
 .PHONY: gotidy
 gotidy:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="tidy"
+	@for mod in $$(cat internal/tidylist/tidylist.txt); do \
+		echo "Tidying $$mod"; \
+		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=1.22.0) || exit $?; \
+	done
 
 .PHONY: remove-toolchain
 remove-toolchain:
@@ -310,20 +323,16 @@ generate: install-tools
 	PATH="$$PWD/.tools:$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
 
-.PHONY: githubgen-install
-githubgen-install:
-	cd cmd/githubgen && $(GOCMD) install .
-
 .PHONY: gengithub
-gengithub: githubgen-install
-	githubgen
+gengithub: $(GITHUBGEN)
+	$(GITHUBGEN)
 
 .PHONY: gendistributions
-gendistributions: githubgen-install
-	githubgen distributions
+gendistributions: $(GITHUBGEN)
+	$(GITHUBGEN) distributions
 
 .PHONY: update-codeowners
-update-codeowners: gengithub generate
+update-codeowners: generate gengithub
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
@@ -344,7 +353,8 @@ chlog-update: $(CHLOGGEN)
 
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
-	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol
+	./internal/buildscripts/ocb-add-replaces.sh otelcontribcol
+	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config-replaced.yaml
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
@@ -360,7 +370,8 @@ otelcontribcollite: genotelcontribcol
 
 .PHONY: genoteltestbedcol
 genoteltestbedcol: $(BUILDER)
-	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config.yaml --output-path cmd/oteltestbedcol
+	./internal/buildscripts/ocb-add-replaces.sh oteltestbedcol
+	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config-replaced.yaml
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
@@ -412,17 +423,22 @@ endef
 
 .PHONY: update-otel
 update-otel:$(MULTIMOD)
+	# Make sure cmd/otelcontribcol/go.mod and cmd/oteltestbedcol/go.mod are present
+	$(MAKE) genotelcontribcol
+	$(MAKE) genoteltestbedcol
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash $(OTEL_STABLE_VERSION)
 	git add . && git commit -s -m "[chore] multimod update stable modules" ; \
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
 	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
 	$(MAKE) gotidy
-	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/otelcontribcol/builder-config.yaml)
-	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/oteltestbedcol/builder-config.yaml)
+	$(call updatehelper,$(CORE_VERSIONS),./cmd/otelcontribcol/go.mod,./cmd/otelcontribcol/builder-config.yaml)
+	$(call updatehelper,$(CORE_VERSIONS),./cmd/oteltestbedcol/go.mod,./cmd/oteltestbedcol/builder-config.yaml)
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
 	$(MAKE) generate
 	$(MAKE) crosslink
+	# Tidy again after generating code
+	$(MAKE) gotidy
 	$(MAKE) remove-toolchain
 	git add . && git commit -s -m "[chore] mod and toolchain tidy" ; \
 
@@ -557,8 +573,7 @@ clean:
 
 .PHONY: generate-gh-issue-templates
 generate-gh-issue-templates:
-	cd cmd/githubgen && $(GOCMD) install .
-	githubgen issue-templates
+	$(GITHUBGEN) issue-templates
 
 .PHONY: checks
 checks:
