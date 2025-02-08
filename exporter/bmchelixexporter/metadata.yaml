@@ -6,4 +6,4 @@ status:
     development: [metrics]
   distributions: []
   codeowners:
-    active: [bertysentry, NassimBtk]
+    active: [bertysentry, NassimBtk, MovieStoreGuy]
