@@ -5,10 +5,12 @@ package logs
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -931,6 +933,300 @@ func Test_ProcessLogs_ErrorMode(t *testing.T) {
 
 			_, err = processor.ProcessLogs(context.Background(), td)
 			assert.Error(t, err)
+		})
+	}
+}
+
+func Test_ProcessLogs_StatementsErrorMode(t *testing.T) {
+	tests := []struct {
+		name          string
+		errorMode     ottl.ErrorMode
+		statements    []common.ContextStatements
+		want          func(td plog.Logs)
+		wantErrorWith string
+	}{
+		{
+			name:      "log: statements group with error mode",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(log.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(log.attributes["test"], "pass") where log.body == "operationA"`}},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "log: statements group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(log.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(log.attributes["pass"], ParseJSON(true))`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+		{
+			name:      "resource: statements group with error mode",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(resource.attributes["test"], "pass")`}},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).Resource().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "resource: statements group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(true))`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+		{
+			name:      "scope: statements group with error mode",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(scope.attributes["test"], "pass")`}},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "scope: statements group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(true))`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructLogs()
+			processor, err := NewProcessor(tt.statements, tt.errorMode, false, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+			_, err = processor.ProcessLogs(context.Background(), td)
+			if tt.wantErrorWith != "" {
+				if err == nil {
+					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+				}
+				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				return
+			}
+			assert.NoError(t, err)
+			exTd := constructLogs()
+			tt.want(exTd)
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessLogs_CacheAccess(t *testing.T) {
+	tests := []struct {
+		name       string
+		statements []common.ContextStatements
+		want       func(td plog.Logs)
+	}{
+		{
+			name: "resource:resource.cache",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["test"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(resource.attributes["test"], resource.cache["test"])`}, SharedCache: true},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).Resource().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "resource:cache",
+			statements: []common.ContextStatements{
+				{
+					Context: common.Resource,
+					Statements: []string{
+						`set(cache["test"], "pass")`,
+						`set(attributes["test"], cache["test"])`,
+					},
+				},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).Resource().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "scope:scope.cache",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.cache["test"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(scope.attributes["test"], scope.cache["test"])`}, SharedCache: true},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "scope:cache",
+			statements: []common.ContextStatements{{
+				Context: common.Scope,
+				Statements: []string{
+					`set(cache["test"], "pass")`,
+					`set(attributes["test"], cache["test"])`,
+				},
+			}},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "log:log.cache",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(log.cache["test"], "pass")`}, SharedCache: true},
+				{Statements: []string{`set(log.attributes["test"], log.cache["test"])`}, SharedCache: true},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "log:cache",
+			statements: []common.ContextStatements{{
+				Context: common.Log,
+				Statements: []string{
+					`set(cache["test"], "pass")`,
+					`set(attributes["test"], cache["test"])`,
+				},
+			}},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "cache isolation",
+			statements: []common.ContextStatements{
+				{
+					Statements:  []string{`set(log.cache["shared"], "fail")`},
+					SharedCache: true,
+				},
+				{
+					Statements: []string{
+						`set(log.cache["test"], "pass")`,
+						`set(log.attributes["test"], log.cache["test"])`,
+						`set(log.attributes["test"], log.cache["shared"])`,
+					},
+				},
+				{
+					Context: common.Log,
+					Statements: []string{
+						`set(cache["test"], "pass")`,
+						`set(attributes["test"], cache["test"])`,
+						`set(attributes["test"], cache["shared"])`,
+						`set(attributes["test"], log.cache["shared"])`,
+					},
+				},
+				{
+					Statements:  []string{`set(log.attributes["test"], "pass") where log.cache["shared"] == "fail"`},
+					SharedCache: true,
+				},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructLogs()
+			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessLogs(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructLogs()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_NewProcessor_ConditionsParse(t *testing.T) {
+	type testCase struct {
+		name          string
+		statements    []common.ContextStatements
+		wantErrorWith string
+	}
+
+	contextsTests := map[string][]testCase{"log": nil, "resource": nil, "scope": nil}
+	for ctx := range contextsTests {
+		contextsTests[ctx] = []testCase{
+			{
+				name: "inferred: condition with context",
+				statements: []common.ContextStatements{
+					{
+						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
+						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
+					},
+				},
+			},
+			{
+				name: "inferred: condition without context",
+				statements: []common.ContextStatements{
+					{
+						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
+						Conditions: []string{`cache["test"] == ""`},
+					},
+				},
+				wantErrorWith: `missing context name for path "cache[test]"`,
+			},
+			{
+				name: "context defined: condition without context",
+				statements: []common.ContextStatements{
+					{
+						Context:    common.ContextID(ctx),
+						Statements: []string{`set(cache["test"], "pass")`},
+						Conditions: []string{`cache["test"] == ""`},
+					},
+				},
+			},
+			{
+				name: "context defined: condition with context",
+				statements: []common.ContextStatements{
+					{
+						Context:    common.ContextID(ctx),
+						Statements: []string{`set(attributes["test"], "pass")`},
+						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
+					},
+				},
+				wantErrorWith: fmt.Sprintf(`segment "%s" from path "%[1]s.cache[test]" is not a valid path`, ctx),
+			},
+		}
+	}
+
+	for ctx, tests := range contextsTests {
+		t.Run(ctx, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					_, err := NewProcessor(tt.statements, ottl.PropagateError, false, componenttest.NewNopTelemetrySettings())
+					if tt.wantErrorWith != "" {
+						if err == nil {
+							t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+						}
+						assert.Contains(t, err.Error(), tt.wantErrorWith)
+						return
+					}
+					require.NoError(t, err)
+				})
+			}
 		})
 	}
 }

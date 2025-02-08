@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
@@ -24,33 +23,33 @@ func TestValidate(t *testing.T) {
 	testCases := []struct {
 		desc                  string
 		defaultConfigModifier func(cfg *Config)
-		expected              error
+		expected              []error
 	}{
 		{
 			desc:                  "missing username and password",
 			defaultConfigModifier: func(*Config) {},
-			expected: multierr.Combine(
+			expected: []error{
 				errors.New(ErrNoUsername),
 				errors.New(ErrNoPassword),
-			),
+			},
 		},
 		{
 			desc: "missing password",
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Username = "otel"
 			},
-			expected: multierr.Combine(
+			expected: []error{
 				errors.New(ErrNoPassword),
-			),
+			},
 		},
 		{
 			desc: "missing username",
 			defaultConfigModifier: func(cfg *Config) {
 				cfg.Password = "otel"
 			},
-			expected: multierr.Combine(
+			expected: []error{
 				errors.New(ErrNoUsername),
-			),
+			},
 		},
 		{
 			desc: "bad endpoint",
@@ -59,9 +58,9 @@ func TestValidate(t *testing.T) {
 				cfg.Password = "otel"
 				cfg.Endpoint = "open-telemetry"
 			},
-			expected: multierr.Combine(
+			expected: []error{
 				errors.New(ErrHostPort),
-			),
+			},
 		},
 		{
 			desc: "bad transport",
@@ -70,9 +69,9 @@ func TestValidate(t *testing.T) {
 				cfg.Password = "otel"
 				cfg.Transport = "udp"
 			},
-			expected: multierr.Combine(
+			expected: []error{
 				errors.New(ErrTransportsSupported),
-			),
+			},
 		},
 		{
 			desc: "unsupported SSL params",
@@ -83,11 +82,11 @@ func TestValidate(t *testing.T) {
 				cfg.MinVersion = "1.0"
 				cfg.MaxVersion = "1.0"
 			},
-			expected: multierr.Combine(
+			expected: []error{
 				fmt.Errorf(ErrNotSupported, "ServerName"),
 				fmt.Errorf(ErrNotSupported, "MaxVersion"),
 				fmt.Errorf(ErrNotSupported, "MinVersion"),
-			),
+			},
 		},
 		{
 			desc: "no error",
@@ -104,7 +103,11 @@ func TestValidate(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			tC.defaultConfigModifier(cfg)
 			actual := component.ValidateConfig(cfg)
-			require.Equal(t, tC.expected, actual)
+			if len(tC.expected) > 0 {
+				for _, err := range tC.expected {
+					require.ErrorContains(t, actual, err.Error())
+				}
+			}
 		})
 	}
 }

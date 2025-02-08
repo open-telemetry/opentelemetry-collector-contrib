@@ -66,8 +66,8 @@ The following settings can be optionally configured:
       only be used if `insecure` is set to false.
     - `key_file`: path to the TLS key to use for TLS required connections. Should
       only be used if `insecure` is set to false.
-    - `insecure` (default = false): Disable verifying the server's certificate
-      chain and host name (`InsecureSkipVerify` in the tls config)
+    - `insecure_skip_verify` (default = false): Disable verifying the server's certificate
+      chain and host name (`InsecureSkipVerify` in the [tls config](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/configtls.go#L100))
     - `server_name_override`: ServerName indicates the name of the server requested by the client
       in order to support virtual hosting.
   - `kerberos`
@@ -94,7 +94,7 @@ The following settings can be optionally configured:
   - `on_error`: (default = false) If false, only the successfully processed messages are marked
     **Note: this can block the entire partition in case a message processing returns a permanent error**
 - `header_extraction`:
-  - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel piepline
+  - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel pipeline
   - `headers` (default = []): List of headers they'd like to extract from kafka record. 
   **Note: Matching pattern will be `exact`. Regexes are not supported as of now.** 
 
