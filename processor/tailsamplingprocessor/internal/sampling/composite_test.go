@@ -62,7 +62,7 @@ func TestCompositeEvaluatorNotSampled(t *testing.T) {
 	max100 := int64(100)
 	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
 	n2 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
-c := NewComposite(zap.NewNop(), 1000, []SubPolicyEvalParams{{n1, 100, "eval-1"}, {n2, 100, "eval-2"}}, FakeTimeProvider{}, false)
+	c := NewComposite(zap.NewNop(), 1000, []SubPolicyEvalParams{{n1, 100, "eval-1"}, {n2, 100, "eval-2"}}, FakeTimeProvider{}, false)
 
 	trace := createTrace()
 
@@ -95,7 +95,9 @@ func TestCompositeEvaluatorSampled(t *testing.T) {
 
 func TestCompositeEvaluatorSampled_RecordSubPolicy(t *testing.T) {
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
-	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
+	min0 := int64(0)
+	max100 := int64(100)
+	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", &min0, &max100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	c := NewComposite(zap.NewNop(), 1000, []SubPolicyEvalParams{{n1, 100, "eval-1"}, {n2, 100, "eval-2"}}, FakeTimeProvider{}, true)
 

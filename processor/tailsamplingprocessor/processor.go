@@ -416,10 +416,9 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 			tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToAttribute[decision])
 		}
 
-			// We associate the first policy with the sampling decision to understand what policy sampled a span
-			if samplingDecisions[decision] == nil {
-				samplingDecisions[decision] = p
-			}
+		// We associate the first policy with the sampling decision to understand what policy sampled a span
+		if samplingDecisions[decision] == nil {
+			samplingDecisions[decision] = p
 		}
 	}
 
