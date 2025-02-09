@@ -8,9 +8,8 @@ package zipkin
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/jaegertracing/jaeger-idl/model/v1"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestProcessHashtable(t *testing.T) {

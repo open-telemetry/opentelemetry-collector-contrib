@@ -18,12 +18,11 @@ import (
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
+	z "github.com/jaegertracing/jaeger-idl/thrift-gen/zipkincore"
 	"github.com/kr/pretty"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/jaegertracing/jaeger-idl/model/v1"
-	z "github.com/jaegertracing/jaeger-idl/thrift-gen/zipkincore"
 )
 
 const NumberOfFixtures = 3
@@ -87,7 +86,7 @@ func TestToDomainWithDurationFromServerAnnotations(t *testing.T) {
 	]}]`)
 	trc, err := ToDomain(zSpans)
 	require.NoError(t, err)
-	assert.Equal(t, 1000, int(trc.Spans[0].StartTime.Nanosecond()))
+	assert.Equal(t, 1000, trc.Spans[0].StartTime.Nanosecond())
 	assert.Equal(t, 9000, int(trc.Spans[0].Duration))
 }
 
@@ -98,7 +97,7 @@ func TestToDomainWithDurationFromClientAnnotations(t *testing.T) {
 	]}]`)
 	trc, err := ToDomain(zSpans)
 	require.NoError(t, err)
-	assert.Equal(t, 1000, int(trc.Spans[0].StartTime.Nanosecond()))
+	assert.Equal(t, 1000, trc.Spans[0].StartTime.Nanosecond())
 	assert.Equal(t, 9000, int(trc.Spans[0].Duration))
 }
 
@@ -162,7 +161,8 @@ func TestInvalidAnnotationTypeError(t *testing.T) {
 func TestValidateBase64Values(t *testing.T) {
 	numberToBase64 := func(num any) string {
 		buf := &bytes.Buffer{}
-		binary.Write(buf, binary.BigEndian, num)
+		err := binary.Write(buf, binary.BigEndian, num)
+		require.NoError(t, err)
 		encoded := base64.StdEncoding.EncodeToString(buf.Bytes())
 		return encoded
 	}

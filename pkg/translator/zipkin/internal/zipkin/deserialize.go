@@ -9,20 +9,26 @@ import (
 	"context"
 
 	"github.com/apache/thrift/lib/go/thrift"
-
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/zipkincore"
 )
 
 // SerializeThrift is only used in tests.
-func SerializeThrift(ctx context.Context, spans []*zipkincore.Span) []byte {
+func SerializeThrift(ctx context.Context, spans []*zipkincore.Span) ([]byte, error) {
 	t := thrift.NewTMemoryBuffer()
 	p := thrift.NewTBinaryProtocolConf(t, &thrift.TConfiguration{})
-	p.WriteListBegin(ctx, thrift.STRUCT, len(spans))
-	for _, s := range spans {
-		s.Write(ctx, p)
+	if err := p.WriteListBegin(ctx, thrift.STRUCT, len(spans)); err != nil {
+		return nil, err
 	}
-	p.WriteListEnd(ctx)
-	return t.Buffer.Bytes()
+
+	for _, s := range spans {
+		if err := s.Write(ctx, p); err != nil {
+			return nil, err
+		}
+	}
+	if err := p.WriteListEnd(ctx); err != nil {
+		return nil, err
+	}
+	return t.Buffer.Bytes(), nil
 }
 
 // DeserializeThrift decodes Thrift bytes to a list of spans.
