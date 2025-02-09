@@ -20,6 +20,7 @@ body:
       - confmap/provider/aesprovider
       - confmap/provider/s3provider
       - confmap/provider/secretsmanagerprovider
+      - confmap/provider/ssmprovider
       - connector/count
       - connector/datadog
       - connector/exceptions
