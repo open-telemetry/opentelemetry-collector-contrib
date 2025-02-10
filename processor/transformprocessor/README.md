@@ -40,6 +40,7 @@ If a context doesn't meet any of the conditions, then the associated statement w
 Each statement may have a Where clause that acts as an additional check for whether to execute the statement.
 
 The transform processor also allows configuring an optional field, `error_mode`, which will determine how the processor reacts to errors that occur while processing a statement.
+The top-level `error_mode` can be overridden at context statements level, offering more granular control over error handling. 
 
 | error_mode | description                                                                                                                                 |
 |------------|---------------------------------------------------------------------------------------------------------------------------------------------|
@@ -54,6 +55,7 @@ transform:
   error_mode: ignore
   <trace|metric|log>_statements:
     - context: string
+      error_mode: propagate
       conditions: 
         - string
         - string
@@ -62,6 +64,7 @@ transform:
         - string
         - string
     - context: string
+      error_mode: silent
       statements:
         - string
         - string
@@ -644,6 +647,25 @@ transform:
         # To access nested maps you can chain index ([]) operations.
         # If nested or attr3 do no exist in cache then nothing happens.
         - set(attributes["nested.attr3"], cache["nested"]["attr3"])
+```
+
+### Override context statements error mode
+
+```yaml
+transform:
+  # default error mode applied to all context statements
+  error_mode: propagate
+  log_statements:
+    - context: log
+      # overrides the default error mode for these statements
+      error_mode: ignore
+      statements:
+        - merge_maps(cache, ParseJSON(body), "upsert") where IsMatch(body, "^\\{")
+        - set(attributes["attr1"], cache["attr1"])
+
+    - context: log
+      statements:
+        - set(attributes["namespace"], attributes["k8s.namespace.name"])
 ```
 
 ### Get Severity of an Unstructured Log Body
