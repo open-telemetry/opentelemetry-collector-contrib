@@ -5,10 +5,8 @@ go 1.22.7
 require (
 	github.com/apache/thrift v0.21.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.66.0
 	github.com/jaegertracing/jaeger-idl v0.5.0
 	github.com/kr/pretty v0.3.1
-	github.com/jaegertracing/jaeger-idl v0.5.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.119.0
 	github.com/openzipkin/zipkin-go v0.4.3
@@ -21,7 +19,6 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
