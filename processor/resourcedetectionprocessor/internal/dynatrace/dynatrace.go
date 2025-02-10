@@ -10,7 +10,6 @@ package dynatrace // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"bufio"
 	"context"
-	"go.uber.org/zap"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -19,6 +18,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )

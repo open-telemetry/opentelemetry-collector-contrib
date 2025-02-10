@@ -5,15 +5,15 @@ package dynatrace
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/component"
-	"go.uber.org/zap"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/processor"
+	"go.uber.org/zap"
 )
 
 const testPropertiesFile = `
