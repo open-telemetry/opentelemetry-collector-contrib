@@ -13,8 +13,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -46,7 +47,7 @@ type Reader struct {
 	maxLogSize             int
 	headerSplitFunc        bufio.SplitFunc
 	contentSplitFunc       bufio.SplitFunc
-	decoder                *decode.Decoder
+	decoder                *encoding.Decoder
 	headerReader           *header.Reader
 	emitFunc               emit.Callback
 	deleteAtEOF            bool
@@ -141,7 +142,7 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 			return true
 		}
 
-		token, err := r.decoder.Decode(s.Bytes())
+		token, err := textutils.DecodeAsString(r.decoder, s.Bytes())
 		if err != nil {
 			r.set.Logger.Error("failed to decode header token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
@@ -206,7 +207,7 @@ func (r *Reader) readContents(ctx context.Context) {
 			return
 		}
 
-		token, err := r.decoder.Decode(s.Bytes())
+		token, err := r.decoder.Bytes(s.Bytes())
 		if err != nil {
 			r.set.Logger.Error("failed to decode token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
