@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -95,11 +95,6 @@ type HeaderConfig struct {
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
 }
 
-// Deprecated [v0.97.0] Use Build and WithSplitFunc option instead
-func (c Config) BuildWithSplitFunc(set component.TelemetrySettings, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
-	return c.Build(set, emit, WithSplitFunc(splitFunc))
-}
-
 func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts ...Option) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
@@ -113,7 +108,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		opt(o)
 	}
 
-	enc, err := decode.LookupEncoding(c.Encoding)
+	enc, err := textutils.LookupEncoding(c.Encoding)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find encoding: %w", err)
 	}
@@ -211,7 +206,7 @@ func (c Config) validate() error {
 		return errors.New("'max_batches' must not be negative")
 	}
 
-	enc, err := decode.LookupEncoding(c.Encoding)
+	enc, err := textutils.LookupEncoding(c.Encoding)
 	if err != nil {
 		return err
 	}
