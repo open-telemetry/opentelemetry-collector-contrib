@@ -114,9 +114,23 @@ stability-tests: otelcontribcol
 gogci:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="gci"
 
+.PHONY: tidylist
+tidylist: $(CROSSLINK)
+	cd internal/tidylist && \
+	$(CROSSLINK) tidylist \
+		--validate \
+		--allow-circular allow-circular.txt \
+		--skip cmd/otelcontribcol/go.mod \
+		--skip cmd/oteltestbedcol/go.mod \
+		tidylist.txt
+
+# internal/tidylist/tidylist.txt lists modules in topological order, to ensure `go mod tidy` converges.
 .PHONY: gotidy
 gotidy:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="tidy"
+	@for mod in $$(cat internal/tidylist/tidylist.txt); do \
+		echo "Tidying $$mod"; \
+		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=1.22.0) || exit $?; \
+	done
 
 .PHONY: remove-toolchain
 remove-toolchain:
@@ -409,18 +423,17 @@ endef
 
 .PHONY: update-otel
 update-otel:$(MULTIMOD)
+	# Make sure cmd/otelcontribcol/go.mod and cmd/oteltestbedcol/go.mod are present
+	$(MAKE) genotelcontribcol
+	$(MAKE) genoteltestbedcol
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash $(OTEL_STABLE_VERSION)
 	git add . && git commit -s -m "[chore] multimod update stable modules" ; \
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
 	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
 	$(MAKE) gotidy
-	# Ensure the otelcontribcol is generated, update deps, then
-	$(MAKE) genotelcontribcol
 	$(call updatehelper,$(CORE_VERSIONS),./cmd/otelcontribcol/go.mod,./cmd/otelcontribcol/builder-config.yaml)
-	$(MAKE) genotelcontribcol
-	# Ensure the otelcontribcol is generated.
-	$(MAKE) genoteltestbedcol
 	$(call updatehelper,$(CORE_VERSIONS),./cmd/oteltestbedcol/go.mod,./cmd/oteltestbedcol/builder-config.yaml)
+	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
 	$(MAKE) generate
 	$(MAKE) crosslink

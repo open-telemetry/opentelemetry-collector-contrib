@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.119.0
 	go.opentelemetry.io/collector/pdata v1.25.0
 	go.uber.org/goleak v1.3.0
+	golang.org/x/text v0.22.0
 )
 
 require (
@@ -43,7 +44,6 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
 	google.golang.org/grpc v1.70.0 // indirect
 	google.golang.org/protobuf v1.36.4 // indirect

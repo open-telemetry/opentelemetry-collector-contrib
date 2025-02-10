@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/elastic/go-docappender/v2 v2.3.3
-	github.com/elastic/go-elasticsearch/v7 v7.17.10
+	github.com/elastic/go-elasticsearch/v8 v8.17.0
 	github.com/elastic/go-structform v0.0.12
 	github.com/klauspost/compress v1.17.11
 	github.com/lestrrat-go/strftime v1.1.0
@@ -34,7 +34,6 @@ require (
 	github.com/armon/go-radix v1.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.6.0 // indirect
-	github.com/elastic/go-elasticsearch/v8 v8.17.0 // indirect
 	github.com/elastic/go-sysinfo v1.7.1 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -62,8 +61,8 @@ require (
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
-	go.elastic.co/apm/module/apmzap/v2 v2.6.2 // indirect
-	go.elastic.co/apm/v2 v2.6.2 // indirect
+	go.elastic.co/apm/module/apmzap/v2 v2.6.3 // indirect
+	go.elastic.co/apm/v2 v2.6.3 // indirect
 	go.elastic.co/fastjson v1.4.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.25.0 // indirect
@@ -91,9 +90,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
 	google.golang.org/grpc v1.70.0 // indirect
 	google.golang.org/protobuf v1.36.4 // indirect
