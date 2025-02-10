@@ -185,10 +185,8 @@ type Log struct {
 func generateLogs(resourceAttrs map[string]string, logs []Log) plog.Logs {
 	ld := plog.NewLogs()
 	rls := ld.ResourceLogs().AppendEmpty()
-	if resourceAttrs != nil {
-		for k, v := range resourceAttrs {
-			rls.Resource().Attributes().PutStr(k, v)
-		}
+	for k, v := range resourceAttrs {
+		rls.Resource().Attributes().PutStr(k, v)
 	}
 	logSlice := rls.ScopeLogs().AppendEmpty().LogRecords()
 
