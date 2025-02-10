@@ -35,6 +35,7 @@ func TestLoadConfig(t *testing.T) {
 				Scopes:         []string{"api.metrics"},
 				TokenURL:       "https://example.com/oauth2/default/v1/token",
 				Timeout:        time.Second,
+				ExpiryBuffer:   5 * time.Minute,
 			},
 		},
 		{
@@ -55,6 +56,7 @@ func TestLoadConfig(t *testing.T) {
 					InsecureSkipVerify: false,
 					ServerName:         "",
 				},
+				ExpiryBuffer: 15 * time.Second,
 			},
 		},
 		{
