@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/spanner"
+
 	"github.com/stretchr/testify/assert"
 )
 

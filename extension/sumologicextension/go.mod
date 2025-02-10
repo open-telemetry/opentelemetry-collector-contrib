@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/config/confighttp v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/config/configopaque v1.25.1-0.20250210123122-44b3eeda354c
+	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250210155359-76f44e1e21d1
 	go.opentelemetry.io/collector/extension v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/extension/auth v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/featuregate v1.25.1-0.20250210123122-44b3eeda354c
@@ -27,12 +28,18 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
+	github.com/knadh/koanf/maps v0.1.1 // indirect
+	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
+	github.com/knadh/koanf/v2 v2.1.2 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
+	github.com/mitchellh/copystructure v1.2.0 // indirect
+	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
@@ -45,6 +52,7 @@ require (
 	go.opentelemetry.io/collector/config/configauth v0.119.1-0.20250210123122-44b3eeda354c // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.25.1-0.20250210123122-44b3eeda354c // indirect
 	go.opentelemetry.io/collector/config/configtls v1.25.1-0.20250210123122-44b3eeda354c // indirect
+	go.opentelemetry.io/collector/confmap v1.25.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.25.1-0.20250210123122-44b3eeda354c // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect

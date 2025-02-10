@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/logging/apiv2/loggingpb"
+
 	"github.com/iancoleman/strcase"
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"

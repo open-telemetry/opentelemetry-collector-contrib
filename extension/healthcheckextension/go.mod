@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/config/confighttp v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/config/configtls v1.25.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/confmap v1.25.1-0.20250210123122-44b3eeda354c
+	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250210155359-76f44e1e21d1
 	go.opentelemetry.io/collector/extension v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/extension/extensiontest v0.119.1-0.20250210123122-44b3eeda354c

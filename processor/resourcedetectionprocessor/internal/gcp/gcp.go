@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"cloud.google.com/go/compute/metadata"
+
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"

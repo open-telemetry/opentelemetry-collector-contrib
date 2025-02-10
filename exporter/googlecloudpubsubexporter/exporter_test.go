@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	pb "cloud.google.com/go/pubsub/apiv1/pubsubpb"
+
 	"github.com/google/uuid"
 	"github.com/googleapis/gax-go/v2"
 	"github.com/stretchr/testify/assert"

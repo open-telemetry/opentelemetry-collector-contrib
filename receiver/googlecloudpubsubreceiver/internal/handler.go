@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
+
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
