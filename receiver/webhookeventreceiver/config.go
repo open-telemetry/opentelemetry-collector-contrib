@@ -20,13 +20,14 @@ var (
 
 // Config defines configuration for the Generic Webhook receiver.
 type Config struct {
-	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	ReadTimeout             string                   `mapstructure:"read_timeout"`          // wait time for reading request headers in ms. Default is 500ms.
-	WriteTimeout            string                   `mapstructure:"write_timeout"`         // wait time for writing request response in ms. Default is 500ms.
-	Path                    string                   `mapstructure:"path"`                  // path for data collection. Default is /events
-	HealthPath              string                   `mapstructure:"health_path"`           // path for health check api. Default is /health_check
-	RequiredHeader          RequiredHeader           `mapstructure:"required_header"`       // optional setting to set a required header for all requests to have
-	SplitLogsAtNewLine      bool                     `mapstructure:"split_logs_at_newline"` // optional setting to split logs into multiple log records
+	confighttp.ServerConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	ReadTimeout                string                   `mapstructure:"read_timeout"`                  // wait time for reading request headers in ms. Default is 500ms.
+	WriteTimeout               string                   `mapstructure:"write_timeout"`                 // wait time for writing request response in ms. Default is 500ms.
+	Path                       string                   `mapstructure:"path"`                          // path for data collection. Default is /events
+	HealthPath                 string                   `mapstructure:"health_path"`                   // path for health check api. Default is /health_check
+	RequiredHeader             RequiredHeader           `mapstructure:"required_header"`               // optional setting to set a required header for all requests to have
+	SplitLogsAtNewLine         bool                     `mapstructure:"split_logs_at_newline"`         // optional setting to split logs into multiple log records
+	ConvertHeadersToAttributes bool                     `mapstructure:"convert_headers_to_attributes"` // optional to convert all headers to attributes
 }
 
 type RequiredHeader struct {
