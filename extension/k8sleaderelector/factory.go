@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package leaderelector // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector"
+package k8sleaderelector // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector"
 
 import (
 	"context"
@@ -42,7 +42,7 @@ func createExtension(
 ) (extension.Extension, error) {
 	baseCfg, ok := cfg.(*Config)
 	if !ok {
-		return nil, errors.New("invalid config, cannot create extension leaderelector")
+		return nil, errors.New("invalid config, cannot create extension k8sleaderelector")
 	}
 
 	// Initialize k8s client in factory as doing it in extension.Start()

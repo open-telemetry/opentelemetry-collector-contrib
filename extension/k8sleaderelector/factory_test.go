@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package leaderelector
+package k8sleaderelector
 
 import (
 	"context"
