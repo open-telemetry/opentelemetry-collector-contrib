@@ -6,9 +6,10 @@ package hostmetadata // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/component"
+
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
-	"go.opentelemetry.io/collector/component"
 )
 
 func GetSourceProvider(set component.TelemetrySettings, configHostname string, timeout time.Duration) (source.Provider, error) {
