@@ -87,18 +87,16 @@ Valid values for `context` are:
 transform:
   error_mode: ignore
   metric_statements:
-    - context: metric
-      conditions: 
-        - type == METRIC_DATA_TYPE_SUM
+    - conditions: 
+        - metric.type == METRIC_DATA_TYPE_SUM
       statements:
-        - set(description, "Sum")
+        - set(metric.description, "Sum")
 
   log_statements:
-    - context: log
-      conditions:
-      - IsMap(body) and body["object"] != nil
+    - conditions:
+      - IsMap(log.body) and log.body["object"] != nil
       statements:
-      - set(body, attributes["http.route"])
+      - set(log.body, log.attributes["http.route"])
 ```
 
 
@@ -232,7 +230,7 @@ For example, __the following context statement is not possible__ because it atte
 metric_statements:
 - context: metric
   statements:
-  - set(description, "test passed") where datapoints.attributes["test"] == "pass"
+  - set(metric.description, "test passed") where datapoints.attributes["test"] == "pass"
 ```
 
 Context __ALWAYS__ supply access to the items "higher" in the protobuf definition that are associated to the telemetry being transformed.
@@ -247,7 +245,7 @@ For example, __the following context statement is possible__ because `datapoint`
 metric_statements:
 - context: datapoint
   statements:
-    - set(metric.description, "test passed") where attributes["test"] == "pass"
+    - set(metric.description, "test passed") where datapoint.attributes["test"] == "pass"
 ```
 
 Whenever possible, associate your statements to the context that the statement intend to transform.
@@ -595,8 +593,8 @@ Supported aggregation functions are:
 
 Examples:
 
-- `aggregate_on_attributes("sum", ["attr1", "attr2"]) where name == "system.memory.usage"`
-- `aggregate_on_attributes("max") where name == "system.memory.usage"`
+- `aggregate_on_attributes("sum", ["attr1", "attr2"]) where metric.name == "system.memory.usage"`
+- `aggregate_on_attributes("max") where metric.name == "system.memory.usage"`
 
 The `aggregate_on_attributes` function can also be used in conjunction with 
 [keep_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#keep_matching_keys) or
@@ -640,7 +638,7 @@ Supported aggregation functions are:
 
 Examples:
 
-- `aggregate_on_attribute_value("sum", "attr1", ["val1", "val2"], "new_val") where name == "system.memory.usage"`
+- `aggregate_on_attribute_value("sum", "attr1", ["val1", "val2"], "new_val") where metric.name == "system.memory.usage"`
 
 The `aggregate_on_attribute_value` function can also be used in conjunction with 
 [keep_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#keep_matching_keys) or
@@ -650,8 +648,8 @@ For example, to remove attribute keys matching a regex and aggregate the metrics
 
 ```yaml
 statements:
-   - delete_matching_keys(attributes, "(?i).*myRegex.*") where name == "system.memory.usage"
-   - aggregate_on_attribute_value("sum", "attr1", ["val1", "val2"], "new_val") where name == "system.memory.usage"
+   - delete_matching_keys(metric.attributes, "(?i).*myRegex.*") where metric.name == "system.memory.usage"
+   - aggregate_on_attribute_value("sum", "attr1", ["val1", "val2"], "new_val") where metric.name == "system.memory.usage"
 ```
 
 To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
@@ -665,10 +663,8 @@ Set attribute `test` to `"pass"` if the attribute `test` does not exist:
 transform:
   error_mode: ignore
   trace_statements:
-    - context: span
-      statements:
-        # accessing a map with a key that does not exist will return nil. 
-        - set(attributes["test"], "pass") where attributes["test"] == nil
+    # accessing a map with a key that does not exist will return nil. 
+    - set(span.attributes["test"], "pass") where span.attributes["test"] == nil
 ``` 
 
 ### Rename attribute
@@ -680,10 +676,8 @@ You can either set a new attribute and delete the old:
 transform:
   error_mode: ignore
   trace_statements:
-    - context: resource
-      statements:
-        - set(attributes["namespace"], attributes["k8s.namespace.name"])
-        - delete_key(attributes, "k8s.namespace.name") 
+    - set(resource.attributes["namespace"], resource.attributes["k8s.namespace.name"])
+    - delete_key(resource.attributes, "k8s.namespace.name") 
 ``` 
 
 Or you can update the key using regex:
@@ -692,9 +686,7 @@ Or you can update the key using regex:
 transform:
   error_mode: ignore
   trace_statements:
-    - context: resource
-      statements:
-        - replace_all_patterns(attributes, "key", "k8s\\.namespace\\.name", "namespace")
+    - replace_all_patterns(resource.attributes, "key", "k8s\\.namespace\\.name", "namespace")
 ``` 
 
 ### Move field to attribute
@@ -704,9 +696,7 @@ Set attribute `body` to the value of the log body:
 transform:
   error_mode: ignore
   log_statements:
-    - context: log
-      statements: 
-        - set(attributes["body"], body)
+    - set(log.attributes["body"], log.body)
 ``` 
 
 ### Combine two attributes
@@ -715,10 +705,8 @@ Set attribute `test` to the value of attributes `"foo"` and `"bar"` combined.
 transform:
   error_mode: ignore
   trace_statements:
-    - context: resource
-      statements:
-        # Use Concat function to combine any number of string, separated by a delimiter.
-        - set(attributes["test"], Concat([attributes["foo"], attributes["bar"]], " "))
+    # Use Concat function to combine any number of string, separated by a delimiter.
+    - set(resource.attributes["test"], Concat([resource.attributes["foo"], resource.attributes["bar"]], " "))
 ```
 
 ### Parsing JSON logs
@@ -740,22 +728,20 @@ add specific fields as attributes on the log:
 
 ```yaml
 transform:
-  error_mode: ignore
   log_statements:
-    - context: log
-      statements:
+    - statements:
         # Parse body as JSON and merge the resulting map with the cache map, ignoring non-json bodies.
         # cache is a field exposed by OTTL that is a temporary storage place for complex operations.
-        - merge_maps(cache, ParseJSON(body), "upsert") where IsMatch(body, "^\\{") 
+        - merge_maps(log.cache, ParseJSON(log.body), "upsert") where IsMatch(log.body, "^\\{") 
           
         # Set attributes using the values merged into cache.
         # If the attribute doesn't exist in cache then nothing happens.
-        - set(attributes["attr1"], cache["attr1"])
-        - set(attributes["attr2"], cache["attr2"])
+        - set(log.attributes["attr1"], log.cache["attr1"])
+        - set(log.attributes["attr2"], log.cache["attr2"])
         
         # To access nested maps you can chain index ([]) operations.
-        # If nested or attr3 do no exist in cache then nothing happens.
-        - set(attributes["nested.attr3"], cache["nested"]["attr3"])
+        # If nested or attr3 do not exist in cache then nothing happens.
+        - set(log.attributes["nested.attr3"], log.cache["nested"]["attr3"])
 ```
 
 ### Override context statements error mode
@@ -765,16 +751,15 @@ transform:
   # default error mode applied to all context statements
   error_mode: propagate
   log_statements:
-    - context: log
-      # overrides the default error mode for these statements
-      error_mode: ignore
+    # overrides the default error mode for these statements
+    - error_mode: ignore
       statements:
-        - merge_maps(cache, ParseJSON(body), "upsert") where IsMatch(body, "^\\{")
-        - set(attributes["attr1"], cache["attr1"])
+        - merge_maps(log.cache, ParseJSON(log.body), "upsert") where IsMatch(log.body, "^\\{")
+        - set(log.attributes["attr1"], log.cache["attr1"])
 
-    - context: log
-      statements:
-        - set(attributes["namespace"], attributes["k8s.namespace.name"])
+    # uses the default error mode
+    - statements:
+        - set(log.attributes["namespace"], log.attributes["k8s.namespace.name"])
 ```
 
 ### Get Severity of an Unstructured Log Body
@@ -791,11 +776,9 @@ You can find the severity using IsMatch:
 transform:
   error_mode: ignore
   log_statements:
-    - context: log
-      statements:
-        - set(severity_number, SEVERITY_NUMBER_INFO) where IsString(body) and IsMatch(body, "\\sINFO\\s")
-        - set(severity_number, SEVERITY_NUMBER_WARN) where IsString(body) and IsMatch(body, "\\sWARN\\s")
-        - set(severity_number, SEVERITY_NUMBER_ERROR) where IsString(body) and IsMatch(body, "\\sERROR\\s")
+    - set(log.severity_number, SEVERITY_NUMBER_INFO) where IsString(log.body) and IsMatch(log.body, "\\sINFO\\s")
+    - set(log.severity_number, SEVERITY_NUMBER_WARN) where IsString(log.body) and IsMatch(log.body, "\\sWARN\\s")
+    - set(log.severity_number, SEVERITY_NUMBER_ERROR) where IsString(log.body) and IsMatch(log.body, "\\sERROR\\s")
 ```
 
 ## Copy attributes matching regular expression to a separate location
@@ -807,11 +790,10 @@ location `kubernetes.labels`, use the following configuration:
 transform:
   error_mode: ignore
   trace_statements:
-    - context: resource
-      statements:
-        - set(cache["attrs"], attributes)
-        - keep_matching_keys(cache["attrs"], "pod_labels_.*")
-        - set(attributes["kubernetes.labels"], cache["attrs"])
+    - statements:
+        - set(resource.cache["attrs"], resource.attributes)
+        - keep_matching_keys(resource.cache["attrs"], "pod_labels_.*")
+        - set(resource.attributes["kubernetes.labels"], resource.cache["attrs"])
 ```
 
 The configuration can be used also with `delete_matching_keys()` to copy the attributes that do not match the regular expression.
@@ -895,9 +877,7 @@ The feature is currently only available for log processing.
   transform:
     flatten_data: true
     log_statements:
-      - context: log
-        statements:
-          - set(resource.attributes["to"], attributes["from"])
+      - set(log.resource.attributes["to"], log.attributes["from"])
   ```
   
   Run collector: `./otelcol --config config.yaml --feature-gates=transform.flatten.logs`
