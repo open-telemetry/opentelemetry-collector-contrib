@@ -34,6 +34,7 @@ const (
 	physicalReads           = "physical reads"
 	physicalReadsDirect     = "physical reads direct"
 	physicalWrites          = "physical writes"
+	physicalWritesDirect    = "physical writes direct"
 	sessionLogicalReads     = "session logical reads"
 	cpuTime                 = "CPU used by this session"
 	pgaMemory               = "session pga memory"
@@ -110,6 +111,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalReads.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalReadsDirect.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalWrites.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalWritesDirect.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbLogicalReads.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPgaMemory.Enabled ||
@@ -171,6 +173,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			case physicalWrites:
 				err := s.mb.RecordOracledbPhysicalWritesDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalWritesDirect:
+				err := s.mb.RecordOracledbPhysicalWritesDirectDataPoint(now, row["VALUE"])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}

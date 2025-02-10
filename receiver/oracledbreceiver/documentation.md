@@ -273,6 +273,14 @@ Number of reads directly from disk, bypassing the buffer cache
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {reads} | Sum | Int | Cumulative | true |
 
+### oracledb.physical_writes_direct
+
+Number of writes directly from disk, bypassing the buffer cache
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {writes} | Sum | Int | Cumulative | true |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |

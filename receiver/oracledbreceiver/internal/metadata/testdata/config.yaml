@@ -39,6 +39,8 @@ all_set:
       enabled: true
     oracledb.physical_writes:
       enabled: true
+    oracledb.physical_writes_direct:
+      enabled: true
     oracledb.processes.limit:
       enabled: true
     oracledb.processes.usage:
@@ -101,6 +103,8 @@ none_set:
     oracledb.physical_reads_direct:
       enabled: false
     oracledb.physical_writes:
+      enabled: false
+    oracledb.physical_writes_direct:
       enabled: false
     oracledb.processes.limit:
       enabled: false
