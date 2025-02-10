@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/leaderelector
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector
 
 go 1.22.0
 

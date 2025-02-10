@@ -7,7 +7,6 @@ status:
   distributions: []
   codeowners:
     active: [rakesh-garimella, dmitryax]
-  sponsors: [dmitryax]
 
 # Skip life cycle tests as we need a real kubeconfig to run the lifecycle tests, as the test needs to generate a kubeconfig client. Enable them once we have a proper solution for this
 tests:
