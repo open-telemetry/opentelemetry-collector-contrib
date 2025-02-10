@@ -41,7 +41,6 @@ require (
 	github.com/aws/aws-sdk-go v1.55.6 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.119.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.119.0 // indirect
@@ -91,6 +90,7 @@ require (
 )
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.119.0
 	go.opentelemetry.io/collector/component/componenttest v0.119.0
@@ -429,7 +429,7 @@ require (
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
-	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
+	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.5.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
