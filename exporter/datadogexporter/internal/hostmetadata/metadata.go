@@ -34,10 +34,10 @@ import (
 
 // metadataFromAttributes gets metadata info from attributes following
 // OpenTelemetry semantic conventions
-func metadataFromAttributes(attrs pcommon.Map) payload.HostMetadata {
+func metadataFromAttributes(attrs pcommon.Map, hostFromAttributesHandler attributes.HostFromAttributesHandler) payload.HostMetadata {
 	hm := payload.HostMetadata{Meta: &payload.Meta{}, Tags: &payload.HostTags{}}
 
-	if src, ok := attributes.SourceFromAttrs(attrs); ok && src.Kind == source.HostnameKind {
+	if src, ok := attributes.SourceFromAttrs(attrs, hostFromAttributesHandler); ok && src.Kind == source.HostnameKind {
 		hm.InternalHostname = src.Identifier
 		hm.Meta.Hostname = src.Identifier
 	}
@@ -184,7 +184,7 @@ func RunPusher(ctx context.Context, params exporter.Settings, pcfg PusherConfig,
 	// *must* be deep copied before calling `fillHostMetadata`.
 	hostMetadata := payload.NewEmpty()
 	if pcfg.UseResourceMetadata {
-		hostMetadata = metadataFromAttributes(attrs)
+		hostMetadata = metadataFromAttributes(attrs, nil)
 	}
 	fillHostMetadata(params, pcfg, p, &hostMetadata)
 	// Consume one first time
