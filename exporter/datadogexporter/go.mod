@@ -26,11 +26,11 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.64.0-devel
 	github.com/DataDog/datadog-agent/pkg/status/health v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace v0.64.0-devel.0.20250203170818-31c3d5c28ba0
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.61.0
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.62.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/startstop v0.61.0 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.34.0
 	github.com/DataDog/datadog-go/v5 v5.6.0
-	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
+	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.25.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.25.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.25.0
@@ -107,12 +107,12 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
-	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.61.0 // indirect
-	github.com/DataDog/datadog-agent/comp/core/flare/types v0.61.0 // indirect
-	github.com/DataDog/datadog-agent/comp/core/secrets v0.61.0 // indirect
+	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.62.1 // indirect
+	github.com/DataDog/datadog-agent/comp/core/flare/types v0.62.1 // indirect
+	github.com/DataDog/datadog-agent/comp/core/secrets v0.62.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.64.0-devel // indirect
-	github.com/DataDog/datadog-agent/comp/core/telemetry v0.61.0 // indirect
-	github.com/DataDog/datadog-agent/comp/def v0.61.0 // indirect
+	github.com/DataDog/datadog-agent/comp/core/telemetry v0.62.1 // indirect
+	github.com/DataDog/datadog-agent/comp/def v0.62.1 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.64.0-devel.0.20250203170818-31c3d5c28ba0 // indirect
 	github.com/DataDog/datadog-agent/comp/trace/compression/def v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.62.1 // indirect
@@ -137,9 +137,9 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/fxutil v0.62.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/http v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.64.0-devel.0.20250129111638-01c8fb06949e // indirect
-	github.com/DataDog/datadog-agent/pkg/util/optional v0.61.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.61.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.61.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/optional v0.62.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.62.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.62.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/statstracker v0.61.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/system v0.62.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.62.1 // indirect
