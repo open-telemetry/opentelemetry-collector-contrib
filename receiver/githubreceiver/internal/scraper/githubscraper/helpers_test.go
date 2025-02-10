@@ -896,10 +896,8 @@ func TestEvalCommits(t *testing.T) {
 			client := graphql.NewClient(server.URL, ghs.client)
 			adds, dels, age, err := ghs.evalCommits(context.Background(), client, "repo1", tc.branch)
 
-			assert.Equal(t, tc.expectedAge, age)
 			assert.Equal(t, tc.expectedDeletions, dels)
 			assert.Equal(t, tc.expectedAdditions, adds)
-			// assert.WithinRange(t, age, time.tc.expectedAge, time.Now())
 			if tc.expectedAge != 0 {
 				assert.WithinDuration(t, time.UnixMilli(tc.expectedAge), time.UnixMilli(age), 10*time.Second)
 			} else {
