@@ -33,6 +33,7 @@ const (
 	userRollbacks           = "user rollbacks"
 	physicalReads           = "physical reads"
 	physicalReadsDirect     = "physical reads direct"
+	physicalReadIORequests  = "physical read IO requests"
 	physicalWrites          = "physical writes"
 	physicalWritesDirect    = "physical writes direct"
 	sessionLogicalReads     = "session logical reads"
@@ -110,6 +111,7 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbUserRollbacks.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalReads.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalReadsDirect.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalReadIoRequests.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalWrites.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalWritesDirect.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbLogicalReads.Enabled ||
@@ -168,6 +170,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			case physicalReadsDirect:
 				err := s.mb.RecordOracledbPhysicalReadsDirectDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalReadIORequests:
+				err := s.mb.RecordOracledbPhysicalReadIoRequestsDataPoint(now, row["VALUE"])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}

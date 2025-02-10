@@ -33,6 +33,8 @@ all_set:
       enabled: true
     oracledb.pga_memory:
       enabled: true
+    oracledb.physical_read_io_requests:
+      enabled: true
     oracledb.physical_reads:
       enabled: true
     oracledb.physical_reads_direct:
@@ -97,6 +99,8 @@ none_set:
     oracledb.parse_calls:
       enabled: false
     oracledb.pga_memory:
+      enabled: false
+    oracledb.physical_read_io_requests:
       enabled: false
     oracledb.physical_reads:
       enabled: false
