@@ -37,7 +37,7 @@ func TestSerializeProfile(t *testing.T) {
 				pt.SetUnitStrindex(3)
 
 				a := profile.AttributeTable().AppendEmpty()
-				a.SetKey("process.executable.build_id.profiling")
+				a.SetKey("process.executable.build_id.htlhash")
 				a.Value().SetStr("600DCAFE4A110000F2BF38C493F5FB92")
 				a = profile.AttributeTable().AppendEmpty()
 				a.SetKey("profile.frame.type")

@@ -312,7 +312,7 @@ func getStringFromAttribute(profile pprofile.Profile, record attributable, attrK
 // old-style Build ID (stored with the mapping) and Build ID as attribute.
 func getBuildID(profile pprofile.Profile, mapping pprofile.Mapping) (libpf.FileID, error) {
 	// Fetch build ID from profiles.attribute_table.
-	buildIDStr, err := getStringFromAttribute(profile, mapping, "process.executable.build_id.profiling")
+	buildIDStr, err := getStringFromAttribute(profile, mapping, "process.executable.build_id.htlhash")
 	if err != nil {
 		return libpf.FileID{}, err
 	}

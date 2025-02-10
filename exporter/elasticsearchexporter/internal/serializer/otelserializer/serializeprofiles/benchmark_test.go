@@ -26,10 +26,10 @@ func BenchmarkTransform(b *testing.B) {
 				a.SetKey("profile.frame.type")
 				a.Value().SetStr("native")
 				a = p.AttributeTable().AppendEmpty()
-				a.SetKey("process.executable.build_id.profiling")
+				a.SetKey("process.executable.build_id.htlhash")
 				a.Value().SetStr(buildIDEncoded)
 				a = p.AttributeTable().AppendEmpty()
-				a.SetKey("process.executable.build_id.profiling")
+				a.SetKey("process.executable.build_id.htlhash")
 				a.Value().SetStr(buildID2Encoded)
 
 				p.StringTable().Append("firefox", "libc.so", "samples", "count", "cpu", "nanoseconds")
