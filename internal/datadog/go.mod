@@ -178,3 +178,11 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.5.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => ../metadataproviders
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../k8sconfig
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => ../aws/ecsutil
