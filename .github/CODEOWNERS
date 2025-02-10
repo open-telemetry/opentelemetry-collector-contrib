@@ -11,6 +11,11 @@
 
 * @open-telemetry/collector-contrib-approvers
 
+# Files owned by collector-releases-approvers
+.github/workflows/prepare-release.yml                            @open-telemetry/collector-contrib-approvers @open-telemetry/collector-releases-approvers
+.github/workflows/scripts/release-prepare-release.sh             @open-telemetry/collector-contrib-approvers @open-telemetry/collector-releases-approvers
+.github/workflows/scripts/set_release_tag.sh                     @open-telemetry/collector-contrib-approvers @open-telemetry/collector-releases-approvers
+
 # Start components list
 
 cmd/githubgen/                                                   @open-telemetry/collector-contrib-approvers @atoulme
