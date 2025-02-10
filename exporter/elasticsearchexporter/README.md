@@ -254,13 +254,11 @@ production. Profiles only support the OTel mapping mode.
 Example:
 
 ```yaml
-[...]
-service:
-	extensions: [basicauth]
-	pipelines:
-		profiles:
-			receivers: [otlp]
-			exporters: [elasticsearch]
+exporters:
+  elasticsearch:
+    endpoint: https://elastic.example.com:9200
+    mapping:
+      mode: otel
 ```
 
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
