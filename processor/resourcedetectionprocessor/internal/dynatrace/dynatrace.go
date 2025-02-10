@@ -10,6 +10,7 @@ package dynatrace // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"bufio"
 	"context"
+	"go.uber.org/zap"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -30,9 +31,10 @@ var dtHostProperties = []string{"dt.entity.host", "host.name"}
 
 type Detector struct {
 	enrichmentDirectory string
+	logger              *zap.Logger
 }
 
-func NewDetector(_ processor.Settings, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, _ internal.DetectorConfig) (internal.Detector, error) {
 	enrichmentDir := "/var/lib/dynatrace/enrichment"
 	if runtime.GOOS == "windows" {
 		// Windows default is "%ProgramData%\dynatrace\enrichment"
@@ -48,6 +50,7 @@ func NewDetector(_ processor.Settings, _ internal.DetectorConfig) (internal.Dete
 
 	return &Detector{
 		enrichmentDirectory: enrichmentDir,
+		logger:              set.Logger,
 	}, nil
 }
 
@@ -78,9 +81,11 @@ func (d Detector) readPropertiesFile(attributes pcommon.Map) error {
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
+		line := scanner.Text()
 		// split by the first "=" character. If there is another "=" afterward, this will be part of the value
-		split := strings.SplitN(scanner.Text(), "=", 2)
+		split := strings.SplitN(line, "=", 2)
 		if len(split) != 2 {
+			d.logger.Debug("Skipping line as it does not match the expected format of '<key>=<value>", zap.String("line", line))
 			continue
 		}
 		key, value := split[0], split[1]
@@ -93,9 +98,5 @@ func (d Detector) readPropertiesFile(attributes pcommon.Map) error {
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	return nil
+	return scanner.Err()
 }

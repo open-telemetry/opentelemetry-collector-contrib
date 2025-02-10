@@ -5,6 +5,8 @@ package dynatrace
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -19,6 +21,7 @@ dt.entity.host=my-host-from-properties
 host.name=my-host-from-properties
 dt.entity.host_group=my-host-group-from-properties
 dt.foo=bar
+invalid-entry
 `
 
 func TestDetectorNewDetector(t *testing.T) {
@@ -36,7 +39,11 @@ func TestDetectorNewDetector(t *testing.T) {
 }
 
 func TestDetector_DetectFromProperties(t *testing.T) {
-	d, err := NewDetector(processor.Settings{}, nil)
+	d, err := NewDetector(processor.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, nil)
 
 	require.NoError(t, err)
 
@@ -65,7 +72,11 @@ func TestDetector_DetectFromProperties(t *testing.T) {
 }
 
 func TestDetector_DetectNoFileAvailable(t *testing.T) {
-	d, err := NewDetector(processor.Settings{}, nil)
+	d, err := NewDetector(processor.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}, nil)
 
 	require.NoError(t, err)
 
