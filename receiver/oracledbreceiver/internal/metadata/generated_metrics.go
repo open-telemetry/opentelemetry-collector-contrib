@@ -920,6 +920,57 @@ func newMetricOracledbPhysicalReadsDirect(cfg MetricConfig) metricOracledbPhysic
 	return m
 }
 
+type metricOracledbPhysicalWrites struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.physical_writes metric with initial data.
+func (m *metricOracledbPhysicalWrites) init() {
+	m.data.SetName("oracledb.physical_writes")
+	m.data.SetDescription("Number of physical writes")
+	m.data.SetUnit("{writes}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbPhysicalWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbPhysicalWrites) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbPhysicalWrites) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbPhysicalWrites(cfg MetricConfig) metricOracledbPhysicalWrites {
+	m := metricOracledbPhysicalWrites{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricOracledbProcessesLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1449,6 +1500,7 @@ type MetricsBuilder struct {
 	metricOracledbPgaMemory             metricOracledbPgaMemory
 	metricOracledbPhysicalReads         metricOracledbPhysicalReads
 	metricOracledbPhysicalReadsDirect   metricOracledbPhysicalReadsDirect
+	metricOracledbPhysicalWrites        metricOracledbPhysicalWrites
 	metricOracledbProcessesLimit        metricOracledbProcessesLimit
 	metricOracledbProcessesUsage        metricOracledbProcessesUsage
 	metricOracledbSessionsLimit         metricOracledbSessionsLimit
@@ -1502,6 +1554,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricOracledbPgaMemory:             newMetricOracledbPgaMemory(mbc.Metrics.OracledbPgaMemory),
 		metricOracledbPhysicalReads:         newMetricOracledbPhysicalReads(mbc.Metrics.OracledbPhysicalReads),
 		metricOracledbPhysicalReadsDirect:   newMetricOracledbPhysicalReadsDirect(mbc.Metrics.OracledbPhysicalReadsDirect),
+		metricOracledbPhysicalWrites:        newMetricOracledbPhysicalWrites(mbc.Metrics.OracledbPhysicalWrites),
 		metricOracledbProcessesLimit:        newMetricOracledbProcessesLimit(mbc.Metrics.OracledbProcessesLimit),
 		metricOracledbProcessesUsage:        newMetricOracledbProcessesUsage(mbc.Metrics.OracledbProcessesUsage),
 		metricOracledbSessionsLimit:         newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
@@ -1608,6 +1661,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbPgaMemory.emit(ils.Metrics())
 	mb.metricOracledbPhysicalReads.emit(ils.Metrics())
 	mb.metricOracledbPhysicalReadsDirect.emit(ils.Metrics())
+	mb.metricOracledbPhysicalWrites.emit(ils.Metrics())
 	mb.metricOracledbProcessesLimit.emit(ils.Metrics())
 	mb.metricOracledbProcessesUsage.emit(ils.Metrics())
 	mb.metricOracledbSessionsLimit.emit(ils.Metrics())
@@ -1821,6 +1875,16 @@ func (mb *MetricsBuilder) RecordOracledbPhysicalReadsDirectDataPoint(ts pcommon.
 		return fmt.Errorf("failed to parse int64 for OracledbPhysicalReadsDirect, value was %s: %w", inputVal, err)
 	}
 	mb.metricOracledbPhysicalReadsDirect.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbPhysicalWritesDataPoint adds a data point to oracledb.physical_writes metric.
+func (mb *MetricsBuilder) RecordOracledbPhysicalWritesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbPhysicalWrites, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbPhysicalWrites.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
