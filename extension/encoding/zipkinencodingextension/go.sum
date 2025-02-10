@@ -70,12 +70,14 @@ go.opentelemetry.io/collector/config/configtelemetry v0.119.0 h1:gAgMUEVXZKgpASx
 go.opentelemetry.io/collector/config/configtelemetry v0.119.0/go.mod h1:SlBEwQg0qly75rXZ6W1Ig8jN25KBVBkFIIAUI1GiAAE=
 go.opentelemetry.io/collector/confmap v1.25.0 h1:dLqd6hF4JqcDHl5GWWhc2jXsHs3hkq3KPvU/2Nw5aN4=
 go.opentelemetry.io/collector/confmap v1.25.0/go.mod h1:Rrhs+MWoaP6AswZp+ReQ2VO9dfOfcUjdjiSHBsG+nec=
+go.opentelemetry.io/collector/confmap v1.25.1-0.20250210123122-44b3eeda354c/go.mod h1:Rrhs+MWoaP6AswZp+ReQ2VO9dfOfcUjdjiSHBsG+nec=
 go.opentelemetry.io/collector/extension v0.119.0 h1:Itkt3jqYLjkhoX4kWhICuhXQEQz332W7UL6DpmaNHMc=
 go.opentelemetry.io/collector/extension v0.119.0/go.mod h1:yMpvs58Z9F3UpSoE4w/1q/EEKlLFZBOQ2muzzikRvO8=
 go.opentelemetry.io/collector/extension/extensiontest v0.119.0 h1:sAdIBRJ6Df7jdkHWY/pSEYTersxURkUz9pENKl73n6s=
 go.opentelemetry.io/collector/extension/extensiontest v0.119.0/go.mod h1:XQbUTXneJ//xt58eu5ofHhzWQcQ24GRTbBMWHCEsipA=
 go.opentelemetry.io/collector/pdata v1.25.0 h1:AmgBklQfbfy0lT8qsoJtRuYMZ7ZV3VZvkvhjSDentrg=
 go.opentelemetry.io/collector/pdata v1.25.0/go.mod h1:Zs7D4RXOGS7E2faGc/jfWdbmhoiHBxA7QbpuJOioxq8=
+go.opentelemetry.io/collector/pdata v1.25.1-0.20250210123122-44b3eeda354c/go.mod h1:ceSqZgTsX5dWzK73YmLBkP87sIEmY1t4d3sf3I2M1VQ=
 go.opentelemetry.io/collector/pdata/pprofile v0.119.0 h1:sVtv/MhQ3NDLkgHOWDF9BdTtThNyXdOUiz5+poRkYLQ=
 go.opentelemetry.io/collector/pdata/pprofile v0.119.0/go.mod h1:ur4388PjUpmwG5HoSMzrLCPkR0gNVLT4lekcJMRPt8A=
 go.opentelemetry.io/collector/semconv v0.119.0 h1:xo+V3a7hnK0I6fxAWCXT8BIT1PCBYd4emolhoKSDUlI=

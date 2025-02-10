@@ -49,6 +49,7 @@ go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJyS
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
 go.opentelemetry.io/collector/pdata v1.25.0 h1:AmgBklQfbfy0lT8qsoJtRuYMZ7ZV3VZvkvhjSDentrg=
 go.opentelemetry.io/collector/pdata v1.25.0/go.mod h1:Zs7D4RXOGS7E2faGc/jfWdbmhoiHBxA7QbpuJOioxq8=
+go.opentelemetry.io/collector/pdata v1.25.1-0.20250210123122-44b3eeda354c/go.mod h1:ceSqZgTsX5dWzK73YmLBkP87sIEmY1t4d3sf3I2M1VQ=
 go.opentelemetry.io/collector/pdata/pprofile v0.119.0 h1:sVtv/MhQ3NDLkgHOWDF9BdTtThNyXdOUiz5+poRkYLQ=
 go.opentelemetry.io/collector/pdata/pprofile v0.119.0/go.mod h1:ur4388PjUpmwG5HoSMzrLCPkR0gNVLT4lekcJMRPt8A=
 go.opentelemetry.io/collector/semconv v0.119.0 h1:xo+V3a7hnK0I6fxAWCXT8BIT1PCBYd4emolhoKSDUlI=

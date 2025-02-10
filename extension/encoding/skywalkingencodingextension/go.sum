@@ -103,6 +103,7 @@ go.opentelemetry.io/collector/extension/extensiontest v0.119.0 h1:sAdIBRJ6Df7jdk
 go.opentelemetry.io/collector/extension/extensiontest v0.119.0/go.mod h1:XQbUTXneJ//xt58eu5ofHhzWQcQ24GRTbBMWHCEsipA=
 go.opentelemetry.io/collector/pdata v1.25.0 h1:AmgBklQfbfy0lT8qsoJtRuYMZ7ZV3VZvkvhjSDentrg=
 go.opentelemetry.io/collector/pdata v1.25.0/go.mod h1:Zs7D4RXOGS7E2faGc/jfWdbmhoiHBxA7QbpuJOioxq8=
+go.opentelemetry.io/collector/pdata v1.25.1-0.20250210123122-44b3eeda354c/go.mod h1:ceSqZgTsX5dWzK73YmLBkP87sIEmY1t4d3sf3I2M1VQ=
 go.opentelemetry.io/collector/semconv v0.119.0 h1:xo+V3a7hnK0I6fxAWCXT8BIT1PCBYd4emolhoKSDUlI=
 go.opentelemetry.io/collector/semconv v0.119.0/go.mod h1:N6XE8Q0JKgBN2fAhkUQtqK9LT7rEGR6+Wu/Rtbal1iI=
 go.opentelemetry.io/otel v1.34.0 h1:zRLXxLCgL1WyKsPVrgbSdMN4c0FMkDAskSTQP+0hdUY=
@@ -246,6 +247,7 @@ google.golang.org/protobuf v1.26.0/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQ
 google.golang.org/protobuf v1.31.0/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
 google.golang.org/protobuf v1.36.4 h1:6A3ZDJHn/eNqc1i+IdefRzy/9PokBTPvcqMySR7NNIM=
 google.golang.org/protobuf v1.36.4/go.mod h1:9fA7Ob0pmnwhb644+1+CVWFRbNajQ6iRojtC/QF5bRE=
+google.golang.org/protobuf v1.36.5/go.mod h1:9fA7Ob0pmnwhb644+1+CVWFRbNajQ6iRojtC/QF5bRE=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c h1:Hei/4ADfdWqJk1ZMxUNpqntNwaWcugrBjAiHlqqRiVk=
 gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c/go.mod h1:JHkPIbrfpd72SG/EVd6muEfDQjcINNoR0C8j2r3qZ4Q=
