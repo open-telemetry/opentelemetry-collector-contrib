@@ -20,9 +20,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
@@ -195,24 +195,25 @@ func tagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
 		link := dest.AppendEmpty()
 
 		// Convert trace id.
-		rawTrace := [16]byte{}
-		errTrace := zipkinv2.UnmarshalJSON(rawTrace[:], []byte(span.TraceID))
+		rawTrace, errTrace := trace.TraceIDFromHex(span.TraceID)
 		if errTrace != nil {
 			return errTrace
 		}
-		link.SetTraceID(rawTrace)
+		link.SetTraceID(pcommon.TraceID(rawTrace))
 
 		// Convert span id.
-		rawSpan := [8]byte{}
-		errSpan := zipkinv2.UnmarshalJSON(rawSpan[:], []byte(span.SpanID))
+		rawSpan, errSpan := trace.SpanIDFromHex(span.SpanID)
 		if errSpan != nil {
 			return errSpan
 		}
-		link.SetSpanID(rawSpan)
+		link.SetSpanID(pcommon.SpanID(rawSpan))
 
 		link.TraceState().FromRaw(span.Tracestate)
 
-		_ = zipkinv2.JSONMapToAttributeMap(span.Attributes, link.Attributes())
+		err = link.Attributes().FromRaw(span.Attributes)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
