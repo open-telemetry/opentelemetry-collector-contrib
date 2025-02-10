@@ -4,7 +4,6 @@ go 1.22.0
 
 require (
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.62.1
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.25.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.25.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.24.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.0.0-00010101000000-000000000000
@@ -20,7 +19,6 @@ require (
 	go.opentelemetry.io/collector/confmap v1.25.0
 	go.opentelemetry.io/collector/exporter v0.119.0
 	go.opentelemetry.io/collector/featuregate v1.25.0
-	go.opentelemetry.io/collector/pdata v1.25.0
 	go.uber.org/zap v1.27.0
 )
 
@@ -32,6 +30,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/version v0.62.1 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.35.0 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.25.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.24.0 // indirect
 	github.com/DataDog/sketches-go v1.4.6 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
@@ -119,6 +118,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.119.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.119.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.119.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.25.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.119.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.119.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.119.0 // indirect
