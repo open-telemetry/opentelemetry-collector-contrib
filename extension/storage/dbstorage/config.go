@@ -5,6 +5,12 @@ package dbstorage // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"errors"
+	"fmt"
+)
+
+const (
+	driverPostgresql = "pgx"
+	driverSqlite     = "sqlite3"
 )
 
 // Config defines configuration for dbstorage extension.
@@ -19,6 +25,10 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.DriverName == "" {
 		return errors.New("missing driver name")
+	}
+
+	if cfg.DriverName != driverPostgresql && cfg.DriverName != driverSqlite {
+		return fmt.Errorf("unsupported driver %s", cfg.DriverName)
 	}
 
 	return nil

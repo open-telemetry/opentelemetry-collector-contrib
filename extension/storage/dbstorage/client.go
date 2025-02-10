@@ -33,7 +33,7 @@ type dbStorageClient struct {
 
 func newClient(ctx context.Context, driverName string, db *sql.DB, tableName string) (*dbStorageClient, error) {
 	createTableSQL := createTable
-	if driverName == "sqlite" {
+	if driverName == driverSqlite {
 		createTableSQL = createTableSqlite
 	}
 	var err error
@@ -59,45 +59,37 @@ func newClient(ctx context.Context, driverName string, db *sql.DB, tableName str
 
 // Get will retrieve data from storage that corresponds to the specified key
 func (c *dbStorageClient) Get(ctx context.Context, key string) ([]byte, error) {
-	rows, err := c.getQuery.QueryContext(ctx, key)
-	if err != nil {
-		return nil, err
-	}
-	if !rows.Next() {
-		return nil, nil
-	}
-	var result []byte
-	err = rows.Scan(&result)
-	if err != nil {
-		return result, err
-	}
-	err = rows.Close()
-	return result, err
+	return c.get(ctx, key, nil)
 }
 
 // Set will store data. The data can be retrieved using the same key
 func (c *dbStorageClient) Set(ctx context.Context, key string, value []byte) error {
-	_, err := c.setQuery.ExecContext(ctx, key, value, value)
-	return err
+	return c.set(ctx, key, value, nil)
 }
 
 // Delete will delete data associated with the specified key
 func (c *dbStorageClient) Delete(ctx context.Context, key string) error {
-	_, err := c.deleteQuery.ExecContext(ctx, key)
-	return err
+	return c.delete(ctx, key, nil)
 }
 
 // Batch executes the specified operations in order. Get operation results are updated in place
 func (c *dbStorageClient) Batch(ctx context.Context, ops ...*storage.Operation) error {
-	var err error
+	// Start a new transaction
+	tx, err := c.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	//nolint:errcheck
+	defer tx.Rollback()
+
 	for _, op := range ops {
 		switch op.Type {
 		case storage.Get:
-			op.Value, err = c.Get(ctx, op.Key)
+			op.Value, err = c.get(ctx, op.Key, tx)
 		case storage.Set:
-			err = c.Set(ctx, op.Key, op.Value)
+			err = c.set(ctx, op.Key, op.Value, tx)
 		case storage.Delete:
-			err = c.Delete(ctx, op.Key)
+			err = c.delete(ctx, op.Key, tx)
 		default:
 			return errors.New("wrong operation type")
 		}
@@ -106,7 +98,8 @@ func (c *dbStorageClient) Batch(ctx context.Context, ops ...*storage.Operation) 
 			return err
 		}
 	}
-	return err
+
+	return tx.Commit()
 }
 
 // Close will close the database
@@ -118,4 +111,40 @@ func (c *dbStorageClient) Close(_ context.Context) error {
 		return err
 	}
 	return c.getQuery.Close()
+}
+
+func (c *dbStorageClient) get(ctx context.Context, key string, tx *sql.Tx) ([]byte, error) {
+	rows, err := c.wrapTx(c.getQuery, tx).QueryContext(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+
+	if !rows.Next() {
+		return nil, nil
+	}
+
+	var result []byte
+	if err := rows.Scan(&result); err != nil {
+		return result, err
+	}
+
+	return result, rows.Close()
+}
+
+func (c *dbStorageClient) set(ctx context.Context, key string, value []byte, tx *sql.Tx) error {
+	_, err := c.wrapTx(c.setQuery, tx).ExecContext(ctx, key, value, value)
+	return err
+}
+
+func (c *dbStorageClient) delete(ctx context.Context, key string, tx *sql.Tx) error {
+	_, err := c.wrapTx(c.deleteQuery, tx).ExecContext(ctx, key)
+	return err
+}
+
+func (c *dbStorageClient) wrapTx(stmt *sql.Stmt, tx *sql.Tx) *sql.Stmt {
+	if tx != nil {
+		return tx.Stmt(stmt)
+	}
+
+	return stmt
 }
