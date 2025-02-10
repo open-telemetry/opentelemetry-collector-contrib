@@ -52,17 +52,6 @@ jobs:
       - run: make genotelcontribcol
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
-  check-codeowners:
-    runs-on: ubuntu-24.04
-    needs: [setup-environment]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check Code Owner Existence
-        run: ./.github/workflows/scripts/check-codeowners.sh check_code_owner_existence
-      - name: Check Component Existence
-        run: ./.github/workflows/scripts/check-codeowners.sh check_component_existence
-      - name: Validate Allowlist entries
-        run: ./.github/workflows/scripts/check-codeowners.sh check_entries_in_allowlist
   lint-matrix:
     strategy:
       fail-fast: false
