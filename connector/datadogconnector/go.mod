@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/datad
 go 1.22.0
 
 require (
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.61.0
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.62.2
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.64.0-devel.0.20250203170818-31c3d5c28ba0
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.0-devel.0.20250129111638-01c8fb06949e
 	github.com/DataDog/datadog-agent/pkg/proto v0.64.0-devel

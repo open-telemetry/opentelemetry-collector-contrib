@@ -85,6 +85,8 @@ github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagent
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.62.0-devel.0.20241213165407-f95df913d2b7/go.mod h1:Zt7cD4W15XoFigBKDbLeOjho0IyP2Qo8c41QWy/kgRM=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.61.0 h1:8dilaUw7v2uPKCgQ1/zVpTURReF2tEbzKz/KpFUJJmg=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.61.0/go.mod h1:0ef8uNhI32EZpnB5J21xveuGLP8K1d+g8EI0WHSKZ5g=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.62.2 h1:x4bd3hPpvaS1bBsT6LzhWnTq2ywCb9y08nr7yAs5QLM=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.62.2/go.mod h1:ZbUtLymuq0uc58CEkvo6DnIi0xbv5zwbGVU/dNFXeTI=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.64.0-devel.0.20250203170818-31c3d5c28ba0 h1:+Uohel2pxipylEL3k48pPTUDxtbtzzFIDFEgmXfR/AA=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.64.0-devel.0.20250203170818-31c3d5c28ba0/go.mod h1:9SK0jzkp3YI7xvvcS31/QkQeCYO9tcRdhvxhOSpKCRg=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.61.0 h1:AFp0Gm4/oWuTjygskUNP/VBxLwqsjHYWmSF99Kve8Lo=
