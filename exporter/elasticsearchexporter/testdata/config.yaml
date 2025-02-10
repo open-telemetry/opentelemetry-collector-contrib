@@ -89,3 +89,6 @@ elasticsearch/compression_none:
 elasticsearch/compression_gzip:
   endpoint: https://elastic.example.com:9200
   compression: gzip
+elasticsearch/require_data_stream:
+  endpoint: https://elastic.example.com:9200
+  require_data_stream: true

@@ -62,6 +62,12 @@ type Config struct {
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html
 	Pipeline string `mapstructure:"pipeline"`
 
+	// RequireDataStream controls whether require_data_stream=true is set in
+	// Elasticsearch bulk requests, causing indexing to fail if the target is
+	// not a data stream. If unspecified, then RequireDataStream will be true
+	// if mapping::mode is set to "otel", and false otherwise.
+	RequireDataStream *bool `mapstructure:"require_data_stream"`
+
 	confighttp.ClientConfig `mapstructure:",squash"`
 	Authentication          AuthenticationSettings `mapstructure:",squash"`
 	Discovery               DiscoverySettings      `mapstructure:"discover"`

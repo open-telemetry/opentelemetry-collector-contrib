@@ -70,16 +70,25 @@ func bulkIndexerConfig(client *elasticsearch.Client, config *Config) docappender
 			maxDocRetries = config.Retry.MaxRetries
 		}
 	}
+
 	var compressionLevel int
 	if config.Compression == configcompression.TypeGzip {
 		compressionLevel = gzip.BestSpeed
 	}
+
+	var requireDataStream bool
+	if config.RequireDataStream != nil {
+		requireDataStream = *config.RequireDataStream
+	} else if config.MappingMode() == MappingOTel {
+		requireDataStream = true
+	}
+
 	return docappender.BulkIndexerConfig{
 		Client:                client,
 		MaxDocumentRetries:    maxDocRetries,
 		Pipeline:              config.Pipeline,
 		RetryOnDocumentStatus: config.Retry.RetryOnStatus,
-		RequireDataStream:     config.MappingMode() == MappingOTel,
+		RequireDataStream:     requireDataStream,
 		CompressionLevel:      compressionLevel,
 	}
 }

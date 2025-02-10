@@ -325,6 +325,16 @@ func TestConfig(t *testing.T) {
 				cfg.Compression = "gzip"
 			}),
 		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "require_data_stream"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				require := true
+				cfg.RequireDataStream = &require
+			}),
+		},
 	}
 
 	for _, tt := range tests {

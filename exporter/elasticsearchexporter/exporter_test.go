@@ -11,6 +11,7 @@ import (
 	"math"
 	"net/http"
 	"runtime"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -1909,6 +1910,58 @@ func TestExporterBatcher(t *testing.T) {
 
 	assert.Equal(t, "value1", requests[0].Context().Value(key{}))
 	assert.Equal(t, "value2", requests[1].Context().Value(key{}))
+}
+
+func TestExporterRequireDataStream(t *testing.T) {
+	type testcase struct {
+		requireDataStream       *bool
+		mappingMode             string
+		expectRequireDataStream bool
+	}
+
+	newBool := func(v bool) *bool {
+		return &v
+	}
+
+	for _, tc := range []testcase{
+		{requireDataStream: newBool(false), mappingMode: "otel", expectRequireDataStream: false},
+		{requireDataStream: newBool(true), mappingMode: "ecs", expectRequireDataStream: true},
+		{requireDataStream: nil, mappingMode: "otel", expectRequireDataStream: true},
+		{requireDataStream: nil, mappingMode: "ecs", expectRequireDataStream: false},
+	} {
+		rds := ""
+		if tc.requireDataStream != nil {
+			rds = strconv.FormatBool(*tc.requireDataStream)
+		}
+		name := fmt.Sprintf("require_data_stream=%s,mapping::mode=%s", rds, tc.mappingMode)
+		t.Run(name, func(t *testing.T) {
+			var queryParamValues []string
+			var hasQueryParam bool
+			done := make(chan struct{}, 1)
+			srv := newESTestServerBulkHandlerFunc(t, func(w http.ResponseWriter, req *http.Request) {
+				queryParamValues, hasQueryParam = req.URL.Query()["require_data_stream"]
+				w.WriteHeader(http.StatusBadRequest) // should not be retried
+				close(done)
+			})
+
+			traces := ptrace.NewTraces()
+			traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+			exporter := newTestTracesExporter(t, srv.URL, func(cfg *Config) {
+				cfg.RequireDataStream = tc.requireDataStream
+				cfg.Mapping.Mode = tc.mappingMode
+				cfg.Batcher.Enabled = newBool(false)
+			})
+			_ = exporter.ConsumeTraces(context.Background(), traces)
+			<-done
+
+			if tc.expectRequireDataStream {
+				assert.True(t, hasQueryParam)
+				assert.Equal(t, []string{"true"}, queryParamValues)
+			} else {
+				assert.False(t, hasQueryParam)
+			}
+		})
+	}
 }
 
 func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Traces {
