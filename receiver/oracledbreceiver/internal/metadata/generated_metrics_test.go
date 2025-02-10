@@ -140,6 +140,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOracledbPhysicalReadsDirectDataPoint(ts, "1")
 
+			allMetricsCount++
+			mb.RecordOracledbPhysicalWriteIoRequestsDataPoint(ts, "1")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbPhysicalWritesDataPoint(ts, "1")
@@ -458,6 +461,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of reads directly from disk, bypassing the buffer cache", ms.At(i).Description())
 					assert.Equal(t, "{reads}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.physical_write_io_requests":
+					assert.False(t, validatedMetrics["oracledb.physical_write_io_requests"], "Found a duplicate in the metrics slice: oracledb.physical_write_io_requests")
+					validatedMetrics["oracledb.physical_write_io_requests"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of write requests for application activity", ms.At(i).Description())
+					assert.Equal(t, "{requests}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)

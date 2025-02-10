@@ -971,6 +971,57 @@ func newMetricOracledbPhysicalReadsDirect(cfg MetricConfig) metricOracledbPhysic
 	return m
 }
 
+type metricOracledbPhysicalWriteIoRequests struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills oracledb.physical_write_io_requests metric with initial data.
+func (m *metricOracledbPhysicalWriteIoRequests) init() {
+	m.data.SetName("oracledb.physical_write_io_requests")
+	m.data.SetDescription("Number of write requests for application activity")
+	m.data.SetUnit("{requests}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricOracledbPhysicalWriteIoRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricOracledbPhysicalWriteIoRequests) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricOracledbPhysicalWriteIoRequests) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricOracledbPhysicalWriteIoRequests(cfg MetricConfig) metricOracledbPhysicalWriteIoRequests {
+	m := metricOracledbPhysicalWriteIoRequests{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricOracledbPhysicalWrites struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1577,44 +1628,45 @@ func newMetricOracledbUserRollbacks(cfg MetricConfig) metricOracledbUserRollback
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                               MetricsBuilderConfig // config of the metrics builder.
-	startTime                            pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                      int                  // maximum observed number of metrics per resource.
-	metricsBuffer                        pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                            component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter       map[string]filter.Filter
-	resourceAttributeExcludeFilter       map[string]filter.Filter
-	metricOracledbConsistentGets         metricOracledbConsistentGets
-	metricOracledbCPUTime                metricOracledbCPUTime
-	metricOracledbDbBlockGets            metricOracledbDbBlockGets
-	metricOracledbDmlLocksLimit          metricOracledbDmlLocksLimit
-	metricOracledbDmlLocksUsage          metricOracledbDmlLocksUsage
-	metricOracledbEnqueueDeadlocks       metricOracledbEnqueueDeadlocks
-	metricOracledbEnqueueLocksLimit      metricOracledbEnqueueLocksLimit
-	metricOracledbEnqueueLocksUsage      metricOracledbEnqueueLocksUsage
-	metricOracledbEnqueueResourcesLimit  metricOracledbEnqueueResourcesLimit
-	metricOracledbEnqueueResourcesUsage  metricOracledbEnqueueResourcesUsage
-	metricOracledbExchangeDeadlocks      metricOracledbExchangeDeadlocks
-	metricOracledbExecutions             metricOracledbExecutions
-	metricOracledbHardParses             metricOracledbHardParses
-	metricOracledbLogicalReads           metricOracledbLogicalReads
-	metricOracledbParseCalls             metricOracledbParseCalls
-	metricOracledbPgaMemory              metricOracledbPgaMemory
-	metricOracledbPhysicalReadIoRequests metricOracledbPhysicalReadIoRequests
-	metricOracledbPhysicalReads          metricOracledbPhysicalReads
-	metricOracledbPhysicalReadsDirect    metricOracledbPhysicalReadsDirect
-	metricOracledbPhysicalWrites         metricOracledbPhysicalWrites
-	metricOracledbPhysicalWritesDirect   metricOracledbPhysicalWritesDirect
-	metricOracledbProcessesLimit         metricOracledbProcessesLimit
-	metricOracledbProcessesUsage         metricOracledbProcessesUsage
-	metricOracledbSessionsLimit          metricOracledbSessionsLimit
-	metricOracledbSessionsUsage          metricOracledbSessionsUsage
-	metricOracledbTablespaceSizeLimit    metricOracledbTablespaceSizeLimit
-	metricOracledbTablespaceSizeUsage    metricOracledbTablespaceSizeUsage
-	metricOracledbTransactionsLimit      metricOracledbTransactionsLimit
-	metricOracledbTransactionsUsage      metricOracledbTransactionsUsage
-	metricOracledbUserCommits            metricOracledbUserCommits
-	metricOracledbUserRollbacks          metricOracledbUserRollbacks
+	config                                MetricsBuilderConfig // config of the metrics builder.
+	startTime                             pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                       int                  // maximum observed number of metrics per resource.
+	metricsBuffer                         pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                             component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter        map[string]filter.Filter
+	resourceAttributeExcludeFilter        map[string]filter.Filter
+	metricOracledbConsistentGets          metricOracledbConsistentGets
+	metricOracledbCPUTime                 metricOracledbCPUTime
+	metricOracledbDbBlockGets             metricOracledbDbBlockGets
+	metricOracledbDmlLocksLimit           metricOracledbDmlLocksLimit
+	metricOracledbDmlLocksUsage           metricOracledbDmlLocksUsage
+	metricOracledbEnqueueDeadlocks        metricOracledbEnqueueDeadlocks
+	metricOracledbEnqueueLocksLimit       metricOracledbEnqueueLocksLimit
+	metricOracledbEnqueueLocksUsage       metricOracledbEnqueueLocksUsage
+	metricOracledbEnqueueResourcesLimit   metricOracledbEnqueueResourcesLimit
+	metricOracledbEnqueueResourcesUsage   metricOracledbEnqueueResourcesUsage
+	metricOracledbExchangeDeadlocks       metricOracledbExchangeDeadlocks
+	metricOracledbExecutions              metricOracledbExecutions
+	metricOracledbHardParses              metricOracledbHardParses
+	metricOracledbLogicalReads            metricOracledbLogicalReads
+	metricOracledbParseCalls              metricOracledbParseCalls
+	metricOracledbPgaMemory               metricOracledbPgaMemory
+	metricOracledbPhysicalReadIoRequests  metricOracledbPhysicalReadIoRequests
+	metricOracledbPhysicalReads           metricOracledbPhysicalReads
+	metricOracledbPhysicalReadsDirect     metricOracledbPhysicalReadsDirect
+	metricOracledbPhysicalWriteIoRequests metricOracledbPhysicalWriteIoRequests
+	metricOracledbPhysicalWrites          metricOracledbPhysicalWrites
+	metricOracledbPhysicalWritesDirect    metricOracledbPhysicalWritesDirect
+	metricOracledbProcessesLimit          metricOracledbProcessesLimit
+	metricOracledbProcessesUsage          metricOracledbProcessesUsage
+	metricOracledbSessionsLimit           metricOracledbSessionsLimit
+	metricOracledbSessionsUsage           metricOracledbSessionsUsage
+	metricOracledbTablespaceSizeLimit     metricOracledbTablespaceSizeLimit
+	metricOracledbTablespaceSizeUsage     metricOracledbTablespaceSizeUsage
+	metricOracledbTransactionsLimit       metricOracledbTransactionsLimit
+	metricOracledbTransactionsUsage       metricOracledbTransactionsUsage
+	metricOracledbUserCommits             metricOracledbUserCommits
+	metricOracledbUserRollbacks           metricOracledbUserRollbacks
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -1636,43 +1688,44 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                               mbc,
-		startTime:                            pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                        pmetric.NewMetrics(),
-		buildInfo:                            settings.BuildInfo,
-		metricOracledbConsistentGets:         newMetricOracledbConsistentGets(mbc.Metrics.OracledbConsistentGets),
-		metricOracledbCPUTime:                newMetricOracledbCPUTime(mbc.Metrics.OracledbCPUTime),
-		metricOracledbDbBlockGets:            newMetricOracledbDbBlockGets(mbc.Metrics.OracledbDbBlockGets),
-		metricOracledbDmlLocksLimit:          newMetricOracledbDmlLocksLimit(mbc.Metrics.OracledbDmlLocksLimit),
-		metricOracledbDmlLocksUsage:          newMetricOracledbDmlLocksUsage(mbc.Metrics.OracledbDmlLocksUsage),
-		metricOracledbEnqueueDeadlocks:       newMetricOracledbEnqueueDeadlocks(mbc.Metrics.OracledbEnqueueDeadlocks),
-		metricOracledbEnqueueLocksLimit:      newMetricOracledbEnqueueLocksLimit(mbc.Metrics.OracledbEnqueueLocksLimit),
-		metricOracledbEnqueueLocksUsage:      newMetricOracledbEnqueueLocksUsage(mbc.Metrics.OracledbEnqueueLocksUsage),
-		metricOracledbEnqueueResourcesLimit:  newMetricOracledbEnqueueResourcesLimit(mbc.Metrics.OracledbEnqueueResourcesLimit),
-		metricOracledbEnqueueResourcesUsage:  newMetricOracledbEnqueueResourcesUsage(mbc.Metrics.OracledbEnqueueResourcesUsage),
-		metricOracledbExchangeDeadlocks:      newMetricOracledbExchangeDeadlocks(mbc.Metrics.OracledbExchangeDeadlocks),
-		metricOracledbExecutions:             newMetricOracledbExecutions(mbc.Metrics.OracledbExecutions),
-		metricOracledbHardParses:             newMetricOracledbHardParses(mbc.Metrics.OracledbHardParses),
-		metricOracledbLogicalReads:           newMetricOracledbLogicalReads(mbc.Metrics.OracledbLogicalReads),
-		metricOracledbParseCalls:             newMetricOracledbParseCalls(mbc.Metrics.OracledbParseCalls),
-		metricOracledbPgaMemory:              newMetricOracledbPgaMemory(mbc.Metrics.OracledbPgaMemory),
-		metricOracledbPhysicalReadIoRequests: newMetricOracledbPhysicalReadIoRequests(mbc.Metrics.OracledbPhysicalReadIoRequests),
-		metricOracledbPhysicalReads:          newMetricOracledbPhysicalReads(mbc.Metrics.OracledbPhysicalReads),
-		metricOracledbPhysicalReadsDirect:    newMetricOracledbPhysicalReadsDirect(mbc.Metrics.OracledbPhysicalReadsDirect),
-		metricOracledbPhysicalWrites:         newMetricOracledbPhysicalWrites(mbc.Metrics.OracledbPhysicalWrites),
-		metricOracledbPhysicalWritesDirect:   newMetricOracledbPhysicalWritesDirect(mbc.Metrics.OracledbPhysicalWritesDirect),
-		metricOracledbProcessesLimit:         newMetricOracledbProcessesLimit(mbc.Metrics.OracledbProcessesLimit),
-		metricOracledbProcessesUsage:         newMetricOracledbProcessesUsage(mbc.Metrics.OracledbProcessesUsage),
-		metricOracledbSessionsLimit:          newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
-		metricOracledbSessionsUsage:          newMetricOracledbSessionsUsage(mbc.Metrics.OracledbSessionsUsage),
-		metricOracledbTablespaceSizeLimit:    newMetricOracledbTablespaceSizeLimit(mbc.Metrics.OracledbTablespaceSizeLimit),
-		metricOracledbTablespaceSizeUsage:    newMetricOracledbTablespaceSizeUsage(mbc.Metrics.OracledbTablespaceSizeUsage),
-		metricOracledbTransactionsLimit:      newMetricOracledbTransactionsLimit(mbc.Metrics.OracledbTransactionsLimit),
-		metricOracledbTransactionsUsage:      newMetricOracledbTransactionsUsage(mbc.Metrics.OracledbTransactionsUsage),
-		metricOracledbUserCommits:            newMetricOracledbUserCommits(mbc.Metrics.OracledbUserCommits),
-		metricOracledbUserRollbacks:          newMetricOracledbUserRollbacks(mbc.Metrics.OracledbUserRollbacks),
-		resourceAttributeIncludeFilter:       make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:       make(map[string]filter.Filter),
+		config:                                mbc,
+		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                         pmetric.NewMetrics(),
+		buildInfo:                             settings.BuildInfo,
+		metricOracledbConsistentGets:          newMetricOracledbConsistentGets(mbc.Metrics.OracledbConsistentGets),
+		metricOracledbCPUTime:                 newMetricOracledbCPUTime(mbc.Metrics.OracledbCPUTime),
+		metricOracledbDbBlockGets:             newMetricOracledbDbBlockGets(mbc.Metrics.OracledbDbBlockGets),
+		metricOracledbDmlLocksLimit:           newMetricOracledbDmlLocksLimit(mbc.Metrics.OracledbDmlLocksLimit),
+		metricOracledbDmlLocksUsage:           newMetricOracledbDmlLocksUsage(mbc.Metrics.OracledbDmlLocksUsage),
+		metricOracledbEnqueueDeadlocks:        newMetricOracledbEnqueueDeadlocks(mbc.Metrics.OracledbEnqueueDeadlocks),
+		metricOracledbEnqueueLocksLimit:       newMetricOracledbEnqueueLocksLimit(mbc.Metrics.OracledbEnqueueLocksLimit),
+		metricOracledbEnqueueLocksUsage:       newMetricOracledbEnqueueLocksUsage(mbc.Metrics.OracledbEnqueueLocksUsage),
+		metricOracledbEnqueueResourcesLimit:   newMetricOracledbEnqueueResourcesLimit(mbc.Metrics.OracledbEnqueueResourcesLimit),
+		metricOracledbEnqueueResourcesUsage:   newMetricOracledbEnqueueResourcesUsage(mbc.Metrics.OracledbEnqueueResourcesUsage),
+		metricOracledbExchangeDeadlocks:       newMetricOracledbExchangeDeadlocks(mbc.Metrics.OracledbExchangeDeadlocks),
+		metricOracledbExecutions:              newMetricOracledbExecutions(mbc.Metrics.OracledbExecutions),
+		metricOracledbHardParses:              newMetricOracledbHardParses(mbc.Metrics.OracledbHardParses),
+		metricOracledbLogicalReads:            newMetricOracledbLogicalReads(mbc.Metrics.OracledbLogicalReads),
+		metricOracledbParseCalls:              newMetricOracledbParseCalls(mbc.Metrics.OracledbParseCalls),
+		metricOracledbPgaMemory:               newMetricOracledbPgaMemory(mbc.Metrics.OracledbPgaMemory),
+		metricOracledbPhysicalReadIoRequests:  newMetricOracledbPhysicalReadIoRequests(mbc.Metrics.OracledbPhysicalReadIoRequests),
+		metricOracledbPhysicalReads:           newMetricOracledbPhysicalReads(mbc.Metrics.OracledbPhysicalReads),
+		metricOracledbPhysicalReadsDirect:     newMetricOracledbPhysicalReadsDirect(mbc.Metrics.OracledbPhysicalReadsDirect),
+		metricOracledbPhysicalWriteIoRequests: newMetricOracledbPhysicalWriteIoRequests(mbc.Metrics.OracledbPhysicalWriteIoRequests),
+		metricOracledbPhysicalWrites:          newMetricOracledbPhysicalWrites(mbc.Metrics.OracledbPhysicalWrites),
+		metricOracledbPhysicalWritesDirect:    newMetricOracledbPhysicalWritesDirect(mbc.Metrics.OracledbPhysicalWritesDirect),
+		metricOracledbProcessesLimit:          newMetricOracledbProcessesLimit(mbc.Metrics.OracledbProcessesLimit),
+		metricOracledbProcessesUsage:          newMetricOracledbProcessesUsage(mbc.Metrics.OracledbProcessesUsage),
+		metricOracledbSessionsLimit:           newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
+		metricOracledbSessionsUsage:           newMetricOracledbSessionsUsage(mbc.Metrics.OracledbSessionsUsage),
+		metricOracledbTablespaceSizeLimit:     newMetricOracledbTablespaceSizeLimit(mbc.Metrics.OracledbTablespaceSizeLimit),
+		metricOracledbTablespaceSizeUsage:     newMetricOracledbTablespaceSizeUsage(mbc.Metrics.OracledbTablespaceSizeUsage),
+		metricOracledbTransactionsLimit:       newMetricOracledbTransactionsLimit(mbc.Metrics.OracledbTransactionsLimit),
+		metricOracledbTransactionsUsage:       newMetricOracledbTransactionsUsage(mbc.Metrics.OracledbTransactionsUsage),
+		metricOracledbUserCommits:             newMetricOracledbUserCommits(mbc.Metrics.OracledbUserCommits),
+		metricOracledbUserRollbacks:           newMetricOracledbUserRollbacks(mbc.Metrics.OracledbUserRollbacks),
+		resourceAttributeIncludeFilter:        make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:        make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.OracledbInstanceName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["oracledb.instance.name"] = filter.CreateFilter(mbc.ResourceAttributes.OracledbInstanceName.MetricsInclude)
@@ -1768,6 +1821,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricOracledbPhysicalReadIoRequests.emit(ils.Metrics())
 	mb.metricOracledbPhysicalReads.emit(ils.Metrics())
 	mb.metricOracledbPhysicalReadsDirect.emit(ils.Metrics())
+	mb.metricOracledbPhysicalWriteIoRequests.emit(ils.Metrics())
 	mb.metricOracledbPhysicalWrites.emit(ils.Metrics())
 	mb.metricOracledbPhysicalWritesDirect.emit(ils.Metrics())
 	mb.metricOracledbProcessesLimit.emit(ils.Metrics())
@@ -1993,6 +2047,16 @@ func (mb *MetricsBuilder) RecordOracledbPhysicalReadsDirectDataPoint(ts pcommon.
 		return fmt.Errorf("failed to parse int64 for OracledbPhysicalReadsDirect, value was %s: %w", inputVal, err)
 	}
 	mb.metricOracledbPhysicalReadsDirect.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordOracledbPhysicalWriteIoRequestsDataPoint adds a data point to oracledb.physical_write_io_requests metric.
+func (mb *MetricsBuilder) RecordOracledbPhysicalWriteIoRequestsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for OracledbPhysicalWriteIoRequests, value was %s: %w", inputVal, err)
+	}
+	mb.metricOracledbPhysicalWriteIoRequests.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

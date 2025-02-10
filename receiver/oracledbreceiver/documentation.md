@@ -281,6 +281,14 @@ Number of reads directly from disk, bypassing the buffer cache
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {reads} | Sum | Int | Cumulative | true |
 
+### oracledb.physical_write_io_requests
+
+Number of write requests for application activity
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {requests} | Sum | Int | Cumulative | true |
+
 ### oracledb.physical_writes_direct
 
 Number of writes directly from disk, bypassing the buffer cache

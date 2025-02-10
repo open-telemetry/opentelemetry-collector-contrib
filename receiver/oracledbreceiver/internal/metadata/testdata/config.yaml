@@ -39,6 +39,8 @@ all_set:
       enabled: true
     oracledb.physical_reads_direct:
       enabled: true
+    oracledb.physical_write_io_requests:
+      enabled: true
     oracledb.physical_writes:
       enabled: true
     oracledb.physical_writes_direct:
@@ -105,6 +107,8 @@ none_set:
     oracledb.physical_reads:
       enabled: false
     oracledb.physical_reads_direct:
+      enabled: false
+    oracledb.physical_write_io_requests:
       enabled: false
     oracledb.physical_writes:
       enabled: false
