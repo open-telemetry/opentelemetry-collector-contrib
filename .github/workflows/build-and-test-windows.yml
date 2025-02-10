@@ -43,7 +43,6 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
           - other
         os: [windows-2022, windows-2025]
     runs-on: ${{ matrix.os }}

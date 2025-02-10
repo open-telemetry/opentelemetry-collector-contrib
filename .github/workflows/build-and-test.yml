@@ -75,7 +75,6 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
           - other
     runs-on: ubuntu-24.04
     needs: [setup-environment]
@@ -144,7 +143,6 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -257,7 +255,6 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
           - other
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
@@ -349,7 +346,6 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
