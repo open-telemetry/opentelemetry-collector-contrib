@@ -34,7 +34,7 @@ func TestConfigValidate(t *testing.T) {
 		},
 		{
 			"Valid",
-			Config{DriverName: driverSqlite, DataSource: "bar"},
+			Config{DriverName: driverSQLite, DataSource: "bar"},
 			nil,
 		},
 	}

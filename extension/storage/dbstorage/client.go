@@ -14,6 +14,7 @@ import (
 	// SQLite driver
 	_ "github.com/mattn/go-sqlite3"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
+	"go.uber.org/zap"
 )
 
 const (
@@ -25,15 +26,16 @@ const (
 )
 
 type dbStorageClient struct {
+	logger      *zap.Logger
 	db          *sql.DB
 	getQuery    *sql.Stmt
 	setQuery    *sql.Stmt
 	deleteQuery *sql.Stmt
 }
 
-func newClient(ctx context.Context, driverName string, db *sql.DB, tableName string) (*dbStorageClient, error) {
+func newClient(ctx context.Context, logger *zap.Logger, db *sql.DB, driverName string, tableName string) (*dbStorageClient, error) {
 	createTableSQL := createTable
-	if driverName == driverSqlite {
+	if driverName == driverSQLite {
 		createTableSQL = createTableSqlite
 	}
 	var err error
@@ -54,7 +56,7 @@ func newClient(ctx context.Context, driverName string, db *sql.DB, tableName str
 	if err != nil {
 		return nil, err
 	}
-	return &dbStorageClient{db, selectQuery, setQuery, deleteQuery}, nil
+	return &dbStorageClient{logger, db, selectQuery, setQuery, deleteQuery}, nil
 }
 
 // Get will retrieve data from storage that corresponds to the specified key
@@ -79,8 +81,18 @@ func (c *dbStorageClient) Batch(ctx context.Context, ops ...*storage.Operation) 
 	if err != nil {
 		return err
 	}
-	//nolint:errcheck
-	defer tx.Rollback()
+
+	// In case of any error we should roll back whole transaction to keep DB in consistent state
+	// In case of successful commit - tx.Rollback() will be a no-op here as tx is already closed
+	defer func() {
+		// We should ignore error related already finished transaction here
+		// It might happened, for example, if Context was canceled outside of Batch() function
+		// in this case whole transaction will be rolled back by sql package and we'll receive ErrTxDone here,
+		// which is actually not an issue because transaction was correctly closed with rollback
+		if rollbackErr := tx.Rollback(); !errors.Is(rollbackErr, sql.ErrTxDone) {
+			c.logger.Error("Failed to rollback Batch() transaction", zap.Error(rollbackErr))
+		}
+	}()
 
 	for _, op := range ops {
 		switch op.Type {

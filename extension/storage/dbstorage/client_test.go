@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
+	"go.uber.org/zap"
 )
 
 var testTableName = "exporter_otlp_test"
@@ -30,7 +31,7 @@ func Test_newClient(t *testing.T) {
 		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(setQueryText, testTableName)))
 		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(deleteQueryText, testTableName)))
 
-		_, err = newClient(context.Background(), driverPostgresql, db, testTableName)
+		_, err = newClient(context.Background(), zap.L(), db, driverPostgreSQL, testTableName)
 		assert.NoError(t, err)
 	})
 	t.Run("Should return client with Sqlite specific query(s)", func(t *testing.T) {
@@ -44,7 +45,7 @@ func Test_newClient(t *testing.T) {
 		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(setQueryText, testTableName)))
 		mock.ExpectPrepare(regexp.QuoteMeta(fmt.Sprintf(deleteQueryText, testTableName)))
 
-		_, err = newClient(context.Background(), driverSqlite, db, testTableName)
+		_, err = newClient(context.Background(), zap.L(), db, driverSQLite, testTableName)
 		assert.NoError(t, err)
 	})
 }
@@ -277,6 +278,7 @@ func newTestClient(t *testing.T) (*dbStorageClient, sqlmock.Sqlmock) {
 	require.NoError(t, err)
 
 	return &dbStorageClient{
+		logger:      zap.L(),
 		db:          db,
 		getQuery:    selectQuery,
 		setQuery:    setQuery,

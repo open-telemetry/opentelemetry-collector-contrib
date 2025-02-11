@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	driverPostgresql = "pgx"
-	driverSqlite     = "sqlite3"
+	driverPostgreSQL = "pgx"
+	driverSQLite     = "sqlite3"
 )
 
 // Config defines configuration for dbstorage extension.
@@ -27,7 +27,7 @@ func (cfg *Config) Validate() error {
 		return errors.New("missing driver name")
 	}
 
-	if cfg.DriverName != driverPostgresql && cfg.DriverName != driverSqlite {
+	if cfg.DriverName != driverPostgreSQL && cfg.DriverName != driverSQLite {
 		return fmt.Errorf("unsupported driver %s", cfg.DriverName)
 	}
 
