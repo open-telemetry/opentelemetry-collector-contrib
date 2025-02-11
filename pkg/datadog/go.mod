@@ -24,7 +24,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.5.2 // indirect
+	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.64.0-devel // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.62.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.62.2 // indirect
@@ -35,7 +35,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.25.0 // indirect
 	github.com/DataDog/sketches-go v1.4.6 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.25.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.26.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.1 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.29.6 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.59 // indirect
