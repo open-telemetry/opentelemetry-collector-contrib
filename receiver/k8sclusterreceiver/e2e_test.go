@@ -260,12 +260,3 @@ func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
 		assert.NoError(t, rcvr.Shutdown(context.Background()))
 	}
 }
-
-func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink) {
-	timeoutMinutes := 3
-	require.Eventuallyf(t, func() bool {
-		return mc.AllMetrics()[len(mc.AllMetrics())-1].ResourceMetrics().Len() == entriesNum
-	}, time.Duration(timeoutMinutes)*time.Minute, 1*time.Second,
-		"failed to receive %d entries,  received %d metrics in %d minutes", entriesNum,
-		len(mc.AllMetrics()), timeoutMinutes)
-}
