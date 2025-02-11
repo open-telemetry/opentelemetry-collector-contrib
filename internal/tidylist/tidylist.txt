@@ -36,6 +36,7 @@ pkg/translator/prometheus
 pkg/translator/prometheusremotewrite
 exporter/prometheusremotewriteexporter
 receiver/prometheusreceiver
+internal/datadog
 pkg/datadog
 processor/tailsamplingprocessor
 exporter/datadogexporter
