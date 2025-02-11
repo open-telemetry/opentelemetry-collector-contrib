@@ -26,7 +26,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.64.0-devel
 	github.com/DataDog/datadog-agent/pkg/status/health v0.62.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace v0.64.0-devel.0.20250203170818-31c3d5c28ba0
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.62.2
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.62.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/startstop v0.62.2 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.35.0
 	github.com/DataDog/datadog-go/v5 v5.6.0
