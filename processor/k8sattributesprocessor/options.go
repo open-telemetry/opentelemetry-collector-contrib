@@ -31,6 +31,8 @@ const (
 	//   replace containerRepoDigests with conventions.AttributeContainerImageRepoDigests
 	clusterUID                = "k8s.cluster.uid"
 	containerImageRepoDigests = "container.image.repo_digests"
+	containerPorts            = "container.ports"
+	containerCpuRequest       = "container.resources.requests.cpu"
 )
 
 // option represents a configuration option that can be passes.
@@ -72,6 +74,12 @@ func enabledAttributes() (attributes []string) {
 	}
 	if defaultConfig.ContainerImageTag.Enabled {
 		attributes = append(attributes, conventions.AttributeContainerImageTag)
+	}
+	if defaultConfig.ContainerPorts.Enabled {
+		attributes = append(attributes, containerPorts)
+	}
+	if defaultConfig.ContainerResourcesRequestsCPU.Enabled {
+		attributes = append(attributes, containerCpuRequest)
 	}
 	if defaultConfig.K8sContainerName.Enabled {
 		attributes = append(attributes, conventions.AttributeK8SContainerName)

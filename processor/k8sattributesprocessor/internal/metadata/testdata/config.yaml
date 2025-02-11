@@ -9,6 +9,10 @@ all_set:
       enabled: true
     container.image.tag:
       enabled: true
+    container.ports:
+      enabled: true
+    container.resources.requests.cpu:
+      enabled: true
     k8s.cluster.uid:
       enabled: true
     k8s.container.name:
@@ -60,6 +64,10 @@ none_set:
     container.image.repo_digests:
       enabled: false
     container.image.tag:
+      enabled: false
+    container.ports:
+      enabled: false
+    container.resources.requests.cpu:
       enabled: false
     k8s.cluster.uid:
       enabled: false

@@ -27,31 +27,33 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for k8sattributes resource attributes.
 type ResourceAttributesConfig struct {
-	ContainerID               ResourceAttributeConfig `mapstructure:"container.id"`
-	ContainerImageName        ResourceAttributeConfig `mapstructure:"container.image.name"`
-	ContainerImageRepoDigests ResourceAttributeConfig `mapstructure:"container.image.repo_digests"`
-	ContainerImageTag         ResourceAttributeConfig `mapstructure:"container.image.tag"`
-	K8sClusterUID             ResourceAttributeConfig `mapstructure:"k8s.cluster.uid"`
-	K8sContainerName          ResourceAttributeConfig `mapstructure:"k8s.container.name"`
-	K8sCronjobName            ResourceAttributeConfig `mapstructure:"k8s.cronjob.name"`
-	K8sDaemonsetName          ResourceAttributeConfig `mapstructure:"k8s.daemonset.name"`
-	K8sDaemonsetUID           ResourceAttributeConfig `mapstructure:"k8s.daemonset.uid"`
-	K8sDeploymentName         ResourceAttributeConfig `mapstructure:"k8s.deployment.name"`
-	K8sDeploymentUID          ResourceAttributeConfig `mapstructure:"k8s.deployment.uid"`
-	K8sJobName                ResourceAttributeConfig `mapstructure:"k8s.job.name"`
-	K8sJobUID                 ResourceAttributeConfig `mapstructure:"k8s.job.uid"`
-	K8sNamespaceName          ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
-	K8sNodeName               ResourceAttributeConfig `mapstructure:"k8s.node.name"`
-	K8sNodeUID                ResourceAttributeConfig `mapstructure:"k8s.node.uid"`
-	K8sPodHostname            ResourceAttributeConfig `mapstructure:"k8s.pod.hostname"`
-	K8sPodIP                  ResourceAttributeConfig `mapstructure:"k8s.pod.ip"`
-	K8sPodName                ResourceAttributeConfig `mapstructure:"k8s.pod.name"`
-	K8sPodStartTime           ResourceAttributeConfig `mapstructure:"k8s.pod.start_time"`
-	K8sPodUID                 ResourceAttributeConfig `mapstructure:"k8s.pod.uid"`
-	K8sReplicasetName         ResourceAttributeConfig `mapstructure:"k8s.replicaset.name"`
-	K8sReplicasetUID          ResourceAttributeConfig `mapstructure:"k8s.replicaset.uid"`
-	K8sStatefulsetName        ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
-	K8sStatefulsetUID         ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
+	ContainerID                   ResourceAttributeConfig `mapstructure:"container.id"`
+	ContainerImageName            ResourceAttributeConfig `mapstructure:"container.image.name"`
+	ContainerImageRepoDigests     ResourceAttributeConfig `mapstructure:"container.image.repo_digests"`
+	ContainerImageTag             ResourceAttributeConfig `mapstructure:"container.image.tag"`
+	ContainerPorts                ResourceAttributeConfig `mapstructure:"container.ports"`
+	ContainerResourcesRequestsCPU ResourceAttributeConfig `mapstructure:"container.resources.requests.cpu"`
+	K8sClusterUID                 ResourceAttributeConfig `mapstructure:"k8s.cluster.uid"`
+	K8sContainerName              ResourceAttributeConfig `mapstructure:"k8s.container.name"`
+	K8sCronjobName                ResourceAttributeConfig `mapstructure:"k8s.cronjob.name"`
+	K8sDaemonsetName              ResourceAttributeConfig `mapstructure:"k8s.daemonset.name"`
+	K8sDaemonsetUID               ResourceAttributeConfig `mapstructure:"k8s.daemonset.uid"`
+	K8sDeploymentName             ResourceAttributeConfig `mapstructure:"k8s.deployment.name"`
+	K8sDeploymentUID              ResourceAttributeConfig `mapstructure:"k8s.deployment.uid"`
+	K8sJobName                    ResourceAttributeConfig `mapstructure:"k8s.job.name"`
+	K8sJobUID                     ResourceAttributeConfig `mapstructure:"k8s.job.uid"`
+	K8sNamespaceName              ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
+	K8sNodeName                   ResourceAttributeConfig `mapstructure:"k8s.node.name"`
+	K8sNodeUID                    ResourceAttributeConfig `mapstructure:"k8s.node.uid"`
+	K8sPodHostname                ResourceAttributeConfig `mapstructure:"k8s.pod.hostname"`
+	K8sPodIP                      ResourceAttributeConfig `mapstructure:"k8s.pod.ip"`
+	K8sPodName                    ResourceAttributeConfig `mapstructure:"k8s.pod.name"`
+	K8sPodStartTime               ResourceAttributeConfig `mapstructure:"k8s.pod.start_time"`
+	K8sPodUID                     ResourceAttributeConfig `mapstructure:"k8s.pod.uid"`
+	K8sReplicasetName             ResourceAttributeConfig `mapstructure:"k8s.replicaset.name"`
+	K8sReplicasetUID              ResourceAttributeConfig `mapstructure:"k8s.replicaset.uid"`
+	K8sStatefulsetName            ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
+	K8sStatefulsetUID             ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -67,6 +69,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		ContainerImageTag: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		ContainerPorts: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ContainerResourcesRequestsCPU: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		K8sClusterUID: ResourceAttributeConfig{
 			Enabled: false,

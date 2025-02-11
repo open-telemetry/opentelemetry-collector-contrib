@@ -49,6 +49,20 @@ func (rb *ResourceBuilder) SetContainerImageTag(val string) {
 	}
 }
 
+// SetContainerPorts sets provided value as "container.ports" attribute.
+func (rb *ResourceBuilder) SetContainerPorts(val []any) {
+	if rb.config.ContainerPorts.Enabled {
+		rb.res.Attributes().PutEmptySlice("container.ports").FromRaw(val)
+	}
+}
+
+// SetContainerResourcesRequestsCPU sets provided value as "container.resources.requests.cpu" attribute.
+func (rb *ResourceBuilder) SetContainerResourcesRequestsCPU(val string) {
+	if rb.config.ContainerResourcesRequestsCPU.Enabled {
+		rb.res.Attributes().PutStr("container.resources.requests.cpu", val)
+	}
+}
+
 // SetK8sClusterUID sets provided value as "k8s.cluster.uid" attribute.
 func (rb *ResourceBuilder) SetK8sClusterUID(val string) {
 	if rb.config.K8sClusterUID.Enabled {

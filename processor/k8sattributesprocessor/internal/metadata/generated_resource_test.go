@@ -17,6 +17,8 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetContainerImageName("container.image.name-val")
 			rb.SetContainerImageRepoDigests([]any{"container.image.repo_digests-item1", "container.image.repo_digests-item2"})
 			rb.SetContainerImageTag("container.image.tag-val")
+			rb.SetContainerPorts([]any{"container.ports-item1", "container.ports-item2"})
+			rb.SetContainerResourcesRequestsCPU("container.resources.requests.cpu-val")
 			rb.SetK8sClusterUID("k8s.cluster.uid-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sCronjobName("k8s.cronjob.name-val")
@@ -46,7 +48,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 8, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 25, res.Attributes().Len())
+				assert.Equal(t, 27, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -73,6 +75,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "container.image.tag-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("container.ports")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, []any{"container.ports-item1", "container.ports-item2"}, val.Slice().AsRaw())
+			}
+			val, ok = res.Attributes().Get("container.resources.requests.cpu")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "container.resources.requests.cpu-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.cluster.uid")
 			assert.Equal(t, tt == "all_set", ok)

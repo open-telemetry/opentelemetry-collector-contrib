@@ -1034,9 +1034,11 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 					Containers: kube.PodContainers{
 						ByName: map[string]*kube.Container{
 							"app": {
-								Name:      "app",
-								ImageName: "test/app",
-								ImageTag:  "1.0.1",
+								Name:                "app",
+								ImageName:           "test/app",
+								ImageTag:            "1.0.1",
+								ContainerPorts:      []int32{80, 443},
+								ContainerCpuRequest: "500m",
 							},
 						},
 					},
@@ -1051,6 +1053,8 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				conventions.AttributeK8SContainerName:   "app",
 				conventions.AttributeContainerImageName: "test/app",
 				conventions.AttributeContainerImageTag:  "1.0.1",
+				containerPorts:                          []int32{80, 443},
+				containerCpuRequest:                     "500m",
 			},
 		},
 		{
