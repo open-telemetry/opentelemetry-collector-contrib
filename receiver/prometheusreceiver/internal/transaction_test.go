@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/histogram"
@@ -606,228 +607,247 @@ func nopObsRecv(t *testing.T) *receiverhelper.ObsReport {
 }
 
 func TestMetricBuilderCounters(t *testing.T) {
-	tests := []buildTestData{
-		{
-			name: "single-item",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("counter_test", 100, nil, "foo", "bar"),
+	for _, disableMetricAdjustment := range []bool{true, false} {
+		tests := []buildTestData{
+			{
+				name: "single-item",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("counter_test", 100, nil, "foo", "bar"),
+						},
 					},
 				},
-			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("counter_test")
-				m0.Metadata().PutStr("prometheus.type", "counter")
-				sum := m0.SetEmptySum()
-				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				sum.SetIsMonotonic(true)
-				pt0 := sum.DataPoints().AppendEmpty()
-				pt0.SetDoubleValue(100.0)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.SetTimestamp(tsNanos)
-				pt0.Attributes().PutStr("foo", "bar")
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("counter_test")
+					m0.Metadata().PutStr("prometheus.type", "counter")
+					sum := m0.SetEmptySum()
+					sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					sum.SetIsMonotonic(true)
+					pt0 := sum.DataPoints().AppendEmpty()
+					pt0.SetDoubleValue(100.0)
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.SetTimestamp(tsNanos)
+					pt0.Attributes().PutStr("foo", "bar")
 
-				return []pmetric.Metrics{md0}
+					return []pmetric.Metrics{md0}
+				},
 			},
-		},
-		{
-			name: "single-item-with-exemplars",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint(
-							"counter_test",
-							100,
-							[]exemplar.Exemplar{
-								{
-									Value:  1,
-									Ts:     1663113420863,
-									Labels: labels.New([]labels.Label{{Name: model.MetricNameLabel, Value: "counter_test"}, {Name: model.JobLabel, Value: "job"}, {Name: model.InstanceLabel, Value: "instance"}, {Name: "foo", Value: "bar"}}...),
+			{
+				name: "single-item-with-exemplars",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint(
+								"counter_test",
+								100,
+								[]exemplar.Exemplar{
+									{
+										Value:  1,
+										Ts:     1663113420863,
+										Labels: labels.New([]labels.Label{{Name: model.MetricNameLabel, Value: "counter_test"}, {Name: model.JobLabel, Value: "job"}, {Name: model.InstanceLabel, Value: "instance"}, {Name: "foo", Value: "bar"}}...),
+									},
+									{
+										Value:  1,
+										Ts:     1663113420863,
+										Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: ""}, {Name: "span_id", Value: ""}}...),
+									},
+									{
+										Value:  1,
+										Ts:     1663113420863,
+										Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "10a47365b8aa04e08291fab9deca84db6170"}, {Name: "span_id", Value: "719cee4a669fd7d109ff"}}...),
+									},
+									{
+										Value:  1,
+										Ts:     1663113420863,
+										Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc880"}, {Name: "span_id", Value: "dfa4597a9d"}}...),
+									},
 								},
-								{
-									Value:  1,
-									Ts:     1663113420863,
-									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: ""}, {Name: "span_id", Value: ""}}...),
-								},
-								{
-									Value:  1,
-									Ts:     1663113420863,
-									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "10a47365b8aa04e08291fab9deca84db6170"}, {Name: "span_id", Value: "719cee4a669fd7d109ff"}}...),
-								},
-								{
-									Value:  1,
-									Ts:     1663113420863,
-									Labels: labels.New([]labels.Label{{Name: "foo", Value: "bar"}, {Name: "trace_id", Value: "174137cab66dc880"}, {Name: "span_id", Value: "dfa4597a9d"}}...),
-								},
-							},
-							"foo", "bar"),
+								"foo", "bar"),
+						},
 					},
 				},
-			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("counter_test")
-				m0.Metadata().PutStr("prometheus.type", "counter")
-				sum := m0.SetEmptySum()
-				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				sum.SetIsMonotonic(true)
-				pt0 := sum.DataPoints().AppendEmpty()
-				pt0.SetDoubleValue(100.0)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.SetTimestamp(tsNanos)
-				pt0.Attributes().PutStr("foo", "bar")
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("counter_test")
+					m0.Metadata().PutStr("prometheus.type", "counter")
+					sum := m0.SetEmptySum()
+					sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					sum.SetIsMonotonic(true)
+					pt0 := sum.DataPoints().AppendEmpty()
+					pt0.SetDoubleValue(100.0)
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.SetTimestamp(tsNanos)
+					pt0.Attributes().PutStr("foo", "bar")
 
-				e0 := pt0.Exemplars().AppendEmpty()
-				e0.SetTimestamp(timestampFromMs(1663113420863))
-				e0.SetDoubleValue(1)
-				e0.FilteredAttributes().PutStr(model.MetricNameLabel, "counter_test")
-				e0.FilteredAttributes().PutStr("foo", "bar")
-				e0.FilteredAttributes().PutStr(model.InstanceLabel, "instance")
-				e0.FilteredAttributes().PutStr(model.JobLabel, "job")
+					e0 := pt0.Exemplars().AppendEmpty()
+					e0.SetTimestamp(timestampFromMs(1663113420863))
+					e0.SetDoubleValue(1)
+					e0.FilteredAttributes().PutStr(model.MetricNameLabel, "counter_test")
+					e0.FilteredAttributes().PutStr("foo", "bar")
+					e0.FilteredAttributes().PutStr(model.InstanceLabel, "instance")
+					e0.FilteredAttributes().PutStr(model.JobLabel, "job")
 
-				e1 := pt0.Exemplars().AppendEmpty()
-				e1.SetTimestamp(timestampFromMs(1663113420863))
-				e1.SetDoubleValue(1)
-				e1.FilteredAttributes().PutStr("foo", "bar")
+					e1 := pt0.Exemplars().AppendEmpty()
+					e1.SetTimestamp(timestampFromMs(1663113420863))
+					e1.SetDoubleValue(1)
+					e1.FilteredAttributes().PutStr("foo", "bar")
 
-				e2 := pt0.Exemplars().AppendEmpty()
-				e2.SetTimestamp(timestampFromMs(1663113420863))
-				e2.SetDoubleValue(1)
-				e2.FilteredAttributes().PutStr("foo", "bar")
-				e2.SetTraceID([16]byte{0x10, 0xa4, 0x73, 0x65, 0xb8, 0xaa, 0x04, 0xe0, 0x82, 0x91, 0xfa, 0xb9, 0xde, 0xca, 0x84, 0xdb})
-				e2.SetSpanID([8]byte{0x71, 0x9c, 0xee, 0x4a, 0x66, 0x9f, 0xd7, 0xd1})
+					e2 := pt0.Exemplars().AppendEmpty()
+					e2.SetTimestamp(timestampFromMs(1663113420863))
+					e2.SetDoubleValue(1)
+					e2.FilteredAttributes().PutStr("foo", "bar")
+					e2.SetTraceID([16]byte{0x10, 0xa4, 0x73, 0x65, 0xb8, 0xaa, 0x04, 0xe0, 0x82, 0x91, 0xfa, 0xb9, 0xde, 0xca, 0x84, 0xdb})
+					e2.SetSpanID([8]byte{0x71, 0x9c, 0xee, 0x4a, 0x66, 0x9f, 0xd7, 0xd1})
 
-				e3 := pt0.Exemplars().AppendEmpty()
-				e3.SetTimestamp(timestampFromMs(1663113420863))
-				e3.SetDoubleValue(1)
-				e3.FilteredAttributes().PutStr("foo", "bar")
-				e3.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x41, 0x37, 0xca, 0xb6, 0x6d, 0xc8, 0x80})
-				e3.SetSpanID([8]byte{0x00, 0x00, 0x00, 0xdf, 0xa4, 0x59, 0x7a, 0x9d})
+					e3 := pt0.Exemplars().AppendEmpty()
+					e3.SetTimestamp(timestampFromMs(1663113420863))
+					e3.SetDoubleValue(1)
+					e3.FilteredAttributes().PutStr("foo", "bar")
+					e3.SetTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x41, 0x37, 0xca, 0xb6, 0x6d, 0xc8, 0x80})
+					e3.SetSpanID([8]byte{0x00, 0x00, 0x00, 0xdf, 0xa4, 0x59, 0x7a, 0x9d})
 
-				return []pmetric.Metrics{md0}
-			},
-		},
-		{
-			name: "two-items",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("counter_test", 150, nil, "foo", "bar"),
-						createDataPoint("counter_test", 25, nil, "foo", "other"),
-					},
+					return []pmetric.Metrics{md0}
 				},
 			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("counter_test")
-				m0.Metadata().PutStr("prometheus.type", "counter")
-				sum := m0.SetEmptySum()
-				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				sum.SetIsMonotonic(true)
-				pt0 := sum.DataPoints().AppendEmpty()
-				pt0.SetDoubleValue(150.0)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.SetTimestamp(tsNanos)
-				pt0.Attributes().PutStr("foo", "bar")
-
-				pt1 := sum.DataPoints().AppendEmpty()
-				pt1.SetDoubleValue(25.0)
-				pt1.SetStartTimestamp(startTimestamp)
-				pt1.SetTimestamp(tsNanos)
-				pt1.Attributes().PutStr("foo", "other")
-
-				return []pmetric.Metrics{md0}
-			},
-		},
-		{
-			name: "two-metrics",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("counter_test", 150, nil, "foo", "bar"),
-						createDataPoint("counter_test", 25, nil, "foo", "other"),
-						createDataPoint("counter_test2", 100, nil, "foo", "bar"),
+			{
+				name: "two-items",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("counter_test", 150, nil, "foo", "bar"),
+							createDataPoint("counter_test", 25, nil, "foo", "other"),
+						},
 					},
 				},
-			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("counter_test")
-				m0.Metadata().PutStr("prometheus.type", "counter")
-				sum0 := m0.SetEmptySum()
-				sum0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				sum0.SetIsMonotonic(true)
-				pt0 := sum0.DataPoints().AppendEmpty()
-				pt0.SetDoubleValue(150.0)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.SetTimestamp(tsNanos)
-				pt0.Attributes().PutStr("foo", "bar")
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("counter_test")
+					m0.Metadata().PutStr("prometheus.type", "counter")
+					sum := m0.SetEmptySum()
+					sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					sum.SetIsMonotonic(true)
+					pt0 := sum.DataPoints().AppendEmpty()
+					pt0.SetDoubleValue(150.0)
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.SetTimestamp(tsNanos)
+					pt0.Attributes().PutStr("foo", "bar")
 
-				pt1 := sum0.DataPoints().AppendEmpty()
-				pt1.SetDoubleValue(25.0)
-				pt1.SetStartTimestamp(startTimestamp)
-				pt1.SetTimestamp(tsNanos)
-				pt1.Attributes().PutStr("foo", "other")
+					pt1 := sum.DataPoints().AppendEmpty()
+					pt1.SetDoubleValue(25.0)
+					if !disableMetricAdjustment {
+						pt1.SetStartTimestamp(startTimestamp)
+					}
+					pt1.SetTimestamp(tsNanos)
+					pt1.Attributes().PutStr("foo", "other")
 
-				m1 := mL0.AppendEmpty()
-				m1.SetName("counter_test2")
-				m1.Metadata().PutStr("prometheus.type", "counter")
-				sum1 := m1.SetEmptySum()
-				sum1.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				sum1.SetIsMonotonic(true)
-				pt2 := sum1.DataPoints().AppendEmpty()
-				pt2.SetDoubleValue(100.0)
-				pt2.SetStartTimestamp(startTimestamp)
-				pt2.SetTimestamp(tsNanos)
-				pt2.Attributes().PutStr("foo", "bar")
-
-				return []pmetric.Metrics{md0}
-			},
-		},
-		{
-			name: "metrics-with-poor-names",
-			inputs: []*testScrapedPage{
-				{
-					pts: []*testDataPoint{
-						createDataPoint("poor_name_count", 100, nil, "foo", "bar"),
-					},
+					return []pmetric.Metrics{md0}
 				},
 			},
-			wants: func() []pmetric.Metrics {
-				md0 := pmetric.NewMetrics()
-				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
-				m0 := mL0.AppendEmpty()
-				m0.SetName("poor_name_count")
-				m0.Metadata().PutStr("prometheus.type", "counter")
-				sum := m0.SetEmptySum()
-				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				sum.SetIsMonotonic(true)
-				pt0 := sum.DataPoints().AppendEmpty()
-				pt0.SetDoubleValue(100.0)
-				pt0.SetStartTimestamp(startTimestamp)
-				pt0.SetTimestamp(tsNanos)
-				pt0.Attributes().PutStr("foo", "bar")
+			{
+				name: "two-metrics",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("counter_test", 150, nil, "foo", "bar"),
+							createDataPoint("counter_test", 25, nil, "foo", "other"),
+							createDataPoint("counter_test2", 100, nil, "foo", "bar"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("counter_test")
+					m0.Metadata().PutStr("prometheus.type", "counter")
+					sum0 := m0.SetEmptySum()
+					sum0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					sum0.SetIsMonotonic(true)
+					pt0 := sum0.DataPoints().AppendEmpty()
+					pt0.SetDoubleValue(150.0)
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.SetTimestamp(tsNanos)
+					pt0.Attributes().PutStr("foo", "bar")
 
-				return []pmetric.Metrics{md0}
+					pt1 := sum0.DataPoints().AppendEmpty()
+					pt1.SetDoubleValue(25.0)
+					if !disableMetricAdjustment {
+						pt1.SetStartTimestamp(startTimestamp)
+					}
+					pt1.SetTimestamp(tsNanos)
+					pt1.Attributes().PutStr("foo", "other")
+
+					m1 := mL0.AppendEmpty()
+					m1.SetName("counter_test2")
+					m1.Metadata().PutStr("prometheus.type", "counter")
+					sum1 := m1.SetEmptySum()
+					sum1.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					sum1.SetIsMonotonic(true)
+					pt2 := sum1.DataPoints().AppendEmpty()
+					pt2.SetDoubleValue(100.0)
+					if !disableMetricAdjustment {
+						pt2.SetStartTimestamp(startTimestamp)
+					}
+					pt2.SetTimestamp(tsNanos)
+					pt2.Attributes().PutStr("foo", "bar")
+
+					return []pmetric.Metrics{md0}
+				},
 			},
-		},
-	}
+			{
+				name: "metrics-with-poor-names",
+				inputs: []*testScrapedPage{
+					{
+						pts: []*testDataPoint{
+							createDataPoint("poor_name_count", 100, nil, "foo", "bar"),
+						},
+					},
+				},
+				wants: func() []pmetric.Metrics {
+					md0 := pmetric.NewMetrics()
+					mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+					m0 := mL0.AppendEmpty()
+					m0.SetName("poor_name_count")
+					m0.Metadata().PutStr("prometheus.type", "counter")
+					sum := m0.SetEmptySum()
+					sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+					sum.SetIsMonotonic(true)
+					pt0 := sum.DataPoints().AppendEmpty()
+					pt0.SetDoubleValue(100.0)
+					if !disableMetricAdjustment {
+						pt0.SetStartTimestamp(startTimestamp)
+					}
+					pt0.SetTimestamp(tsNanos)
+					pt0.Attributes().PutStr("foo", "bar")
 
-	for _, tt := range tests {
-		for _, enableNativeHistograms := range []bool{true, false} {
-			t.Run(fmt.Sprintf("%s/enableNativeHistograms=%v", tt.name, enableNativeHistograms), func(t *testing.T) {
-				tt.run(t, enableNativeHistograms)
-			})
+					return []pmetric.Metrics{md0}
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			for _, enableNativeHistograms := range []bool{true, false} {
+				t.Run(fmt.Sprintf("%s/enableNativeHistograms=%v/disableMetricAdjustment=%v", tt.name, enableNativeHistograms, disableMetricAdjustment), func(t *testing.T) {
+					defer testutil.SetFeatureGateForTest(t, removeStartTimeAdjuster, disableMetricAdjustment)()
+					tt.run(t, enableNativeHistograms)
+				})
+			}
 		}
 	}
 }

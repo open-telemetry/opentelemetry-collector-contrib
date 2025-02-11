@@ -260,6 +260,9 @@ func NewInitialPointAdjuster(logger *zap.Logger, gcInterval time.Duration, useCr
 // AdjustMetrics takes a sequence of metrics and adjust their start times based on the initial and
 // previous points in the timeseriesMap.
 func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
+	if removeStartTimeAdjuster.IsEnabled() {
+		return nil
+	}
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		_, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)

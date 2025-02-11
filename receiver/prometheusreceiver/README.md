@@ -90,6 +90,12 @@ prometheus --config.file=prom.yaml
 "--feature-gates=receiver.prometheusreceiver.RemoveLegacyResourceAttributes"
 ```
 
+- `receiver.prometheusreceiver.RemoveStartTimeAdjuster`: If enabled, the prometheus receiver no longer sets the start timestamp of metrics if it is not known. Use the `metricstarttime` processor instead if you need this functionality.
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjuster"
+```
+
 - `report_extra_scrape_metrics`: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`
 
 You can copy and paste that same configuration under:
