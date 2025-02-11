@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
 )
 
 type elasticsearchExporter struct {
@@ -39,6 +40,14 @@ type elasticsearchExporter struct {
 
 	wg          sync.WaitGroup // active sessions
 	bulkIndexer bulkIndexer
+
+	// Profiles requires multiple bulk indexers depending on the data type
+	// Bulk indexer for profiling-events-*
+	biEvents bulkIndexer
+	// Bulk indexer for profiling-stacktraces
+	biStackTraces bulkIndexer
+	// Bulk indexer for profiling-stackframes
+	biStackFrames bulkIndexer
 
 	bufferPool *pool.BufferPool
 }
@@ -83,17 +92,48 @@ func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) 
 	if err != nil {
 		return err
 	}
-	bulkIndexer, err := newBulkIndexer(e.Logger, client, e.config)
+	bulkIndexer, err := newBulkIndexer(e.Logger, client, e.config, e.config.MappingMode() == MappingOTel)
 	if err != nil {
 		return err
 	}
 	e.bulkIndexer = bulkIndexer
+	biEvents, err := newBulkIndexer(e.Logger, client, e.config, true)
+	if err != nil {
+		return err
+	}
+	e.biEvents = biEvents
+	biStackTraces, err := newBulkIndexer(e.Logger, client, e.config, false)
+	if err != nil {
+		return err
+	}
+	e.biStackTraces = biStackTraces
+	biStackFrames, err := newBulkIndexer(e.Logger, client, e.config, false)
+	if err != nil {
+		return err
+	}
+	e.biStackFrames = biStackFrames
+
 	return nil
 }
 
 func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	if e.bulkIndexer != nil {
 		if err := e.bulkIndexer.Close(ctx); err != nil {
+			return err
+		}
+	}
+	if e.biEvents != nil {
+		if err := e.biEvents.Close(ctx); err != nil {
+			return err
+		}
+	}
+	if e.biStackTraces != nil {
+		if err := e.biStackTraces.Close(ctx); err != nil {
+			return err
+		}
+	}
+	if e.biStackFrames != nil {
+		if err := e.biStackFrames.Close(ctx); err != nil {
 			return err
 		}
 	}
@@ -496,11 +536,26 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	e.wg.Add(1)
 	defer e.wg.Done()
 
-	session, err := e.bulkIndexer.StartSession(ctx)
+	defaultSession, err := e.bulkIndexer.StartSession(ctx)
 	if err != nil {
 		return err
 	}
-	defer session.End()
+	defer defaultSession.End()
+	eventsSession, err := e.biEvents.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer eventsSession.End()
+	stackTracesSession, err := e.biStackTraces.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer stackTracesSession.End()
+	stackFramesSession, err := e.biStackFrames.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer stackFramesSession.End()
 
 	var errs []error
 	rps := pd.ResourceProfiles()
@@ -513,7 +568,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 			scope := sp.Scope()
 			p := sp.Profiles()
 			for k := 0; k < p.Len(); k++ {
-				if err := e.pushProfileRecord(ctx, resource, p.At(k), scope, session); err != nil {
+				if err := e.pushProfileRecord(ctx, resource, p.At(k), scope, defaultSession, eventsSession, stackTracesSession, stackFramesSession); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -529,12 +584,31 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 		}
 	}
 
-	if err := session.Flush(ctx); err != nil {
+	if err := defaultSession.Flush(ctx); err != nil {
 		if cerr := ctx.Err(); cerr != nil {
 			return cerr
 		}
 		errs = append(errs, err)
 	}
+	if err := eventsSession.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
+	if err := stackTracesSession.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
+	if err := stackFramesSession.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
+
 	return errors.Join(errs...)
 }
 
@@ -543,9 +617,18 @@ func (e *elasticsearchExporter) pushProfileRecord(
 	resource pcommon.Resource,
 	record pprofile.Profile,
 	scope pcommon.InstrumentationScope,
-	bulkIndexerSession bulkIndexerSession,
+	defaultSession, eventsSession, stackTracesSession, stackFramesSession bulkIndexerSession,
 ) error {
 	return e.model.encodeProfile(resource, scope, record, func(buf *bytes.Buffer, docID, index string) error {
-		return bulkIndexerSession.Add(ctx, index, docID, buf, nil)
+		switch index {
+		case otelserializer.StackTraceIndex:
+			return stackTracesSession.Add(ctx, index, docID, buf, nil)
+		case otelserializer.StackFrameIndex:
+			return stackFramesSession.Add(ctx, index, docID, buf, nil)
+		case otelserializer.AllEventsIndex:
+			return eventsSession.Add(ctx, index, docID, buf, nil)
+		default:
+			return defaultSession.Add(ctx, index, docID, buf, nil)
+		}
 	})
 }

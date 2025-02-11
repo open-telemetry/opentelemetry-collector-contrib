@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	allEventsIndex   = "profiling-events-all"
-	stackTraceIndex  = "profiling-stacktraces"
-	stackFrameIndex  = "profiling-stackframes"
-	executablesIndex = "profiling-executables"
+	AllEventsIndex   = "profiling-events-all"
+	StackTraceIndex  = "profiling-stacktraces"
+	StackFrameIndex  = "profiling-stackframes"
+	ExecutablesIndex = "profiling-executables"
 )
 
 // SerializeProfile serializes a profile and calls the `pushData` callback for each generated document.
@@ -33,7 +33,7 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 			if err != nil {
 				return err
 			}
-			err = pushData(c, "", allEventsIndex)
+			err = pushData(c, "", AllEventsIndex)
 			if err != nil {
 				return err
 			}
@@ -44,7 +44,7 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 			if err != nil {
 				return err
 			}
-			err = pushData(c, payload.StackTrace.DocID, stackTraceIndex)
+			err = pushData(c, payload.StackTrace.DocID, StackTraceIndex)
 			if err != nil {
 				return err
 			}
@@ -55,7 +55,7 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 			if err != nil {
 				return err
 			}
-			err = pushData(c, stackFrame.DocID, stackFrameIndex)
+			err = pushData(c, stackFrame.DocID, StackFrameIndex)
 			if err != nil {
 				return err
 			}
@@ -66,7 +66,7 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 			if err != nil {
 				return err
 			}
-			err = pushData(c, executable.DocID, executablesIndex)
+			err = pushData(c, executable.DocID, ExecutablesIndex)
 			if err != nil {
 				return err
 			}

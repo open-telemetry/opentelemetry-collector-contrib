@@ -55,14 +55,14 @@ type bulkIndexerSession interface {
 
 const defaultMaxRetries = 2
 
-func newBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config) (bulkIndexer, error) {
+func newBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) (bulkIndexer, error) {
 	if config.Batcher.Enabled != nil {
-		return newSyncBulkIndexer(logger, client, config), nil
+		return newSyncBulkIndexer(logger, client, config, requireDataStream), nil
 	}
-	return newAsyncBulkIndexer(logger, client, config)
+	return newAsyncBulkIndexer(logger, client, config, requireDataStream)
 }
 
-func bulkIndexerConfig(client esapi.Transport, config *Config) docappender.BulkIndexerConfig {
+func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream bool) docappender.BulkIndexerConfig {
 	var maxDocRetries int
 	if config.Retry.Enabled {
 		maxDocRetries = defaultMaxRetries
@@ -79,14 +79,14 @@ func bulkIndexerConfig(client esapi.Transport, config *Config) docappender.BulkI
 		MaxDocumentRetries:    maxDocRetries,
 		Pipeline:              config.Pipeline,
 		RetryOnDocumentStatus: config.Retry.RetryOnStatus,
-		RequireDataStream:     config.MappingMode() == MappingOTel,
+		RequireDataStream:     requireDataStream,
 		CompressionLevel:      compressionLevel,
 	}
 }
 
-func newSyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config) *syncBulkIndexer {
+func newSyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) *syncBulkIndexer {
 	return &syncBulkIndexer{
-		config:       bulkIndexerConfig(client, config),
+		config:       bulkIndexerConfig(client, config, requireDataStream),
 		flushTimeout: config.Timeout,
 		flushBytes:   config.Flush.Bytes,
 		retryConfig:  config.Retry,
@@ -176,7 +176,7 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 	}
 }
 
-func newAsyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config) (*asyncBulkIndexer, error) {
+func newAsyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) (*asyncBulkIndexer, error) {
 	numWorkers := config.NumWorkers
 	if numWorkers == 0 {
 		numWorkers = runtime.NumCPU()
@@ -190,7 +190,7 @@ func newAsyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Con
 	pool.wg.Add(numWorkers)
 
 	for i := 0; i < numWorkers; i++ {
-		bi, err := docappender.NewBulkIndexer(bulkIndexerConfig(client, config))
+		bi, err := docappender.NewBulkIndexer(bulkIndexerConfig(client, config, requireDataStream))
 		if err != nil {
 			return nil, err
 		}
