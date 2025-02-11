@@ -91,7 +91,7 @@ require (
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.119.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.119.0
 	go.opentelemetry.io/collector/component/componenttest v0.119.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.119.0
