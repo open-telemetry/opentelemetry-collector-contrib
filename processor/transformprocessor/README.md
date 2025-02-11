@@ -90,16 +90,18 @@ Valid values for `context` are:
 transform:
   error_mode: ignore
   metric_statements:
-    - conditions: 
-        - metric.type == METRIC_DATA_TYPE_SUM
+    - context: metric
+      conditions:
+        - type == METRIC_DATA_TYPE_SUM
       statements:
-        - set(metric.description, "Sum")
+        - set(description, "Sum")
 
   log_statements:
-    - conditions:
-      - IsMap(log.body) and log.body["object"] != nil
+    - context: log
+      conditions:
+        - IsMap(body) and body["object"] != nil
       statements:
-      - set(log.body, log.attributes["http.route"])
+        - set(body, attributes["http.route"])
 ```
 
 
