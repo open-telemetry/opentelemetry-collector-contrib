@@ -233,7 +233,7 @@ func TestSpanConfigUsedWithmetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.NoError(t, xconfmap.Validate(cfg))
 
 	sink := consumertest.MetricsSink{}
 
