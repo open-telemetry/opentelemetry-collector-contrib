@@ -6,26 +6,22 @@ package decode // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"golang.org/x/text/encoding"
-	"golang.org/x/text/encoding/ianaindex"
 	"golang.org/x/text/transform"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 )
 
+// Deprecated: [v0.120.0] Use directly the encoding.Decoder().
 type Decoder struct {
-	encoding     encoding.Encoding
 	decoder      *encoding.Decoder
 	decodeBuffer []byte
 }
 
-// New wraps a character set encoding and creates a reusable buffer to reduce allocation.
-// Decoder is not thread-safe and must not be used in multiple goroutines.
+// Deprecated: [v0.120.0] Use directly the encoding.Decoder().
 func New(enc encoding.Encoding) *Decoder {
 	return &Decoder{
-		encoding:     enc,
 		decoder:      enc.NewDecoder(),
 		decodeBuffer: make([]byte, 1<<12),
 	}
@@ -47,25 +43,12 @@ func (d *Decoder) Decode(msgBuf []byte) ([]byte, error) {
 	}
 }
 
-// LookupEncoding attempts to match the string name provided with a character set encoding.
+// Deprecated: [v0.120.0] no public replacement.
 func LookupEncoding(enc string) (encoding.Encoding, error) {
-	if e, ok := textutils.EncodingOverridesMap.Get(strings.ToLower(enc)); ok {
-		return e, nil
-	}
-	e, err := ianaindex.IANA.Encoding(enc)
-	if err != nil {
-		return nil, fmt.Errorf("unsupported encoding '%s'", enc)
-	}
-	if e == nil {
-		return nil, fmt.Errorf("no charmap defined for encoding '%s'", enc)
-	}
-	return e, nil
+	return textutils.LookupEncoding(enc)
 }
 
+// Deprecated: [v0.120.0] no public replacement.
 func IsNop(enc string) bool {
-	e, err := LookupEncoding(enc)
-	if err != nil {
-		return false
-	}
-	return e == encoding.Nop
+	return textutils.IsNop(enc)
 }
