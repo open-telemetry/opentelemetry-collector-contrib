@@ -3,10 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog
 go 1.22.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.62.1
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.25.0
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.62.2
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.25.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.119.0
 	go.opentelemetry.io/collector/component/componenttest v0.119.0
@@ -23,14 +21,11 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.5.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.64.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.62.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.62.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.62.1 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.35.0 // indirect
-	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.25.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.62.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.62.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.62.2 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.25.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.25.0 // indirect
 	github.com/DataDog/sketches-go v1.4.6 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
@@ -136,11 +131,9 @@ require (
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/term v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	golang.org/x/time v0.7.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241230172942-26aa7a208def // indirect
 	google.golang.org/grpc v1.70.0 // indirect
 	google.golang.org/protobuf v1.36.4 // indirect
-	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0 // indirect
 	k8s.io/api v0.31.3 // indirect
