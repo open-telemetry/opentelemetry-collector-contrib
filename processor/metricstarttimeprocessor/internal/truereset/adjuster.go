@@ -5,7 +5,6 @@ package truereset // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -43,19 +42,7 @@ func NewAdjuster(set component.TelemetrySettings, gcInterval time.Duration) *Adj
 func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
-		_, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
-		if !found {
-			return metrics, errors.New("adjusting metrics without service.name")
-		}
-
-		_, found = rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
-		if !found {
-			return metrics, errors.New("adjusting metrics without service.instance.id")
-		}
-	}
-
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
-		rm := metrics.ResourceMetrics().At(i)
+		// TODO: Produce a hash of all resource attributes, rather than just job + instance.
 		job, _ := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
 		instance, _ := rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
 		tsm := a.jobsMap.get(job.Str(), instance.Str())
