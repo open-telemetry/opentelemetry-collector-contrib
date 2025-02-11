@@ -68,9 +68,10 @@ func TestNewFactory(t *testing.T) {
 					return fakeClient, nil
 				}
 
-				_, err := NewFactory().Create(
+				f := NewFactory()
+				_, err := f.Create(
 					context.Background(),
-					extensiontest.NewNopSettings(),
+					extensiontest.NewNopSettingsWithType(f.Type()),
 					cfg,
 				)
 				require.NoError(t, err)
