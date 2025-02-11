@@ -19,8 +19,8 @@ func TestNewFactory(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	assert.Equal(t, f.CreateDefaultConfig().(*Config), cfg)
 
-	ext, _ := createExtension(context.Background(), extensiontest.NewNopSettingsWithType(extensiontest.NopType), cfg)
-	fext, _ := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(extensiontest.NopType), cfg)
+	ext, _ := createExtension(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), cfg)
+	fext, _ := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), cfg)
 	assert.Equal(t, fext, ext)
 }
 
