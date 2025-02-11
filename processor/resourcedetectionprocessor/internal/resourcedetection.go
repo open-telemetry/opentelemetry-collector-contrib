@@ -15,7 +15,6 @@ import (
 	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"go.opentelemetry.io/collector/component"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
@@ -52,7 +51,8 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 	timeout time.Duration,
 	attributes []string,
 	detectorConfigs ResourceDetectorConfig,
-	detectorTypes ...DetectorType) (*ResourceProvider, error) {
+	detectorTypes ...DetectorType,
+) (*ResourceProvider, error) {
 	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes)
 	if err != nil {
 		return nil, err
@@ -123,10 +123,10 @@ func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resour
 	return p.detectedResource.resource, p.detectedResource.schemaURL, p.detectedResource.err
 }
 
-func (p *ResourceProvider) ConfigureHandlers(ctx context.Context, host component.Host, middlewareId component.ID) {
+func (p *ResourceProvider) ConfigureHandlers(_ context.Context, host component.Host, middlewareID component.ID) {
 	for _, detector := range p.detectors {
 		if handlerDetector, ok := detector.(HandlerProvider); ok {
-			awsmiddleware.TryConfigure(p.logger, host, middlewareId, awsmiddleware.SDKv1(handlerDetector.ExposeHandlers()))
+			awsmiddleware.TryConfigure(p.logger, host, middlewareID, awsmiddleware.SDKv1(handlerDetector.ExposeHandlers()))
 		}
 	}
 }

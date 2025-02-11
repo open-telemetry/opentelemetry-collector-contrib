@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -46,21 +46,17 @@ const (
 	k8sRemoteNamespace = "K8s.RemoteNamespace"
 )
 
-var (
-	// reInvalidSpanCharacters defines the invalid letters in a span name as per
-	// Allowed characters for X-Ray Segment Name:
-	// Unicode letters, numbers, and whitespace, and the following symbols: _, ., :, /, %, &, #, =, +, \, -, @
-	// Doc: https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
-	reInvalidSpanCharacters = regexp.MustCompile(`[^ 0-9\p{L}N_.:/%&#=+\-@]`)
-)
+// reInvalidSpanCharacters defines the invalid letters in a span name as per
+// Allowed characters for X-Ray Segment Name:
+// Unicode letters, numbers, and whitespace, and the following symbols: _, ., :, /, %, &, #, =, +, \, -, @
+// Doc: https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
+var reInvalidSpanCharacters = regexp.MustCompile(`[^ 0-9\p{L}N_.:/%&#=+\-@]`)
 
-var (
-	remoteXrayExporterDotConverter = featuregate.GlobalRegistry().MustRegister(
-		"exporter.xray.allowDot",
-		featuregate.StageBeta,
-		featuregate.WithRegisterDescription("X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled. "),
-		featuregate.WithRegisterFromVersion("v0.97.0"),
-	)
+var remoteXrayExporterDotConverter = featuregate.GlobalRegistry().MustRegister(
+	"exporter.xray.allowDot",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled. "),
+	featuregate.WithRegisterFromVersion("v0.97.0"),
 )
 
 const (
@@ -90,9 +86,7 @@ var removeAnnotationsFromServiceSegment = []string{
 	k8sRemoteNamespace,
 }
 
-var (
-	writers = newWriterPool(2048)
-)
+var writers = newWriterPool(2048)
 
 // MakeSegmentDocuments converts spans to json documents
 func MakeSegmentDocuments(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) ([]string, error) {
@@ -143,13 +137,12 @@ func addNamespaceToSubsegmentWithRemoteService(span ptrace.Span, segment *awsxra
 }
 
 func MakeDependencySubsegmentForLocalRootDependencySpan(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool, serviceSegmentID pcommon.SpanID) (*awsxray.Segment, error) {
-	var dependencySpan = ptrace.NewSpan()
+	dependencySpan := ptrace.NewSpan()
 	span.CopyTo(dependencySpan)
 
 	dependencySpan.SetParentSpanID(serviceSegmentID)
 
 	dependencySubsegment, err := MakeSegment(dependencySpan, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
-
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +180,6 @@ func MakeServiceSegmentForLocalRootDependencySpan(span ptrace.Span, resource pco
 	}
 
 	serviceSegment, err := MakeSegment(serviceSpan, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
-
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +226,6 @@ func MakeServiceSegmentForLocalRootDependencySpan(span ptrace.Span, resource pco
 
 func MakeServiceSegmentForLocalRootSpanWithoutDependency(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) ([]*awsxray.Segment, error) {
 	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
-
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +238,6 @@ func MakeServiceSegmentForLocalRootSpanWithoutDependency(span ptrace.Span, resou
 
 func MakeNonLocalRootSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) ([]*awsxray.Segment, error) {
 	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
-
 	if err != nil {
 		return nil, err
 	}
@@ -259,7 +249,7 @@ func MakeNonLocalRootSegment(span ptrace.Span, resource pcommon.Resource, indexe
 
 func MakeServiceSegmentAndDependencySubsegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) ([]*awsxray.Segment, error) {
 	// If it is a local root span and a dependency span, we need to make a segment and subsegment representing the local service and remote service, respectively.
-	var serviceSegmentID = newSegmentID()
+	serviceSegmentID := newSegmentID()
 	var segments []*awsxray.Segment
 
 	// Make Dependency Subsegment
@@ -296,7 +286,6 @@ func MakeSegmentsFromSpan(span ptrace.Span, resource pcommon.Resource, indexedAt
 // MakeSegmentDocumentString will be deprecated in the future
 func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) (string, error) {
 	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
-
 	if err != nil {
 		return "", err
 	}
@@ -612,7 +601,8 @@ func addSpecialAttributes(attributes map[string]pcommon.Value, indexedAttrs []st
 }
 
 func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Resource, storeResource bool, indexedAttrs []string, indexAllAttrs bool) (
-	string, map[string]any, map[string]map[string]any) {
+	string, map[string]any, map[string]map[string]any,
+) {
 	var (
 		annotations = map[string]any{}
 		metadata    = map[string]map[string]any{}

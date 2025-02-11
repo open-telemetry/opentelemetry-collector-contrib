@@ -1,0 +1,28 @@
+type: otelarrow
+
+status:
+  class: pkg
+  stability:
+    beta: [traces, metrics, logs]
+  codeowners:
+    active: [jmacd, moh-osman3]
+
+telemetry:
+  metrics:
+    otelarrow_admission_in_flight_bytes:
+      description: Number of bytes that have started processing but are not finished.
+      unit: By
+      enabled: true
+      sum:
+        monotonic: false
+        value_type: int
+        async: true
+
+    otelarrow_admission_waiting_bytes:
+      description: Number of items waiting to start processing.
+      enabled: true
+      unit: By
+      sum:
+        monotonic: false
+        value_type: int
+        async: true

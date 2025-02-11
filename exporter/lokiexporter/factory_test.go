@@ -18,12 +18,12 @@ const (
 )
 
 func TestExporter_new(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = validEndpoint
+
 	t.Run("with valid config", func(t *testing.T) {
 		config := &Config{
-
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: validEndpoint,
-			},
+			ClientConfig: clientConfig,
 		}
 		exp, err := newExporter(config, componenttest.NewNopTelemetrySettings())
 		require.NoError(t, err)
@@ -32,10 +32,11 @@ func TestExporter_new(t *testing.T) {
 }
 
 func TestExporter_startReturnsNillWhenValidConfig(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = validEndpoint
+
 	config := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: validEndpoint,
-		},
+		ClientConfig: clientConfig,
 	}
 	exp, err := newExporter(config, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
@@ -44,15 +45,16 @@ func TestExporter_startReturnsNillWhenValidConfig(t *testing.T) {
 }
 
 func TestExporter_startReturnsErrorWhenInvalidHttpClientSettings(t *testing.T) {
-	config := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "",
-			TLSSetting: configtls.ClientConfig{
-				Config: configtls.Config{
-					MinVersion: "invalid",
-				},
-			},
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = ""
+	clientConfig.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			MinVersion: "invalid",
 		},
+	}
+
+	config := &Config{
+		ClientConfig: clientConfig,
 	}
 	exp, err := newExporter(config, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
@@ -61,10 +63,11 @@ func TestExporter_startReturnsErrorWhenInvalidHttpClientSettings(t *testing.T) {
 }
 
 func TestExporter_stopAlwaysReturnsNil(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = validEndpoint
+
 	config := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: validEndpoint,
-		},
+		ClientConfig: clientConfig,
 	}
 	exp, err := newExporter(config, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)

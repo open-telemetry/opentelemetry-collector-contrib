@@ -143,7 +143,6 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) *kineticaMetricsExporte
 }
 
 func (e *kineticaMetricsExporter) start(ctx context.Context, _ component.Host) error {
-
 	fmt.Println("SCHEMA NAME - ", e.writer.cfg.Schema)
 
 	if e.writer.cfg.Schema != "" && len(e.writer.cfg.Schema) != 0 {
@@ -209,7 +208,6 @@ func createTablesForMetricType(ctx context.Context, metricTypeDDLs []string, kiW
 	}
 
 	lo.ForEach(metricTypeDDLs, func(ddl string, _ int) {
-
 		stmt := strings.ReplaceAll(ddl, "%s", schema)
 		kiWriter.logger.Debug("Creating Table - ", zap.String("DDL", stmt))
 
@@ -251,7 +249,6 @@ func (e *kineticaMetricsExporter) shutdown(_ context.Context) error {
 //	@param md
 //	@return error
 func (e *kineticaMetricsExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) error {
-
 	var metricType pmetric.MetricType
 	var errs []error
 
@@ -277,7 +274,6 @@ func (e *kineticaMetricsExporter) pushMetricsData(_ context.Context, md pmetric.
 			e.logger.Debug("metrics ", zap.Int("count = ", metricSlice.Len()))
 
 			for k := 0; k < metricSlice.Len(); k++ {
-
 				metric := metricSlice.At(k)
 				metricType = metric.Type()
 				switch metric.Type() {
@@ -374,7 +370,6 @@ func (e *kineticaMetricsExporter) pushMetricsData(_ context.Context, md pmetric.
 		}
 	default:
 		return fmt.Errorf("Unsupported metrics type")
-
 	}
 	return multierr.Combine(errs...)
 }
@@ -464,7 +459,6 @@ func (e *kineticaMetricsExporter) createSummaryRecord(resAttr pcommon.Map, _ str
 			}
 			kiSummaryRecord.summaryDatapointQuantileValues = append(kiSummaryRecord.summaryDatapointQuantileValues, *summaryQV)
 		}
-
 	}
 
 	// Handle Resource attribute
@@ -658,7 +652,6 @@ func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcomm
 			for k := range exemplarAttributes {
 				delete(exemplarAttributes, k)
 			}
-
 		}
 
 		// Handle positive and negative bucket counts
@@ -683,7 +676,6 @@ func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcomm
 			})
 		}
 		kiExpHistogramRecord.histogramBucketNegativeCount = append(kiExpHistogramRecord.histogramBucketNegativeCount, datapointBucketNegativeCount...)
-
 	}
 
 	// Handle Resource attribute
@@ -761,7 +753,6 @@ func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcomm
 //	@return *kineticaHistogramRecord
 //	@return error
 func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ string, scopeInstr pcommon.InstrumentationScope, _ string, histogramRecord pmetric.Histogram, name, description, unit string) (*kineticaHistogramRecord, error) {
-
 	e.logger.Debug("In createHistogramRecord ...")
 
 	var errs []error
@@ -928,7 +919,6 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 
 		kiHistogramRecord.histogramResourceAttribute = make([]HistogramResourceAttribute, len(resourceAttribute))
 		copy(kiHistogramRecord.histogramResourceAttribute, resourceAttribute)
-
 	}
 
 	// Handle Scope attribute
@@ -1092,9 +1082,7 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 			for k := range exemplarAttributes {
 				delete(exemplarAttributes, k)
 			}
-
 		}
-
 	}
 
 	// Handle Resource attribute
@@ -1167,7 +1155,6 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 			Key:            "",
 			AttributeValue: AttributeValue{},
 		})
-
 	}
 
 	return kiSumRecord, multierr.Combine(errs...)
@@ -1187,7 +1174,6 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 //	@return *kineticaGaugeRecord
 //	@return error
 func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, _ string, scopeInstr pcommon.InstrumentationScope, _ string, gaugeRecord pmetric.Gauge, name, description, unit string) (*kineticaGaugeRecord, error) {
-
 	var errs []error
 
 	kiGaugeRecord := new(kineticaGaugeRecord)
@@ -1605,7 +1591,6 @@ func (e *kineticaMetricsExporter) newSummaryScopeAttributeValue(summaryID string
 
 	sa := &SummaryScopeAttribute{summaryID, key, scopeName, scopeVersion, *av}
 	return sa, nil
-
 }
 
 func (e *kineticaMetricsExporter) newSummaryDatapointAttributeValue(summaryID string, summaryDatapointID string, key string, vtPair ValueTypePair) (*SummaryDataPointAttribute, error) {

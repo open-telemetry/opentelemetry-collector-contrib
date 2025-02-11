@@ -177,7 +177,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 						},
 					},
 				},
-			}, NodeLimits{}, nil)
+			}, NodeCapacity{}, nil)
 			metadata.DetailedPVCResourceSetter = tt.detailedPVCLabelsSetterOverride
 
 			res, err := getVolumeResourceOptions(rb, podStats, stats.VolumeStats{Name: tt.volumeName}, metadata)

@@ -65,7 +65,7 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 
-			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
+			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
@@ -483,7 +483,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 
-			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
+			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
@@ -496,7 +496,6 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, numberDataPoint)
-
 		})
 	}
 }
@@ -918,7 +917,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 
 			histogramDataPoint := createHistogramDataPointTelemetry()
 
-			ctx := NewTransformContext(histogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
+			ctx := NewTransformContext(histogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
@@ -1436,7 +1435,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 			expoHistogramDataPoint := createExpoHistogramDataPointTelemetry()
 
-			ctx := NewTransformContext(expoHistogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
+			ctx := NewTransformContext(expoHistogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
@@ -1855,7 +1854,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 			summaryDataPoint := createSummaryDataPointTelemetry()
 
-			ctx := NewTransformContext(summaryDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
+			ctx := NewTransformContext(summaryDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
@@ -2039,7 +2038,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 
 			metric := createMetricTelemetry()
 
-			ctx := NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
+			ctx := NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
@@ -2130,7 +2129,7 @@ func Test_ParseEnum(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			actual, err := parseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
 			assert.NoError(t, err)
-			assert.Equal(t, *actual, tt.want)
+			assert.Equal(t, tt.want, *actual)
 		})
 	}
 }

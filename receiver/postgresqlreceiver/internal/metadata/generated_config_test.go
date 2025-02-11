@@ -31,6 +31,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlBgwriterCheckpointCount:  MetricConfig{Enabled: true},
 					PostgresqlBgwriterDuration:         MetricConfig{Enabled: true},
 					PostgresqlBgwriterMaxwritten:       MetricConfig{Enabled: true},
+					PostgresqlBlksHit:                  MetricConfig{Enabled: true},
+					PostgresqlBlksRead:                 MetricConfig{Enabled: true},
 					PostgresqlBlocksRead:               MetricConfig{Enabled: true},
 					PostgresqlCommits:                  MetricConfig{Enabled: true},
 					PostgresqlConnectionMax:            MetricConfig{Enabled: true},
@@ -49,6 +51,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlTableSize:                MetricConfig{Enabled: true},
 					PostgresqlTableVacuumCount:         MetricConfig{Enabled: true},
 					PostgresqlTempFiles:                MetricConfig{Enabled: true},
+					PostgresqlTupDeleted:               MetricConfig{Enabled: true},
+					PostgresqlTupFetched:               MetricConfig{Enabled: true},
+					PostgresqlTupInserted:              MetricConfig{Enabled: true},
+					PostgresqlTupReturned:              MetricConfig{Enabled: true},
+					PostgresqlTupUpdated:               MetricConfig{Enabled: true},
 					PostgresqlWalAge:                   MetricConfig{Enabled: true},
 					PostgresqlWalDelay:                 MetricConfig{Enabled: true},
 					PostgresqlWalLag:                   MetricConfig{Enabled: true},
@@ -71,6 +78,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlBgwriterCheckpointCount:  MetricConfig{Enabled: false},
 					PostgresqlBgwriterDuration:         MetricConfig{Enabled: false},
 					PostgresqlBgwriterMaxwritten:       MetricConfig{Enabled: false},
+					PostgresqlBlksHit:                  MetricConfig{Enabled: false},
+					PostgresqlBlksRead:                 MetricConfig{Enabled: false},
 					PostgresqlBlocksRead:               MetricConfig{Enabled: false},
 					PostgresqlCommits:                  MetricConfig{Enabled: false},
 					PostgresqlConnectionMax:            MetricConfig{Enabled: false},
@@ -89,6 +98,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlTableSize:                MetricConfig{Enabled: false},
 					PostgresqlTableVacuumCount:         MetricConfig{Enabled: false},
 					PostgresqlTempFiles:                MetricConfig{Enabled: false},
+					PostgresqlTupDeleted:               MetricConfig{Enabled: false},
+					PostgresqlTupFetched:               MetricConfig{Enabled: false},
+					PostgresqlTupInserted:              MetricConfig{Enabled: false},
+					PostgresqlTupReturned:              MetricConfig{Enabled: false},
+					PostgresqlTupUpdated:               MetricConfig{Enabled: false},
 					PostgresqlWalAge:                   MetricConfig{Enabled: false},
 					PostgresqlWalDelay:                 MetricConfig{Enabled: false},
 					PostgresqlWalLag:                   MetricConfig{Enabled: false},
@@ -105,9 +119,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }
@@ -153,9 +166,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }

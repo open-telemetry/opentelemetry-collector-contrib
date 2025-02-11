@@ -4,7 +4,6 @@
 package perfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -13,7 +12,7 @@ type PerfCounterInitError struct {
 }
 
 func (p *PerfCounterInitError) Error() string {
-	return fmt.Sprintf("failed to init counters: %s", strings.Join(p.FailedObjects, "; "))
+	return "failed to init counters: " + strings.Join(p.FailedObjects, "; ")
 }
 
 func (p *PerfCounterInitError) AddFailure(object string) {

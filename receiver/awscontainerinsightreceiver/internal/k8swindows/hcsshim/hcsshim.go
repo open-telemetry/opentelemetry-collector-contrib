@@ -7,31 +7,34 @@
 package hcsshim // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/hcsshim"
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
+
+	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	cExtractor "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/extractors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
-
-	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 )
 
 type PodKey struct {
-	PodId, PodName, PodNamespace string
-	Containers                   []ContainerInfo
+	PodId        string //nolint:revive
+	PodName      string
+	PodNamespace string
+	Containers   []ContainerInfo
 }
 
 type ContainerInfo struct {
-	Name, Id string
+	Name string
+	Id   string //nolint:revive
 }
 
 type EndpointInfo struct {
-	Id, Name string
+	Id   string //nolint:revive
+	Name string
 }
 
 type HCSStatsProvider struct {
@@ -80,21 +83,21 @@ func (hp *HCSStatsProvider) GetMetrics() ([]*stores.CIMetricImpl, error) {
 	return metrics, nil
 }
 
-func (hp *HCSStatsProvider) getContainerMetrics(containerId string) (extractors.HCSStat, error) {
+func (hp *HCSStatsProvider) getContainerMetrics(containerID string) (extractors.HCSStat, error) {
 	hp.logger.Debug("Getting Container stats using Microsoft HCS shim APIs")
 
-	cps, err := hp.hcsClient.GetContainerStats(containerId)
+	cps, err := hp.hcsClient.GetContainerStats(containerID)
 	if err != nil {
 		hp.logger.Error("failed to get container stats from HCS shim client, ", zap.Error(err))
 		return extractors.HCSStat{}, err
 	}
 
-	if _, ok := hp.containerToEndpoint[containerId]; !ok {
-		hp.logger.Warn("HNS endpoint not found ", zap.String("container", containerId))
+	if _, ok := hp.containerToEndpoint[containerID]; !ok {
+		hp.logger.Warn("HNS endpoint not found ", zap.String("container", containerID))
 		return extractors.HCSStat{}, nil
 	}
 
-	endpoint := hp.containerToEndpoint[containerId]
+	endpoint := hp.containerToEndpoint[containerID]
 	enpointStat, err := hp.hcsClient.GetEndpointStat(endpoint.Id)
 	if err != nil {
 		hp.logger.Error("failed to get HNS endpoint stats, ", zap.Error(err))
@@ -130,9 +133,9 @@ func (hp *HCSStatsProvider) getPodMetrics() ([]*stores.CIMetricImpl, error) {
 		var metricsPerPod []*stores.CIMetricImpl
 		tags := map[string]string{}
 
-		tags[ci.AttributePodID] = pod.PodId
-		tags[ci.AttributeK8sPodName] = pod.PodName
-		tags[ci.AttributeK8sNamespace] = pod.PodNamespace
+		tags[ci.PodIDKey] = pod.PodId
+		tags[ci.K8sPodNameKey] = pod.PodName
+		tags[ci.K8sNamespace] = pod.PodNamespace
 
 		for _, container := range pod.Containers {
 			if _, ok := hp.containerToEndpoint[container.Id]; !ok {
@@ -171,21 +174,21 @@ func (hp *HCSStatsProvider) getPodMetrics() ([]*stores.CIMetricImpl, error) {
 }
 
 func (hp *HCSStatsProvider) getPodToContainerMap() (map[string]PodKey, error) {
-	containerNameToIdMapping := make(map[string]PodKey)
+	containerNameToIDMapping := make(map[string]PodKey)
 	podList, err := hp.kubeletProvider.GetPods()
 	if err != nil {
 		hp.logger.Error("failed to get pod list from kubelet provider, ", zap.Error(err))
 		return nil, err
 	}
 	for _, pod := range podList {
-		podId := fmt.Sprintf("%s", pod.UID)
+		podID := string(pod.UID)
 		podKey := PodKey{
-			PodId:        podId,
+			PodId:        podID,
 			PodName:      pod.Name,
 			PodNamespace: pod.Namespace,
 		}
-		if _, ok := containerNameToIdMapping[podId]; !ok {
-			containerNameToIdMapping[podId] = podKey
+		if _, ok := containerNameToIDMapping[podID]; !ok {
+			containerNameToIDMapping[podID] = podKey
 		}
 
 		for _, container := range pod.Status.ContainerStatuses {
@@ -197,14 +200,14 @@ func (hp *HCSStatsProvider) getPodToContainerMap() (map[string]PodKey, error) {
 				podKey.Containers = append(podKey.Containers, cinfo)
 			}
 		}
-		containerNameToIdMapping[podId] = podKey
+		containerNameToIDMapping[podID] = podKey
 	}
 
-	return containerNameToIdMapping, nil
+	return containerNameToIDMapping, nil
 }
 
 func (hp *HCSStatsProvider) getContainerToEndpointMap() (map[string]EndpointInfo, error) {
-	var containerToEndpointMap = make(map[string]EndpointInfo)
+	containerToEndpointMap := make(map[string]EndpointInfo)
 	endpointList, err := hp.hcsClient.GetEndpointList()
 	if err != nil {
 		hp.logger.Error("failed to get endpoints list from HCS shim client, ", zap.Error(err))

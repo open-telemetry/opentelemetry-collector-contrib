@@ -1,5 +1,4 @@
 type: windowseventlog
-scope_name: otelcol/windowseventlogreceiver
 
 status:
   class: receiver
@@ -7,7 +6,7 @@ status:
     alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, armstrmi, pjanotti]
+    active: [armstrmi, pjanotti]
   unsupported_platforms: [darwin, linux]
 
 tests:

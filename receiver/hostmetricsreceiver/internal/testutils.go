@@ -59,6 +59,7 @@ func AssertGaugeMetricStartTimeEquals(t *testing.T, metric pmetric.Metric, start
 		require.Equal(t, startTime, ddps.At(i).StartTimestamp())
 	}
 }
+
 func AssertSameTimeStampForAllMetrics(t *testing.T, metrics pmetric.MetricSlice) {
 	AssertSameTimeStampForMetrics(t, metrics, 0, metrics.Len())
 }

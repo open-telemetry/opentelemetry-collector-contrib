@@ -7,10 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -32,7 +30,7 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 		previousReadTime    pcommon.Timestamp
 		previousCPUStat     *cpu.TimesStat
 		expectedUtilization *CPUUtilization
-		normalize           bool
+		shouldError         bool
 	}{
 		{
 			name:         "no previous times",
@@ -96,28 +94,6 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 				System: 0.15,
 				Iowait: 0.0005,
 			},
-			normalize: true,
-		},
-		{
-			name:             "one second time delta, 2 logical cores, not normalized",
-			logicalCores:     2,
-			previousReadTime: 1640097430772858000,
-			currentReadTime:  1640097431772858000,
-			previousCPUStat: &cpu.TimesStat{
-				User:   8258.4,
-				System: 6193.3,
-				Iowait: 34.201,
-			},
-			currentCPUStat: &cpu.TimesStat{
-				User:   8258.5,
-				System: 6193.6,
-				Iowait: 34.202,
-			},
-			expectedUtilization: &CPUUtilization{
-				User:   0.1,
-				System: 0.3,
-				Iowait: 0.001,
-			},
 		},
 		{
 			name:             "0 logical cores",
@@ -134,33 +110,31 @@ func TestCpuUtilizationCalculator_Calculate(t *testing.T) {
 				System: 6193.6,
 				Iowait: 34.202,
 			},
-			expectedUtilization: &CPUUtilization{
-				User:   0.1,
-				System: 0.3,
-				Iowait: 0.001,
-			},
+			shouldError: true,
 		},
 	}
 	for _, test := range testCases {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
-			setNormalizeProcessCPUUtilizationFeatureGate(t, test.normalize)
 			recorder := inMemoryRecorder{}
 			calculator := CPUUtilizationCalculator{
 				previousReadTime: test.previousReadTime,
 				previousCPUStats: test.previousCPUStat,
 			}
 			err := calculator.CalculateAndRecord(test.currentReadTime, test.logicalCores, test.currentCPUStat, recorder.record)
-			assert.NoError(t, err)
-			assert.InDelta(t, test.expectedUtilization.System, recorder.cpuUtilization.System, 0.00001)
-			assert.InDelta(t, test.expectedUtilization.User, recorder.cpuUtilization.User, 0.00001)
-			assert.InDelta(t, test.expectedUtilization.Iowait, recorder.cpuUtilization.Iowait, 0.00001)
+			if test.shouldError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.InDelta(t, test.expectedUtilization.System, recorder.cpuUtilization.System, 0.00001)
+				assert.InDelta(t, test.expectedUtilization.User, recorder.cpuUtilization.User, 0.00001)
+				assert.InDelta(t, test.expectedUtilization.Iowait, recorder.cpuUtilization.Iowait, 0.00001)
+			}
 		})
 	}
 }
 
 func Test_cpuUtilization(t *testing.T) {
-
 	startTime := pcommon.Timestamp(1640097435776827000)
 	halfSecondLater := pcommon.Timestamp(uint64(startTime) + uint64(time.Second.Nanoseconds()/2))
 	startStat := &cpu.TimesStat{
@@ -183,22 +157,4 @@ func Test_cpuUtilization(t *testing.T) {
 	assert.InDelta(t, expectedUtilization.User, actualUtilization.User, 0.00001)
 	assert.InDelta(t, expectedUtilization.System, actualUtilization.System, 0.00001)
 	assert.InDelta(t, expectedUtilization.Iowait, actualUtilization.Iowait, 0.00001)
-
-}
-
-func setNormalizeProcessCPUUtilizationFeatureGate(t *testing.T, val bool) {
-	wasEnabled := normalizeProcessCPUUtilizationFeatureGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(
-		normalizeProcessCPUUtilizationFeatureGate.ID(),
-		val,
-	)
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		err := featuregate.GlobalRegistry().Set(
-			normalizeProcessCPUUtilizationFeatureGate.ID(),
-			wasEnabled,
-		)
-		require.NoError(t, err)
-	})
 }

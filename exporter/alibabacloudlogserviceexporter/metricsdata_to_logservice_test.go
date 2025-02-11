@@ -112,7 +112,6 @@ func TestMetricDataToLogService(t *testing.T) {
 			})
 		}
 		gotLogPairs = append(gotLogPairs, pairs)
-
 	}
 
 	wantLogs := make([][]logKeyValuePair, 0, len(gotLogs))
@@ -130,12 +129,12 @@ func TestMetricDataToLogService(t *testing.T) {
 }
 
 func TestMetricCornerCases(t *testing.T) {
-	assert.Equal(t, min(1, 2), 1)
-	assert.Equal(t, min(2, 1), 1)
-	assert.Equal(t, min(1, 1), 1)
+	assert.Equal(t, 1, min(1, 2))
+	assert.Equal(t, 1, min(2, 1))
+	assert.Equal(t, 1, min(1, 1))
 	var label KeyValues
 	label.Append("a", "b")
-	assert.Equal(t, label.String(), "a#$#b")
+	assert.Equal(t, "a#$#b", label.String())
 }
 
 func TestMetricLabelSanitize(t *testing.T) {
@@ -144,7 +143,7 @@ func TestMetricLabelSanitize(t *testing.T) {
 	label.Append("0test", "key_0test")
 	label.Append("test_normal", "test_normal")
 	label.Append("0test", "key_0test")
-	assert.Equal(t, label.String(), "key_test#$#key_test|key_0test#$#key_0test|test_normal#$#test_normal|key_0test#$#key_0test")
+	assert.Equal(t, "key_test#$#key_test|key_0test#$#key_0test|test_normal#$#test_normal|key_0test#$#key_0test", label.String())
 	label.Sort()
-	assert.Equal(t, label.String(), "key_0test#$#key_0test|key_0test#$#key_0test|key_test#$#key_test|test_normal#$#test_normal")
+	assert.Equal(t, "key_0test#$#key_0test|key_0test#$#key_0test|key_test#$#key_test|test_normal#$#test_normal", label.String())
 }

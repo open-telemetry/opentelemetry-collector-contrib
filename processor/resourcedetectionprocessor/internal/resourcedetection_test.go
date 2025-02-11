@@ -7,16 +7,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"go.opentelemetry.io/collector/component"
 	"net/http"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -223,7 +223,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			detected, _, err := p.Get(context.Background(), http.DefaultClient)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 		}()
 	}
@@ -283,7 +283,7 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 	_, ok = attr.Get("host.id")
 	assert.False(t, ok)
 
-	assert.EqualValues(t, droppedAttributes, []string{"host.name", "host.id"})
+	assert.EqualValues(t, []string{"host.name", "host.id"}, droppedAttributes)
 }
 
 func TestFilterAttributes_NilAttributes(t *testing.T) {
@@ -300,7 +300,7 @@ func TestFilterAttributes_NilAttributes(t *testing.T) {
 	_, ok = attr.Get("host.id")
 	assert.True(t, ok)
 
-	assert.Equal(t, len(droppedAttributes), 0)
+	assert.Empty(t, droppedAttributes)
 }
 
 func TestFilterAttributes_NoAttributes(t *testing.T) {
@@ -317,7 +317,7 @@ func TestFilterAttributes_NoAttributes(t *testing.T) {
 	_, ok = attr.Get("host.id")
 	assert.True(t, ok)
 
-	assert.Equal(t, len(droppedAttributes), 0)
+	assert.Empty(t, droppedAttributes)
 }
 
 // mockDetectorWithHandler is a mock detector that implements HandlerProvider
@@ -325,7 +325,7 @@ type mockDetectorWithHandler struct {
 	handlersCalled bool
 }
 
-func (m *mockDetectorWithHandler) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (m *mockDetectorWithHandler) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	return pcommon.NewResource(), "", nil
 }
 
@@ -335,9 +335,7 @@ func (m *mockDetectorWithHandler) ExposeHandlers() *request.Handlers {
 }
 
 // mockExtension implements component.Component
-type mockExtension struct {
-	configured bool
-}
+type mockExtension struct{}
 
 func (m *mockExtension) Start(context.Context, component.Host) error {
 	return nil
@@ -355,7 +353,7 @@ type mockHost struct {
 // mockDetector is a basic detector that doesn't implement HandlerProvider
 type mockDetector struct{}
 
-func (m *mockDetector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (m *mockDetector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	return pcommon.NewResource(), "", nil
 }
 
@@ -372,18 +370,14 @@ func (m *mockHost) GetExtension(id component.ID) (component.Component, error) {
 	return nil, nil
 }
 
-func (m *mockHost) ReportFatalError(err error) {}
+func (m *mockHost) ReportFatalError(_ error) {}
 
-func (m *mockHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
+func (m *mockHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
 }
 
 func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 	return m.extensions
-}
-
-func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	return nil
 }
 
 func TestConfigureHandlers(t *testing.T) {
@@ -414,5 +408,6 @@ func TestConfigureHandlersWithNonHandlerDetector(t *testing.T) {
 	middlewareID := component.NewID(testType)
 
 	ctx := context.Background()
-	provider.ConfigureHandlers(ctx, host, middlewareID)
+
+	assert.NotPanics(t, func() { provider.ConfigureHandlers(ctx, host, middlewareID) }, "Attempting to configure a detector that does not expose handlers should not panic")
 }

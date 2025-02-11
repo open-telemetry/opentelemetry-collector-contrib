@@ -37,17 +37,6 @@ func newS3Client(ctx context.Context, cfg S3DownloaderConfig) (ListObjectsAPI, G
 	if cfg.Region != "" {
 		optionsFuncs = append(optionsFuncs, config.WithRegion(cfg.Region))
 	}
-
-	if cfg.Endpoint != "" {
-		customResolver := aws.EndpointResolverWithOptionsFunc(func(_, _ string, _ ...any) (aws.Endpoint, error) {
-			return aws.Endpoint{
-				PartitionID:   cfg.EndpointPartitionID,
-				URL:           cfg.Endpoint,
-				SigningRegion: cfg.Region,
-			}, nil
-		})
-		optionsFuncs = append(optionsFuncs, config.WithEndpointResolverWithOptions(customResolver))
-	}
 	awsCfg, err := config.LoadDefaultConfig(ctx, optionsFuncs...)
 	if err != nil {
 		log.Fatalf("unable to load SDK config, %v", err)
@@ -57,6 +46,11 @@ func newS3Client(ctx context.Context, cfg S3DownloaderConfig) (ListObjectsAPI, G
 	if cfg.S3ForcePathStyle {
 		s3OptionFuncs = append(s3OptionFuncs, func(o *s3.Options) {
 			o.UsePathStyle = true
+		})
+	}
+	if cfg.Endpoint != "" {
+		s3OptionFuncs = append(s3OptionFuncs, func(o *s3.Options) {
+			o.BaseEndpoint = aws.String(cfg.Endpoint)
 		})
 	}
 	client := s3.NewFromConfig(awsCfg, s3OptionFuncs...)

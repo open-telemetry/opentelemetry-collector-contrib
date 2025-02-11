@@ -56,7 +56,7 @@ func TestStatefulsetMetadata(t *testing.T) {
 
 	actualMetadata := GetMetadata(ss)
 
-	require.Equal(t, 1, len(actualMetadata))
+	require.Len(t, actualMetadata, 1)
 
 	require.Equal(t,
 		metadata.KubernetesMetadata{

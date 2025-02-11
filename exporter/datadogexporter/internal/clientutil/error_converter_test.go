@@ -13,9 +13,9 @@ import (
 )
 
 func TestWrapError(t *testing.T) {
-	respOK := http.Response{StatusCode: 200}
-	respRetriable := http.Response{StatusCode: 402}
-	respNonRetriable := http.Response{StatusCode: 404}
+	respOK := http.Response{StatusCode: http.StatusOK}
+	respRetriable := http.Response{StatusCode: http.StatusPaymentRequired}
+	respNonRetriable := http.Response{StatusCode: http.StatusNotFound}
 	err := fmt.Errorf("Test error")
 	assert.False(t, consumererror.IsPermanent(WrapError(err, &respOK)))
 	assert.False(t, consumererror.IsPermanent(WrapError(err, &respRetriable)))

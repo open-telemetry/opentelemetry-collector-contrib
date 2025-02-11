@@ -26,7 +26,7 @@ func TestCAdvisorMetric_Merge(t *testing.T) {
 		Logger: zap.NewNop(),
 	}
 	src.Merge(dest)
-	assert.Equal(t, 3, len(src.Fields))
+	assert.Len(t, src.Fields, 3)
 	assert.Equal(t, 1, src.Fields["value1"].(int))
 }
 
@@ -47,20 +47,20 @@ func TestGetMetricKey(t *testing.T) {
 
 	c = &stores.CIMetricImpl{
 		Tags: map[string]string{
-			ci.MetricType:     ci.TypePod,
-			ci.AttributePodID: "podID",
+			ci.MetricType: ci.TypePod,
+			ci.PodIDKey:   "podID",
 		},
 	}
 	assert.Equal(t, "metricType:Pod,podId:podID", getMetricKey(c))
 
 	c = &stores.CIMetricImpl{
 		Tags: map[string]string{
-			ci.MetricType:             ci.TypeContainer,
-			ci.AttributePodID:         "podID",
-			ci.AttributeContainerName: "ContainerName",
+			ci.MetricType:       ci.TypeContainer,
+			ci.PodIDKey:         "podID",
+			ci.ContainerNamekey: "containerName",
 		},
 	}
-	assert.Equal(t, "metricType:Container,podId:podID,containerName:ContainerName", getMetricKey(c))
+	assert.Equal(t, "metricType:Container,podId:podID,containerName:containerName", getMetricKey(c))
 
 	c = &stores.CIMetricImpl{
 		Tags: map[string]string{
@@ -121,5 +121,4 @@ func TestMergeMetrics(t *testing.T) {
 	require.Len(t, mergedMetrics, 1)
 	assert.Equal(t, expected.GetTags(), mergedMetrics[0].GetTags())
 	assert.Equal(t, expected.GetFields(), mergedMetrics[0].GetFields())
-
 }

@@ -8,7 +8,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/net"
+	"github.com/shirou/gopsutil/v4/net"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -37,7 +37,7 @@ func TestScrape(t *testing.T) {
 		initializationErr       string
 		expectedErr             string
 		expectedErrCount        int
-		mutateScraper           func(*scraper)
+		mutateScraper           func(*networkScraper)
 	}
 
 	testCases := []testCase{
@@ -227,7 +227,7 @@ func assertNetworkIOMetricValid(t *testing.T, metric pmetric.Metric, expectedNam
 }
 
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pmetric.Metric) {
-	assert.Equal(t, metric.Name(), "system.network.connections")
+	assert.Equal(t, "system.network.connections", metric.Name())
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol",
 		pcommon.NewValueStr(metadata.AttributeProtocolTcp.String()))
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")

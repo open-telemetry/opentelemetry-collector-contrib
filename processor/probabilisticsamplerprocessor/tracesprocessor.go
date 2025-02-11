@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadata"
 )
 
 // samplingPriority has the semantic result of parsing the "sampling.priority"
@@ -38,9 +39,10 @@ const (
 )
 
 type traceProcessor struct {
-	sampler    dataSampler
-	failClosed bool
-	logger     *zap.Logger
+	sampler          dataSampler
+	failClosed       bool
+	logger           *zap.Logger
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // tracestateCarrier conveys information about sampled spans between
@@ -99,12 +101,17 @@ func (tc *tracestateCarrier) reserialize() error {
 // perform intermediate span sampling according to the given
 // configuration.
 func newTracesProcessor(ctx context.Context, set processor.Settings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
-	tp := &traceProcessor{
-		sampler:    makeSampler(cfg, false),
-		failClosed: cfg.FailClosed,
-		logger:     set.Logger,
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
 	}
-	return processorhelper.NewTracesProcessor(
+	tp := &traceProcessor{
+		sampler:          makeSampler(cfg, false),
+		failClosed:       cfg.FailClosed,
+		logger:           set.Logger,
+		telemetryBuilder: telemetryBuilder,
+	}
+	return processorhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -176,6 +183,7 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 					tp.priorityFunc,
 					"traces sampler",
 					tp.logger,
+					tp.telemetryBuilder.ProcessorProbabilisticSamplerCountTracesSampled,
 				)
 			})
 			// Filter out empty ScopeMetrics

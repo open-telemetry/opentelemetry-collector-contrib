@@ -34,12 +34,12 @@ func TestLoadConfig(t *testing.T) {
 				Protocols: Protocols{
 					GRPC: &configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
-							Endpoint:  "0.0.0.0:3600",
+							Endpoint:  "localhost:3600",
 							Transport: confignet.TransportTypeTCP,
 						},
 					},
 					HTTP: &confighttp.ServerConfig{
-						Endpoint: "0.0.0.0:3500",
+						Endpoint: "localhost:3500",
 					},
 				},
 			},

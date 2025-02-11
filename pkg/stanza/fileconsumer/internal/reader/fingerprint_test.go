@@ -296,7 +296,7 @@ func (tc updateFingerprintTest) run(bufferSize int) func(*testing.T) {
 
 		i, err := temp.Write(tc.moreBytes)
 		require.NoError(t, err)
-		require.Equal(t, i, len(tc.moreBytes))
+		require.Len(t, tc.moreBytes, i)
 
 		r.ReadToEnd(context.Background())
 

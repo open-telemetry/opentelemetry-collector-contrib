@@ -22,8 +22,7 @@ type DeploymentClient interface {
 	DeploymentInfos() []*DeploymentInfo
 }
 
-type noOpDeploymentClient struct {
-}
+type noOpDeploymentClient struct{}
 
 func (nd *noOpDeploymentClient) DeploymentInfos() []*DeploymentInfo {
 	return []*DeploymentInfo{}

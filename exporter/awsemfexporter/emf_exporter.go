@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -21,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/appsignals"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
@@ -34,6 +36,8 @@ const (
 	appSignalsMetricNamespace    = "ApplicationSignals"
 	appSignalsLogGroupNamePrefix = "/aws/application-signals/"
 )
+
+var enhancedContainerInsightsEKSPattern = regexp.MustCompile(`^/aws/containerinsights/\S+/performance$`)
 
 type emfExporter struct {
 	pusherMap        map[cwlogs.StreamKey]cwlogs.Pusher
@@ -200,6 +204,14 @@ func (emf *emfExporter) start(_ context.Context, host component.Host) error {
 		return err
 	}
 
+	var userAgentExtras []string
+	if emf.config.IsAppSignalsEnabled() {
+		userAgentExtras = append(userAgentExtras, "AppSignals")
+	}
+	if emf.config.IsEnhancedContainerInsights() && enhancedContainerInsightsEKSPattern.MatchString(emf.config.LogGroupName) {
+		userAgentExtras = append(userAgentExtras, "EnhancedEKSContainerInsights")
+	}
+
 	// create CWLogs client with aws session config
 	svcStructuredLog := cwlogs.NewClient(emf.config.logger,
 		awsConfig,
@@ -208,8 +220,8 @@ func (emf *emfExporter) start(_ context.Context, host component.Host) error {
 		emf.config.LogRetention,
 		emf.config.Tags,
 		session,
-		cwlogs.WithEnabledContainerInsights(emf.config.IsEnhancedContainerInsights()),
-		cwlogs.WithEnabledAppSignals(emf.config.IsAppSignalsEnabled()),
+		metadata.Type.String(),
+		cwlogs.WithUserAgentExtras(userAgentExtras...),
 	)
 
 	// Assign to the struct

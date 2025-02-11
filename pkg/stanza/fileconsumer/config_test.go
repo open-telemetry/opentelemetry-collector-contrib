@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -41,6 +40,7 @@ func TestNewConfig(t *testing.T) {
 	assert.False(t, cfg.IncludeFileOwnerName)
 	assert.False(t, cfg.IncludeFileOwnerGroupName)
 	assert.False(t, cfg.IncludeFileRecordNumber)
+	assert.False(t, cfg.AcquireFSLock)
 }
 
 func TestUnmarshal(t *testing.T) {
@@ -209,6 +209,23 @@ func TestUnmarshal(t *testing.T) {
 					cfg := NewConfig()
 					cfg.OrderingCriteria = matcher.OrderingCriteria{
 						Regex: `err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log`,
+						SortBy: []matcher.Sort{
+							{
+								SortType: "numeric",
+								RegexKey: "file_num",
+							},
+						},
+					}
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
+			{
+				Name: "sort_by_group_by",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					cfg.OrderingCriteria = matcher.OrderingCriteria{
+						Regex:   `err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log`,
+						GroupBy: `err\.(?P<value>[a-z]+).[0-9]*.*log`,
 						SortBy: []matcher.Sort{
 							{
 								SortType: "numeric",
@@ -455,7 +472,7 @@ func TestBuild(t *testing.T) {
 			func(_ *Config) {},
 			require.NoError,
 			func(t *testing.T, m *Manager) {
-				require.Equal(t, m.pollInterval, 10*time.Millisecond)
+				require.Equal(t, 10*time.Millisecond, m.pollInterval)
 			},
 		},
 		{
@@ -664,7 +681,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 			func(_ *Config) {},
 			require.NoError,
 			func(t *testing.T, m *Manager) {
-				require.Equal(t, m.pollInterval, 10*time.Millisecond)
+				require.Equal(t, 10*time.Millisecond, m.pollInterval)
 			},
 		},
 		{
@@ -723,11 +740,6 @@ func TestBuildWithSplitFunc(t *testing.T) {
 }
 
 func TestBuildWithHeader(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), true))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), false))
-	})
-
 	basicConfig := func() *Config {
 		cfg := NewConfig()
 		cfg.Include = []string{"/var/log/testpath.*"}

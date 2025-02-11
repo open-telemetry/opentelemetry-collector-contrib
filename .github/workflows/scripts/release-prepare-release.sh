@@ -16,6 +16,9 @@ then
     exit 1
 fi
 
+# Expand CURRENT_BETA to escape . character by using [.]
+CURRENT_BETA_ESCAPED=${CURRENT_BETA//./[.]}
+
 make chlog-update VERSION="v${CANDIDATE_BETA}"
 git config user.name opentelemetrybot
 git config user.email 107717825+opentelemetrybot@users.noreply.github.com
@@ -25,15 +28,15 @@ git checkout -b "${BRANCH}"
 git add --all
 git commit -m "changelog update ${CANDIDATE_BETA}"
 
-sed -i.bak "s/${CURRENT_BETA}/${CANDIDATE_BETA}/g" versions.yaml
+sed -i.bak "s/${CURRENT_BETA_ESCAPED}/${CANDIDATE_BETA}/g" versions.yaml
 find . -name "*.bak" -type f -delete
 git add versions.yaml
 git commit -m "update version.yaml ${CANDIDATE_BETA}"
 
-sed -i.bak "s/v${CURRENT_BETA}/v${CANDIDATE_BETA}/g" ./cmd/oteltestbedcol/builder-config.yaml
-sed -i.bak "s/v${CURRENT_BETA}/v${CANDIDATE_BETA}/g" ./cmd/otelcontribcol/builder-config.yaml
-sed -i.bak "s/${CURRENT_BETA}-dev/${CANDIDATE_BETA}-dev/g" ./cmd/otelcontribcol/builder-config.yaml
-sed -i.bak "s/${CURRENT_BETA}-dev/${CANDIDATE_BETA}-dev/g" ./cmd/oteltestbedcol/builder-config.yaml
+sed -i.bak "s/v${CURRENT_BETA_ESCAPED}/v${CANDIDATE_BETA}/g" ./cmd/oteltestbedcol/builder-config.yaml
+sed -i.bak "s/v${CURRENT_BETA_ESCAPED}/v${CANDIDATE_BETA}/g" ./cmd/otelcontribcol/builder-config.yaml
+sed -i.bak "s/${CURRENT_BETA_ESCAPED}-dev/${CANDIDATE_BETA}-dev/g" ./cmd/otelcontribcol/builder-config.yaml
+sed -i.bak "s/${CURRENT_BETA_ESCAPED}-dev/${CANDIDATE_BETA}-dev/g" ./cmd/oteltestbedcol/builder-config.yaml
 
 find . -name "*.bak" -type f -delete
 make genotelcontribcol
@@ -64,7 +67,7 @@ git push origin "${BRANCH}"
 gh pr create --title "[chore] Prepare release ${CANDIDATE_BETA}" --body "
 The following commands were run to prepare this release:
 - make chlog-update VERSION=v${CANDIDATE_BETA}
-- sed -i.bak s/${CURRENT_BETA}/${CANDIDATE_BETA}/g versions.yaml
+- sed -i.bak s/${CURRENT_BETA_ESCAPED}/${CANDIDATE_BETA}/g versions.yaml
 - make multimod-prerelease
 - make multimod-sync
 "

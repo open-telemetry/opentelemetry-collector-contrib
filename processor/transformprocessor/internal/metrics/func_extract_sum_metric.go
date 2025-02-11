@@ -14,12 +14,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
+const sumFuncName = "extract_sum_metric"
+
 type extractSumMetricArguments struct {
 	Monotonic bool
 }
 
 func newExtractSumMetricFactory() ottl.Factory[ottlmetric.TransformContext] {
-	return ottl.NewFactory("extract_sum_metric", &extractSumMetricArguments{}, createExtractSumMetricFunction)
+	return ottl.NewFactory(sumFuncName, &extractSumMetricArguments{}, createExtractSumMetricFunction)
 }
 
 func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
@@ -32,7 +34,7 @@ func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments
 	return extractSumMetric(args.Monotonic)
 }
 
-// this interface helps unify the logic for extracting data from different histogram types
+// SumCountDataPoint interface helps unify the logic for extracting data from different histogram types
 // all supported metric types' datapoints implement it
 type SumCountDataPoint interface {
 	Attributes() pcommon.Map
@@ -45,11 +47,9 @@ type SumCountDataPoint interface {
 func extractSumMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
-		invalidMetricTypeError := fmt.Errorf("extract_sum_metric requires an input metric of type Histogram, ExponentialHistogram or Summary, got %s", metric.Type())
-
 		aggTemp := getAggregationTemporality(metric)
 		if aggTemp == pmetric.AggregationTemporalityUnspecified {
-			return nil, invalidMetricTypeError
+			return nil, invalidMetricTypeError(sumFuncName, metric)
 		}
 
 		sumMetric := pmetric.NewMetric()
@@ -83,7 +83,7 @@ func extractSumMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext
 				addSumDataPoint(dataPoints.At(i), sumMetric.Sum().DataPoints())
 			}
 		default:
-			return nil, invalidMetricTypeError
+			return nil, invalidMetricTypeError(sumFuncName, metric)
 		}
 
 		if sumMetric.Sum().DataPoints().Len() > 0 {
@@ -115,4 +115,8 @@ func getAggregationTemporality(metric pmetric.Metric) pmetric.AggregationTempora
 	default:
 		return pmetric.AggregationTemporalityUnspecified
 	}
+}
+
+func invalidMetricTypeError(name string, metric pmetric.Metric) error {
+	return fmt.Errorf("%s requires an input metric of type Histogram, ExponentialHistogram or Summary, got %s", name, metric.Type())
 }

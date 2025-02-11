@@ -259,7 +259,7 @@ func TestMetricsMetadata_RowToMetricsDataPoints(t *testing.T) {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, 1, len(dataPoints))
+				assert.Len(t, dataPoints, 1)
 			}
 		})
 	}

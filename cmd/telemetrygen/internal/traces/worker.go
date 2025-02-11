@@ -50,6 +50,10 @@ func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 		spanStart := time.Now()
 		spanEnd := spanStart.Add(w.spanDuration)
 
+		if err := limiter.Wait(context.Background()); err != nil {
+			w.logger.Fatal("limiter waited failed, retry", zap.Error(err))
+		}
+
 		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
 			semconv.NetPeerIPKey.String(fakeIP),
 			semconv.PeerServiceKey.String("telemetrygen-server"),
@@ -74,6 +78,10 @@ func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 		var endTimestamp trace.SpanEventOption
 
 		for j := 0; j < w.numChildSpans; j++ {
+			if err := limiter.Wait(context.Background()); err != nil {
+				w.logger.Fatal("limiter waited failed, retry", zap.Error(err))
+			}
+
 			_, child := tracer.Start(childCtx, "okey-dokey-"+strconv.Itoa(j), trace.WithAttributes(
 				semconv.NetPeerIPKey.String(fakeIP),
 				semconv.PeerServiceKey.String("telemetrygen-client"),
@@ -82,10 +90,6 @@ func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 				trace.WithTimestamp(spanStart),
 			)
 			child.SetAttributes(telemetryAttributes...)
-
-			if err := limiter.Wait(context.Background()); err != nil {
-				w.logger.Fatal("limiter waited failed, retry", zap.Error(err))
-			}
 
 			endTimestamp = trace.WithTimestamp(spanEnd)
 			child.SetStatus(w.statusCode, "")

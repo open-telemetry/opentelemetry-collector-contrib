@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -369,8 +370,7 @@ func TestDoRequest404(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = client.doRequest(context.Background(), "invalid_path")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "404")
+	require.ErrorContains(t, err, "404")
 }
 
 func TestIndexStatsNoPassword(t *testing.T) {
@@ -628,28 +628,28 @@ func newMockServer(t *testing.T, opts ...mockServerOption) *httptest.Server {
 		if mock.auth != nil {
 			username, password, ok := req.BasicAuth()
 			if !ok {
-				rw.WriteHeader(401)
+				rw.WriteHeader(http.StatusUnauthorized)
 				return
 			} else if !mock.auth(username, password) {
-				rw.WriteHeader(403)
+				rw.WriteHeader(http.StatusForbidden)
 				return
 			}
 		}
 		if req.URL.Path == "/" {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err := rw.Write(mock.metadata)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 		for prefix, payload := range mock.prefixes {
 			if strings.HasPrefix(req.URL.Path, prefix) {
-				rw.WriteHeader(200)
+				rw.WriteHeader(http.StatusOK)
 				_, err := rw.Write(payload)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 				return
 			}
 		}
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 	}))
 
 	return elasticsearchMock

@@ -23,13 +23,17 @@ const (
 )
 
 // The timestamps used for the tests
-var tsUnix = time.Unix(time.Now().Unix(), time.Now().UnixNano())
-var ts = pcommon.NewTimestampFromTime(tsUnix)
-var tstr = ts.AsTime().Format(time.RFC3339Nano)
+var (
+	tsUnix = time.Unix(time.Now().Unix(), time.Now().UnixNano())
+	ts     = pcommon.NewTimestampFromTime(tsUnix)
+	tstr   = ts.AsTime().Format(time.RFC3339Nano)
+)
 
 // the histogram values and distribution for the tests
-var distributionBounds = []float64{1, 2, 4}
-var distributionCounts = []uint64{4, 2, 3, 5}
+var (
+	distributionBounds = []float64{1, 2, 4}
+	distributionCounts = []uint64{4, 2, 3, 5}
+)
 
 func Test_rawMetricsToAdxMetrics(t *testing.T) {
 	t.Parallel()
@@ -156,7 +160,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 				// Metric assertions
 				assert.Equal(t, expectedMetric.MetricName, actualMetrics[i].MetricName)
 				assert.Equal(t, expectedMetric.MetricType, actualMetrics[i].MetricType)
-				assert.Equal(t, expectedMetric.MetricValue, actualMetrics[i].MetricValue, fmt.Sprintf("Mismatch for value for test %s", tt.name))
+				assert.Equalf(t, expectedMetric.MetricValue, actualMetrics[i].MetricValue, "Mismatch for value for test %s", tt.name)
 				assert.Equal(t, expectedMetric.MetricDescription, actualMetrics[i].MetricDescription)
 				assert.Equal(t, expectedMetric.MetricUnit, actualMetrics[i].MetricUnit)
 				assert.Equal(t, expectedMetric.MetricAttributes, actualMetrics[i].MetricAttributes)
@@ -169,7 +173,6 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func Test_mapToAdxMetric(t *testing.T) {
@@ -556,7 +559,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				// Metric assertions
 				assert.Equal(t, expectedMetric.MetricName, actualMetrics[i].MetricName)
 				assert.Equal(t, expectedMetric.MetricType, actualMetrics[i].MetricType)
-				assert.Equal(t, expectedMetric.MetricValue, actualMetrics[i].MetricValue, fmt.Sprintf("Mismatch for value for test %s", tt.name))
+				assert.Equalf(t, expectedMetric.MetricValue, actualMetrics[i].MetricValue, "Mismatch for value for test %s", tt.name)
 				assert.Equal(t, expectedMetric.MetricDescription, actualMetrics[i].MetricDescription)
 				assert.Equal(t, expectedMetric.MetricUnit, actualMetrics[i].MetricUnit)
 				assert.Equal(t, expectedMetric.MetricAttributes, actualMetrics[i].MetricAttributes)

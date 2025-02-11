@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	gzip "github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
@@ -21,6 +22,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -30,6 +32,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+)
+
+var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.TraceExportUseCustomHTTPClient",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, trace export uses the HTTP client from the exporter HTTP configs"),
+	featuregate.WithRegisterFromVersion("v0.105.0"),
 )
 
 type traceExporter struct {
@@ -187,7 +196,7 @@ func newTraceAgent(ctx context.Context, params exporter.Settings, cfg *Config, s
 	if err != nil {
 		return nil, err
 	}
-	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector(), metricsClient), nil
+	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector(), metricsClient, gzip.NewComponent()), nil
 }
 
 func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*traceconfig.AgentConfig, error) {
@@ -204,13 +213,20 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.Traces.SpanNameAsResourceName
 	acfg.Endpoints[0].APIKey = string(cfg.API.Key)
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
-	acfg.ReceiverPort = 0 // disable HTTP receiver
+	acfg.ReceiverEnabled = false // disable HTTP receiver
 	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
 	acfg.SkipSSLValidation = cfg.ClientConfig.TLSSetting.InsecureSkipVerify
 	acfg.ComputeStatsBySpanKind = cfg.Traces.ComputeStatsBySpanKind
 	acfg.PeerTagsAggregation = cfg.Traces.PeerTagsAggregation
 	acfg.PeerTags = cfg.Traces.PeerTags
-	if v := cfg.Traces.flushInterval; v > 0 {
+	acfg.MaxSenderRetries = 4
+	if traceCustomHTTPFeatureGate.IsEnabled() {
+		params.Logger.Info("Experimental feature: datadog exporter trace export uses a custom HTTP client from the exporter HTTP configs")
+		acfg.HTTPClientFunc = func() *http.Client {
+			return clientutil.NewHTTPClient(cfg.ClientConfig)
+		}
+	}
+	if v := cfg.Traces.GetFlushInterval(); v > 0 {
 		acfg.TraceWriter.FlushPeriodSeconds = v
 	}
 	if v := cfg.Traces.TraceBuffer; v > 0 {
@@ -222,6 +238,6 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 	if cfg.Traces.ComputeTopLevelBySpanKind {
 		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
 	}
-	tracelog.SetLogger(&zaplogger{params.Logger}) //TODO: This shouldn't be a singleton
+	tracelog.SetLogger(&zaplogger{params.Logger}) // TODO: This shouldn't be a singleton
 	return acfg, nil
 }

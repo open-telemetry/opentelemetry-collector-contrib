@@ -1,0 +1,14 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: percentage of time CPU is idle.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  timeUnixNano: "1646857199239674900"
+            name: cpu.idle
+            unit: '%'
+        # Should not be present in the scrape output.
+        # - name: no.counter
+        scope: {}

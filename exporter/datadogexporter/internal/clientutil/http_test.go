@@ -19,12 +19,10 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
-var (
-	buildInfo = component.BuildInfo{
-		Command: "otelcontribcol",
-		Version: "1.0",
-	}
-)
+var buildInfo = component.BuildInfo{
+	Command: "otelcontribcol",
+	Version: "1.0",
+}
 
 func TestNewHTTPClient(t *testing.T) {
 	hcsEmpty := confighttp.ClientConfig{}
@@ -160,8 +158,7 @@ func TestNewHTTPClient(t *testing.T) {
 }
 
 func TestUserAgent(t *testing.T) {
-
-	assert.Equal(t, UserAgent(buildInfo), "otelcontribcol/1.0")
+	assert.Equal(t, "otelcontribcol/1.0", UserAgent(buildInfo))
 }
 
 func TestDDHeaders(t *testing.T) {
@@ -169,6 +166,5 @@ func TestDDHeaders(t *testing.T) {
 	apiKey := "apikey"
 	SetDDHeaders(header, buildInfo, apiKey)
 	assert.Equal(t, header.Get("DD-Api-Key"), apiKey)
-	assert.Equal(t, header.Get("USer-Agent"), "otelcontribcol/1.0")
-
+	assert.Equal(t, "otelcontribcol/1.0", header.Get("USer-Agent"))
 }

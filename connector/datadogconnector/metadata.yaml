@@ -1,5 +1,4 @@
 type: datadog
-scope_name: otelcol/datadog
 
 status:
   class: connector
@@ -7,7 +6,7 @@ status:
     beta: [traces_to_metrics, traces_to_traces]
   distributions: [contrib]
   codeowners:
-    active: [mx-psi, dineshg13, ankitpatel96]
+    active: [mx-psi, dineshg13, ankitpatel96, jade-guiton-dd]
     emeritus: [gbbr]
 
 tests:

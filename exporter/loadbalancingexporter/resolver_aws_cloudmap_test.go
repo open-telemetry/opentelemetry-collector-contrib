@@ -17,14 +17,17 @@ import (
 	"go.uber.org/zap"
 )
 
-var instanceID = "test"
-var namespaceName = "cloudmap"
-var statusFilterHealthy = types.HealthStatusFilterHealthy
+var (
+	instanceID          = "test"
+	namespaceName       = "cloudmap"
+	statusFilterHealthy = types.HealthStatusFilterHealthy
+)
 
 var port uint16 = 1234
 
 func TestInitialCloudMapResolution(t *testing.T) {
 	// prepare
+	_, tb := getTelemetryAssets(t)
 
 	res := &cloudMapResolver{
 		logger:        zap.NewNop(),
@@ -35,6 +38,7 @@ func TestInitialCloudMapResolution(t *testing.T) {
 		resTimeout:    1 * time.Second,
 		stopCh:        make(chan struct{}),
 		discoveryFn:   mockDiscovery,
+		telemetry:     tb,
 	}
 
 	// test
@@ -56,6 +60,7 @@ func TestInitialCloudMapResolution(t *testing.T) {
 
 func TestInitialCloudMapResolutionWithPort(t *testing.T) {
 	// prepare
+	_, tb := getTelemetryAssets(t)
 
 	res := &cloudMapResolver{
 		logger:        zap.NewNop(),
@@ -67,6 +72,7 @@ func TestInitialCloudMapResolutionWithPort(t *testing.T) {
 		resTimeout:    1 * time.Second,
 		stopCh:        make(chan struct{}),
 		discoveryFn:   mockDiscovery,
+		telemetry:     tb,
 	}
 
 	// test
@@ -98,8 +104,8 @@ func makeSummary(i int) types.HttpInstanceSummary {
 		ServiceName:   nil,
 	}
 }
-func mockDiscovery(*servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
 
+func mockDiscovery(*servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
 	s := &servicediscovery.DiscoverInstancesOutput{
 		Instances: []types.HttpInstanceSummary{
 			makeSummary(1),

@@ -5,7 +5,6 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type DataPointSlice[DP DataPoint[DP]] interface {
@@ -15,8 +14,6 @@ type DataPointSlice[DP DataPoint[DP]] interface {
 }
 
 type DataPoint[Self any] interface {
-	pmetric.NumberDataPoint | pmetric.HistogramDataPoint | pmetric.ExponentialHistogramDataPoint
-
 	Timestamp() pcommon.Timestamp
 	Attributes() pcommon.Map
 	CopyTo(dest Self)

@@ -27,7 +27,6 @@ func GetStorageClient(ctx context.Context, host component.Host, storageID *compo
 	}
 
 	return storageExtension.GetClient(ctx, component.KindReceiver, componentID, "")
-
 }
 
 func (r *receiver) setStorageClient(ctx context.Context, host component.Host) error {

@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"strconv"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
@@ -84,10 +84,12 @@ func (rm randomnessMethod) randomness() sampling.Randomness {
 	return sampling.Randomness(rm)
 }
 
-type traceIDHashingMethod struct{ randomnessMethod }
-type traceIDW3CSpecMethod struct{ randomnessMethod }
-type samplingRandomnessMethod struct{ randomnessMethod }
-type samplingPriorityMethod struct{ randomnessMethod }
+type (
+	traceIDHashingMethod     struct{ randomnessMethod }
+	traceIDW3CSpecMethod     struct{ randomnessMethod }
+	samplingRandomnessMethod struct{ randomnessMethod }
+	samplingPriorityMethod   struct{ randomnessMethod }
+)
 
 type missingRandomnessMethod struct{}
 
@@ -124,11 +126,13 @@ func (samplingPriorityMethod) policyName() string {
 	return "sampling_priority"
 }
 
-var _ randomnessNamer = missingRandomnessMethod{}
-var _ randomnessNamer = traceIDHashingMethod{}
-var _ randomnessNamer = traceIDW3CSpecMethod{}
-var _ randomnessNamer = samplingRandomnessMethod{}
-var _ randomnessNamer = samplingPriorityMethod{}
+var (
+	_ randomnessNamer = missingRandomnessMethod{}
+	_ randomnessNamer = traceIDHashingMethod{}
+	_ randomnessNamer = traceIDW3CSpecMethod{}
+	_ randomnessNamer = samplingRandomnessMethod{}
+	_ randomnessNamer = samplingPriorityMethod{}
+)
 
 func newMissingRandomnessMethod() randomnessNamer {
 	return missingRandomnessMethod{}
@@ -243,12 +247,10 @@ func (th *hashingSampler) decide(_ samplingCarrier) sampling.Threshold {
 // consistentTracestateCommon contains the common aspects of the
 // Proportional and Equalizing sampler modes.  These samplers sample
 // using the TraceID and do not support use of logs source attribute.
-type consistentTracestateCommon struct {
-}
+type consistentTracestateCommon struct{}
 
 // neverSampler always decides false.
-type neverSampler struct {
-}
+type neverSampler struct{}
 
 func (*neverSampler) decide(_ samplingCarrier) sampling.Threshold {
 	return sampling.NeverSampleThreshold
@@ -473,6 +475,7 @@ func commonShouldSampleLogic[T any](
 	priorityFunc priorityFunc[T],
 	description string,
 	logger *zap.Logger,
+	counter metric.Int64Counter,
 ) bool {
 	rnd, carrier, err := randFunc(item)
 
@@ -518,11 +521,7 @@ func commonShouldSampleLogic[T any](
 		}
 	}
 
-	_ = stats.RecordWithTags(
-		ctx,
-		[]tag.Mutator{tag.Upsert(tagPolicyKey, rnd.policyName()), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
-		statCountTracesSampled.M(int64(1)),
-	)
+	counter.Add(ctx, 1, metric.WithAttributes(attribute.String("policy", rnd.policyName()), attribute.String("sampled", strconv.FormatBool(sampled))))
 
 	return sampled
 }

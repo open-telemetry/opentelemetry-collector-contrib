@@ -23,13 +23,10 @@ type NetMetricExtractor struct {
 }
 
 func (n *NetMetricExtractor) HasValue(rawMetric RawMetric) bool {
-	if !rawMetric.Time.IsZero() {
-		return true
-	}
-	return false
+	return !rawMetric.Time.IsZero()
 }
 
-func (n *NetMetricExtractor) GetValue(rawMetric RawMetric, mInfo cExtractor.CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl {
+func (n *NetMetricExtractor) GetValue(rawMetric RawMetric, _ cExtractor.CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl {
 	var metrics []*stores.CIMetricImpl
 
 	if containerType == ci.TypeContainer {

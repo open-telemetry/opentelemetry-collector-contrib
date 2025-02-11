@@ -14,8 +14,7 @@ import (
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
-type mockEndpoint struct {
-}
+type mockEndpoint struct{}
 
 func (m *mockEndpoint) PodKeyToServiceNames() map[string][]string {
 	return map[string][]string{
@@ -37,8 +36,8 @@ func TestServiceStore(t *testing.T) {
 	// test the case when it decorates metrics successfully
 	metric := &mockCIMetric{
 		tags: map[string]string{
-			ci.AttributeK8sPodName:   "test-pod",
-			ci.AttributeK8sNamespace: "default",
+			ci.K8sPodNameKey: "test-pod",
+			ci.K8sNamespace:  "default",
 		},
 	}
 	kubernetesBlob := map[string]any{}
@@ -49,7 +48,7 @@ func TestServiceStore(t *testing.T) {
 	// test the case when it fails to decorate metrics
 	metric = &mockCIMetric{
 		tags: map[string]string{
-			ci.AttributeK8sPodName: "test-pod",
+			ci.K8sPodNameKey: "test-pod",
 		},
 	}
 	kubernetesBlob = map[string]any{}

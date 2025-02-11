@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ProjectID: "my-project",
 				UserAgent: "opentelemetry-collector-contrib {{version}}",
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 20 * time.Second,
 				},
 				Subscription: "projects/my-project/subscriptions/otlp-subscription",

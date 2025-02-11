@@ -79,7 +79,7 @@ func (sp *spanProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				if sp.skipExpr != nil {
-					skip, err := sp.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
+					skip, err := sp.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource, ils, rs))
 					if err != nil {
 						return td, err
 					}
@@ -187,7 +187,7 @@ func (sp *spanProcessor) processToAttributes(span ptrace.Span) {
 		var sb strings.Builder
 
 		// Index in the oldName until which we traversed.
-		var oldNameIndex = 0
+		oldNameIndex := 0
 
 		attrs := span.Attributes()
 
@@ -213,7 +213,9 @@ func (sp *spanProcessor) processToAttributes(span ptrace.Span) {
 		}
 
 		// Set new span name.
-		span.SetName(sb.String())
+		if !sp.config.Rename.ToAttributes.KeepOriginalName {
+			span.SetName(sb.String())
+		}
 
 		if sp.config.Rename.ToAttributes.BreakAfterMatch {
 			// Stop processing, break after first match is requested.

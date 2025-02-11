@@ -39,7 +39,6 @@ func NewConfig(set component.TelemetrySettings, matchRegex string, metadataOpera
 		Operators:     metadataOperators,
 		DefaultOutput: newPipelineOutput(set),
 	}.Build(set)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to build pipelines: %w", err)
 	}

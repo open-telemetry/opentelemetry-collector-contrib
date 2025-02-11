@@ -12,7 +12,8 @@ import (
 	"strings"
 
 	"github.com/Showmax/go-fqdn"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"github.com/shirou/gopsutil/v4/cpu"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
 
@@ -69,6 +70,9 @@ type Provider interface {
 
 	// HostMACs returns the host's MAC addresses
 	HostMACs() ([]net.HardwareAddr, error)
+
+	// CPUInfo returns the host's CPU info
+	CPUInfo(ctx context.Context) ([]cpu.InfoStat, error)
 }
 
 type systemMetadataProvider struct {
@@ -195,7 +199,6 @@ func (p systemMetadataProvider) HostIPs() (ips []net.IP, err error) {
 
 			ips = append(ips, ip)
 		}
-
 	}
 	return ips, err
 }
@@ -215,4 +218,8 @@ func (p systemMetadataProvider) HostMACs() (macs []net.HardwareAddr, err error) 
 		macs = append(macs, iface.HardwareAddr)
 	}
 	return macs, err
+}
+
+func (p systemMetadataProvider) CPUInfo(ctx context.Context) ([]cpu.InfoStat, error) {
+	return cpu.InfoWithContext(ctx)
 }

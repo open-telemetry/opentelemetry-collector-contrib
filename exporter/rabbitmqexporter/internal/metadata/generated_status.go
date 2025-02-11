@@ -7,11 +7,12 @@ import (
 )
 
 var (
-	Type = component.MustNewType("rabbitmq")
+	Type      = component.MustNewType("rabbitmq")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter"
 )
 
 const (
-	TracesStability  = component.StabilityLevelDevelopment
-	MetricsStability = component.StabilityLevelDevelopment
-	LogsStability    = component.StabilityLevelDevelopment
+	TracesStability  = component.StabilityLevelAlpha
+	MetricsStability = component.StabilityLevelAlpha
+	LogsStability    = component.StabilityLevelAlpha
 )

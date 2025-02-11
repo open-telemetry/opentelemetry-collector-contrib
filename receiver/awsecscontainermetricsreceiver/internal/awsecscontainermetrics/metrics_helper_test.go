@@ -96,7 +96,6 @@ func TestGetContainerMetricsMissingMemory(t *testing.T) {
 }
 
 func TestGetContainerDereferenceCheck(t *testing.T) {
-
 	tests := []struct {
 		memoryStats  *MemoryStats
 		testName     string
@@ -421,7 +420,6 @@ func TestExtractStorageUsageDereferenceCheck(t *testing.T) {
 	require.NotPanics(t, func() {
 		extractStorageUsage(disk)
 	})
-
 }
 
 func TestGetNetworkStats(t *testing.T) {

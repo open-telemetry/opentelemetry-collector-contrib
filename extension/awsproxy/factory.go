@@ -13,7 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 const (
@@ -34,7 +34,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ProxyConfig: proxy.Config{
 			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: localhostgate.EndpointForPort(defaultPort),
+				Endpoint: testutil.EndpointForPort(defaultPort),
 			},
 			TLSSetting: configtls.ClientConfig{
 				Insecure: false,

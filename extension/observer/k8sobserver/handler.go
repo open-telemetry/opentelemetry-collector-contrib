@@ -9,13 +9,16 @@ import (
 
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
-var _ cache.ResourceEventHandler = (*handler)(nil)
-var _ observer.EndpointsLister = (*handler)(nil)
+var (
+	_ cache.ResourceEventHandler = (*handler)(nil)
+	_ observer.EndpointsLister   = (*handler)(nil)
+)
 
 // handler handles k8s cache informer callbacks.
 type handler struct {
@@ -49,6 +52,8 @@ func (h *handler) OnAdd(objectInterface any, _ bool) {
 		endpoints = convertPodToEndpoints(h.idNamespace, object)
 	case *v1.Service:
 		endpoints = convertServiceToEndpoints(h.idNamespace, object)
+	case *networkingv1.Ingress:
+		endpoints = convertIngressToEndpoints(h.idNamespace, object)
 	case *v1.Node:
 		endpoints = append(endpoints, convertNodeToEndpoint(h.idNamespace, object))
 	default: // unsupported
@@ -89,6 +94,19 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface any) {
 			oldEndpoints[e.ID] = e
 		}
 		for _, e := range convertServiceToEndpoints(h.idNamespace, newService) {
+			newEndpoints[e.ID] = e
+		}
+
+	case *networkingv1.Ingress:
+		newIngress, ok := newObjectInterface.(*networkingv1.Ingress)
+		if !ok {
+			h.logger.Warn("skip updating endpoint for ingress as the update is of different type", zap.Any("oldIngress", oldObjectInterface), zap.Any("newObject", newObjectInterface))
+			return
+		}
+		for _, e := range convertIngressToEndpoints(h.idNamespace, oldObject) {
+			oldEndpoints[e.ID] = e
+		}
+		for _, e := range convertIngressToEndpoints(h.idNamespace, newIngress) {
 			newEndpoints[e.ID] = e
 		}
 
@@ -164,6 +182,10 @@ func (h *handler) OnDelete(objectInterface any) {
 	case *v1.Service:
 		if object != nil {
 			endpoints = convertServiceToEndpoints(h.idNamespace, object)
+		}
+	case *networkingv1.Ingress:
+		if object != nil {
+			endpoints = convertIngressToEndpoints(h.idNamespace, object)
 		}
 	case *v1.Node:
 		if object != nil {

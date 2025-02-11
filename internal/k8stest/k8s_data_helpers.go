@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	network2 "github.com/docker/docker/api/types/network"
 	docker "github.com/docker/docker/client"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/labels"
@@ -25,7 +25,7 @@ func HostEndpoint(t *testing.T) string {
 	client.NegotiateAPIVersion(context.Background())
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	network, err := client.NetworkInspect(ctx, "kind", types.NetworkInspectOptions{})
+	network, err := client.NetworkInspect(ctx, "kind", network2.InspectOptions{})
 	require.NoError(t, err)
 	for _, ipam := range network.IPAM.Config {
 		if ipam.Gateway != "" {

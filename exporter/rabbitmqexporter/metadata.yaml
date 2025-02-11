@@ -1,11 +1,10 @@
 type: rabbitmq
-scope_name: otelcol/rabbitmq
 
 status:
   class: exporter
   stability:
-    development: [traces, metrics, logs]
-  distributions: []
+    alpha: [traces, metrics, logs]
+  distributions: [contrib]
   codeowners:
     active: [swar8080, atoulme]
 

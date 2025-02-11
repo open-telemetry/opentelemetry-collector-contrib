@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -24,6 +24,12 @@ const (
 )
 
 func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *Config) *splunk.Event {
+	body := lr.Body().AsRaw()
+	if body == nil || body == "" {
+		// events with no body are rejected by Splunk.
+		return nil
+	}
+
 	host := unknownHostName
 	source := config.Source
 	sourcetype := config.SourceType
@@ -83,11 +89,6 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		return true
 	})
 
-	body := lr.Body().AsRaw()
-	if body == nil {
-		body = ""
-	}
-
 	return &splunk.Event{
 		Time:       nanoTimestampToEpochMilliseconds(lr.Timestamp()),
 		Host:       host,
@@ -110,15 +111,14 @@ func mergeValue(dst map[string]any, k string, v any) {
 		if isArrayFlat(element) {
 			dst[k] = v
 		} else {
-			jsonStr, _ := jsoniter.MarshalToString(element)
-			dst[k] = jsonStr
+			b, _ := json.Marshal(element)
+			dst[k] = string(b)
 		}
 	case map[string]any:
 		flattenAndMergeMap(element, dst, k)
 	default:
 		dst[k] = v
 	}
-
 }
 
 func isArrayFlat(array []any) bool {
@@ -141,8 +141,8 @@ func flattenAndMergeMap(src, dst map[string]any, key string) {
 			if isArrayFlat(element) {
 				dst[current] = element
 			} else {
-				jsonStr, _ := jsoniter.MarshalToString(element)
-				dst[current] = jsonStr
+				b, _ := json.Marshal(element)
+				dst[current] = string(b)
 			}
 
 		default:

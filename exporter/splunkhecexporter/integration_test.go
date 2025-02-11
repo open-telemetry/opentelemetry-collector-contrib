@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -105,7 +105,7 @@ func startSplunk() SplunkContainerConfig {
 			{
 				HostFilePath:      filepath.Join("testdata", "splunk.yaml"),
 				ContainerFilePath: "/tmp/defaults/default.yml",
-				FileMode:          0644,
+				FileMode:          0o644,
 			},
 		},
 		WaitingFor: wait.ForHealthCheck().WithStartupTimeout(5 * time.Minute),
@@ -115,7 +115,6 @@ func startSplunk() SplunkContainerConfig {
 		ContainerRequest: req,
 		Started:          true,
 	})
-
 	if err != nil {
 		logger.Info("Error while creating container")
 		panic(err)
@@ -223,9 +222,11 @@ type cfg struct {
 
 type telemetryType string
 
-var metricsType = telemetryType("metrics")
-var logsType = telemetryType("logs")
-var tracesType = telemetryType("traces")
+var (
+	metricsType = telemetryType("metrics")
+	logsType    = telemetryType("logs")
+	tracesType  = telemetryType("traces")
+)
 
 type testCfg struct {
 	name      string
@@ -252,7 +253,7 @@ func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	waitForEventToBeIndexed()
 
 	events := integrationtestutils.CheckEventsFromSplunk("index="+test.config.index+" *", test.startTime)
-	assert.Equal(t, len(events), 1)
+	assert.Len(t, events, 1)
 	// check events fields
 	data, ok := events[0].(map[string]any)
 	assert.True(t, ok, "Invalid event format")
@@ -275,7 +276,7 @@ func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	waitForEventToBeIndexed()
 
 	events := integrationtestutils.CheckMetricsFromSplunk(test.config.index, test.config.event)
-	assert.Equal(t, len(events), 1, "Events length is less than 1. No metrics found")
+	assert.Len(t, events, 1, "Events length is less than 1. No metrics found")
 }
 
 func tracesTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
@@ -291,7 +292,7 @@ func tracesTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	waitForEventToBeIndexed()
 
 	events := integrationtestutils.CheckEventsFromSplunk("index="+test.config.index+" *", test.startTime)
-	assert.Equal(t, len(events), 1)
+	assert.Len(t, events, 1)
 	// check fields
 	data, ok := events[0].(map[string]any)
 	assert.True(t, ok, "Invalid event format")

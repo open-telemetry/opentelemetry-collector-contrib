@@ -4,8 +4,8 @@
 package metadata
 
 import (
-	"fmt"
 	"hash/fnv"
+	"strconv"
 	"testing"
 	"time"
 
@@ -119,14 +119,14 @@ func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPII(t *testing.T) {
 	hashFunction := fnv.New32a()
 	hashFunction.Reset()
 	hashFunction.Write([]byte("23"))
-	hashOf23 := fmt.Sprint(hashFunction.Sum32())
+	hashOf23 := strconv.FormatUint(uint64(hashFunction.Sum32()), 10)
 	hashFunction.Reset()
 	hashFunction.Write([]byte("hello"))
-	hashOfHello := fmt.Sprint(hashFunction.Sum32())
+	hashOfHello := strconv.FormatUint(uint64(hashFunction.Sum32()), 10)
 
 	metricsDataPoint.HideLockStatsRowrangestartkeyPII()
 
-	assert.Equal(t, len(metricsDataPoint.labelValues), 2)
+	assert.Len(t, metricsDataPoint.labelValues, 2)
 	assert.Equal(t, metricsDataPoint.labelValues[0].Value(), "table1.s("+hashOf23+","+hashOfHello+","+hashOf23+"+)")
 	assert.Equal(t, metricsDataPoint.labelValues[1].Value(), "table2("+hashOf23+","+hashOfHello+")")
 }
@@ -149,7 +149,7 @@ func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPIIWithInvalidLabelValue(
 		metricValue: metricValues[0],
 	}
 	metricsDataPoint.HideLockStatsRowrangestartkeyPII()
-	assert.Equal(t, len(metricsDataPoint.labelValues), 4)
+	assert.Len(t, metricsDataPoint.labelValues, 4)
 }
 
 func TestMetricsDataPoint_TruncateQueryText(t *testing.T) {
@@ -168,8 +168,8 @@ func TestMetricsDataPoint_TruncateQueryText(t *testing.T) {
 
 	metricsDataPoint.TruncateQueryText(6)
 
-	assert.Equal(t, len(metricsDataPoint.labelValues), 1)
-	assert.Equal(t, metricsDataPoint.labelValues[0].Value(), "SELECT")
+	assert.Len(t, metricsDataPoint.labelValues, 1)
+	assert.Equal(t, "SELECT", metricsDataPoint.labelValues[0].Value())
 }
 
 func allPossibleLabelValues() []LabelValue {

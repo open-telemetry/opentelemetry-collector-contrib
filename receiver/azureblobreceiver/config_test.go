@@ -29,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 2)
+	assert.Len(t, cfg.Receivers, 2)
 
 	receiver := cfg.Receivers[component.NewID(metadata.Type)]
 	assert.NoError(t, componenttest.CheckConfigStruct(receiver))

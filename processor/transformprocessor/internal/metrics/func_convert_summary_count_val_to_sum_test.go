@@ -97,7 +97,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 			evaluate, err := convertSummaryCountValToSum(tt.temporality, tt.monotonicity)
 			assert.NoError(t, err)
 
-			_, err = evaluate(nil, ottldatapoint.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+			_, err = evaluate(nil, ottldatapoint.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
 			assert.NoError(t, err)
 
 			expected := pmetric.NewMetricSlice()

@@ -36,6 +36,30 @@ var jmxMetricsGathererVersions = map[string]supportedJar{
 		version: "1.37.0-fix",
 		jar:     "JMX metrics gatherer w/ Tomcat metrics fix",
 	},
+	"8005bee5861f0a9f72577ee6e64d2f9f7ce72a063c88ba38db9568785c7f0cfd": {
+		version: "1.41.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"a51b50329446ae7516888ef915e4b20fb61b986b2230d66eacaf61d8690525c9": {
+		version: "1.40.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"43543679b12c7772fffe78ad9dcde3421cb5dd2a704231f9901d32578b2cf69e": {
+		version: "1.39.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"75d03922df2306086b9eee2daccbfd8c9b94ce140a482fb4698a839ec3d3f192": {
+		version: "1.38.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"74d23e8714deab770c940a14175ab5dfd0cd0c16e198861e45a72fbb854bc727": {
+		version: "1.37.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
+	"ab53c54b7cd8a6e31bb40e8ab3a9a9dedc9386cb4905c2a7f2188d3baae99f39": {
+		version: "1.36.0-alpha",
+		jar:     "JMX metrics gatherer",
+	},
 	"60b2ee1a798c35d10f6e3602ea46f1b1c0298080262636d73b4fc652b7dcd0da": {
 		version: "1.35.0-alpha",
 		jar:     "JMX metrics gatherer",

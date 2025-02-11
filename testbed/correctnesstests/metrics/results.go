@@ -23,13 +23,13 @@ type result struct {
 }
 
 func (r *results) Init(resultsDir string) {
-	err := os.MkdirAll(resultsDir, os.FileMode(0755))
+	err := os.MkdirAll(resultsDir, os.FileMode(0o755))
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err.Error())
 	}
 	r.resultsFile, err = os.Create(path.Join(resultsDir, "TESTRESULTS.md"))
 	if err != nil {
-		log.Fatalf(err.Error())
+		log.Fatal(err.Error())
 	}
 	r.writeString(
 		"# Test Results\n" +

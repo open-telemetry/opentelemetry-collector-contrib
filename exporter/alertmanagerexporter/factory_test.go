@@ -19,11 +19,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	te, err := factory.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	te, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }

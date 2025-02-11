@@ -19,10 +19,11 @@ type Config struct {
 }
 
 type HeaderConfig struct {
-	Action      ActionValue `mapstructure:"action"`
-	Key         *string     `mapstructure:"key"`
-	Value       *string     `mapstructure:"value"`
-	FromContext *string     `mapstructure:"from_context"`
+	Action       ActionValue `mapstructure:"action"`
+	Key          *string     `mapstructure:"key"`
+	Value        *string     `mapstructure:"value"`
+	FromContext  *string     `mapstructure:"from_context"`
+	DefaultValue *string     `mapstructure:"default_value"`
 }
 
 // ActionValue is the enum to capture the four types of actions to perform on a header
@@ -45,7 +46,7 @@ const (
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.HeadersConfig == nil || len(cfg.HeadersConfig) == 0 {
+	if len(cfg.HeadersConfig) == 0 {
 		return errMissingHeadersConfig
 	}
 	for _, header := range cfg.HeadersConfig {

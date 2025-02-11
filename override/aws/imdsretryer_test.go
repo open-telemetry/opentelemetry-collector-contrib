@@ -32,7 +32,7 @@ func Test_IMDSRetryer_ShouldRetry(t *testing.T) {
 			req: &request.Request{
 				Error: awserr.New("throttle me for 503", "throttle me for 503", nil),
 				HTTPResponse: &http.Response{
-					StatusCode: 503,
+					StatusCode: http.StatusServiceUnavailable,
 				},
 			},
 			want: true,
@@ -98,7 +98,7 @@ func TestNumberOfRetryTest(t *testing.T) {
 		func() {
 			t.Run(tt.name, func(t *testing.T) {
 				newIMDSRetryer := NewIMDSRetryer(tt.expectedRetriesInput)
-				assert.Equal(t, newIMDSRetryer.MaxRetries(), tt.expectedRetriesOutput)
+				assert.Equal(t, tt.expectedRetriesOutput, newIMDSRetryer.MaxRetries())
 			})
 		}()
 	}

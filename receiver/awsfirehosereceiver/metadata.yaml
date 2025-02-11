@@ -1,10 +1,9 @@
 type: awsfirehose
-scope_name: otelcol/awsfirehosereceiver
 
 status:
   class: receiver
   stability:
-    alpha: [metrics]
+    alpha: [metrics, logs]
   distributions: [contrib]
   codeowners:
     active: [Aneurysm9]

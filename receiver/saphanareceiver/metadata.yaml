@@ -1,5 +1,4 @@
 type: saphana
-scope_name: otelcol/saphanareceiver
 
 status:
   class: receiver
@@ -8,6 +7,12 @@ status:
   distributions: []
   codeowners:
     active: [dehaansa]
+
+tests:
+  goleak:
+    ignore:
+      top:
+        - "github.com/SAP/go-hdb/driver.(*metrics).collect"
 
 resource_attributes:
   saphana.host:

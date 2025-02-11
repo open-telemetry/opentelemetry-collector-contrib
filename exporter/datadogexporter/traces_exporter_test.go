@@ -9,12 +9,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
@@ -24,9 +27,11 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"google.golang.org/protobuf/proto"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 func setupTestMain(m *testing.M) {
@@ -135,15 +140,20 @@ func TestTracesSource(t *testing.T) {
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: metricsServer.URL},
 		},
 		Traces: TracesConfig{
-			TCPAddrConfig:   confignet.TCPAddrConfig{Endpoint: tracesServer.URL},
-			IgnoreResources: []string{},
+			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: tracesServer.URL},
+			TracesConfig: datadogconfig.TracesConfig{
+				IgnoreResources: []string{},
+			},
+		},
+		HostMetadata: HostMetadataConfig{
+			ReporterPeriod: 30 * time.Minute,
 		},
 	}
 
 	assert := assert.New(t)
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
-	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
+	exporter, err := f.CreateTraces(context.Background(), params, &cfg)
 	assert.NoError(err)
 
 	// Payload specifies a sub-set of a Zorkian metrics series payload.
@@ -255,15 +265,20 @@ func TestTraceExporter(t *testing.T) {
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: server.URL,
 			},
-			IgnoreResources: []string{},
-			flushInterval:   0.1,
-			TraceBuffer:     2,
+			TracesConfig: datadogconfig.TracesConfig{
+				IgnoreResources: []string{},
+			},
+			TraceBuffer: 2,
+		},
+		HostMetadata: HostMetadataConfig{
+			ReporterPeriod: 30 * time.Minute,
 		},
 	}
+	cfg.Traces.SetFlushInterval(0.1)
 
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
-	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
+	exporter, err := f.CreateTraces(context.Background(), params, &cfg)
 	assert.NoError(t, err)
 
 	ctx := context.Background()
@@ -283,14 +298,18 @@ func TestNewTracesExporter(t *testing.T) {
 	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
-	cfg := &Config{}
+	cfg := &Config{
+		HostMetadata: HostMetadataConfig{
+			ReporterPeriod: 30 * time.Minute,
+		},
+	}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	cfg.Metrics.TCPAddrConfig.Endpoint = metricsServer.URL
 	params := exportertest.NewNopSettings()
 
 	// The client should have been created correctly
 	f := NewFactory()
-	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
+	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 }
@@ -311,16 +330,16 @@ func TestPushTraceData(t *testing.T) {
 		Traces: TracesConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
-
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceFirstResource,
+			ReporterPeriod: 30 * time.Minute,
 		},
 	}
 
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
-	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
+	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
 	testTraces := ptrace.NewTraces()
@@ -329,7 +348,50 @@ func TestPushTraceData(t *testing.T) {
 	assert.NoError(t, err)
 
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
+	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
+}
+
+func TestPushTraceData_NewEnvConvention(t *testing.T) {
+	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
+	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
+	defer server.Close()
+	cfg := &Config{
+		API: APIConfig{
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+		TagsConfig: TagsConfig{
+			Hostname: "test-host",
+		},
+		Metrics: MetricsConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
+		},
+		Traces: TracesConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
+		},
+		HostMetadata: HostMetadataConfig{
+			ReporterPeriod: 30 * time.Minute,
+		},
+	}
+	cfg.Traces.SetFlushInterval(0.1)
+
+	params := exportertest.NewNopSettings()
+	f := NewFactory()
+	exp, err := f.CreateTraces(context.Background(), params, cfg)
+	assert.NoError(t, err)
+
+	err = exp.ConsumeTraces(context.Background(), simpleTracesWithAttributes(map[string]any{conventions127.AttributeDeploymentEnvironmentName: "new_env"}))
+	assert.NoError(t, err)
+
+	reqBytes := <-tracesRec.ReqChan
+	buf := bytes.NewBuffer(reqBytes)
+	reader, err := gzip.NewReader(buf)
+	require.NoError(t, err)
+	slurp, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	var traces pb.AgentPayload
+	require.NoError(t, proto.Unmarshal(slurp, &traces))
+	assert.Len(t, traces.TracerPayloads, 1)
+	assert.Equal(t, "new_env", traces.TracerPayloads[0].GetEnv())
 }
 
 func simpleTraces() ptrace.Traces {

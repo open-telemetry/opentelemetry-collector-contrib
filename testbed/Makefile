@@ -1,5 +1,7 @@
 include ../Makefile.Common
 
+GOTEST=$(GOCMD) test
+
 .PHONY: list-tests
 list-tests:
 	RUN_TESTBED=1 $(GOTEST) -v ./tests --test.list '.*' | grep "^Test"

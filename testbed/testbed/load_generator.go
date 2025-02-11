@@ -46,6 +46,9 @@ type LoadOptions struct {
 
 	// Parallel specifies how many goroutines to send from.
 	Parallel int
+
+	// MaxDelay defines the longest amount of time we can continue retrying for non-permanent errors.
+	MaxDelay time.Duration
 }
 
 var _ LoadGenerator = (*ProviderSender)(nil)
@@ -110,6 +113,11 @@ func (ps *ProviderSender) Start(options LoadOptions) {
 	if ps.options.ItemsPerBatch == 0 {
 		// 10 items per batch by default.
 		ps.options.ItemsPerBatch = 10
+	}
+
+	if ps.options.MaxDelay == 0 {
+		// retry for an additional 10 seconds by default
+		ps.options.MaxDelay = time.Second * 10
 	}
 
 	log.Printf("Starting load generator at %d items/sec.", ps.options.DataItemsPerSecond)
@@ -240,23 +248,30 @@ func (ps *ProviderSender) generateTrace() error {
 	traceSender := ps.Sender.(TraceDataSender)
 
 	traceData, done := ps.Provider.GenerateTraces()
+	timer := time.NewTimer(ps.options.MaxDelay)
 	if done {
 		return nil
 	}
 
 	for {
+		// Generated data MUST be consumed once since the data counters
+		// are updated by the provider and not consuming the generated
+		// data will lead to accounting errors.
 		err := traceSender.ConsumeTraces(context.Background(), traceData)
 		if err == nil {
 			return nil
 		}
 
-		if !consumererror.IsPermanent(err) {
-			ps.nonPermanentErrors.Add(uint64(traceData.SpanCount()))
-			continue
+		if consumererror.IsPermanent(err) {
+			ps.permanentErrors.Add(uint64(traceData.SpanCount()))
+			return fmt.Errorf("cannot send traces: %w", err)
 		}
-
-		ps.permanentErrors.Add(uint64(traceData.SpanCount()))
-		return fmt.Errorf("cannot send traces: %w", err)
+		ps.nonPermanentErrors.Add(uint64(traceData.SpanCount()))
+		select {
+		case <-timer.C:
+			return nil
+		default:
+		}
 	}
 }
 
@@ -264,23 +279,31 @@ func (ps *ProviderSender) generateMetrics() error {
 	metricSender := ps.Sender.(MetricDataSender)
 
 	metricData, done := ps.Provider.GenerateMetrics()
+	timer := time.NewTimer(ps.options.MaxDelay)
 	if done {
 		return nil
 	}
 
 	for {
+		// Generated data MUST be consumed once since the data counters
+		// are updated by the provider and not consuming the generated
+		// data will lead to accounting errors.
 		err := metricSender.ConsumeMetrics(context.Background(), metricData)
 		if err == nil {
 			return nil
 		}
 
-		if !consumererror.IsPermanent(err) {
-			ps.nonPermanentErrors.Add(uint64(metricData.DataPointCount()))
-			continue
+		if consumererror.IsPermanent(err) {
+			ps.permanentErrors.Add(uint64(metricData.DataPointCount()))
+			return fmt.Errorf("cannot send metrics: %w", err)
 		}
+		ps.nonPermanentErrors.Add(uint64(metricData.DataPointCount()))
 
-		ps.permanentErrors.Add(uint64(metricData.DataPointCount()))
-		return fmt.Errorf("cannot send metrics: %w", err)
+		select {
+		case <-timer.C:
+			return nil
+		default:
+		}
 	}
 }
 
@@ -288,22 +311,30 @@ func (ps *ProviderSender) generateLog() error {
 	logSender := ps.Sender.(LogDataSender)
 
 	logData, done := ps.Provider.GenerateLogs()
+	timer := time.NewTimer(ps.options.MaxDelay)
 	if done {
 		return nil
 	}
 
 	for {
+		// Generated data MUST be consumed once since the data counters
+		// are updated by the provider and not consuming the generated
+		// data will lead to accounting errors.
 		err := logSender.ConsumeLogs(context.Background(), logData)
 		if err == nil {
 			return nil
 		}
 
-		if !consumererror.IsPermanent(err) {
-			ps.nonPermanentErrors.Add(uint64(logData.LogRecordCount()))
-			continue
+		if consumererror.IsPermanent(err) {
+			ps.permanentErrors.Add(uint64(logData.LogRecordCount()))
+			return fmt.Errorf("cannot send logs: %w", err)
 		}
+		ps.nonPermanentErrors.Add(uint64(logData.LogRecordCount()))
 
-		ps.permanentErrors.Add(uint64(logData.LogRecordCount()))
-		return fmt.Errorf("cannot send logs: %w", err)
+		select {
+		case <-timer.C:
+			return nil
+		default:
+		}
 	}
 }

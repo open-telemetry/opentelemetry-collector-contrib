@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
@@ -24,16 +25,15 @@ type xrayProxy struct {
 
 var _ extension.Extension = (*xrayProxy)(nil)
 
-func (x *xrayProxy) Start(_ context.Context, _ component.Host) error {
+func (x *xrayProxy) Start(_ context.Context, host component.Host) error {
 	srv, err := proxy.NewServer(&x.config.ProxyConfig, x.settings.Logger)
-
 	if err != nil {
 		return err
 	}
 	x.server = srv
 	go func() {
 		if err := x.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			x.settings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	x.logger.Info("X-Ray proxy server started on " + x.config.ProxyConfig.Endpoint)

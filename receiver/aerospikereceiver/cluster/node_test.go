@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	as "github.com/aerospike/aerospike-client-go/v6"
+	as "github.com/aerospike/aerospike-client-go/v7"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster/mocks"
@@ -70,7 +70,6 @@ func TestNode_NewConnNode(t *testing.T) {
 	_, err = _newConnNode(cPolicy, host, authEnabled, factoryFuncNegLogin)
 	connFactoryNegLogin.AssertExpectations(t)
 	require.ErrorContains(t, err, "ResultCode: NOT_AUTHENTICATED")
-
 }
 
 func TestNode_RequestInfo(t *testing.T) {

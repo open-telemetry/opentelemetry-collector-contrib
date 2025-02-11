@@ -41,6 +41,12 @@ all_set:
       enabled: true
     splunk.io.avg.iops:
       enabled: true
+    splunk.kvstore.backup.status:
+      enabled: true
+    splunk.kvstore.replication.status:
+      enabled: true
+    splunk.kvstore.status:
+      enabled: true
     splunk.license.index.usage:
       enabled: true
     splunk.parse.queue.ratio:
@@ -56,6 +62,22 @@ all_set:
     splunk.server.introspection.queues.current:
       enabled: true
     splunk.server.introspection.queues.current.bytes:
+      enabled: true
+    splunk.server.searchartifacts.adhoc:
+      enabled: true
+    splunk.server.searchartifacts.completed:
+      enabled: true
+    splunk.server.searchartifacts.incomplete:
+      enabled: true
+    splunk.server.searchartifacts.invalid:
+      enabled: true
+    splunk.server.searchartifacts.job.cache.count:
+      enabled: true
+    splunk.server.searchartifacts.job.cache.size:
+      enabled: true
+    splunk.server.searchartifacts.savedsearches:
+      enabled: true
+    splunk.server.searchartifacts.scheduled:
       enabled: true
     splunk.typing.queue.ratio:
       enabled: true
@@ -101,6 +123,12 @@ none_set:
       enabled: false
     splunk.io.avg.iops:
       enabled: false
+    splunk.kvstore.backup.status:
+      enabled: false
+    splunk.kvstore.replication.status:
+      enabled: false
+    splunk.kvstore.status:
+      enabled: false
     splunk.license.index.usage:
       enabled: false
     splunk.parse.queue.ratio:
@@ -116,6 +144,22 @@ none_set:
     splunk.server.introspection.queues.current:
       enabled: false
     splunk.server.introspection.queues.current.bytes:
+      enabled: false
+    splunk.server.searchartifacts.adhoc:
+      enabled: false
+    splunk.server.searchartifacts.completed:
+      enabled: false
+    splunk.server.searchartifacts.incomplete:
+      enabled: false
+    splunk.server.searchartifacts.invalid:
+      enabled: false
+    splunk.server.searchartifacts.job.cache.count:
+      enabled: false
+    splunk.server.searchartifacts.job.cache.size:
+      enabled: false
+    splunk.server.searchartifacts.savedsearches:
+      enabled: false
+    splunk.server.searchartifacts.scheduled:
       enabled: false
     splunk.typing.queue.ratio:
       enabled: false

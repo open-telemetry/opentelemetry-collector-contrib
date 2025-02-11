@@ -15,7 +15,7 @@ import (
 )
 
 func RetrieveBearerToken(authCfg configauth.Authentication, extensions map[component.ID]component.Component) (string, error) {
-	auth, err := authCfg.GetClientAuthenticatorContext(context.Background(), extensions)
+	auth, err := authCfg.GetClientAuthenticator(context.Background(), extensions)
 	if err != nil {
 		return "", err
 	}

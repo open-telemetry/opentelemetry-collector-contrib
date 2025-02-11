@@ -57,7 +57,6 @@ func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *TraceData {
 }
 
 func TestCompositeEvaluatorNotSampled(t *testing.T) {
-
 	// Create 2 policies which do not match any trace
 	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
 	n2 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 200, 300, false)
@@ -71,11 +70,10 @@ func TestCompositeEvaluatorNotSampled(t *testing.T) {
 	// None of the numeric filters should match since input trace data does not contain
 	// the "tag", so the decision should be NotSampled.
 	expected := NotSampled
-	assert.Equal(t, decision, expected)
+	assert.Equal(t, expected, decision)
 }
 
 func TestCompositeEvaluatorSampled(t *testing.T) {
-
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
 	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
@@ -88,11 +86,10 @@ func TestCompositeEvaluatorSampled(t *testing.T) {
 
 	// The second policy is AlwaysSample, so the decision should be Sampled.
 	expected := Sampled
-	assert.Equal(t, decision, expected)
+	assert.Equal(t, expected, decision)
 }
 
 func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
-
 	timeProvider := &FakeTimeProvider{second: 0}
 
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
@@ -107,7 +104,7 @@ func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 
 	// The first policy is NewNumericAttributeFilter and trace tag matches criteria, so the decision should be Sampled.
 	expected := Sampled
-	assert.Equal(t, decision, expected)
+	assert.Equal(t, expected, decision)
 
 	trace = newTraceWithKV(traceID, "tag", int64(11))
 
@@ -116,7 +113,7 @@ func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 
 	// The first policy is NewNumericAttributeFilter and trace tag matches criteria, so the decision should be Sampled.
 	expected = NotSampled
-	assert.Equal(t, decision, expected)
+	assert.Equal(t, expected, decision)
 
 	trace = newTraceWithKV(traceID, "tag", int64(1001))
 	decision, err = c.Evaluate(context.Background(), traceID, trace)
@@ -124,11 +121,10 @@ func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 
 	// The first policy fails as the tag value is higher than the range set where as the second policy is AlwaysSample, so the decision should be Sampled.
 	expected = Sampled
-	assert.Equal(t, decision, expected)
+	assert.Equal(t, expected, decision)
 }
 
 func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
-
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
 	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
@@ -142,12 +138,11 @@ func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
 
 		// The second policy is AlwaysSample, so the decision should be Sampled.
 		expected := Sampled
-		assert.Equal(t, decision, expected)
+		assert.Equal(t, expected, decision)
 	}
 }
 
 func TestCompositeEvaluatorInverseSampled_AlwaysSampled(t *testing.T) {
-
 	// The first policy does not match, the second matches through invert
 	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, false)
 	n2 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, true)
@@ -161,12 +156,11 @@ func TestCompositeEvaluatorInverseSampled_AlwaysSampled(t *testing.T) {
 
 		// The second policy is AlwaysSample, so the decision should be Sampled.
 		expected := Sampled
-		assert.Equal(t, decision, expected)
+		assert.Equal(t, expected, decision)
 	}
 }
 
 func TestCompositeEvaluatorThrottling(t *testing.T) {
-
 	// Create only one subpolicy, with 100% Sampled policy.
 	n1 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	timeProvider := &FakeTimeProvider{second: 0}
@@ -181,7 +175,7 @@ func TestCompositeEvaluatorThrottling(t *testing.T) {
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := Sampled
-		assert.Equal(t, decision, expected)
+		assert.Equal(t, expected, decision)
 	}
 
 	// Now we hit the rate limit, so subsequent evaluations should result in 100% NotSampled
@@ -190,7 +184,7 @@ func TestCompositeEvaluatorThrottling(t *testing.T) {
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := NotSampled
-		assert.Equal(t, decision, expected)
+		assert.Equal(t, expected, decision)
 	}
 
 	// Let the time advance by one second.
@@ -202,12 +196,11 @@ func TestCompositeEvaluatorThrottling(t *testing.T) {
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := Sampled
-		assert.Equal(t, decision, expected)
+		assert.Equal(t, expected, decision)
 	}
 }
 
 func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
-
 	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	timeProvider := &FakeTimeProvider{second: 0}
@@ -249,7 +242,7 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := Sampled
-		assert.Equal(t, decision, expected)
+		assert.Equal(t, expected, decision)
 	}
 
 	// Now let's hit the hard limit and exceed the total by a factor of 2
@@ -258,7 +251,7 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := NotSampled
-		assert.Equal(t, decision, expected)
+		assert.Equal(t, expected, decision)
 	}
 
 	// Let the time advance by one second.
@@ -270,6 +263,6 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := Sampled
-		assert.Equal(t, decision, expected)
+		assert.Equal(t, expected, decision)
 	}
 }

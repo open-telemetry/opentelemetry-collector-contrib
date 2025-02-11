@@ -24,10 +24,13 @@ import (
 var (
 	contribPerfResultsSummary = &testbed.PerformanceResults{}
 	resourceCheckPeriod, _    = time.ParseDuration("1m")
-	processorsConfig          = map[string]string{
-		"batch": `
+	processorsConfig          = []scenarios.ProcessorNameAndConfigBody{
+		{
+			Name: "batch",
+			Body: `
   batch:
 `,
+		},
 	}
 )
 

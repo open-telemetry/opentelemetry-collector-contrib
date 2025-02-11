@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
 	"github.com/open-telemetry/otel-arrow/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,9 +20,11 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
@@ -45,7 +46,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t,
 		&Config{
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutSettings: exporterhelper.TimeoutConfig{
 				Timeout: 10 * time.Second,
 			},
 			RetryConfig: configretry.BackOffConfig{
@@ -56,7 +57,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueSettings: exporterhelper.QueueSettings{
+			QueueSettings: exporterhelper.QueueConfig{
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
@@ -83,6 +84,16 @@ func TestUnmarshalConfig(t *testing.T) {
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "experimental",
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID(component.MustNewType("nop"))},
+			},
+			BatcherConfig: exporterbatcher.Config{
+				Enabled:      true,
+				FlushTimeout: 200 * time.Millisecond,
+				MinSizeConfig: exporterbatcher.MinSizeConfig{
+					MinSizeItems: 1000,
+				},
+				MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+					MaxSizeItems: 10000,
+				},
 			},
 			Arrow: ArrowConfig{
 				NumStreams:         2,

@@ -10,10 +10,10 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/common"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/host"
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/common"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -42,7 +42,7 @@ const (
 )
 
 // scraper for Process Metrics
-type scraper struct {
+type processScraper struct {
 	settings           receiver.Settings
 	config             *Config
 	mb                 *metadata.MetricsBuilder
@@ -60,8 +60,8 @@ type scraper struct {
 }
 
 // newProcessScraper creates a Process Scraper
-func newProcessScraper(settings receiver.Settings, cfg *Config) (*scraper, error) {
-	scraper := &scraper{
+func newProcessScraper(settings receiver.Settings, cfg *Config) (*processScraper, error) {
+	scraper := &processScraper{
 		settings:             settings,
 		config:               cfg,
 		getProcessCreateTime: processHandle.CreateTimeWithContext,
@@ -97,12 +97,12 @@ func newProcessScraper(settings receiver.Settings, cfg *Config) (*scraper, error
 	return scraper, nil
 }
 
-func (s *scraper) start(context.Context, component.Host) error {
+func (s *processScraper) start(context.Context, component.Host) error {
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
 }
 
-func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *processScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var errs scrapererror.ScrapeErrors
 
 	// If the boot time cache featuregate is disabled, this will refresh the
@@ -187,6 +187,10 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
+	if s.config.MuteProcessAllErrors {
+		return s.mb.Emit(), nil
+	}
+
 	return s.mb.Emit(), errs.Combine()
 }
 
@@ -194,7 +198,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 // for all currently running processes. If errors occur obtaining information
 // for some processes, an error will be returned, but any processes that were
 // successfully obtained will still be returned.
-func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
+func (s *processScraper) getProcessMetadata() ([]*processMetadata, error) {
 	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
 	handles, err := s.getProcessHandles(ctx)
 	if err != nil {
@@ -285,7 +289,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	return data, errs.Combine()
 }
 
-func (s *scraper) scrapeAndAppendCPUTimeMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle, pid int32) error {
+func (s *processScraper) scrapeAndAppendCPUTimeMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle, pid int32) error {
 	if !s.config.MetricsBuilderConfig.Metrics.ProcessCPUTime.Enabled && !s.config.MetricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled {
 		return nil
 	}
@@ -311,7 +315,7 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(ctx context.Context, now pcommon.
 	return err
 }
 
-func (s *scraper) scrapeAndAppendMemoryUsageMetrics(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
+func (s *processScraper) scrapeAndAppendMemoryUsageMetrics(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
 	if !(s.config.MetricsBuilderConfig.Metrics.ProcessMemoryUsage.Enabled || s.config.MetricsBuilderConfig.Metrics.ProcessMemoryVirtual.Enabled) {
 		return nil
 	}
@@ -326,7 +330,7 @@ func (s *scraper) scrapeAndAppendMemoryUsageMetrics(ctx context.Context, now pco
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendMemoryUtilizationMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
+func (s *processScraper) scrapeAndAppendMemoryUtilizationMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
 	if !s.config.MetricsBuilderConfig.Metrics.ProcessMemoryUtilization.Enabled {
 		return nil
 	}
@@ -341,7 +345,7 @@ func (s *scraper) scrapeAndAppendMemoryUtilizationMetric(ctx context.Context, no
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendDiskMetrics(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
+func (s *processScraper) scrapeAndAppendDiskMetrics(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
 	if !(s.config.MetricsBuilderConfig.Metrics.ProcessDiskIo.Enabled || s.config.MetricsBuilderConfig.Metrics.ProcessDiskOperations.Enabled) || runtime.GOOS == "darwin" {
 		return nil
 	}
@@ -362,7 +366,7 @@ func (s *scraper) scrapeAndAppendDiskMetrics(ctx context.Context, now pcommon.Ti
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendPagingMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
+func (s *processScraper) scrapeAndAppendPagingMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
 	if !s.config.MetricsBuilderConfig.Metrics.ProcessPagingFaults.Enabled {
 		return nil
 	}
@@ -378,7 +382,7 @@ func (s *scraper) scrapeAndAppendPagingMetric(ctx context.Context, now pcommon.T
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendThreadsMetrics(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
+func (s *processScraper) scrapeAndAppendThreadsMetrics(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
 	if !s.config.MetricsBuilderConfig.Metrics.ProcessThreads.Enabled {
 		return nil
 	}
@@ -391,13 +395,12 @@ func (s *scraper) scrapeAndAppendThreadsMetrics(ctx context.Context, now pcommon
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendContextSwitchMetrics(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
+func (s *processScraper) scrapeAndAppendContextSwitchMetrics(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
 	if !s.config.MetricsBuilderConfig.Metrics.ProcessContextSwitches.Enabled {
 		return nil
 	}
 
 	contextSwitches, err := handle.NumCtxSwitchesWithContext(ctx)
-
 	if err != nil {
 		return err
 	}
@@ -408,13 +411,12 @@ func (s *scraper) scrapeAndAppendContextSwitchMetrics(ctx context.Context, now p
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendOpenFileDescriptorsMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
+func (s *processScraper) scrapeAndAppendOpenFileDescriptorsMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
 	if !s.config.MetricsBuilderConfig.Metrics.ProcessOpenFileDescriptors.Enabled {
 		return nil
 	}
 
 	fds, err := handle.NumFDsWithContext(ctx)
-
 	if err != nil {
 		return err
 	}
@@ -424,7 +426,7 @@ func (s *scraper) scrapeAndAppendOpenFileDescriptorsMetric(ctx context.Context, 
 	return nil
 }
 
-func (s *scraper) refreshHandleCounts() error {
+func (s *processScraper) refreshHandleCounts() error {
 	if !s.config.MetricsBuilderConfig.Metrics.ProcessHandles.Enabled {
 		return nil
 	}
@@ -432,7 +434,7 @@ func (s *scraper) refreshHandleCounts() error {
 	return s.handleCountManager.Refresh()
 }
 
-func (s *scraper) scrapeAndAppendHandlesMetric(_ context.Context, now pcommon.Timestamp, pid int64) error {
+func (s *processScraper) scrapeAndAppendHandlesMetric(_ context.Context, now pcommon.Timestamp, pid int64) error {
 	if !s.config.MetricsBuilderConfig.Metrics.ProcessHandles.Enabled {
 		return nil
 	}
@@ -447,7 +449,7 @@ func (s *scraper) scrapeAndAppendHandlesMetric(_ context.Context, now pcommon.Ti
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendSignalsPendingMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
+func (s *processScraper) scrapeAndAppendSignalsPendingMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
 	if !s.config.MetricsBuilderConfig.Metrics.ProcessSignalsPending.Enabled {
 		return nil
 	}

@@ -7,9 +7,11 @@ import (
 )
 
 var (
-	Type = component.MustNewType("datadog")
+	Type      = component.MustNewType("datadog")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 )
 
 const (
-	TracesStability = component.StabilityLevelAlpha
+	TracesStability  = component.StabilityLevelAlpha
+	MetricsStability = component.StabilityLevelAlpha
 )

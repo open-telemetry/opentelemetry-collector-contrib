@@ -103,7 +103,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "apitoken"),
 			expected: &Config{
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 				},
@@ -117,7 +117,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "bearertoken"),
 			expected: &Config{
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 					Headers: map[string]configopaque.String{
@@ -130,7 +130,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "resource-mapping-op"),
 			expected: &Config{
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
-				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "https://company.logicmonitor.com/rest",
 					Headers: map[string]configopaque.String{
@@ -173,7 +173,7 @@ func TestUnmarshal(t *testing.T) {
 					"resource_mapping_op": "invalid_op",
 				},
 			}),
-			err: "1 error(s) decoding:\n\n* error decoding 'logs.resource_mapping_op': unsupported mapping operation \"invalid_op\"",
+			err: "'logs.resource_mapping_op': unsupported mapping operation \"invalid_op\"",
 		},
 	}
 
@@ -183,7 +183,7 @@ func TestUnmarshal(t *testing.T) {
 			cfg := f.CreateDefaultConfig().(*Config)
 			err := tt.configMap.Unmarshal(cfg)
 			if err != nil || tt.err != "" {
-				assert.EqualError(t, err, tt.err)
+				assert.ErrorContains(t, err, tt.err)
 			} else {
 				assert.Equal(t, tt.cfg, cfg)
 			}

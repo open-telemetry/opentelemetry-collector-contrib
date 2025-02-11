@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor/internal/metadata"
 )
 
@@ -48,7 +49,7 @@ func createMetricsProcessor(
 	}
 	metricsProcessor := newMetricsTransformProcessor(set.Logger, hCfg)
 
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -88,8 +89,8 @@ func validateConfiguration(config *Config) error {
 			return fmt.Errorf("missing required field %q while %q is %v", groupResourceLabelsFieldName, actionFieldName, Group)
 		}
 
-		if transform.AggregationType != "" && !transform.AggregationType.isValid() {
-			return fmt.Errorf("%q must be in %q", aggregationTypeFieldName, aggregationTypes)
+		if transform.AggregationType != "" && !transform.AggregationType.IsValid() {
+			return fmt.Errorf("%q must be in %q", aggregationTypeFieldName, aggregateutil.AggregationTypes)
 		}
 
 		if transform.SubmatchCase != "" && !transform.SubmatchCase.isValid() {
@@ -114,8 +115,8 @@ func validateConfiguration(config *Config) error {
 				return fmt.Errorf("operation %v: missing required field %q while %q is %v", i+1, scaleFieldName, actionFieldName, scaleValue)
 			}
 
-			if op.AggregationType != "" && !op.AggregationType.isValid() {
-				return fmt.Errorf("operation %v: %q must be in %q", i+1, aggregationTypeFieldName, aggregationTypes)
+			if op.AggregationType != "" && !op.AggregationType.IsValid() {
+				return fmt.Errorf("operation %v: %q must be in %q", i+1, aggregationTypeFieldName, aggregateutil.AggregationTypes)
 			}
 		}
 	}
@@ -126,7 +127,6 @@ func validateConfiguration(config *Config) error {
 func buildHelperConfig(config *Config, version string) ([]internalTransform, error) {
 	helperDataTransforms := make([]internalTransform, len(config.Transforms))
 	for i, t := range config.Transforms {
-
 		if t.MetricIncludeFilter.MatchType == "" {
 			t.MetricIncludeFilter.MatchType = strictMatchType
 		}

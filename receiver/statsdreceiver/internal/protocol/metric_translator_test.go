@@ -7,7 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lightstep/go-expohisto/structure"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
@@ -35,7 +37,7 @@ func TestBuildCounterMetric(t *testing.T) {
 	dp := expectedMetric.Sum().DataPoints().AppendEmpty()
 	dp.SetIntValue(32)
 	dp.Attributes().PutStr("mykey", "myvalue")
-	assert.Equal(t, metric, expectedMetrics)
+	assert.Equal(t, expectedMetrics, metric)
 }
 
 func TestSetTimestampsForCounterMetric(t *testing.T) {
@@ -61,7 +63,6 @@ func TestSetTimestampsForCounterMetric(t *testing.T) {
 		metric.Metrics().At(0).Sum().DataPoints().At(0).Timestamp(),
 		expectedMetrics.Metrics().At(0).Sum().DataPoints().At(0).Timestamp(),
 	)
-
 }
 
 func TestBuildGaugeMetric(t *testing.T) {
@@ -88,7 +89,7 @@ func TestBuildGaugeMetric(t *testing.T) {
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	dp.Attributes().PutStr("mykey", "myvalue")
 	dp.Attributes().PutStr("mykey2", "myvalue2")
-	assert.Equal(t, metric, expectedMetrics)
+	assert.Equal(t, expectedMetrics, metric)
 }
 
 func TestBuildSummaryMetricUnsampled(t *testing.T) {
@@ -214,4 +215,60 @@ func TestBuildSummaryMetricSampled(t *testing.T) {
 
 		assert.Equal(t, expectedMetric, metric)
 	}
+}
+
+func TestBuildHistogramMetric(t *testing.T) {
+	timeNow := time.Now()
+	startTime := timeNow.Add(-5 * time.Second)
+
+	attrs := attribute.NewSet(
+		attribute.String("mykey", "myvalue"),
+		attribute.String("mykey2", "myvalue2"),
+	)
+
+	desc := statsDMetricDescription{
+		name:       "testHistogram",
+		metricType: HistogramType,
+		attrs:      attrs,
+	}
+
+	agg := new(histogramStructure)
+	cfg := structure.NewConfig(structure.WithMaxSize(10))
+	agg.Init(cfg)
+	agg.UpdateByIncr(2, 2)
+	agg.UpdateByIncr(2, 1)
+	agg.UpdateByIncr(2, 4)
+	agg.UpdateByIncr(1, 1)
+	agg.UpdateByIncr(8, 3)
+	agg.UpdateByIncr(0.5, 8)
+	agg.UpdateByIncr(-5, 8)
+
+	histMetric := histogramMetric{
+		agg: agg,
+	}
+
+	ilm := pmetric.NewScopeMetrics()
+
+	buildHistogramMetric(desc, histMetric, startTime, timeNow, ilm)
+
+	require.NotNil(t, ilm.Metrics())
+	require.Equal(t, "testHistogram", ilm.Metrics().At(0).Name())
+
+	hist := ilm.Metrics().At(0).ExponentialHistogram()
+	require.NotNil(t, hist)
+	require.Equal(t, 1, hist.DataPoints().Len())
+	require.Equal(t, pmetric.AggregationTemporalityDelta, hist.AggregationTemporality())
+
+	datapoint := hist.DataPoints().At(0)
+	require.Equal(t, uint64(27), datapoint.Count())
+	require.Equal(t, int32(1), datapoint.Scale())
+	require.Equal(t, 3.0, datapoint.Sum())
+	require.Equal(t, int32(-3), datapoint.Positive().Offset())
+	require.Equal(t, int32(4), datapoint.Negative().Offset())
+	require.Equal(t, -5.0, datapoint.Min())
+	require.Equal(t, 8.0, datapoint.Max())
+	val, _ := datapoint.Attributes().Get("mykey")
+	require.Equal(t, "myvalue", val.Str())
+	val, _ = datapoint.Attributes().Get("mykey2")
+	require.Equal(t, "myvalue2", val.Str())
 }

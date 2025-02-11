@@ -44,8 +44,7 @@ func TestConfigBuildFailure(t *testing.T) {
 	config.OnError = "invalid_on_error"
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid `on_error` field")
+	require.ErrorContains(t, err, "invalid `on_error` field")
 }
 
 func TestBuild(t *testing.T) {
@@ -151,22 +150,19 @@ func TestBuild(t *testing.T) {
 func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("cannot split %q into 2 items, got 1 item(s)", "invalid"))
+	require.ErrorContains(t, err, fmt.Sprintf("cannot split %q into 2 items, got 1 item(s)", "invalid"))
 }
 
 func TestParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]int{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type []int cannot be parsed as key value pairs")
+	require.ErrorContains(t, err, "type []int cannot be parsed as key value pairs")
 }
 
 func TestParserEmptyInput(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "parse from field body is empty")
+	require.ErrorContains(t, err, "parse from field body is empty")
 }
 
 func TestKVImplementations(t *testing.T) {

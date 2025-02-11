@@ -5,6 +5,8 @@ package k8stest // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,4 +54,37 @@ func DeleteObject(client *K8sClient, obj *unstructured.Unstructured) error {
 	return resource.Delete(context.Background(), obj.GetName(), metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
 	})
+}
+
+func CreateObjects(client *K8sClient, dir string) ([]*unstructured.Unstructured, error) {
+	var objs []*unstructured.Unstructured
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue // Skip directories
+		}
+		manifest, err := os.ReadFile(filepath.Join(dir, file.Name()))
+		if err != nil {
+			return nil, err
+		}
+		obj, err := CreateObject(client, manifest)
+		if err != nil {
+			return nil, err
+		}
+		objs = append(objs, obj)
+	}
+	return objs, nil
+}
+
+func DeleteObjects(client *K8sClient, objs []*unstructured.Unstructured) error {
+	for _, obj := range objs {
+		if err := DeleteObject(client, obj); err != nil {
+			return err
+		}
+	}
+	return nil
 }

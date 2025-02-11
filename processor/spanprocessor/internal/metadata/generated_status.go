@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("span")
+	Type      = component.MustNewType("span")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 )
 
 const (

@@ -18,15 +18,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
-var _ internal.ResourceContext = (*TransformContext)(nil)
-var _ internal.InstrumentationScopeContext = (*TransformContext)(nil)
-var _ zapcore.ObjectMarshaler = (*TransformContext)(nil)
+var (
+	_ internal.ResourceContext             = (*TransformContext)(nil)
+	_ internal.InstrumentationScopeContext = (*TransformContext)(nil)
+	_ zapcore.ObjectMarshaler              = (*TransformContext)(nil)
+)
 
 type TransformContext struct {
 	span                 ptrace.Span
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
 	cache                pcommon.Map
+	scopeSpans           ptrace.ScopeSpans
+	resourceSpans        ptrace.ResourceSpans
 }
 
 func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
@@ -39,12 +43,14 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 
 type Option func(*ottl.Parser[TransformContext])
 
-func NewTransformContext(span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
+func NewTransformContext(span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSpans ptrace.ScopeSpans, resourceSpans ptrace.ResourceSpans) TransformContext {
 	return TransformContext{
 		span:                 span,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
 		cache:                pcommon.NewMap(),
+		scopeSpans:           scopeSpans,
+		resourceSpans:        resourceSpans,
 	}
 }
 
@@ -62,6 +68,14 @@ func (tCtx TransformContext) GetResource() pcommon.Resource {
 
 func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
+}
+
+func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
+	return tCtx.resourceSpans
+}
+
+func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
+	return tCtx.scopeSpans
 }
 
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {

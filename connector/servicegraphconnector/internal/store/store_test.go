@@ -23,15 +23,15 @@ func TestStoreUpsertEdge(t *testing.T) {
 	var onExpireCount int
 
 	s := NewStore(time.Hour, 1, countingCallback(&onCompletedCount), countingCallback(&onExpireCount))
-	assert.Equal(t, 0, s.len())
+	assert.Equal(t, 0, s.Len())
 
 	// Insert first half of an edge
 	isNew, err := s.UpsertEdge(key, func(e *Edge) {
 		e.ClientService = clientService
 	})
 	require.NoError(t, err)
-	require.Equal(t, true, isNew)
-	assert.Equal(t, 1, s.len())
+	require.True(t, isNew)
+	assert.Equal(t, 1, s.Len())
 
 	// Nothing should be evicted as TTL is set to 1h
 	assert.False(t, s.tryEvictHead())
@@ -44,9 +44,9 @@ func TestStoreUpsertEdge(t *testing.T) {
 		e.ServerService = "server"
 	})
 	require.NoError(t, err)
-	require.Equal(t, false, isNew)
+	require.False(t, isNew)
 	// Edge is complete and should have been removed
-	assert.Equal(t, 0, s.len())
+	assert.Equal(t, 0, s.Len())
 
 	assert.Equal(t, 1, onCompletedCount)
 	assert.Equal(t, 0, onExpireCount)
@@ -57,13 +57,13 @@ func TestStoreUpsertEdge(t *testing.T) {
 		e.expiration = time.UnixMicro(0)
 	})
 	require.NoError(t, err)
-	require.Equal(t, true, isNew)
-	assert.Equal(t, 1, s.len())
+	require.True(t, isNew)
+	assert.Equal(t, 1, s.Len())
 	assert.Equal(t, 1, onCompletedCount)
 	assert.Equal(t, 0, onExpireCount)
 
 	assert.True(t, s.tryEvictHead())
-	assert.Equal(t, 0, s.len())
+	assert.Equal(t, 0, s.Len())
 	assert.Equal(t, 1, onCompletedCount)
 	assert.Equal(t, 1, onExpireCount)
 }
@@ -74,27 +74,27 @@ func TestStoreUpsertEdge_errTooManyItems(t *testing.T) {
 	var onCallbackCounter int
 
 	s := NewStore(time.Hour, 1, countingCallback(&onCallbackCounter), countingCallback(&onCallbackCounter))
-	assert.Equal(t, 0, s.len())
+	assert.Equal(t, 0, s.Len())
 
 	isNew, err := s.UpsertEdge(key1, func(e *Edge) {
 		e.ClientService = clientService
 	})
 	require.NoError(t, err)
-	require.Equal(t, true, isNew)
-	assert.Equal(t, 1, s.len())
+	require.True(t, isNew)
+	assert.Equal(t, 1, s.Len())
 
 	_, err = s.UpsertEdge(key2, func(e *Edge) {
 		e.ClientService = clientService
 	})
 	require.ErrorIs(t, err, ErrTooManyItems)
-	assert.Equal(t, 1, s.len())
+	assert.Equal(t, 1, s.Len())
 
 	isNew, err = s.UpsertEdge(key1, func(e *Edge) {
 		e.ClientService = clientService
 	})
 	require.NoError(t, err)
-	require.Equal(t, false, isNew)
-	assert.Equal(t, 1, s.len())
+	require.False(t, isNew)
+	assert.Equal(t, 1, s.Len())
 
 	assert.Equal(t, 0, onCallbackCounter)
 }
@@ -120,11 +120,11 @@ func TestStoreExpire(t *testing.T) {
 	for key := range keys {
 		isNew, err := s.UpsertEdge(key, noopCallback)
 		require.NoError(t, err)
-		require.Equal(t, true, isNew)
+		require.True(t, isNew)
 	}
 
 	s.Expire()
-	assert.Equal(t, 0, s.len())
+	assert.Equal(t, 0, s.Len())
 	assert.Equal(t, 0, onCompletedCount)
 	assert.Equal(t, testSize, onExpireCount)
 }

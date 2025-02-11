@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -132,7 +132,7 @@ func createLogData(numResources int, numLibraries int, numRecords int) plog.Logs
 }
 
 func repeat(what int, times int) []int {
-	var result = make([]int, times)
+	result := make([]int, times)
 	for i := range result {
 		result[i] = what
 	}
@@ -229,12 +229,12 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -282,12 +282,12 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -342,12 +342,12 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
 	params := exportertest.NewNopSettings()
-	exporter, err := NewFactory().CreateLogsExporter(context.Background(), params, cfg)
+	exporter, err := NewFactory().CreateLogs(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -397,10 +397,12 @@ func TestReceiveTracesBatches(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: [][]string{
-					{`"start_time":1`,
+					{
+						`"start_time":1`,
 						`"start_time":2`,
 						`start_time":3`,
-						`start_time":4`},
+						`start_time":4`,
+					},
 				},
 				numBatches: 1,
 			},
@@ -508,7 +510,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 			for i, batch := range test.want.batches {
 				require.NotZero(t, got[i])
 				if test.conf.MaxContentLengthTraces != 0 {
-					require.True(t, int(test.conf.MaxContentLengthTraces) > len(got[i].body))
+					require.Greater(t, int(test.conf.MaxContentLengthTraces), len(got[i].body))
 				}
 				if test.conf.DisableCompression {
 					for _, expected := range batch {
@@ -570,10 +572,12 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: [][]string{
-					{`"otel.log.name":"0_0_0"`,
+					{
+						`"otel.log.name":"0_0_0"`,
 						`"otel.log.name":"0_0_1"`,
 						`otel.log.name":"0_0_2`,
-						`otel.log.name":"0_0_3`},
+						`otel.log.name":"0_0_3`,
+					},
 				},
 				numBatches: 1,
 			},
@@ -786,12 +790,12 @@ func TestReceiveLogs(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			require.Equal(t, test.want.numBatches, len(got))
+			require.Len(t, got, test.want.numBatches)
 
 			for i, wantBatch := range test.want.batches {
 				require.NotZero(t, got[i])
 				if test.conf.MaxContentLengthLogs != 0 {
-					require.True(t, int(test.conf.MaxContentLengthLogs) > len(got[i].body))
+					require.Greater(t, int(test.conf.MaxContentLengthLogs), len(got[i].body))
 				}
 				if test.conf.DisableCompression {
 					for _, expected := range wantBatch {
@@ -978,16 +982,15 @@ func TestReceiveSpanEvent(t *testing.T) {
 }
 
 // compareWithTestData compares hec output with a json file using maps instead of strings to avoid key ordering
-// issues (jsoniter doesn't sort the keys).
 func compareWithTestData(t *testing.T, actual []byte, file string) {
 	wantStr, err := os.ReadFile(file)
 	require.NoError(t, err)
 	wantMap := map[string]any{}
-	err = jsoniter.Unmarshal(wantStr, &wantMap)
+	err = json.Unmarshal(wantStr, &wantMap)
 	require.NoError(t, err)
 
 	gotMap := map[string]any{}
-	err = jsoniter.Unmarshal(actual, &gotMap)
+	err = json.Unmarshal(actual, &gotMap)
 	require.NoError(t, err)
 	assert.Equal(t, wantMap, gotMap)
 }
@@ -1164,7 +1167,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 				for i, batch := range test.want.batches {
 					require.NotZero(t, got[i])
 					if test.conf.MaxContentLengthMetrics != 0 {
-						require.True(t, int(test.conf.MaxContentLengthMetrics) > len(got[i].body))
+						require.Greater(t, int(test.conf.MaxContentLengthMetrics), len(got[i].body))
 					}
 					if test.want.compressed {
 						validateCompressedContains(t, batch, got[i].body)
@@ -1182,7 +1185,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 				}
 
 				if test.want.numBatches == 0 {
-					assert.Equal(t, 0, len(got))
+					assert.Empty(t, got)
 					return
 				}
 
@@ -1212,7 +1215,6 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 		}
 		t.Run(test.name, testFn(false))
 		t.Run(test.name+"_MultiMetric", testFn(true))
-
 	}
 }
 
@@ -1288,7 +1290,7 @@ func TestErrorReceived(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 
@@ -1304,7 +1306,7 @@ func TestErrorReceived(t *testing.T) {
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -1352,7 +1354,7 @@ func TestInvalidURL(t *testing.T) {
 	cfg.ClientConfig.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -1377,7 +1379,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 	factory := NewFactory()
@@ -1393,7 +1395,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	cfg.Heartbeat.Startup = true
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.EqualError(t,
 		exporter.Start(context.Background(), componenttest.NewNopHost()),
@@ -1416,7 +1418,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 	factory := NewFactory()
@@ -1432,7 +1434,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	cfg.Heartbeat.Startup = false
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, exporter.Shutdown(context.Background()))
@@ -1451,7 +1453,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	defer s.Close()
 	go func() {
 		if e := s.Serve(listener); e != http.ErrServerClosed {
-			require.NoError(t, e)
+			assert.NoError(t, e)
 		}
 	}()
 	factory := NewFactory()
@@ -1467,7 +1469,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	cfg.Heartbeat.Startup = true
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, exporter.Shutdown(context.Background()))
@@ -1481,7 +1483,7 @@ func TestInvalidJson(t *testing.T) {
 	badEvent := badJSON{
 		Foo: math.Inf(1),
 	}
-	_, err := jsoniter.Marshal(badEvent)
+	_, err := json.Marshal(badEvent)
 	assert.Error(t, err)
 }
 
@@ -1510,7 +1512,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 				return logs
 			}(),
 			requires: func(t *testing.T, logs plog.Logs) {
-				require.Equal(t, logs.ResourceLogs().Len(), 1)
+				require.Equal(t, 1, logs.ResourceLogs().Len())
 				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().Len())
 			},
 		},
@@ -1524,8 +1526,8 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 				return logs
 			}(),
 			requires: func(t *testing.T, logs plog.Logs) {
-				require.Equal(t, logs.ResourceLogs().Len(), 1)
-				require.Equal(t, logs.ResourceLogs().At(0).ScopeLogs().Len(), 1)
+				require.Equal(t, 1, logs.ResourceLogs().Len())
+				require.Equal(t, 1, logs.ResourceLogs().At(0).ScopeLogs().Len())
 				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
 			},
 		},
@@ -1542,7 +1544,6 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			})
 		}
 	}
-
 }
 
 func Test_pushLogData_InvalidLog(t *testing.T) {
@@ -1609,9 +1610,9 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
 	require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
-	require.Contains(t, err.Error(), "HTTP/0.0 400")
+	require.ErrorContains(t, err, "HTTP/0.0 400")
 	// The returned error should contain the response body responseBody.
-	assert.Contains(t, err.Error(), responseBody)
+	assert.ErrorContains(t, err, responseBody)
 
 	// An HTTP client that returns some other status code other than 400 and response body responseBody.
 	httpClient, _ = newTestClient(500, responseBody)
@@ -1619,7 +1620,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(context.Background(), logs)
 	require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
-	require.Contains(t, err.Error(), "HTTP 500")
+	require.ErrorContains(t, err, "HTTP 500")
 	// The returned error should not contain the response body responseBody.
 	assert.NotContains(t, err.Error(), responseBody)
 }
@@ -1671,7 +1672,7 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	require.NoError(t, err)
 	err = c.pushLogData(context.Background(), profilingData)
 	require.NoError(t, err)
-	assert.Equal(t, 30, len(*headers))
+	assert.Len(t, *headers, 30)
 
 	profilingCount, nonProfilingCount := 0, 0
 	for i := range *headers {
@@ -1752,7 +1753,7 @@ func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize ui
 	config.DisableCompression = !compressionEnabled
 	c := newLogsClient(exportertest.NewNopSettings(), config)
 	c.hecWorker = &mockHecWorker{}
-	exp, err := exporterhelper.NewLogsExporter(context.Background(), exportertest.NewNopSettings(), config,
+	exp, err := exporterhelper.NewLogs(context.Background(), exportertest.NewNopSettings(), config,
 		c.pushLogData)
 	require.NoError(b, err)
 	exp = &baseLogsExporter{
@@ -1902,7 +1903,7 @@ func benchPushMetricData(b *testing.B, numResources int, numRecords int, bufSize
 	config.UseMultiMetricFormat = useMultiMetricFormat
 	c := newLogsClient(exportertest.NewNopSettings(), config)
 	c.hecWorker = &mockHecWorker{}
-	exp, err := exporterhelper.NewMetricsExporter(context.Background(), exportertest.NewNopSettings(), config,
+	exp, err := exporterhelper.NewMetrics(context.Background(), exportertest.NewNopSettings(), config,
 		c.pushMetricsData)
 	require.NoError(b, err)
 
@@ -1923,7 +1924,7 @@ func BenchmarkConsumeLogsRejected(b *testing.B) {
 	c := newLogsClient(exportertest.NewNopSettings(), config)
 	c.hecWorker = &mockHecWorker{failSend: true}
 
-	exp, err := exporterhelper.NewLogsExporter(context.Background(), exportertest.NewNopSettings(), config,
+	exp, err := exporterhelper.NewLogs(context.Background(), exportertest.NewNopSettings(), config,
 		c.pushLogData)
 	require.NoError(b, err)
 
@@ -1954,7 +1955,7 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 		require.Error(t, err)
 
 		assert.True(t, consumererror.IsPermanent(err))
-		assert.Contains(t, err.Error(), "dropped log event")
+		assert.ErrorContains(t, err, "dropped log event")
 	}
 }
 
@@ -2106,5 +2107,4 @@ func validateCompressedContains(t *testing.T, expected []string, got []byte) {
 	for _, e := range expected {
 		assert.Contains(t, string(p), e)
 	}
-
 }

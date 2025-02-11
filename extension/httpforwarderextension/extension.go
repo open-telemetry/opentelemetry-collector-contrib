@@ -12,6 +12,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 )
@@ -48,7 +49,7 @@ func (h *httpForwarder) Start(ctx context.Context, host component.Host) error {
 
 	go func() {
 		if errHTTP := h.server.Serve(listener); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			h.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
@@ -115,7 +116,7 @@ func newHTTPForwarder(config *Config, settings component.TelemetrySettings) (ext
 		return nil, errors.New("'egress.endpoint' config option cannot be empty")
 	}
 
-	var url, err = url.Parse(config.Egress.Endpoint)
+	url, err := url.Parse(config.Egress.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("enter a valid URL for 'egress.endpoint': %w", err)
 	}

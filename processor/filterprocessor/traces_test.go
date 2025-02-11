@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
@@ -128,7 +130,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 				},
 			}
 			factory := NewFactory()
-			fmp, err := factory.CreateTracesProcessor(
+			fmp, err := factory.CreateTraces(
 				ctx,
 				processortest.NewNopSettings(),
 				cfg,
@@ -143,12 +145,12 @@ func TestFilterTraceProcessor(t *testing.T) {
 			require.NoError(t, fmp.Start(ctx, nil))
 
 			cErr := fmp.ConsumeTraces(ctx, test.inTraces)
-			require.Nil(t, cErr)
+			require.NoError(t, cErr)
 			got := next.AllTraces()
 
 			// If all traces got filtered you shouldn't even have ResourceSpans
 			if test.allTracesFiltered {
-				require.Equal(t, 0, len(got))
+				require.Empty(t, got)
 			} else {
 				require.Equal(t, test.spanCountExpected, got[0].SpanCount())
 			}
@@ -271,7 +273,6 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
 			} else {
-
 				exTd := constructTraces()
 				tt.want(exTd)
 				assert.Equal(t, exTd, got)
@@ -281,23 +282,39 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 }
 
 func TestFilterTraceProcessorTelemetry(t *testing.T) {
-	telemetryTest(t, "FilterTraceProcessorTelemetry", func(t *testing.T, tel testTelemetry) {
-		processor, err := newFilterSpansProcessor(tel.NewProcessorCreateSettings(), &Config{
-			Traces: TraceFilters{
-				SpanConditions: []string{
-					`name == "operationA"`,
-				},
-			}, ErrorMode: ottl.IgnoreError,
-		})
-		assert.NoError(t, err)
-
-		_, err = processor.processTraces(context.Background(), constructTraces())
-		assert.NoError(t, err)
-
-		tel.assertMetrics(t, expectedMetrics{
-			spansFiltered: 2,
-		})
+	tel := setupTestTelemetry()
+	processor, err := newFilterSpansProcessor(tel.NewSettings(), &Config{
+		Traces: TraceFilters{
+			SpanConditions: []string{
+				`name == "operationA"`,
+			},
+		}, ErrorMode: ottl.IgnoreError,
 	})
+	assert.NoError(t, err)
+
+	_, err = processor.processTraces(context.Background(), constructTraces())
+	assert.NoError(t, err)
+
+	want := []metricdata.Metrics{
+		{
+			Name:        "otelcol_processor_filter_spans.filtered",
+			Description: "Number of spans dropped by the filter processor",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value:      2,
+						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
+					},
+				},
+			},
+		},
+	}
+
+	tel.assertMetrics(t, want)
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func constructTraces() ptrace.Traces {

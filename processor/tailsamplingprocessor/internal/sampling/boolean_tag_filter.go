@@ -13,20 +13,22 @@ import (
 )
 
 type booleanAttributeFilter struct {
-	key    string
-	value  bool
-	logger *zap.Logger
+	key         string
+	value       bool
+	logger      *zap.Logger
+	invertMatch bool
 }
 
 var _ PolicyEvaluator = (*booleanAttributeFilter)(nil)
 
 // NewBooleanAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute that match the supplied boolean value.
-func NewBooleanAttributeFilter(settings component.TelemetrySettings, key string, value bool) PolicyEvaluator {
+func NewBooleanAttributeFilter(settings component.TelemetrySettings, key string, value bool, invertMatch bool) PolicyEvaluator {
 	return &booleanAttributeFilter{
-		key:    key,
-		value:  value,
-		logger: settings.Logger,
+		key:         key,
+		value:       value,
+		logger:      settings.Logger,
+		invertMatch: invertMatch,
 	}
 }
 
@@ -36,6 +38,25 @@ func (baf *booleanAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID
 	defer trace.Unlock()
 	batches := trace.ReceivedBatches
 
+	if baf.invertMatch {
+		return invertHasResourceOrSpanWithCondition(
+			batches,
+			func(resource pcommon.Resource) bool {
+				if v, ok := resource.Attributes().Get(baf.key); ok {
+					value := v.Bool()
+					return value != baf.value
+				}
+				return true
+			},
+			func(span ptrace.Span) bool {
+				if v, ok := span.Attributes().Get(baf.key); ok {
+					value := v.Bool()
+					return value != baf.value
+				}
+				return true
+			},
+		), nil
+	}
 	return hasResourceOrSpanWithCondition(
 		batches,
 		func(resource pcommon.Resource) bool {

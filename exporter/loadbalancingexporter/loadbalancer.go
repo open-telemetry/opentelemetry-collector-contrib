@@ -11,8 +11,9 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
 
 const (
@@ -41,10 +42,10 @@ type loadBalancer struct {
 }
 
 // Create new load balancer
-func newLoadBalancer(params exporter.Settings, cfg component.Config, factory componentFactory) (*loadBalancer, error) {
+func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory componentFactory, telemetry *metadata.TelemetryBuilder) (*loadBalancer, error) {
 	oCfg := cfg.(*Config)
 
-	var count = 0
+	count := 0
 	if oCfg.Resolver.DNS != nil {
 		count++
 	}
@@ -64,37 +65,63 @@ func newLoadBalancer(params exporter.Settings, cfg component.Config, factory com
 	var res resolver
 	if oCfg.Resolver.Static != nil {
 		var err error
-		res, err = newStaticResolver(oCfg.Resolver.Static.Hostnames)
+		res, err = newStaticResolver(
+			oCfg.Resolver.Static.Hostnames,
+			telemetry,
+		)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if oCfg.Resolver.DNS != nil {
-		dnsLogger := params.Logger.With(zap.String("resolver", "dns"))
+		dnsLogger := logger.With(zap.String("resolver", "dns"))
 
 		var err error
-		res, err = newDNSResolver(dnsLogger, oCfg.Resolver.DNS.Hostname, oCfg.Resolver.DNS.Port, oCfg.Resolver.DNS.Interval, oCfg.Resolver.DNS.Timeout)
+		res, err = newDNSResolver(
+			dnsLogger,
+			oCfg.Resolver.DNS.Hostname,
+			oCfg.Resolver.DNS.Port,
+			oCfg.Resolver.DNS.Interval,
+			oCfg.Resolver.DNS.Timeout,
+			telemetry,
+		)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if oCfg.Resolver.K8sSvc != nil {
-		k8sLogger := params.Logger.With(zap.String("resolver", "k8s service"))
+		k8sLogger := logger.With(zap.String("resolver", "k8s service"))
 
 		clt, err := newInClusterClient()
 		if err != nil {
 			return nil, err
 		}
-		res, err = newK8sResolver(clt, k8sLogger, oCfg.Resolver.K8sSvc.Service, oCfg.Resolver.K8sSvc.Ports, oCfg.Resolver.K8sSvc.Timeout)
+		res, err = newK8sResolver(
+			clt,
+			k8sLogger,
+			oCfg.Resolver.K8sSvc.Service,
+			oCfg.Resolver.K8sSvc.Ports,
+			oCfg.Resolver.K8sSvc.Timeout,
+			telemetry,
+		)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	if oCfg.Resolver.AWSCloudMap != nil {
-		awsCloudMapLogger := params.Logger.With(zap.String("resolver", "aws_cloud_map"))
+		awsCloudMapLogger := logger.With(zap.String("resolver", "aws_cloud_map"))
 		var err error
-		res, err = newCloudMapResolver(awsCloudMapLogger, &oCfg.Resolver.AWSCloudMap.NamespaceName, &oCfg.Resolver.AWSCloudMap.ServiceName, oCfg.Resolver.AWSCloudMap.Port, &oCfg.Resolver.AWSCloudMap.HealthStatus, oCfg.Resolver.AWSCloudMap.Interval, oCfg.Resolver.AWSCloudMap.Timeout)
+		res, err = newCloudMapResolver(
+			awsCloudMapLogger,
+			&oCfg.Resolver.AWSCloudMap.NamespaceName,
+			&oCfg.Resolver.AWSCloudMap.ServiceName,
+			oCfg.Resolver.AWSCloudMap.Port,
+			&oCfg.Resolver.AWSCloudMap.HealthStatus,
+			oCfg.Resolver.AWSCloudMap.Interval,
+			oCfg.Resolver.AWSCloudMap.Timeout,
+			telemetry,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -105,7 +132,7 @@ func newLoadBalancer(params exporter.Settings, cfg component.Config, factory com
 	}
 
 	return &loadBalancer{
-		logger:           params.Logger,
+		logger:           logger,
 		res:              res,
 		componentFactory: factory,
 		exporters:        map[string]*wrappedExporter{},
@@ -146,7 +173,7 @@ func (lb *loadBalancer) addMissingExporters(ctx context.Context, endpoints []str
 				lb.logger.Error("failed to create new exporter for endpoint", zap.String("endpoint", endpoint), zap.Error(err))
 				continue
 			}
-			we := newWrappedExporter(exp)
+			we := newWrappedExporter(exp, endpoint)
 			if err = we.Start(ctx, lb.host); err != nil {
 				lb.logger.Error("failed to start new exporter for endpoint", zap.String("endpoint", endpoint), zap.Error(err))
 				continue
@@ -193,6 +220,10 @@ func endpointFound(endpoint string, endpoints []string) bool {
 func (lb *loadBalancer) Shutdown(ctx context.Context) error {
 	err := lb.res.shutdown(ctx)
 	lb.stopped = true
+
+	for _, e := range lb.exporters {
+		err = errors.Join(err, e.Shutdown(ctx))
+	}
 	return err
 }
 

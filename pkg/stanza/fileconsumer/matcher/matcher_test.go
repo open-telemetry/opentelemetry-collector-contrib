@@ -70,6 +70,15 @@ func TestNew(t *testing.T) {
 			expectedErr: "exclude: parse glob: syntax error in pattern",
 		},
 		{
+			name: "GroupBy",
+			criteria: Criteria{
+				Include: []string{"*.log"},
+				OrderingCriteria: OrderingCriteria{
+					GroupBy: "[a-z]",
+				},
+			},
+		},
+		{
 			name: "RegexEmpty",
 			criteria: Criteria{
 				Include: []string{"*.log"},
@@ -117,6 +126,16 @@ func TestNew(t *testing.T) {
 				},
 			},
 			expectedErr: "'top_n' must be a positive integer",
+		},
+		{
+			name: "GroupBy error",
+			criteria: Criteria{
+				Include: []string{"*.log"},
+				OrderingCriteria: OrderingCriteria{
+					GroupBy: "[a-z",
+				},
+			},
+			expectedErr: "compile group_by regex: error parsing regexp: missing closing ]: `[a-z`",
 		},
 		{
 			name: "SortTypeEmpty",
@@ -383,6 +402,54 @@ func TestMatcher(t *testing.T) {
 				},
 			},
 			expected: []string{"err.123456789.log"},
+		},
+		{
+			name:    "Numeric Sorting",
+			files:   []string{"err.a.123456788.log", "err.a.123456789.log", "err.a.123456787.log", "err.a.123456786.log", "err.b.123456788.log", "err.b.123456789.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterCriteria: OrderingCriteria{
+				TopN:  6,
+				Regex: `err\.[a-z]\.(?P<value>\d+).*log`,
+				SortBy: []Sort{
+					{
+						SortType:  sortTypeNumeric,
+						RegexKey:  "value",
+						Ascending: false,
+					},
+				},
+			},
+			expected: []string{"err.a.123456789.log", "err.b.123456789.log", "err.a.123456788.log", "err.b.123456788.log", "err.a.123456787.log", "err.a.123456786.log"},
+		},
+		{
+			name:    "Numeric Sorting with grouping",
+			files:   []string{"err.a.123456788.log", "err.a.123456789.log", "err.a.123456787.log", "err.a.123456786.log", "err.b.123456788.log", "err.b.123456789.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterCriteria: OrderingCriteria{
+				TopN:    6,
+				GroupBy: `err\.(?P<value>[a-z]+).[0-9]*.*log`,
+				Regex:   `err\.[a-z]\.(?P<value>\d+).*log`,
+				SortBy: []Sort{
+					{
+						SortType:  sortTypeNumeric,
+						RegexKey:  "value",
+						Ascending: false,
+					},
+				},
+			},
+			expected: []string{"err.a.123456789.log", "err.a.123456788.log", "err.a.123456787.log", "err.a.123456786.log", "err.b.123456789.log", "err.b.123456788.log"},
+		},
+		{
+			name:    "Grouping",
+			files:   []string{"err.a.123456788.log", "err.a.123456789.log", "err.a.123456787.log", "err.b.123456788.log", "err.a.123456786.log", "err.b.123456789.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterCriteria: OrderingCriteria{
+				TopN:    6,
+				GroupBy: `err\.(?P<value>[a-z]+).[0-9]*.*log`,
+			},
+			expected: []string{"err.a.123456786.log", "err.a.123456787.log", "err.a.123456788.log", "err.a.123456789.log", "err.b.123456788.log", "err.b.123456789.log"},
 		},
 		{
 			name:    "Numeric Sorting Ascending",
@@ -753,7 +820,8 @@ func TestMatcher(t *testing.T) {
 			expected: []string{
 				filepath.Join("a", "1.log"),
 			},
-		}}
+		},
+	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -764,8 +832,8 @@ func TestMatcher(t *testing.T) {
 				require.NoError(t, os.Chdir(cwd))
 			}()
 			for _, f := range tc.files {
-				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0700))
-				file, fErr := os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0600)
+				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0o700))
+				file, fErr := os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0o600)
 				require.NoError(t, fErr)
 
 				_, fErr = file.WriteString(filepath.Base(f))
@@ -785,7 +853,7 @@ func TestMatcher(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, tc.expected, files)
+			assert.ElementsMatch(t, tc.expected, files)
 		})
 	}
 }

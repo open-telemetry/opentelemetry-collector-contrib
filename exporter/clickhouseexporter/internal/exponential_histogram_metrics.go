@@ -11,14 +11,14 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
 const (
 	// language=ClickHouse SQL
 	createExpHistogramTableSQL = `
-CREATE TABLE IF NOT EXISTS %s_exponential_histogram %s (
+CREATE TABLE IF NOT EXISTS %s %s (
     ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ResourceSchemaUrl String CODEC(ZSTD(1)),
     ScopeName String CODEC(ZSTD(1)),
@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS %s_exponential_histogram %s (
     Flags UInt32  CODEC(ZSTD(1)),
     Min Float64 CODEC(ZSTD(1)),
     Max Float64 CODEC(ZSTD(1)),
+		AggregationTemporality Int32 CODEC(ZSTD(1)),
 	INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	INDEX idx_scope_attr_key mapKeys(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
@@ -64,7 +65,7 @@ ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
-	insertExpHistogramTableSQL = `INSERT INTO %s_exponential_histogram (
+	insertExpHistogramTableSQL = `INSERT INTO %s (
 	ResourceAttributes,
     ResourceSchemaUrl,
     ScopeName,
@@ -94,7 +95,8 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     Exemplars.TraceId,
 	Flags,
 	Min,
-	Max) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+	Max,
+	AggregationTemporality) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
 )
 
 type expHistogramModel struct {
@@ -135,7 +137,6 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 
 			for i := 0; i < model.expHistogram.DataPoints().Len(); i++ {
 				dp := model.expHistogram.DataPoints().At(i)
-
 				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
 				_, err = statement.ExecContext(ctx,
 					model.metadata.ResAttr,
@@ -168,6 +169,7 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 					uint32(dp.Flags()),
 					dp.Min(),
 					dp.Max(),
+					int32(model.expHistogram.AggregationTemporality()),
 				)
 				if err != nil {
 					return fmt.Errorf("ExecContext:%w", err)

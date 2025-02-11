@@ -137,22 +137,6 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
               isMonotonic: true
             unit: '{operations}'
-          - description: The total number of active sessions.
-            name: mongodb.session.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "19"
-                  startTimeUnixNano: "1682363190502544000"
-                  timeUnixNano: "1682363210513475000"
-            unit: '{sessions}'
-        scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource:
-      attributes: []
-    scopeMetrics:
-      - metrics:
           - description: The total time spent performing operations.
             name: mongodb.operation.time
             sum:
@@ -202,12 +186,24 @@ resourceMetrics:
                   timeUnixNano: "1682363210513475000"
               isMonotonic: true
             unit: ms
+          - description: The total number of active sessions.
+            name: mongodb.session.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "19"
+                  startTimeUnixNano: "1682363190502544000"
+                  timeUnixNano: "1682363210513475000"
+            unit: '{sessions}'
         scope:
-          name: otelcol/mongodbreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
           version: latest
   - resource:
       attributes:
         - key: database
+          value:
+            stringValue: admin
+        - key: server.address
           value:
             stringValue: admin
     scopeMetrics:
@@ -293,6 +289,19 @@ resourceMetrics:
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{extents}'
+          - description: The number of times an index has been accessed.
+            name: mongodb.index.access.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: collection
+                      value:
+                        stringValue: system.version
+                  startTimeUnixNano: "1682363190502544000"
+                  timeUnixNano: "1682363210513475000"
+            unit: '{accesses}'
           - description: The number of indexes.
             name: mongodb.index.count
             sum:
@@ -351,30 +360,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: database
-          value:
-            stringValue: admin
-    scopeMetrics:
-      - metrics:
-          - description: The number of times an index has been accessed.
-            name: mongodb.index.access.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: collection
-                      value:
-                        stringValue: system.version
-                  startTimeUnixNano: "1682363190502544000"
-                  timeUnixNano: "1682363210513475000"
-            unit: '{accesses}'
-        scope:
-          name: otelcol/mongodbreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
           version: latest
   - resource:
       attributes:
@@ -464,6 +450,19 @@ resourceMetrics:
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{extents}'
+          - description: The number of times an index has been accessed.
+            name: mongodb.index.access.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: collection
+                      value:
+                        stringValue: system.sessions
+                  startTimeUnixNano: "1682363190502544000"
+                  timeUnixNano: "1682363210513475000"
+            unit: '{accesses}'
           - description: The number of indexes.
             name: mongodb.index.count
             sum:
@@ -522,30 +521,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: database
-          value:
-            stringValue: config
-    scopeMetrics:
-      - metrics:
-          - description: The number of times an index has been accessed.
-            name: mongodb.index.access.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: collection
-                      value:
-                        stringValue: system.sessions
-                  startTimeUnixNano: "1682363190502544000"
-                  timeUnixNano: "1682363210513475000"
-            unit: '{accesses}'
-        scope:
-          name: otelcol/mongodbreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
           version: latest
   - resource:
       attributes:
@@ -693,7 +669,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/mongodbreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
           version: latest
   - resource:
       attributes:
@@ -783,6 +759,19 @@ resourceMetrics:
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{extents}'
+          - description: The number of times an index has been accessed.
+            name: mongodb.index.access.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: collection
+                      value:
+                        stringValue: orders
+                  startTimeUnixNano: "1682363190502544000"
+                  timeUnixNano: "1682363210513475000"
+            unit: '{accesses}'
           - description: The number of indexes.
             name: mongodb.index.count
             sum:
@@ -841,28 +830,5 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: database
-          value:
-            stringValue: testdb
-    scopeMetrics:
-      - metrics:
-          - description: The number of times an index has been accessed.
-            name: mongodb.index.access.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: collection
-                      value:
-                        stringValue: orders
-                  startTimeUnixNano: "1682363190502544000"
-                  timeUnixNano: "1682363210513475000"
-            unit: '{accesses}'
-        scope:
-          name: otelcol/mongodbreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
           version: latest

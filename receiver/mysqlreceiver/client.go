@@ -12,11 +12,12 @@ import (
 
 	// registers the mysql driver
 	"github.com/go-sql-driver/mysql"
+	"github.com/hashicorp/go-version"
 )
 
 type client interface {
 	Connect() error
-	getVersion() (string, error)
+	getVersion() (*version.Version, error)
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
 	getTableStats() ([]TableStats, error)
@@ -110,66 +111,83 @@ type tableLockWaitEventStats struct {
 }
 
 type ReplicaStatusStats struct {
-	replicaIOState            string
-	sourceHost                string
-	sourceUser                string
-	sourcePort                int64
-	connectRetry              int64
-	sourceLogFile             string
-	readSourceLogPos          int64
-	relayLogFile              string
-	relayLogPos               int64
-	relaySourceLogFile        string
-	replicaIORunning          string
-	replicaSQLRunning         string
-	replicateDoDB             string
-	replicateIgnoreDB         string
-	replicateDoTable          string
-	replicateIgnoreTable      string
-	replicateWildDoTable      string
-	replicateWildIgnoreTable  string
-	lastErrno                 int64
-	lastError                 string
-	skipCounter               int64
-	execSourceLogPos          int64
-	relayLogSpace             int64
-	untilCondition            string
-	untilLogFile              string
-	untilLogPos               string
-	sourceSSLAllowed          string
-	sourceSSLCAFile           string
-	sourceSSLCAPath           string
-	sourceSSLCert             string
-	sourceSSLCipher           string
-	sourceSSLKey              string
-	secondsBehindSource       sql.NullInt64
-	sourceSSLVerifyServerCert string
-	lastIOErrno               int64
-	lastIOError               string
-	lastSQLErrno              int64
-	lastSQLError              string
-	replicateIgnoreServerIDs  string
-	sourceServerID            int64
-	sourceUUID                string
-	sourceInfoFile            string
-	sqlDelay                  int64
-	sqlRemainingDelay         sql.NullInt64
-	replicaSQLRunningState    string
-	sourceRetryCount          int64
-	sourceBind                string
-	lastIOErrorTimestamp      string
-	lastSQLErrorTimestamp     string
-	sourceSSLCrl              string
-	sourceSSLCrlpath          string
-	retrievedGtidSet          string
-	executedGtidSet           string
-	autoPosition              string
-	replicateRewriteDB        string
-	channelName               string
-	sourceTLSVersion          string
-	sourcePublicKeyPath       string
-	getSourcePublicKey        int64
-	networkNamespace          string
+	replicaIOState              string
+	sourceHost                  string
+	sourceUser                  string
+	sourcePort                  int64
+	connectRetry                int64
+	sourceLogFile               string
+	readSourceLogPos            int64
+	relayLogFile                string
+	relayLogPos                 int64
+	relaySourceLogFile          string
+	replicaIORunning            string
+	replicaSQLRunning           string
+	replicateDoDB               string
+	replicateIgnoreDB           string
+	replicateDoTable            string
+	replicateIgnoreTable        string
+	replicateWildDoTable        string
+	replicateWildIgnoreTable    string
+	lastErrno                   int64
+	lastError                   string
+	skipCounter                 int64
+	execSourceLogPos            int64
+	relayLogSpace               int64
+	untilCondition              string
+	untilLogFile                string
+	untilLogPos                 string
+	sourceSSLAllowed            string
+	sourceSSLCAFile             string
+	sourceSSLCAPath             string
+	sourceSSLCert               string
+	sourceSSLCipher             string
+	sourceSSLKey                string
+	secondsBehindSource         sql.NullInt64
+	sourceSSLVerifyServerCert   string
+	lastIOErrno                 int64
+	lastIOError                 string
+	lastSQLErrno                int64
+	lastSQLError                string
+	replicateIgnoreServerIDs    string
+	sourceServerID              int64
+	sourceUUID                  string
+	sourceInfoFile              string
+	sqlDelay                    int64
+	sqlRemainingDelay           sql.NullInt64
+	replicaSQLRunningState      string
+	sourceRetryCount            int64
+	sourceBind                  string
+	lastIOErrorTimestamp        string
+	lastSQLErrorTimestamp       string
+	sourceSSLCrl                string
+	sourceSSLCrlpath            string
+	retrievedGtidSet            string
+	executedGtidSet             string
+	autoPosition                string
+	replicateRewriteDB          string
+	channelName                 string
+	sourceTLSVersion            string
+	sourcePublicKeyPath         string
+	getSourcePublicKey          int64
+	networkNamespace            string
+	usingGtid                   string
+	gtidIoPos                   string
+	slaveDdlGroups              int64
+	slaveNonTransactionalGroups int64
+	slaveTransactionalGroups    int64
+	retriedTransactions         int64
+	maxRelayLogSize             int64
+	executedLogEntries          int64
+	slaveReceivedHeartbeats     int64
+	slaveHeartbeatPeriod        int64
+	gtidSlavePos                string
+	masterLastEventTime         string
+	slaveLastEventTime          string
+	masterSlaveTimeDiff         string
+	parallelMode                string
+	replicateDoDomainIDs        string
+	replicateIgnoreDomainIDs    string
 }
 
 var _ client = (*mySQLClient)(nil)
@@ -218,15 +236,15 @@ func (c *mySQLClient) Connect() error {
 }
 
 // getVersion queries the db for the version.
-func (c *mySQLClient) getVersion() (string, error) {
+func (c *mySQLClient) getVersion() (*version.Version, error) {
 	query := "SELECT VERSION();"
-	var version string
-	err := c.client.QueryRow(query).Scan(&version)
+	var versionStr string
+	err := c.client.QueryRow(query).Scan(&versionStr)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-
-	return version, nil
+	version, err := version.NewVersion(versionStr)
+	return version, err
 }
 
 // getGlobalStats queries the db for global status metrics.
@@ -243,8 +261,11 @@ func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
 
 // getTableStats queries the db for information_schema table size metrics.
 func (c *mySQLClient) getTableStats() ([]TableStats, error) {
-	query := "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_ROWS, " +
-		"AVG_ROW_LENGTH, DATA_LENGTH, INDEX_LENGTH " +
+	query := "SELECT TABLE_SCHEMA, TABLE_NAME, " +
+		"COALESCE(TABLE_ROWS, 0) as TABLE_ROWS, " +
+		"COALESCE(AVG_ROW_LENGTH, 0) as AVG_ROW_LENGTH, " +
+		"COALESCE(DATA_LENGTH, 0) as DATA_LENGTH, " +
+		"COALESCE(INDEX_LENGTH, 0) as  INDEX_LENGTH " +
 		"FROM information_schema.TABLES " +
 		"WHERE TABLE_SCHEMA NOT in ('information_schema', 'sys');"
 	rows, err := c.client.Query(query)
@@ -394,18 +415,20 @@ func (c *mySQLClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, e
 }
 
 func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
-	version, err := c.getVersion()
+	mysqlVersion, err := c.getVersion()
 	if err != nil {
 		return nil, err
 	}
 
-	if version < "8.0.22" {
-		return nil, nil
+	query := "SHOW REPLICA STATUS"
+	minMysqlVersion, _ := version.NewVersion("8.0.22")
+	if strings.Contains(mysqlVersion.String(), "MariaDB") {
+		query = "SHOW SLAVE STATUS"
+	} else if mysqlVersion.LessThan(minMysqlVersion) {
+		query = "SHOW SLAVE STATUS"
 	}
 
-	query := "SHOW REPLICA STATUS"
 	rows, err := c.client.Query(query)
-
 	if err != nil {
 		return nil, err
 	}
@@ -424,17 +447,29 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 			switch strings.ToLower(col) {
 			case "replica_io_state":
 				dest = append(dest, &s.replicaIOState)
+			case "slave_io_state":
+				dest = append(dest, &s.replicaIOState)
 			case "source_host":
+				dest = append(dest, &s.sourceHost)
+			case "master_host":
 				dest = append(dest, &s.sourceHost)
 			case "source_user":
 				dest = append(dest, &s.sourceUser)
+			case "master_user":
+				dest = append(dest, &s.sourceUser)
 			case "source_port":
+				dest = append(dest, &s.sourcePort)
+			case "master_port":
 				dest = append(dest, &s.sourcePort)
 			case "connect_retry":
 				dest = append(dest, &s.connectRetry)
 			case "source_log_file":
 				dest = append(dest, &s.sourceLogFile)
+			case "master_log_file":
+				dest = append(dest, &s.sourceLogFile)
 			case "read_source_log_pos":
+				dest = append(dest, &s.readSourceLogPos)
+			case "read_master_log_pos":
 				dest = append(dest, &s.readSourceLogPos)
 			case "relay_log_file":
 				dest = append(dest, &s.relayLogFile)
@@ -442,9 +477,15 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 				dest = append(dest, &s.relayLogPos)
 			case "relay_source_log_file":
 				dest = append(dest, &s.relaySourceLogFile)
+			case "relay_master_log_file":
+				dest = append(dest, &s.relaySourceLogFile)
 			case "replica_io_running":
 				dest = append(dest, &s.replicaIORunning)
+			case "slave_io_running":
+				dest = append(dest, &s.replicaIORunning)
 			case "replica_sql_running":
+				dest = append(dest, &s.replicaSQLRunning)
+			case "slave_sql_running":
 				dest = append(dest, &s.replicaSQLRunning)
 			case "replicate_do_db":
 				dest = append(dest, &s.replicateDoDB)
@@ -466,6 +507,8 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 				dest = append(dest, &s.skipCounter)
 			case "exec_source_log_pos":
 				dest = append(dest, &s.execSourceLogPos)
+			case "exec_master_log_pos":
+				dest = append(dest, &s.execSourceLogPos)
 			case "relay_log_space":
 				dest = append(dest, &s.relayLogSpace)
 			case "until_condition":
@@ -476,19 +519,35 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 				dest = append(dest, &s.untilLogPos)
 			case "source_ssl_allowed":
 				dest = append(dest, &s.sourceSSLAllowed)
+			case "master_ssl_allowed":
+				dest = append(dest, &s.sourceSSLAllowed)
 			case "source_ssl_ca_file":
+				dest = append(dest, &s.sourceSSLCAFile)
+			case "master_ssl_ca_file":
 				dest = append(dest, &s.sourceSSLCAFile)
 			case "source_ssl_ca_path":
 				dest = append(dest, &s.sourceSSLCAPath)
+			case "master_ssl_ca_path":
+				dest = append(dest, &s.sourceSSLCAPath)
 			case "source_ssl_cert":
+				dest = append(dest, &s.sourceSSLCert)
+			case "master_ssl_cert":
 				dest = append(dest, &s.sourceSSLCert)
 			case "source_ssl_cipher":
 				dest = append(dest, &s.sourceSSLCipher)
+			case "master_ssl_cipher":
+				dest = append(dest, &s.sourceSSLCipher)
 			case "source_ssl_key":
+				dest = append(dest, &s.sourceSSLKey)
+			case "master_ssl_key":
 				dest = append(dest, &s.sourceSSLKey)
 			case "seconds_behind_source":
 				dest = append(dest, &s.secondsBehindSource)
+			case "seconds_behind_master":
+				dest = append(dest, &s.secondsBehindSource)
 			case "source_ssl_verify_server_cert":
+				dest = append(dest, &s.sourceSSLVerifyServerCert)
+			case "master_ssl_verify_server_cert":
 				dest = append(dest, &s.sourceSSLVerifyServerCert)
 			case "last_io_errno":
 				dest = append(dest, &s.lastIOErrno)
@@ -502,9 +561,15 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 				dest = append(dest, &s.replicateIgnoreServerIDs)
 			case "source_server_id":
 				dest = append(dest, &s.sourceServerID)
+			case "master_server_id":
+				dest = append(dest, &s.sourceServerID)
 			case "source_uuid":
 				dest = append(dest, &s.sourceUUID)
+			case "master_uuid":
+				dest = append(dest, &s.sourceUUID)
 			case "source_info_file":
+				dest = append(dest, &s.sourceInfoFile)
+			case "master_info_file":
 				dest = append(dest, &s.sourceInfoFile)
 			case "sql_delay":
 				dest = append(dest, &s.sqlDelay)
@@ -512,9 +577,15 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 				dest = append(dest, &s.sqlRemainingDelay)
 			case "replica_sql_running_state":
 				dest = append(dest, &s.replicaSQLRunningState)
+			case "slave_sql_running_state":
+				dest = append(dest, &s.replicaSQLRunningState)
 			case "source_retry_count":
 				dest = append(dest, &s.sourceRetryCount)
+			case "master_retry_count":
+				dest = append(dest, &s.sourceRetryCount)
 			case "source_bind":
+				dest = append(dest, &s.sourceBind)
+			case "master_bind":
 				dest = append(dest, &s.sourceBind)
 			case "last_io_error_timestamp":
 				dest = append(dest, &s.lastIOErrorTimestamp)
@@ -522,7 +593,11 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 				dest = append(dest, &s.lastSQLErrorTimestamp)
 			case "source_ssl_crl":
 				dest = append(dest, &s.sourceSSLCrl)
+			case "master_ssl_crl":
+				dest = append(dest, &s.sourceSSLCrl)
 			case "source_ssl_crlpath":
+				dest = append(dest, &s.sourceSSLCrlpath)
+			case "master_ssl_crlpath":
 				dest = append(dest, &s.sourceSSLCrlpath)
 			case "retrieved_gtid_set":
 				dest = append(dest, &s.retrievedGtidSet)
@@ -536,18 +611,57 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 				dest = append(dest, &s.channelName)
 			case "source_tls_version":
 				dest = append(dest, &s.sourceTLSVersion)
+			case "master_tls_version":
+				dest = append(dest, &s.sourceTLSVersion)
 			case "source_public_key_path":
+				dest = append(dest, &s.sourcePublicKeyPath)
+			case "master_public_key_path":
 				dest = append(dest, &s.sourcePublicKeyPath)
 			case "get_source_public_key":
 				dest = append(dest, &s.getSourcePublicKey)
+			case "get_master_public_key":
+				dest = append(dest, &s.getSourcePublicKey)
 			case "network_namespace":
 				dest = append(dest, &s.networkNamespace)
+			case "using_gtid":
+				dest = append(dest, &s.usingGtid)
+			case "gtid_io_pos":
+				dest = append(dest, &s.gtidIoPos)
+			case "slave_ddl_groups":
+				dest = append(dest, &s.slaveDdlGroups)
+			case "slave_non_transactional_groups":
+				dest = append(dest, &s.slaveNonTransactionalGroups)
+			case "slave_transactional_groups":
+				dest = append(dest, &s.slaveTransactionalGroups)
+			case "retried_transactions":
+				dest = append(dest, &s.retriedTransactions)
+			case "max_relay_log_size":
+				dest = append(dest, &s.maxRelayLogSize)
+			case "executed_log_entries":
+				dest = append(dest, &s.executedLogEntries)
+			case "slave_received_heartbeats":
+				dest = append(dest, &s.slaveReceivedHeartbeats)
+			case "slave_heartbeat_period":
+				dest = append(dest, &s.slaveHeartbeatPeriod)
+			case "gtid_slave_pos":
+				dest = append(dest, &s.gtidSlavePos)
+			case "master_last_event_time":
+				dest = append(dest, &s.masterLastEventTime)
+			case "slave_last_event_time":
+				dest = append(dest, &s.slaveLastEventTime)
+			case "master_slave_time_diff":
+				dest = append(dest, &s.masterSlaveTimeDiff)
+			case "parallel_mode":
+				dest = append(dest, &s.parallelMode)
+			case "replicate_do_domain_ids":
+				dest = append(dest, &s.replicateDoDomainIDs)
+			case "replicate_ignore_domain_ids":
+				dest = append(dest, &s.replicateIgnoreDomainIDs)
 			default:
 				return nil, fmt.Errorf("unknown column name %s for replica status", col)
 			}
 		}
 		err := rows.Scan(dest...)
-
 		if err != nil {
 			return nil, err
 		}

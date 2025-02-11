@@ -45,6 +45,12 @@ func Test_ProcessTraces_ResourceContext(t *testing.T) {
 			want: func(_ ptrace.Traces) {
 			},
 		},
+		{
+			statement: `set(schema_url, "test_schema_url")`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).SetSchemaUrl("test_schema_url")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -78,6 +84,12 @@ func Test_ProcessTraces_ScopeContext(t *testing.T) {
 		{
 			statement: `set(attributes["test"], "pass") where version == 2`,
 			want: func(_ ptrace.Traces) {
+			},
+		},
+		{
+			statement: `set(schema_url, "test_schema_url")`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).SetSchemaUrl("test_schema_url")
 			},
 		},
 	}
@@ -330,6 +342,12 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			statement: `set(attributes["entrypoint"], name) where parent_span_id == SpanID(0x0000000000000000)`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("entrypoint", "operationB")
+			},
+		},
+		{
+			statement: `set(attributes["entrypoint-root"], name) where IsRootSpan()`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("entrypoint-root", "operationB")
 			},
 		},
 		{
@@ -664,8 +682,10 @@ func BenchmarkHundredSpans(b *testing.B) {
 func constructTraces() ptrace.Traces {
 	td := ptrace.NewTraces()
 	rs0 := td.ResourceSpans().AppendEmpty()
+	rs0.SetSchemaUrl("test_schema_url")
 	rs0.Resource().Attributes().PutStr("host.name", "localhost")
 	rs0ils0 := rs0.ScopeSpans().AppendEmpty()
+	rs0ils0.SetSchemaUrl("test_schema_url")
 	rs0ils0.Scope().SetName("scope")
 	fillSpanOne(rs0ils0.Spans().AppendEmpty())
 	fillSpanTwo(rs0ils0.Spans().AppendEmpty())

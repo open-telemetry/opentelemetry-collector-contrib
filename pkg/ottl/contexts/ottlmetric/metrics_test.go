@@ -17,7 +17,6 @@ import (
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-
 	refMetric := createMetricTelemetry()
 
 	newCache := pcommon.NewMap()
@@ -149,7 +148,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			metric := createMetricTelemetry()
 
-			ctx := NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
+			ctx := NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
@@ -224,7 +223,7 @@ func Test_ParseEnum(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			actual, err := parseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
 			assert.NoError(t, err)
-			assert.Equal(t, *actual, tt.want)
+			assert.Equal(t, tt.want, *actual)
 		})
 	}
 }

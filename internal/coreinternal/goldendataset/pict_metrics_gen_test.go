@@ -14,7 +14,7 @@ import (
 func TestGenerateMetricDatas(t *testing.T) {
 	mds, err := GenerateMetrics("testdata/generated_pict_pairs_metrics.txt")
 	require.NoError(t, err)
-	require.Equal(t, 25, len(mds))
+	require.Len(t, mds, 25)
 }
 
 func TestPICTtoCfg(t *testing.T) {

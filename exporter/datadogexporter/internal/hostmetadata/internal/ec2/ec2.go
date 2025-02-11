@@ -21,9 +21,7 @@ import (
 	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
 )
 
-var (
-	defaultPrefixes = [3]string{"ip-", "domu", "ec2amaz-"}
-)
+var defaultPrefixes = [3]string{"ip-", "domu", "ec2amaz-"}
 
 type HostInfo struct {
 	InstanceID  string
@@ -43,7 +41,7 @@ func isDefaultHostname(hostname string) bool {
 }
 
 // GetHostInfo gets the hostname info from EC2 metadata
-func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
+func GetHostInfo(ctx context.Context, logger *zap.Logger) (hostInfo *HostInfo) {
 	sess, err := session.NewSession()
 	hostInfo = &HostInfo{}
 
@@ -54,18 +52,18 @@ func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
 
 	meta := ec2metadata.New(sess)
 
-	if !meta.Available() {
+	if !meta.AvailableWithContext(ctx) {
 		logger.Debug("EC2 Metadata not available")
 		return
 	}
 
-	if idDoc, err := meta.GetInstanceIdentityDocument(); err == nil {
+	if idDoc, err := meta.GetInstanceIdentityDocumentWithContext(ctx); err == nil {
 		hostInfo.InstanceID = idDoc.InstanceID
 	} else {
 		logger.Warn("Failed to get EC2 instance id document", zap.Error(err))
 	}
 
-	if ec2Hostname, err := meta.GetMetadata("hostname"); err == nil {
+	if ec2Hostname, err := meta.GetMetadataWithContext(ctx, "hostname"); err == nil {
 		hostInfo.EC2Hostname = ec2Hostname
 	} else {
 		logger.Warn("Failed to get EC2 hostname", zap.Error(err))
@@ -82,8 +80,10 @@ func (hi *HostInfo) GetHostname(_ *zap.Logger) string {
 	return hi.EC2Hostname
 }
 
-var _ source.Provider = (*Provider)(nil)
-var _ provider.ClusterNameProvider = (*Provider)(nil)
+var (
+	_ source.Provider              = (*Provider)(nil)
+	_ provider.ClusterNameProvider = (*Provider)(nil)
+)
 
 type Provider struct {
 	once     sync.Once
@@ -104,12 +104,12 @@ func NewProvider(logger *zap.Logger) (*Provider, error) {
 	}, nil
 }
 
-func (p *Provider) fillHostInfo() {
-	p.once.Do(func() { p.hostInfo = *GetHostInfo(p.logger) })
+func (p *Provider) fillHostInfo(ctx context.Context) {
+	p.once.Do(func() { p.hostInfo = *GetHostInfo(ctx, p.logger) })
 }
 
-func (p *Provider) Source(_ context.Context) (source.Source, error) {
-	p.fillHostInfo()
+func (p *Provider) Source(ctx context.Context) (source.Source, error) {
+	p.fillHostInfo(ctx)
 	if p.hostInfo.InstanceID == "" {
 		return source.Source{}, fmt.Errorf("instance ID is unavailable")
 	}
@@ -175,6 +175,6 @@ func (p *Provider) ClusterName(ctx context.Context) (string, error) {
 }
 
 func (p *Provider) HostInfo() *HostInfo {
-	p.fillHostInfo()
+	p.fillHostInfo(context.Background())
 	return &p.hostInfo
 }

@@ -39,24 +39,25 @@ func TestNewFactory(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
-					Services:                      monitorServices,
-					CacheResources:                24 * 60 * 60,
-					CacheResourcesDefinitions:     24 * 60 * 60,
-					MaximumNumberOfMetricsInACall: 20,
-					Authentication:                servicePrincipal,
-					Cloud:                         defaultCloud,
+					MetricsBuilderConfig:              metadata.DefaultMetricsBuilderConfig(),
+					Services:                          monitorServices,
+					CacheResources:                    24 * 60 * 60,
+					CacheResourcesDefinitions:         24 * 60 * 60,
+					MaximumNumberOfMetricsInACall:     20,
+					MaximumNumberOfRecordsPerResource: 10,
+					Authentication:                    servicePrincipal,
+					Cloud:                             defaultCloud,
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
 			},
 		},
 		{
-			desc: "creates a new factory and CreateMetricsReceiver returns no error",
+			desc: "creates a new factory and CreateMetrics returns no error",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
-				_, err := factory.CreateMetricsReceiver(
+				_, err := factory.CreateMetrics(
 					context.Background(),
 					receivertest.NewNopSettings(),
 					cfg,
@@ -66,10 +67,10 @@ func TestNewFactory(t *testing.T) {
 			},
 		},
 		{
-			desc: "creates a new factory and CreateMetricsReceiver returns error with incorrect config",
+			desc: "creates a new factory and CreateMetrics returns error with incorrect config",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
-				_, err := factory.CreateMetricsReceiver(
+				_, err := factory.CreateMetrics(
 					context.Background(),
 					receivertest.NewNopSettings(),
 					nil,

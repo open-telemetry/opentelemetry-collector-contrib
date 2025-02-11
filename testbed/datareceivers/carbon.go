@@ -39,7 +39,7 @@ func (cr *CarbonDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, _ co
 
 	set := receivertest.NewNopSettings()
 	var err error
-	cr.receiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc)
+	cr.receiver, err = factory.CreateMetrics(context.Background(), set, cfg, mc)
 	if err != nil {
 		return err
 	}

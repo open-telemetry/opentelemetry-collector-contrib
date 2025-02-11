@@ -7,9 +7,12 @@ import (
 )
 
 var (
-	Type = component.MustNewType("awss3")
+	Type      = component.MustNewType("awss3")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver"
 )
 
 const (
-	TracesStability = component.StabilityLevelDevelopment
+	TracesStability  = component.StabilityLevelAlpha
+	MetricsStability = component.StabilityLevelAlpha
+	LogsStability    = component.StabilityLevelAlpha
 )

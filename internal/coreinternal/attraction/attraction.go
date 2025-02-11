@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/clientutil"
 )
 
 // Settings specifies the processor settings.
@@ -32,7 +34,7 @@ type ActionKeyValue struct {
 	// The type of the value is inferred from the configuration.
 	Value any `mapstructure:"value"`
 
-	// A regex pattern  must be specified for the action EXTRACT.
+	// A regex pattern must be specified for the action EXTRACT.
 	// It uses the attribute specified by `key' to extract values from
 	// The target keys are inferred based on the names of the matcher groups
 	// provided and the names will be inferred based on the values of the
@@ -347,14 +349,17 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 
 func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Value, bool) {
 	const (
-		metadataPrefix = "metadata."
-		authPrefix     = "auth."
+		metadataPrefix   = "metadata."
+		authPrefix       = "auth."
+		clientAddressKey = "client.address"
 	)
 
 	ci := client.FromContext(ctx)
 	var vals []string
 
 	switch {
+	case key == clientAddressKey:
+		vals = []string{clientutil.Address(ci)}
 	case strings.HasPrefix(key, metadataPrefix):
 		mdKey := strings.TrimPrefix(key, metadataPrefix)
 		vals = ci.Metadata.Get(mdKey)

@@ -29,7 +29,7 @@ func TestNewFactory(t *testing.T) {
 	assert.NotNil(t, f)
 }
 
-func TestCreateExtension(t *testing.T) {
+func TestCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	testKey := privateKey
 

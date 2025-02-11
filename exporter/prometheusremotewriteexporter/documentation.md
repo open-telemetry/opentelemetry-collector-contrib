@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### exporter_prometheusremotewrite_failed_translations
+### otelcol_exporter_prometheusremotewrite_failed_translations
 
 Number of translation operations that failed to translate metrics from Otel to Prometheus
 
@@ -14,7 +14,7 @@ Number of translation operations that failed to translate metrics from Otel to P
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### exporter_prometheusremotewrite_translated_time_series
+### otelcol_exporter_prometheusremotewrite_translated_time_series
 
 Number of Prometheus time series that were translated from OTel metrics
 

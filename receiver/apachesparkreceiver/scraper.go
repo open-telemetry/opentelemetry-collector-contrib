@@ -126,122 +126,122 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *sparkScraper) recordCluster(clusterStats *models.ClusterProperties, now pcommon.Timestamp, appID string, appName string) {
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.BlockManager.disk.diskSpaceUsed_MB", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.BlockManager.disk.diskSpaceUsed_MB"]; ok {
 		s.mb.RecordSparkDriverBlockManagerDiskUsageDataPoint(now, int64(stat.Value))
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.BlockManager.memory.offHeapMemUsed_MB", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.BlockManager.memory.offHeapMemUsed_MB"]; ok {
 		s.mb.RecordSparkDriverBlockManagerMemoryUsageDataPoint(now, int64(stat.Value), metadata.AttributeLocationOffHeap, metadata.AttributeStateUsed)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.BlockManager.memory.onHeapMemUsed_MB", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.BlockManager.memory.onHeapMemUsed_MB"]; ok {
 		s.mb.RecordSparkDriverBlockManagerMemoryUsageDataPoint(now, int64(stat.Value), metadata.AttributeLocationOnHeap, metadata.AttributeStateUsed)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.BlockManager.memory.remainingOffHeapMem_MB", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.BlockManager.memory.remainingOffHeapMem_MB"]; ok {
 		s.mb.RecordSparkDriverBlockManagerMemoryUsageDataPoint(now, int64(stat.Value), metadata.AttributeLocationOffHeap, metadata.AttributeStateFree)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.BlockManager.memory.remainingOnHeapMem_MB", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.BlockManager.memory.remainingOnHeapMem_MB"]; ok {
 		s.mb.RecordSparkDriverBlockManagerMemoryUsageDataPoint(now, int64(stat.Value), metadata.AttributeLocationOnHeap, metadata.AttributeStateFree)
 	}
 
-	if stat, ok := clusterStats.Counters[fmt.Sprintf("%s.driver.HiveExternalCatalog.fileCacheHits", appID)]; ok {
+	if stat, ok := clusterStats.Counters[appID+".driver.HiveExternalCatalog.fileCacheHits"]; ok {
 		s.mb.RecordSparkDriverHiveExternalCatalogFileCacheHitsDataPoint(now, stat.Count)
 	}
-	if stat, ok := clusterStats.Counters[fmt.Sprintf("%s.driver.HiveExternalCatalog.filesDiscovered", appID)]; ok {
+	if stat, ok := clusterStats.Counters[appID+".driver.HiveExternalCatalog.filesDiscovered"]; ok {
 		s.mb.RecordSparkDriverHiveExternalCatalogFilesDiscoveredDataPoint(now, stat.Count)
 	}
-	if stat, ok := clusterStats.Counters[fmt.Sprintf("%s.driver.HiveExternalCatalog.hiveClientCalls", appID)]; ok {
+	if stat, ok := clusterStats.Counters[appID+".driver.HiveExternalCatalog.hiveClientCalls"]; ok {
 		s.mb.RecordSparkDriverHiveExternalCatalogHiveClientCallsDataPoint(now, stat.Count)
 	}
-	if stat, ok := clusterStats.Counters[fmt.Sprintf("%s.driver.HiveExternalCatalog.parallelListingJobCount", appID)]; ok {
+	if stat, ok := clusterStats.Counters[appID+".driver.HiveExternalCatalog.parallelListingJobCount"]; ok {
 		s.mb.RecordSparkDriverHiveExternalCatalogParallelListingJobsDataPoint(now, stat.Count)
 	}
-	if stat, ok := clusterStats.Counters[fmt.Sprintf("%s.driver.HiveExternalCatalog.partitionsFetched", appID)]; ok {
+	if stat, ok := clusterStats.Counters[appID+".driver.HiveExternalCatalog.partitionsFetched"]; ok {
 		s.mb.RecordSparkDriverHiveExternalCatalogPartitionsFetchedDataPoint(now, stat.Count)
 	}
 
-	if stat, ok := clusterStats.Histograms[fmt.Sprintf("%s.driver.CodeGenerator.compilationTime", appID)]; ok {
+	if stat, ok := clusterStats.Histograms[appID+".driver.CodeGenerator.compilationTime"]; ok {
 		s.mb.RecordSparkDriverCodeGeneratorCompilationCountDataPoint(now, stat.Count)
 		s.mb.RecordSparkDriverCodeGeneratorCompilationAverageTimeDataPoint(now, stat.Mean)
 	}
-	if stat, ok := clusterStats.Histograms[fmt.Sprintf("%s.driver.CodeGenerator.generatedClassSize", appID)]; ok {
+	if stat, ok := clusterStats.Histograms[appID+".driver.CodeGenerator.generatedClassSize"]; ok {
 		s.mb.RecordSparkDriverCodeGeneratorGeneratedClassCountDataPoint(now, stat.Count)
 		s.mb.RecordSparkDriverCodeGeneratorGeneratedClassAverageSizeDataPoint(now, stat.Mean)
 	}
-	if stat, ok := clusterStats.Histograms[fmt.Sprintf("%s.driver.CodeGenerator.generatedMethodSize", appID)]; ok {
+	if stat, ok := clusterStats.Histograms[appID+".driver.CodeGenerator.generatedMethodSize"]; ok {
 		s.mb.RecordSparkDriverCodeGeneratorGeneratedMethodCountDataPoint(now, stat.Count)
 		s.mb.RecordSparkDriverCodeGeneratorGeneratedMethodAverageSizeDataPoint(now, stat.Mean)
 	}
-	if stat, ok := clusterStats.Histograms[fmt.Sprintf("%s.driver.CodeGenerator.sourceCodeSize", appID)]; ok {
+	if stat, ok := clusterStats.Histograms[appID+".driver.CodeGenerator.sourceCodeSize"]; ok {
 		s.mb.RecordSparkDriverCodeGeneratorSourceCodeOperationsDataPoint(now, stat.Count)
 		s.mb.RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint(now, stat.Mean)
 	}
 
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.DAGScheduler.job.activeJobs", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.DAGScheduler.job.activeJobs"]; ok {
 		s.mb.RecordSparkDriverDagSchedulerJobActiveDataPoint(now, int64(stat.Value))
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.DAGScheduler.job.allJobs", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.DAGScheduler.job.allJobs"]; ok {
 		s.mb.RecordSparkDriverDagSchedulerJobCountDataPoint(now, int64(stat.Value))
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.DAGScheduler.stage.failedStages", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.DAGScheduler.stage.failedStages"]; ok {
 		s.mb.RecordSparkDriverDagSchedulerStageFailedDataPoint(now, int64(stat.Value))
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.DAGScheduler.stage.runningStages", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.DAGScheduler.stage.runningStages"]; ok {
 		s.mb.RecordSparkDriverDagSchedulerStageCountDataPoint(now, int64(stat.Value), metadata.AttributeSchedulerStatusRunning)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.DAGScheduler.stage.waitingStages", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.DAGScheduler.stage.waitingStages"]; ok {
 		s.mb.RecordSparkDriverDagSchedulerStageCountDataPoint(now, int64(stat.Value), metadata.AttributeSchedulerStatusWaiting)
 	}
 
-	if stat, ok := clusterStats.Counters[fmt.Sprintf("%s.driver.LiveListenerBus.numEventsPosted", appID)]; ok {
+	if stat, ok := clusterStats.Counters[appID+".driver.LiveListenerBus.numEventsPosted"]; ok {
 		s.mb.RecordSparkDriverLiveListenerBusPostedDataPoint(now, stat.Count)
 	}
-	if stat, ok := clusterStats.Timers[fmt.Sprintf("%s.driver.LiveListenerBus.queue.appStatus.listenerProcessingTime", appID)]; ok {
+	if stat, ok := clusterStats.Timers[appID+".driver.LiveListenerBus.queue.appStatus.listenerProcessingTime"]; ok {
 		s.mb.RecordSparkDriverLiveListenerBusProcessingTimeAverageDataPoint(now, stat.Mean)
 	}
-	if stat, ok := clusterStats.Counters[fmt.Sprintf("%s.driver.LiveListenerBus.queue.appStatus.numDroppedEvents", appID)]; ok {
+	if stat, ok := clusterStats.Counters[appID+".driver.LiveListenerBus.queue.appStatus.numDroppedEvents"]; ok {
 		s.mb.RecordSparkDriverLiveListenerBusDroppedDataPoint(now, stat.Count)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.LiveListenerBus.queue.appStatus.size", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.LiveListenerBus.queue.appStatus.size"]; ok {
 		s.mb.RecordSparkDriverLiveListenerBusQueueSizeDataPoint(now, int64(stat.Value))
 	}
 
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.JVMCPU.jvmCpuTime", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.JVMCPU.jvmCpuTime"]; ok {
 		s.mb.RecordSparkDriverJvmCPUTimeDataPoint(now, int64(stat.Value))
 	}
 
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.ExecutorMetrics.JVMOffHeapMemory", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.ExecutorMetrics.JVMOffHeapMemory"]; ok {
 		s.mb.RecordSparkDriverExecutorMemoryJvmDataPoint(now, int64(stat.Value), metadata.AttributeLocationOffHeap)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.ExecutorMetrics.JVMHeapMemory", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.ExecutorMetrics.JVMHeapMemory"]; ok {
 		s.mb.RecordSparkDriverExecutorMemoryJvmDataPoint(now, int64(stat.Value), metadata.AttributeLocationOnHeap)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.ExecutorMetrics.OffHeapExecutionMemory", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.ExecutorMetrics.OffHeapExecutionMemory"]; ok {
 		s.mb.RecordSparkDriverExecutorMemoryExecutionDataPoint(now, int64(stat.Value), metadata.AttributeLocationOffHeap)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.ExecutorMetrics.OnHeapExecutionMemory", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.ExecutorMetrics.OnHeapExecutionMemory"]; ok {
 		s.mb.RecordSparkDriverExecutorMemoryExecutionDataPoint(now, int64(stat.Value), metadata.AttributeLocationOnHeap)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.ExecutorMetrics.OffHeapStorageMemory", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.ExecutorMetrics.OffHeapStorageMemory"]; ok {
 		s.mb.RecordSparkDriverExecutorMemoryStorageDataPoint(now, int64(stat.Value), metadata.AttributeLocationOffHeap)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.ExecutorMetrics.OnHeapStorageMemory", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.ExecutorMetrics.OnHeapStorageMemory"]; ok {
 		s.mb.RecordSparkDriverExecutorMemoryStorageDataPoint(now, int64(stat.Value), metadata.AttributeLocationOnHeap)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.ExecutorMetrics.DirectPoolMemory", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.ExecutorMetrics.DirectPoolMemory"]; ok {
 		s.mb.RecordSparkDriverExecutorMemoryPoolDataPoint(now, int64(stat.Value), metadata.AttributePoolMemoryTypeDirect)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.ExecutorMetrics.MappedPoolMemory", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.ExecutorMetrics.MappedPoolMemory"]; ok {
 		s.mb.RecordSparkDriverExecutorMemoryPoolDataPoint(now, int64(stat.Value), metadata.AttributePoolMemoryTypeMapped)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.ExecutorMetrics.MinorGCCount", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.ExecutorMetrics.MinorGCCount"]; ok {
 		s.mb.RecordSparkDriverExecutorGcOperationsDataPoint(now, int64(stat.Value), metadata.AttributeGcTypeMinor)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.ExecutorMetrics.MajorGCCount", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.ExecutorMetrics.MajorGCCount"]; ok {
 		s.mb.RecordSparkDriverExecutorGcOperationsDataPoint(now, int64(stat.Value), metadata.AttributeGcTypeMajor)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.ExecutorMetrics.MinorGCTime", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.ExecutorMetrics.MinorGCTime"]; ok {
 		s.mb.RecordSparkDriverExecutorGcTimeDataPoint(now, int64(stat.Value), metadata.AttributeGcTypeMinor)
 	}
-	if stat, ok := clusterStats.Gauges[fmt.Sprintf("%s.driver.ExecutorMetrics.MajorGCTime", appID)]; ok {
+	if stat, ok := clusterStats.Gauges[appID+".driver.ExecutorMetrics.MajorGCTime"]; ok {
 		s.mb.RecordSparkDriverExecutorGcTimeDataPoint(now, int64(stat.Value), metadata.AttributeGcTypeMajor)
 	}
 

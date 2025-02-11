@@ -45,10 +45,10 @@ Because of the gaps mentioned above, this project will convert from the current 
 
 ## **2. Prometheus Remote Write/Cortex Exporter**
 
-The Prometheus remote write/Cortex exporter should receive  OTLP metrics, group data points by metric name and label set, convert each group to a TimeSeries, and send all TimeSeries to a storage backend via HTTP.
+The Prometheus remote write/Cortex exporter should receive OTLP metrics, group data points by metric name and label set, convert each group to a TimeSeries, and send all TimeSeries to a storage backend via HTTP.
 
 ### **2.1 Receiving Metrics**
-The  Prometheus remote write/Cortex exporter receives a MetricsData instance in its PushMetrics() function. MetricsData contains a collection of Metric instances. Each Metric instance contains a series of data points, and each data point has a set of labels associated with it. Since Prometheus remote write TimeSeries are identified by unique sets of labels, the exporter needs to group data points within each Metric instance by their label set, and convert each group to a TimeSeries.
+The Prometheus remote write/Cortex exporter receives a MetricsData instance in its PushMetrics() function. MetricsData contains a collection of Metric instances. Each Metric instance contains a series of data points, and each data point has a set of labels associated with it. Since Prometheus remote write TimeSeries are identified by unique sets of labels, the exporter needs to group data points within each Metric instance by their label set, and convert each group to a TimeSeries.
 
 To group data points by label set, the exporter should create a map with each PushMetrics() call. The key of the map should represent a combination of the following information:
 
@@ -67,7 +67,7 @@ The value of the map should be Prometheus TimeSeries, and each data point’s va
 
 Pseudocode:
 
-        func  PushMetrics(metricsData) {
+        func PushMetrics(metricsData) {
 
          // Create a map that stores distinct TimeSeries
          map := make(map[String][]TimeSeries)
@@ -81,7 +81,7 @@ Pseudocode:
 	           // Add to TimeSeries
 
 	      // Sends TimeSeries to backend
-          export(map)  
+          export(map)
        }
 
 ### **2.2 Mapping of OTLP Metrics to TimeSeries**

@@ -26,6 +26,19 @@ type localFileStorage struct {
 var _ storage.Extension = (*localFileStorage)(nil)
 
 func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extension, error) {
+	if config.CreateDirectory {
+		var dirs []string
+		if config.Compaction.OnStart || config.Compaction.OnRebound {
+			dirs = []string{config.Directory, config.Compaction.Directory}
+		} else {
+			dirs = []string{config.Directory}
+		}
+		for _, dir := range dirs {
+			if err := ensureDirectoryExists(dir, os.FileMode(config.directoryPermissionsParsed)); err != nil {
+				return nil, err
+			}
+		}
+	}
 	return &localFileStorage{
 		cfg:    config,
 		logger: logger,
@@ -59,7 +72,6 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 	rawName = sanitize(rawName)
 	absoluteName := filepath.Join(lfs.cfg.Directory, rawName)
 	client, err := newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
-
 	if err != nil {
 		return nil, err
 	}
@@ -127,6 +139,14 @@ func isSafe(character rune) bool {
 		return true
 	}
 	return false
+}
+
+func ensureDirectoryExists(path string, perm os.FileMode) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return os.MkdirAll(path, perm)
+	}
+	// we already handled other errors in config.Validate(), so it's okay to return nil
+	return nil
 }
 
 // cleanup left compaction temporary files from previous killed process

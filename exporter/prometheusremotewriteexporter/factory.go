@@ -10,7 +10,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -36,8 +35,8 @@ func NewFactory() exporter.Factory {
 }
 
 func createMetricsExporter(ctx context.Context, set exporter.Settings,
-	cfg component.Config) (exporter.Metrics, error) {
-
+	cfg component.Config,
+) (exporter.Metrics, error) {
 	prwCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration")
@@ -54,13 +53,13 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 	// order for each timeseries. If we shard the incoming metrics
 	// without considering this limitation, we experience
 	// "out of order samples" errors.
-	exporter, err := exporterhelper.NewMetricsExporter(
+	exporter, err := exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
 		prwe.PushMetrics,
 		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
-		exporterhelper.WithQueue(exporterhelper.QueueSettings{
+		exporterhelper.WithQueue(exporterhelper.QueueConfig{
 			Enabled:      prwCfg.RemoteWriteQueue.Enabled,
 			NumConsumers: 1,
 			QueueSize:    prwCfg.RemoteWriteQueue.QueueSize,
@@ -77,23 +76,22 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 func createDefaultConfig() component.Config {
 	retrySettings := configretry.NewDefaultBackOffConfig()
 	retrySettings.InitialInterval = 50 * time.Millisecond
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "http://some.url:9411/api/prom/push"
+	// We almost read 0 bytes, so no need to tune ReadBufferSize.
+	clientConfig.ReadBufferSize = 0
+	clientConfig.WriteBufferSize = 512 * 1024
+	clientConfig.Timeout = exporterhelper.NewDefaultTimeoutConfig().Timeout
 
 	return &Config{
 		Namespace:         "",
 		ExternalLabels:    map[string]string{},
 		MaxBatchSizeBytes: 3000000,
-		TimeoutSettings:   exporterhelper.NewDefaultTimeoutSettings(),
+		TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
 		BackOffConfig:     retrySettings,
 		AddMetricSuffixes: true,
 		SendMetadata:      false,
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "http://some.url:9411/api/prom/push",
-			// We almost read 0 bytes, so no need to tune ReadBufferSize.
-			ReadBufferSize:  0,
-			WriteBufferSize: 512 * 1024,
-			Timeout:         exporterhelper.NewDefaultTimeoutSettings().Timeout,
-			Headers:         map[string]configopaque.String{},
-		},
+		ClientConfig:      clientConfig,
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{
 			Enabled:      true,

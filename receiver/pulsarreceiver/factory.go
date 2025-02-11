@@ -55,7 +55,6 @@ func withLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
 
 // NewFactory creates Pulsar receiver factory.
 func NewFactory(options ...FactoryOption) receiver.Factory {
-
 	f := &pulsarReceiverFactory{
 		tracesUnmarshalers:  defaultTracesUnmarshalers(),
 		metricsUnmarshalers: defaultMetricsUnmarshalers(),

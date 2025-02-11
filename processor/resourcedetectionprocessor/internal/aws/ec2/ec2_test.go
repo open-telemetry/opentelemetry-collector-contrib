@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"github.com/stretchr/testify/assert"
@@ -31,6 +32,8 @@ type mockMetadata struct {
 
 	retHostname    string
 	retErrHostname error
+
+	retHandlers *request.Handlers
 
 	isAvailable bool
 }
@@ -61,6 +64,10 @@ func (mm mockMetadata) Get(_ context.Context) (ec2metadata.EC2InstanceIdentityDo
 		return ec2metadata.EC2InstanceIdentityDocument{}, mm.retErrIDDoc
 	}
 	return mm.retIDDoc, nil
+}
+
+func (mm mockMetadata) GetHandlers() *request.Handlers {
+	return mm.retHandlers
 }
 
 func (mm mockMetadata) Hostname(_ context.Context) (string, error) {
@@ -173,7 +180,8 @@ func TestDetector_Detect(t *testing.T) {
 					InstanceType:     "c4.xlarge",
 				},
 				retHostname: "example-hostname",
-				isAvailable: true}},
+				isAvailable: true,
+			}},
 			args: args{ctx: context.Background()},
 			want: func() pcommon.Resource {
 				res := pcommon.NewResource()
@@ -188,7 +196,8 @@ func TestDetector_Detect(t *testing.T) {
 				attr.PutStr("host.type", "c4.xlarge")
 				attr.PutStr("host.name", "example-hostname")
 				return res
-			}()},
+			}(),
+		},
 		{
 			name: "success with tags",
 			fields: fields{metadataProvider: &mockMetadata{
@@ -201,7 +210,8 @@ func TestDetector_Detect(t *testing.T) {
 					InstanceType:     "c4.xlarge",
 				},
 				retHostname: "example-hostname",
-				isAvailable: true}},
+				isAvailable: true,
+			}},
 			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile("^tag1$"), regexp.MustCompile("^tag2$")},
 			args:          args{ctx: context.Background()},
 			want: func() pcommon.Resource {
@@ -234,7 +244,8 @@ func TestDetector_Detect(t *testing.T) {
 					InstanceType:     "c4.xlarge",
 				},
 				retHostname: "example-hostname",
-				isAvailable: true}},
+				isAvailable: true,
+			}},
 			args: args{ctx: context.Background()},
 			want: func() pcommon.Resource {
 				res := pcommon.NewResource()
@@ -261,7 +272,8 @@ func TestDetector_Detect(t *testing.T) {
 			}},
 			args:    args{ctx: context.Background()},
 			want:    pcommon.NewResource(),
-			wantErr: false},
+			wantErr: false,
+		},
 		{
 			name: "get fails",
 			fields: fields{metadataProvider: &mockMetadata{
@@ -271,7 +283,8 @@ func TestDetector_Detect(t *testing.T) {
 			}},
 			args:    args{ctx: context.Background()},
 			want:    pcommon.NewResource(),
-			wantErr: true},
+			wantErr: true,
+		},
 		{
 			name: "hostname fails",
 			fields: fields{metadataProvider: &mockMetadata{
@@ -282,7 +295,8 @@ func TestDetector_Detect(t *testing.T) {
 			}},
 			args:    args{ctx: context.Background()},
 			want:    pcommon.NewResource(),
-			wantErr: true},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -353,7 +367,7 @@ func TestEC2Tags(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			assert.Equal(t, output, tt.expectedOutput)
+			assert.Equal(t, tt.expectedOutput, output)
 		})
 	}
 }

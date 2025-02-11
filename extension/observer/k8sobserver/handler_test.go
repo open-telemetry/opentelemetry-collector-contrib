@@ -36,7 +36,23 @@ func TestPodEndpointsAdded(t *testing.T) {
 				UID:       "pod-2-UID",
 				Labels:    map[string]string{"env": "prod"},
 			},
-		}, {
+		},
+		{
+			ID:     "test-1/pod-2-UID/container-2",
+			Target: "1.2.3.4",
+			Details: &observer.PodContainer{
+				Name:        "container-2",
+				Image:       "container-image-2",
+				ContainerID: "a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
+				Pod: observer.Pod{
+					Name:      "pod-2",
+					Namespace: "default",
+					UID:       "pod-2-UID",
+					Labels:    map[string]string{"env": "prod"},
+				},
+			},
+		},
+		{
 			ID:     "test-1/pod-2-UID/https(443)",
 			Target: "1.2.3.4:443",
 			Details: &observer.Port{
@@ -50,7 +66,8 @@ func TestPodEndpointsAdded(t *testing.T) {
 				Port:      443,
 				Transport: observer.ProtocolTCP,
 			},
-		}}, th.ListEndpoints())
+		},
+	}, th.ListEndpoints())
 }
 
 func TestPodEndpointsRemoved(t *testing.T) {
@@ -73,8 +90,8 @@ func TestPodEndpointsChanged(t *testing.T) {
 
 	endpoints := th.ListEndpoints()
 	require.ElementsMatch(t,
-		[]observer.EndpointID{"test-1/pod-2-UID", "test-1/pod-2-UID/https(443)"},
-		[]observer.EndpointID{endpoints[0].ID, endpoints[1].ID},
+		[]observer.EndpointID{"test-1/pod-2-UID", "test-1/pod-2-UID/container-2", "test-1/pod-2-UID/https(443)"},
+		[]observer.EndpointID{endpoints[0].ID, endpoints[1].ID, endpoints[2].ID},
 	)
 
 	// Running state changed, one added and one removed.
@@ -89,7 +106,24 @@ func TestPodEndpointsChanged(t *testing.T) {
 				Name:      "pod-2",
 				Namespace: "default",
 				UID:       "pod-2-UID",
-				Labels:    map[string]string{"env": "prod", "updated-label": "true"}}},
+				Labels:    map[string]string{"env": "prod", "updated-label": "true"},
+			},
+		},
+		{
+			ID:     "test-1/pod-2-UID/container-2",
+			Target: "1.2.3.4",
+			Details: &observer.PodContainer{
+				Name:        "container-2",
+				Image:       "container-image-2",
+				ContainerID: "a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
+				Pod: observer.Pod{
+					Name:      "pod-2",
+					Namespace: "default",
+					UID:       "pod-2-UID",
+					Labels:    map[string]string{"env": "prod", "updated-label": "true"},
+				},
+			},
+		},
 		{
 			ID:     "test-1/pod-2-UID/https(443)",
 			Target: "1.2.3.4:443",
@@ -98,9 +132,12 @@ func TestPodEndpointsChanged(t *testing.T) {
 					Name:      "pod-2",
 					Namespace: "default",
 					UID:       "pod-2-UID",
-					Labels:    map[string]string{"env": "prod", "updated-label": "true"}},
+					Labels:    map[string]string{"env": "prod", "updated-label": "true"},
+				},
 				Port:      443,
-				Transport: observer.ProtocolTCP}},
+				Transport: observer.ProtocolTCP,
+			},
+		},
 	}, th.ListEndpoints())
 }
 
@@ -119,7 +156,8 @@ func TestServiceEndpointsAdded(t *testing.T) {
 				ServiceType: "ClusterIP",
 				ClusterIP:   "1.2.3.4",
 			},
-		}}, th.ListEndpoints())
+		},
+	}, th.ListEndpoints())
 }
 
 func TestServiceEndpointsRemoved(t *testing.T) {
@@ -161,7 +199,73 @@ func TestServiceEndpointsChanged(t *testing.T) {
 				Labels:      map[string]string{"env": "prod", "updated-label": "true"},
 				ServiceType: "ClusterIP",
 				ClusterIP:   "1.2.3.4",
-			}},
+			},
+		},
+	}, th.ListEndpoints())
+}
+
+func TestIngressEndpointsAdded(t *testing.T) {
+	th := newTestHandler()
+	th.OnAdd(ingress, true)
+	assert.ElementsMatch(t, []observer.Endpoint{
+		{
+			ID:     "test-1/ingress-1-UID/host-1/",
+			Target: "https://host-1/",
+			Details: &observer.K8sIngress{
+				Name:      "application-ingress",
+				Namespace: "default",
+				UID:       "test-1/ingress-1-UID/host-1/",
+				Labels:    map[string]string{"env": "prod"},
+				Scheme:    "https",
+				Host:      "host-1",
+				Path:      "/",
+			},
+		},
+	}, th.ListEndpoints())
+}
+
+func TestIngressEndpointsRemoved(t *testing.T) {
+	th := newTestHandler()
+	th.OnAdd(ingress, true)
+	th.OnDelete(ingress)
+	assert.Empty(t, th.ListEndpoints())
+}
+
+func TestIngressEndpointsChanged(t *testing.T) {
+	th := newTestHandler()
+	// Nothing changed.
+	th.OnUpdate(ingress, ingress)
+	require.Empty(t, th.ListEndpoints())
+
+	// Labels changed.
+	changedLabels := ingress.DeepCopy()
+	changedLabels.Labels["new-label"] = "value"
+	th.OnUpdate(ingress, changedLabels)
+
+	endpoints := th.ListEndpoints()
+	require.ElementsMatch(t,
+		[]observer.EndpointID{"test-1/ingress-1-UID/host-1/"},
+		[]observer.EndpointID{endpoints[0].ID},
+	)
+
+	// Running state changed, one added and one removed.
+	updatedIngress := ingress.DeepCopy()
+	updatedIngress.Labels["updated-label"] = "true"
+	th.OnUpdate(ingress, updatedIngress)
+	require.ElementsMatch(t, []observer.Endpoint{
+		{
+			ID:     "test-1/ingress-1-UID/host-1/",
+			Target: "https://host-1/",
+			Details: &observer.K8sIngress{
+				Name:      "application-ingress",
+				Namespace: "default",
+				UID:       "test-1/ingress-1-UID/host-1/",
+				Labels:    map[string]string{"env": "prod", "updated-label": "true"},
+				Scheme:    "https",
+				Host:      "host-1",
+				Path:      "/",
+			},
+		},
 	}, th.ListEndpoints())
 }
 

@@ -7,9 +7,11 @@
 package k8swindows // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows"
 
 import (
-	"context"
 	"errors"
 	"os"
+
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	cExtractor "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
@@ -18,13 +20,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/hcsshim"
 	kubeletsummaryprovider "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
-
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
 )
 
 type K8sWindows struct {
-	cancel                 context.CancelFunc
 	logger                 *zap.Logger
 	nodeName               string `toml:"node_name"`
 	k8sDecorator           stores.K8sDecorator
@@ -98,11 +96,11 @@ func (k *K8sWindows) GetMetrics() []pmetric.Metrics {
 }
 
 func (k *K8sWindows) decorateMetrics(windowsmetrics []*stores.CIMetricImpl) []*stores.CIMetricImpl {
-	//ebsVolumeIdsUsedAsPV := c.hostInfo.ExtractEbsIDsUsedByKubernetes()
+	// ebsVolumeIdsUsedAsPV := c.hostInfo.ExtractEbsIDsUsedByKubernetes()
 	var result []*stores.CIMetricImpl
 	for _, m := range windowsmetrics {
 		tags := m.GetTags()
-		//c.addEbsVolumeInfo(tags, ebsVolumeIdsUsedAsPV)
+		// c.addEbsVolumeInfo(tags, ebsVolumeIdsUsedAsPV)
 
 		// add version
 		tags[ci.Version] = k.version

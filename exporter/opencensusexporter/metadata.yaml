@@ -1,5 +1,4 @@
 type: opencensus
-scope_name: otelcol/opencensus
 
 status:
   class: exporter

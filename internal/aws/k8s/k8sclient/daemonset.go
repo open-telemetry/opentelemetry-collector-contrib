@@ -22,8 +22,7 @@ type DaemonSetClient interface {
 	DaemonSetInfos() []*DaemonSetInfo
 }
 
-type noOpDaemonSetClient struct {
-}
+type noOpDaemonSetClient struct{}
 
 func (nd *noOpDaemonSetClient) DaemonSetInfos() []*DaemonSetInfo {
 	return []*DaemonSetInfo{}

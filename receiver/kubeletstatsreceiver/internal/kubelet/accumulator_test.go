@@ -53,7 +53,7 @@ func TestMetadataErrorCases(t *testing.T) {
 						},
 					},
 				},
-			}, NodeLimits{}, nil),
+			}, NodeCapacity{}, nil),
 			testScenario: func(acc metricDataAccumulator) {
 				now := metav1.Now()
 				podStats := stats.PodStats{
@@ -79,7 +79,7 @@ func TestMetadataErrorCases(t *testing.T) {
 			metricGroupsToCollect: map[MetricGroup]bool{
 				VolumeMetricGroup: true,
 			},
-			metadata: NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, nil, NodeLimits{}, nil),
+			metadata: NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, nil, NodeCapacity{}, nil),
 			testScenario: func(acc metricDataAccumulator) {
 				podStats := stats.PodStats{
 					PodRef: stats.PodReference{
@@ -121,7 +121,7 @@ func TestMetadataErrorCases(t *testing.T) {
 						},
 					},
 				},
-			}, NodeLimits{}, nil),
+			}, NodeCapacity{}, nil),
 			testScenario: func(acc metricDataAccumulator) {
 				podStats := stats.PodStats{
 					PodRef: stats.PodReference{
@@ -165,7 +165,7 @@ func TestMetadataErrorCases(t *testing.T) {
 						},
 					},
 				},
-			}, NodeLimits{}, nil),
+			}, NodeCapacity{}, nil),
 			detailedPVCLabelsSetterOverride: func(*metadata.ResourceBuilder, string, string, string) error {
 				// Mock failure cases.
 				return errors.New("")
@@ -210,7 +210,7 @@ func TestMetadataErrorCases(t *testing.T) {
 
 			tt.testScenario(acc)
 
-			assert.Equal(t, tt.numMDs, len(acc.m))
+			assert.Len(t, acc.m, tt.numMDs)
 			require.Equal(t, tt.numLogs, logs.Len())
 			for i := 0; i < tt.numLogs; i++ {
 				assert.Equal(t, tt.logMessages[i], logs.All()[i].Message)

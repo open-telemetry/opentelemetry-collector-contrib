@@ -17,15 +17,22 @@ exporters:
     metric:
       prefix: my-metric-domain.com
       add_metric_suffixes: false
+      cumulative_normalization: false
       extra_metrics_config:
         enable_target_info: false
         enable_scope_info: false
-
+      resource_filters:
+        - prefix: "cloud"
+        - prefix: "k8s"
+        - prefix: "faas"
+        - regex: "container.id"
+        - regex: "process.pid"
+        - regex: "host.name"
+        - regex: "host.id"
 
 service:
   pipelines:
     traces:
-        receivers: [nop]
-        processors: [nop]
-        exporters: [googlemanagedprometheus]
-
+      receivers: [nop]
+      processors: [nop]
+      exporters: [googlemanagedprometheus]

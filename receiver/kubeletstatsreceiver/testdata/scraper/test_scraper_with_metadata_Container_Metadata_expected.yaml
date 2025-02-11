@@ -109,7 +109,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -221,7 +221,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -333,7 +333,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -445,7 +445,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -557,7 +557,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -669,7 +669,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -781,7 +781,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -893,7 +893,7 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -1005,5 +1005,5 @@ resourceMetrics:
             name: container.memory.working_set
             unit: By
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest

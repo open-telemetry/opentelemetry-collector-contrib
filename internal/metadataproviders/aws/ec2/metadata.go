@@ -6,11 +6,10 @@ package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"context"
 
-	"github.com/aws/aws-sdk-go/aws/request"
-
 	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 

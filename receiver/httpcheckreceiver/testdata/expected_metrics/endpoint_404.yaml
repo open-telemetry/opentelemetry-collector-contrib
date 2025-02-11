@@ -99,5 +99,5 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: "1"
         scope:
-          name: otelcol/httpcheckreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver
           version: latest

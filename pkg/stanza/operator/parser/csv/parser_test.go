@@ -41,8 +41,7 @@ func TestParserBuildFailure(t *testing.T) {
 	cfg.OnError = "invalid_on_error"
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := cfg.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid `on_error` field")
+	require.ErrorContains(t, err, "invalid `on_error` field")
 }
 
 func TestParserBuildFailureLazyIgnoreQuotes(t *testing.T) {
@@ -62,8 +61,7 @@ func TestParserBuildFailureInvalidDelimiter(t *testing.T) {
 	cfg.FieldDelimiter = ";;"
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := cfg.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid 'delimiter': ';;'")
+	require.ErrorContains(t, err, "invalid 'delimiter': ';;'")
 }
 
 func TestParserBuildFailureBadHeaderConfig(t *testing.T) {
@@ -72,36 +70,31 @@ func TestParserBuildFailureBadHeaderConfig(t *testing.T) {
 	cfg.HeaderAttribute = "testheader"
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := cfg.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "only one header parameter can be set: 'header' or 'header_attribute'")
+	require.ErrorContains(t, err, "only one header parameter can be set: 'header' or 'header_attribute'")
 }
 
 func TestParserByteFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]byte("invalid"))
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "wrong number of fields: expected 3, found 1")
+	require.ErrorContains(t, err, "wrong number of fields: expected 3, found 1")
 }
 
 func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "wrong number of fields: expected 3, found 1")
+	require.ErrorContains(t, err, "wrong number of fields: expected 3, found 1")
 }
 
 func TestParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]int{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as csv")
+	require.ErrorContains(t, err, "type '[]int' cannot be parsed as csv")
 }
 
 func TestParserInvalidTypeIgnoreQuotes(t *testing.T) {
 	parser := newTestParserIgnoreQuotes(t)
 	_, err := parser.parse([]int{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as csv")
+	require.ErrorContains(t, err, "type '[]int' cannot be parsed as csv")
 }
 
 func TestParserCSV(t *testing.T) {
@@ -1112,8 +1105,7 @@ func TestBuildParserCSV(t *testing.T) {
 		c.Header = "name"
 		set := componenttest.NewNopTelemetrySettings()
 		_, err := c.Build(set)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "missing field delimiter in header")
+		require.ErrorContains(t, err, "missing field delimiter in header")
 	})
 
 	t.Run("InvalidHeaderFieldWrongDelimiter", func(t *testing.T) {
@@ -1130,7 +1122,6 @@ func TestBuildParserCSV(t *testing.T) {
 		c.FieldDelimiter = ":"
 		set := componenttest.NewNopTelemetrySettings()
 		_, err := c.Build(set)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "missing field delimiter in header")
+		require.ErrorContains(t, err, "missing field delimiter in header")
 	})
 }

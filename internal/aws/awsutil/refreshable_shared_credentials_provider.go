@@ -24,7 +24,6 @@ type RefreshableSharedCredentialsProvider struct {
 // Retrieve reads and extracts the shared credentials from the current
 // users home directory.
 func (p *RefreshableSharedCredentialsProvider) Retrieve() (credentials.Value, error) {
-
 	if p.ExpiryWindow == 0 {
 		p.ExpiryWindow = defaultExpiryWindow
 	}

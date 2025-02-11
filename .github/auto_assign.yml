@@ -12,9 +12,10 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - atoulme
-    - bryan-aguilar
-    - crobert-1
+    - ChrsMark
+    # - crobert-1 on leave
     - dashpole
+    - mwear
     - songy23
     - fatsheep9146
     # Maintainers

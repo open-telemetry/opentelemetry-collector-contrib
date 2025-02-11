@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("alertmanager")
+	Type      = component.MustNewType("alertmanager")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter"
 )
 
 const (

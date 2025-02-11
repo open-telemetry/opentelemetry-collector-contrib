@@ -91,12 +91,12 @@ type Client interface {
 	GetPod(PodIdentifier) (*Pod, bool)
 	GetNamespace(string) (*Namespace, bool)
 	GetNode(string) (*Node, bool)
-	Start()
+	Start() error
 	Stop()
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace, InformerProviderReplicaSet) (Client, error)
+type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace, InformerProviderReplicaSet, bool, time.Duration) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -140,7 +140,8 @@ type Container struct {
 
 // ContainerStatus stores resource attributes for a particular container run defined by k8s pod status.
 type ContainerStatus struct {
-	ContainerID string
+	ContainerID     string
+	ImageRepoDigest string
 }
 
 // Namespace represents a kubernetes namespace.
@@ -194,29 +195,31 @@ type FieldFilter struct {
 // ExtractionRules is used to specify the information that needs to be extracted
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
-	CronJobName        bool
-	DeploymentName     bool
-	DeploymentUID      bool
-	DaemonSetUID       bool
-	DaemonSetName      bool
-	JobUID             bool
-	JobName            bool
-	Namespace          bool
-	PodName            bool
-	PodUID             bool
-	PodHostName        bool
-	ReplicaSetID       bool
-	ReplicaSetName     bool
-	StatefulSetUID     bool
-	StatefulSetName    bool
-	Node               bool
-	NodeUID            bool
-	StartTime          bool
-	ContainerName      bool
-	ContainerID        bool
-	ContainerImageName bool
-	ContainerImageTag  bool
-	ClusterUID         bool
+	CronJobName               bool
+	DeploymentName            bool
+	DeploymentUID             bool
+	DaemonSetUID              bool
+	DaemonSetName             bool
+	JobUID                    bool
+	JobName                   bool
+	Namespace                 bool
+	PodName                   bool
+	PodUID                    bool
+	PodHostName               bool
+	PodIP                     bool
+	ReplicaSetID              bool
+	ReplicaSetName            bool
+	StatefulSetUID            bool
+	StatefulSetName           bool
+	Node                      bool
+	NodeUID                   bool
+	StartTime                 bool
+	ContainerName             bool
+	ContainerID               bool
+	ContainerImageName        bool
+	ContainerImageRepoDigests bool
+	ContainerImageTag         bool
+	ClusterUID                bool
 
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule

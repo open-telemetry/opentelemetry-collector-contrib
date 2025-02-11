@@ -340,8 +340,10 @@ func (c *K8sClient) ShutdownPodClient() {
 func (c *K8sClient) GetNodeClient() NodeClient {
 	c.nodeMu.Lock()
 	if c.node == nil {
-		opts := []nodeClientOption{nodeSyncCheckerOption(c.syncChecker), captureNodeLevelInfoOption(c.captureNodeLevelInfo),
-			captureOnlyNodeLabelInfoOption(c.captureOnlyNodeLabelInfo)}
+		opts := []nodeClientOption{
+			nodeSyncCheckerOption(c.syncChecker), captureNodeLevelInfoOption(c.captureNodeLevelInfo),
+			captureOnlyNodeLabelInfoOption(c.captureOnlyNodeLabelInfo),
+		}
 		if c.nodeSelector != nil {
 			opts = append(opts, nodeSelectorOption(c.nodeSelector))
 		}

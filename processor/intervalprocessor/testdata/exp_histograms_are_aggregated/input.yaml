@@ -16,7 +16,7 @@ resourceMetrics:
                 stringValue: bar
         metrics:
           - name: cumulative.exphistogram.test
-            histogram:
+            exponentialHistogram:
               aggregationTemporality: 2
               dataPoints:
                 - timeUnixNano: 50

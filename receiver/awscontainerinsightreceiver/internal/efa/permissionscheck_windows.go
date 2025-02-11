@@ -11,6 +11,6 @@ import (
 	"os"
 )
 
-func checkPermissions(info os.FileInfo) error {
+func checkPermissions(_ os.FileInfo) error {
 	return errors.New("not implemented on Windows")
 }

@@ -13,5 +13,5 @@ func TestGenerateTraces(t *testing.T) {
 	rscSpans, err := GenerateTraces("testdata/generated_pict_pairs_traces.txt",
 		"testdata/generated_pict_pairs_spans.txt")
 	assert.NoError(t, err)
-	assert.Equal(t, 32, len(rscSpans))
+	assert.Len(t, rscSpans, 32)
 }

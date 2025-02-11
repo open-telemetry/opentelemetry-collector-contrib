@@ -449,6 +449,11 @@ exporters:
       #
       # tags: ["team:infra", "<TAG_KEY>:<TAG_VALUE>"]
 
+      ## @param reporter_period - duration - optional - default: 30m
+      ## The period at which the host metadata reporter sends host metadata to Datadog.
+      ## The default is 30 minutes.
+      # reporter_period: 30m
+
     ## @param logs - custom object - optional
     ## Logs exporter specific configuration.
     #
@@ -457,14 +462,15 @@ exporters:
       ## If set to true, payloads will be dumped when logging level is set to debug. Please note that
       ## This may result in an escaping loop if a filelog receiver is watching the collector log output.
       ## See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16380
-      ## Note: this config option does not apply when enabling `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
+      ## Note: this config option does not apply when the `exporter.datadogexporter.UseLogsAgentExporter` feature flag is enabled (now enabled by default).
+      ## Deprecated since v0.107.0: This config option is not supported in the Datadog Agent logs pipeline.
       #
       # dump_payloads: false
 
       ## @param use_compression - boolean - optional - default: true
       ## This parameter is available when sending logs with HTTPS. If enabled, the logs agent
       ## compresses logs before sending them.
-      ## Note: this config option does not apply unless enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
+      ## Note: this config option does not apply when the `exporter.datadogexporter.UseLogsAgentExporter` feature flag is disabled.
       #
       # use_compression: true
 
@@ -472,13 +478,13 @@ exporters:
       ## The compression_level parameter accepts values from 0 (no compression)
       ## to 9 (maximum compression but higher resource usage). Only takes effect if
       ## `use_compression` is set to `true`.
-      ## Note: this config option does not apply unless enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
+      ## Note: this config option does not apply when the `exporter.datadogexporter.UseLogsAgentExporter` feature flag is disabled.
       #
       # compression_level: 6
 
       ## @param batch_wait - integer - optional - default: 5
       ## The maximum time the logs agent waits to fill each batch of logs before sending.
-      ## Note: this config option does not apply unless enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
+      ## Note: this config option does not apply when the `exporter.datadogexporter.UseLogsAgentExporter` feature flag is disabled.
       #
       # batch_wait: 5
 

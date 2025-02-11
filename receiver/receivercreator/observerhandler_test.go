@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/otelcol"
@@ -62,7 +62,7 @@ func TestOnAddForMetrics(t *testing.T) {
 			name:                   "inherits unsupported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
-			expectedError:          "failed to load \"without_endpoint/some.name\" template config: 1 error(s) decoding:\n\n* '' has invalid keys: endpoint",
+			expectedError:          "'' has invalid keys: endpoint",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -78,6 +78,7 @@ func TestOnAddForMetrics(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
+					signals:            receiverSignals{true, true, true},
 				},
 			}
 
@@ -90,7 +91,67 @@ func TestOnAddForMetrics(t *testing.T) {
 			if test.expectedError != "" {
 				assert.Equal(t, 0, handler.receiversByEndpointID.Size())
 				require.Error(t, mr.lastError)
-				require.EqualError(t, mr.lastError, test.expectedError)
+				require.ErrorContains(t, mr.lastError, test.expectedError)
+				require.Nil(t, mr.startedComponent)
+				return
+			}
+
+			assert.Equal(t, 1, handler.receiversByEndpointID.Size())
+			require.NoError(t, mr.lastError)
+			require.NotNil(t, mr.startedComponent)
+
+			wr, ok := mr.startedComponent.(*wrappedReceiver)
+			require.True(t, ok)
+
+			require.Nil(t, wr.logs)
+			require.Nil(t, wr.traces)
+
+			var actualConfig component.Config
+			switch v := wr.metrics.(type) {
+			case *nopWithEndpointReceiver:
+				require.NotNil(t, v)
+				actualConfig = v.cfg
+			case *nopWithoutEndpointReceiver:
+				require.NotNil(t, v)
+				actualConfig = v.cfg
+			default:
+				t.Fatalf("unexpected startedComponent: %T", v)
+			}
+			require.Equal(t, test.expectedReceiverConfig, actualConfig)
+		})
+	}
+}
+
+func TestOnAddForMetricsWithHints(t *testing.T) {
+	for _, test := range []struct {
+		name                   string
+		expectedReceiverType   component.Component
+		expectedReceiverConfig component.Config
+		expectedError          string
+	}{
+		{
+			name:                 "dynamically set with supported endpoint",
+			expectedReceiverType: &nopWithEndpointReceiver{},
+			expectedReceiverConfig: &nopWithEndpointConfig{
+				IntField: 20,
+				Endpoint: "1.2.3.4:6379",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Discovery.Enabled = true
+
+			handler, mr := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
+			handler.OnAdd([]observer.Endpoint{
+				portEndpointWithHints,
+				unsupportedEndpoint,
+			})
+
+			if test.expectedError != "" {
+				assert.Equal(t, 0, handler.receiversByEndpointID.Size())
+				require.Error(t, mr.lastError)
+				require.ErrorContains(t, mr.lastError, test.expectedError)
 				require.Nil(t, mr.startedComponent)
 				return
 			}
@@ -164,7 +225,7 @@ func TestOnAddForLogs(t *testing.T) {
 			name:                   "inherits unsupported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
-			expectedError:          "failed to load \"without_endpoint/some.name\" template config: 1 error(s) decoding:\n\n* '' has invalid keys: endpoint",
+			expectedError:          "'' has invalid keys: endpoint",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -180,6 +241,7 @@ func TestOnAddForLogs(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true},
 				},
 			}
 
@@ -192,7 +254,7 @@ func TestOnAddForLogs(t *testing.T) {
 			if test.expectedError != "" {
 				assert.Equal(t, 0, handler.receiversByEndpointID.Size())
 				require.Error(t, mr.lastError)
-				require.EqualError(t, mr.lastError, test.expectedError)
+				require.ErrorContains(t, mr.lastError, test.expectedError)
 				require.Nil(t, mr.startedComponent)
 				return
 			}
@@ -266,7 +328,7 @@ func TestOnAddForTraces(t *testing.T) {
 			name:                   "inherits unsupported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
-			expectedError:          "failed to load \"without_endpoint/some.name\" template config: 1 error(s) decoding:\n\n* '' has invalid keys: endpoint",
+			expectedError:          "'' has invalid keys: endpoint",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -282,6 +344,7 @@ func TestOnAddForTraces(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true},
 				},
 			}
 
@@ -294,7 +357,7 @@ func TestOnAddForTraces(t *testing.T) {
 			if test.expectedError != "" {
 				assert.Equal(t, 0, handler.receiversByEndpointID.Size())
 				require.Error(t, mr.lastError)
-				require.EqualError(t, mr.lastError, test.expectedError)
+				require.ErrorContains(t, mr.lastError, test.expectedError)
 				require.Nil(t, mr.startedComponent)
 				return
 			}
@@ -321,7 +384,6 @@ func TestOnAddForTraces(t *testing.T) {
 				t.Fatalf("unexpected startedComponent: %T", v)
 			}
 			require.Equal(t, test.expectedReceiverConfig, actualConfig)
-
 		})
 	}
 }
@@ -339,6 +401,7 @@ func TestOnRemoveForMetrics(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
@@ -368,6 +431,7 @@ func TestOnRemoveForLogs(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, consumertest.NewNop(), nil, nil)
@@ -397,6 +461,7 @@ func TestOnChange(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
@@ -465,21 +530,17 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	m.t.Fatal("GetExporters")
-	return nil
-}
-
 func newMockRunner(t *testing.T) *mockRunner {
 	cs := receivertest.NewNopSettings()
-	cs.TelemetrySettings.ReportStatus = func(event *component.StatusEvent) {
-		require.NoError(t, event.Err())
-	}
 	return &mockRunner{
 		receiverRunner: receiverRunner{
 			params:      cs,
 			idNamespace: component.MustNewIDWithName("some_type", "some.name"),
-			host:        newMockHost(t, componenttest.NewNopHost()),
+			host: newMockHost(t, &reportingHost{
+				reportFunc: func(event *componentstatus.Event) {
+					require.NoError(t, event.Err())
+				},
+			}),
 		},
 	}
 }
@@ -502,4 +563,18 @@ func newObserverHandler(
 		nextMetricsConsumer:   nextMetrics,
 		nextTracesConsumer:    nextTraces,
 	}, mr
+}
+
+var _ componentstatus.Reporter = (*reportingHost)(nil)
+
+type reportingHost struct {
+	reportFunc func(event *componentstatus.Event)
+}
+
+func (nh *reportingHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *reportingHost) Report(event *componentstatus.Event) {
+	nh.reportFunc(event)
 }

@@ -1,5 +1,4 @@
 type: otlp_encoding
-scope_name: otelcol/otlpencoding
 
 status:
   class: extension

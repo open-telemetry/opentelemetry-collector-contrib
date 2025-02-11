@@ -47,6 +47,9 @@ type MetricsConfig struct {
 	SplunkIndexesMedianDataAge                  MetricConfig `mapstructure:"splunk.indexes.median.data.age"`
 	SplunkIndexesSize                           MetricConfig `mapstructure:"splunk.indexes.size"`
 	SplunkIoAvgIops                             MetricConfig `mapstructure:"splunk.io.avg.iops"`
+	SplunkKvstoreBackupStatus                   MetricConfig `mapstructure:"splunk.kvstore.backup.status"`
+	SplunkKvstoreReplicationStatus              MetricConfig `mapstructure:"splunk.kvstore.replication.status"`
+	SplunkKvstoreStatus                         MetricConfig `mapstructure:"splunk.kvstore.status"`
 	SplunkLicenseIndexUsage                     MetricConfig `mapstructure:"splunk.license.index.usage"`
 	SplunkParseQueueRatio                       MetricConfig `mapstructure:"splunk.parse.queue.ratio"`
 	SplunkPipelineSetCount                      MetricConfig `mapstructure:"splunk.pipeline.set.count"`
@@ -55,6 +58,14 @@ type MetricsConfig struct {
 	SplunkSchedulerCompletionRatio              MetricConfig `mapstructure:"splunk.scheduler.completion.ratio"`
 	SplunkServerIntrospectionQueuesCurrent      MetricConfig `mapstructure:"splunk.server.introspection.queues.current"`
 	SplunkServerIntrospectionQueuesCurrentBytes MetricConfig `mapstructure:"splunk.server.introspection.queues.current.bytes"`
+	SplunkServerSearchartifactsAdhoc            MetricConfig `mapstructure:"splunk.server.searchartifacts.adhoc"`
+	SplunkServerSearchartifactsCompleted        MetricConfig `mapstructure:"splunk.server.searchartifacts.completed"`
+	SplunkServerSearchartifactsIncomplete       MetricConfig `mapstructure:"splunk.server.searchartifacts.incomplete"`
+	SplunkServerSearchartifactsInvalid          MetricConfig `mapstructure:"splunk.server.searchartifacts.invalid"`
+	SplunkServerSearchartifactsJobCacheCount    MetricConfig `mapstructure:"splunk.server.searchartifacts.job.cache.count"`
+	SplunkServerSearchartifactsJobCacheSize     MetricConfig `mapstructure:"splunk.server.searchartifacts.job.cache.size"`
+	SplunkServerSearchartifactsSavedsearches    MetricConfig `mapstructure:"splunk.server.searchartifacts.savedsearches"`
+	SplunkServerSearchartifactsScheduled        MetricConfig `mapstructure:"splunk.server.searchartifacts.scheduled"`
 	SplunkTypingQueueRatio                      MetricConfig `mapstructure:"splunk.typing.queue.ratio"`
 }
 
@@ -120,6 +131,15 @@ func DefaultMetricsConfig() MetricsConfig {
 		SplunkIoAvgIops: MetricConfig{
 			Enabled: true,
 		},
+		SplunkKvstoreBackupStatus: MetricConfig{
+			Enabled: false,
+		},
+		SplunkKvstoreReplicationStatus: MetricConfig{
+			Enabled: false,
+		},
+		SplunkKvstoreStatus: MetricConfig{
+			Enabled: false,
+		},
 		SplunkLicenseIndexUsage: MetricConfig{
 			Enabled: true,
 		},
@@ -142,6 +162,30 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SplunkServerIntrospectionQueuesCurrentBytes: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchartifactsAdhoc: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchartifactsCompleted: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchartifactsIncomplete: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchartifactsInvalid: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchartifactsJobCacheCount: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchartifactsJobCacheSize: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchartifactsSavedsearches: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchartifactsScheduled: MetricConfig{
 			Enabled: false,
 		},
 		SplunkTypingQueueRatio: MetricConfig{

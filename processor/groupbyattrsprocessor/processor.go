@@ -90,7 +90,6 @@ func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld plog.Logs)
 				log.CopyTo(lr)
 			}
 		}
-
 	}
 
 	// Copy the grouped data into output
@@ -114,7 +113,6 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 
 				//exhaustive:enforce
 				switch metric.Type() {
-
 				case pmetric.MetricTypeGauge:
 					for pointIndex := 0; pointIndex < metric.Gauge().DataPoints().Len(); pointIndex++ {
 						dataPoint := metric.Gauge().DataPoints().At(pointIndex)
@@ -174,7 +172,6 @@ func deleteAttributes(attrsForRemoval, targetAttrs pcommon.Map) {
 //   - whether any attribute matched (true) or none (false)
 //   - the extracted AttributeMap of matching keys and their corresponding values
 func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pcommon.Map) (bool, pcommon.Map) {
-
 	groupingAttributes := pcommon.NewMap()
 	foundMatch := false
 
@@ -191,7 +188,6 @@ func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pcommon.Map)
 
 // Searches for metric with same name in the specified InstrumentationLibrary and returns it. If nothing is found, create it.
 func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric pmetric.Metric) pmetric.Metric {
-
 	// Loop through all metrics and try to find the one that matches with the one we search for
 	// (name and type)
 	for i := 0; i < ilm.Metrics().Len(); i++ {
@@ -206,11 +202,11 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 	metric.SetDescription(searchedMetric.Description())
 	metric.SetName(searchedMetric.Name())
 	metric.SetUnit(searchedMetric.Unit())
+	searchedMetric.Metadata().CopyTo(metric.Metadata())
 
 	// Move other special type specific values
 	//exhaustive:enforce
 	switch searchedMetric.Type() {
-
 	case pmetric.MetricTypeHistogram:
 		metric.SetEmptyHistogram().SetAggregationTemporality(searchedMetric.Histogram().AggregationTemporality())
 
@@ -242,7 +238,6 @@ func (gap *groupByAttrsProcessor) getGroupedMetricsFromAttributes(
 	metric pmetric.Metric,
 	attributes pcommon.Map,
 ) pmetric.Metric {
-
 	toBeGrouped, requiredAttributes := gap.extractGroupingAttributes(attributes)
 	if toBeGrouped {
 		gap.telemetryBuilder.ProcessorGroupbyattrsNumGroupedMetrics.Add(ctx, 1)
@@ -261,5 +256,4 @@ func (gap *groupByAttrsProcessor) getGroupedMetricsFromAttributes(
 
 	// Return the metric in this resource
 	return getMetricInInstrumentationLibrary(groupedInstrumentationLibrary, metric)
-
 }

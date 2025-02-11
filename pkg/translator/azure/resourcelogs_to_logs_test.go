@@ -5,6 +5,7 @@ package azure // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"encoding/json"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -146,7 +147,7 @@ var badLevelLogRecord = func() plog.LogRecord {
 	lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
 
 	m := lr.Attributes().PutEmptyMap(azureProperties)
-	m.PutStr("method", "GET")
+	m.PutStr("method", http.MethodGet)
 	m.PutStr("url", "https://api.azure-api.net/sessions")
 	m.PutDouble("backendResponseCode", 200)
 	m.PutDouble("responseCode", 200)
@@ -162,7 +163,7 @@ var badLevelLogRecord = func() plog.LogRecord {
 	m.PutStr("backendProtocol", "HTTP/1.1")
 	m.PutStr("apiRevision", "1")
 	m.PutStr("clientTlsVersion", "1.2")
-	m.PutStr("backendMethod", "GET")
+	m.PutStr("backendMethod", http.MethodGet)
 	m.PutStr("backendUrl", "https://api.azurewebsites.net/sessions")
 	return lr
 }()
@@ -181,7 +182,7 @@ var badTimeLogRecord = func() plog.LogRecord {
 	m.PutStr("instanceId", "appgw_2")
 	m.PutStr("clientIP", "185.42.129.24")
 	m.PutDouble("clientPort", 45057)
-	m.PutStr("httpMethod", "GET")
+	m.PutStr("httpMethod", http.MethodGet)
 	m.PutStr("originalRequestUriWithArgs", "/")
 	m.PutStr("requestUri", "/")
 	m.PutStr("requestQuery", "")
@@ -361,14 +362,13 @@ func TestExtractRawAttributes(t *testing.T) {
 			assert.Equal(t, tt.expected, extractRawAttributes(tt.log))
 		})
 	}
-
 }
 
 func TestUnmarshalLogs(t *testing.T) {
 	expectedMinimum := plog.NewLogs()
 	resourceLogs := expectedMinimum.ResourceLogs().AppendEmpty()
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
+	scopeLogs.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure")
 	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
 	lr := scopeLogs.LogRecords().AppendEmpty()
 	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
@@ -378,7 +378,7 @@ func TestUnmarshalLogs(t *testing.T) {
 	resourceLogs = expectedMinimum2.ResourceLogs().AppendEmpty()
 	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
 	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
+	scopeLogs.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure")
 	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
 	logRecords := scopeLogs.LogRecords()
 	lr = logRecords.AppendEmpty()
@@ -390,7 +390,7 @@ func TestUnmarshalLogs(t *testing.T) {
 	resourceLogs = expectedMaximum.ResourceLogs().AppendEmpty()
 	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID-1")
 	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
+	scopeLogs.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure")
 	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
 	lr = scopeLogs.LogRecords().AppendEmpty()
 	maximumLogRecord1.CopyTo(lr)
@@ -398,7 +398,7 @@ func TestUnmarshalLogs(t *testing.T) {
 	resourceLogs = expectedMaximum.ResourceLogs().AppendEmpty()
 	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID-2")
 	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
+	scopeLogs.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure")
 	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
 	lr = scopeLogs.LogRecords().AppendEmpty()
 	lr2 := scopeLogs.LogRecords().AppendEmpty()
@@ -409,7 +409,7 @@ func TestUnmarshalLogs(t *testing.T) {
 	resourceLogs = expectedBadLevel.ResourceLogs().AppendEmpty()
 	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
 	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
+	scopeLogs.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure")
 	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
 	lr = scopeLogs.LogRecords().AppendEmpty()
 	badLevelLogRecord.CopyTo(lr)
@@ -418,7 +418,7 @@ func TestUnmarshalLogs(t *testing.T) {
 	resourceLogs = expectedBadTime.ResourceLogs().AppendEmpty()
 	resourceLogs.Resource().Attributes().PutStr(azureResourceID, "/RESOURCE_ID")
 	scopeLogs = resourceLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName("otelcol/azureresourcelogs")
+	scopeLogs.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure")
 	scopeLogs.Scope().SetVersion(testBuildInfo.Version)
 	lr = scopeLogs.LogRecords().AppendEmpty()
 	badTimeLogRecord.CopyTo(lr)

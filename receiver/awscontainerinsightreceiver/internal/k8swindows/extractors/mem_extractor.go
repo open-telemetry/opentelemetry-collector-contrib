@@ -9,12 +9,12 @@ package extractors // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"time"
 
+	"go.uber.org/zap"
+
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	awsmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 	cExtractor "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
-
-	"go.uber.org/zap"
 )
 
 type MemMetricExtractor struct {
@@ -23,10 +23,7 @@ type MemMetricExtractor struct {
 }
 
 func (m *MemMetricExtractor) HasValue(rawMetric RawMetric) bool {
-	if !rawMetric.Time.IsZero() {
-		return true
-	}
-	return false
+	return !rawMetric.Time.IsZero()
 }
 
 func (m *MemMetricExtractor) GetValue(rawMetric RawMetric, mInfo cExtractor.CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl {

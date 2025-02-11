@@ -1,5 +1,4 @@
 type: sqlserver
-scope_name: otelcol/sqlserverreceiver
 
 status:
   class: receiver
@@ -7,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, StefanKurek]
+    active: [StefanKurek]
     seeking_new: true
 
 resource_attributes:
@@ -55,7 +54,6 @@ metrics:
     unit: "{connections}"
     gauge:
       value_type: int
-    extended_documentation: This metric is only available when running on Windows.
   sqlserver.lock.wait_time.avg:
     enabled: true
     description: Average wait time for all lock requests that had to wait.
@@ -75,28 +73,24 @@ metrics:
     unit: "{requests}/s"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
   sqlserver.batch.sql_compilation.rate:
     enabled: true
     description: Number of SQL compilations needed.
     unit: "{compilations}/s"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
   sqlserver.batch.sql_recompilation.rate:
     enabled: true
     description: Number of SQL recompilations needed.
     unit: "{compilations}/s"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
   sqlserver.page.buffer_cache.hit_ratio:
     enabled: true
     description: Pages found in the buffer pool without having to read from disk.
     unit: "%"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
   sqlserver.page.life_expectancy:
     enabled: true
     description: Time a page will stay in the buffer pool.

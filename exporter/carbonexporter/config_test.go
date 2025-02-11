@@ -31,7 +31,6 @@ func TestLoadConfig(t *testing.T) {
 		expected     component.Config
 		errorMessage string
 	}{
-
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
@@ -43,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 					Endpoint: "localhost:8080",
 				},
 				MaxIdleConns: 15,
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
 				RetryConfig: configretry.BackOffConfig{
@@ -54,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:         1 * time.Minute,
 					MaxElapsedTime:      10 * time.Minute,
 				},
-				QueueConfig: exporterhelper.QueueSettings{
+				QueueConfig: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
@@ -104,7 +103,7 @@ func TestValidateConfig(t *testing.T) {
 			name: "invalid_timeout",
 			config: &Config{
 				TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: defaultEndpoint},
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: -5 * time.Second,
 				},
 			},

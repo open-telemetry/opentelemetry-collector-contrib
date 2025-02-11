@@ -10,8 +10,9 @@ import (
 
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/ianaindex"
-	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 )
 
 type Decoder struct {
@@ -46,20 +47,9 @@ func (d *Decoder) Decode(msgBuf []byte) ([]byte, error) {
 	}
 }
 
-var encodingOverrides = map[string]encoding.Encoding{
-	"":         unicode.UTF8,
-	"nop":      encoding.Nop,
-	"ascii":    unicode.UTF8,
-	"us-ascii": unicode.UTF8,
-	"utf8":     unicode.UTF8,
-	"utf-8":    unicode.UTF8,
-	"utf16":    unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
-	"utf-16":   unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
-}
-
 // LookupEncoding attempts to match the string name provided with a character set encoding.
 func LookupEncoding(enc string) (encoding.Encoding, error) {
-	if e, ok := encodingOverrides[strings.ToLower(enc)]; ok {
+	if e, ok := textutils.EncodingOverridesMap.Get(strings.ToLower(enc)); ok {
 		return e, nil
 	}
 	e, err := ianaindex.IANA.Encoding(enc)

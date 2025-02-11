@@ -25,7 +25,8 @@ func hostJitter(max time.Duration) time.Duration {
 // execute the refresh() function periodically with the given refresh interval
 // until shouldRefresh() return false or the context is canceled
 func RefreshUntil(ctx context.Context, refresh func(context.Context), refreshInterval time.Duration,
-	shouldRefresh func() bool, maxJitterTime time.Duration) {
+	shouldRefresh func() bool, maxJitterTime time.Duration,
+) {
 	if maxJitterTime > 0 {
 		// add some sleep jitter to prevent a large number of receivers calling the ec2 api at the same time
 		time.Sleep(hostJitter(maxJitterTime))

@@ -18,9 +18,19 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
 	)
 }
 
 func createTracesReceiver(ctx context.Context, settings receiver.Settings, cc component.Config, consumer consumer.Traces) (receiver.Traces, error) {
 	return newAWSS3TraceReceiver(ctx, cc.(*Config), consumer, settings)
+}
+
+func createMetricsReceiver(ctx context.Context, settings receiver.Settings, cc component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+	return newAWSS3MetricsReceiver(ctx, cc.(*Config), consumer, settings)
+}
+
+func createLogsReceiver(ctx context.Context, settings receiver.Settings, cc component.Config, consumer consumer.Logs) (receiver.Logs, error) {
+	return newAWSS3LogsReceiver(ctx, cc.(*Config), consumer, settings)
 }

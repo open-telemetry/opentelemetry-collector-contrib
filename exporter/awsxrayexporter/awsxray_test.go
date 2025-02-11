@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -22,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -167,7 +168,7 @@ func testEncodingOtlpFormatWithIndexConfiguration(t *testing.T, config *Config) 
 	td := constructMultiSpanData(50)
 	documents, err := encodeOtlpAsBase64(td, config)
 	assert.NoError(t, err)
-	assert.EqualValues(t, td.ResourceSpans().Len(), len(documents), "ensure #resourcespans same as #documents")
+	assert.Len(t, documents, td.ResourceSpans().Len(), "ensure #resourcespans same as #documents")
 
 	// 2. ensure documents can be decoded back
 	unmarshaler := &ptrace.ProtoUnmarshaler{}
@@ -191,7 +192,7 @@ func TestEncodingOtlpFormatWithEmptySpans(t *testing.T) {
 	td := constructMultiSpanData(0)
 	documents, err := encodeOtlpAsBase64(td, generateConfig(t))
 	assert.NoError(t, err)
-	assert.EqualValues(t, 0, len(documents), "expect 0 document")
+	assert.Empty(t, documents, "expect 0 document")
 }
 
 func BenchmarkForTracesExporter(b *testing.B) {
@@ -227,6 +228,7 @@ func initializeTracesExporter(t testing.TB, exporterConfig *Config, registry tel
 	}
 	return traceExporter
 }
+
 func generateConfig(t testing.TB) *Config {
 	t.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
@@ -308,7 +310,7 @@ func constructResource() pcommon.Resource {
 
 func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPStatusCode] = 200
 	endTime := time.Now().Round(time.Second)
@@ -335,7 +337,7 @@ func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 
 func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
 	attributes[conventions.AttributeHTTPStatusCode] = 200

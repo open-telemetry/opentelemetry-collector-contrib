@@ -64,7 +64,8 @@ func RecordMetrics(mb *imetadata.MetricsBuilder, node *corev1.Node, ts pcommon.T
 }
 
 func CustomMetrics(set receiver.Settings, rb *metadata.ResourceBuilder, node *corev1.Node, nodeConditionTypesToReport,
-	allocatableTypesToReport []string, ts pcommon.Timestamp) pmetric.ResourceMetrics {
+	allocatableTypesToReport []string, ts pcommon.Timestamp,
+) pmetric.ResourceMetrics {
 	rm := pmetric.NewResourceMetrics()
 
 	sm := rm.ScopeMetrics().AppendEmpty()
@@ -106,7 +107,7 @@ func CustomMetrics(set receiver.Settings, rb *metadata.ResourceBuilder, node *co
 
 	// TODO: Generate a schema URL for the node metrics in the metadata package and use them here.
 	rm.SetSchemaUrl(conventions.SchemaURL)
-	sm.Scope().SetName("otelcol/k8sclusterreceiver")
+	sm.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver")
 	sm.Scope().SetVersion(set.BuildInfo.Version)
 
 	rb.SetK8sNodeUID(string(node.UID))
@@ -171,8 +172,9 @@ func getContainerRuntimeInfo(rawInfo string) (runtime string, version string) {
 	}
 	return "", ""
 }
+
 func getNodeConditionMetric(nodeConditionTypeValue string) string {
-	return fmt.Sprintf("k8s.node.condition_%s", strcase.ToSnake(nodeConditionTypeValue))
+	return "k8s.node.condition_" + strcase.ToSnake(nodeConditionTypeValue)
 }
 
 func getNodeAllocatableUnit(res corev1.ResourceName) string {
@@ -198,5 +200,5 @@ func setNodeAllocatableValue(dp pmetric.NumberDataPoint, res corev1.ResourceName
 }
 
 func getNodeAllocatableMetric(nodeAllocatableTypeValue string) string {
-	return fmt.Sprintf("k8s.node.allocatable_%s", strcase.ToSnake(nodeAllocatableTypeValue))
+	return "k8s.node.allocatable_" + strcase.ToSnake(nodeAllocatableTypeValue)
 }

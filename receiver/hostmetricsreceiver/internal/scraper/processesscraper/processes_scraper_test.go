@@ -9,9 +9,9 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/shirou/gopsutil/v3/host"
-	"github.com/shirou/gopsutil/v3/load"
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/load"
+	"github.com/shirou/gopsutil/v4/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -203,7 +203,7 @@ func validateFakeData(t *testing.T, metrics pmetric.MetricSlice) {
 			attrs[val.Str()] = point.IntValue()
 		}
 
-		assert.Equal(t, attrs, map[string]int64{
+		assert.Equal(t, map[string]int64{
 			metadata.AttributeStatusBlocked.String():  3,
 			metadata.AttributeStatusPaging.String():   1,
 			metadata.AttributeStatusRunning.String():  2,
@@ -211,7 +211,7 @@ func validateFakeData(t *testing.T, metrics pmetric.MetricSlice) {
 			metadata.AttributeStatusStopped.String():  5,
 			metadata.AttributeStatusUnknown.String():  9,
 			metadata.AttributeStatusZombies.String():  6,
-		})
+		}, attrs)
 	}
 
 	if expectProcessesCreatedMetric {

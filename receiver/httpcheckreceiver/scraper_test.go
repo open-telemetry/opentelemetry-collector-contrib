@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -27,7 +28,7 @@ func newMockServer(t *testing.T, responseCode int) *httptest.Server {
 		// This could be expanded if the checks for the server include
 		// parsing the response content
 		_, err := rw.Write([]byte(``))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 }
 
@@ -158,18 +159,22 @@ func TestScaperScrape(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			if len(tc.endpoint) > 0 {
-				cfg.Targets = []*targetConfig{{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint: tc.endpoint,
-					}},
+				cfg.Targets = []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: tc.endpoint,
+						},
+					},
 				}
 			} else {
 				ms := newMockServer(t, tc.expectedResponse)
 				defer ms.Close()
-				cfg.Targets = []*targetConfig{{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint: ms.URL,
-					}},
+				cfg.Targets = []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: ms.URL,
+						},
+					},
 				}
 			}
 			scraper := newScraper(cfg, receivertest.NewNopSettings())
@@ -194,7 +199,6 @@ func TestNilClient(t *testing.T) {
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.EqualError(t, err, errClientNotInit.Error())
 	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
-
 }
 
 func TestScraperMultipleTargets(t *testing.T) {

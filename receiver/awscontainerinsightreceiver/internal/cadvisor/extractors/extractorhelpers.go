@@ -85,7 +85,6 @@ func AssertContainsTaggedField(
 	expectedFields map[string]any,
 	expectedTags map[string]string,
 ) {
-
 	actualFields := cadvisorMetric.GetFields()
 	actualTags := cadvisorMetric.GetTags()
 	if !reflect.DeepEqual(expectedTags, actualTags) {

@@ -23,8 +23,7 @@ func TestInputConfigMissingBase(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "missing required `type` field.")
+	require.ErrorContains(t, err, "missing required `type` field.")
 }
 
 func TestInputConfigMissingOutput(t *testing.T) {
@@ -89,7 +88,7 @@ func TestInputOperatorProcess(t *testing.T) {
 	ctx := context.Background()
 	err := input.Process(ctx, entry)
 	require.Error(t, err)
-	require.Equal(t, err.Error(), "Operator can not process logs.")
+	require.Equal(t, "Operator can not process logs.", err.Error())
 }
 
 func TestInputOperatorNewEntry(t *testing.T) {

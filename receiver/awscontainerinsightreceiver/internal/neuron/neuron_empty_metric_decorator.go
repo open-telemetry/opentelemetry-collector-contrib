@@ -72,7 +72,7 @@ func (ed *EmptyMetricDecorator) ConsumeMetrics(ctx context.Context, md pmetric.M
 }
 
 func (ed *EmptyMetricDecorator) addEmptyMetrics(hardwareInfo pmetric.Metric, metrics pmetric.MetricSlice) {
-	var metricFoundMap = make(map[string]bool)
+	metricFoundMap := make(map[string]bool)
 	for k := range attributeConfig {
 		metricFoundMap[k] = false
 	}
@@ -124,7 +124,6 @@ func populateCoreMetrics(metrics pmetric.MetricSlice, metricName string, hardwar
 		metricBody.Attributes().PutStr(neuronDeviceAttributeKey, strconv.Itoa(coreIndex/neuronCoresPerDevice))
 		metricToAdd.CopyTo(metrics.AppendEmpty())
 	}
-
 }
 
 // returns the device count for neuron from the hardwareInfo metric

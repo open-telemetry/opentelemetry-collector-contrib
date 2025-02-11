@@ -48,7 +48,7 @@ func newTracesExporter(
 	var xrayClient awsxray.XRayClient
 	var sender telemetry.Sender = telemetry.NewNopSender()
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		context.TODO(),
 		set,
 		cfg,

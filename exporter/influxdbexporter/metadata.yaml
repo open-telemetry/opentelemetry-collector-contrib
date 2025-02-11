@@ -1,5 +1,4 @@
 type: influxdb
-scope_name: otelcol/influxdb
 
 status:
   class: exporter
@@ -11,8 +10,3 @@ status:
 
 tests:
   expect_consumer_error: true
-  goleak:
-    ignore:
-      top:
-        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
-        - "go.opencensus.io/stats/view.(*worker).start"

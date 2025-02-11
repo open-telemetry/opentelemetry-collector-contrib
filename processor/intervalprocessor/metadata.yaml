@@ -1,5 +1,4 @@
 type: interval
-scope_name: otelcol/interval
 
 status:
   class: processor
@@ -8,6 +7,6 @@ status:
   distributions: []
   warnings: [Statefulness]
   codeowners:
-    active: [RichieSams, sh0rez, djaglowski]
+    active: [RichieSams, sh0rez]
 tests:
   config:

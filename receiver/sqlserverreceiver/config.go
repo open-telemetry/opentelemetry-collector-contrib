@@ -4,7 +4,7 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -35,7 +35,7 @@ func (cfg *Config) Validate() error {
 
 	if !directDBConnectionEnabled(cfg) {
 		if cfg.Server != "" || cfg.Username != "" || string(cfg.Password) != "" {
-			return fmt.Errorf("Found one or more of the following configuration options set: [server, port, username, password]. " +
+			return errors.New("Found one or more of the following configuration options set: [server, port, username, password]. " +
 				"All of these options must be configured to directly connect to a SQL Server instance.")
 		}
 	}

@@ -94,7 +94,7 @@ func TestValidate(t *testing.T) {
 			if tc.expected == nil {
 				require.NoError(t, err)
 			} else {
-				require.Contains(t, err.Error(), tc.expected.Error())
+				require.ErrorContains(t, err, tc.expected.Error())
 			}
 		})
 	}
@@ -136,7 +136,7 @@ func TestBadTLSConfigs(t *testing.T) {
 				Password: "pword",
 				Hosts: []confignet.TCPAddrConfig{
 					{
-						Endpoint: "localhost:27017",
+						Endpoint: defaultEndpoint,
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -156,7 +156,7 @@ func TestOptions(t *testing.T) {
 	cfg := &Config{
 		Hosts: []confignet.TCPAddrConfig{
 			{
-				Endpoint: "localhost:27017",
+				Endpoint: defaultEndpoint,
 			},
 		},
 		Username:   "uname",
@@ -181,7 +181,7 @@ func TestOptionsTLS(t *testing.T) {
 	cfg := &Config{
 		Hosts: []confignet.TCPAddrConfig{
 			{
-				Endpoint: "localhost:27017",
+				Endpoint: defaultEndpoint,
 			},
 		},
 		ClientConfig: configtls.ClientConfig{
@@ -209,7 +209,7 @@ func TestLoadConfig(t *testing.T) {
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Hosts = []confignet.TCPAddrConfig{
 		{
-			Endpoint: "localhost:27017",
+			Endpoint: defaultEndpoint,
 		},
 	}
 	expected.Username = "otel"

@@ -1,12 +1,11 @@
 type: osquery
-scope_name: otelcol/osqueryreceiver
 
 status:
   class: receiver
   stability:
     development: [logs]
   codeowners:
-    active: [codeboten, nslaughter, smithclay]
+    active: [nslaughter, smithclay]
 
 # TODO: Update the receiver to pass the tests
 tests:

@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -178,6 +179,57 @@ func testTransactionAppendResource(t *testing.T, enableNativeHistograms bool) {
 	require.Equal(t, expectedResource, gotResource)
 }
 
+func TestTransactionAppendMultipleResources(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testTransactionAppendMultipleResources(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testTransactionAppendMultipleResources(t *testing.T, enableNativeHistograms bool) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, enableNativeHistograms)
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
+		model.InstanceLabel:   "localhost:8080",
+		model.JobLabel:        "test-1",
+		model.MetricNameLabel: "counter_test",
+	}), time.Now().Unix()*1000, 1.0)
+	assert.NoError(t, err)
+	_, err = tr.Append(0, labels.FromMap(map[string]string{
+		model.InstanceLabel:   "localhost:8080",
+		model.JobLabel:        "test-2",
+		model.MetricNameLabel: startTimeMetricName,
+	}), time.Now().UnixMilli(), 1.0)
+	assert.NoError(t, err)
+	assert.NoError(t, tr.Commit())
+
+	expectedResources := []pcommon.Resource{
+		CreateResource("test-1", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http")),
+		CreateResource("test-2", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http")),
+	}
+
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	require.Equal(t, 2, mds[0].ResourceMetrics().Len())
+
+	for _, expectedResource := range expectedResources {
+		foundResource := false
+		expectedServiceName, _ := expectedResource.Attributes().Get(conventions.AttributeServiceName)
+		for i := 0; i < mds[0].ResourceMetrics().Len(); i++ {
+			res := mds[0].ResourceMetrics().At(i).Resource()
+			if serviceName, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
+				if serviceName.AsString() == expectedServiceName.AsString() {
+					foundResource = true
+					require.Equal(t, expectedResource, res)
+					break
+				}
+			}
+		}
+		require.True(t, foundResource)
+	}
+}
+
 func TestReceiverVersionAndNameAreAttached(t *testing.T) {
 	for _, enableNativeHistograms := range []bool{true, false} {
 		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
@@ -204,7 +256,7 @@ func testReceiverVersionAndNameAreAttached(t *testing.T, enableNativeHistograms 
 	require.Equal(t, expectedResource, gotResource)
 
 	gotScope := mds[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Scope()
-	require.Equal(t, receiverName, gotScope.Name())
+	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver", gotScope.Name())
 	require.Equal(t, component.NewDefaultBuildInfo().Version, gotScope.Version())
 }
 
@@ -253,8 +305,7 @@ func testTransactionAppendDuplicateLabels(t *testing.T, enableNativeHistograms b
 	)
 
 	_, err := tr.Append(0, dupLabels, 1917, 1.0)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `invalid sample: non-unique label names: "a"`)
+	assert.ErrorContains(t, err, `invalid sample: non-unique label names: "a"`)
 }
 
 func TestTransactionAppendHistogramNoLe(t *testing.T) {
@@ -293,7 +344,7 @@ func testTransactionAppendHistogramNoLe(t *testing.T, enableNativeHistograms boo
 	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
 
 	assert.NoError(t, tr.Commit())
-	assert.Len(t, sink.AllMetrics(), 0)
+	assert.Empty(t, sink.AllMetrics())
 }
 
 func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
@@ -332,7 +383,7 @@ func testTransactionAppendSummaryNoQuantile(t *testing.T, enableNativeHistograms
 	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
 
 	assert.NoError(t, tr.Commit())
-	assert.Len(t, sink.AllMetrics(), 0)
+	assert.Empty(t, sink.AllMetrics())
 }
 
 func TestTransactionAppendValidAndInvalid(t *testing.T) {
@@ -487,8 +538,7 @@ func testAppendExemplarWithDuplicateLabels(t *testing.T, enableNativeHistograms 
 		"a", "c",
 	)
 	_, err := tr.AppendExemplar(0, labels, exemplar.Exemplar{Value: 0})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `invalid sample: non-unique label names: "a"`)
+	assert.ErrorContains(t, err, `invalid sample: non-unique label names: "a"`)
 }
 
 func TestAppendExemplarWithoutAddingMetric(t *testing.T) {
@@ -1692,7 +1742,6 @@ func TestMetricBuilderSummary(t *testing.T) {
 			})
 		}
 	}
-
 }
 
 func TestMetricBuilderNativeHistogram(t *testing.T) {
@@ -1830,7 +1879,7 @@ func (tt buildTestData) run(t *testing.T, enableNativeHistograms bool) {
 		mds := sink.AllMetrics()
 		if wants[i].ResourceMetrics().Len() == 0 {
 			// Receiver does not emit empty metrics, so will not have anything in the sink.
-			require.Len(t, mds, 0)
+			require.Empty(t, mds)
 			st += interval
 			continue
 		}
@@ -1953,5 +2002,4 @@ func assertEquivalentMetrics(t *testing.T, want, got pmetric.Metrics) {
 			assert.EqualValues(t, wmap, gmap)
 		}
 	}
-
 }

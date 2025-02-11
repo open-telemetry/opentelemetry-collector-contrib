@@ -1,0 +1,11 @@
+type: prometheusremotewrite
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: [dashpole, ArthurSens]
+tests:
+  config:

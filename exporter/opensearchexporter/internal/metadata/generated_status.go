@@ -7,10 +7,11 @@ import (
 )
 
 var (
-	Type = component.MustNewType("opensearch")
+	Type      = component.MustNewType("opensearch")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter"
 )
 
 const (
-	LogsStability   = component.StabilityLevelDevelopment
-	TracesStability = component.StabilityLevelAlpha
+	TracesStability = component.StabilityLevelUnmaintained
+	LogsStability   = component.StabilityLevelUnmaintained
 )

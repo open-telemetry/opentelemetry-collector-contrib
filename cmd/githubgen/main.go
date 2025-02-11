@@ -32,6 +32,7 @@ type generator interface {
 func main() {
 	folder := flag.String("folder", ".", "folder investigated for codeowners")
 	allowlistFilePath := flag.String("allowlist", "cmd/githubgen/allowlist.txt", "path to a file containing an allowlist of members outside the OpenTelemetry organization")
+	skipGithubCheck := flag.Bool("skipgithub", false, "skip checking GitHub membership check for CODEOWNERS generator")
 	flag.Parse()
 	var generators []generator
 	for _, arg := range flag.Args() {
@@ -39,7 +40,7 @@ func main() {
 		case "issue-templates":
 			generators = append(generators, issueTemplatesGenerator{})
 		case "codeowners":
-			generators = append(generators, codeownersGenerator{})
+			generators = append(generators, codeownersGenerator{skipGithub: *skipGithubCheck})
 		case "distributions":
 			generators = append(generators, distributionsGenerator{})
 		default:
@@ -47,7 +48,7 @@ func main() {
 		}
 	}
 	if len(generators) == 0 {
-		generators = []generator{issueTemplatesGenerator{}, codeownersGenerator{}}
+		generators = []generator{issueTemplatesGenerator{}, codeownersGenerator{skipGithub: *skipGithubCheck}}
 	}
 	if err := run(*folder, *allowlistFilePath, generators); err != nil {
 		log.Fatal(err)
@@ -112,7 +113,6 @@ func loadMetadata(filePath string) (metadata, error) {
 }
 
 func run(folder string, allowlistFilePath string, generators []generator) error {
-
 	components := map[string]metadata{}
 	var foldersList []string
 	maxLength := 0

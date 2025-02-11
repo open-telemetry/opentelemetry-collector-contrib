@@ -82,7 +82,7 @@ func (p *azureProviderImpl) Metadata(ctx context.Context) (*ComputeMetadata, err
 		return nil, fmt.Errorf("failed to query Azure IMDS: %w", err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		//lint:ignore ST1005 Azure is a capitalized proper noun here
 		return nil, fmt.Errorf("Azure IMDS replied with status code: %s", resp.Status)
 	}

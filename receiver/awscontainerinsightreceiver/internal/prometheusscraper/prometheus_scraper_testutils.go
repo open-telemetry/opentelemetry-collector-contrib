@@ -137,7 +137,7 @@ func TestSimplePrometheusEndToEnd(opts TestSimplePrometheusEndToEndOpts) {
 	params := receiver.Settings{
 		TelemetrySettings: scraper.Settings,
 	}
-	scraper.PrometheusReceiver, err = promFactory.CreateMetricsReceiver(scraper.Ctx, params, &promConfig, opts.Consumer)
+	scraper.PrometheusReceiver, err = promFactory.CreateMetrics(scraper.Ctx, params, &promConfig, opts.Consumer)
 	assert.NoError(opts.T, err)
 	assert.NotNil(opts.T, mp)
 	defer mp.Close()

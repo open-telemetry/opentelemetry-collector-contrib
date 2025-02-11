@@ -47,7 +47,7 @@ func testUDP(t *testing.T, cfg *UDPLogConfig, listenAddress string) {
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -121,7 +121,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			return *c
 		}(),
 	}
-	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), badCfg, sink)
+	receiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), badCfg, sink)
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")
 	require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 }

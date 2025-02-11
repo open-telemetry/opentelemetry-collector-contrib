@@ -5,6 +5,7 @@ package hostmetadata // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/component"
@@ -27,7 +28,7 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterToVersion("0.75.0"),
 )
 
-func GetSourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
+func GetSourceProvider(set component.TelemetrySettings, configHostname string, timeout time.Duration) (source.Provider, error) {
 	ecs, err := ecs.NewProvider(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build ECS Fargate provider: %w", err)
@@ -69,8 +70,8 @@ func GetSourceProvider(set component.TelemetrySettings, configHostname string) (
 			"system":     system.NewProvider(set.Logger),
 		},
 		[]string{"config", "azure", "ecs", "ec2", "gcp", "kubernetes", "system"},
+		timeout,
 	)
-
 	if err != nil {
 		return nil, err
 	}

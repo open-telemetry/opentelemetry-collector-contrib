@@ -83,15 +83,13 @@ func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entr
 		return t.HandleEntryError(ctx, entry, err)
 	}
 	if skip {
-		t.Write(ctx, entry)
-		return nil
+		return t.Write(ctx, entry)
 	}
 
 	if err := transform(entry); err != nil {
 		return t.HandleEntryError(ctx, entry, err)
 	}
-	t.Write(ctx, entry)
-	return nil
+	return t.Write(ctx, entry)
 }
 
 // HandleEntryError will handle an entry error using the on_error strategy.
@@ -102,8 +100,12 @@ func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry
 		t.Logger().Error("Failed to process entry", zap.Any("error", err), zap.Any("action", t.OnError))
 	}
 	if t.OnError == SendOnError || t.OnError == SendOnErrorQuiet {
-		t.Write(ctx, entry)
+		writeErr := t.Write(ctx, entry)
+		if writeErr != nil {
+			err = fmt.Errorf("failed to send entry after error: %w", writeErr)
+		}
 	}
+
 	return err
 }
 

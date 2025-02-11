@@ -65,7 +65,6 @@ func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
 	assert.Equal(t, library.Name(), secondOutILS.Scope().Name())
 	assert.Equal(t, secondSpan.Name(), secondOutILS.Spans().At(0).Name())
 	assert.Equal(t, ils.SchemaUrl(), secondOutILS.SchemaUrl())
-
 }
 
 func TestSplitTracesWithNilTraceID(t *testing.T) {

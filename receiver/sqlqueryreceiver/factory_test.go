@@ -14,14 +14,14 @@ import (
 
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
-	_, err := factory.CreateMetricsReceiver(
+	_, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		factory.CreateDefaultConfig(),
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
-	_, err = factory.CreateLogsReceiver(
+	_, err = factory.CreateLogs(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		factory.CreateDefaultConfig(),

@@ -771,5 +771,5 @@ resourceMetrics:
             name: azure_metric6_count
             unit: unit1
         scope:
-          name: otelcol/azuremonitorreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver
           version: latest

@@ -239,7 +239,6 @@ func (er *eventsReceiver) transformOrgEvents(now pcommon.Timestamp, events []*mo
 
 func (er *eventsReceiver) transformEvents(now pcommon.Timestamp, events []*mongodbatlas.Event, resourceLogs *plog.ResourceLogs) {
 	for _, event := range events {
-
 		logRecord := resourceLogs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		bodyBytes, err := json.Marshal(event)
 		if err != nil {

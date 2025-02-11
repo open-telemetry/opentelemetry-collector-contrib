@@ -1,10 +1,10 @@
 type: resourcedetection
-scope_name: otelcol/resourcedetection
 
 status:
   class: processor
   stability:
     beta: [traces, metrics, logs]
-  distributions: [contrib]
+    development: [profiles]
+  distributions: [contrib, k8s]
   codeowners:
     active: [Aneurysm9, dashpole]

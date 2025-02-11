@@ -39,14 +39,6 @@ type mockEncodingExtension struct {
 	mock.Mock
 }
 
-func (h *mockHostWithEncodings) GetFactory(component.Kind, component.Type) component.Factory {
-	return nil
-}
-
-func (h *mockHostWithEncodings) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	return nil
-}
-
 func (h *mockHostWithEncodings) GetExtensions() map[component.ID]component.Component {
 	args := h.Called()
 	return args.Get(0).(map[component.ID]component.Component)

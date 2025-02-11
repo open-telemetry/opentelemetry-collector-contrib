@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 const (
@@ -67,7 +67,7 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		TCPAddrConfig: confignet.TCPAddrConfig{
-			Endpoint: localhostgate.EndpointForPort(2000),
+			Endpoint: testutil.EndpointForPort(2000),
 		},
 		ProxyAddress: "",
 		TLSSetting: configtls.ClientConfig{

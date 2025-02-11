@@ -1,5 +1,4 @@
 type: sumologic
-scope_name: otelcol/sumologic
 
 status:
   class: extension
@@ -7,7 +6,8 @@ status:
     alpha: [extension]
   distributions: []
   codeowners:
-    active: [aboguszewski-sumo, kkujawa-sumo, mat-rumian, rnishtala-sumo, sumo-drosiek, swiatekm-sumo]
+    active: [rnishtala-sumo, chan-tim-sumo]
+    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek]
 
 # TODO: Update the extension to make the tests pass
 tests:

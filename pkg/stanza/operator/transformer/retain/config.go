@@ -44,7 +44,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	if err != nil {
 		return nil, err
 	}
-	if c.Fields == nil || len(c.Fields) == 0 {
+	if len(c.Fields) == 0 {
 		return nil, fmt.Errorf("retain: 'fields' is empty")
 	}
 

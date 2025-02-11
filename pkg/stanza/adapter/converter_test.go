@@ -566,6 +566,7 @@ func TestConvertMetadata(t *testing.T) {
 			"int":    123,
 			"double": 12.34,
 			"string": "hello",
+			"empty":  nil,
 		},
 	}
 	e.Body = true
@@ -595,7 +596,7 @@ func TestConvertMetadata(t *testing.T) {
 	require.True(t, ok)
 
 	mapVal := attVal.Map()
-	require.Equal(t, 4, mapVal.Len())
+	require.Equal(t, 5, mapVal.Len())
 
 	attVal, ok = mapVal.Get("bool")
 	require.True(t, ok)
@@ -612,6 +613,10 @@ func TestConvertMetadata(t *testing.T) {
 	attVal, ok = mapVal.Get("string")
 	require.True(t, ok)
 	require.Equal(t, "hello", attVal.Str())
+
+	attVal, ok = mapVal.Get("empty")
+	require.True(t, ok)
+	require.Equal(t, pcommon.ValueTypeEmpty, attVal.Type())
 
 	bod := result.Body()
 	require.Equal(t, pcommon.ValueTypeBool, bod.Type())
@@ -890,7 +895,8 @@ func TestConvertTrace(t *testing.T) {
 		},
 		TraceFlags: []byte{
 			0x01,
-		}})
+		},
+	})
 
 	require.Equal(t, pcommon.TraceID(
 		[16]byte{
@@ -911,7 +917,8 @@ func TestConvertTraceEmptyFlags(t *testing.T) {
 		SpanID: []byte{
 			0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		},
-		TraceFlags: []byte{}})
+		TraceFlags: []byte{},
+	})
 
 	require.Equal(t, pcommon.TraceID(
 		[16]byte{

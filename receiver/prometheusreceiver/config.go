@@ -40,18 +40,32 @@ type Config struct {
 
 // Validate checks the receiver configuration is valid.
 func (cfg *Config) Validate() error {
-	if (cfg.PrometheusConfig == nil || len(cfg.PrometheusConfig.ScrapeConfigs) == 0) && cfg.TargetAllocator == nil {
+	if !containsScrapeConfig(cfg) && cfg.TargetAllocator == nil {
 		return errors.New("no Prometheus scrape_configs or target_allocator set")
 	}
 	return nil
+}
+
+func containsScrapeConfig(cfg *Config) bool {
+	if cfg.PrometheusConfig == nil {
+		return false
+	}
+	scrapeConfigs, err := (*promconfig.Config)(cfg.PrometheusConfig).GetScrapeConfigs()
+	if err != nil {
+		return false
+	}
+
+	return len(scrapeConfigs) > 0
 }
 
 // PromConfig is a redeclaration of promconfig.Config because we need custom unmarshaling
 // as prometheus "config" uses `yaml` tags.
 type PromConfig promconfig.Config
 
-var _ confmap.Unmarshaler = (*PromConfig)(nil)
-var _ confmap.Marshaler = (*PromConfig)(nil)
+var (
+	_ confmap.Unmarshaler = (*PromConfig)(nil)
+	_ confmap.Marshaler   = (*PromConfig)(nil)
+)
 
 func (cfg *PromConfig) Unmarshal(componentParser *confmap.Conf) error {
 	cfgMap := componentParser.ToStringMap()
@@ -102,7 +116,12 @@ func (cfg *PromConfig) Validate() error {
 		return fmt.Errorf("unsupported features:\n\t%s", strings.Join(unsupportedFeatures, "\n\t"))
 	}
 
-	for _, sc := range cfg.ScrapeConfigs {
+	scrapeConfigs, err := (*promconfig.Config)(cfg).GetScrapeConfigs()
+	if err != nil {
+		return err
+	}
+
+	for _, sc := range scrapeConfigs {
 		if err := validateHTTPClientConfig(&sc.HTTPClientConfig); err != nil {
 			return err
 		}
@@ -142,7 +161,6 @@ func validateHTTPClientConfig(cfg *commonconfig.HTTPClientConfig) error {
 		return err
 	}
 	return nil
-
 }
 
 func checkFile(fn string) error {

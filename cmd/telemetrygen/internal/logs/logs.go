@@ -4,12 +4,17 @@
 package logs
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+	"go.opentelemetry.io/otel/log"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.uber.org/zap"
@@ -24,19 +29,37 @@ func Start(cfg *Config) error {
 	if err != nil {
 		return err
 	}
+	expFunc := func() (sdklog.Exporter, error) {
+		var exp sdklog.Exporter
+		if cfg.UseHTTP {
+			var exporterOpts []otlploghttp.Option
 
-	e, err := newExporter(cfg)
-	if err != nil {
-		return err
+			logger.Info("starting HTTP exporter")
+			exporterOpts, err = httpExporterOptions(cfg)
+			if err != nil {
+				return nil, err
+			}
+			exp, err = otlploghttp.New(context.Background(), exporterOpts...)
+			if err != nil {
+				return nil, fmt.Errorf("failed to obtain OTLP HTTP exporter: %w", err)
+			}
+		} else {
+			var exporterOpts []otlploggrpc.Option
+
+			logger.Info("starting gRPC exporter")
+			exporterOpts, err = grpcExporterOptions(cfg)
+			if err != nil {
+				return nil, err
+			}
+			exp, err = otlploggrpc.New(context.Background(), exporterOpts...)
+			if err != nil {
+				return nil, fmt.Errorf("failed to obtain OTLP gRPC exporter: %w", err)
+			}
+		}
+		return exp, err
 	}
 
-	if err = cfg.Validate(); err != nil {
-		logger.Error("failed to validate the parameters for the test scenario.", zap.Error(err))
-		return err
-	}
-
-	if err = Run(cfg, e, logger); err != nil {
-		logger.Error("failed to execute the test scenario.", zap.Error(err))
+	if err = Run(cfg, expFunc, logger); err != nil {
 		return err
 	}
 
@@ -44,11 +67,13 @@ func Start(cfg *Config) error {
 }
 
 // Run executes the test scenario.
-func Run(c *Config, exp exporter, logger *zap.Logger) error {
+func Run(c *Config, exp func() (sdklog.Exporter, error), logger *zap.Logger) error {
+	if err := c.Validate(); err != nil {
+		return err
+	}
+
 	if c.TotalDuration > 0 {
 		c.NumLogs = 0
-	} else if c.NumLogs <= 0 {
-		return fmt.Errorf("either `logs` or `duration` must be greater than 0")
 	}
 
 	limit := rate.Limit(c.Rate)
@@ -97,13 +122,11 @@ func Run(c *Config, exp exporter, logger *zap.Logger) error {
 	return nil
 }
 
-func parseSeverity(severityText string, severityNumber int32) (string, plog.SeverityNumber, error) {
-	// severityNumber must range in [1,24]
-	if severityNumber <= 0 || severityNumber >= 25 {
-		return "", 0, fmt.Errorf("severity-number is out of range, the valid range is [1,24]")
+func parseSeverity(severityText string, severityNumber int32) (string, log.Severity, error) {
+	sn := log.Severity(severityNumber)
+	if sn < log.SeverityTrace1 || sn > log.SeverityFatal4 {
+		return "", log.SeverityUndefined, fmt.Errorf("severity-number is out of range, the valid range is [1,24]")
 	}
-
-	sn := plog.SeverityNumber(severityNumber)
 
 	// severity number should match well-known severityText
 	switch severityText {

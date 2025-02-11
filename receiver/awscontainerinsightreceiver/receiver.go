@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -67,8 +66,8 @@ type awsContainerInsightReceiver struct {
 func newAWSContainerInsightReceiver(
 	settings component.TelemetrySettings,
 	config *Config,
-	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-
+	nextConsumer consumer.Metrics,
+) (receiver.Metrics, error) {
 	r := &awsContainerInsightReceiver{
 		settings:     settings,
 		nextConsumer: nextConsumer,
@@ -146,7 +145,8 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 }
 
 func (acir *awsContainerInsightReceiver) initEKS(ctx context.Context, host component.Host, hostInfo *hostinfo.Info,
-	hostName string, kubeletClient *kubeletutil.KubeletClient) error {
+	hostName string, kubeletClient *kubeletutil.KubeletClient,
+) error {
 	k8sDecorator, err := stores.NewK8sDecorator(ctx, kubeletClient, acir.config.TagService, acir.config.PrefFullPodName,
 		acir.config.AddFullPodNameMetricLabel, acir.config.AddContainerNameMetricLabel,
 		acir.config.EnableControlPlaneMetrics, acir.config.EnableAcceleratedComputeMetrics,
@@ -427,7 +427,6 @@ func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 	}
 
 	return errs
-
 }
 
 // collectData collects container stats from cAdvisor and k8s api server (if it is an elected leader)

@@ -7,7 +7,6 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -15,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -327,7 +327,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				return
 			}
 
-			expectedFile := filepath.Join("testdata", "scraper", fmt.Sprintf("%s.yaml", tt.expectedMetricsFilename))
+			expectedFile := filepath.Join("testdata", "scraper", tt.expectedMetricsFilename+".yaml")
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 
@@ -362,7 +362,7 @@ func (ms *mockedServer) mockZKServer(t *testing.T, cmdToFileMap map[string]strin
 			case <-ms.quit:
 				return
 			default:
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 		}
 		reader := bufio.NewReader(conn)
@@ -372,13 +372,13 @@ func (ms *mockedServer) mockZKServer(t *testing.T, cmdToFileMap map[string]strin
 			continue
 		}
 
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		filename := cmdToFileMap[cmd]
 		out, err := os.ReadFile(filepath.Join("testdata", filename))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		_, err = conn.Write(out)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		conn.Close()
 	}

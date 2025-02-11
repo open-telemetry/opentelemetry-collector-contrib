@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	t.Run("Nil config gives error", func(t *testing.T) {
 		recv, err := createMetricsReceiver(
 			context.Background(),

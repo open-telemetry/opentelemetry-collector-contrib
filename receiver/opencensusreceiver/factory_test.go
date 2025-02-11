@@ -39,7 +39,7 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateTracesReceiver(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	defaultNetAddr := confignet.AddrConfig{
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
 		Transport: confignet.TransportTypeTCP,
@@ -89,14 +89,14 @@ func TestCreateTracesReceiver(t *testing.T) {
 			require.NoError(t, err)
 			err = tr.Start(context.Background(), componenttest.NewNopHost())
 			if (err != nil) != tt.wantErr {
-				t.Errorf("factory.CreateTracesReceiver() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("factory.CreateTraces() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			require.NoError(t, tr.Shutdown(context.Background()))
 		})
 	}
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	defaultNetAddr := confignet.AddrConfig{
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
 		Transport: confignet.TransportTypeTCP,
@@ -156,7 +156,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 				require.NoError(t, tc.Shutdown(context.Background()))
 			}()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("factory.CreateMetricsReceiver() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("factory.CreateMetrics() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 		})

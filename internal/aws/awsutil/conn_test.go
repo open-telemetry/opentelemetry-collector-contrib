@@ -50,7 +50,7 @@ func TestEC2Session(t *testing.T) {
 	expectedSession, _ = session.NewSession()
 	m.sn = expectedSession
 	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
-	assert.Equal(t, s, expectedSession, "Expect the session object is not overridden")
+	assert.Equal(t, expectedSession, s, "Expect the session object is not overridden")
 	assert.Equal(t, *cfg.Region, ec2Region, "Region value fetched from ec2-metadata service")
 	assert.NoError(t, err)
 }
@@ -62,12 +62,12 @@ func TestRegionEnv(t *testing.T) {
 	region := "us-east-1"
 	t.Setenv("AWS_REGION", region)
 
-	var m = &mockConn{}
+	m := &mockConn{}
 	var expectedSession *session.Session
 	expectedSession, _ = session.NewSession()
 	m.sn = expectedSession
 	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
-	assert.Equal(t, s, expectedSession, "Expect the session object is not overridden")
+	assert.Equal(t, expectedSession, s, "Expect the session object is not overridden")
 	assert.Equal(t, *cfg.Region, region, "Region value fetched from environment")
 	assert.NoError(t, err)
 }
@@ -116,13 +116,13 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 		RoleARN: roleArn,
 	}
 	se, err := conn.newAWSSession(logger, aWSSessionSettings, region)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, se)
 	aWSSessionSettings = &AWSSessionSettings{
 		RoleARN: "",
 	}
 	se, err = conn.newAWSSession(logger, aWSSessionSettings, region)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, se)
 	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "regional")
@@ -131,7 +131,7 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 	})
 	assert.NotNil(t, se)
 	_, err = conn.getEC2Region(se, aWSSessionSettings.IMDSRetries)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
@@ -153,7 +153,7 @@ func TestGetDefaultSession(t *testing.T) {
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	aWSSessionSettings := &AWSSessionSettings{}
 	_, err := GetDefaultSession(logger, aWSSessionSettings)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestGetSTSCreds(t *testing.T) {
@@ -165,10 +165,10 @@ func TestGetSTSCreds(t *testing.T) {
 	}
 	creds, err := getSTSCreds(logger, region, aWSSessionSettings)
 	assert.NotNil(t, creds)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	_, err = getSTSCreds(logger, region, aWSSessionSettings)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestLoadAmazonCertificateFromFile(t *testing.T) {
@@ -222,7 +222,6 @@ func TestConfusedDeputyHeaders(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			t.Setenv(AmzSourceAccount, tt.envSourceAccount)
 			t.Setenv(AmzSourceArn, tt.envSourceArn)
 
@@ -252,5 +251,4 @@ func TestConfusedDeputyHeaders(t *testing.T) {
 			assert.Equal(t, tt.expectedHeaderAccount, headerSourceAccount)
 		})
 	}
-
 }

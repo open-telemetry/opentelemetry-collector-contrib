@@ -17,11 +17,9 @@ type KV struct {
 	Value string
 }
 
-var (
-	// ErrTraceStateSize is returned when a TraceState is over its
-	// size limit, as specified by W3C.
-	ErrTraceStateSize = errors.New("invalid tracestate size")
-)
+// ErrTraceStateSize is returned when a TraceState is over its
+// size limit, as specified by W3C.
+var ErrTraceStateSize = errors.New("invalid tracestate size")
 
 // keyValueScanner defines distinct scanner behaviors for lists of
 // key-values.

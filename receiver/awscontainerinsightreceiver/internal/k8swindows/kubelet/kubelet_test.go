@@ -9,15 +9,15 @@ package kubelet
 import (
 	"testing"
 
-	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
-	cTestUtils "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/extractors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/testutils"
-
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+
+	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	cTestUtils "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/extractors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/testutils"
 )
 
 // MockKubeletProvider Mock provider implements KubeletProvider interface.
@@ -54,65 +54,69 @@ func mockMetricExtractors() []extractors.MetricExtractor {
 
 // TestGetPodMetrics Verify tags on pod and container levels metrics.
 func TestGetPodMetrics(t *testing.T) {
-
 	k8sSummaryProvider, err := New(&zap.Logger{}, mockInfoProvider(), mockMetricExtractors(), createKubeletDecoratorWithMockKubeletProvider(t, &zap.Logger{}))
+	assert.NoError(t, err)
 	summary, err := k8sSummaryProvider.kubeletProvider.GetSummary()
+	assert.NoError(t, err)
 	metrics, err := k8sSummaryProvider.getPodMetrics(summary)
+	assert.NoError(t, err)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, metrics)
 
 	podMetric := metrics[1]
-	assert.Equal(t, podMetric.GetMetricType(), ci.TypePod)
-	assert.NotNil(t, podMetric.GetTag(ci.AttributePodID))
-	assert.NotNil(t, podMetric.GetTag(ci.AttributeK8sPodName))
-	assert.NotNil(t, podMetric.GetTag(ci.AttributeK8sNamespace))
+	assert.Equal(t, ci.TypePod, podMetric.GetMetricType())
+	assert.NotNil(t, podMetric.GetTag(ci.PodIDKey))
+	assert.NotNil(t, podMetric.GetTag(ci.K8sPodNameKey))
+	assert.NotNil(t, podMetric.GetTag(ci.K8sNamespace))
 	assert.NotNil(t, podMetric.GetTag(ci.Timestamp))
 	assert.NotNil(t, podMetric.GetTag(ci.SourcesKey))
 
 	containerMetric := metrics[len(metrics)-1]
-	assert.Equal(t, containerMetric.GetMetricType(), ci.TypeContainer)
-	assert.NotNil(t, containerMetric.GetTag(ci.AttributePodID))
-	assert.NotNil(t, containerMetric.GetTag(ci.AttributeK8sPodName))
-	assert.NotNil(t, containerMetric.GetTag(ci.AttributeK8sNamespace))
+	assert.Equal(t, ci.TypeContainer, containerMetric.GetMetricType())
+	assert.NotNil(t, containerMetric.GetTag(ci.PodIDKey))
+	assert.NotNil(t, containerMetric.GetTag(ci.K8sPodNameKey))
+	assert.NotNil(t, containerMetric.GetTag(ci.K8sNamespace))
 	assert.NotNil(t, containerMetric.GetTag(ci.Timestamp))
-	assert.NotNil(t, containerMetric.GetTag(ci.AttributeContainerName))
-	assert.NotNil(t, containerMetric.GetTag(ci.AttributeContainerID))
+	assert.NotNil(t, containerMetric.GetTag(ci.ContainerNamekey))
+	assert.NotNil(t, containerMetric.GetTag(ci.ContainerIDkey))
 	assert.NotNil(t, containerMetric.GetTag(ci.SourcesKey))
 }
 
 // TestGetContainerMetrics verify tags on container level metrics returned.
 func TestGetContainerMetrics(t *testing.T) {
-
 	k8sSummaryProvider, err := New(&zap.Logger{}, mockInfoProvider(), mockMetricExtractors(), createKubeletDecoratorWithMockKubeletProvider(t, &zap.Logger{}))
+	assert.NoError(t, err)
 	summary, err := k8sSummaryProvider.kubeletProvider.GetSummary()
+	assert.NoError(t, err)
 
 	metrics, err := k8sSummaryProvider.getContainerMetrics(summary.Pods[0])
 	assert.NoError(t, err)
 	assert.NotNil(t, metrics)
 
 	containerMetric := metrics[1]
-	assert.Equal(t, containerMetric.GetMetricType(), ci.TypeContainer)
-	assert.NotNil(t, containerMetric.GetTag(ci.AttributePodID))
-	assert.NotNil(t, containerMetric.GetTag(ci.AttributeK8sPodName))
-	assert.NotNil(t, containerMetric.GetTag(ci.AttributeK8sNamespace))
+	assert.Equal(t, ci.TypeContainer, containerMetric.GetMetricType())
+	assert.NotNil(t, containerMetric.GetTag(ci.PodIDKey))
+	assert.NotNil(t, containerMetric.GetTag(ci.K8sPodNameKey))
+	assert.NotNil(t, containerMetric.GetTag(ci.K8sNamespace))
 	assert.NotNil(t, containerMetric.GetTag(ci.Timestamp))
-	assert.NotNil(t, containerMetric.GetTag(ci.AttributeContainerName))
-	assert.NotNil(t, containerMetric.GetTag(ci.AttributeContainerID))
+	assert.NotNil(t, containerMetric.GetTag(ci.ContainerNamekey))
+	assert.NotNil(t, containerMetric.GetTag(ci.ContainerIDkey))
 	assert.NotNil(t, containerMetric.GetTag(ci.SourcesKey))
 }
 
 // TestGetNodeMetrics verify tags on node level metrics.
 func TestGetNodeMetrics(t *testing.T) {
-
 	k8sSummaryProvider, err := New(&zap.Logger{}, mockInfoProvider(), mockMetricExtractors(), createKubeletDecoratorWithMockKubeletProvider(t, &zap.Logger{}))
+	assert.NoError(t, err)
 	summary, err := k8sSummaryProvider.kubeletProvider.GetSummary()
+	assert.NoError(t, err)
 
 	metrics, err := k8sSummaryProvider.getNodeMetrics(summary)
 	assert.NoError(t, err)
 	assert.NotNil(t, metrics)
 
 	nodeMetric := metrics[1]
-	assert.Equal(t, nodeMetric.GetMetricType(), ci.TypeNode)
+	assert.Equal(t, ci.TypeNode, nodeMetric.GetMetricType())
 	assert.NotNil(t, nodeMetric.GetTag(ci.SourcesKey))
 }

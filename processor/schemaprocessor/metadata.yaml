@@ -1,5 +1,4 @@
 type: schema
-scope_name: otelcol/schema
 
 status:
   class: processor
@@ -7,7 +6,7 @@ status:
     development: [traces, metrics, logs]
   distributions: []
   codeowners:
-    active: [MovieStoreGuy]
+    active: [MovieStoreGuy, ankitpatel96]
 
 tests:
   config:

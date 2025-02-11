@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -179,7 +179,7 @@ func TestSpan_Matching_False(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, expr)
 
-			val, err := expr.Eval(context.Background(), ottlspan.NewTransformContext(span, library, resource))
+			val, err := expr.Eval(context.Background(), ottlspan.NewTransformContext(span, library, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
 			require.NoError(t, err)
 			assert.False(t, val)
 		})
@@ -197,7 +197,7 @@ func TestSpan_MissingServiceName(t *testing.T) {
 	assert.NotNil(t, mp)
 
 	emptySpan := ptrace.NewSpan()
-	val, err := mp.Eval(context.Background(), ottlspan.NewTransformContext(emptySpan, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
+	val, err := mp.Eval(context.Background(), ottlspan.NewTransformContext(emptySpan, pcommon.NewInstrumentationScope(), pcommon.NewResource(), ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
 	require.NoError(t, err)
 	assert.False(t, val)
 }
@@ -288,7 +288,7 @@ func TestSpan_Matching_True(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, mp)
 
-			val, err := mp.Eval(context.Background(), ottlspan.NewTransformContext(span, library, resource))
+			val, err := mp.Eval(context.Background(), ottlspan.NewTransformContext(span, library, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans()))
 			require.NoError(t, err)
 			assert.True(t, val)
 		})
@@ -298,13 +298,12 @@ func TestSpan_Matching_True(t *testing.T) {
 func TestServiceNameForResource(t *testing.T) {
 	td := testdata.GenerateTracesOneSpanNoResource()
 	name := serviceNameForResource(td.ResourceSpans().At(0).Resource())
-	require.Equal(t, name, "<nil-service-name>")
+	require.Equal(t, "<nil-service-name>", name)
 
 	td = testdata.GenerateTracesOneSpan()
 	resource := td.ResourceSpans().At(0).Resource()
 	name = serviceNameForResource(resource)
-	require.Equal(t, name, "<nil-service-name>")
-
+	require.Equal(t, "<nil-service-name>", name)
 }
 
 func Test_NewSkipExpr_With_Bridge(t *testing.T) {
@@ -1211,7 +1210,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 			scope.SetName("scope")
 			scope.SetVersion("0.1.0")
 
-			tCtx := ottlspan.NewTransformContext(span, scope, resource)
+			tCtx := ottlspan.NewTransformContext(span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
 
 			boolExpr, err := NewSkipExpr(tt.condition)
 			require.NoError(t, err)
@@ -1279,7 +1278,7 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 
 		scope := pcommon.NewInstrumentationScope()
 
-		tCtx := ottlspan.NewTransformContext(span, scope, resource)
+		tCtx := ottlspan.NewTransformContext(span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
 
 		b.Run(tt.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {

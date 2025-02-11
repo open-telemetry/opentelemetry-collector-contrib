@@ -19,19 +19,19 @@ func TestMarshaler(t *testing.T) {
 		m, err := newMarshaler("otlp_json", zap.NewNop())
 		assert.NoError(t, err)
 		require.NotNil(t, m)
-		assert.Equal(t, m.format(), "json")
+		assert.Equal(t, "json", m.format())
 	}
 	{
 		m, err := newMarshaler("otlp_proto", zap.NewNop())
 		assert.NoError(t, err)
 		require.NotNil(t, m)
-		assert.Equal(t, m.format(), "binpb")
+		assert.Equal(t, "binpb", m.format())
 	}
 	{
 		m, err := newMarshaler("sumo_ic", zap.NewNop())
 		assert.NoError(t, err)
 		require.NotNil(t, m)
-		assert.Equal(t, m.format(), "json.gz")
+		assert.Equal(t, "json.gz", m.format())
 	}
 	{
 		m, err := newMarshaler("unknown", zap.NewNop())
@@ -42,24 +42,12 @@ func TestMarshaler(t *testing.T) {
 		m, err := newMarshaler("body", zap.NewNop())
 		assert.NoError(t, err)
 		require.NotNil(t, m)
-		assert.Equal(t, m.format(), "txt")
+		assert.Equal(t, "txt", m.format())
 	}
 }
 
 type hostWithExtensions struct {
 	encoding encodingExtension
-}
-
-func (h hostWithExtensions) Start(context.Context, component.Host) error {
-	panic("unsupported")
-}
-
-func (h hostWithExtensions) Shutdown(context.Context) error {
-	panic("unsupported")
-}
-
-func (h hostWithExtensions) GetFactory(component.Kind, component.Type) component.Factory {
-	panic("unsupported")
 }
 
 func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component {
@@ -68,12 +56,7 @@ func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component
 	}
 }
 
-func (h hostWithExtensions) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	panic("unsupported")
-}
-
-type encodingExtension struct {
-}
+type encodingExtension struct{}
 
 func (e encodingExtension) Start(_ context.Context, _ component.Host) error {
 	panic("unsupported")

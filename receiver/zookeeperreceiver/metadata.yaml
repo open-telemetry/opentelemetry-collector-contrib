@@ -1,10 +1,9 @@
 type: zookeeper
-scope_name: otelcol/zookeeperreceiver
 
 status:
   class: receiver
   stability:
-    development: [metrics]
+    alpha: [metrics]
   distributions: [contrib]
   codeowners:
     active: [djaglowski]
@@ -152,7 +151,7 @@ metrics:
   zookeeper.ruok:
     enabled: true
     description: Response from zookeeper ruok command
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
 

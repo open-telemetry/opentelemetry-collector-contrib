@@ -48,7 +48,7 @@ func TestProcessLogsWithoutFlatten(t *testing.T) {
 		},
 	}
 	sink := new(consumertest.LogsSink)
-	p, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopSettings(), oCfg, sink)
+	p, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), oCfg, sink)
 	require.NoError(t, err)
 
 	input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
@@ -79,7 +79,7 @@ func TestProcessLogsWithFlatten(t *testing.T) {
 		},
 	}
 	sink := new(consumertest.LogsSink)
-	p, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopSettings(), oCfg, sink)
+	p, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), oCfg, sink)
 	require.NoError(t, err)
 
 	input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
@@ -109,7 +109,7 @@ func BenchmarkLogsWithoutFlatten(b *testing.B) {
 		},
 	}
 	sink := new(consumertest.LogsSink)
-	p, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopSettings(), oCfg, sink)
+	p, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), oCfg, sink)
 	require.NoError(b, err)
 
 	input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
@@ -135,7 +135,7 @@ func BenchmarkLogsWithFlatten(b *testing.B) {
 		},
 	}
 	sink := new(consumertest.LogsSink)
-	p, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopSettings(), oCfg, sink)
+	p, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), oCfg, sink)
 	require.NoError(b, err)
 
 	input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))

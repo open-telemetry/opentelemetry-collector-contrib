@@ -9,14 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap/zaptest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 func TestSubmitLogs(t *testing.T) {
@@ -196,7 +195,7 @@ func TestSubmitLogs(t *testing.T) {
 			if err := s.SubmitLogs(context.Background(), tt.payload); err != nil {
 				t.Fatal(err)
 			}
-			assert.True(t, calls == tt.numRequests)
+			assert.Equal(t, calls, tt.numRequests)
 		})
 	}
 }

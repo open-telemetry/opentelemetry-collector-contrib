@@ -1,5 +1,4 @@
 type: snmp
-scope_name: otelcol/snmpreceiver
 
 status:
   class: receiver
@@ -7,7 +6,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, StefanKurek, tamir-michaeli]
+    active: [StefanKurek, tamir-michaeli]
 
 tests:
   config:

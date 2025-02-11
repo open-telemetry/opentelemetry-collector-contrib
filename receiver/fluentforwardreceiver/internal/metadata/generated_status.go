@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("fluentforward")
+	Type      = component.MustNewType("fluentforward")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 )
 
 const (

@@ -1,5 +1,4 @@
 type: hostmetricsreceiver/paging
-scope_name: otelcol/hostmetricsreceiver/paging
 
 parent: hostmetrics
 
@@ -59,7 +58,7 @@ metrics:
   system.paging.utilization:
     enabled: false
     description: Swap (unix) or pagefile (windows) utilization.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [device, state]

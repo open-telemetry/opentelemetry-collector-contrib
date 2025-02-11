@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"fmt"
+	"errors"
 	"net"
 	"reflect"
 	"runtime"
@@ -182,7 +182,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 
 func TestAMQPDialFailure(t *testing.T) {
 	const expectedAddr = "some-host:1234"
-	var expectedErr = fmt.Errorf("some error")
+	expectedErr := errors.New("some error")
 	dialFunc = func(_ context.Context, addr string, _ *amqp.ConnOptions) (*amqp.Conn, error) {
 		defer func() { dialFunc = amqp.Dial }() // reset dialFunc
 		assert.Equal(t, expectedAddr, addr)
@@ -207,7 +207,7 @@ func TestAMQPDialFailure(t *testing.T) {
 func TestAMQPDialConfigOptionsWithoutTLS(t *testing.T) {
 	// try creating a service without a tls config calling dial expecting no tls config passed
 	const expectedAddr = "some-host:1234"
-	var expectedErr = fmt.Errorf("some error")
+	expectedErr := errors.New("some error")
 	expectedAuthConnOption := amqp.SASLTypeAnonymous()
 	dialFunc = func(_ context.Context, addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
 		defer func() { dialFunc = amqp.Dial }() // reset dialFunc
@@ -235,7 +235,7 @@ func TestAMQPDialConfigOptionsWithoutTLS(t *testing.T) {
 func TestAMQPDialConfigOptionsWithTLS(t *testing.T) {
 	// try creating a service with a tls config calling dial
 	const expectedAddr = "some-host:1234"
-	var expectedErr = fmt.Errorf("some error")
+	expectedErr := errors.New("some error")
 	expectedAuthConnOption := amqp.SASLTypeAnonymous()
 	expectedTLSConnOption := &tls.Config{
 		InsecureSkipVerify: false,
@@ -302,7 +302,7 @@ func TestAMQPNewClientDialAndCloseConnFailure(t *testing.T) {
 	closed := false
 	conn.setCloseHandler(func() error {
 		closed = true
-		return fmt.Errorf("some error")
+		return errors.New("some error")
 	})
 	service.close(context.Background())
 	// expect conn.Close to have been called
@@ -506,7 +506,7 @@ func TestAMQPSubstituteVariables(t *testing.T) {
 // It is not a perfect comparison but will perform well differentiating between anonymous
 // functions and the amqp named functinos
 func testFunctionEquality(t *testing.T, f1, f2 any) {
-	assert.True(t, (f1 == nil) == (f2 == nil))
+	assert.Equal(t, (f1 == nil), (f2 == nil))
 	if f1 == nil {
 		return
 	}
@@ -636,8 +636,10 @@ type connMock struct {
 	remaining   *bytes.Reader
 }
 
-type writeHandler func([]byte) (n int, err error)
-type closeHandler func() error
+type (
+	writeHandler func([]byte) (n int, err error)
+	closeHandler func() error
+)
 
 func (c *connMock) setWriteHandler(handler writeHandler) {
 	atomic.StorePointer(&c.writeHandle, unsafe.Pointer(&handler))
@@ -679,18 +681,23 @@ func (c *connMock) Close() error {
 	}
 	return nil
 }
+
 func (c *connMock) LocalAddr() net.Addr {
 	return nil
 }
+
 func (c *connMock) RemoteAddr() net.Addr {
 	return nil
 }
+
 func (c *connMock) SetDeadline(_ time.Time) error {
 	return nil
 }
+
 func (c *connMock) SetReadDeadline(_ time.Time) error {
 	return nil
 }
+
 func (c *connMock) SetWriteDeadline(_ time.Time) error {
 	return nil
 }

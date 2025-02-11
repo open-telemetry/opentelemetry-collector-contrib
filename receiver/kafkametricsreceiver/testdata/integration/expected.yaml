@@ -12,5 +12,5 @@ resourceMetrics:
             name: kafka.brokers
             unit: '{brokers}'
         scope:
-          name: otelcol/kafkametricsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
           version: latest

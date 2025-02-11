@@ -9,9 +9,8 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/aws/aws-sdk-go/aws/request"
-
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
@@ -42,7 +41,8 @@ type ec2ClientBuilder struct{}
 func (e *ec2ClientBuilder) buildClient(region string, client *http.Client) (ec2iface.EC2API, error) {
 	sess, err := session.NewSession(&aws.Config{
 		Region:     aws.String(region),
-		HTTPClient: client},
+		HTTPClient: client,
+	},
 	)
 	if err != nil {
 		return nil, err

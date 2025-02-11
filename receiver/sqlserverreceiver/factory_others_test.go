@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-func TestCreateMetricsReceiverOtherOS(t *testing.T) {
+func TestCreateMetricsOtherOS(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		testFunc func(*testing.T)
@@ -54,7 +54,7 @@ func TestCreateMetricsReceiverOtherOS(t *testing.T) {
 
 				require.True(t, databaseIOScraperFound)
 
-				r, err := factory.CreateMetricsReceiver(
+				r, err := factory.CreateMetrics(
 					context.Background(),
 					receivertest.NewNopSettings(),
 					cfg,

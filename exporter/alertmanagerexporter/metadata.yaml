@@ -1,5 +1,4 @@
 type: alertmanager
-scope_name: otelcol/alertmanager
 
 status:
   class: exporter
@@ -7,7 +6,7 @@ status:
     development: [traces]
   distributions: []
   codeowners:
-    active: [jpkrohling, sokoide, mcube8]
+    active: [sokoide, mcube8]
 
 tests:
   config:

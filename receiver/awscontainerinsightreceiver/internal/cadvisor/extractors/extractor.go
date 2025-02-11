@@ -47,7 +47,8 @@ func NewFloat64RateCalculator() awsmetrics.MetricCalculator {
 }
 
 func AssignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields map[string]any, metricName string,
-	cinfoName string, curVal any, curTime time.Time, multiplier float64) {
+	cinfoName string, curVal any, curTime time.Time, multiplier float64,
+) {
 	mKey := awsmetrics.NewKey(cinfoName+metricName, nil)
 	if val, ok := rateCalculator.Calculate(mKey, curVal, curTime); ok {
 		fields[metricName] = val.(float64) * multiplier
@@ -83,16 +84,16 @@ func getMetricKey(metric *stores.CIMetricImpl) string {
 	switch metricType {
 	case ci.TypeInstance:
 		// merge cpu, memory, net metric for type Instance
-		metricKey = fmt.Sprintf("metricType:%s", ci.TypeInstance)
+		metricKey = "metricType:" + ci.TypeInstance
 	case ci.TypeNode:
 		// merge cpu, memory, net metric for type Node
-		metricKey = fmt.Sprintf("metricType:%s", ci.TypeNode)
+		metricKey = "metricType:" + ci.TypeNode
 	case ci.TypePod:
 		// merge cpu, memory, net metric for type Pod
-		metricKey = fmt.Sprintf("metricType:%s,podId:%s", ci.TypePod, metric.GetTags()[ci.AttributePodID])
+		metricKey = fmt.Sprintf("metricType:%s,podId:%s", ci.TypePod, metric.GetTags()[ci.PodIDKey])
 	case ci.TypeContainer:
 		// merge cpu, memory metric for type Container
-		metricKey = fmt.Sprintf("metricType:%s,podId:%s,containerName:%s", ci.TypeContainer, metric.GetTags()[ci.AttributePodID], metric.GetTags()[ci.AttributeContainerName])
+		metricKey = fmt.Sprintf("metricType:%s,podId:%s,containerName:%s", ci.TypeContainer, metric.GetTags()[ci.PodIDKey], metric.GetTags()[ci.ContainerNamekey])
 	case ci.TypeInstanceDiskIO:
 		// merge io_serviced, io_service_bytes for type InstanceDiskIO
 		metricKey = fmt.Sprintf("metricType:%s,device:%s", ci.TypeInstanceDiskIO, metric.GetTags()[ci.DiskDev])

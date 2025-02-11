@@ -69,16 +69,16 @@ func TestCopyTruncate(t *testing.T) {
 					filetest.WriteString(t, file, getMessage(fn, rotationNum, messageNum)+"\n")
 					time.Sleep(10 * time.Millisecond)
 				}
-				require.NoError(t, file.Sync())
+				assert.NoError(t, file.Sync())
 				_, err := file.Seek(0, 0)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 				dst := filetest.OpenFile(t, fileName(fn, rotationNum))
 				_, err = io.Copy(dst, file)
-				require.NoError(t, err)
-				require.NoError(t, dst.Close())
-				require.NoError(t, file.Truncate(0))
+				assert.NoError(t, err)
+				assert.NoError(t, dst.Close())
+				assert.NoError(t, file.Truncate(0))
 				_, err = file.Seek(0, 0)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}
 		}(fileNum)
 	}
@@ -130,8 +130,8 @@ func TestMoveCreate(t *testing.T) {
 					filetest.WriteString(t, file, getMessage(fn, rotationNum, messageNum)+"\n")
 					time.Sleep(10 * time.Millisecond)
 				}
-				require.NoError(t, file.Close())
-				require.NoError(t, os.Rename(baseFileName(fn), fileName(fn, rotationNum)))
+				assert.NoError(t, file.Close())
+				assert.NoError(t, os.Rename(baseFileName(fn), fileName(fn, rotationNum)))
 			}
 		}(fileNum)
 	}
@@ -191,14 +191,14 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	operator.wg.Wait()
 
 	newDir := fmt.Sprintf("%s%s", tempDir[:len(tempDir)-1], "_new/")
-	err := os.Mkdir(newDir, 0777)
+	err := os.Mkdir(newDir, 0o777)
 	require.NoError(t, err)
 	newFileName := fmt.Sprintf("%s%s", newDir, "newfile.log")
 
 	err = os.Rename(temp1.Name(), newFileName)
 	require.NoError(t, err)
 
-	movedFile, err := os.OpenFile(newFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	movedFile, err := os.OpenFile(newFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	require.NoError(t, err)
 	filetest.WriteString(t, movedFile, "testlog2\n")
 	operator.poll(context.Background())
@@ -236,12 +236,12 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 	originalFile.Close()
 
 	newDir := fmt.Sprintf("%s%s", tempDir[:len(tempDir)-1], "_new/")
-	require.NoError(t, os.Mkdir(newDir, 0777))
+	require.NoError(t, os.Mkdir(newDir, 0o777))
 	movedFileName := fmt.Sprintf("%s%s", newDir, "newfile.log")
 
 	require.NoError(t, os.Rename(orginalName, movedFileName))
 
-	newFile, err := os.OpenFile(orginalName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	newFile, err := os.OpenFile(orginalName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	require.NoError(t, err)
 	filetest.WriteString(t, newFile, "testlog3\n")
 

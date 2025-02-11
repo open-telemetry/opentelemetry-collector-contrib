@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	Type = component.MustNewType("azuremonitor")
+	Type      = component.MustNewType("azuremonitor")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 )
 
 const (
-	MetricsStability = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelAlpha
 )

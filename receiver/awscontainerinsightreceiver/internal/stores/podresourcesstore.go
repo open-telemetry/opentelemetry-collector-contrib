@@ -113,7 +113,6 @@ func (p *PodResourcesStore) updateMaps() {
 	}
 
 	devicePods, err := p.podResourcesClient.ListPods()
-
 	if err != nil {
 		p.logger.Error(fmt.Sprintf("Error getting pod resources: %v", err))
 		return
@@ -122,7 +121,6 @@ func (p *PodResourcesStore) updateMaps() {
 	for _, pod := range devicePods.GetPodResources() {
 		for _, container := range pod.GetContainers() {
 			for _, device := range container.GetDevices() {
-
 				containerInfo := ContainerInfo{
 					PodName:       pod.GetName(),
 					Namespace:     pod.GetNamespace(),

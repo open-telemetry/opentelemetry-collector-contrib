@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"sync"
 
-	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
@@ -18,9 +19,17 @@ import (
 )
 
 const (
-	operatorType              = "container"
-	recombineSourceIdentifier = "log.file.path"
-	recombineIsLastEntry      = "attributes.logtag == 'F'"
+	operatorType                       = "container"
+	recombineSourceIdentifier          = "log.file.path"
+	recombineIsLastEntry               = "attributes.logtag == 'F'"
+	removeOriginalTimeFieldFeatureFlag = "filelog.container.removeOriginalTimeField"
+)
+
+var removeOriginalTimeField = featuregate.GlobalRegistry().MustRegister(
+	removeOriginalTimeFieldFeatureFlag,
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, deletes the original `time` field from the Log Attributes. Time is parsed to Timestamp field, which should be used instead."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33389"),
 )
 
 func init() {
@@ -58,14 +67,6 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 
-	cLogEmitter := helper.NewLogEmitter(set)
-	recombineParser, err := createRecombine(set, c, cLogEmitter)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create internal recombine config: %w", err)
-	}
-
-	wg := sync.WaitGroup{}
-
 	if c.Format != "" {
 		switch c.Format {
 		case dockerFormat, crioFormat, containerdFormat:
@@ -78,15 +79,32 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		}
 	}
 
+	if !removeOriginalTimeField.IsEnabled() {
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33389
+		set.Logger.Info("`time` log record attribute will be removed in a future release. Switch now using the feature gate.",
+			zap.String("attribute", "time"),
+			zap.String("feature gate", removeOriginalTimeFieldFeatureFlag),
+		)
+	}
+
+	wg := sync.WaitGroup{}
+
 	p := &Parser{
 		ParserOperator:          parserOperator,
-		recombineParser:         recombineParser,
-		json:                    jsoniter.ConfigFastest,
 		format:                  c.Format,
 		addMetadataFromFilepath: c.AddMetadataFromFilePath,
-		crioLogEmitter:          cLogEmitter,
 		criConsumers:            &wg,
 	}
+
+	cLogEmitter := helper.NewLogEmitter(set, p.consumeEntries)
+	p.criLogEmitter = cLogEmitter
+	recombineParser, err := createRecombine(set, c, cLogEmitter)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create internal recombine config: %w", err)
+	}
+
+	p.recombineParser = recombineParser
+
 	return p, nil
 }
 

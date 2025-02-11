@@ -97,8 +97,7 @@ func TestValidateConfig(t *testing.T) {
 			t.Parallel()
 
 			err := test.conf.Validate()
-			require.Error(t, err)
-			require.Contains(t, err.Error(), test.expect.Error())
+			require.ErrorContains(t, err, test.expect.Error())
 		})
 	}
 }

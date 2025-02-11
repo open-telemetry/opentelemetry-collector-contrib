@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func allConsumers[T any](r router[T]) ([]T, error) {
@@ -29,8 +30,8 @@ func allConsumers[T any](r router[T]) ([]T, error) {
 }
 
 type router[T any] interface {
-	PipelineIDs() []component.ID
-	Consumer(pipelineIDs ...component.ID) (T, error)
+	PipelineIDs() []pipeline.ID
+	Consumer(pipelineIDs ...pipeline.ID) (T, error)
 }
 
 func newLogs(nextConsumer consumer.Logs) (connector.Logs, error) {

@@ -11,7 +11,7 @@ import (
 )
 
 func TestWithValue(t *testing.T) {
-	assert.Nil(t, WithValue(nil, "a", "b"))
+	assert.NoError(t, WithValue(nil, "a", "b"))
 	assert.Panics(t, func() {
 		_ = WithValue(fmt.Errorf("base"), "", nil)
 	})
@@ -35,7 +35,7 @@ func TestWithValue(t *testing.T) {
 }
 
 func TestWithValues(t *testing.T) {
-	assert.Nil(t, WithValues(nil, map[string]any{"a": "b"}))
+	assert.NoError(t, WithValues(nil, map[string]any{"a": "b"}))
 	assert.Panics(t, func() {
 		_ = WithValues(fmt.Errorf("base"), map[string]any{"": "123"})
 	})
@@ -83,5 +83,4 @@ func TestValueFrom(t *testing.T) {
 		assert.True(t, ok)
 		assert.Equal(t, "e2", v)
 	})
-
 }

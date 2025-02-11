@@ -21,10 +21,12 @@ endif
 # SRC_ROOT is the top of the source tree.
 SRC_ROOT := $(shell git rev-parse --show-toplevel)
 # SRC_PARENT_DIR is the absolute path of source tree's parent directory
-SRC_PARENT_DIR :=  $(shell dirname $(SRC_ROOT))
+SRC_PARENT_DIR := $(shell dirname $(SRC_ROOT))
 
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
 GO_BUILD_TAGS=""
+# These ldflags allow the build tool to omit the symbol table, debug information, and the DWARF symbol table to downscale binary size.
+GO_BUILD_LDFLAGS="-s -w"
 GOTEST_TIMEOUT?= 600s
 GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
 GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4
@@ -34,6 +36,7 @@ GOTEST_OPT_WITH_INTEGRATION_COVERAGE=$(GOTEST_OPT_WITH_INTEGRATION) -coverprofil
 GOCMD?= go
 GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
+GOTESTARCH?=$(GOARCH)
 
 # In order to help reduce toil related to managing tooling for the open telemetry collector
 # this section of the makefile looks at only requiring command definitions to be defined
@@ -54,7 +57,7 @@ $(TOOLS_BIN_DIR):
 	mkdir -p $@
 
 $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
+	cd $(TOOLS_MOD_DIR) && GOOS="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
 
 ADDLICENSE          := $(TOOLS_BIN_DIR)/addlicense
 MDLINKCHECK         := $(TOOLS_BIN_DIR)/markdown-link-check
@@ -69,11 +72,14 @@ CHECKFILE           := $(TOOLS_BIN_DIR)/checkfile
 CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
 GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report
 BUILDER             := $(TOOLS_BIN_DIR)/builder
+GOFUMPT             := $(TOOLS_BIN_DIR)/gofumpt
 GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 GCI                 := $(TOOLS_BIN_DIR)/gci
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
+TESTIFYLINT         := $(TOOLS_BIN_DIR)/testifylint
 
 GOTESTSUM_OPT?= --rerun-fails=1
+TESTIFYLINT_OPT?= --enable-all --disable=float-compare,require-error,suite-subtest-run,encoded-compare
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
@@ -85,7 +91,7 @@ ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
                                 -not -path '*/local/*' \
                                 -type f | sort)
 
-ALL_SRC_AND_SHELL := find . -type f  \( -iname '*.go' -o -iname "*.sh" \) ! -path '**/third_party/*' | sort
+ALL_SRC_AND_SHELL := find . -type f \( -iname '*.go' -o -iname "*.sh" \) ! -path '**/third_party/*' | sort
 
 # All source code and documents. Used in spell check.
 ALL_SRC_AND_DOC_CMD := find $(ALL_PKG_DIRS) -name "*.md" -o -name "*.go" -o -name "*.yaml" -not -path '*/third_party/*' -type f | sort
@@ -133,24 +139,36 @@ test-with-cover: $(GOTESTSUM)
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover: $(GOTESTSUM)
 	@echo "running $(GOCMD) unit test ./... + coverage in `pwd`"
-	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." --  $(GOTEST_OPT_WITH_COVERAGE)
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_COVERAGE)
 	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
+
+.PHONY: buildtest
+buildtest:
+ifneq (,$(wildcard ./*.go))
+	GOARCH=$(GOTESTARCH) CGO_ENABLED=1 $(GOCMD) test -c -o builtunitetest.test
+endif
+
+.PHONY: runbuilttest
+runbuilttest: $(GOTESTSUM)
+ifneq (,$(wildcard ./builtunitetest.test))
+	$(GOTESTSUM) --raw-command -- $(GOCMD) tool test2json -p "./..." -t ./builtunitetest.test -test.v -test.failfast -test.timeout $(GOTEST_TIMEOUT)
+endif	
 
 .PHONY: mod-integration-test
 mod-integration-test: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration test ./... in `pwd`"
 	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION)
 	@if [ -e integration-coverage.txt ]; then \
-  		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
-  	fi
+		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
+	fi
 
 .PHONY: do-integration-tests-with-cover
 do-integration-tests-with-cover: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration test ./... + coverage in `pwd`"
-	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." --  $(GOTEST_OPT_WITH_INTEGRATION_COVERAGE)
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION_COVERAGE)
 	@if [ -e integration-coverage.txt ]; then \
-  		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
-  	fi
+		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
+	fi
 
 .PHONY: benchmark
 benchmark: $(GOTESTSUM)
@@ -190,9 +208,9 @@ checklinks:
 		$(MDLINKCHECK) -q -c $(SRC_ROOT)/.github/workflows/check_links_config.json || true
 
 .PHONY: fmt
-fmt: $(GOIMPORTS)
-	gofmt  -w -s ./
-	$(GOIMPORTS) -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+fmt: $(GOFUMPT) $(GOIMPORTS)
+	$(GOFUMPT) -l -w .
+	$(GOIMPORTS) -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
@@ -205,7 +223,11 @@ govulncheck: $(GOVULNCHECK)
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.21.0
+	$(GOCMD) mod tidy -compat=1.22.0
+
+.PHONY: toolchain
+toolchain:
+	$(GOCMD) get toolchain@none
 
 .PHONY: misspell
 misspell: $(TOOLS_BIN_DIR)/misspell
@@ -219,6 +241,15 @@ misspell-correction: $(TOOLS_BIN_DIR)/misspell
 .PHONY: moddownload
 moddownload:
 	$(GOCMD) mod download
+
+.PHONY: testifylint
+testifylint: $(TESTIFYLINT)
+	@echo "running $(TESTIFYLINT)"
+	$(TESTIFYLINT) $(TESTIFYLINT_OPT) ./...
+
+.PHONY: testifylint-fix
+testifylint-fix:
+	@$(MAKE) testifylint TESTIFYLINT_OPT="${TESTIFYLINT_OPT} --fix"
 
 .PHONY: gci
 gci: $(TOOLS_BIN_DIR)/gci

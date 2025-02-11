@@ -5,6 +5,7 @@ package postgresqlreceiver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -44,6 +45,13 @@ func TestScraper(t *testing.T) {
 		cfg.Metrics.PostgresqlWalDelay.Enabled = true
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
+		cfg.Metrics.PostgresqlTupReturned.Enabled = true
+		cfg.Metrics.PostgresqlTupFetched.Enabled = true
+		cfg.Metrics.PostgresqlTupInserted.Enabled = true
+		cfg.Metrics.PostgresqlTupDeleted.Enabled = true
+		cfg.Metrics.PostgresqlBlksHit.Enabled = true
+		cfg.Metrics.PostgresqlBlksRead.Enabled = true
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 
@@ -80,6 +88,20 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
+		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
+		cfg.Metrics.PostgresqlTupReturned.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupFetched.Enabled)
+		cfg.Metrics.PostgresqlTupFetched.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupInserted.Enabled)
+		cfg.Metrics.PostgresqlTupInserted.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupDeleted.Enabled)
+		cfg.Metrics.PostgresqlTupDeleted.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlBlksHit.Enabled)
+		cfg.Metrics.PostgresqlBlksHit.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlBlksRead.Enabled)
+		cfg.Metrics.PostgresqlBlksRead.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlSequentialScans.Enabled)
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
@@ -99,6 +121,13 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlWalDelay.Enabled = false
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = false
 		cfg.Metrics.PostgresqlTempFiles.Enabled = false
+		cfg.Metrics.PostgresqlTupUpdated.Enabled = false
+		cfg.Metrics.PostgresqlTupReturned.Enabled = false
+		cfg.Metrics.PostgresqlTupFetched.Enabled = false
+		cfg.Metrics.PostgresqlTupInserted.Enabled = false
+		cfg.Metrics.PostgresqlTupDeleted.Enabled = false
+		cfg.Metrics.PostgresqlBlksHit.Enabled = false
+		cfg.Metrics.PostgresqlBlksRead.Enabled = false
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = false
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = false
 
@@ -134,6 +163,20 @@ func TestScraperNoDatabaseMultipleWithoutPreciseLag(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
+		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
+		cfg.Metrics.PostgresqlTupReturned.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupFetched.Enabled)
+		cfg.Metrics.PostgresqlTupFetched.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupInserted.Enabled)
+		cfg.Metrics.PostgresqlTupInserted.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupDeleted.Enabled)
+		cfg.Metrics.PostgresqlTupDeleted.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlBlksHit.Enabled)
+		cfg.Metrics.PostgresqlBlksHit.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlBlksRead.Enabled)
+		cfg.Metrics.PostgresqlBlksRead.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlSequentialScans.Enabled)
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
@@ -171,6 +214,20 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
+		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
+		cfg.Metrics.PostgresqlTupReturned.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupFetched.Enabled)
+		cfg.Metrics.PostgresqlTupFetched.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupInserted.Enabled)
+		cfg.Metrics.PostgresqlTupInserted.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupDeleted.Enabled)
+		cfg.Metrics.PostgresqlTupDeleted.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlBlksHit.Enabled)
+		cfg.Metrics.PostgresqlBlksHit.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlBlksRead.Enabled)
+		cfg.Metrics.PostgresqlBlksRead.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlSequentialScans.Enabled)
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
@@ -208,6 +265,20 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
+		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
+		cfg.Metrics.PostgresqlTupReturned.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupFetched.Enabled)
+		cfg.Metrics.PostgresqlTupFetched.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupInserted.Enabled)
+		cfg.Metrics.PostgresqlTupInserted.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupDeleted.Enabled)
+		cfg.Metrics.PostgresqlTupDeleted.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlBlksHit.Enabled)
+		cfg.Metrics.PostgresqlBlksHit.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlBlksRead.Enabled)
+		cfg.Metrics.PostgresqlBlksRead.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlSequentialScans.Enabled)
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
@@ -246,6 +317,20 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTempFiles.Enabled)
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
+		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
+		cfg.Metrics.PostgresqlTupReturned.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupFetched.Enabled)
+		cfg.Metrics.PostgresqlTupFetched.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupInserted.Enabled)
+		cfg.Metrics.PostgresqlTupInserted.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupDeleted.Enabled)
+		cfg.Metrics.PostgresqlTupDeleted.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlBlksHit.Enabled)
+		cfg.Metrics.PostgresqlBlksHit.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlBlksRead.Enabled)
+		cfg.Metrics.PostgresqlBlksRead.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlSequentialScans.Enabled)
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)
@@ -295,8 +380,10 @@ func TestScraperExcludeDatabase(t *testing.T) {
 	runTest(false, "exclude.yaml")
 }
 
-type mockClientFactory struct{ mock.Mock }
-type mockClient struct{ mock.Mock }
+type (
+	mockClientFactory struct{ mock.Mock }
+	mockClient        struct{ mock.Mock }
+)
 
 var _ client = &mockClient{}
 
@@ -403,6 +490,13 @@ func (m *mockClient) initMocks(database string, schema string, databases []strin
 				transactionRollback:  int64(idx + 2),
 				deadlocks:            int64(idx + 3),
 				tempFiles:            int64(idx + 4),
+				tupUpdated:           int64(idx + 5),
+				tupReturned:          int64(idx + 6),
+				tupFetched:           int64(idx + 7),
+				tupInserted:          int64(idx + 8),
+				tupDeleted:           int64(idx + 9),
+				blksHit:              int64(idx + 10),
+				blksRead:             int64(idx + 11),
 			}
 			dbSize[databaseName(db)] = int64(idx + 4)
 			backends[databaseName(db)] = int64(idx + 3)
@@ -453,7 +547,7 @@ func (m *mockClient) initMocks(database string, schema string, databases []strin
 				lockType: "relation",
 				locks:    5600,
 			},
-		}, fmt.Errorf("some error"))
+		}, errors.New("some error"))
 		m.On("getReplicationStats", mock.Anything).Return([]replicationStats{
 			{
 				clientAddr:   "unix",
@@ -542,8 +636,8 @@ func (m *mockClient) initMocks(database string, schema string, databases []strin
 		m.On("getDatabaseTableMetrics", mock.Anything, database).Return(tableMetrics, nil)
 		m.On("getBlocksReadByTable", mock.Anything, database).Return(blocksMetrics, nil)
 
-		index1 := fmt.Sprintf("%s_test1_pkey", database)
-		index2 := fmt.Sprintf("%s_test2_pkey", database)
+		index1 := database + "_test1_pkey"
+		index2 := database + "_test2_pkey"
 		indexStats := map[indexIdentifer]indexStat{
 			indexKey(database, schema, table1, index1): {
 				database: database,

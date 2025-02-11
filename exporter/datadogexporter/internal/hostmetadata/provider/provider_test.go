@@ -6,6 +6,7 @@ package provider // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -38,8 +39,12 @@ type delayedProvider struct {
 }
 
 func (p *delayedProvider) Source(ctx context.Context) (source.Source, error) {
-	time.Sleep(p.delay)
-	return p.provider.Source(ctx)
+	select {
+	case <-ctx.Done():
+		return source.Source{}, fmt.Errorf("no source provider was available")
+	case <-time.After(p.delay):
+		return p.provider.Source(ctx)
+	}
 }
 
 func withDelay(provider source.Provider, delay time.Duration) source.Provider {
@@ -56,6 +61,7 @@ func TestChain(t *testing.T) {
 
 		hostname string
 		queryErr string
+		timeout  time.Duration
 	}{
 		{
 			name: "missing provider in priority list",
@@ -77,6 +83,18 @@ func TestChain(t *testing.T) {
 			priorityList: []string{"p1", "p2"},
 
 			queryErr: "no source provider was available",
+		},
+		{
+			name: "all providers timeout",
+			providers: map[string]source.Provider{
+				"p1": withDelay(HostProvider("p1SourceName"), 100*time.Millisecond),
+				"p2": withDelay(HostProvider("p2SourceName"), 100*time.Millisecond),
+				"p3": withDelay(HostProvider("p3SourceName"), 100*time.Millisecond),
+			},
+			priorityList: []string{"p1", "p2", "p3"},
+
+			queryErr: "no source provider was available",
+			timeout:  10 * time.Millisecond,
 		},
 		{
 			name: "no providers fail",
@@ -111,11 +129,23 @@ func TestChain(t *testing.T) {
 
 			hostname: "p2SourceName",
 		},
+		{
+			name: "p2 times out",
+			providers: map[string]source.Provider{
+				"p1": ErrorSourceProvider("p1Err"),
+				"p2": withDelay(HostProvider("p2SourceName"), 50*time.Millisecond),
+				"p3": HostProvider("p3SourceName"),
+			},
+			priorityList: []string{"p1", "p2", "p3"},
+
+			hostname: "p3SourceName",
+			timeout:  10 * time.Millisecond,
+		},
 	}
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			provider, err := Chain(zaptest.NewLogger(t), testInstance.providers, testInstance.priorityList)
+			provider, err := Chain(zaptest.NewLogger(t), testInstance.providers, testInstance.priorityList, testInstance.timeout)
 			if err != nil || testInstance.buildErr != "" {
 				assert.EqualError(t, err, testInstance.buildErr)
 				return

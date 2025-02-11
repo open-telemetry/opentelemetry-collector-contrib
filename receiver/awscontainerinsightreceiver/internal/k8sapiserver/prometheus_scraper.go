@@ -32,29 +32,27 @@ const (
 	jobName = "containerInsightsKubeAPIServerScraper"
 )
 
-var (
-	controlPlaneMetricAllowList = []string{
-		"^apiserver_admission_controller_admission_duration_seconds_(bucket|sum|count)$",
-		"^apiserver_admission_step_admission_duration_seconds_(bucket|sum|count)$",
-		"^apiserver_admission_webhook_admission_duration_seconds_(bucket|sum|count)$",
-		"^apiserver_current_inflight_requests$",
-		"^apiserver_current_inqueue_requests$",
-		"^apiserver_flowcontrol_rejected_requests_total$",
-		"^apiserver_flowcontrol_request_concurrency_limit$",
-		"^apiserver_longrunning_requests$",
-		"^apiserver_request_duration_seconds_(bucket|sum|count)$",
-		"^apiserver_request_total$",
-		"^apiserver_requested_deprecated_apis$",
-		"^apiserver_storage_list_duration_seconds_(bucket|sum|count)$",
-		"^apiserver_storage_objects$",
-		"^apiserver_storage_db_total_size_in_bytes$",
-		"^apiserver_storage_size_bytes$",
-		"^etcd_db_total_size_in_bytes$",
-		"^etcd_request_duration_seconds_(bucket|sum|count)$",
-		"^rest_client_request_duration_seconds_(bucket|sum|count)$",
-		"^rest_client_requests_total$",
-	}
-)
+var controlPlaneMetricAllowList = []string{
+	"^apiserver_admission_controller_admission_duration_seconds_(bucket|sum|count)$",
+	"^apiserver_admission_step_admission_duration_seconds_(bucket|sum|count)$",
+	"^apiserver_admission_webhook_admission_duration_seconds_(bucket|sum|count)$",
+	"^apiserver_current_inflight_requests$",
+	"^apiserver_current_inqueue_requests$",
+	"^apiserver_flowcontrol_rejected_requests_total$",
+	"^apiserver_flowcontrol_request_concurrency_limit$",
+	"^apiserver_longrunning_requests$",
+	"^apiserver_request_duration_seconds_(bucket|sum|count)$",
+	"^apiserver_request_total$",
+	"^apiserver_requested_deprecated_apis$",
+	"^apiserver_storage_list_duration_seconds_(bucket|sum|count)$",
+	"^apiserver_storage_objects$",
+	"^apiserver_storage_db_total_size_in_bytes$",
+	"^apiserver_storage_size_bytes$",
+	"^etcd_db_total_size_in_bytes$",
+	"^etcd_request_duration_seconds_(bucket|sum|count)$",
+	"^rest_client_request_duration_seconds_(bucket|sum|count)$",
+	"^rest_client_requests_total$",
+}
 
 type PrometheusScraper struct {
 	ctx                 context.Context
@@ -165,7 +163,7 @@ func NewPrometheusScraper(opts PrometheusScraperOpts) (*PrometheusScraper, error
 	}
 
 	promFactory := prometheusreceiver.NewFactory()
-	promReceiver, err := promFactory.CreateMetricsReceiver(opts.Ctx, params, &promConfig, opts.Consumer)
+	promReceiver, err := promFactory.CreateMetrics(opts.Ctx, params, &promConfig, opts.Consumer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create prometheus receiver: %w", err)
 	}
@@ -198,6 +196,7 @@ func (ps *PrometheusScraper) GetMetrics() []pmetric.Metrics {
 	}
 	return nil
 }
+
 func (ps *PrometheusScraper) Shutdown() {
 	if ps.running {
 		err := ps.prometheusReceiver.Shutdown(ps.ctx)

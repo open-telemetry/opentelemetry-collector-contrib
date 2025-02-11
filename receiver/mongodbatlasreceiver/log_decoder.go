@@ -71,7 +71,7 @@ func decode4_2(logger *zap.Logger, r io.Reader) ([]model.LogEntry, error) {
 		}
 
 		submatches := mongo4_2LogRegex.FindStringSubmatch(scanner.Text())
-		if submatches == nil || len(submatches) != 6 {
+		if len(submatches) != 6 {
 			// Match failed for line; We will skip this line and continue processing others.
 			logger.Error("Entry did not match regex", zap.String("entry", scanner.Text()))
 			continue

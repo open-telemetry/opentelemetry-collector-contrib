@@ -40,8 +40,8 @@ func newCurrentStatsReader(
 	logger *zap.Logger,
 	database *datasource.Database,
 	metricsMetadata *metadata.MetricsMetadata,
-	config ReaderConfig) *currentStatsReader {
-
+	config ReaderConfig,
+) *currentStatsReader {
 	return &currentStatsReader{
 		logger:                 logger,
 		database:               database,

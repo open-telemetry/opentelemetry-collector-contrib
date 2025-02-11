@@ -14,11 +14,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
-var (
-	// eMFSupportedUnits contains the unit collection supported by CloudWatch backend service.
-	// https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_MetricDatum.html
-	eMFSupportedUnits = newEMFSupportedUnits()
-)
+// eMFSupportedUnits contains the unit collection supported by CloudWatch backend service.
+// https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_MetricDatum.html
+var eMFSupportedUnits = newEMFSupportedUnits()
 
 // Config defines configuration for AWS EMF exporter.
 type Config struct {
@@ -167,11 +165,13 @@ func (config *Config) IsAppSignalsEnabled() bool {
 
 func newEMFSupportedUnits() map[string]any {
 	unitIndexer := map[string]any{}
-	for _, unit := range []string{"Seconds", "Microseconds", "Milliseconds", "Bytes", "Kilobytes", "Megabytes",
+	for _, unit := range []string{
+		"Seconds", "Microseconds", "Milliseconds", "Bytes", "Kilobytes", "Megabytes",
 		"Gigabytes", "Terabytes", "Bits", "Kilobits", "Megabits", "Gigabits", "Terabits",
 		"Percent", "Count", "Bytes/Second", "Kilobytes/Second", "Megabytes/Second",
 		"Gigabytes/Second", "Terabytes/Second", "Bits/Second", "Kilobits/Second",
-		"Megabits/Second", "Gigabits/Second", "Terabits/Second", "Count/Second", "None"} {
+		"Megabits/Second", "Gigabits/Second", "Terabits/Second", "Count/Second", "None",
+	} {
 		unitIndexer[unit] = nil
 	}
 	return unitIndexer

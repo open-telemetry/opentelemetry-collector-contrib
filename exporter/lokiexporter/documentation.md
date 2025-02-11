@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### lokiexporter_send_failed_due_to_missing_labels
+### otelcol_lokiexporter_send_failed_due_to_missing_labels
 
 Number of log records failed to send because labels were missing
 

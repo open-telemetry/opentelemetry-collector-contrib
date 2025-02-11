@@ -1,0 +1,3 @@
+awsfirehose:
+  endpoint: 0.0.0.0:4433
+  record_type: invalid

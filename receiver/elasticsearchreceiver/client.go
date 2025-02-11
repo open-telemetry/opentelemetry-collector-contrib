@@ -63,7 +63,7 @@ func newElasticsearchClient(ctx context.Context, settings component.TelemetrySet
 	if c.Username != "" && c.Password != "" {
 		userPass := fmt.Sprintf("%s:%s", c.Username, string(c.Password))
 		authb64 := base64.StdEncoding.EncodeToString([]byte(userPass))
-		authHeader = fmt.Sprintf("Basic %s", authb64)
+		authHeader = "Basic " + authb64
 	}
 
 	esClient := defaultElasticsearchClient{
@@ -78,12 +78,10 @@ func newElasticsearchClient(ctx context.Context, settings component.TelemetrySet
 	return &esClient, nil
 }
 
-var (
-	es7_9 = func() *version.Version {
-		v, _ := version.NewVersion("7.9")
-		return v
-	}()
-)
+var es7_9 = func() *version.Version {
+	v, _ := version.NewVersion("7.9")
+	return v
+}()
 
 const (
 	// A comma separated list of metrics that will be gathered from NodeStats.
@@ -204,7 +202,7 @@ func (c defaultElasticsearchClient) ClusterStats(ctx context.Context, nodes []st
 		nodesSpec = "_all"
 	}
 
-	clusterStatsPath := fmt.Sprintf("_cluster/stats/nodes/%s", nodesSpec)
+	clusterStatsPath := "_cluster/stats/nodes/" + nodesSpec
 
 	body, err := c.doRequest(ctx, clusterStatsPath)
 	if err != nil {
@@ -223,7 +221,7 @@ func (c defaultElasticsearchClient) doRequest(ctx context.Context, path string) 
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", endpoint.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +240,7 @@ func (c defaultElasticsearchClient) doRequest(ctx context.Context, path string) 
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == 200 {
+	if resp.StatusCode == http.StatusOK {
 		return io.ReadAll(resp.Body)
 	}
 
@@ -256,9 +254,9 @@ func (c defaultElasticsearchClient) doRequest(ctx context.Context, path string) 
 	)
 
 	switch resp.StatusCode {
-	case 401:
+	case http.StatusUnauthorized:
 		return nil, errUnauthenticated
-	case 403:
+	case http.StatusForbidden:
 		return nil, errUnauthorized
 	default:
 		return nil, fmt.Errorf("got non 200 status code %d", resp.StatusCode)

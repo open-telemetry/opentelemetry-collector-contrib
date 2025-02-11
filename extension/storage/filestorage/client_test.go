@@ -79,7 +79,6 @@ func TestClientBatchOperations(t *testing.T) {
 	// Make sure nothing is there
 	err = client.Batch(ctx, testGetEntries...)
 	require.NoError(t, err)
-	require.Equal(t, testGetEntries, testGetEntries)
 
 	// Set it
 	err = client.Batch(ctx, testSetEntries...)
@@ -123,7 +122,6 @@ func TestClientBatchOperations(t *testing.T) {
 	for i := range testGetEntries {
 		require.Equal(t, testGetEntries[i].Key, testEntriesDelete[i].Key)
 		require.Nil(t, testGetEntries[i].Value)
-
 	}
 }
 
@@ -176,7 +174,6 @@ func TestNewClientTransactionErrors(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			tempDir := t.TempDir()
 			dbFile := filepath.Join(tempDir, "my_db")
 

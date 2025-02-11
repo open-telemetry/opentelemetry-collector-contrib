@@ -14,16 +14,16 @@ import (
 )
 
 type HCSClient interface {
-	GetContainerStats(containerId string) (hcsshim.Statistics, error)
+	GetContainerStats(containerID string) (hcsshim.Statistics, error)
 	GetEndpointList() ([]hcsshim.HNSEndpoint, error)
-	GetEndpointStat(endpointId string) (hcsshim.HNSEndpointStats, error)
+	GetEndpointStat(endpointID string) (hcsshim.HNSEndpointStats, error)
 }
 type hCSClient struct {
 	logger *zap.Logger
 }
 
-func (hc *hCSClient) GetContainerStats(containerId string) (hcsshim.Statistics, error) {
-	container, err := hcsshim.OpenContainer(containerId)
+func (hc *hCSClient) GetContainerStats(containerID string) (hcsshim.Statistics, error) {
+	container, err := hcsshim.OpenContainer(containerID)
 	if err != nil {
 		hc.logger.Error("failed to open container using HCS shim APIs, ", zap.Error(err))
 		return hcsshim.Statistics{}, err
@@ -47,8 +47,8 @@ func (hc *hCSClient) GetEndpointList() ([]hcsshim.HNSEndpoint, error) {
 	return endpointList, nil
 }
 
-func (hc *hCSClient) GetEndpointStat(endpointId string) (hcsshim.HNSEndpointStats, error) {
-	endpointStat, err := hcsshim.GetHNSEndpointStats(endpointId)
+func (hc *hCSClient) GetEndpointStat(endpointID string) (hcsshim.HNSEndpointStats, error) {
+	endpointStat, err := hcsshim.GetHNSEndpointStats(endpointID)
 	if err != nil {
 		hc.logger.Error("failed to get HNS endpoint stats, ", zap.Error(err))
 		return hcsshim.HNSEndpointStats{}, err

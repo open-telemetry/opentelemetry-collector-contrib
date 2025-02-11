@@ -16,38 +16,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"google.golang.org/api/option"
 )
 
 func TestName(t *testing.T) {
 	exporter := &pubsubExporter{}
 	assert.Equal(t, "googlecloudpubsub", exporter.Name())
-}
-
-func TestGenerateClientOptions(t *testing.T) {
-	// Start a fake server running locally.
-	srv := pstest.NewServer()
-	defer srv.Close()
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	exporterConfig := cfg.(*Config)
-	exporterConfig.Endpoint = srv.Addr
-	exporterConfig.UserAgent = "test-user-agent"
-	exporterConfig.Insecure = true
-	exporterConfig.ProjectID = "my-project"
-	exporterConfig.Topic = "projects/my-project/topics/otlp"
-	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
-		Timeout: 12 * time.Second,
-	}
-	exporter := ensureExporter(exportertest.NewNopSettings(), exporterConfig)
-
-	options := exporter.generateClientOptions()
-	assert.Equal(t, option.WithUserAgent("test-user-agent"), options[0])
-
-	exporter.config.Insecure = false
-	options = exporter.generateClientOptions()
-	assert.Equal(t, option.WithUserAgent("test-user-agent"), options[0])
-	assert.Equal(t, option.WithEndpoint(srv.Addr), options[1])
 }
 
 func TestExporterDefaultSettings(t *testing.T) {
@@ -67,7 +40,7 @@ func TestExporterDefaultSettings(t *testing.T) {
 	exporterConfig.Insecure = true
 	exporterConfig.ProjectID = "my-project"
 	exporterConfig.Topic = "projects/my-project/topics/otlp"
-	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
+	exporterConfig.TimeoutSettings = exporterhelper.TimeoutConfig{
 		Timeout: 12 * time.Second,
 	}
 	exporter := ensureExporter(exportertest.NewNopSettings(), exporterConfig)
@@ -96,7 +69,7 @@ func TestExporterCompression(t *testing.T) {
 	exporterConfig.Insecure = true
 	exporterConfig.ProjectID = "my-project"
 	exporterConfig.Topic = "projects/my-project/topics/otlp"
-	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
+	exporterConfig.TimeoutSettings = exporterhelper.TimeoutConfig{
 		Timeout: 12 * time.Second,
 	}
 	exporterConfig.Compression = "gzip"

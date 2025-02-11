@@ -31,12 +31,11 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.Equal(t,
-		cfg,
 		&Config{
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,
-			DecisionCache:           DecisionCacheConfig{SampledCacheSize: 500},
+			DecisionCache:           DecisionCacheConfig{SampledCacheSize: 1_000, NonSampledCacheSize: 10_000},
 			PolicyCfgs: []PolicyCfg{
 				{
 					sharedPolicyCfg: sharedPolicyCfg{
@@ -185,5 +184,5 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, cfg)
 }

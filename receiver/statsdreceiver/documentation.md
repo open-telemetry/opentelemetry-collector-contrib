@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### receiver_received_statsd_metrics
+### otelcol_receiver_received_statsd_metrics
 
 Number of statsd metrics received.
 

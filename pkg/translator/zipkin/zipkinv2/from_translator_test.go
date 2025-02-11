@@ -95,7 +95,7 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 	for _, td := range tds {
 		zipkinSpans, err := FromTranslator{}.FromTraces(td)
 		assert.NoError(t, err)
-		assert.Equal(t, td.SpanCount(), len(zipkinSpans))
+		assert.Len(t, zipkinSpans, td.SpanCount())
 		tdFromZS, zErr := ToTranslator{}.ToTraces(zipkinSpans)
 		assert.NoError(t, zErr, zipkinSpans)
 		assert.NotNil(t, tdFromZS)
@@ -139,8 +139,10 @@ func findSpanByID(rs ptrace.ResourceSpansSlice, spanID pcommon.SpanID) ptrace.Sp
 func generateTraceOneSpanOneTraceID(status ptrace.StatusCode) ptrace.Traces {
 	td := testdata.GenerateTracesOneSpan()
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-	span.SetTraceID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
-		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10})
+	span.SetTraceID([16]byte{
+		0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+		0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10,
+	})
 	span.SetSpanID([8]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08})
 	switch status {
 	case ptrace.StatusCodeError:

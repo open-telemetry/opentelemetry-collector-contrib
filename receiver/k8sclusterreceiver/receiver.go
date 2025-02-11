@@ -6,11 +6,12 @@ package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
@@ -38,7 +39,7 @@ type kubernetesReceiver struct {
 }
 
 type getExporters interface {
-	GetExporters() map[component.DataType]map[component.ID]component.Component
+	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
@@ -50,12 +51,12 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 
 	ge, ok := host.(getExporters)
 	if !ok {
-		return fmt.Errorf("unable to get exporters")
+		return errors.New("unable to get exporters")
 	}
 	exporters := ge.GetExporters()
 
 	if err := kr.resourceWatcher.setupMetadataExporters(
-		exporters[component.DataTypeMetrics], kr.config.MetadataExporters); err != nil {
+		exporters[pipeline.SignalMetrics], kr.config.MetadataExporters); err != nil {
 		return err
 	}
 
@@ -76,7 +77,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 			if errors.Is(timedContextForInitialSync.Err(), context.DeadlineExceeded) {
 				kr.resourceWatcher.initialSyncTimedOut.Store(true)
 				kr.settings.Logger.Error("Timed out waiting for initial cache sync.")
-				kr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errors.New("failed to start receiver")))
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errors.New("failed to start receiver")))
 				return
 			}
 		}

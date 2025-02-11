@@ -24,8 +24,8 @@ type s3Exporter struct {
 }
 
 func newS3Exporter(config *Config,
-	params exporter.Settings) *s3Exporter {
-
+	params exporter.Settings,
+) *s3Exporter {
 	s3Exporter := &s3Exporter{
 		config:     config,
 		dataWriter: &s3Writer{},
@@ -35,7 +35,6 @@ func newS3Exporter(config *Config,
 }
 
 func (e *s3Exporter) start(_ context.Context, host component.Host) error {
-
 	var m marshaler
 	var err error
 	if e.config.Encoding != nil {
@@ -58,7 +57,6 @@ func (e *s3Exporter) Capabilities() consumer.Capabilities {
 
 func (e *s3Exporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	buf, err := e.marshaler.MarshalMetrics(md)
-
 	if err != nil {
 		return err
 	}
@@ -68,7 +66,6 @@ func (e *s3Exporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) err
 
 func (e *s3Exporter) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
 	buf, err := e.marshaler.MarshalLogs(logs)
-
 	if err != nil {
 		return err
 	}

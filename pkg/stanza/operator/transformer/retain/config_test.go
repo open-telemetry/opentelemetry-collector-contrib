@@ -92,5 +92,4 @@ func TestUnmarshal(t *testing.T) {
 			},
 		},
 	}.Run(t)
-
 }

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -25,7 +26,7 @@ func TestGenerateTraces(t *testing.T) {
 	rCfg := f.CreateDefaultConfig()
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	rCfg.(*otlpreceiver.Config).GRPC.NetAddr.Endpoint = endpoint
-	r, err := f.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), rCfg, sink)
+	r, err := f.CreateTraces(context.Background(), receivertest.NewNopSettings(), rCfg, sink)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -53,7 +54,7 @@ func TestGenerateTraces(t *testing.T) {
 	}
 	go func() {
 		err = traces.Start(cfg)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}()
 	require.Eventually(t, func() bool {
 		return len(sink.AllTraces()) > 0

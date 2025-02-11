@@ -20,7 +20,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "0.0.0.0:13133",
+			Endpoint: "localhost:13133",
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
 		Path:                   "/",
@@ -32,7 +32,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	require.NotNil(t, ext)
 }
 
-func TestFactory_CreateExtension(t *testing.T) {
+func TestFactory_Create(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 

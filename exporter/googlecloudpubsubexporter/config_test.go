@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 
 	customConfig.ProjectID = "my-project"
 	customConfig.UserAgent = "opentelemetry-collector-contrib {{version}}"
-	customConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
+	customConfig.TimeoutSettings = exporterhelper.TimeoutConfig{
 		Timeout: 20 * time.Second,
 	}
 	customConfig.Topic = "projects/my-project/topics/otlp-topic"

@@ -391,6 +391,12 @@ func getMetricNamesAsSlice(metricName string, metricNames map[string]bool) []str
 	return out
 }
 
+func (mp *MetricTranslator) Start() {
+	if mp.deltaTranslator != nil {
+		mp.deltaTranslator.start()
+	}
+}
+
 // TranslateDataPoints transforms datapoints to a format compatible with signalfx backend
 // sfxDataPoints represents one metric converted to signalfx protobuf datapoints
 func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoints []*sfxpb.DataPoint) []*sfxpb.DataPoint {
@@ -424,7 +430,6 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 						for _, d := range dp.Dimensions {
 							if k, ok := tr.CopyDimensions[d.Key]; ok {
 								dp.Dimensions = append(dp.Dimensions, &sfxpb.Dimension{Key: k, Value: d.Value})
-
 							}
 						}
 					}
@@ -538,6 +543,12 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 	}
 
 	return processedDataPoints
+}
+
+func (mp *MetricTranslator) Shutdown() {
+	if mp.deltaTranslator != nil {
+		mp.deltaTranslator.shutdown()
+	}
 }
 
 func calcNewMetricInputPairs(processedDataPoints []*sfxpb.DataPoint, tr Rule) [][2]*sfxpb.DataPoint {
@@ -737,7 +748,7 @@ func aggregateDatapoints(
 // generate map keys.
 func stringifyDimensions(dimensions []*sfxpb.Dimension, exclusions []string) string {
 	const aggregationKeyDelimiter = "//"
-	var aggregationKeyParts = make([]string, 0, len(dimensions))
+	aggregationKeyParts := make([]string, 0, len(dimensions))
 	for _, d := range dimensions {
 		if !dimensionIn(d, exclusions) {
 			aggregationKeyParts = append(aggregationKeyParts, fmt.Sprintf("%s:%s", d.Key, d.Value))
@@ -812,7 +823,7 @@ func convertMetricValue(logger *zap.Logger, dp *sfxpb.DataPoint, newType MetricV
 				zap.String("metric", dp.Metric))
 			return
 		}
-		var intVal = int64(*val)
+		intVal := int64(*val)
 		dp.Value = sfxpb.Datum{IntValue: &intVal}
 	case MetricValueTypeDouble:
 		val := dp.GetValue().IntValue
@@ -821,7 +832,7 @@ func convertMetricValue(logger *zap.Logger, dp *sfxpb.DataPoint, newType MetricV
 				zap.String("metric", dp.Metric))
 			return
 		}
-		var floatVal = float64(*val)
+		floatVal := float64(*val)
 		dp.Value = sfxpb.Datum{DoubleValue: &floatVal}
 	}
 }
@@ -858,7 +869,8 @@ func dropDimensions(dp *sfxpb.DataPoint, rule Rule) {
 
 func filterDimensionsByValues(
 	dimensions []*sfxpb.Dimension,
-	dimensionPairs map[string]map[string]bool) []*sfxpb.Dimension {
+	dimensionPairs map[string]map[string]bool,
+) []*sfxpb.Dimension {
 	if len(dimensions) == 0 {
 		return nil
 	}

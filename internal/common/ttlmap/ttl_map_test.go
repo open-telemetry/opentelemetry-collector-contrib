@@ -22,8 +22,8 @@ func TestTTLMapData(t *testing.T) {
 
 func TestTTLMapSimple(t *testing.T) {
 	m := New(5, 10, make(chan struct{}))
-	require.EqualValues(t, m.sweepInterval, 5)
-	require.EqualValues(t, m.md.maxAge, 10)
+	require.EqualValues(t, 5, m.sweepInterval)
+	require.EqualValues(t, 10, m.md.maxAge)
 	m.Put("foo", "bar")
 	s := m.Get("foo").(string)
 	require.Equal(t, "bar", s)

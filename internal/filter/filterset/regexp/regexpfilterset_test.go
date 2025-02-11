@@ -10,18 +10,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	validRegexpFilters = []string{
-		"prefix/.*",
-		"prefix_.*",
-		".*/suffix",
-		".*_suffix",
-		".*/contains/.*",
-		".*_contains_.*",
-		"full/name/match",
-		"full_name_match",
-	}
-)
+var validRegexpFilters = []string{
+	"prefix/.*",
+	"prefix_.*",
+	".*/suffix",
+	".*_suffix",
+	".*/contains/.*",
+	".*_contains_.*",
+	"full/name/match",
+	"full_name_match",
+}
 
 func TestNewRegexpFilterSet(t *testing.T) {
 	tests := []struct {
@@ -109,7 +107,7 @@ func TestRegexpDeDup(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, fs)
 	assert.Nil(t, fs.cache)
-	assert.EqualValues(t, 1, len(fs.regexes))
+	assert.Len(t, fs.regexes, 1)
 }
 
 func TestRegexpMatchesCaches(t *testing.T) {

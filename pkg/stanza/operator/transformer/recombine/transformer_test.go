@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 
@@ -25,8 +26,8 @@ const (
 
 func TestTransformer(t *testing.T) {
 	now := time.Now()
-	t1 := time.Date(2020, time.April, 11, 21, 34, 01, 0, time.UTC)
-	t2 := time.Date(2020, time.April, 11, 21, 34, 02, 0, time.UTC)
+	t1 := time.Date(2020, time.April, 11, 21, 34, 0o1, 0, time.UTC)
+	t2 := time.Date(2020, time.April, 11, 21, 34, 0o2, 0, time.UTC)
 
 	entryWithBody := func(ts time.Time, body any) *entry.Entry {
 		e := entry.New()
@@ -814,7 +815,6 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 		require.NoError(b, recombine.Process(ctx, next))
 		recombine.flushAllSources(ctx)
 	}
-
 }
 
 func TestTimeout(t *testing.T) {
@@ -898,8 +898,7 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				require.NoError(t, recombine.Process(ctx, next))
-
+				assert.NoError(t, recombine.Process(ctx, next))
 			}
 		}
 	}()
@@ -950,9 +949,9 @@ func TestSourceBatchDelete(t *testing.T) {
 	ctx := context.Background()
 
 	require.NoError(t, recombine.Process(ctx, start))
-	require.Equal(t, 1, len(recombine.batchMap))
+	require.Len(t, recombine.batchMap, 1)
 	require.NoError(t, recombine.Process(ctx, next))
-	require.Equal(t, 0, len(recombine.batchMap))
+	require.Empty(t, recombine.batchMap)
 	fake.ExpectEntry(t, expect)
 	require.NoError(t, recombine.Stop())
 }

@@ -15,7 +15,6 @@ import (
 )
 
 func TestDiskIOStats(t *testing.T) {
-
 	result := testutils.LoadContainerInfo(t, "./testdata/PreInfoContainer.json")
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
 	// for eks node-level metrics
@@ -99,5 +98,5 @@ func TestDiskIOStats(t *testing.T) {
 		cMetrics = extractor.GetValue(result2[0], nil, containerType)
 	}
 
-	assert.Equal(t, len(cMetrics), 0)
+	assert.Empty(t, cMetrics)
 }

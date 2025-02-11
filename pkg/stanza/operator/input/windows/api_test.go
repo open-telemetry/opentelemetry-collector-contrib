@@ -22,7 +22,7 @@ func (m MockProc) Call(a ...uintptr) (uintptr, uintptr, error) {
 // SimpleMockProc returns a mock proc that will always return the supplied arguments when called.
 func SimpleMockProc(r1 uintptr, r2 uintptr, err syscall.Errno) SyscallProc {
 	return MockProc{
-		call: func(a ...uintptr) (uintptr, uintptr, error) {
+		call: func(_ ...uintptr) (uintptr, uintptr, error) {
 			return r1, r2, err
 		},
 	}

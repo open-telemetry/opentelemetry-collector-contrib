@@ -11,10 +11,13 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/versions"
+	"github.com/docker/docker/client"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 type Config struct {
 	// The URL of the docker server. Default is "unix:///var/run/docker.sock"
+	// on non-Windows and "npipe:////./pipe/docker_engine" on Windows
 	Endpoint string `mapstructure:"endpoint"`
 
 	// The maximum amount of time to wait for docker API responses. Default is 5s
@@ -27,40 +30,51 @@ type Config struct {
 	DockerAPIVersion string `mapstructure:"api_version"`
 }
 
+func (config *Config) Unmarshal(conf *confmap.Conf) error {
+	// WithIgonreUnused needed because this configuration is embedded inside other configurations
+	err := conf.Unmarshal(config, confmap.WithIgnoreUnused())
+	if err != nil {
+		if floatAPIVersion, ok := conf.Get("api_version").(float64); ok {
+			return fmt.Errorf(
+				"%w.\n\nHint: You may want to wrap the 'api_version' value in quotes (api_version: \"%1.2f\")",
+				err,
+				floatAPIVersion,
+			)
+		}
+		return err
+	}
+	return nil
+}
+
+func (config Config) Validate() error {
+	if config.Endpoint == "" {
+		return errors.New("endpoint must be specified")
+	}
+	return nil
+}
+
 // NewConfig creates a new config to be used when creating
 // a docker client
-func NewConfig(endpoint string, timeout time.Duration, excludedImages []string, apiVersion string) (*Config, error) {
+func NewConfig(endpoint string, timeout time.Duration, excludedImages []string, apiVersion string) *Config {
 	cfg := &Config{
 		Endpoint:         endpoint,
 		Timeout:          timeout,
 		ExcludedImages:   excludedImages,
 		DockerAPIVersion: apiVersion,
 	}
-	return cfg, cfg.validate()
+	return cfg
 }
 
 // NewDefaultConfig creates a new config with default values
 // to be used when creating a docker client
 func NewDefaultConfig() *Config {
 	cfg := &Config{
-		Endpoint:         "unix:///var/run/docker.sock",
+		Endpoint:         client.DefaultDockerHost,
 		Timeout:          5 * time.Second,
 		DockerAPIVersion: minimumRequiredDockerAPIVersion,
 	}
 
 	return cfg
-}
-
-// validate asserts that an endpoint field is set
-// on the config struct
-func (config Config) validate() error {
-	if config.Endpoint == "" {
-		return errors.New("config.Endpoint must be specified")
-	}
-	if err := VersionIsValidAndGTE(config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
-		return err
-	}
-	return nil
 }
 
 type apiVersion struct {

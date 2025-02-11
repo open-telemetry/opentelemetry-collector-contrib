@@ -6,6 +6,7 @@ package subprocess // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -85,7 +86,7 @@ func NewSubprocess(conf *Config, logger *zap.Logger) *Subprocess {
 	}
 
 	return &Subprocess{
-		Stdout:         make(chan string),
+		Stdout:         make(chan string, 100),
 		pid:            pid{pid: noPid, pidLock: sync.Mutex{}},
 		config:         conf,
 		logger:         logger,
@@ -115,6 +116,7 @@ func (subprocess *Subprocess) Start(ctx context.Context) error {
 	go func() {
 		subprocess.run(cancelCtx) // will block for lifetime of process
 		close(subprocess.shutdownSignal)
+		close(subprocess.Stdout)
 	}()
 	return nil
 }
@@ -122,7 +124,7 @@ func (subprocess *Subprocess) Start(ctx context.Context) error {
 // Shutdown is invoked during service shutdown.
 func (subprocess *Subprocess) Shutdown(ctx context.Context) error {
 	if subprocess.cancel == nil {
-		return fmt.Errorf("no subprocess.cancel().  Has it been started properly?")
+		return errors.New("no subprocess.cancel().  Has it been started properly?")
 	}
 
 	timeout := defaultShutdownTimeout

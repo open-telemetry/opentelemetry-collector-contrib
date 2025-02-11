@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	Type = component.MustNewType("httpcheck")
+	Type      = component.MustNewType("httpcheck")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 )
 
 const (
-	MetricsStability = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelAlpha
 )

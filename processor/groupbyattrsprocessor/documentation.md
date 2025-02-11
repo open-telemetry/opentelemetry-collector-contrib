@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### processor_groupbyattrs_log_groups
+### otelcol_processor_groupbyattrs_log_groups
 
 Distribution of groups extracted for logs
 
@@ -14,7 +14,7 @@ Distribution of groups extracted for logs
 | ---- | ----------- | ---------- |
 | 1 | Histogram | Int |
 
-### processor_groupbyattrs_metric_groups
+### otelcol_processor_groupbyattrs_metric_groups
 
 Distribution of groups extracted for metrics
 
@@ -22,7 +22,7 @@ Distribution of groups extracted for metrics
 | ---- | ----------- | ---------- |
 | 1 | Histogram | Int |
 
-### processor_groupbyattrs_num_grouped_logs
+### otelcol_processor_groupbyattrs_num_grouped_logs
 
 Number of logs that had attributes grouped
 
@@ -30,7 +30,7 @@ Number of logs that had attributes grouped
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_groupbyattrs_num_grouped_metrics
+### otelcol_processor_groupbyattrs_num_grouped_metrics
 
 Number of metrics that had attributes grouped
 
@@ -38,7 +38,7 @@ Number of metrics that had attributes grouped
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_groupbyattrs_num_grouped_spans
+### otelcol_processor_groupbyattrs_num_grouped_spans
 
 Number of spans that had attributes grouped
 
@@ -46,7 +46,7 @@ Number of spans that had attributes grouped
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_groupbyattrs_num_non_grouped_logs
+### otelcol_processor_groupbyattrs_num_non_grouped_logs
 
 Number of logs that did not have attributes grouped
 
@@ -54,7 +54,7 @@ Number of logs that did not have attributes grouped
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_groupbyattrs_num_non_grouped_metrics
+### otelcol_processor_groupbyattrs_num_non_grouped_metrics
 
 Number of metrics that did not have attributes grouped
 
@@ -62,7 +62,7 @@ Number of metrics that did not have attributes grouped
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_groupbyattrs_num_non_grouped_spans
+### otelcol_processor_groupbyattrs_num_non_grouped_spans
 
 Number of spans that did not have attributes grouped
 
@@ -70,7 +70,7 @@ Number of spans that did not have attributes grouped
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_groupbyattrs_span_groups
+### otelcol_processor_groupbyattrs_span_groups
 
 Distribution of groups extracted for spans
 

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
-
 	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/aws/aws-sdk-go/aws"
 	awsec2metadata "github.com/aws/aws-sdk-go/aws/ec2metadata"
@@ -45,7 +44,8 @@ type ec2Metadata struct {
 type ec2MetadataOption func(*ec2Metadata)
 
 func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterval time.Duration,
-	instanceIDReadyC chan bool, instanceIPReadyC chan bool, localMode bool, imdsRetries int, logger *zap.Logger, configurer *awsmiddleware.Configurer, options ...ec2MetadataOption) ec2MetadataProvider {
+	instanceIDReadyC chan bool, instanceIPReadyC chan bool, localMode bool, imdsRetries int, logger *zap.Logger, configurer *awsmiddleware.Configurer, options ...ec2MetadataOption,
+) ec2MetadataProvider {
 	emd := &ec2Metadata{
 		client: awsec2metadata.New(session, &aws.Config{
 			Retryer:                   override.NewIMDSRetryer(imdsRetries),

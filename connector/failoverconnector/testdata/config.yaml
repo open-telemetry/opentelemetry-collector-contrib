@@ -1,7 +1,8 @@
 failover:
 
 failover/default:
-  priority_levels: [traces]
+  priority_levels:
+    - [traces]
 
 failover/full:
   priority_levels:

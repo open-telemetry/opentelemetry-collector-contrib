@@ -460,13 +460,11 @@ func TestAttributeFieldUnmarshalFailure(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var fy AttributeField
 			err := yaml.UnmarshalStrict(tc.invalid, &fy)
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tc.expectedErr)
+			require.ErrorContains(t, err, tc.expectedErr)
 
 			var fj AttributeField
 			err = json.Unmarshal(tc.invalid, &fj)
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tc.expectedErr)
+			require.ErrorContains(t, err, tc.expectedErr)
 		})
 	}
 }

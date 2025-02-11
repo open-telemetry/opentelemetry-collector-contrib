@@ -181,7 +181,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "negative-collection-interval"),
-			expectedErr: fmt.Sprintf("collection_interval must be a positive duration; %s", negativeCollectionIntervalErr),
+			expectedErr: "collection_interval must be a positive duration; " + negativeCollectionIntervalErr,
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "noperfcounters"),

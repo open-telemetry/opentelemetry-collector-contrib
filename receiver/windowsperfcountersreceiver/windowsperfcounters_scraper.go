@@ -29,8 +29,8 @@ type perfCounterMetricWatcher struct {
 
 type newWatcherFunc func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
 
-// scraper is the type that scrapes various host metrics.
-type scraper struct {
+// windowsPerfCountersScraper is the type that scrapes various host metrics.
+type windowsPerfCountersScraper struct {
 	cfg      *Config
 	settings component.TelemetrySettings
 	watchers []perfCounterMetricWatcher
@@ -39,11 +39,11 @@ type scraper struct {
 	newWatcher newWatcherFunc
 }
 
-func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
-	return &scraper{cfg: cfg, settings: settings, newWatcher: winperfcounters.NewWatcher}
+func newScraper(cfg *Config, settings component.TelemetrySettings) *windowsPerfCountersScraper {
+	return &windowsPerfCountersScraper{cfg: cfg, settings: settings, newWatcher: winperfcounters.NewWatcher}
 }
 
-func (s *scraper) start(context.Context, component.Host) error {
+func (s *windowsPerfCountersScraper) start(context.Context, component.Host) error {
 	watchers, err := s.initWatchers()
 	if err != nil {
 		s.settings.Logger.Warn("some performance counters could not be initialized", zap.Error(err))
@@ -52,7 +52,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *scraper) initWatchers() ([]perfCounterMetricWatcher, error) {
+func (s *windowsPerfCountersScraper) initWatchers() ([]perfCounterMetricWatcher, error) {
 	var errs error
 	var watchers []perfCounterMetricWatcher
 
@@ -85,7 +85,7 @@ func (s *scraper) initWatchers() ([]perfCounterMetricWatcher, error) {
 	return watchers, errs
 }
 
-func (s *scraper) shutdown(context.Context) error {
+func (s *windowsPerfCountersScraper) shutdown(context.Context) error {
 	var errs error
 	for _, watcher := range s.watchers {
 		err := watcher.Close()
@@ -96,7 +96,7 @@ func (s *scraper) shutdown(context.Context) error {
 	return errs
 }
 
-func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
+func (s *windowsPerfCountersScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 	metricSlice := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	now := pcommon.NewTimestampFromTime(time.Now())
@@ -132,7 +132,7 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 		counterVals, err := watcher.ScrapeData()
 		if err != nil {
 			errs = multierr.Append(errs, err)
-			scrapeFailures += 1
+			scrapeFailures++
 			continue
 		}
 
@@ -157,14 +157,30 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 			initializeMetricDps(metric, now, val, watcher.MetricRep.Attributes)
 		}
 	}
+
+	// Drop metrics with no datapoints. This happens when configured counters don't exist on the host.
+	// This may result in a Metrics message with no metrics if all counters are missing.
+	metricSlice.RemoveIf(func(m pmetric.Metric) bool {
+		switch m.Type() {
+		case pmetric.MetricTypeGauge:
+			return m.Gauge().DataPoints().Len() == 0
+		case pmetric.MetricTypeSum:
+			return m.Sum().DataPoints().Len() == 0
+		default:
+			return false
+		}
+	})
+
 	if scrapeFailures != 0 && scrapeFailures != len(s.watchers) {
 		errs = scrapererror.NewPartialScrapeError(errs, scrapeFailures)
 	}
+
 	return md, errs
 }
 
 func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterValue winperfcounters.CounterValue,
-	attributes map[string]string) {
+	attributes map[string]string,
+) {
 	var dps pmetric.NumberDataPointSlice
 
 	if metric.Type() == pmetric.MetricTypeGauge {

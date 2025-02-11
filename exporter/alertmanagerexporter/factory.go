@@ -10,7 +10,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -27,18 +26,18 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "http://localhost:9093"
+	clientConfig.Timeout = 30 * time.Second
+	clientConfig.WriteBufferSize = 512 * 1024
+
 	return &Config{
 		GeneratorURL:    "opentelemetry-collector",
 		DefaultSeverity: "info",
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		BackoffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint:        "http://localhost:9093",
-			Timeout:         30 * time.Second,
-			Headers:         map[string]configopaque.String{},
-			WriteBufferSize: 512 * 1024,
-		},
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		ClientConfig:    clientConfig,
 	}
 }
 

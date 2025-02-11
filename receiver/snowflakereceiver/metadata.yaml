@@ -1,5 +1,4 @@
 type: snowflake
-scope_name: otelcol/snowflakereceiver
 
 status:
   class: receiver
@@ -106,7 +105,7 @@ metrics:
   # Login (Security) metrics 
   snowflake.logins.total:
     description: Total login attempts for account over the last 24 hour window.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int 
     enabled: false 
@@ -115,28 +114,28 @@ metrics:
   # High level low dimensionality query metrics 
   snowflake.query.blocked:
     description: Blocked query count for warehouse over the last 24 hour window.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     enabled: true 
     attributes: [warehouse_name]
   snowflake.query.executed:
     description: Executed query count for warehouse over the last 24 hour window.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     enabled: true 
     attributes: [warehouse_name]
   snowflake.query.queued_overload:
     description: Overloaded query count for warehouse over the last 24 hour window.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     enabled: true 
     attributes: [warehouse_name]
   snowflake.query.queued_provision:
     description: Number of compute resources queued for provisioning over the last 24 hour window.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double 
     enabled: true 
@@ -145,7 +144,7 @@ metrics:
   # DB metrics
   snowflake.database.query.count:
     description: Total query count for database over the last 24 hour window.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int 
     enabled: true
@@ -194,7 +193,7 @@ metrics:
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.data_scanned_cache.avg:
     description: Average percentage of data scanned from cache over the last 24 hour window.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     enabled: false 
@@ -208,7 +207,7 @@ metrics:
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.partitions_scanned.avg:
     description: Number of partitions scanned during query so far over the last 24 hour window. 
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     enabled: false
@@ -280,7 +279,7 @@ metrics:
   # Session metric 
   snowflake.session_id.count:
     description: Distinct session id's associated with snowflake username over the last 24 hour window.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     enabled: false

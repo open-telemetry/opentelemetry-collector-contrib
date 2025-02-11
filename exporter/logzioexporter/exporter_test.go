@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 const (
@@ -173,7 +173,7 @@ func TestExportErrors(tester *testing.T) {
 	type ExportErrorsTest struct {
 		status int
 	}
-	var ExportErrorsTests = []ExportErrorsTest{
+	ExportErrorsTests := []ExportErrorsTest{
 		{http.StatusUnauthorized},
 		{http.StatusBadGateway},
 		{http.StatusInternalServerError},
@@ -186,12 +186,13 @@ func TestExportErrors(tester *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 			rw.WriteHeader(test.status)
 		}))
+		clientConfig := confighttp.NewDefaultClientConfig()
+		clientConfig.Endpoint = server.URL
+
 		cfg := &Config{
-			Region: "",
-			Token:  "token",
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: server.URL,
-			},
+			Region:       "",
+			Token:        "token",
+			ClientConfig: clientConfig,
 		}
 		td := newTestTracesWithAttributes()
 		ld := testdata.GenerateLogs(10)
@@ -203,7 +204,6 @@ func TestExportErrors(tester *testing.T) {
 		server.Close()
 		require.Error(tester, err)
 	}
-
 }
 
 func TestNullTracesExporterConfig(tester *testing.T) {
@@ -240,13 +240,13 @@ func TestPushTraceData(tester *testing.T) {
 		recordedRequests, _ = io.ReadAll(req.Body)
 		rw.WriteHeader(http.StatusOK)
 	}))
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	clientConfig.Compression = configcompression.TypeGzip
 	cfg := Config{
-		Token:  "token",
-		Region: "",
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint:    server.URL,
-			Compression: configcompression.TypeGzip,
-		},
+		Token:        "token",
+		Region:       "",
+		ClientConfig: clientConfig,
 	}
 	defer server.Close()
 	td := newTestTraces()
@@ -273,13 +273,13 @@ func TestPushLogsData(tester *testing.T) {
 		recordedRequests, _ = io.ReadAll(req.Body)
 		rw.WriteHeader(http.StatusOK)
 	}))
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	clientConfig.Compression = configcompression.TypeGzip
 	cfg := Config{
-		Token:  "token",
-		Region: "",
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint:    server.URL,
-			Compression: configcompression.TypeGzip,
-		},
+		Token:        "token",
+		Region:       "",
+		ClientConfig: clientConfig,
 	}
 	defer server.Close()
 	ld := generateLogsOneEmptyTimestamp()
@@ -303,9 +303,9 @@ func TestPushLogsData(tester *testing.T) {
 }
 
 func TestMergeMapEntries(tester *testing.T) {
-	var firstMap = pcommon.NewMap()
-	var secondMap = pcommon.NewMap()
-	var expectedMap = pcommon.NewMap()
+	firstMap := pcommon.NewMap()
+	secondMap := pcommon.NewMap()
+	expectedMap := pcommon.NewMap()
 	firstMap.PutStr("name", "exporter")
 	firstMap.PutStr("host", "localhost")
 	firstMap.PutStr("instanceNum", "1")
@@ -316,17 +316,17 @@ func TestMergeMapEntries(tester *testing.T) {
 	secondMap.PutEmptyMap("id").PutInt("instance_a", 1)
 	expectedMap.PutStr("name", "exporter")
 	expectedMap.PutStr("tag", "test")
-	var slice = expectedMap.PutEmptySlice("host")
+	slice := expectedMap.PutEmptySlice("host")
 	slice.AppendEmpty().SetStr("localhost")
 	slice.AppendEmpty().SetStr("ec2")
 	slice = expectedMap.PutEmptySlice("instanceNum")
-	var val = slice.AppendEmpty()
+	val := slice.AppendEmpty()
 	val.SetStr("1")
 	val = slice.AppendEmpty()
 	val.SetInt(3)
 	slice = expectedMap.PutEmptySlice("id")
 	slice.AppendEmpty().SetInt(4)
 	slice.AppendEmpty().SetEmptyMap().PutInt("instance_a", 1)
-	var mergedMap = mergeMapEntries(firstMap, secondMap)
+	mergedMap := mergeMapEntries(firstMap, secondMap)
 	assert.Equal(tester, expectedMap.AsRaw(), mergedMap.AsRaw())
 }

@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	Type = component.MustNewType("experimental_metricsgeneration")
+	Type      = component.MustNewType("metricsgeneration")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor"
 )
 
 const (
-	MetricsStability = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelAlpha
 )

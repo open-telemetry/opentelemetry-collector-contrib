@@ -28,7 +28,6 @@ var validAttributeSource = map[AttributeSource]bool{
 
 // Config has the configuration guiding the sampler processor.
 type Config struct {
-
 	// SamplingPercentage is the percentage rate at which traces or logs are going to be sampled. Defaults to zero, i.e.: no sample.
 	// Values greater or equal 100 are treated as "sample all traces/logs".
 	SamplingPercentage float32 `mapstructure:"sampling_percentage"`

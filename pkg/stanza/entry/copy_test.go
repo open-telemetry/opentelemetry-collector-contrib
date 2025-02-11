@@ -31,7 +31,7 @@ func TestCopyValueByte(t *testing.T) {
 
 func TestCopyValueNil(t *testing.T) {
 	var value any
-	require.Equal(t, nil, copyValue(value))
+	require.Nil(t, copyValue(value))
 }
 
 func TestCopyValueStringArray(t *testing.T) {

@@ -38,7 +38,7 @@ type podKey struct {
 	namespace    string
 }
 
-func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger) []*stores.CIMetricImpl {
+func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger, metricExtractors []extractors.MetricExtractor) []*stores.CIMetricImpl {
 	var metrics []*stores.CIMetricImpl
 	podKeys := make(map[string]podKey)
 
@@ -48,7 +48,7 @@ func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInf
 		if len(info.Stats) == 0 {
 			continue
 		}
-		outMetrics, outPodKey, err := processContainer(info, mInfo, containerOrchestrator, logger)
+		outMetrics, outPodKey, err := processContainer(info, mInfo, containerOrchestrator, logger, metricExtractors)
 		if err != nil {
 			logger.Warn("drop some container info", zap.Error(err))
 			continue
@@ -74,7 +74,7 @@ func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInf
 			continue
 		}
 
-		metrics = append(metrics, processPod(info, mInfo, podKeys, logger)...)
+		metrics = append(metrics, processPod(info, mInfo, podKeys, logger, metricExtractors)...)
 	}
 
 	// This happens when our cgroup path based pod detection logic is not working.
@@ -88,7 +88,7 @@ func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInf
 }
 
 // processContainers get metrics for individual container and gather information for pod so we can look it up later.
-func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger) ([]*stores.CIMetricImpl, *podKey, error) {
+func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger, metricExtractors []extractors.MetricExtractor) ([]*stores.CIMetricImpl, *podKey, error) {
 	var result []*stores.CIMetricImpl
 	var pKey *podKey
 
@@ -123,9 +123,9 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 		podPath := path.Dir(info.Name)
 		pKey = &podKey{cgroupPath: podPath, podName: podName, podID: podID, namespace: namespace}
 
-		tags[ci.AttributePodID] = podID
-		tags[ci.AttributeK8sPodName] = podName
-		tags[ci.AttributeK8sNamespace] = namespace
+		tags[ci.PodIDKey] = podID
+		tags[ci.K8sPodNameKey] = podName
+		tags[ci.K8sNamespace] = namespace
 		switch containerName {
 		// For docker, pause container name is set to POD while containerd does not set it.
 		// See https://github.com/aws/amazon-cloudwatch-agent/issues/188
@@ -134,9 +134,9 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 			// other pod info like CPU, Mem are dealt within in processPod.
 			containerType = ci.TypeInfraContainer
 		default:
-			tags[ci.AttributeContainerName] = containerName
+			tags[ci.ContainerNamekey] = containerName
 			containerID := path.Base(info.Name)
-			tags[ci.AttributeContainerID] = containerID
+			tags[ci.ContainerIDkey] = containerID
 			pKey.containerIDs = []string{containerID}
 			containerType = ci.TypeContainer
 			// TODO(pvasir): wait for upstream fix https://github.com/google/cadvisor/issues/2785
@@ -153,7 +153,7 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 
 	tags[ci.Timestamp] = strconv.FormatInt(extractors.GetStats(info).Timestamp.UnixNano(), 10)
 
-	for _, extractor := range GetMetricsExtractors() {
+	for _, extractor := range metricExtractors {
 		if extractor.HasValue(info) {
 			result = append(result, extractor.GetValue(info, mInfo, containerType)...)
 		}
@@ -165,7 +165,7 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 	return result, pKey, nil
 }
 
-func processPod(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, podKeys map[string]podKey, logger *zap.Logger) []*stores.CIMetricImpl {
+func processPod(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, podKeys map[string]podKey, logger *zap.Logger, metricExtractors []extractors.MetricExtractor) []*stores.CIMetricImpl {
 	var result []*stores.CIMetricImpl
 	if isContainerInContainer(info.Name) {
 		logger.Debug("drop metric because it's nested container", zap.String("name", info.Name))
@@ -178,13 +178,13 @@ func processPod(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, 
 	}
 
 	tags := map[string]string{}
-	tags[ci.AttributePodID] = podKey.podID
-	tags[ci.AttributeK8sPodName] = podKey.podName
-	tags[ci.AttributeK8sNamespace] = podKey.namespace
+	tags[ci.PodIDKey] = podKey.podID
+	tags[ci.K8sPodNameKey] = podKey.podName
+	tags[ci.K8sNamespace] = podKey.namespace
 
 	tags[ci.Timestamp] = strconv.FormatInt(extractors.GetStats(info).Timestamp.UnixNano(), 10)
 
-	for _, extractor := range GetMetricsExtractors() {
+	for _, extractor := range metricExtractors {
 		if extractor.HasValue(info) {
 			result = append(result, extractor.GetValue(info, mInfo, ci.TypePod)...)
 		}

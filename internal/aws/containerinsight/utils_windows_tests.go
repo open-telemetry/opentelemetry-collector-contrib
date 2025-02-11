@@ -14,8 +14,8 @@ import (
 
 func TestHostProcessContainer(t *testing.T) {
 	t.Setenv(RunInContainer, "True")
-	assert.Equal(t, IsWindowsHostProcessContainer(), false)
+	assert.False(t, IsWindowsHostProcessContainer())
 
 	t.Setenv(RunAsHostProcessContainer, "True")
-	assert.Equal(t, IsWindowsHostProcessContainer(), true)
+	assert.True(t, IsWindowsHostProcessContainer())
 }

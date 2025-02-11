@@ -47,8 +47,10 @@ func createDefaultConfig() component.Config {
 			CheckInterval:              defaultCompactionInterval,
 			CleanupOnStart:             false,
 		},
-		Timeout: time.Second,
-		FSync:   false,
+		Timeout:              time.Second,
+		FSync:                false,
+		CreateDirectory:      false,
+		DirectoryPermissions: "0750",
 	}
 }
 

@@ -26,7 +26,7 @@ func TestCreateOrLoadPersistentState(t *testing.T) {
 	t.Run("loads state from file if it exists", func(t *testing.T) {
 		f := filepath.Join(t.TempDir(), "state.yaml")
 
-		err := os.WriteFile(f, []byte(`instance_id: "018feed6-905b-7aa6-ba37-b0eec565de03"`), 0600)
+		err := os.WriteFile(f, []byte(`instance_id: "018feed6-905b-7aa6-ba37-b0eec565de03"`), 0o600)
 		require.NoError(t, err)
 
 		state, err := loadOrCreatePersistentState(f)
@@ -36,7 +36,6 @@ func TestCreateOrLoadPersistentState(t *testing.T) {
 		require.Equal(t, uuid.MustParse("018feed6-905b-7aa6-ba37-b0eec565de03"), state.InstanceID)
 		require.FileExists(t, f)
 	})
-
 }
 
 func TestPersistentState_SetInstanceID(t *testing.T) {

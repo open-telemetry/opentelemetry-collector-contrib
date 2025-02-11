@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
@@ -73,7 +74,7 @@ func newCwLogsExporter(config component.Config, params exp.Settings) (exp.Logs, 
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		context.TODO(),
 		params,
 		config,
@@ -91,13 +92,11 @@ func (e *cwlExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	var errs error
 
 	err := pushLogsToCWLogs(e.logger, ld, e.Config, pusher)
-
 	if err != nil {
 		errs = errors.Join(errs, fmt.Errorf("Error pushing logs: %w", err))
 	}
 
 	err = pusher.ForceFlush()
-
 	if err != nil {
 		errs = errors.Join(errs, fmt.Errorf("Error flushing logs: %w", err))
 	}
@@ -105,7 +104,7 @@ func (e *cwlExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	return errs
 }
 
-func (e *cwlExporter) start(ctx context.Context, host component.Host) error {
+func (e *cwlExporter) start(_ context.Context, host component.Host) error {
 	// Create AWS session
 	awsConfig, session, err := awsutil.GetAWSConfigSession(e.logger, &awsutil.Conn{}, &e.Config.AWSSessionSettings)
 	if err != nil {
@@ -113,7 +112,7 @@ func (e *cwlExporter) start(ctx context.Context, host component.Host) error {
 	}
 
 	// Create CWLogs client with aws session config
-	e.svcStructuredLog = cwlogs.NewClient(e.logger, awsConfig, e.params.BuildInfo, e.Config.LogGroupName, e.Config.LogRetention, e.Config.Tags, session)
+	e.svcStructuredLog = cwlogs.NewClient(e.logger, awsConfig, e.params.BuildInfo, e.Config.LogGroupName, e.Config.LogRetention, e.Config.Tags, session, metadata.Type.String())
 
 	e.retryCount = *awsConfig.MaxRetries
 

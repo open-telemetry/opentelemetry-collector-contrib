@@ -112,5 +112,4 @@ func TestValidatingServerResponse(t *testing.T) {
 
 	_, err := new(IAMSASLClient).Step("")
 	assert.ErrorIs(t, err, ErrInvalidStateReached, "Must be an invalid step when not set up correctly")
-
 }

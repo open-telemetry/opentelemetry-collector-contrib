@@ -22,6 +22,7 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -130,11 +131,11 @@ func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consum
 	return recv, nil
 }
 
-func (a *alertsReceiver) Start(ctx context.Context, _ component.Host, storageClient storage.Client) error {
+func (a *alertsReceiver) Start(ctx context.Context, host component.Host, storageClient storage.Client) error {
 	if a.mode == alertModePoll {
 		return a.startPolling(ctx, storageClient)
 	}
-	return a.startListening(ctx)
+	return a.startListening(ctx, host)
 }
 
 func (a *alertsReceiver) startPolling(ctx context.Context, storageClient storage.Client) error {
@@ -209,7 +210,7 @@ func (a *alertsReceiver) pollAndProcess(ctx context.Context, pc *ProjectConfig, 
 	}
 }
 
-func (a *alertsReceiver) startListening(ctx context.Context) error {
+func (a *alertsReceiver) startListening(ctx context.Context, host component.Host) error {
 	a.telemetrySettings.Logger.Debug("starting alerts receiver in listening mode")
 	// We use a.server.Serve* over a.server.ListenAndServe*
 	// So that we can catch and return errors relating to binding to network interface on start.
@@ -236,7 +237,7 @@ func (a *alertsReceiver) startListening(ctx context.Context) error {
 
 			if err != http.ErrServerClosed {
 				a.telemetrySettings.Logger.Error("ServeTLS failed", zap.Error(err))
-				a.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
 		}()
 	} else {
@@ -250,7 +251,7 @@ func (a *alertsReceiver) startListening(ctx context.Context) error {
 			a.telemetrySettings.Logger.Debug("Serve done")
 
 			if err != http.ErrServerClosed {
-				a.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
 		}()
 	}
@@ -497,7 +498,6 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 
 		attrs.PutStr("net.peer.name", host)
 		attrs.PutInt("net.peer.port", port)
-
 	}
 
 	return logs, nil
@@ -549,12 +549,12 @@ func (a *alertsReceiver) writeCheckpoint(ctx context.Context) error {
 func (a *alertsReceiver) applyFilters(pConf *ProjectConfig, alerts []mongodbatlas.Alert) []mongodbatlas.Alert {
 	filtered := []mongodbatlas.Alert{}
 
-	var lastRecordedTime = pcommon.Timestamp(0).AsTime()
+	lastRecordedTime := pcommon.Timestamp(0).AsTime()
 	if a.record.LastRecordedTime != nil {
 		lastRecordedTime = *a.record.LastRecordedTime
 	}
 	// we need to maintain two timestamps in order to not conflict while iterating
-	var latestInPayload = pcommon.Timestamp(0).AsTime()
+	latestInPayload := pcommon.Timestamp(0).AsTime()
 
 	for _, alert := range alerts {
 		updatedTime, err := time.Parse(time.RFC3339, alert.Updated)

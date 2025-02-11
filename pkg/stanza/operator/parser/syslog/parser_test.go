@@ -70,8 +70,36 @@ func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 	newEntry := entry.New()
 	newEntry.Body = body
 	err = op.Process(context.Background(), newEntry)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "expecting a structured data element id (from 1 to max 32 US-ASCII characters")
+	require.ErrorContains(t, err, "expecting a structured data element id (from 1 to max 32 US-ASCII characters")
+
+	select {
+	case e := <-fake.Received:
+		require.Equal(t, body, e.Body)
+	case <-time.After(time.Second):
+		require.FailNow(t, "Timed out waiting for entry to be processed")
+	}
+}
+
+func TestSyslogParseRFC5424_Octet_Counting_MessageTooLong(t *testing.T) {
+	cfg := basicConfig()
+	cfg.Protocol = RFC5424
+	cfg.EnableOctetCounting = true
+	cfg.MaxOctets = 214
+
+	body := `215 <86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile`
+
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err)
+
+	fake := testutil.NewFakeOutput(t)
+	err = op.SetOutputs([]operator.Operator{fake})
+	require.NoError(t, err)
+
+	newEntry := entry.New()
+	newEntry.Body = body
+	err = op.Process(context.Background(), newEntry)
+	require.ErrorContains(t, err, "message too long to parse. was size 215, max length 214")
 
 	select {
 	case e := <-fake.Received:

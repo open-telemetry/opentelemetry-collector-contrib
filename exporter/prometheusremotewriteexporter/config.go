@@ -16,8 +16,8 @@ import (
 
 // Config defines configuration for Remote Write exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// prefix attached to each exported metric name
 	// See: https://prometheus.io/docs/practices/naming/#metric-names
@@ -45,6 +45,8 @@ type Config struct {
 	TargetInfo *TargetInfo `mapstructure:"target_info,omitempty"`
 
 	// CreatedMetric allows customizing creation of _created metrics
+	// Deprecated[0.114.0]: The feature doesn't provide the expected behavior. Use Prometheus remote-write v2 to enable sending Created Timestamps.
+	// This feature is planned to be removed in v0.116.0
 	CreatedMetric *CreatedMetric `mapstructure:"export_created_metric,omitempty"`
 
 	// AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export

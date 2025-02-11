@@ -28,8 +28,6 @@ import (
 )
 
 func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
-	t.Skip("TODO: Skipping due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32533")
-
 	const maxDelay = 200 * time.Millisecond
 	createSettings := exportertest.NewNopSettings()
 
@@ -52,7 +50,7 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 
 		for _, ev := range cer.Events {
 			processedEvents.Add(1)
-			key, found := ev.Attrs["body.str"]
+			key, found := ev.Attrs["key"]
 			assert.True(t, found)
 			mutex.Lock()
 			sKey := key.(string)
@@ -82,11 +80,19 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 		BufferSettings: BufferSettings{
 			MaxLifetime:          maxDelay,
 			GroupBy:              []string{"attributes.container_id"},
+			RetryInitialInterval: maxDelay,
+			RetryMaxInterval:     10 * maxDelay,
+			RetryMaxElapsedTime:  50 * maxDelay,
 			RetryShutdownTimeout: time.Minute,
+			PurgeOlderThan:       100 * maxDelay,
+			MaxParallelOutgoing:  bufferMaxParallelOutgoing,
 		},
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+		ServerHostSettings: ServerHostSettings{
+			UseHostName: true,
+		},
 	}
 
 	logs, err := createLogsExporter(context.Background(), createSettings, config)
@@ -138,7 +144,7 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 
 	assert.True(t, wasSuccessful.Load())
 
-	assert.Equal(t, seenKeys, expectedKeys)
+	assert.Equal(t, expectedKeys, seenKeys)
 	assert.Equal(t, expectedLogs, processedEvents.Load(), "processed items")
 	assert.Equal(t, expectedLogs, uint64(len(seenKeys)), "unique items")
 }

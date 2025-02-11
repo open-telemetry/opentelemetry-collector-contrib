@@ -250,8 +250,8 @@ func assertMapsContainData(t *testing.T, store *PodResourcesStore) {
 }
 
 func assertMapsDontContainData(t *testing.T, store *PodResourcesStore) {
-	assert.Equal(t, 0, len(store.containerInfoToResourcesMap))
-	assert.Equal(t, 0, len(store.resourceToPodContainerMap))
+	assert.Empty(t, store.containerInfoToResourcesMap)
+	assert.Empty(t, store.resourceToPodContainerMap)
 
 	actualContainerInfo := store.GetContainerInfo(defaultDeviceID1, defaultResourceName)
 	if actualContainerInfo != nil {

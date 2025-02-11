@@ -20,9 +20,9 @@ const (
 
 // Config defines by Coralogix.
 type Config struct {
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 
 	// Coralogix domain
 	Domain string `mapstructure:"domain"`
@@ -63,6 +63,7 @@ func isEmpty(endpoint string) bool {
 	}
 	return false
 }
+
 func (c *Config) Validate() error {
 	// validate that at least one endpoint is set up correctly
 	if isEmpty(c.Domain) &&

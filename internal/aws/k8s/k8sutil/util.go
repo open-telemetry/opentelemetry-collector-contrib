@@ -40,14 +40,12 @@ func (ct HyperPodConditionType) EnumIndex() int {
 	return int(ct)
 }
 
-var (
-	HyperPodConditionTypeMap = map[string]HyperPodConditionType{
-		"Schedulable":                     Schedulable,
-		"UnschedulablePendingReplacement": UnschedulablePendingReplacement,
-		"UnschedulablePendingReboot":      UnschedulablePendingReboot,
-		"Unschedulable":                   Unschedulable,
-	}
-)
+var HyperPodConditionTypeMap = map[string]HyperPodConditionType{
+	"Schedulable":                     Schedulable,
+	"UnschedulablePendingReplacement": UnschedulablePendingReplacement,
+	"UnschedulablePendingReboot":      UnschedulablePendingReboot,
+	"Unschedulable":                   Unschedulable,
+}
 
 func ParseString(str string) (int8, bool) {
 	c, ok := HyperPodConditionTypeMap[str]

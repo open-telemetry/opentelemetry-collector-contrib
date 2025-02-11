@@ -1,10 +1,10 @@
 type: clickhouse
-scope_name: otelcol/clickhouse
 
 status:
   class: exporter
   stability:
-    alpha: [traces, metrics, logs]
+    alpha: [metrics]
+    beta: [traces, logs]
   distributions: [contrib]
   codeowners:
     active: [hanjm, dmitryax, Frapschen, SpencerTorres]

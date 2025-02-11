@@ -21,14 +21,15 @@ import (
 
 // Config defines configuration for Sumo Logic exporter.
 type Config struct {
-	confighttp.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
-	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
+	confighttp.ClientConfig   `mapstructure:",squash"`   // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// Compression encoding format, either empty string, gzip or deflate (default gzip)
 	// Empty string means no compression
 	// NOTE: CompressEncoding is deprecated and will be removed in an upcoming release
-	CompressEncoding configcompression.Type `mapstructure:"compress_encoding"`
+	CompressEncoding *configcompression.Type `mapstructure:"compress_encoding"`
+
 	// Max HTTP request body size in bytes before compression (if applied).
 	// By default 1MB is recommended.
 	MaxRequestBodySize int `mapstructure:"max_request_body_size"`
@@ -62,24 +63,22 @@ type Config struct {
 
 // createDefaultClientConfig returns default http client settings
 func createDefaultClientConfig() confighttp.ClientConfig {
-	return confighttp.ClientConfig{
-		Timeout:     defaultTimeout,
-		Compression: DefaultCompressEncoding,
-		Auth: &configauth.Authentication{
-			AuthenticatorID: component.NewID(sumologicextension.NewFactory().Type()),
-		},
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = defaultTimeout
+	clientConfig.Compression = DefaultCompressEncoding
+	clientConfig.Auth = &configauth.Authentication{
+		AuthenticatorID: component.NewID(sumologicextension.NewFactory().Type()),
 	}
+	return clientConfig
 }
 
 func (cfg *Config) Validate() error {
+	if cfg.CompressEncoding != nil {
+		return errors.New("support for compress_encoding configuration has been removed, in favor of compression")
+	}
 
-	switch cfg.CompressEncoding {
-	case configcompression.TypeGzip:
-	case configcompression.TypeDeflate:
-	case NoCompression:
-
-	default:
-		return fmt.Errorf("invalid compression encoding type: %v", cfg.CompressEncoding)
+	if cfg.ClientConfig.Timeout < 1 || cfg.ClientConfig.Timeout > maxTimeout {
+		return fmt.Errorf("timeout must be between 1 and 55 seconds, got %v", cfg.ClientConfig.Timeout)
 	}
 
 	switch cfg.ClientConfig.Compression {
@@ -90,10 +89,6 @@ func (cfg *Config) Validate() error {
 
 	default:
 		return fmt.Errorf("invalid compression encoding type: %v", cfg.ClientConfig.Compression)
-	}
-
-	if cfg.CompressEncoding != NoCompression && cfg.ClientConfig.Compression != DefaultCompressEncoding {
-		return fmt.Errorf("compress_encoding is deprecated and should not be used when compression is set to a non-default value")
 	}
 
 	switch cfg.LogFormat {
@@ -171,6 +166,8 @@ const (
 	TracesPipeline PipelineType = "traces"
 	// defaultTimeout
 	defaultTimeout time.Duration = 30 * time.Second
+	// maxTimeout
+	maxTimeout time.Duration = 55 * time.Second
 	// DefaultCompress defines default Compress
 	DefaultCompress bool = true
 	// DefaultCompressEncoding defines default CompressEncoding

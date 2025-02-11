@@ -20,6 +20,7 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/scrape"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -79,7 +80,7 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 
 	logger := internal.NewZapToGokitLogAdapter(r.settings.Logger)
 
-	err := r.initPrometheusComponents(discoveryCtx, logger)
+	err := r.initPrometheusComponents(discoveryCtx, logger, host)
 	if err != nil {
 		r.settings.Logger.Error("Failed to initPrometheusComponents Prometheus components", zap.Error(err))
 		return err
@@ -97,7 +98,7 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Logger) error {
+func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Logger, host component.Host) error {
 	// Some SD mechanisms use the "refresh" package, which has its own metrics.
 	refreshSdMetrics := discovery.NewRefreshMetrics(r.registerer)
 
@@ -110,14 +111,14 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 	if r.discoveryManager == nil {
 		// NewManager can sometimes return nil if it encountered an error, but
 		// the error message is logged separately.
-		return fmt.Errorf("failed to create discovery manager")
+		return errors.New("failed to create discovery manager")
 	}
 
 	go func() {
 		r.settings.Logger.Info("Starting discovery manager")
 		if err = r.discoveryManager.Run(); err != nil && !errors.Is(err, context.Canceled) {
 			r.settings.Logger.Error("Discovery manager failed", zap.Error(err))
-			r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 
@@ -152,6 +153,10 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		},
 	}
 
+	if enableNativeHistogramsGate.IsEnabled() {
+		opts.EnableNativeHistogramsIngestion = true
+	}
+
 	// for testing only
 	if r.skipOffsetting {
 		optsValue := reflect.ValueOf(opts).Elem()
@@ -182,7 +187,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		r.settings.Logger.Info("Starting scrape manager")
 		if err := r.scrapeManager.Run(r.discoveryManager.SyncCh()); err != nil {
 			r.settings.Logger.Error("Scrape manager failed", zap.Error(err))
-			r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil

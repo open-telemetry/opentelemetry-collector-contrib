@@ -68,5 +68,4 @@ func TestQueryContents(t *testing.T) {
 			require.Equal(t, expected, actual)
 		})
 	}
-
 }

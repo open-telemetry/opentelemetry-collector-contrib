@@ -25,35 +25,33 @@ type metricsGroupingTest struct {
 	transforms []internalTransform
 }
 
-var (
-	groupingTests = []metricsGroupingTest{
-		{
-			name: "metric_group_by_strict_name",
-			transforms: []internalTransform{
-				{
-					MetricIncludeFilter: internalFilterStrict{include: "foo/metric"},
-					Action:              Group,
-					GroupResourceLabels: map[string]string{"resource.type": "foo"},
-				},
+var groupingTests = []metricsGroupingTest{
+	{
+		name: "metric_group_by_strict_name",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterStrict{include: "foo/metric"},
+				Action:              Group,
+				GroupResourceLabels: map[string]string{"resource.type": "foo"},
 			},
 		},
-		{
-			name: "metric_group_regex_multiple_empty_resource",
-			transforms: []internalTransform{
-				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^container.(.*)$")},
-					Action:              Group,
-					GroupResourceLabels: map[string]string{"resource.type": "container"},
-				},
-				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^k8s.pod.(.*)$")},
-					Action:              Group,
-					GroupResourceLabels: map[string]string{"resource.type": "k8s.pod"},
-				},
+	},
+	{
+		name: "metric_group_regex_multiple_empty_resource",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^container.(.*)$")},
+				Action:              Group,
+				GroupResourceLabels: map[string]string{"resource.type": "container"},
+			},
+			{
+				MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^k8s.pod.(.*)$")},
+				Action:              Group,
+				GroupResourceLabels: map[string]string{"resource.type": "k8s.pod"},
 			},
 		},
-	}
-)
+	},
+}
 
 func TestMetricsGrouping(t *testing.T) {
 	for _, useOTLP := range []bool{false, true} {
@@ -67,7 +65,7 @@ func TestMetricsGrouping(t *testing.T) {
 					otlpDataModelGateEnabled: useOTLP,
 				}
 
-				mtp, err := processorhelper.NewMetricsProcessor(
+				mtp, err := processorhelper.NewMetrics(
 					context.Background(),
 					processortest.NewNopSettings(),
 					&Config{},
@@ -75,7 +73,7 @@ func TestMetricsGrouping(t *testing.T) {
 				require.NoError(t, err)
 
 				caps := mtp.Capabilities()
-				assert.Equal(t, true, caps.MutatesData)
+				assert.True(t, caps.MutatesData)
 
 				input, err := golden.ReadMetrics(filepath.Join("testdata", "operation_group", test.name+"_in.yaml"))
 				require.NoError(t, err)
@@ -86,7 +84,7 @@ func TestMetricsGrouping(t *testing.T) {
 				assert.NoError(t, cErr)
 
 				got := next.AllMetrics()
-				require.Equal(t, 1, len(got))
+				require.Len(t, got, 1)
 				require.NoError(t, pmetrictest.CompareMetrics(expected, got[0], pmetrictest.IgnoreMetricValues()))
 
 				assert.NoError(t, mtp.Shutdown(context.Background()))

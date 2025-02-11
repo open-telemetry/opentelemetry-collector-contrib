@@ -1,0 +1,22 @@
+type: logdedup
+
+status:
+  class: processor
+  stability:
+    alpha: [logs]
+  distributions: [contrib, k8s]
+  warnings: []
+  codeowners:
+    active: [MikeGoldsmith, djaglowski]
+
+tests:
+  config:
+
+telemetry:
+  metrics:
+    dedup_processor_aggregated_logs:
+      description: Number of log records that were aggregated together.
+      unit: "{records}"
+      enabled: true
+      histogram:
+        value_type: int

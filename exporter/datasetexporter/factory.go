@@ -31,8 +31,8 @@ func createDefaultConfig() component.Config {
 		LogsSettings:       newDefaultLogsSettings(),
 		ServerHostSettings: newDefaultServerHostSettings(),
 		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
-		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
-		TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
+		QueueSettings:      exporterhelper.NewDefaultQueueConfig(),
+		TimeoutSettings:    exporterhelper.NewDefaultTimeoutConfig(),
 		Debug:              debugDefault,
 	}
 }

@@ -15,8 +15,8 @@ type Config struct {
 	collector.Config `mapstructure:",squash"`
 
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings   exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
 }
 
 func (cfg *Config) Validate() error {

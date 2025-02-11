@@ -73,7 +73,7 @@ func createTracesExporter(
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	fe := getOrCreateFileExporter(cfg, set.Logger)
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -90,7 +90,7 @@ func createMetricsExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	fe := getOrCreateFileExporter(cfg, set.Logger)
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -107,7 +107,7 @@ func createLogsExporter(
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	fe := getOrCreateFileExporter(cfg, set.Logger)
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
@@ -120,7 +120,7 @@ func createLogsExporter(
 
 // getOrCreateFileExporter creates a FileExporter and caches it for a particular configuration,
 // or returns the already cached one. Caching is required because the factory is asked trace and
-// metric receivers separately when it gets CreateTracesReceiver() and CreateMetricsReceiver()
+// metric receivers separately when it gets CreateTraces() and CreateMetrics()
 // but they must not create separate objects, they must use one Exporter object per configuration.
 func getOrCreateFileExporter(cfg component.Config, logger *zap.Logger) FileExporter {
 	conf := cfg.(*Config)
@@ -143,7 +143,6 @@ func newFileExporter(conf *Config, logger *zap.Logger) FileExporter {
 		conf:   conf,
 		logger: logger,
 	}
-
 }
 
 func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInterval time.Duration, export exportFunc) (*fileWriter, error) {
@@ -155,7 +154,7 @@ func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInte
 		} else {
 			fileFlags |= os.O_TRUNC
 		}
-		f, err := os.OpenFile(path, fileFlags, 0644)
+		f, err := os.OpenFile(path, fileFlags, 0o644)
 		if err != nil {
 			return nil, err
 		}
@@ -180,6 +179,6 @@ func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInte
 
 // This is the map of already created File exporters for particular configurations.
 // We maintain this map because the Factory is asked trace and metric receivers separately
-// when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
+// when it gets CreateTraces() and CreateMetrics() but they must not
 // create separate objects, they must use one Exporter object per configuration.
 var exporters = sharedcomponent.NewSharedComponents()

@@ -4,8 +4,8 @@
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 
 import (
-	"fmt"
 	"hash/fnv"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -126,9 +126,9 @@ func parseAndHashRowrangestartkey(key string) string {
 		hashFunction.Reset()
 		hashFunction.Write([]byte(subKey))
 		if cnt < len(keySlice)-1 {
-			builderHashedKey.WriteString(fmt.Sprint(hashFunction.Sum32()) + ",")
+			builderHashedKey.WriteString(strconv.FormatUint(uint64(hashFunction.Sum32()), 10) + ",")
 		} else {
-			builderHashedKey.WriteString(fmt.Sprint(hashFunction.Sum32()))
+			builderHashedKey.WriteString(strconv.FormatUint(uint64(hashFunction.Sum32()), 10))
 		}
 	}
 	if plusPresent {
@@ -182,5 +182,5 @@ func (mdp *MetricsDataPoint) hash() (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf("%x", hashedData), nil
+	return strconv.FormatUint(hashedData, 16), nil
 }

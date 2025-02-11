@@ -5,18 +5,20 @@ package otelarrowexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
-	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
 	"github.com/open-telemetry/otel-arrow/pkg/config"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 )
 
 // Config defines configuration for OTLP exporter.
@@ -25,12 +27,16 @@ type Config struct {
 	// inherited from exporterhelper using field names
 	// intentionally identical to the core OTLP exporter.
 
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings   exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
 
 	RetryConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+
+	// Experimental: This configuration is at the early stage of development and may change without backward compatibility
+	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved
+	BatcherConfig exporterbatcher.Config `mapstructure:"batcher"`
 
 	// Arrow includes settings specific to OTel Arrow.
 	Arrow ArrowConfig `mapstructure:"arrow"`
@@ -40,6 +46,23 @@ type Config struct {
 	// exporter is built and configured via code instead of yaml.
 	// Uses include custom dialer, custom user-agent, etc.
 	UserDialOptions []grpc.DialOption `mapstructure:"-"`
+
+	// MetadataKeys is a list of client.Metadata keys that will be
+	// used to form distinct exporters.  If this setting is empty,
+	// a single exporter instance will be used.  When this setting
+	// is not empty, one exporter will be used per distinct
+	// combination of values for the listed metadata keys.
+	//
+	// Empty value and unset metadata are treated as distinct cases.
+	//
+	// Entries are case-insensitive.  Duplicated entries will
+	// trigger a validation error.
+	MetadataKeys []string `mapstructure:"metadata_keys"`
+
+	// MetadataCardinalityLimit indicates the maximum number of
+	// exporter instances that will be created through a distinct
+	// combination of MetadataKeys.
+	MetadataCardinalityLimit uint32 `mapstructure:"metadata_cardinality_limit"`
 }
 
 // ArrowConfig includes whether Arrow is enabled and the number of
@@ -84,6 +107,24 @@ type ArrowConfig struct {
 var _ component.Config = (*Config)(nil)
 
 var _ component.ConfigValidator = (*ArrowConfig)(nil)
+
+func (cfg *Config) Validate() error {
+	err := cfg.Arrow.Validate()
+	if err != nil {
+		return err
+	}
+
+	uniq := map[string]bool{}
+	for _, k := range cfg.MetadataKeys {
+		l := strings.ToLower(k)
+		if _, has := uniq[l]; has {
+			return fmt.Errorf("duplicate entry in metadata_keys: %q (case-insensitive)", l)
+		}
+		uniq[l] = true
+	}
+
+	return nil
+}
 
 // Validate returns an error when the number of streams is less than 1.
 func (cfg *ArrowConfig) Validate() error {

@@ -20,21 +20,21 @@ func TestNewFactory(t *testing.T) {
 	assert.NotNil(t, f)
 }
 
-func TestCreateTracesReceiver(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	f := NewFactory()
 	ctx := context.Background()
 	params := receivertest.NewNopSettings()
-	receiver, err := f.CreateTracesReceiver(ctx, params, getConfig(), consumertest.NewNop())
+	receiver, err := f.CreateTraces(ctx, params, getConfig(), consumertest.NewNop())
 
 	require.NoError(t, err)
 	assert.NotNil(t, receiver)
 }
 
-func TestCreateLogsReceiver(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	f := NewFactory()
 	ctx := context.Background()
 	params := receivertest.NewNopSettings()
-	receiver, err := f.CreateLogsReceiver(ctx, params, getConfig(), consumertest.NewNop())
+	receiver, err := f.CreateLogs(ctx, params, getConfig(), consumertest.NewNop())
 
 	require.NoError(t, err)
 	assert.NotNil(t, receiver)
@@ -45,10 +45,10 @@ func TestTracesAndLogsReceiversAreSame(t *testing.T) {
 	ctx := context.Background()
 	params := receivertest.NewNopSettings()
 	config := getConfig()
-	logsReceiver, err := f.CreateLogsReceiver(ctx, params, config, consumertest.NewNop())
+	logsReceiver, err := f.CreateLogs(ctx, params, config, consumertest.NewNop())
 	require.NoError(t, err)
 
-	tracesReceiver, err := f.CreateTracesReceiver(ctx, params, config, consumertest.NewNop())
+	tracesReceiver, err := f.CreateTraces(ctx, params, config, consumertest.NewNop())
 	require.NoError(t, err)
 
 	assert.Equal(t, logsReceiver, tracesReceiver)

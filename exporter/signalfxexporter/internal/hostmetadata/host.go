@@ -15,9 +15,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/host"
-	"github.com/shirou/gopsutil/v3/mem"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/mem"
 )
 
 // etcPath is the path to host etc and can be set using the env var "HOST_ETC"
@@ -32,10 +32,12 @@ var etcPath = func() string {
 const cpuStatsTimeout = 10 * time.Second
 
 // Map library functions to unexported package variables for testing purposes.
-var cpuInfo = cpu.InfoWithContext
-var cpuCounts = cpu.CountsWithContext
-var memVirtualMemory = mem.VirtualMemory
-var hostInfo = host.Info
+var (
+	cpuInfo          = cpu.InfoWithContext
+	cpuCounts        = cpu.CountsWithContext
+	memVirtualMemory = mem.VirtualMemory
+	hostInfo         = host.Info
+)
 
 // hostCPU information about the host
 type hostCPU struct {
@@ -179,7 +181,7 @@ func getMemory() (*Memory, error) {
 func getStringFromFile(pattern string, path string) (string, error) {
 	var err error
 	var file []byte
-	var reg = regexp.MustCompile(pattern)
+	reg := regexp.MustCompile(pattern)
 	if file, err = os.ReadFile(path); err == nil {
 		if match := reg.FindSubmatch(file); len(match) > 1 {
 			return string(match[1]), nil

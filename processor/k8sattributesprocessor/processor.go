@@ -7,11 +7,14 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 	"go.uber.org/zap"
@@ -25,17 +28,19 @@ const (
 )
 
 type kubernetesprocessor struct {
-	cfg               component.Config
-	options           []option
-	telemetrySettings component.TelemetrySettings
-	logger            *zap.Logger
-	apiConfig         k8sconfig.APIConfig
-	kc                kube.Client
-	passthroughMode   bool
-	rules             kube.ExtractionRules
-	filters           kube.Filters
-	podAssociations   []kube.Association
-	podIgnore         kube.Excludes
+	cfg                    component.Config
+	options                []option
+	telemetrySettings      component.TelemetrySettings
+	logger                 *zap.Logger
+	apiConfig              k8sconfig.APIConfig
+	kc                     kube.Client
+	passthroughMode        bool
+	rules                  kube.ExtractionRules
+	filters                kube.Filters
+	podAssociations        []kube.Association
+	podIgnore              kube.Excludes
+	waitForMetadata        bool
+	waitForMetadataTimeout time.Duration
 }
 
 func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, kubeClient kube.ClientProvider) error {
@@ -43,7 +48,7 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil)
+		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil, kp.waitForMetadata, kp.waitForMetadataTimeout)
 		if err != nil {
 			return err
 		}
@@ -52,32 +57,30 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 	return nil
 }
 
-func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error {
-	if kp.rules.StartTime {
-		kp.logger.Warn("k8s.pod.start_time value will be changed to use RFC3339 format in v0.83.0. " +
-			"see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/24016 for more information. " +
-			"enable feature-gate k8sattr.rfc3339 to opt into this change.")
-	}
-
+func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) error {
 	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
+
 	for _, opt := range allOptions {
 		if err := opt(kp); err != nil {
-			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
-			return nil
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+			return err
 		}
 	}
+
 	// This might have been set by an option already
 	if kp.kc == nil {
 		err := kp.initKubeClient(kp.telemetrySettings, kubeClientProvider)
 		if err != nil {
-			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
-			return nil
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+			return err
 		}
-
 	}
-
 	if !kp.passthroughMode {
-		go kp.kc.Start()
+		err := kp.kc.Start()
+		if err != nil {
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+			return err
+		}
 	}
 	return nil
 }
@@ -120,6 +123,16 @@ func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (p
 	}
 
 	return ld, nil
+}
+
+// processProfiles process profiles and add k8s metadata using resource IP, hostname or incoming IP as pod origin.
+func (kp *kubernetesprocessor) processProfiles(ctx context.Context, pd pprofile.Profiles) (pprofile.Profiles, error) {
+	rp := pd.ResourceProfiles()
+	for i := 0; i < rp.Len(); i++ {
+		kp.processResource(ctx, rp.At(i).Resource())
+	}
+
+	return pd, nil
 }
 
 // processResource adds Pod metadata tags to resource based on pod association configuration
@@ -251,9 +264,12 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 		}
 	}
 	if runID != -1 {
-		if containerStatus, ok := containerSpec.Statuses[runID]; ok && containerStatus.ContainerID != "" {
-			if _, found := attrs.Get(conventions.AttributeContainerID); !found {
+		if containerStatus, ok := containerSpec.Statuses[runID]; ok {
+			if _, found := attrs.Get(conventions.AttributeContainerID); !found && containerStatus.ContainerID != "" {
 				attrs.PutStr(conventions.AttributeContainerID, containerStatus.ContainerID)
+			}
+			if _, found := attrs.Get(containerImageRepoDigests); !found && containerStatus.ImageRepoDigest != "" {
+				attrs.PutEmptySlice(containerImageRepoDigests).AppendEmpty().SetStr(containerStatus.ImageRepoDigest)
 			}
 		}
 	}

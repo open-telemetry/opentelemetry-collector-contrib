@@ -61,8 +61,8 @@ func TestLeastRecentlyUsedIsEvicted(t *testing.T) {
 	c.Put(id1, true)
 	c.Put(id2, true)
 	v, ok := c.Get(id1) // use id1
-	assert.True(t, true, v)
-	assert.True(t, true, ok)
+	assert.True(t, v)
+	assert.True(t, ok)
 	c.Put(id3, true)
 
 	v, ok = c.Get(id1)

@@ -55,7 +55,6 @@ func Test_ProcessScrape(t *testing.T) {
 			pmetrictest.IgnoreTimestamp(),
 		),
 	).Run(t)
-
 }
 
 func Test_ProcessScrapeWithCustomRootPath(t *testing.T) {
@@ -88,7 +87,6 @@ func Test_ProcessScrapeWithCustomRootPath(t *testing.T) {
 			pmetrictest.IgnoreTimestamp(),
 		),
 	).Run(t)
-
 }
 
 func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
@@ -121,5 +119,4 @@ func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
 			pmetrictest.IgnoreTimestamp(),
 		),
 	).Run(t)
-
 }

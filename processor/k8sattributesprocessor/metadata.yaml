@@ -1,13 +1,14 @@
 type: k8sattributes
-scope_name: otelcol/k8sattributes
 
 status:
   class: processor
   stability:
     beta: [logs, metrics, traces]
-  distributions: [contrib]
+    development: [profiles]
+  distributions: [contrib, k8s]
   codeowners:
-    active: [dmitryax, rmfitzpatrick, fatsheep9146, TylerHelmuth]
+    active: [dmitryax, fatsheep9146, TylerHelmuth]
+    emeritus: [rmfitzpatrick]
 # resource attributes are exposed through a different configuration interface (extract::metadata).
 resource_attributes:
   k8s.cluster.uid:
@@ -34,6 +35,10 @@ resource_attributes:
     description: The start time of the Pod.
     type: string
     enabled: true
+  k8s.pod.ip:
+    description: The IP address of the Pod.
+    type: string
+    enabled: false
   k8s.deployment.name:
     description: The name of the Deployment.
     type: string
@@ -98,13 +103,18 @@ resource_attributes:
     description: Name of the image the container was built on. Requires container.id or k8s.container.name.
     type: string
     enabled: true
+  container.image.repo_digests:
+    description: Repo digests of the container image as provided by the container runtime.
+    type: slice
+    enabled: false
   container.image.tag:
-    description: Container image tag. Requires container.id or k8s.container.name.
+    description: Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name.
     type: string
     enabled: true
 
 tests:
   config:
+  skip_lifecycle: true
   goleak:
     skip: true
 

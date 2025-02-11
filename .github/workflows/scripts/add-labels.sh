@@ -20,18 +20,31 @@ if [[ ${COMMENT:0:6} != "/label" ]]; then
 fi
 
 declare -A COMMON_LABELS
+COMMON_LABELS["arm64"]="arm64"
 COMMON_LABELS["good-first-issue"]="good first issue"
 COMMON_LABELS["help-wanted"]="help wanted"
 COMMON_LABELS["needs-discussion"]="needs discussion"
 COMMON_LABELS["needs-triage"]="needs triage"
+COMMON_LABELS["os:mac"]="os:mac"
+COMMON_LABELS["os:windows"]="os:windows"
 COMMON_LABELS["waiting-for-author"]="waiting for author"
+COMMON_LABELS["waiting-for-code-owners"]="waiting-for-code-owners"
+COMMON_LABELS["bug"]="bug"
+COMMON_LABELS["priority:p0"]="priority:p0"
+COMMON_LABELS["priority:p1"]="priority:p1"
+COMMON_LABELS["priority:p2"]="priority:p2"
+COMMON_LABELS["priority:p3"]="priority:p3"
+COMMON_LABELS["stale"]="Stale"
+COMMON_LABELS["never-stale"]="never stale"
 
 LABELS=$(echo "${COMMENT}" | sed -E 's%^/label%%')
 
 for LABEL_REQ in ${LABELS}; do
     LABEL=$(echo "${LABEL_REQ}" | sed -E s/^[+-]?//)
-    SHOULD_ADD=true
+    # Trim newlines from label that would cause matching to fail
+    LABEL=$(echo "${LABEL}" | tr -d '\n')
 
+    SHOULD_ADD=true
     if [[ "${LABEL_REQ:0:1}" = "-" ]]; then
         SHOULD_ADD=false
     fi

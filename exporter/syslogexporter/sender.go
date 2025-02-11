@@ -4,6 +4,7 @@
 package syslogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter"
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
@@ -14,23 +15,31 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultPriority = 165
-const versionRFC5424 = 1
+const (
+	defaultPriority = 165
+	versionRFC5424  = 1
+)
 
-const protocolRFC5424Str = "rfc5424"
-const protocolRFC3164Str = "rfc3164"
+const (
+	protocolRFC5424Str = "rfc5424"
+	protocolRFC3164Str = "rfc3164"
+)
 
-const priority = "priority"
-const version = "version"
-const hostname = "hostname"
-const app = "appname"
-const pid = "proc_id"
-const msgID = "msg_id"
-const structuredData = "structured_data"
-const message = "message"
+const (
+	priority       = "priority"
+	version        = "version"
+	hostname       = "hostname"
+	app            = "appname"
+	pid            = "proc_id"
+	msgID          = "msg_id"
+	structuredData = "structured_data"
+	message        = "message"
+)
 
-const emptyValue = "-"
-const emptyMessage = ""
+const (
+	emptyValue   = "-"
+	emptyMessage = ""
+)
 
 type sender struct {
 	network   string
@@ -42,7 +51,7 @@ type sender struct {
 	conn      net.Conn
 }
 
-func connect(logger *zap.Logger, cfg *Config, tlsConfig *tls.Config) (*sender, error) {
+func connect(ctx context.Context, logger *zap.Logger, cfg *Config, tlsConfig *tls.Config) (*sender, error) {
 	s := &sender{
 		logger:    logger,
 		network:   cfg.Network,
@@ -54,7 +63,7 @@ func connect(logger *zap.Logger, cfg *Config, tlsConfig *tls.Config) (*sender, e
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	err := s.dial()
+	err := s.dial(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -73,21 +82,23 @@ func (s *sender) close() error {
 	return nil
 }
 
-func (s *sender) dial() error {
+func (s *sender) dial(ctx context.Context) error {
 	if s.conn != nil {
 		s.conn.Close()
 		s.conn = nil
 	}
 	var err error
 	if s.tlsConfig != nil && s.network == string(confignet.TransportTypeTCP) {
-		s.conn, err = tls.Dial(s.network, s.addr, s.tlsConfig)
+		dialer := tls.Dialer{Config: s.tlsConfig}
+		s.conn, err = dialer.DialContext(ctx, s.network, s.addr)
 	} else {
-		s.conn, err = net.Dial(s.network, s.addr)
+		dialer := new(net.Dialer)
+		s.conn, err = dialer.DialContext(ctx, s.network, s.addr)
 	}
 	return err
 }
 
-func (s *sender) Write(msgStr string) error {
+func (s *sender) Write(ctx context.Context, msgStr string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -96,12 +107,13 @@ func (s *sender) Write(msgStr string) error {
 			return nil
 		}
 	}
-	if err := s.dial(); err != nil {
+	if err := s.dial(ctx); err != nil {
 		return err
 	}
 
 	return s.write(msgStr)
 }
+
 func (s *sender) write(msg string) error {
 	// check if logs contains new line character at the end, if not add it
 	if !strings.HasSuffix(msg, "\n") {

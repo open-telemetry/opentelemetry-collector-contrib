@@ -6,6 +6,8 @@ package flush // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"bufio"
 	"time"
+
+	internaltime "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/time"
 )
 
 type State struct {
@@ -40,7 +42,7 @@ func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.Spli
 
 		// If there's a token, return it
 		if token != nil {
-			s.LastDataChange = time.Now()
+			s.LastDataChange = internaltime.Now()
 			s.LastDataLength = 0
 			return advance, token, err
 		}
@@ -53,14 +55,14 @@ func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.Spli
 
 		// We're seeing new data so postpone the next flush
 		if len(data) > s.LastDataLength {
-			s.LastDataChange = time.Now()
+			s.LastDataChange = internaltime.Now()
 			s.LastDataLength = len(data)
 			return 0, nil, nil
 		}
 
 		// Flush timed out
 		if time.Since(s.LastDataChange) > period {
-			s.LastDataChange = time.Now()
+			s.LastDataChange = internaltime.Now()
 			s.LastDataLength = 0
 			return len(data), data, nil
 		}
@@ -72,6 +74,6 @@ func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.Spli
 
 // Deprecated: [v0.88.0] Use WithFunc instead.
 func WithPeriod(splitFunc bufio.SplitFunc, period time.Duration) bufio.SplitFunc {
-	s := &State{LastDataChange: time.Now()}
+	s := &State{LastDataChange: internaltime.Now()}
 	return s.Func(splitFunc, period)
 }

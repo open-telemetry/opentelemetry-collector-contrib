@@ -1,5 +1,4 @@
 type: tencentcloud_logservice
-scope_name: otelcol/tencentcloudlogservice
 
 status:
   class: exporter
@@ -7,7 +6,8 @@ status:
     beta: [logs]
   distributions: [contrib]
   codeowners:
-    active: [wgliang, yiyang5055]
+    active: [wgliang]
+    emeritus: [yiyang5055]
 
 # TODO: Update the exporter to pass the tests
 tests:

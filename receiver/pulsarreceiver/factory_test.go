@@ -28,7 +28,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 // trace
-func TestCreateTracesReceiver_err_addr(t *testing.T) {
+func TestCreateTraces_err_addr(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "invalid:6650"
 
@@ -38,7 +38,7 @@ func TestCreateTracesReceiver_err_addr(t *testing.T) {
 	assert.Nil(t, r)
 }
 
-func TestCreateTracesReceiver_err_marshallers(t *testing.T) {
+func TestCreateTraces_err_marshallers(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = defaultServiceURL
 
@@ -63,20 +63,20 @@ func TestWithTracesUnmarshalers(t *testing.T) {
 
 	t.Run("custom_encoding", func(t *testing.T) {
 		cfg.Encoding = unmarshaler.Encoding()
-		receiver, err := f.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
+		receiver, err := f.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 		require.NoError(t, err)
 		require.NotNil(t, receiver)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg.Encoding = defaultEncoding
-		receiver, err := f.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
+		receiver, err := f.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 		require.NoError(t, err)
 		assert.NotNil(t, receiver)
 	})
 }
 
 // metrics
-func TestCreateMetricsReceiver_err_addr(t *testing.T) {
+func TestCreateMetrics_err_addr(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "invalid:6650"
 
@@ -86,7 +86,7 @@ func TestCreateMetricsReceiver_err_addr(t *testing.T) {
 	assert.Nil(t, r)
 }
 
-func TestCreateMetricsReceiver_err_marshallers(t *testing.T) {
+func TestCreateMetrics_err_marshallers(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = defaultServiceURL
 
@@ -96,7 +96,7 @@ func TestCreateMetricsReceiver_err_marshallers(t *testing.T) {
 	assert.Nil(t, r)
 }
 
-func Test_CreateMetricsReceiver(t *testing.T) {
+func Test_CreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	f := pulsarReceiverFactory{metricsUnmarshalers: defaultMetricsUnmarshalers()}
 
@@ -112,20 +112,20 @@ func TestWithMetricsUnmarshalers(t *testing.T) {
 
 	t.Run("custom_encoding", func(t *testing.T) {
 		cfg.Encoding = unmarshaler.Encoding()
-		receiver, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
+		receiver, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 		require.NoError(t, err)
 		require.NotNil(t, receiver)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg.Encoding = defaultEncoding
-		receiver, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
+		receiver, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 		require.NoError(t, err)
 		assert.NotNil(t, receiver)
 	})
 }
 
 // logs
-func TestCreateLogsReceiver_err_addr(t *testing.T) {
+func TestCreateLogs_err_addr(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "invalid:6650"
 
@@ -135,7 +135,7 @@ func TestCreateLogsReceiver_err_addr(t *testing.T) {
 	assert.Nil(t, r)
 }
 
-func TestCreateLogsReceiver_err_marshallers(t *testing.T) {
+func TestCreateLogs_err_marshallers(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = defaultServiceURL
 
@@ -145,7 +145,7 @@ func TestCreateLogsReceiver_err_marshallers(t *testing.T) {
 	assert.Nil(t, r)
 }
 
-func Test_CreateLogsReceiver(t *testing.T) {
+func Test_CreateLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = defaultServiceURL
 
@@ -162,26 +162,23 @@ func TestWithLogsUnmarshalers(t *testing.T) {
 
 	t.Run("custom_encoding", func(t *testing.T) {
 		cfg.Encoding = unmarshaler.Encoding()
-		exporter, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
+		exporter, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 		require.NoError(t, err)
 		require.NotNil(t, exporter)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg.Encoding = defaultEncoding
-		exporter, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
+		exporter, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 		require.NoError(t, err)
 		assert.NotNil(t, exporter)
 	})
 }
 
-type customTracesUnmarshaler struct {
-}
+type customTracesUnmarshaler struct{}
 
-type customMetricsUnmarshaler struct {
-}
+type customMetricsUnmarshaler struct{}
 
-type customLogsUnmarshaler struct {
-}
+type customLogsUnmarshaler struct{}
 
 func (c customTracesUnmarshaler) Unmarshal([]byte) (ptrace.Traces, error) {
 	panic("implement me")

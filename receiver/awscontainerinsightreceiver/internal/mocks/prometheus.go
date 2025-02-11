@@ -44,7 +44,7 @@ func (mp *MockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	defer mp.Mu.Unlock()
 	iptr, ok := mp.AccessIndex[req.URL.Path]
 	if !ok {
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
 	index := int(iptr.Load())
@@ -54,7 +54,7 @@ func (mp *MockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if index == len(pages) {
 			mp.Wg.Done()
 		}
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
 	if pages[index].UseOpenMetrics {

@@ -1,0 +1,18 @@
+type: awscontainerinsightskueuereceiver
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  warnings: [Other]
+  codeowners:
+    active: [rvasahu-amazon]
+
+tests:
+  skip_lifecycle: true
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"

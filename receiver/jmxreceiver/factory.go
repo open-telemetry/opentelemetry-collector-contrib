@@ -33,7 +33,7 @@ func createDefaultConfig() component.Config {
 		JMXRegistrySSLEnabled: false,
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: otlpEndpoint,
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutSettings: exporterhelper.TimeoutConfig{
 				Timeout: 5 * time.Second,
 			},
 		},

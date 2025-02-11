@@ -353,3 +353,5 @@ The amount of time that the server has been running.
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | database | The name of a database. | Any Str | true |
+| server.address | The address of the MongoDB host. | Any Str | true |
+| server.port | The port of the MongoDB host. | Any Int | false |

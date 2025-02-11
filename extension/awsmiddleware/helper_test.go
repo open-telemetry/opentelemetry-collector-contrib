@@ -17,7 +17,7 @@ import (
 func TestTryConfigure(t *testing.T) {
 	testCases := []SDKVersion{SDKv1(&request.Handlers{}), SDKv2(&aws.Config{})}
 	for _, testCase := range testCases {
-		id := component.NewID(component.DataTypeMetrics)
+		id := component.MustNewID("test")
 		host := new(MockExtensionsHost)
 		host.On("GetExtensions").Return(nil).Once()
 		core, observed := observer.New(zap.DebugLevel)

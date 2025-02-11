@@ -1,19 +1,30 @@
 type: probabilistic_sampler
-scope_name: otelcol/probabilisticsampler
 
 status:
   class: processor
   stability:
     beta: [traces]
     alpha: [logs]
-  distributions: [core, contrib]
+  distributions: [core, contrib, k8s]
   codeowners:
     active: [jpkrohling, jmacd]
 
 tests:
   config:
-  goleak:
-    ignore:
-      top:
-        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
-        - "go.opencensus.io/stats/view.(*worker).start"
+
+telemetry:
+  metrics:
+    processor_probabilistic_sampler_count_traces_sampled:
+      enabled: true
+      description: Count of traces that were sampled or not
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true
+    processor_probabilistic_sampler_count_logs_sampled:
+      enabled: true
+      description: Count of logs that were sampled or not
+      unit: "1"
+      sum:
+        value_type: int
+        monotonic: true

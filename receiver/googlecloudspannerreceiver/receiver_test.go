@@ -116,10 +116,10 @@ func TestStart(t *testing.T) {
 
 			if testCase.expectError {
 				require.Error(t, err)
-				assert.Equal(t, 0, len(receiver.projectReaders))
+				assert.Empty(t, receiver.projectReaders)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, 1, len(receiver.projectReaders))
+				assert.Len(t, receiver.projectReaders, 1)
 			}
 		})
 	}
@@ -189,10 +189,10 @@ func TestInitializeProjectReaders(t *testing.T) {
 
 			if testCase.expectError {
 				require.Error(t, err)
-				assert.Equal(t, 0, len(receiver.projectReaders))
+				assert.Empty(t, receiver.projectReaders)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, 1, len(receiver.projectReaders))
+				assert.Len(t, receiver.projectReaders, 1)
 			}
 		})
 	}

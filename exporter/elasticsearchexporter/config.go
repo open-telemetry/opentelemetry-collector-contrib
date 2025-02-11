@@ -12,14 +12,17 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 )
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	QueueSettings exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 	// Endpoints holds the Elasticsearch URLs the exporter should send events to.
 	//
 	// This setting is required if CloudID is not set and if the
@@ -47,6 +50,12 @@ type Config struct {
 	LogsIndex string `mapstructure:"logs_index"`
 	// fall back to pure LogsIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
 	LogsDynamicIndex DynamicIndexSetting `mapstructure:"logs_dynamic_index"`
+
+	// This setting is required when the exporter is used in a metrics pipeline.
+	MetricsIndex string `mapstructure:"metrics_index"`
+	// fall back to pure MetricsIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource attributes
+	MetricsDynamicIndex DynamicIndexSetting `mapstructure:"metrics_dynamic_index"`
+
 	// This setting is required when traces pipelines used.
 	TracesIndex string `mapstructure:"traces_index"`
 	// fall back to pure TracesIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
@@ -65,6 +74,40 @@ type Config struct {
 	Flush                   FlushSettings          `mapstructure:"flush"`
 	Mapping                 MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat          LogstashFormatSettings `mapstructure:"logstash_format"`
+
+	// TelemetrySettings contains settings useful for testing/debugging purposes
+	// This is experimental and may change at any time.
+	TelemetrySettings `mapstructure:"telemetry"`
+
+	// Batcher holds configuration for batching requests based on timeout
+	// and size-based thresholds.
+	//
+	// Batcher is unused by default, in which case Flush will be used.
+	// If Batcher.Enabled is non-nil (i.e. batcher::enabled is specified),
+	// then the Flush will be ignored even if Batcher.Enabled is false.
+	Batcher BatcherConfig `mapstructure:"batcher"`
+}
+
+// BatcherConfig holds configuration for exporterbatcher.
+//
+// This is a slightly modified version of exporterbatcher.Config,
+// to enable tri-state Enabled: unset, false, true.
+type BatcherConfig struct {
+	// Enabled indicates whether to enqueue batches before sending
+	// to the exporter. If Enabled is specified (non-nil),
+	// then the exporter will not perform any buffering itself.
+	Enabled *bool `mapstructure:"enabled"`
+
+	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
+	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
+
+	exporterbatcher.MinSizeConfig `mapstructure:",squash"`
+	exporterbatcher.MaxSizeConfig `mapstructure:",squash"`
+}
+
+type TelemetrySettings struct {
+	LogRequestBody  bool `mapstructure:"log_request_body"`
+	LogResponseBody bool `mapstructure:"log_response_body"`
 }
 
 type LogstashFormatSettings struct {
@@ -110,7 +153,7 @@ type DiscoverySettings struct {
 	Interval time.Duration `mapstructure:"interval"`
 }
 
-// FlushSettings  defines settings for configuring the write buffer flushing
+// FlushSettings defines settings for configuring the write buffer flushing
 // policy in the Elasticsearch exporter. The exporter sends a bulk request with
 // all events already serialized into the send-buffer.
 type FlushSettings struct {
@@ -127,8 +170,12 @@ type RetrySettings struct {
 	// Enabled allows users to disable retry without having to comment out all settings.
 	Enabled bool `mapstructure:"enabled"`
 
-	// MaxRequests configures how often an HTTP request is retried before it is assumed to be failed.
+	// MaxRequests configures how often an HTTP request is attempted before it is assumed to be failed.
+	// Deprecated: use MaxRetries instead.
 	MaxRequests int `mapstructure:"max_requests"`
+
+	// MaxRetries configures how many times an HTTP request is retried.
+	MaxRetries int `mapstructure:"max_retries"`
 
 	// InitialInterval configures the initial waiting time if a request failed.
 	InitialInterval time.Duration `mapstructure:"initial_interval"`
@@ -144,15 +191,16 @@ type MappingsSettings struct {
 	// Mode configures the field mappings.
 	Mode string `mapstructure:"mode"`
 
-	// Additional field mappings.
-	Fields map[string]string `mapstructure:"fields"`
+	// Dedup is non-operational, and will be removed in the future.
+	//
+	// Deprecated: [v0.104.0] deduplication is always enabled, and cannot be
+	// disabled. Disabling deduplication is not meaningful, as Elasticsearch
+	// will always reject documents with duplicate JSON object keys.
+	Dedup *bool `mapstructure:"dedup,omitempty"`
 
-	// File to read additional fields mappings from.
-	File string `mapstructure:"file"`
-
-	// Try to find and remove duplicate fields
-	Dedup bool `mapstructure:"dedup"`
-
+	// Deprecated: [v0.104.0] dedotting will always be applied for ECS mode
+	// in future, and never for other modes. Elasticsearch's "dot_expander"
+	// Ingest processor may be used as an alternative for non-ECS modes.
 	Dedot bool `mapstructure:"dedot"`
 }
 
@@ -162,7 +210,9 @@ type MappingMode int
 const (
 	MappingNone MappingMode = iota
 	MappingECS
+	MappingOTel
 	MappingRaw
+	MappingBodyMap
 )
 
 var (
@@ -176,8 +226,12 @@ func (m MappingMode) String() string {
 		return ""
 	case MappingECS:
 		return "ecs"
+	case MappingOTel:
+		return "otel"
 	case MappingRaw:
 		return "raw"
+	case MappingBodyMap:
+		return "bodymap"
 	default:
 		return ""
 	}
@@ -188,7 +242,9 @@ var mappingModes = func() map[string]MappingMode {
 	for _, m := range []MappingMode{
 		MappingNone,
 		MappingECS,
+		MappingOTel,
 		MappingRaw,
+		MappingBodyMap,
 	} {
 		table[strings.ToLower(m.String())] = m
 	}
@@ -218,10 +274,20 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("unknown mapping mode %q", cfg.Mapping.Mode)
 	}
 
-	if cfg.Compression != "" {
-		// TODO support confighttp.ClientConfig.Compression
-		return errors.New("compression is not currently configurable")
+	if cfg.Compression != "none" && cfg.Compression != configcompression.TypeGzip {
+		return errors.New("compression must be one of [none, gzip]")
 	}
+
+	if cfg.Retry.MaxRequests != 0 && cfg.Retry.MaxRetries != 0 {
+		return errors.New("must not specify both retry::max_requests and retry::max_retries")
+	}
+	if cfg.Retry.MaxRequests < 0 {
+		return errors.New("retry::max_requests should be non-negative")
+	}
+	if cfg.Retry.MaxRetries < 0 {
+		return errors.New("retry::max_retries should be non-negative")
+	}
+
 	return nil
 }
 
@@ -302,4 +368,18 @@ func parseCloudID(input string) (*url.URL, error) {
 // called without returning an error.
 func (cfg *Config) MappingMode() MappingMode {
 	return mappingModes[cfg.Mapping.Mode]
+}
+
+func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
+	if cfg.Mapping.Dedup != nil {
+		logger.Warn("dedup is deprecated, and is always enabled")
+	}
+	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS || !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
+		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")
+	}
+	if cfg.Retry.MaxRequests != 0 {
+		cfg.Retry.MaxRetries = cfg.Retry.MaxRequests - 1
+		// Do not set cfg.Retry.Enabled = false if cfg.Retry.MaxRequest = 1 to avoid breaking change on behavior
+		logger.Warn("retry::max_requests has been deprecated, and will be removed in a future version. Use retry::max_retries instead.")
+	}
 }

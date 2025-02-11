@@ -6,12 +6,12 @@ package awscontainerinsightreceiver
 import (
 	"context"
 	"errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	"go.opentelemetry.io/collector/component"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -20,8 +20,7 @@ import (
 )
 
 // Mock cadvisor
-type mockCadvisor struct {
-}
+type mockCadvisor struct{}
 
 func (c *mockCadvisor) GetMetrics() []pmetric.Metrics {
 	md := pmetric.NewMetrics()
@@ -33,8 +32,7 @@ func (c *mockCadvisor) Shutdown() error {
 }
 
 // Mock k8sapiserver
-type mockK8sAPIServer struct {
-}
+type mockK8sAPIServer struct{}
 
 func (m *mockK8sAPIServer) Shutdown() error {
 	return nil
@@ -159,7 +157,7 @@ func TestCollectDataWithSystemd(t *testing.T) {
 
 	r.containerMetricsProvider = &mockCadvisor{}
 	err = r.collectData(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 }
 
 // MockHost is a mock implementation of component.Host
@@ -185,7 +183,7 @@ func (m *MockConfigurer) Shutdown(context.Context) error {
 	return nil
 }
 
-func (m *MockHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
+func (m *MockHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
 }
 

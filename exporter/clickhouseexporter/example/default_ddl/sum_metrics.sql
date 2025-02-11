@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS otel_metrics_sum (
 		SpanId String,
 		TraceId String
     ) CODEC(ZSTD(1)),
-    AggTemp Int32 CODEC(ZSTD(1)),
+    AggregationTemporality Int32 CODEC(ZSTD(1)),
 	IsMonotonic Boolean CODEC(Delta, ZSTD(1)),
 	INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,

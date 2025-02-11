@@ -28,7 +28,8 @@ func TestValidateOtherOS(t *testing.T) {
 				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedSuccess: true,
-		}, {
+		},
+		{
 			desc: "valid config with no metric settings",
 			cfg: &Config{
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),

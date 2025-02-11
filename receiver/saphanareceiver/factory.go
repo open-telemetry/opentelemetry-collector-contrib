@@ -57,10 +57,10 @@ func createMetricsReceiver(
 	if !ok {
 		return nil, errConfigNotSAPHANA
 	}
-	scraper, err := newSapHanaScraper(set, c, &defaultConnectionFactory{})
+	s, err := newSapHanaScraper(set, c, &defaultConnectionFactory{})
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&c.ControllerConfig, set, consumer, scraperhelper.AddScraper(scraper))
+	return scraperhelper.NewScraperControllerReceiver(&c.ControllerConfig, set, consumer, scraperhelper.AddScraper(metadata.Type, s))
 }

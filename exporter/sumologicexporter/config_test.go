@@ -6,6 +6,7 @@ package sumologicexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
@@ -13,6 +14,15 @@ import (
 )
 
 func TestInitExporterInvalidConfiguration(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "test_endpoint"
+	clientConfig.Timeout = defaultTimeout
+
+	clientConfigGzip := confighttp.NewDefaultClientConfig()
+	clientConfigGzip.Endpoint = "test_endpoint"
+	clientConfigGzip.Timeout = defaultTimeout
+	clientConfigGzip.Compression = "gzip"
+
 	testcases := []struct {
 		name          string
 		cfg           *Config
@@ -24,10 +34,7 @@ func TestInitExporterInvalidConfiguration(t *testing.T) {
 			cfg: &Config{
 				LogFormat:    "test_format",
 				MetricFormat: "otlp",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:  defaultTimeout,
-					Endpoint: "test_endpoint",
-				},
+				ClientConfig: clientConfig,
 			},
 		},
 		{
@@ -36,11 +43,7 @@ func TestInitExporterInvalidConfiguration(t *testing.T) {
 			cfg: &Config{
 				LogFormat:    "json",
 				MetricFormat: "test_format",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:     defaultTimeout,
-					Endpoint:    "test_endpoint",
-					Compression: "gzip",
-				},
+				ClientConfig: clientConfigGzip,
 			},
 		},
 		{
@@ -49,11 +52,7 @@ func TestInitExporterInvalidConfiguration(t *testing.T) {
 			cfg: &Config{
 				LogFormat:    "json",
 				MetricFormat: "carbon2",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:     defaultTimeout,
-					Endpoint:    "test_endpoint",
-					Compression: "gzip",
-				},
+				ClientConfig: clientConfigGzip,
 			},
 		},
 		{
@@ -62,11 +61,7 @@ func TestInitExporterInvalidConfiguration(t *testing.T) {
 			cfg: &Config{
 				LogFormat:    "json",
 				MetricFormat: "graphite",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:     defaultTimeout,
-					Endpoint:    "test_endpoint",
-					Compression: "gzip",
-				},
+				ClientConfig: clientConfigGzip,
 			},
 		},
 	}
@@ -75,6 +70,47 @@ func TestInitExporterInvalidConfiguration(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			err := component.ValidateConfig(tc.cfg)
+
+			if tc.expectedError != nil {
+				assert.EqualError(t, err, tc.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestConfigInvalidTimeout(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = 56 * time.Second
+
+	clientConfigZeroTimeout := confighttp.NewDefaultClientConfig()
+	clientConfigZeroTimeout.Timeout = 0 * time.Second
+	testcases := []struct {
+		name          string
+		expectedError error
+		cfg           *Config
+	}{
+		{
+			name:          "over the limit timeout",
+			expectedError: errors.New("timeout must be between 1 and 55 seconds, got 56s"),
+			cfg: &Config{
+				ClientConfig: clientConfig,
+			},
+		},
+		{
+			name:          "less than 1 timeout",
+			expectedError: errors.New("timeout must be between 1 and 55 seconds, got 0s"),
+			cfg: &Config{
+				ClientConfig: clientConfigZeroTimeout,
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.cfg.Validate()
 
 			if tc.expectedError != nil {
 				assert.EqualError(t, err, tc.expectedError.Error())

@@ -472,7 +472,7 @@ func TestSpanWithoutTimestampGetsTag(t *testing.T) {
 	assert.NotZero(t, gs.StartTimestamp())
 	assert.NotZero(t, gs.EndTimestamp())
 
-	assert.True(t, gs.StartTimestamp().AsTime().Sub(testStart) >= 0)
+	assert.GreaterOrEqual(t, gs.StartTimestamp().AsTime().Sub(testStart), time.Duration(0))
 
 	wantAttributes := pcommon.NewMap()
 	wantAttributes.PutBool(zipkin.StartTimeAbsent, true)

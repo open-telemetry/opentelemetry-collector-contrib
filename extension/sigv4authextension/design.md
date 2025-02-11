@@ -563,5 +563,3 @@ Additionally, a few other files will be modified to reflect changes made, for ex
 * `go.sum`
 * `versions.yaml`
 * `.github/CODEOWNERS`
-* `internal/components/components.go`
-* `internal/components/extensions_test.go`

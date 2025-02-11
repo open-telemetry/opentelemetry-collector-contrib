@@ -21,9 +21,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/observability"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
 )
 
 var (
@@ -122,6 +124,7 @@ type sender struct {
 	stickySessionCookieFunc    func() string
 	setStickySessionCookieFunc func(string)
 	id                         component.ID
+	telemetryBuilder           *metadata.TelemetryBuilder
 }
 
 const (
@@ -153,6 +156,7 @@ func newSender(
 	stickySessionCookieFunc func() string,
 	setStickySessionCookieFunc func(string),
 	id component.ID,
+	telemetryBuilder *metadata.TelemetryBuilder,
 ) *sender {
 	return &sender{
 		logger:                     logger,
@@ -165,6 +169,7 @@ func newSender(
 		stickySessionCookieFunc:    stickySessionCookieFunc,
 		setStickySessionCookieFunc: setStickySessionCookieFunc,
 		id:                         id,
+		telemetryBuilder:           telemetryBuilder,
 	}
 }
 
@@ -210,7 +215,7 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 
 	// API responds with a 200 or 204 with ConentLength set to 0 when all data
 	// has been successfully ingested.
-	if resp.ContentLength == 0 && (resp.StatusCode == 200 || resp.StatusCode == 204) {
+	if resp.ContentLength == 0 && (resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent) {
 		return nil
 	}
 
@@ -224,7 +229,7 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 	// API responds with a 200 or 204 with a JSON body describing what issues
 	// were encountered when processing the sent data.
 	switch resp.StatusCode {
-	case 200, 204:
+	case http.StatusOK, http.StatusNoContent:
 		if resp.ContentLength < 0 {
 			s.logger.Warn("Unknown length of server response")
 			return nil
@@ -254,7 +259,7 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 		l.Warn("There was an issue sending data")
 		return nil
 
-	case 401:
+	case http.StatusUnauthorized:
 		return errUnauthorized
 
 	default:
@@ -349,7 +354,6 @@ func (s *sender) logToJSON(record plog.LogRecord) (string, error) {
 	enc := json.NewEncoder(nextLine)
 	enc.SetEscapeHTML(false)
 	err := enc.Encode(recordCopy.Attributes().AsRaw())
-
 	if err != nil {
 		return "", err
 	}
@@ -480,7 +484,6 @@ func (s *sender) sendNonOTLPMetrics(ctx context.Context, md pmetric.Metrics) (pm
 			previousFields := newFields(rms.At(i - 1).Resource().Attributes())
 			previousSourceHeaders := getSourcesHeaders(previousFields)
 			if !reflect.DeepEqual(previousSourceHeaders, currentSourceHeaders) && body.Len() > 0 {
-
 				if err := s.send(ctx, MetricsPipeline, body.toCountingReader(), previousFields); err != nil {
 					errs = append(errs, err)
 					for _, resource := range currentResources {
@@ -532,7 +535,6 @@ func (s *sender) sendNonOTLPMetrics(ctx context.Context, md pmetric.Metrics) (pm
 		}
 
 		currentResources = append(currentResources, rm)
-
 	}
 
 	if body.Len() > 0 {
@@ -575,7 +577,6 @@ func (s *sender) appendAndMaybeSend(
 	body *bodyBuilder,
 	flds fields,
 ) (sent bool, err error) {
-
 	linesTotalLength := 0
 	for _, line := range lines {
 		linesTotalLength += len(line) + 1 // count the newline as well
@@ -698,6 +699,7 @@ func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, fld
 	}
 	return nil
 }
+
 func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Request, resp *http.Response, pipeline PipelineType) {
 	statusCode := 0
 
@@ -707,21 +709,16 @@ func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Re
 
 	id := s.id.String()
 
-	if err := observability.RecordRequestsDuration(duration, statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for request duration", zap.Error(err))
-	}
-
-	if err := observability.RecordRequestsBytes(req.ContentLength, statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for sent bytes", zap.Error(err))
-	}
-
-	if err := observability.RecordRequestsRecords(count, statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for sent records", zap.Error(err))
-	}
-
-	if err := observability.RecordRequestsSent(statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for sent request", zap.Error(err))
-	}
+	attrs := attribute.NewSet(
+		attribute.String("status_code", fmt.Sprint(statusCode)),
+		attribute.String("endpoint", req.URL.String()),
+		attribute.String("pipeline", string(pipeline)),
+		attribute.String("exporter", id),
+	)
+	s.telemetryBuilder.ExporterRequestsDuration.Add(context.Background(), duration.Milliseconds(), metric.WithAttributeSet(attrs))
+	s.telemetryBuilder.ExporterRequestsBytes.Add(context.Background(), req.ContentLength, metric.WithAttributeSet(attrs))
+	s.telemetryBuilder.ExporterRequestsRecords.Add(context.Background(), count, metric.WithAttributeSet(attrs))
+	s.telemetryBuilder.ExporterRequestsSent.Add(context.Background(), 1, metric.WithAttributeSet(attrs))
 }
 
 func (s *sender) addStickySessionCookie(req *http.Request) {

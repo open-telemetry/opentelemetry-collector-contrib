@@ -9,17 +9,16 @@ package extractors
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	cExtractor "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNetStats(t *testing.T) {
-
 	result := testutils.LoadKubeletSummary(t, "./testdata/PreSingleKubeletSummary.json")
 	result2 := testutils.LoadKubeletSummary(t, "./testdata/CurSingleKubeletSummary.json")
 
@@ -158,7 +157,7 @@ func TestNetStats(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(cMetrics), 9)
+	assert.Len(t, cMetrics, 9)
 	for i := range expectedFields {
 		cExtractor.AssertContainsTaggedField(t, cMetrics[i], expectedFields[i], expectedTags[i])
 	}
@@ -210,7 +209,7 @@ func TestNetStats(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(cMetrics), 2)
+	assert.Len(t, cMetrics, 2)
 	for i := range expectedFields {
 		cExtractor.AssertContainsTaggedField(t, cMetrics[i], expectedFields[i], expectedTags[i])
 	}

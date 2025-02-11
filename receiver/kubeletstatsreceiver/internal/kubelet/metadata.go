@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
@@ -52,7 +52,7 @@ type Metadata struct {
 	DetailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error
 	podResources              map[string]resources
 	containerResources        map[string]resources
-	cpuNodeLimit              float64
+	nodeCapacity              NodeCapacity
 }
 
 type resources struct {
@@ -62,9 +62,12 @@ type resources struct {
 	memoryLimit   int64
 }
 
-type NodeLimits struct {
-	Name              string
-	CPUNanoCoresLimit float64
+type NodeCapacity struct {
+	Name string
+	// node's CPU capacity in cores
+	CPUCapacity float64
+	// node's Memory capacity in bytes
+	MemoryCapacity float64
 }
 
 func getContainerResources(r *v1.ResourceRequirements) resources {
@@ -80,15 +83,16 @@ func getContainerResources(r *v1.ResourceRequirements) resources {
 	}
 }
 
-func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList, nodeResourceLimits NodeLimits,
-	detailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error) Metadata {
+func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList, nodeCap NodeCapacity,
+	detailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error,
+) Metadata {
 	m := Metadata{
 		Labels:                    getLabelsMap(labels),
 		PodsMetadata:              podsMetadata,
 		DetailedPVCResourceSetter: detailedPVCResourceSetter,
 		podResources:              make(map[string]resources),
 		containerResources:        make(map[string]resources),
-		cpuNodeLimit:              nodeResourceLimits.CPUNanoCoresLimit,
+		nodeCapacity:              nodeCap,
 	}
 
 	if podsMetadata != nil {
@@ -151,7 +155,8 @@ func getLabelsMap(metadataLabels []MetadataLabel) map[MetadataLabel]bool {
 
 // getExtraResources gets extra resources based on provided metadata label.
 func (m *Metadata) setExtraResources(rb *metadata.ResourceBuilder, podRef stats.PodReference,
-	extraMetadataLabel MetadataLabel, extraMetadataFrom string) error {
+	extraMetadataLabel MetadataLabel, extraMetadataFrom string,
+) error {
 	// Ensure MetadataLabel exists before proceeding.
 	if !m.Labels[extraMetadataLabel] || len(m.Labels) == 0 {
 		return nil
@@ -204,7 +209,6 @@ func (m *Metadata) getContainerID(podUID string, containerName string) (string, 
 					return stripContainerID(containerStatus.ContainerID), nil
 				}
 			}
-
 		}
 	}
 

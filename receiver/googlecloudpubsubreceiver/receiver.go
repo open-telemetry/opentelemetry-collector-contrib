@@ -170,7 +170,6 @@ func (receiver *pubsubReceiver) handleCloudLoggingLogEntry(ctx context.Context, 
 	lr.CopyTo(ills.LogRecords().AppendEmpty())
 
 	return receiver.logsConsumer.ConsumeLogs(ctx, out)
-
 }
 
 func decompress(payload []byte, compression compression) ([]byte, error) {

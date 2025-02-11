@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 )
 
 type metricsTransformProcessor struct {
@@ -23,7 +25,7 @@ type internalTransform struct {
 	Action              ConfigAction
 	NewName             string
 	GroupResourceLabels map[string]string
-	AggregationType     aggregationType
+	AggregationType     aggregateutil.AggregationType
 	SubmatchCase        submatchCase
 	Operations          []internalOperation
 }

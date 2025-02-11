@@ -10,7 +10,8 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/healthcheck"
@@ -25,10 +26,9 @@ type healthCheckExtension struct {
 	settings component.TelemetrySettings
 }
 
-var _ extension.PipelineWatcher = (*healthCheckExtension)(nil)
+var _ extensioncapabilities.PipelineWatcher = (*healthCheckExtension)(nil)
 
 func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) error {
-
 	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
 	ln, err := hc.config.ToListener(ctx)
 	if err != nil {
@@ -50,7 +50,7 @@ func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) 
 
 		// The listener ownership goes to the server.
 		if err = hc.server.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			hc.settings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 

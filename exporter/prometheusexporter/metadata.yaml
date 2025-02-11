@@ -1,5 +1,4 @@
 type: prometheus
-scope_name: otelcol/prometheus
 
 status:
   class: exporter
@@ -9,7 +8,7 @@ status:
   - core
   - contrib
   codeowners:
-    active: [Aneurysm9]
+    active: [Aneurysm9, dashpole, ArthurSens]
 
 tests:
   config:

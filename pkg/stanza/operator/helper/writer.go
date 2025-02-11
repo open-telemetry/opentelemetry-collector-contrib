@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -47,14 +48,17 @@ type WriterOperator struct {
 }
 
 // Write will write an entry to the outputs of the operator.
-func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) {
-	for i, operator := range w.OutputOperators {
+func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) error {
+	for i, op := range w.OutputOperators {
 		if i == len(w.OutputOperators)-1 {
-			_ = operator.Process(ctx, e)
-			return
+			return op.Process(ctx, e)
 		}
-		_ = operator.Process(ctx, e.Copy())
+		err := op.Process(ctx, e.Copy())
+		if err != nil {
+			w.Logger().Error("Failed to process entry", zap.Error(err))
+		}
 	}
+	return nil
 }
 
 // CanOutput always returns true for a writer operator.

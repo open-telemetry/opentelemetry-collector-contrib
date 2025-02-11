@@ -38,8 +38,10 @@ type testHandler struct {
 	operations     []string
 }
 
-var _ RequestHandler = (*testHandler)(nil)
-var _ ResponseHandler = (*testHandler)(nil)
+var (
+	_ RequestHandler  = (*testHandler)(nil)
+	_ ResponseHandler = (*testHandler)(nil)
+)
 
 func (t *testHandler) ID() string {
 	return t.id

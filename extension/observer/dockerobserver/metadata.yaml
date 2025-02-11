@@ -1,5 +1,4 @@
 type: docker_observer
-scope_name: otelcol/dockerobserver
 
 status:
   class: extension
@@ -13,3 +12,8 @@ status:
 tests:
   skip_lifecycle: true
   skip_shutdown: true
+  goleak:
+    ignore:
+      top:
+        - "net/http.(*persistConn).writeLoop"
+        - "internal/poll.runtime_pollWait"

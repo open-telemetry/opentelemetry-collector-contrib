@@ -39,7 +39,7 @@ func TestLoggingIntegration(t *testing.T) {
 	cfg.Logs.Groups.AutodiscoverConfig = &AutodiscoverConfig{
 		Limit: 1,
 	}
-	recv, err := NewFactory().CreateLogsReceiver(
+	recv, err := NewFactory().CreateLogs(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		cfg,
