@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/component v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/component/componenttest v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/confmap v1.25.1-0.20250210123122-44b3eeda354c
+	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250211051543-4eeb4687b4d9
 	go.opentelemetry.io/collector/connector v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/connector/connectortest v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/consumer v1.25.1-0.20250210123122-44b3eeda354c
