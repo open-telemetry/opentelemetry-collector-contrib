@@ -26,6 +26,8 @@ github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKeRZfjY=
+github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/jaegertracing/jaeger-idl v0.5.0 h1:zFXR5NL3Utu7MhPg8ZorxtCBjHrL3ReM1VoB65FOFGE=
 github.com/jaegertracing/jaeger-idl v0.5.0/go.mod h1:ON90zFo9eoyXrt9F/KN8YeF3zxcnujaisMweFY/rg5k=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
@@ -108,6 +110,8 @@ go.opentelemetry.io/collector/extension/auth v0.120.1-0.20250224010654-18e18b21d
 go.opentelemetry.io/collector/extension/auth v0.120.1-0.20250224010654-18e18b21da7a/go.mod h1:2DyrUZYNlO3ExAVhflUwvifpxb077Q2aLndcPfkZIzM=
 go.opentelemetry.io/collector/extension/auth/authtest v0.120.0 h1:28gD24eaXhHWvquQWWLDpg/L42QOuohuKI7XAYG1jc8=
 go.opentelemetry.io/collector/extension/auth/authtest v0.120.0/go.mod h1:+rtuoMo4ZEyWcoUfKQAZIT3Sx1syYRJatLMVWzDPZaE=
+go.opentelemetry.io/collector/featuregate v1.26.1-0.20250224010654-18e18b21da7a h1:aoC6TR4RtbM63X2sWmJVl2he5lDz4YdIDZWcmLvP+J0=
+go.opentelemetry.io/collector/featuregate v1.26.1-0.20250224010654-18e18b21da7a/go.mod h1:Y/KsHbvREENKvvN9RlpiWk/IGBK+CATBYzIIpU7nccc=
 go.opentelemetry.io/collector/pdata v1.26.1-0.20250224010654-18e18b21da7a h1:Mx486Ha/w8oKYjCrKcnTU0FfXhmEeop9NVwvmKstdiE=
 go.opentelemetry.io/collector/pdata v1.26.1-0.20250224010654-18e18b21da7a/go.mod h1:18e8/xDZsqyj00h/5HM5GLdJgBzzG9Ei8g9SpNoiMtI=
 go.opentelemetry.io/collector/pdata/pprofile v0.120.1-0.20250224010654-18e18b21da7a h1:qsCFXcq3Nr7DRWgw8ZgAW/c/MrNGupG7ISBCj++YRGw=
