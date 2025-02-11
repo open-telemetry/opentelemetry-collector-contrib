@@ -71,8 +71,10 @@ func TestE2EClusterScoped(t *testing.T) {
 		}
 	})
 
+	wantEntries := 10 // Minimal number of metrics to wait for.
 	// the commented line below writes the received list of metrics to the expected.yaml
 	// golden.WriteMetrics(t, expectedFileClusterScoped, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
+	waitForData(t, wantEntries, metricsConsumer)
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
 		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
@@ -156,8 +158,10 @@ func TestE2ENamespaceScoped(t *testing.T) {
 		}
 	})
 
+	wantEntries := 10 // Minimal number of metrics to wait for.
 	// the commented line below writes the received list of metrics to the expected.yaml
 	// golden.WriteMetrics(t, expectedFileNamespaceScoped, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
+	waitForData(t, wantEntries, metricsConsumer)
 
 	require.EventuallyWithT(t, func(tt *assert.CollectT) {
 		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
@@ -259,4 +263,13 @@ func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
 	return func() {
 		assert.NoError(t, rcvr.Shutdown(context.Background()))
 	}
+}
+
+func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink) {
+	timeoutMinutes := 3
+	require.Eventuallyf(t, func() bool {
+		return len(mc.AllMetrics()) > entriesNum
+	}, time.Duration(timeoutMinutes)*time.Minute, 1*time.Second,
+		"failed to receive %d entries,  received %d metrics in %d minutes", entriesNum,
+		len(mc.AllMetrics()), timeoutMinutes)
 }
