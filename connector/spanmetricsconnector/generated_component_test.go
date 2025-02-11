@@ -17,8 +17,10 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
+var typ = component.MustNewType("spanmetrics")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "spanmetrics", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -29,8 +31,8 @@ func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {
-		name     string
 		createFn func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error)
+		name     string
 	}{
 
 		{
