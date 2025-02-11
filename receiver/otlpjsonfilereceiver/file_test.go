@@ -206,6 +206,7 @@ func testdataConfigYamlAsMap() *Config {
 			Encoding:           "utf-8",
 			StartAt:            "end",
 			FingerprintSize:    1000,
+			InitialBufferSize:  16 * 1024,
 			MaxLogSize:         1024 * 1024,
 			MaxConcurrentFiles: 1024,
 			FlushPeriod:        500 * time.Millisecond,
