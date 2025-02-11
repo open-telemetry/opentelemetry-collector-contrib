@@ -261,6 +261,10 @@ exporters:
       mode: otel
 ```
 
+> [!IMPORTANT]
+> For the Elasticsearch Exporter to be able to export Profiles data, Universal Profiling needs to be installed in the database.
+> See [the Universal Profiling getting started documentation](https://www.elastic.co/guide/en/observability/current/profiling-get-started.html)
+
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings
 [configauth]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configauth/README.md#authentication-configuration
