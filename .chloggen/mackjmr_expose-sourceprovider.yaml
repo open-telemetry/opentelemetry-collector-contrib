@@ -7,10 +7,7 @@ change_type: enhancement
 component: internal/datadog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: |
-  - created new module `github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog`
-  - packages `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata`, `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil` and `github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub` have been moved into `github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata`, `github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil` and `github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub`. 
-  - create new package `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/hostmetadata` which exposes `GetSourceProvider` from `github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata`
+note: create new package `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/hostmetadata` which exposes `GetSourceProvider` from `github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata`
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [37668]
