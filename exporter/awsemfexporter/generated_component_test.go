@@ -19,8 +19,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+var typ = component.MustNewType("awsemf")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "awsemf", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
