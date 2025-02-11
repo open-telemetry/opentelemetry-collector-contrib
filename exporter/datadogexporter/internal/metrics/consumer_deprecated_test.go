@@ -39,7 +39,7 @@ func TestZorkianRunningMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewZorkianConsumer()
-	_, err := tr.MapMetrics(ctx, ms, consumer)
+	_, err := tr.MapMetrics(ctx, ms, consumer, nil)
 	assert.NoError(t, err)
 
 	var runningHostnames []string
@@ -83,7 +83,7 @@ func TestZorkianTagsMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewZorkianConsumer()
-	_, err := tr.MapMetrics(ctx, ms, consumer)
+	_, err := tr.MapMetrics(ctx, ms, consumer, nil)
 	assert.NoError(t, err)
 
 	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})
