@@ -137,6 +137,60 @@ func TestReqToLog(t *testing.T) {
 			},
 		},
 		{
+			desc:    "ConvertHeadersToAttributes enabled but no headers included",
+			headers: http.Header{},
+			config: &Config{
+				Path:                       defaultPath,
+				HealthPath:                 defaultHealthPath,
+				ReadTimeout:                defaultReadTimeout,
+				WriteTimeout:               defaultWriteTimeout,
+				RequiredHeader:             RequiredHeader{Key: "X-Required-Header", Value: "password"},
+				ConvertHeadersToAttributes: true,
+			},
+			sc: func() *bufio.Scanner {
+				reader := io.NopCloser(bytes.NewReader([]byte("this is a: log")))
+				return bufio.NewScanner(reader)
+			}(),
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
+				require.Equal(t, 1, reqLen)
+
+				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
+				require.Equal(t, 0, attributes.Len())
+
+				scopeLogsScope := reqLog.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
+				require.Equal(t, 2, scopeLogsScope.Attributes().Len()) // expect no additional attributes even though headers are set
+			},
+		},
+		{
+			desc: "ConvertHeadersToAttributes enabled but only a required header included",
+			headers: http.Header{
+				textproto.CanonicalMIMEHeaderKey("X-Required-Header"): []string{"password"},
+			},
+			config: &Config{
+				Path:                       defaultPath,
+				HealthPath:                 defaultHealthPath,
+				ReadTimeout:                defaultReadTimeout,
+				WriteTimeout:               defaultWriteTimeout,
+				RequiredHeader:             RequiredHeader{Key: "X-Required-Header", Value: "password"},
+				ConvertHeadersToAttributes: true,
+			},
+			sc: func() *bufio.Scanner {
+				reader := io.NopCloser(bytes.NewReader([]byte("this is a: log")))
+				return bufio.NewScanner(reader)
+			}(),
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
+				require.Equal(t, 1, reqLen)
+
+				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
+				require.Equal(t, 0, attributes.Len())
+
+				scopeLogsScope := reqLog.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
+				require.Equal(t, 2, scopeLogsScope.Attributes().Len()) // expect no additional attributes even though headers are set
+				_, exists := scopeLogsScope.Attributes().Get("header.x_required_header")
+				require.False(t, exists)
+			},
+		},
+		{
 			desc: "Headers added if ConvertHeadersToAttributes enabled",
 			headers: http.Header{
 				textproto.CanonicalMIMEHeaderKey("X-Foo"): []string{"1"},
@@ -216,4 +270,12 @@ func TestReqToLog(t *testing.T) {
 			test.tt(t, reqLog, reqLen, receivertest.NewNopSettings(metadata.Type))
 		})
 	}
+}
+
+func TestHeaderAttributeKey(t *testing.T) {
+	// Test mix of header values to ensure consistent output
+	require.Equal(t, "header.foo", headerAttributeKey("foo"))
+	require.Equal(t, "header.1", headerAttributeKey("1"))
+	require.Equal(t, "header.content_type", headerAttributeKey("Content-type"))
+	require.Equal(t, "header.unexpected_camel_case_header", headerAttributeKey("UnExPectEd-CaMeL-CaSe-HeAdEr"))
 }

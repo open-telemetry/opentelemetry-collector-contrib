@@ -79,9 +79,13 @@ func appendHeaders(config *Config, scopeLog plog.ScopeLogs, headers http.Header)
 		if k == textproto.CanonicalMIMEHeaderKey(config.RequiredHeader.Key) {
 			continue
 		}
-		// store headers with "header" namespace and normalize key to snake_case
-		normalizedHeader := strings.ReplaceAll(k, "-", "_")
-		normalizedHeader = strings.ToLower(normalizedHeader)
-		scopeLog.Scope().Attributes().PutStr("header."+normalizedHeader, strings.Join(headers.Values(k), ";"))
+		scopeLog.Scope().Attributes().PutStr(headerAttributeKey(k), strings.Join(headers.Values(k), ";"))
 	}
+}
+
+// convert given header to snake_case and add "header" as a namespace prefix
+func headerAttributeKey(header string) string {
+	snakeCaseHeader := strings.ReplaceAll(header, "-", "_")
+	snakeCaseHeader = strings.ToLower(snakeCaseHeader)
+	return "header." + snakeCaseHeader
 }
