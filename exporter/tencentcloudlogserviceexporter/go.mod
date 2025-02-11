@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.119.0
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/stretchr/testify v1.10.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1095
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1096
 	go.opentelemetry.io/collector/component v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/component/componenttest v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/config/configopaque v1.25.1-0.20250210123122-44b3eeda354c
