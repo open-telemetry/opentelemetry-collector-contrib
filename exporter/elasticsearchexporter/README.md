@@ -264,6 +264,7 @@ exporters:
 > [!IMPORTANT]
 > For the Elasticsearch Exporter to be able to export Profiles data, Universal Profiling needs to be installed in the database.
 > See [the Universal Profiling getting started documentation](https://www.elastic.co/guide/en/observability/current/profiling-get-started.html)
+> You will need to use the Elasticsearch endpoint, with an [Elasticsearch API key](https://www.elastic.co/guide/en/kibana/current/api-keys.html).
 
 [confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings
@@ -374,7 +375,7 @@ In case the record contains `timestamp`, this value is used. Otherwise, the `obs
 
 ## Setting a document id dynamically
 
-The `logs_dynamic_id` setting allows users to set the document ID dynamically based on a log record attribute. 
+The `logs_dynamic_id` setting allows users to set the document ID dynamically based on a log record attribute.
 Besides the ability to control the document ID, this setting also works as a deduplication mechanism, as Elasticsearch will refuse to index a document with the same ID.
 
 The log record attribute `elasticsearch.document_id` can be set explicitly by a processor based on the log record.
