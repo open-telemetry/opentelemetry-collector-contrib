@@ -479,10 +479,10 @@ The new metric will be exactly the same as the current metric.  You can use the 
 
 Examples:
 
-- `copy_metric(name="http.request.status_code", unit="s") where name == "http.status_code`
+- `copy_metric(name="http.request.status_code", unit="s") where metric.name == "http.status_code`
 
 
-- `copy_metric(desc="new desc") where description == "old desc"`
+- `copy_metric(desc="new desc") where metric.description == "old desc"`
 
 
 ### convert_exponential_histogram_to_histogram
@@ -620,8 +620,8 @@ For example, to remove attribute keys matching a regex and aggregate the metrics
 
 ```yaml
 statements:
-   - delete_matching_keys(attributes, "(?i).*myRegex.*") where name == "system.memory.usage"
-   - aggregate_on_attributes("sum") where name == "system.memory.usage"
+   - delete_matching_keys(resource.attributes, "(?i).*myRegex.*") where metric.name == "system.memory.usage"
+   - aggregate_on_attributes("sum") where metric.name == "system.memory.usage"
 ```
 
 To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
@@ -664,7 +664,7 @@ For example, to remove attribute keys matching a regex and aggregate the metrics
 
 ```yaml
 statements:
-   - delete_matching_keys(metric.attributes, "(?i).*myRegex.*") where metric.name == "system.memory.usage"
+   - delete_matching_keys(resource.attributes, "(?i).*myRegex.*") where metric.name == "system.memory.usage"
    - aggregate_on_attribute_value("sum", "attr1", ["val1", "val2"], "new_val") where metric.name == "system.memory.usage"
 ```
 
@@ -881,7 +881,7 @@ The transform processor uses the [OpenTelemetry Transformation Language](https:/
 
 The `transform.flatten.logs` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) enables the `flatten_data` configuration option (default `false`). With `flatten_data: true`, the processor provides each log record with a distinct copy of its resource and scope. Then, after applying all transformations, the log records are regrouped by resource and scope.
 
-This option is useful when applying transformations which alter the resource or scope. e.g. `set(resource.attributes["to"], attributes["from"])`, which may otherwise result in unexpected behavior. Using this option typically incurs a performance penalty as the processor must compute many hashes and create copies of resource and scope information for every log record.
+This option is useful when applying transformations which alter the resource or scope. e.g. `set(resource.attributes["to"], log.attributes["from"])`, which may otherwise result in unexpected behavior. Using this option typically incurs a performance penalty as the processor must compute many hashes and create copies of resource and scope information for every log record.
 
 The feature is currently only available for log processing.
 
