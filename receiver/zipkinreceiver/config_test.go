@@ -120,7 +120,7 @@ func TestValidateConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.wantErr != "" {
-				assert.Equal(t, tt.wantErr, component.ValidateConfig(cfg).Error())
+				assert.Equal(t, tt.wantErr, xconfmap.Validate(cfg).Error())
 			} else {
 				assert.NoError(t, xconfmap.Validate(cfg))
 				assert.Equal(t, tt.expected, cfg)
