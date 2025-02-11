@@ -20,8 +20,10 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
+var typ = component.MustNewType("resourcedetection")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "resourcedetection", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
