@@ -74,8 +74,8 @@ func TestE2EClusterScoped(t *testing.T) {
 	// the commented line below writes the received list of metrics to the expected.yaml
 	// golden.WriteMetrics(t, expectedFileClusterScoped, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
-	require.EventuallyWithT(t, func(collect *assert.CollectT) {
-		require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 			pmetrictest.IgnoreTimestamp(),
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreMetricValues(
@@ -159,8 +159,8 @@ func TestE2ENamespaceScoped(t *testing.T) {
 	// the commented line below writes the received list of metrics to the expected.yaml
 	// golden.WriteMetrics(t, expectedFileNamespaceScoped, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 
-	require.EventuallyWithT(t, func(collect *assert.CollectT) {
-		assert.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 			pmetrictest.IgnoreTimestamp(),
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreMetricValues(
