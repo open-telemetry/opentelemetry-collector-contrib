@@ -199,7 +199,7 @@ func TestGetPrefix(t *testing.T) {
 			ent:      newTestEntity("my_component"),
 			kind:     "receiver",
 			name:     "",
-			expected: "test_",
+			expected: "receiver_nop_my_component_test_",
 		},
 		{
 			prefix:   "",
@@ -228,6 +228,13 @@ func TestGetPrefix(t *testing.T) {
 			kind:     "receiver",
 			name:     "",
 			expected: "receiver_nop_",
+		},
+		{
+			prefix:   "pref_",
+			ent:      newTestEntity("my_test_component"),
+			kind:     "receiver",
+			name:     "rdsExt",
+			expected: "receiver_nop_my_test_component_rdsExt_pref_",
 		},
 	}
 

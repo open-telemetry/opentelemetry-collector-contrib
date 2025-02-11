@@ -107,16 +107,17 @@ func (rs *redisStorage) GetClient(_ context.Context, kind component.Kind, ent co
 }
 
 func (rs *redisStorage) getPrefix(ent component.ID, kind, name string) string {
-	prefix := rs.cfg.Prefix
-	if prefix != "" {
-		return prefix
-	}
-
+	var prefix string
 	if name == "" {
 		prefix = fmt.Sprintf("%s_%s_%s", kind, ent.Type(), ent.Name())
 	} else {
 		prefix = fmt.Sprintf("%s_%s_%s_%s", kind, ent.Type(), ent.Name(), name)
 	}
+
+	if rs.cfg.Prefix != "" {
+		prefix = fmt.Sprintf("%s_%s", prefix, rs.cfg.Prefix)
+	}
+
 	return prefix
 }
 
