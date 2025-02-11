@@ -72,11 +72,10 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 	}
 	var compressionLevel int
 	if config.Compression == configcompression.TypeGzip {
-		if config.CompressionParams.Level >= 0 {
+		if config.CompressionParams.Level > 0 {
 			compressionLevel = int(config.CompressionParams.Level)
 		} else {
 			compressionLevel = gzip.BestSpeed
-
 		}
 	}
 	return docappender.BulkIndexerConfig{
