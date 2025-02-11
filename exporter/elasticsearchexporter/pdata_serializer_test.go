@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
 func TestSerializeLog(t *testing.T) {
@@ -31,6 +33,7 @@ func TestSerializeLog(t *testing.T) {
 			record.Attributes().PutDouble("double", 42.0)
 			record.Attributes().PutInt("int", 42)
 			record.Attributes().PutEmptyBytes("bytes").Append(42)
+			record.Attributes().PutStr(documentIDAttributeName, "my_id")
 			_ = record.Attributes().PutEmptySlice("slice").FromRaw([]any{42, "foo"})
 			record.Attributes().PutEmptySlice("map_slice").AppendEmpty().SetEmptyMap().PutStr("foo.bar", "baz")
 			mapAttr := record.Attributes().PutEmptyMap("map")
@@ -42,10 +45,7 @@ func TestSerializeLog(t *testing.T) {
 		}, wantErr: false, expected: map[string]any{
 			"@timestamp":         "0.0",
 			"observed_timestamp": "0.0",
-			"data_stream": map[string]any{
-				"type": "logs",
-			},
-			"severity_text": "debug",
+			"severity_text":      "debug",
 			"resource": map[string]any{
 				"attributes": map[string]any{
 					"resource_map": map[string]any{
@@ -86,7 +86,6 @@ func TestSerializeLog(t *testing.T) {
 			expected: map[string]any{
 				"@timestamp":         "0.0",
 				"observed_timestamp": "0.0",
-				"data_stream":        map[string]any{},
 				"resource":           map[string]any{},
 				"scope":              map[string]any{},
 				"body": map[string]any{
@@ -103,11 +102,10 @@ func TestSerializeLog(t *testing.T) {
 			expected: map[string]any{
 				"@timestamp":         "0.0",
 				"observed_timestamp": "0.0",
-				"data_stream":        map[string]any{},
 				"resource":           map[string]any{},
 				"scope":              map[string]any{},
 				"body": map[string]any{
-					"flattened": map[string]any{
+					"structured": map[string]any{
 						"foo.bar": "baz",
 					},
 				},
@@ -132,7 +130,6 @@ func TestSerializeLog(t *testing.T) {
 			expected: map[string]any{
 				"@timestamp":         "0.0",
 				"observed_timestamp": "0.0",
-				"data_stream":        map[string]any{},
 				"resource":           map[string]any{},
 				"scope":              map[string]any{},
 				"attributes": map[string]any{
@@ -159,7 +156,6 @@ func TestSerializeLog(t *testing.T) {
 				"@timestamp":         "0.0",
 				"observed_timestamp": "0.0",
 				"event_name":         "bar",
-				"data_stream":        map[string]any{},
 				"resource":           map[string]any{},
 				"scope":              map[string]any{},
 				"attributes": map[string]any{
@@ -176,7 +172,6 @@ func TestSerializeLog(t *testing.T) {
 			expected: map[string]any{
 				"@timestamp":         "1721314113467.654123",
 				"observed_timestamp": "0.0",
-				"data_stream":        map[string]any{},
 				"resource":           map[string]any{},
 				"scope":              map[string]any{},
 			},
@@ -184,13 +179,15 @@ func TestSerializeLog(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resourceLogs := plog.NewResourceLogs()
+			logs := plog.NewLogs()
+			resourceLogs := logs.ResourceLogs().AppendEmpty()
 			scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 			record := scopeLogs.LogRecords().AppendEmpty()
 			tt.logCustomizer(resourceLogs.Resource(), scopeLogs.Scope(), record)
+			logs.MarkReadOnly()
 
 			var buf bytes.Buffer
-			err := serializeLog(resourceLogs.Resource(), "", scopeLogs.Scope(), "", record, &buf)
+			err := serializeLog(resourceLogs.Resource(), "", scopeLogs.Scope(), "", record, elasticsearch.Index{}, &buf)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("serializeLog() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -209,7 +206,8 @@ func TestSerializeLog(t *testing.T) {
 }
 
 func TestSerializeMetricsConflict(t *testing.T) {
-	resourceMetrics := pmetric.NewResourceMetrics()
+	metrics := pmetric.NewMetrics()
+	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
 	var dataPoints []dataPoint
 	metric1 := scopeMetrics.Metrics().AppendEmpty()
@@ -220,10 +218,11 @@ func TestSerializeMetricsConflict(t *testing.T) {
 		dp.SetIntValue(42)
 		dataPoints = append(dataPoints, newNumberDataPoint(m, dp))
 	}
+	metrics.MarkReadOnly()
 
 	var validationErrors []error
 	var buf bytes.Buffer
-	_, err := serializeMetrics(resourceMetrics.Resource(), "", scopeMetrics.Scope(), "", dataPoints, &validationErrors, &buf)
+	_, err := serializeMetrics(resourceMetrics.Resource(), "", scopeMetrics.Scope(), "", dataPoints, &validationErrors, elasticsearch.Index{}, &buf)
 	if err != nil {
 		t.Errorf("serializeMetrics() error = %v", err)
 	}
@@ -240,10 +239,9 @@ func TestSerializeMetricsConflict(t *testing.T) {
 	assert.Equal(t, fmt.Errorf("metric with name 'foo' has already been serialized in document with timestamp 1970-01-01T00:00:00.000000000Z"), validationErrors[0])
 
 	assert.Equal(t, map[string]any{
-		"@timestamp":  "0.0",
-		"data_stream": map[string]any{},
-		"resource":    map[string]any{},
-		"scope":       map[string]any{},
+		"@timestamp": "0.0",
+		"resource":   map[string]any{},
+		"scope":      map[string]any{},
 		"metrics": map[string]any{
 			"foo": json.Number("42"),
 		},

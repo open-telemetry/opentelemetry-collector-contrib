@@ -142,7 +142,7 @@ func TestS3ManagerUpload(t *testing.T) {
 			)
 
 			// Using a mocked virtual clock to fix the timestamp used
-			// to reduce the potential of flakey tests
+			// to reduce the potential of flaky tests
 			mc := clock.NewMock(time.Date(2024, 0o1, 10, 10, 30, 40, 100, time.Local))
 
 			err := sm.Upload(

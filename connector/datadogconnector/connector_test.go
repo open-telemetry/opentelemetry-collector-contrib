@@ -253,6 +253,66 @@ func testReceiveResourceSpansV2(t *testing.T, enableReceiveResourceSpansV2 bool)
 	}
 }
 
+func TestOperationAndResourceNameV2(t *testing.T) {
+	t.Run("OperationAndResourceNameV1", func(t *testing.T) {
+		testOperationAndResourceNameV2(t, false)
+	})
+	t.Run("OperationAndResourceNameV2", func(t *testing.T) {
+		testOperationAndResourceNameV2(t, true)
+	})
+}
+
+func testOperationAndResourceNameV2(t *testing.T, enableOperationAndResourceNameV2 bool) {
+	if err := featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", enableOperationAndResourceNameV2); err != nil {
+		t.Fatal(err)
+	}
+	connector, metricsSink := creteConnector(t)
+	err := connector.Start(context.Background(), componenttest.NewNopHost())
+	if err != nil {
+		t.Errorf("Error starting connector: %v", err)
+		return
+	}
+	defer func() {
+		_ = connector.Shutdown(context.Background())
+	}()
+
+	trace := generateTrace()
+	rspan := trace.ResourceSpans().At(0)
+	rspan.Resource().Attributes().PutStr("deployment.environment.name", "new_env")
+	rspan.ScopeSpans().At(0).Spans().At(0).SetKind(ptrace.SpanKindServer)
+
+	err = connector.ConsumeTraces(context.Background(), trace)
+	assert.NoError(t, err)
+
+	for {
+		if len(metricsSink.AllMetrics()) > 0 {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	// check if the container tags are added to the metrics
+	metrics := metricsSink.AllMetrics()
+	assert.Len(t, metrics, 1)
+
+	ch := make(chan []byte, 100)
+	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
+	_, err = tr.MapMetrics(context.Background(), metrics[0], nil)
+	require.NoError(t, err)
+	msg := <-ch
+	sp := &pb.StatsPayload{}
+
+	err = proto.Unmarshal(msg, sp)
+	require.NoError(t, err)
+
+	gotName := sp.Stats[0].Stats[0].Stats[0].Name
+	if enableOperationAndResourceNameV2 {
+		assert.Equal(t, "server.request", gotName)
+	} else {
+		assert.Equal(t, "opentelemetry.server", gotName)
+	}
+}
+
 func newTranslatorWithStatsChannel(t *testing.T, logger *zap.Logger, ch chan []byte) *otlpmetrics.Translator {
 	options := []otlpmetrics.TranslatorOption{
 		otlpmetrics.WithHistogramMode(otlpmetrics.HistogramModeDistributions),

@@ -55,6 +55,7 @@ type MetricsConfig struct {
 	VcenterHostDiskLatencyAvg          MetricConfig `mapstructure:"vcenter.host.disk.latency.avg"`
 	VcenterHostDiskLatencyMax          MetricConfig `mapstructure:"vcenter.host.disk.latency.max"`
 	VcenterHostDiskThroughput          MetricConfig `mapstructure:"vcenter.host.disk.throughput"`
+	VcenterHostMemoryCapacity          MetricConfig `mapstructure:"vcenter.host.memory.capacity"`
 	VcenterHostMemoryUsage             MetricConfig `mapstructure:"vcenter.host.memory.usage"`
 	VcenterHostMemoryUtilization       MetricConfig `mapstructure:"vcenter.host.memory.utilization"`
 	VcenterHostNetworkPacketDropRate   MetricConfig `mapstructure:"vcenter.host.network.packet.drop.rate"`
@@ -83,6 +84,7 @@ type MetricsConfig struct {
 	VcenterVMDiskUsage                 MetricConfig `mapstructure:"vcenter.vm.disk.usage"`
 	VcenterVMDiskUtilization           MetricConfig `mapstructure:"vcenter.vm.disk.utilization"`
 	VcenterVMMemoryBallooned           MetricConfig `mapstructure:"vcenter.vm.memory.ballooned"`
+	VcenterVMMemoryGranted             MetricConfig `mapstructure:"vcenter.vm.memory.granted"`
 	VcenterVMMemorySwapped             MetricConfig `mapstructure:"vcenter.vm.memory.swapped"`
 	VcenterVMMemorySwappedSsd          MetricConfig `mapstructure:"vcenter.vm.memory.swapped_ssd"`
 	VcenterVMMemoryUsage               MetricConfig `mapstructure:"vcenter.vm.memory.usage"`
@@ -179,6 +181,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcenterHostDiskThroughput: MetricConfig{
 			Enabled: true,
 		},
+		VcenterHostMemoryCapacity: MetricConfig{
+			Enabled: false,
+		},
 		VcenterHostMemoryUsage: MetricConfig{
 			Enabled: true,
 		},
@@ -262,6 +267,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterVMMemoryBallooned: MetricConfig{
 			Enabled: true,
+		},
+		VcenterVMMemoryGranted: MetricConfig{
+			Enabled: false,
 		},
 		VcenterVMMemorySwapped: MetricConfig{
 			Enabled: true,
