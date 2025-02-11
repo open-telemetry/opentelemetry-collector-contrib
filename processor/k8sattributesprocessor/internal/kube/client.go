@@ -98,6 +98,7 @@ func New(
 	waitForMetadata bool,
 	waitForMetadataTimeout time.Duration,
 ) (Client, error) {
+	var err error
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
 		return nil, err
@@ -140,6 +141,12 @@ func New(
 
 		return removeUnnecessaryPodData(originalPod, c.Rules), nil
 	}
+	// if we return an error, we need to signal any informers we created to stop
+	defer func() {
+		if err != nil {
+			close(c.stopCh)
+		}
+	}()
 	c.informer, err = informerProviders.PodInformerProvider(
 		c.Filters.Namespace,
 		labelSelector,
@@ -213,16 +220,6 @@ func (c *WatchClient) Start() error {
 		synced = append(synced, c.replicasetHandlerRegistration.HasSynced)
 	}
 
-	c.podHandlerRegistration, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.handlePodAdd,
-		UpdateFunc: c.handlePodUpdate,
-		DeleteFunc: c.handlePodDelete,
-	})
-	if err != nil {
-		return err
-	}
-	synced = append(synced, c.podHandlerRegistration.HasSynced)
-
 	if c.namespaceInformer != nil {
 		c.namespaceHandlerRegistration, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleNamespaceAdd,
@@ -246,14 +243,28 @@ func (c *WatchClient) Start() error {
 		}
 		synced = append(synced, c.nodeHandlerRegistration.HasSynced)
 	}
+
+	// wait until other informers are synced before adding the Pod informer
+	// we want metadata for other resource types to be populated before we start acting on Pod metadata
+	c.logger.Debug("waiting for non Pod caches to sync")
+	if !c.waitForCacheSync(time.Second*5, synced...) {
+		c.logger.Warn("timed out waiting for caches to sync, proceeding anyway")
+	}
+
+	c.podHandlerRegistration, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    c.handlePodAdd,
+		UpdateFunc: c.handlePodUpdate,
+		DeleteFunc: c.handlePodDelete,
+	})
+	if err != nil {
+		return err
+	}
+
 	if c.waitForMetadata {
-		timeoutCh := make(chan struct{})
-		t := time.AfterFunc(c.waitForMetadataTimeout, func() {
-			close(timeoutCh)
-		})
-		defer t.Stop()
-		if !cache.WaitForCacheSync(timeoutCh, synced...) {
-			return errors.New("failed to wait for caches to sync")
+		c.logger.Debug("waiting for Pod caches to sync")
+		// we only need to check the Pod sync, since we've already checked the others
+		if !c.waitForCacheSync(c.waitForMetadataTimeout, c.podHandlerRegistration.HasSynced) {
+			return errors.New("timed out waiting for Pod cache to sync")
 		}
 	}
 	return nil
@@ -1144,6 +1155,19 @@ func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {
 		return replicaset, ok
 	}
 	return nil, false
+}
+
+// waitForCacheSync waits until the given cache sync functions all indicate success, or a timeout.
+func (c *WatchClient) waitForCacheSync(waitTime time.Duration, synced ...cache.InformerSynced) bool {
+	if len(synced) == 0 {
+		return true
+	}
+	timeoutCh := make(chan struct{})
+	t := time.AfterFunc(waitTime, func() {
+		close(timeoutCh)
+	})
+	defer t.Stop()
+	return cache.WaitForCacheSync(timeoutCh, synced...)
 }
 
 // ignoreDeletedFinalStateUnknown returns the object wrapped in
