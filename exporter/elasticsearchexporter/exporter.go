@@ -48,6 +48,8 @@ type elasticsearchExporter struct {
 	biStackTraces bulkIndexer
 	// Bulk indexer for profiling-stackframes
 	biStackFrames bulkIndexer
+	// Bulk indexer for profiling-executables
+	biExecutables bulkIndexer
 
 	bufferPool *pool.BufferPool
 }
@@ -112,6 +114,11 @@ func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) 
 		return err
 	}
 	e.biStackFrames = biStackFrames
+	biExecutables, err := newBulkIndexer(e.Logger, client, e.config, false)
+	if err != nil {
+		return err
+	}
+	e.biExecutables = biExecutables
 
 	return nil
 }
@@ -134,6 +141,11 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	}
 	if e.biStackFrames != nil {
 		if err := e.biStackFrames.Close(ctx); err != nil {
+			return err
+		}
+	}
+	if e.biExecutables != nil {
+		if err := e.biExecutables.Close(ctx); err != nil {
 			return err
 		}
 	}
@@ -556,6 +568,11 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 		return err
 	}
 	defer stackFramesSession.End()
+	executablesSession, err := e.biExecutables.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer executablesSession.End()
 
 	var errs []error
 	rps := pd.ResourceProfiles()
@@ -568,7 +585,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 			scope := sp.Scope()
 			p := sp.Profiles()
 			for k := 0; k < p.Len(); k++ {
-				if err := e.pushProfileRecord(ctx, resource, p.At(k), scope, defaultSession, eventsSession, stackTracesSession, stackFramesSession); err != nil {
+				if err := e.pushProfileRecord(ctx, resource, p.At(k), scope, defaultSession, eventsSession, stackTracesSession, stackFramesSession, executablesSession); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -608,6 +625,12 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 		}
 		errs = append(errs, err)
 	}
+	if err := executablesSession.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
 
 	return errors.Join(errs...)
 }
@@ -617,7 +640,7 @@ func (e *elasticsearchExporter) pushProfileRecord(
 	resource pcommon.Resource,
 	record pprofile.Profile,
 	scope pcommon.InstrumentationScope,
-	defaultSession, eventsSession, stackTracesSession, stackFramesSession bulkIndexerSession,
+	defaultSession, eventsSession, stackTracesSession, stackFramesSession, executablesSession bulkIndexerSession,
 ) error {
 	return e.model.encodeProfile(resource, scope, record, func(buf *bytes.Buffer, docID, index string) error {
 		switch index {
@@ -627,6 +650,8 @@ func (e *elasticsearchExporter) pushProfileRecord(
 			return stackFramesSession.Add(ctx, index, docID, buf, nil)
 		case otelserializer.AllEventsIndex:
 			return eventsSession.Add(ctx, index, docID, buf, nil)
+		case otelserializer.ExecutablesIndex:
+			return executablesSession.Add(ctx, index, docID, buf, nil)
 		default:
 			return defaultSession.Add(ctx, index, docID, buf, nil)
 		}
