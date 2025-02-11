@@ -161,22 +161,12 @@ the need for explicit specification. This inference leverages the path names, fu
 present in the statements to efficiently determine the most appropriate context. 
 For more details, see [context inference](#context-inference).
 
-The following example takes advantage of context inference by suppressing the `context` value,
-and using statements with fully qualified paths:
+The following example uses the flat configuration style, which allows users to configure 
+statements as a list, without worrying about contexts or extra configurations. 
+It also supports statements from multiple contexts and does not require grouping them 
+separately.
 
-```yaml
-transform:
-  error_mode: ignore
-  metric_statements:
-    - statements:
-      - keep_keys(resource.attributes, ["host.name"])
-      - truncate_all(resource.attributes, 4096)
-      - set(metric.description, "Sum") where metric.type == "Sum"
-      - convert_sum_to_gauge() where metric.name == "system.processes.count"
-      - convert_gauge_to_sum("cumulative", false) where metric.name == "prometheus_metric"
-```
-
-This configuration can be further simplified by using the flat configuration style:
+Format:
 
 ```yaml
 transform:
@@ -198,6 +188,28 @@ transform:
     - set(metric.description, "Sum") where metric.type == "Sum"
     - convert_sum_to_gauge() where metric.name == "system.processes.count"
     - convert_gauge_to_sum("cumulative", false) where metric.name == "prometheus_metric"
+```
+
+This streamlined approach enhances readability and makes configuration more intuitive.
+Please note that all paths in the statements must be prefixed with their respective contexts.
+These prefixes are required for context-inferred configurations and serve as hints for
+selecting the best match. It also makes statements unambiguous and portable between
+components.
+
+When a granular control over the statements configuration is desired, such as different 
+`error_mode` or `conditions`, the structured configuration style must be used. 
+To enable the context inference, the `context` key value must be suppressed, and all paths 
+in the statements must be fully qualified:
+
+```yaml
+transform:
+  error_mode: ignore
+  metric_statements:
+    - conditions:
+        resource.attributes["service.name"] == "my.service"
+      statements:
+        - set(metric.description, "Sum") where metric.type == "Sum"
+        - convert_sum_to_gauge() where metric.name == "system.processes.count"
 ```
 
 ## Grammar
@@ -265,8 +277,7 @@ To enable this inference, path names must be prefixed with the `context` names. 
 
 ```yaml
 metric_statements:
-  - statements:
-    - set(metric.description, "test passed") where datapoint.attributes["test"] == "pass"
+  - set(metric.description, "test passed") where datapoint.attributes["test"] == "pass"
 ```
 
 In this configuration, the inferred `context` value is `datapoint`, as it is the only context 
@@ -277,9 +288,8 @@ as `metric` is the context capable of parsing both `metric` and `resource` data.
 
 ```yaml
 metric_statements:
-  - statements:
-    - set(resource.attributes["test"], "passed")
-    - set(metric.description, "test passed")
+  - set(resource.attributes["test"], "passed")
+  - set(metric.description, "test passed")
 ```
 
 The primary benefit of context inference is that it enhances the efficiency of statement processing 
@@ -287,7 +297,8 @@ by linking them to the most suitable context. This optimization ensures that dat
 are both accurate and performant, leveraging the hierarchical structure of contexts to avoid unnecessary 
 iterations and improve overall processing efficiency.
 
-In some situations, automatic inference might not be possible. For example:
+In some situations, when using the structured configuration style, the automatic inference might
+not be possible. For example:
 
 ```yaml
 metric_statements:
@@ -880,7 +891,7 @@ The feature is currently only available for log processing.
   transform:
     flatten_data: true
     log_statements:
-      - set(log.resource.attributes["to"], log.attributes["from"])
+      - set(resource.attributes["to"], log.attributes["from"])
   ```
   
   Run collector: `./otelcol --config config.yaml --feature-gates=transform.flatten.logs`
