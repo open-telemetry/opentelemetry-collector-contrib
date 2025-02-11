@@ -16,17 +16,17 @@ import (
 
 const Type = "true_reset"
 
-// InitialPointAdjuster takes a map from a metric instance to the initial point in the metrics instance
-// and provides AdjustMetricSlice, which takes a sequence of metrics and adjust their start times based on
+// Adjuster takes a map from a metric instance to the initial point in the metrics instance
+// and provides AdjustMetric, which takes a sequence of metrics and adjust their start times based on
 // the initial points.
-type InitialPointAdjuster struct {
+type Adjuster struct {
 	jobsMap *JobsMap
 	set     component.TelemetrySettings
 }
 
-// NewInitialPointAdjuster returns a new MetricsAdjuster that adjust metrics' start times based on the initial received points.
-func NewInitialPointAdjuster(set component.TelemetrySettings, gcInterval time.Duration) *InitialPointAdjuster {
-	return &InitialPointAdjuster{
+// NewAdjuster returns a new Adjuster which adjust metrics' start times based on the initial received points.
+func NewAdjuster(set component.TelemetrySettings, gcInterval time.Duration) *Adjuster {
+	return &Adjuster{
 		jobsMap: NewJobsMap(gcInterval),
 		set:     set,
 	}
@@ -34,7 +34,7 @@ func NewInitialPointAdjuster(set component.TelemetrySettings, gcInterval time.Du
 
 // AdjustMetrics takes a sequence of metrics and adjust their start times based on the initial and
 // previous points in the timeseriesMap.
-func (a *InitialPointAdjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
+func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		_, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
@@ -91,7 +91,7 @@ func (a *InitialPointAdjuster) AdjustMetrics(_ context.Context, metrics pmetric.
 	return metrics, nil
 }
 
-func (a *InitialPointAdjuster) adjustMetricHistogram(tsm *timeseriesMap, current pmetric.Metric) {
+func (a *Adjuster) adjustMetricHistogram(tsm *timeseriesMap, current pmetric.Metric) {
 	histogram := current.Histogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
@@ -132,7 +132,7 @@ func (a *InitialPointAdjuster) adjustMetricHistogram(tsm *timeseriesMap, current
 	}
 }
 
-func (a *InitialPointAdjuster) adjustMetricExponentialHistogram(tsm *timeseriesMap, current pmetric.Metric) {
+func (a *Adjuster) adjustMetricExponentialHistogram(tsm *timeseriesMap, current pmetric.Metric) {
 	histogram := current.ExponentialHistogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
@@ -173,7 +173,7 @@ func (a *InitialPointAdjuster) adjustMetricExponentialHistogram(tsm *timeseriesM
 	}
 }
 
-func (a *InitialPointAdjuster) adjustMetricSum(tsm *timeseriesMap, current pmetric.Metric) {
+func (a *Adjuster) adjustMetricSum(tsm *timeseriesMap, current pmetric.Metric) {
 	currentPoints := current.Sum().DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSum := currentPoints.At(i)
@@ -205,7 +205,7 @@ func (a *InitialPointAdjuster) adjustMetricSum(tsm *timeseriesMap, current pmetr
 	}
 }
 
-func (a *InitialPointAdjuster) adjustMetricSummary(tsm *timeseriesMap, current pmetric.Metric) {
+func (a *Adjuster) adjustMetricSummary(tsm *timeseriesMap, current pmetric.Metric) {
 	currentPoints := current.Summary().DataPoints()
 
 	for i := 0; i < currentPoints.Len(); i++ {

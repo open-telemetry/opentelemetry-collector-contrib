@@ -36,7 +36,7 @@ func createMetricsProcessor(
 	var processMetrics func(context.Context, pmetric.Metrics) (pmetric.Metrics, error)
 	switch rCfg.Strategy {
 	case truereset.Type:
-		adjuster := truereset.NewInitialPointAdjuster(set.TelemetrySettings, rCfg.GCInterval)
+		adjuster := truereset.NewAdjuster(set.TelemetrySettings, rCfg.GCInterval)
 		processMetrics = adjuster.AdjustMetrics
 	}
 
