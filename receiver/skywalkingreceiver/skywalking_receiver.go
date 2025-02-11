@@ -20,15 +20,14 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/trace"
-
 	cds "skywalking.apache.org/repo/goapi/collect/agent/configuration/v3"
 	event "skywalking.apache.org/repo/goapi/collect/event/v3"
 	v3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 	profile "skywalking.apache.org/repo/goapi/collect/language/profile/v3"
 	management "skywalking.apache.org/repo/goapi/collect/management/v3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/trace"
 )
 
 // configuration defines the behavior and the ports that

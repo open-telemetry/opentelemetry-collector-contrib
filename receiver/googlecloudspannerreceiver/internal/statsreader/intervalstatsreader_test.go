@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/spanner"
-
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap/zaptest"
 

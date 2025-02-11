@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/spanner"
-
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 

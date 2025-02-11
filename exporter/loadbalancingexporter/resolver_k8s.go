@@ -26,10 +26,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/utils/ptr"
 	"k8s.io/utils/strings/slices"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
-
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 var _ resolver = (*k8sResolver)(nil)

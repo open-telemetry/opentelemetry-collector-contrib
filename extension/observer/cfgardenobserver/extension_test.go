@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"code.cloudfoundry.org/garden"
-
 	"github.com/cloudfoundry/go-cfclient/v3/resource"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"

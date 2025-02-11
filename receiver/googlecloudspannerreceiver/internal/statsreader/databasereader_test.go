@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"cloud.google.com/go/spanner"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"

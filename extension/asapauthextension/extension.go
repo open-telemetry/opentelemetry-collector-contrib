@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"bitbucket.org/atlassian/go-asap/v2"
-
 	"github.com/SermoDigital/jose/crypto"
 	"go.opentelemetry.io/collector/extension/auth"
 	"google.golang.org/grpc/credentials"

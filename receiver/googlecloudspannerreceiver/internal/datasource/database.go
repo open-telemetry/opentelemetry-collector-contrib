@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"cloud.google.com/go/spanner"
-
 	"google.golang.org/api/option"
 )
 

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"bitbucket.org/atlassian/go-asap/v2"
-
 	"github.com/stretchr/testify/assert"
 )
 

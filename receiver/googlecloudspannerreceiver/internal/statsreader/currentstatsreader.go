@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/spanner"
-
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
 

@@ -8,7 +8,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
-	_ "net/http/pprof"
+	_ "net/http/pprof" // #nosec Needed to enable the performance profiler
 	"os"
 	"runtime"
 	"runtime/pprof"
@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.uber.org/zap"
-	// #nosec Needed to enable the performance profiler
 )
 
 var running = &atomic.Bool{}

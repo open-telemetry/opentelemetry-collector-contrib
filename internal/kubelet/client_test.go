@@ -23,10 +23,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (

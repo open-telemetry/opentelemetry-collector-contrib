@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	pubsub "cloud.google.com/go/pubsub/apiv1"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/api/option"
