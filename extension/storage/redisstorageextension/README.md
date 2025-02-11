@@ -21,7 +21,7 @@ The extension requires read and write access to a Redis cluster.
 - `password` (optional): The password to connect to the redis instance. Default: ``
 - `db` (optional): Database to be selected after connecting to the server. Default: 0
 - `expiration` (optional): TTL for all storage entries. Default TTL means the key has no expiration time. Default: 0
-- `prefix` (optional): Prefix to be used for a redis key. Default:`<component_kind>_<component_type>_<component_name>_<storage_extension_name>` - e.g. `receiver_filelog_` if filelog receiver & redisstorage extension have no names
+- `prefix` (optional): The prefix used for the redis key. If specified, it will be appended to the default as follows: `_<prefix>`. Default: `<component_kind>_<component_type>_<component_name>_<storage_extension_name>`.
 
 ## Example
 
