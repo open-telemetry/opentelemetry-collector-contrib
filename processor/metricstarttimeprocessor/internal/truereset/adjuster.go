@@ -14,7 +14,13 @@ import (
 	"go.uber.org/zap"
 )
 
-const Type = "true_reset"
+// Type is the value users can use to configure the true reset point adjuster.
+// The true reset point adjuster sets the start time of all points in a series following:
+// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#cumulative-streams-inserting-true-reset-points.
+// This involves setting the start time using the following strategy:
+//   - The initial point in a series has its start time set to that point's end time.
+//   - All subsequent points in the series have their start time set to the initial point's end time.
+const Type = "true_reset_point"
 
 // Adjuster takes a map from a metric instance to the initial point in the metrics instance
 // and provides AdjustMetric, which takes a sequence of metrics and adjust their start times based on
