@@ -358,14 +358,6 @@ github.com/onsi/gomega v0.0.0-20170829124025-dcabb60a477c/go.mod h1:C1qb7wdrVGGV
 github.com/onsi/gomega v1.7.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
 github.com/onsi/gomega v1.33.1 h1:dsYjIxxSR755MDmKVsaFQTE22ChNBcuuTWgkUDSubOk=
 github.com/onsi/gomega v1.33.1/go.mod h1:U4R44UsT+9eLIaYRB2a5qajjtQYn0hauxvRm16AVYg0=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.119.0 h1:U/j+jjOId2iiudkHN5EOqmZoMSDxWXTR6N9xGdj3bh8=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.119.0/go.mod h1:K6fKwsOcIEkOMR7CitUWBYaS8yrb3Y2TjM1ocMwgJx4=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.119.0 h1:o1s1koCc7Rg2auZLhFc2Ja6Eo2rOCMHKZJptRwdhoTI=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.119.0/go.mod h1:8rSWjIfW9QDA3KHzdZIfGs+Na0HBEmKg2EMmMplK1X8=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.119.0 h1:Rfn7AHN559aaxqKwFWlG36HuHlhl7dbIspKC/O1H8EQ=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.119.0/go.mod h1:GhC+Pk3PbAIq52vmYr+d6PN4Hnxyp4lGQMbomI7Bom8=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.119.0 h1:9ivuvcvfagk7ppQmtQUOgH2nFJ66tsgyccEMcXPKoDI=
-github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.119.0/go.mod h1:Fv/VznY6QoEJd34B0DqHXctRgABY3eLNFmpCnkfUeLY=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.118.0 h1:DSoYrOjLv23HXpx72hl61br4ZZTj6dqtwZSGoypKWIA=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.118.0/go.mod h1:nR+r7aAbsktscJk4fGmzljblbZBMaiZcIWeKbXV+HmY=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.118.0 h1:aUTSkzJExtrlHN32g8hX/cRNEo2ZmucPg+vwPqOYvhg=
