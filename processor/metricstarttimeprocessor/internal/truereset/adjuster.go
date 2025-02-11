@@ -16,17 +16,15 @@ import (
 // and provides AdjustMetricSlice, which takes a sequence of metrics and adjust their start times based on
 // the initial points.
 type InitialPointAdjuster struct {
-	jobsMap          *JobsMap
-	logger           *zap.Logger
-	useCreatedMetric bool
+	jobsMap *JobsMap
+	logger  *zap.Logger
 }
 
 // NewInitialPointAdjuster returns a new MetricsAdjuster that adjust metrics' start times based on the initial received points.
-func NewInitialPointAdjuster(logger *zap.Logger, gcInterval time.Duration, useCreatedMetric bool) *InitialPointAdjuster {
+func NewInitialPointAdjuster(logger *zap.Logger, gcInterval time.Duration) *InitialPointAdjuster {
 	return &InitialPointAdjuster{
-		jobsMap:          NewJobsMap(gcInterval),
-		logger:           logger,
-		useCreatedMetric: useCreatedMetric,
+		jobsMap: NewJobsMap(gcInterval),
+		logger:  logger,
 	}
 }
 
@@ -100,13 +98,6 @@ func (a *InitialPointAdjuster) adjustMetricHistogram(tsm *timeseriesMap, current
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentDist := currentPoints.At(i)
 
-		// start timestamp was set from _created
-		if a.useCreatedMetric &&
-			!currentDist.Flags().NoRecordedValue() &&
-			currentDist.StartTimestamp() < currentDist.Timestamp() {
-			continue
-		}
-
 		tsi, found := tsm.get(current, currentDist.Attributes())
 		if !found {
 			// initialize everything.
@@ -148,13 +139,6 @@ func (a *InitialPointAdjuster) adjustMetricExponentialHistogram(tsm *timeseriesM
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentDist := currentPoints.At(i)
 
-		// start timestamp was set from _created
-		if a.useCreatedMetric &&
-			!currentDist.Flags().NoRecordedValue() &&
-			currentDist.StartTimestamp() < currentDist.Timestamp() {
-			continue
-		}
-
 		tsi, found := tsm.get(current, currentDist.Attributes())
 		if !found {
 			// initialize everything.
@@ -190,13 +174,6 @@ func (a *InitialPointAdjuster) adjustMetricSum(tsm *timeseriesMap, current pmetr
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSum := currentPoints.At(i)
 
-		// start timestamp was set from _created
-		if a.useCreatedMetric &&
-			!currentSum.Flags().NoRecordedValue() &&
-			currentSum.StartTimestamp() < currentSum.Timestamp() {
-			continue
-		}
-
 		tsi, found := tsm.get(current, currentSum.Attributes())
 		if !found {
 			// initialize everything.
@@ -229,13 +206,6 @@ func (a *InitialPointAdjuster) adjustMetricSummary(tsm *timeseriesMap, current p
 
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSummary := currentPoints.At(i)
-
-		// start timestamp was set from _created
-		if a.useCreatedMetric &&
-			!currentSummary.Flags().NoRecordedValue() &&
-			currentSummary.StartTimestamp() < currentSummary.Timestamp() {
-			continue
-		}
 
 		tsi, found := tsm.get(current, currentSummary.Attributes())
 		if !found {
