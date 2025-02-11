@@ -4,14 +4,15 @@
 package truereset
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
-	"go.uber.org/zap"
 )
 
 var (
@@ -70,7 +71,7 @@ func TestGauge(t *testing.T) {
 			adjusted:    metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t3, t3, 55))),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestSum(t *testing.T) {
@@ -101,7 +102,7 @@ func TestSum(t *testing.T) {
 			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t5, 72))),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestSumWithDifferentResources(t *testing.T) {
@@ -132,7 +133,7 @@ func TestSumWithDifferentResources(t *testing.T) {
 			adjusted:    metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t3, t5, 72))), resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t5, t5, 10)))),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestSummaryNoCount(t *testing.T) {
@@ -159,7 +160,7 @@ func TestSummaryNoCount(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestSummaryFlagNoRecordedValue(t *testing.T) {
@@ -176,7 +177,7 @@ func TestSummaryFlagNoRecordedValue(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestSummary(t *testing.T) {
@@ -219,7 +220,7 @@ func TestSummary(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestHistogram(t *testing.T) {
@@ -242,7 +243,7 @@ func TestHistogram(t *testing.T) {
 			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t4, bounds0, []uint64{7, 4, 2, 12}))),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestHistogramFlagNoRecordedValue(t *testing.T) {
@@ -259,7 +260,7 @@ func TestHistogramFlagNoRecordedValue(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
@@ -276,7 +277,7 @@ func TestHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 // In TestExponentHistogram we exclude negative buckets on purpose as they are
@@ -303,7 +304,7 @@ func TestExponentialHistogram(t *testing.T) {
 			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t3, t4, 3, 1, 0, []uint64{}, -2, []uint64{7, 4, 2, 12}))),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestExponentialHistogramFlagNoRecordedValue(t *testing.T) {
@@ -320,7 +321,7 @@ func TestExponentialHistogramFlagNoRecordedValue(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestExponentialHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
@@ -337,7 +338,7 @@ func TestExponentialHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestSummaryFlagNoRecordedValueFirstObservation(t *testing.T) {
@@ -354,7 +355,7 @@ func TestSummaryFlagNoRecordedValueFirstObservation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestGaugeFlagNoRecordedValueFirstObservation(t *testing.T) {
@@ -371,7 +372,7 @@ func TestGaugeFlagNoRecordedValueFirstObservation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestSumFlagNoRecordedValueFirstObservation(t *testing.T) {
@@ -388,7 +389,7 @@ func TestSumFlagNoRecordedValueFirstObservation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestMultiMetrics(t *testing.T) {
@@ -452,7 +453,7 @@ func TestMultiMetrics(t *testing.T) {
 			),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestNewDataPointsAdded(t *testing.T) {
@@ -514,7 +515,7 @@ func TestNewDataPointsAdded(t *testing.T) {
 			),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestMultiTimeseries(t *testing.T) {
@@ -573,7 +574,7 @@ func TestMultiTimeseries(t *testing.T) {
 			),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestEmptyLabels(t *testing.T) {
@@ -599,7 +600,7 @@ func TestEmptyLabels(t *testing.T) {
 			adjusted:    metrics(sumMetric(sum1, doublePoint(k1vEmptyk2vEmptyk3vEmpty, t1, t3, 88))),
 		},
 	}
-	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
+	runScript(t, NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
 }
 
 func TestTsGC(t *testing.T) {
@@ -653,16 +654,16 @@ func TestTsGC(t *testing.T) {
 		},
 	}
 
-	ma := NewInitialPointAdjuster(zap.NewNop(), time.Minute, true)
+	ma := NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute)
 
 	// run round 1
 	runScript(t, ma, "job", "0", script1)
 	// gc the tsmap, unmarking all entries
-	ma.(*initialPointAdjuster).jobsMap.get("job", "0").gc()
+	ma.jobsMap.get("job", "0").gc()
 	// run round 2 - update metrics first timeseries only
 	runScript(t, ma, "job", "0", script2)
 	// gc the tsmap, collecting umarked entries
-	ma.(*initialPointAdjuster).jobsMap.get("job", "0").gc()
+	ma.jobsMap.get("job", "0").gc()
 	// run round 3 - verify that metrics second timeseries have been gc'd
 	runScript(t, ma, "job", "0", script3)
 }
@@ -713,7 +714,7 @@ func TestJobGC(t *testing.T) {
 	}
 
 	gcInterval := 10 * time.Millisecond
-	ma := NewInitialPointAdjuster(zap.NewNop(), gcInterval, true)
+	ma := NewInitialPointAdjuster(componenttest.NewNopTelemetrySettings(), gcInterval)
 
 	// run job 1, round 1 - all entries marked
 	runScript(t, ma, "job1", "0", job1Script1)
@@ -726,7 +727,7 @@ func TestJobGC(t *testing.T) {
 	// re-run job 2, round1 - trigger job gc, removing unmarked entries
 	runScript(t, ma, "job1", "1", job2Script1)
 	// ensure that at least one jobsMap.gc() completed
-	ma.(*initialPointAdjuster).jobsMap.gc()
+	ma.jobsMap.gc()
 	// run job 1, round 2 - verify that all job 1 timeseries have been gc'd
 	runScript(t, ma, "job1", "0", job1Script2)
 }
@@ -737,7 +738,7 @@ type metricsAdjusterTest struct {
 	adjusted    pmetric.Metrics
 }
 
-func runScript(t *testing.T, ma MetricsAdjuster, job, instance string, tests []*metricsAdjusterTest) {
+func runScript(t *testing.T, ma *InitialPointAdjuster, job, instance string, tests []*metricsAdjusterTest) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			adjusted := pmetric.NewMetrics()
@@ -754,7 +755,9 @@ func runScript(t *testing.T, ma MetricsAdjuster, job, instance string, tests []*
 					rm.Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
 				}
 			}
-			assert.NoError(t, ma.AdjustMetrics(adjusted))
+			var err error
+			adjusted, err = ma.AdjustMetrics(context.Background(), adjusted)
+			assert.NoError(t, err)
 
 			// Add the instance/job to the expected metrics as well if they aren't already present.
 			for i := 0; i < test.adjusted.ResourceMetrics().Len(); i++ {

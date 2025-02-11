@@ -4,43 +4,47 @@
 package truereset // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/truereset"
 
 import (
+	"context"
 	"errors"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
+
+const Type = "true_reset"
 
 // InitialPointAdjuster takes a map from a metric instance to the initial point in the metrics instance
 // and provides AdjustMetricSlice, which takes a sequence of metrics and adjust their start times based on
 // the initial points.
 type InitialPointAdjuster struct {
 	jobsMap *JobsMap
-	logger  *zap.Logger
+	set     component.TelemetrySettings
 }
 
 // NewInitialPointAdjuster returns a new MetricsAdjuster that adjust metrics' start times based on the initial received points.
-func NewInitialPointAdjuster(logger *zap.Logger, gcInterval time.Duration) *InitialPointAdjuster {
+func NewInitialPointAdjuster(set component.TelemetrySettings, gcInterval time.Duration) *InitialPointAdjuster {
 	return &InitialPointAdjuster{
 		jobsMap: NewJobsMap(gcInterval),
-		logger:  logger,
+		set:     set,
 	}
 }
 
 // AdjustMetrics takes a sequence of metrics and adjust their start times based on the initial and
 // previous points in the timeseriesMap.
-func (a *InitialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
+func (a *InitialPointAdjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		_, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
 		if !found {
-			return errors.New("adjusting metrics without job")
+			return metrics, errors.New("adjusting metrics without service.name")
 		}
 
 		_, found = rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
 		if !found {
-			return errors.New("adjusting metrics without instance")
+			return metrics, errors.New("adjusting metrics without service.instance.id")
 		}
 	}
 
@@ -78,13 +82,13 @@ func (a *InitialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 
 				default:
 					// this shouldn't happen
-					a.logger.Info("Adjust - skipping unexpected point", zap.String("type", dataType.String()))
+					a.set.Logger.Info("Adjust - skipping unexpected point", zap.String("type", dataType.String()))
 				}
 			}
 		}
 		tsm.Unlock()
 	}
-	return nil
+	return metrics, nil
 }
 
 func (a *InitialPointAdjuster) adjustMetricHistogram(tsm *timeseriesMap, current pmetric.Metric) {
