@@ -46,7 +46,7 @@ Pros:
 
 Cons:
 
-* This strategy is **stateful** because the initial True Reset point is neccessary to properly calculate rates on subsequent points.
+* This strategy is **stateful** because the initial True Reset point is necessary to properly calculate rates on subsequent points.
 * The True Reset point doesn't make sense semantically. It has a zero duration, but non-zero values.
 * Many backends reject points with equal start and end timestamps.
     * If the True Reset point is rejected, the next point will appear to have a very large rate.
