@@ -142,9 +142,7 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 			opts = append(opts, arrowRecord.WithMemoryLimit(r.cfg.Arrow.MemoryLimitMiB<<20))
 		}
 		if r.settings.TelemetrySettings.MeterProvider != nil {
-			// This alt method call should be replaced once https://github.com/open-telemetry/otel-arrow/issues/280 is resolved.
-			// The WithMeterProvider function will be updated in a future release cycle.
-			opts = append(opts, arrowRecord.WithMeterProviderAlt(r.settings.TelemetrySettings.MeterProvider))
+			opts = append(opts, arrowRecord.WithMeterProvider(r.settings.TelemetrySettings.MeterProvider))
 		}
 		return arrowRecord.NewConsumer(opts...)
 	}, r.boundedQueue, r.netReporter)

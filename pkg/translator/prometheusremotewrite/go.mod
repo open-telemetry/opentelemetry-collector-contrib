@@ -11,9 +11,9 @@ require (
 	github.com/prometheus/common v0.62.0
 	github.com/prometheus/prometheus v0.54.1
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/featuregate v1.25.0
-	go.opentelemetry.io/collector/pdata v1.25.0
-	go.opentelemetry.io/collector/semconv v0.119.0
+	go.opentelemetry.io/collector/featuregate v1.25.1-0.20250210123122-44b3eeda354c
+	go.opentelemetry.io/collector/pdata v1.25.1-0.20250210123122-44b3eeda354c
+	go.opentelemetry.io/collector/semconv v0.119.1-0.20250210123122-44b3eeda354c
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )
@@ -28,13 +28,13 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.119.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.119.1-0.20250210123122-44b3eeda354c // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
 	google.golang.org/grpc v1.70.0 // indirect
-	google.golang.org/protobuf v1.36.4 // indirect
+	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

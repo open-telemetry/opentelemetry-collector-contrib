@@ -6,16 +6,25 @@ package reader
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"golang.org/x/text/encoding/unicode"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	internaltime "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/time"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 func TestFileReader_FingerprintUpdated(t *testing.T) {
@@ -321,4 +330,61 @@ func TestUntermintedLogEntryGrows(t *testing.T) {
 	sink.ExpectToken(t, append(content, additionalContext...))
 
 	sink.ExpectNoCalls(t)
+}
+
+func BenchmarkFileRead(b *testing.B) {
+	tempDir := b.TempDir()
+
+	temp := filetest.OpenTemp(b, tempDir)
+	// Initialize the file to ensure a unique fingerprint
+	_, err := temp.WriteString(temp.Name() + "\n")
+	require.NoError(b, err)
+	// Write half the content before starting the benchmark
+	for i := 0; i < 100; i++ {
+		_, err := temp.WriteString(string(filetest.TokenWithLength(999)) + "\n")
+		require.NoError(b, err)
+	}
+
+	// Use a long flush period to ensure it does not expire DURING a ReadToEnd
+	counter := atomic.Int64{}
+	f := newTestFactory(b, func(_ context.Context, token emit.Token) error {
+		if len(token.Body) != 0 {
+			counter.Add(1)
+		}
+		return nil
+	})
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		file, err := os.OpenFile(temp.Name(), os.O_CREATE|os.O_RDWR, 0o600)
+		require.NoError(b, err)
+		fp, err := f.NewFingerprint(file)
+		require.NoError(b, err)
+		reader, err := f.NewReader(file, fp)
+		require.NoError(b, err)
+		reader.ReadToEnd(context.Background())
+		assert.EqualValues(b, (i+1)*101, counter.Load())
+		reader.Close()
+	}
+}
+
+func newTestFactory(tb testing.TB, callback emit.Callback) *Factory {
+	splitFunc, err := split.Config{}.Func(unicode.UTF8, false, defaultMaxLogSize)
+	require.NoError(tb, err)
+
+	return &Factory{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		FromBeginning:     true,
+		FingerprintSize:   fingerprint.DefaultSize,
+		InitialBufferSize: scanner.DefaultBufferSize,
+		MaxLogSize:        defaultMaxLogSize,
+		Encoding:          unicode.UTF8,
+		SplitFunc:         splitFunc,
+		TrimFunc:          trim.Whitespace,
+		FlushTimeout:      defaultFlushPeriod,
+		EmitFunc:          callback,
+		Attributes: attrs.Resolver{
+			IncludeFileName: true,
+		},
+	}
 }

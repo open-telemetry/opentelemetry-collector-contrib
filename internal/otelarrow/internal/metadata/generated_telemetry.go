@@ -47,16 +47,6 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
-// Deprecated: [v0.119.0] use RegisterOtelarrowAdmissionInFlightBytesCallback.
-func WithOtelarrowAdmissionInFlightBytesCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeOtelarrowAdmissionInFlightBytes = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.OtelarrowAdmissionInFlightBytes, cb(), opts...)
-			return nil
-		}
-	})
-}
-
 // RegisterOtelarrowAdmissionInFlightBytesCallback sets callback for observable OtelarrowAdmissionInFlightBytes metric.
 func (builder *TelemetryBuilder) RegisterOtelarrowAdmissionInFlightBytesCallback(cb metric.Int64Callback) error {
 	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
@@ -70,16 +60,6 @@ func (builder *TelemetryBuilder) RegisterOtelarrowAdmissionInFlightBytesCallback
 	defer builder.mu.Unlock()
 	builder.registrations = append(builder.registrations, reg)
 	return nil
-}
-
-// Deprecated: [v0.119.0] use RegisterOtelarrowAdmissionWaitingBytesCallback.
-func WithOtelarrowAdmissionWaitingBytesCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeOtelarrowAdmissionWaitingBytes = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.OtelarrowAdmissionWaitingBytes, cb(), opts...)
-			return nil
-		}
-	})
 }
 
 // RegisterOtelarrowAdmissionWaitingBytesCallback sets callback for observable OtelarrowAdmissionWaitingBytes metric.
