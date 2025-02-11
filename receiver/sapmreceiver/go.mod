@@ -4,7 +4,7 @@ go 1.22.7
 
 require (
 	github.com/gorilla/mux v1.8.1
-	github.com/jaegertracing/jaeger v1.66.0
+	github.com/jaegertracing/jaeger-idl v0.5.0
 	github.com/klauspost/compress v1.17.11
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.119.0
@@ -41,7 +41,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
-	github.com/jaegertracing/jaeger-idl v0.5.0 // indirect
+	github.com/jaegertracing/jaeger v1.66.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect

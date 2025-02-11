@@ -161,6 +161,7 @@ pkg/status
 extension/healthcheckv2extension
 extension/httpforwarderextension
 extension/jaegerremotesampling
+extension/k8sleaderelector
 extension/oauth2clientauthextension
 extension/observer
 extension/observer/cfgardenobserver
