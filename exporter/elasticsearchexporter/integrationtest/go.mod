@@ -1,6 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/integrationtest
 
-go 1.22.7
+go 1.23
+
+toolchain go1.23.6
 
 require (
 	github.com/elastic/go-docappender/v2 v2.4.0
@@ -136,7 +138,7 @@ require (
 	go.elastic.co/apm/module/apmzap/v2 v2.6.3 // indirect
 	go.elastic.co/apm/v2 v2.6.3 // indirect
 	go.elastic.co/fastjson v1.4.0 // indirect
-	go.etcd.io/bbolt v1.3.11 // indirect
+	go.etcd.io/bbolt v1.4.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector v0.119.1-0.20250210123122-44b3eeda354c // indirect
