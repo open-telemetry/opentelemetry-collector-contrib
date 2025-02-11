@@ -219,7 +219,7 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 			name: "compression gzip - level 5",
 			config: Config{
 				NumWorkers:   1,
-				ClientConfig: confighttp.ClientConfig{Compression: "gzip", CompressionParams: configcompression.CompresionParams{Level: 5}},
+				ClientConfig: confighttp.ClientConfig{Compression: "gzip", CompressionParams: configcompression.CompressionParams{Level: 5}},
 				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 		},
