@@ -38,7 +38,7 @@ func TestUnmarshalMetrics(t *testing.T) {
 			content, err := os.ReadFile(filepath.Join("testdata", testCase.filename+".json"))
 			require.NoError(t, err)
 
-			result, err := UnmarshalMetrics(content)
+			result, err := UnmarshalMetrics([][]byte{content})
 			require.Equal(t, testCase.err, err)
 			if err != nil {
 				return

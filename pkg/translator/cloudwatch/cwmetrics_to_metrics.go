@@ -171,17 +171,19 @@ func addMetric(cwMetric cloudwatchMetric, metrics pmetric.Metrics) {
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(cwMetric.Timestamp)))
 }
 
-func UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
-	decoder := json.NewDecoder(bytes.NewReader(record))
+func UnmarshalMetrics(data [][]byte) (pmetric.Metrics, error) {
 	metrics := pmetric.NewMetrics()
-	var cwMetric cloudwatchMetric
-	if err := decoder.Decode(&cwMetric); err != nil {
-		return pmetric.Metrics{},
-			fmt.Errorf("unable to unmarshal data into cloudwatch metric: %w", err)
+	for _, datum := range data {
+		decoder := json.NewDecoder(bytes.NewReader(datum))
+		var cwMetric cloudwatchMetric
+		if err := decoder.Decode(&cwMetric); err != nil {
+			return pmetric.Metrics{},
+				fmt.Errorf("unable to unmarshal data into cloudwatch metric: %w", err)
+		}
+		if valid, err := isMetricValid(cwMetric); !valid {
+			return pmetric.Metrics{}, fmt.Errorf("cloudwatch metric is invalid: %w", err)
+		}
+		addMetric(cwMetric, metrics)
 	}
-	if valid, err := isMetricValid(cwMetric); !valid {
-		return pmetric.Metrics{}, fmt.Errorf("cloudwatch metric is invalid: %w", err)
-	}
-	addMetric(cwMetric, metrics)
 	return metrics, nil
 }

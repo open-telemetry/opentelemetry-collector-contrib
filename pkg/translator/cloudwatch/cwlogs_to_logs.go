@@ -39,18 +39,21 @@ func addRecord(log cloudwatchLog, logs plog.Logs) {
 	logRecord.Body().SetStr(log.Message)
 }
 
-func UnmarshalLogs(record []byte) (plog.Logs, error) {
+func UnmarshalLogs(data [][]byte) (plog.Logs, error) {
 	logs := plog.NewLogs()
-	decoder := json.NewDecoder(bytes.NewReader(record))
-	var log cloudwatchLog
-	if err := decoder.Decode(&log); err != nil {
-		return plog.Logs{},
-			fmt.Errorf("unable to unmarshal data into cloudwatch log: %w", err)
+	for _, datum := range data {
+		//dataLogs, errUnmarshal := l.unmarshaler.UnmarshalLogs(datum)
+		decoder := json.NewDecoder(bytes.NewReader(datum))
+		var log cloudwatchLog
+		if err := decoder.Decode(&log); err != nil {
+			return plog.Logs{},
+				fmt.Errorf("unable to unmarshal data into cloudwatch log: %w", err)
+		}
+		if valid, err := isLogValid(log); !valid {
+			return plog.Logs{},
+				fmt.Errorf("cloudwatch log is invalid: %w", err)
+		}
+		addRecord(log, logs)
 	}
-	if valid, err := isLogValid(log); !valid {
-		return plog.Logs{},
-			fmt.Errorf("cloudwatch log is invalid: %w", err)
-	}
-	addRecord(log, logs)
 	return logs, nil
 }
