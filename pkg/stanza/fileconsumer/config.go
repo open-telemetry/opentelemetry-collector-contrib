@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -59,6 +59,7 @@ func NewConfig() *Config {
 		MaxConcurrentFiles: defaultMaxConcurrentFiles,
 		StartAt:            "end",
 		FingerprintSize:    fingerprint.DefaultSize,
+		InitialBufferSize:  scanner.DefaultBufferSize,
 		MaxLogSize:         reader.DefaultMaxLogSize,
 		Encoding:           defaultEncoding,
 		FlushPeriod:        reader.DefaultFlushPeriod,
@@ -77,6 +78,7 @@ type Config struct {
 	MaxBatches              int             `mapstructure:"max_batches,omitempty"`
 	StartAt                 string          `mapstructure:"start_at,omitempty"`
 	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
+	InitialBufferSize       helper.ByteSize `mapstructure:"initial_buffer_size,omitempty"`
 	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
 	Encoding                string          `mapstructure:"encoding,omitempty"`
 	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
@@ -95,11 +97,6 @@ type HeaderConfig struct {
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
 }
 
-// Deprecated [v0.97.0] Use Build and WithSplitFunc option instead
-func (c Config) BuildWithSplitFunc(set component.TelemetrySettings, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
-	return c.Build(set, emit, WithSplitFunc(splitFunc))
-}
-
 func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts ...Option) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
@@ -113,7 +110,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		opt(o)
 	}
 
-	enc, err := decode.LookupEncoding(c.Encoding)
+	enc, err := textutils.LookupEncoding(c.Encoding)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find encoding: %w", err)
 	}
@@ -159,7 +156,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		TelemetrySettings:       set,
 		FromBeginning:           startAtBeginning,
 		FingerprintSize:         int(c.FingerprintSize),
-		InitialBufferSize:       scanner.DefaultBufferSize,
+		InitialBufferSize:       int(c.InitialBufferSize),
 		MaxLogSize:              int(c.MaxLogSize),
 		Encoding:                enc,
 		SplitFunc:               splitFunc,
@@ -211,7 +208,7 @@ func (c Config) validate() error {
 		return errors.New("'max_batches' must not be negative")
 	}
 
-	enc, err := decode.LookupEncoding(c.Encoding)
+	enc, err := textutils.LookupEncoding(c.Encoding)
 	if err != nil {
 		return err
 	}
