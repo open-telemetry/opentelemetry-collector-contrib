@@ -15,9 +15,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
@@ -34,7 +34,7 @@ func TestScrape(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Username = "otelu"
 	cfg.Password = "otelp"
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 
 	t.Run("scrape from couchdb version 2.31", func(t *testing.T) {
 		mockClient := new(mockClient)
@@ -123,7 +123,7 @@ func TestStart(t *testing.T) {
 		cfg := f.CreateDefaultConfig().(*Config)
 		cfg.Username = "otelu"
 		cfg.Password = "otelp"
-		require.NoError(t, component.ValidateConfig(cfg))
+		require.NoError(t, xconfmap.Validate(cfg))
 
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
 		err := scraper.start(context.Background(), componenttest.NewNopHost())
@@ -135,7 +135,7 @@ func TestStart(t *testing.T) {
 		cfg.ClientConfig.TLSSetting.CAFile = "/non/existent"
 		cfg.Username = "otelu"
 		cfg.Password = "otelp"
-		require.NoError(t, component.ValidateConfig(cfg))
+		require.NoError(t, xconfmap.Validate(cfg))
 
 		scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
 		err := scraper.start(context.Background(), componenttest.NewNopHost())
