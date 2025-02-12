@@ -468,6 +468,7 @@ Available Converters:
 - [Time](#time)
 - [ToKeyValueString](#tokeyvaluestring)
 - [ToSnakeCase](#tosnakecase)
+- [ToUpperCase](#touppercase)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
@@ -2068,6 +2069,18 @@ The `ToSnakeCase` Converter converts the `target` string into snake case (e.g. `
 Examples:
 
 - `ToSnakeCase(metric.name)`
+
+### ToUpperCase
+
+`ToUpperCase(target)`
+
+The `ToUpperCase` Converter converts the `target` string into upper case (e.g. `MyMetricName` to `MYMETRICNAME`).
+
+`target` is a string.
+
+Examples:
+
+- `ToUpperCase(metric.name)`
 
 ### TraceID
 
