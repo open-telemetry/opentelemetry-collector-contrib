@@ -289,6 +289,87 @@ func TestTranslateV2(t *testing.T) {
 			}(),
 			expectedStats: remote.WriteResponseStats{},
 		},
+		{
+			name: "provided otel_scope_name and otel_scope_version",
+			request: &writev2.Request{
+				Symbols: []string{
+					"", "__name__", "metric_with_scope",
+					"otel_scope_name", "custom_scope",
+					"otel_scope_version", "v1.0",
+					"job", "service-y/custom",
+					"instance", "instance-1",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+						Samples:    []writev2.Sample{{Value: 10, Timestamp: 100}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				// For job "service-y/custom", resource attributes are set as follows:
+				rm.Resource().Attributes().PutStr("service.namespace", "service-y")
+				rm.Resource().Attributes().PutStr("service.name", "custom")
+				rm.Resource().Attributes().PutStr("service.instance.id", "instance-1")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				// Expect the provided scope values.
+				sm.Scope().SetName("custom_scope")
+				sm.Scope().SetVersion("v1.0")
+				m := sm.Metrics().AppendEmpty().SetEmptyGauge()
+				// The datapoint will have no extra attributes because __name__, otel_scope_name/version,
+				// job and instance are filtered out.
+				_ = m.DataPoints().AppendEmpty()
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{},
+		},
+		{
+			name: "missing otel_scope_name/version falls back to buildName/buildVersion",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",                // index 0
+					"__name__",        // index 1
+					"metric_no_scope", // index 2
+					"job",             // index 3
+					"service-z/xyz",   // index 4
+					"instance",        // index 5
+					"inst-42",         // index 6
+					"d",               // index 7
+					"e",               // index 8
+					"foo",             // index 9
+					"bar",             // index 10
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+						Samples:    []writev2.Sample{{Value: 5, Timestamp: 50}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				// parseJobAndInstance splits "service-z/xyz" into namespace "service-z" and name "xyz"
+				rm.Resource().Attributes().PutStr("service.namespace", "service-z")
+				rm.Resource().Attributes().PutStr("service.name", "xyz")
+				rm.Resource().Attributes().PutStr("service.instance.id", "inst-42")
+				sm := rm.ScopeMetrics().AppendEmpty()
+				// Since otel_scope_name/version are missing, the code falls back to buildName/buildVersion.
+				sm.Scope().SetName(buildName)
+				sm.Scope().SetVersion(buildVersion)
+				m := sm.Metrics().AppendEmpty().SetEmptyGauge()
+				dp := m.DataPoints().AppendEmpty()
+				// Expect the attributes from the labels that are added by addDatapoints.
+				dp.Attributes().PutStr("d", "e")
+				dp.Attributes().PutStr("foo", "bar")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			metrics, stats, err := prwReceiver.translateV2(ctx, tc.request)
