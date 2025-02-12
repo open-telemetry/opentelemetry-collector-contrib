@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/elastic/go-docappender/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -240,7 +241,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 	}
 
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, fIndex.Index, docID, buf, nil)
+	return bulkIndexerSession.Add(ctx, fIndex.Index, docID, buf, nil, docappender.ActionCreate)
 }
 
 type dataPointsGroup struct {
@@ -376,7 +377,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 				errs = append(errs, err)
 				continue
 			}
-			if err := session.Add(ctx, fIndex.Index, "", buf, dynamicTemplates); err != nil {
+			if err := session.Add(ctx, fIndex.Index, "", buf, dynamicTemplates, docappender.ActionCreate); err != nil {
 				// not recycling after Add returns an error as we don't know if it's already recycled
 				if cerr := ctx.Err(); cerr != nil {
 					return cerr
@@ -497,7 +498,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, fIndex.Index, "", buf, nil)
+	return bulkIndexerSession.Add(ctx, fIndex.Index, "", buf, nil, docappender.ActionCreate)
 }
 
 func (e *elasticsearchExporter) pushSpanEvent(
@@ -529,7 +530,7 @@ func (e *elasticsearchExporter) pushSpanEvent(
 		return nil
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, fIndex.Index, "", buf, nil)
+	return bulkIndexerSession.Add(ctx, fIndex.Index, "", buf, nil, docappender.ActionCreate)
 }
 
 func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string {
@@ -645,15 +646,15 @@ func (e *elasticsearchExporter) pushProfileRecord(
 	return e.model.encodeProfile(resource, scope, record, func(buf *bytes.Buffer, docID, index string) error {
 		switch index {
 		case otelserializer.StackTraceIndex:
-			return stackTracesSession.Add(ctx, index, docID, buf, nil)
+			return stackTracesSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
 		case otelserializer.StackFrameIndex:
-			return stackFramesSession.Add(ctx, index, docID, buf, nil)
+			return stackFramesSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
 		case otelserializer.AllEventsIndex:
-			return eventsSession.Add(ctx, index, docID, buf, nil)
+			return eventsSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
 		case otelserializer.ExecutablesIndex:
-			return executablesSession.Add(ctx, index, docID, buf, nil)
+			return executablesSession.Add(ctx, index, docID, buf, nil, docappender.ActionUpdate)
 		default:
-			return defaultSession.Add(ctx, index, docID, buf, nil)
+			return defaultSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
 		}
 	})
 }
