@@ -4,14 +4,14 @@ go 1.22.0
 
 require (
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/aws/aws-sdk-go-v2 v1.36.0
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.27
+	github.com/aws/aws-sdk-go-v2 v1.36.1
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.28
 	github.com/docker/docker v27.5.1+incompatible
 	github.com/hashicorp/consul/api v1.31.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.119.0
 	github.com/shirou/gopsutil/v4 v4.25.1
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/semconv v0.119.0
+	go.opentelemetry.io/collector/semconv v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/otel v1.34.0
 	go.opentelemetry.io/otel/sdk v1.34.0
 	go.uber.org/goleak v1.3.0

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/metadata"
 )
@@ -179,7 +180,7 @@ func TestConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(&cfg))
 
-			err = component.ValidateConfig(cfg)
+			err = xconfmap.Validate(cfg)
 			if len(tc.errorMsgs) > 0 {
 				for _, errMsg := range tc.errorMsgs {
 					assert.ErrorContains(t, err, errMsg)
