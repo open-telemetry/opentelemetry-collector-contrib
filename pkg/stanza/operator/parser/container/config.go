@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
@@ -19,19 +18,9 @@ import (
 )
 
 const (
-	operatorType                       = "container"
-	recombineSourceIdentifier          = attrs.LogFilePath
-	recombineIsLastEntry               = "attributes.logtag == 'F'"
-	removeOriginalTimeFieldFeatureFlag = "filelog.container.removeOriginalTimeField"
-)
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	removeOriginalTimeFieldFeatureFlag,
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, deletes the original `time` field from the Log Attributes. Time is parsed to Timestamp field, which should be used instead."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33389"),
-	featuregate.WithRegisterFromVersion("v0.105.0"),
-	featuregate.WithRegisterToVersion("v0.118.0"),
+	operatorType              = "container"
+	recombineSourceIdentifier = attrs.LogFilePath
+	recombineIsLastEntry      = "attributes.logtag == 'F'"
 )
 
 func init() {

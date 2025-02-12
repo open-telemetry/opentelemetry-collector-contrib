@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
@@ -119,4 +120,4 @@ func (i *MetricInfo) validateAttributes() error {
 	return nil
 }
 
-var _ component.ConfigValidator = (*Config)(nil)
+var _ xconfmap.Validator = (*Config)(nil)

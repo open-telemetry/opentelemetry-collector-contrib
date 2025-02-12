@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -307,6 +308,42 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "context_statements_error_mode"),
+			expected: &Config{
+				ErrorMode: ottl.IgnoreError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(resource.attributes["name"], "propagate")`},
+						ErrorMode:  ottl.PropagateError,
+					},
+					{
+						Statements: []string{`set(resource.attributes["name"], "ignore")`},
+						ErrorMode:  "",
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(resource.attributes["name"], "silent")`},
+						ErrorMode:  ottl.SilentError,
+					},
+					{
+						Statements: []string{`set(resource.attributes["name"], "ignore")`},
+						ErrorMode:  "",
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(resource.attributes["name"], "propagate")`},
+						ErrorMode:  ottl.PropagateError,
+					},
+					{
+						Statements: []string{`set(resource.attributes["name"], "ignore")`},
+						ErrorMode:  "",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.Name(), func(t *testing.T) {
@@ -321,7 +358,7 @@ func TestLoadConfig(t *testing.T) {
 			assert.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				err = component.ValidateConfig(cfg)
+				err = xconfmap.Validate(cfg)
 				assert.Error(t, err)
 
 				if len(tt.errors) > 0 {
@@ -330,7 +367,7 @@ func TestLoadConfig(t *testing.T) {
 					}
 				}
 			} else {
-				assert.NoError(t, component.ValidateConfig(cfg))
+				assert.NoError(t, xconfmap.Validate(cfg))
 				assert.Equal(t, tt.expected, cfg)
 			}
 		})
