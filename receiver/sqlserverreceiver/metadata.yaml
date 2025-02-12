@@ -46,6 +46,14 @@ attributes:
     description: The direction of flow of bytes or operations.
     type: string
     enum: [read, write]
+  table.state:
+    description: The state of the table.
+    type: string
+    enum: [active, inactive]
+  table.status:
+     description: The status of the table.
+     type: string
+     enum: [temporary, permanent]    
 
 metrics:
   sqlserver.user.connection.count:
@@ -255,6 +263,145 @@ metrics:
       input_type: string
     attributes: [database.status]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.table.count:
+    enabled: false
+    description: The number of tables.
+    unit: “{tables}”
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    attributes: [table.state, table.status]
+  sqlserver.database.backup_or_restore.rate:
+    enabled: false
+    description: The number of backups/restores per second.
+    unit: “{backups_or_restores}/s”
+    gauge:
+      value_type: int
+    attributes: []
+  sqlserver.replica.sent.rate:
+    enabled: false
+    description: Bytes sent per second to a replica.
+    unit: “{bytes}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.replica.received.rate:
+    enabled: false
+    description: Bytes received per second from a replica.
+    unit: “{bytes}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.database.execution_errors.count:
+    enabled: false
+    description: Number of execution errors.
+    unit: “{errors}”
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    attributes: []
+  sqlserver.memory.free_list_stalls.rate:
+    enabled: false
+    description: Number of free list stalls per second.
+    unit: “{stalls}/s”
+    gauge:
+      value_type: int
+    attributes: []
+  sqlserver.database.free_space_tempdb:
+    enabled: false
+    description: Total free space in temporary DB.
+    unit: “KB”
+    gauge:
+      value_type: int
+    attributes: []
+  sqlserver.database.full_scan.rate:
+    enabled: false
+    description: The number of unrestricted full table or index scans per second.
+    unit: "{scans}/s"
+    gauge:
+      value_type: int
+    attributes: []
+  sqlserver.index.search.rate:
+    enabled: false
+    description: Total number of index searches per second.
+    unit: “{searches}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.database.lock_timeout.rate:
+    enabled: false
+    description: Total number of lock timeouts per second.
+    unit: “{lock_timeouts}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.database.login.rate:
+    enabled: false
+    description: Total number of logins per second.
+    unit: “{logins}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.database.logout.rate:
+    enabled: false
+    description: Total number of logouts per second.
+    unit: “{logouts}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.database.deadlock.rate:
+    enabled: false
+    description: Total number of deadlocks per second.
+    unit: “{deadlocks}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.database.mirror_write_transaction.rate:
+    enabled: false
+    description: Total number of mirror write transactions per second.
+    unit: “{mirror_write_transactions}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.memory.grants_pending.count:
+    enabled: false
+    description: Total number of memory grants pending.
+    unit: “{memory_grants_pending}”
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    attributes: []
+  sqlserver.page.lookup.rate:
+    enabled: false
+    description: Total number of page lookups per second.
+    unit: “{lookups}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.transaction.delay:
+    enabled: false
+    description: Time consumed in transaction delays.
+    unit: ms
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.memory.usage:
+    enabled: false
+    description: Total memory in use.
+    unit: “KB”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.database.version_store_size:
+    enabled: false
+    description: Version store size.
+    unit: “KB”
+    gauge:
+      value_type: double
+    attributes: []  
 
 tests:
   config:
