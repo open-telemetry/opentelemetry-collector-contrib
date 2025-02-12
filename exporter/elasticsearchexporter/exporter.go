@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"runtime"
 	"sync"
 	"time"
@@ -650,6 +651,7 @@ func (e *elasticsearchExporter) pushProfileRecord(
 		case otelserializer.StackFrameIndex:
 			return stackFramesSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
 		case otelserializer.AllEventsIndex:
+			fmt.Fprintf(os.Stdout, "========= EVENT\n%#v\n\n", buf.String())
 			return eventsSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
 		case otelserializer.ExecutablesIndex:
 			return executablesSession.Add(ctx, index, docID, buf, nil, docappender.ActionUpdate)

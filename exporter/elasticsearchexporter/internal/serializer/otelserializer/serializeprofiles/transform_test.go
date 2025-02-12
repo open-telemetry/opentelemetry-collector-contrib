@@ -191,8 +191,9 @@ func TestTransform(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						DocID:    wantedTraceID,
-						FrameIDs: frameID2Base64 + frameIDBase64,
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						DocID:      wantedTraceID,
+						FrameIDs:   frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.NativeFrame,
 							libpf.NativeFrame,
@@ -219,6 +220,7 @@ func TestTransform(t *testing.T) {
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
+						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    42,
 						StackTraceID: wantedTraceID,
 						Count:        1,
@@ -301,8 +303,9 @@ func TestStackPayloads(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						DocID:    wantedTraceID,
-						FrameIDs: frameID2Base64 + frameIDBase64,
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						DocID:      wantedTraceID,
+						FrameIDs:   frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
 							libpf.FrameType(3),
@@ -329,6 +332,7 @@ func TestStackPayloads(t *testing.T) {
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
+						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    1,
 						StackTraceID: wantedTraceID,
 						Count:        1,
@@ -384,8 +388,9 @@ func TestStackPayloads(t *testing.T) {
 			wantPayload: []StackPayload{
 				{
 					StackTrace: StackTrace{
-						DocID:    wantedTraceID,
-						FrameIDs: frameID2Base64 + frameIDBase64,
+						EcsVersion: EcsVersion{V: EcsVersionString},
+						DocID:      wantedTraceID,
+						FrameIDs:   frameID2Base64 + frameIDBase64,
 						Types: frameTypesToString([]libpf.FrameType{
 							libpf.FrameType(3),
 							libpf.FrameType(3),
@@ -412,6 +417,7 @@ func TestStackPayloads(t *testing.T) {
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
+						EcsVersion:   EcsVersion{V: EcsVersionString},
 						TimeStamp:    1,
 						StackTraceID: wantedTraceID,
 						Count:        2,
@@ -457,6 +463,7 @@ func TestStackTraceEvent(t *testing.T) {
 			},
 
 			wantEvent: StackTraceEvent{
+				EcsVersion:   EcsVersion{V: EcsVersionString},
 				StackTraceID: stacktraceIDBase64,
 				Count:        1,
 			},
@@ -476,6 +483,7 @@ func TestStackTraceEvent(t *testing.T) {
 			},
 
 			wantEvent: StackTraceEvent{
+				EcsVersion:   EcsVersion{V: EcsVersionString},
 				TimeStamp:    1704067273,
 				StackTraceID: stacktraceIDBase64,
 				Count:        1,
@@ -495,6 +503,7 @@ func TestStackTraceEvent(t *testing.T) {
 			},
 
 			wantEvent: StackTraceEvent{
+				EcsVersion:   EcsVersion{V: EcsVersionString},
 				StackTraceID: stacktraceIDBase64,
 				Count:        1,
 			},
@@ -527,6 +536,7 @@ func TestStackTraceEvent(t *testing.T) {
 			},
 
 			wantEvent: StackTraceEvent{
+				EcsVersion:    EcsVersion{V: EcsVersionString},
 				PodName:       "my_pod",
 				ContainerName: "my_container",
 				ThreadName:    "my_thread",
@@ -618,7 +628,8 @@ func TestStackTrace(t *testing.T) {
 			},
 
 			wantTrace: StackTrace{
-				FrameIDs: frameID3Base64 + frameID2Base64 + frameIDBase64,
+				EcsVersion: EcsVersion{V: EcsVersionString},
+				FrameIDs:   frameID3Base64 + frameID2Base64 + frameIDBase64,
 				Types: frameTypesToString([]libpf.FrameType{
 					libpf.KernelFrame,
 					libpf.DotnetFrame,

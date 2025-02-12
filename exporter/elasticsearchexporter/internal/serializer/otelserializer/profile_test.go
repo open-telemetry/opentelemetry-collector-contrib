@@ -60,7 +60,7 @@ func TestSerializeProfile(t *testing.T) {
 				{
 					"Stacktrace.frame.ids":   "YA3K_koRAADyvzjEk_X7kgAAAAAAAABv",
 					"Stacktrace.frame.types": "AQM",
-					"ecs.version":            "",
+					"ecs.version":            "1.12.0",
 				},
 				{
 					"script": map[string]any{
@@ -79,7 +79,7 @@ func TestSerializeProfile(t *testing.T) {
 					"@timestamp":          json.Number("0"),
 					"Stacktrace.count":    json.Number("1"),
 					"Stacktrace.id":       "02VzuClbpt_P3xxwox83Ng",
-					"ecs.version":         "",
+					"ecs.version":         "1.12.0",
 					"process.thread.name": "",
 				},
 			},

@@ -159,6 +159,7 @@ func isFrameSymbolized(frame StackFrame) bool {
 
 func stackTraceEvent(traceID string, profile pprofile.Profile, sample pprofile.Sample) StackTraceEvent {
 	event := StackTraceEvent{
+		EcsVersion:   EcsVersion{V: EcsVersionString},
 		StackTraceID: traceID,
 		Count:        1, // TODO: Check whether count can be dropped with nanosecond timestamps
 	}
@@ -200,9 +201,10 @@ func stackTrace(stackTraceID string, frames []StackFrame, frameTypes []libpf.Fra
 	encodeFrameTypesTo(buf, frameTypes)
 
 	return StackTrace{
-		DocID:    stackTraceID,
-		FrameIDs: strings.Join(frameIDs, ""),
-		Types:    buf.String(),
+		EcsVersion: EcsVersion{V: EcsVersionString},
+		DocID:      stackTraceID,
+		FrameIDs:   strings.Join(frameIDs, ""),
+		Types:      buf.String(),
 	}
 }
 
@@ -254,6 +256,7 @@ func stackFrames(profile pprofile.Profile, sample pprofile.Sample) ([]StackFrame
 
 		frames = append([]StackFrame{
 			{
+				EcsVersion:   EcsVersion{V: EcsVersionString},
 				DocID:        frameID.String(),
 				FileName:     fileNames,
 				FunctionName: functionNames,
