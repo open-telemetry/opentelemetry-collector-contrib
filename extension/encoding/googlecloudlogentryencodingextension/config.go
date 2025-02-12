@@ -5,10 +5,10 @@ package googlecloudlogentryencodingextension // import "github.com/open-telemetr
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
-var _ component.ConfigValidator = (*Config)(nil)
+var _ xconfmap.Validator = (*Config)(nil)
 
 type HandleAs string
 

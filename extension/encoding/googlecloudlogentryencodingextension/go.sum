@@ -60,6 +60,8 @@ go.opentelemetry.io/collector/component/componenttest v0.119.1-0.20250210123122-
 go.opentelemetry.io/collector/component/componenttest v0.119.1-0.20250210123122-44b3eeda354c/go.mod h1:qw0JC0EJRxKb7Dmqrdvg1dDs3Ovjprrry8cpF5Q0vF0=
 go.opentelemetry.io/collector/confmap v1.25.1-0.20250210123122-44b3eeda354c h1:LO+X9E8QkbObkjZMSSMnuQzAjQOTiF7EnXfmktg2NXw=
 go.opentelemetry.io/collector/confmap v1.25.1-0.20250210123122-44b3eeda354c/go.mod h1:Rrhs+MWoaP6AswZp+ReQ2VO9dfOfcUjdjiSHBsG+nec=
+go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250212161139-9be1b84ff8e5 h1:5Eunx1s6+sIgpZxvKv+DiAMF3AFCCmfWds0ZV3bi2P8=
+go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250212161139-9be1b84ff8e5/go.mod h1:2f9IBikoBX7YJ1u62B7n6F/wmbf4m5bShgn34bVLwF4=
 go.opentelemetry.io/collector/extension v0.119.1-0.20250210123122-44b3eeda354c h1:9koiLXtEcu3pNTWokNI7/p+kGoPFb20OB7fPwHY516o=
 go.opentelemetry.io/collector/extension v0.119.1-0.20250210123122-44b3eeda354c/go.mod h1:qJ07BdPHd7x6vgUeGH8LjC0+0jGD71T0za9vbnzqNHI=
 go.opentelemetry.io/collector/extension/extensiontest v0.119.1-0.20250210123122-44b3eeda354c h1:iDBzCm38IfZB6EXMSnRwV0CI0jJi81tX4yIpztbmtBY=
