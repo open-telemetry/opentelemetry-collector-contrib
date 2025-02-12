@@ -1,0 +1,21 @@
+type: huaweicloud_aom
+
+status:
+  class: exporter
+  stability:
+    development: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [qsupremacy]
+
+tests:
+  config:
+    endpoint: "lts-access.cn-north-4.myhuaweicloud.com"
+    region_id: "demo-region-id"
+    project_id: "demo-project-id"
+    log_group_id: "demo-group-id"
+    log_stream_id: "demo-stream-id"
+    access_key_id: "test-id"
+    access_key_secret: "test-secret"
+  goleak:
+    skip: true
