@@ -85,7 +85,7 @@ func (d Detector) readPropertiesFile(attributes pcommon.Map) error {
 		// split by the first "=" character. If there is another "=" afterward, this will be part of the value
 		split := strings.SplitN(line, "=", 2)
 		if len(split) != 2 {
-			d.logger.Debug("Skipping line as it does not match the expected format of '<key>=<value>", zap.String("line", line))
+			d.logger.Warn("Skipping line as it does not match the expected format of '<key>=<value>", zap.String("line", line))
 			continue
 		}
 		key, value := split[0], split[1]
