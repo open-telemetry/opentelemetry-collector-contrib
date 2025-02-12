@@ -216,6 +216,14 @@ metrics:
     enabled: true
 ```
 
+### sqlserver.database.backup_or_restore.rate
+
+The number of backups/restores per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| “{backups_or_restores}/s” | Gauge | Int |
+
 ### sqlserver.database.count
 
 The number of databases
@@ -231,6 +239,38 @@ This metric is only available when the receiver is configured to directly connec
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | database.status | The current status of a database | Str: ``online``, ``restoring``, ``recovering``, ``pending_recovery``, ``suspect``, ``offline`` |
+
+### sqlserver.database.deadlock.rate
+
+Total number of deadlocks per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| “{deadlocks}/s” | Gauge | Double |
+
+### sqlserver.database.execution_errors.count
+
+Number of execution errors.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| “{errors}” | Sum | Int | Cumulative | false |
+
+### sqlserver.database.free_space_tempdb
+
+Total free space in temporary DB.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| “KB” | Gauge | Int |
+
+### sqlserver.database.full_scan.rate
+
+The number of unrestricted full table or index scans per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {scans}/s | Gauge | Int |
 
 ### sqlserver.database.io
 
@@ -270,6 +310,38 @@ This metric is only available when the receiver is configured to directly connec
 | file_type | The type of file being monitored. | Any Str |
 | direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
 
+### sqlserver.database.lock_timeout.rate
+
+Total number of lock timeouts per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| “{lock_timeouts}/s” | Gauge | Double |
+
+### sqlserver.database.login.rate
+
+Total number of logins per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| “{logins}/s” | Gauge | Double |
+
+### sqlserver.database.logout.rate
+
+Total number of logouts per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| “{logouts}/s” | Gauge | Double |
+
+### sqlserver.database.mirror_write_transaction.rate
+
+Total number of mirror write transactions per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| “{mirror_write_transactions}/s” | Gauge | Double |
+
 ### sqlserver.database.operations
 
 The number of operations issued on the file.
@@ -289,6 +361,54 @@ This metric is only available when the receiver is configured to directly connec
 | file_type | The type of file being monitored. | Any Str |
 | direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
 
+### sqlserver.database.version_store_size
+
+Version store size.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| “KB” | Gauge | Double |
+
+### sqlserver.index.search.rate
+
+Total number of index searches per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| “{searches}/s” | Gauge | Double |
+
+### sqlserver.memory.free_list_stalls.rate
+
+Number of free list stalls per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| “{stalls}/s” | Gauge | Int |
+
+### sqlserver.memory.grants_pending.count
+
+Total number of memory grants pending.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| “{memory_grants_pending}” | Sum | Int | Cumulative | false |
+
+### sqlserver.memory.usage
+
+Total memory in use.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| “KB” | Gauge | Double |
+
+### sqlserver.page.lookup.rate
+
+Total number of page lookups per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| “{lookups}/s” | Gauge | Double |
+
 ### sqlserver.processes.blocked
 
 The number of processes that are currently blocked
@@ -298,6 +418,22 @@ This metric is only available when the receiver is configured to directly connec
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {processes} | Gauge | Int |
+
+### sqlserver.replica.received.rate
+
+Bytes received per second from a replica.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| “{bytes}/s” | Gauge | Double |
+
+### sqlserver.replica.sent.rate
+
+Bytes sent per second to a replica.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| “{bytes}/s” | Gauge | Double |
 
 ### sqlserver.resource_pool.disk.throttled.read.rate
 
@@ -318,6 +454,29 @@ This metric is only available when the receiver is configured to directly connec
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {writes}/s | Gauge | Double |
+
+### sqlserver.table.count
+
+The number of tables.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| “{tables}” | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| table.state | The state of the table. | Str: ``active``, ``inactive`` |
+| table.status | The status of the table. | Str: ``temporary``, ``permanent`` |
+
+### sqlserver.transaction.delay
+
+Time consumed in transaction delays.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Double |
 
 ## Resource Attributes
 

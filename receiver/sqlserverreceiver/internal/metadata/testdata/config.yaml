@@ -7,17 +7,45 @@ all_set:
       enabled: true
     sqlserver.batch.sql_recompilation.rate:
       enabled: true
+    sqlserver.database.backup_or_restore.rate:
+      enabled: true
     sqlserver.database.count:
+      enabled: true
+    sqlserver.database.deadlock.rate:
+      enabled: true
+    sqlserver.database.execution_errors.count:
+      enabled: true
+    sqlserver.database.free_space_tempdb:
+      enabled: true
+    sqlserver.database.full_scan.rate:
       enabled: true
     sqlserver.database.io:
       enabled: true
     sqlserver.database.latency:
       enabled: true
+    sqlserver.database.lock_timeout.rate:
+      enabled: true
+    sqlserver.database.login.rate:
+      enabled: true
+    sqlserver.database.logout.rate:
+      enabled: true
+    sqlserver.database.mirror_write_transaction.rate:
+      enabled: true
     sqlserver.database.operations:
+      enabled: true
+    sqlserver.database.version_store_size:
+      enabled: true
+    sqlserver.index.search.rate:
       enabled: true
     sqlserver.lock.wait.rate:
       enabled: true
     sqlserver.lock.wait_time.avg:
+      enabled: true
+    sqlserver.memory.free_list_stalls.rate:
+      enabled: true
+    sqlserver.memory.grants_pending.count:
+      enabled: true
+    sqlserver.memory.usage:
       enabled: true
     sqlserver.page.buffer_cache.hit_ratio:
       enabled: true
@@ -27,15 +55,25 @@ all_set:
       enabled: true
     sqlserver.page.life_expectancy:
       enabled: true
+    sqlserver.page.lookup.rate:
+      enabled: true
     sqlserver.page.operation.rate:
       enabled: true
     sqlserver.page.split.rate:
       enabled: true
     sqlserver.processes.blocked:
       enabled: true
+    sqlserver.replica.received.rate:
+      enabled: true
+    sqlserver.replica.sent.rate:
+      enabled: true
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: true
     sqlserver.resource_pool.disk.throttled.write.rate:
+      enabled: true
+    sqlserver.table.count:
+      enabled: true
+    sqlserver.transaction.delay:
       enabled: true
     sqlserver.transaction.rate:
       enabled: true
@@ -70,17 +108,45 @@ none_set:
       enabled: false
     sqlserver.batch.sql_recompilation.rate:
       enabled: false
+    sqlserver.database.backup_or_restore.rate:
+      enabled: false
     sqlserver.database.count:
+      enabled: false
+    sqlserver.database.deadlock.rate:
+      enabled: false
+    sqlserver.database.execution_errors.count:
+      enabled: false
+    sqlserver.database.free_space_tempdb:
+      enabled: false
+    sqlserver.database.full_scan.rate:
       enabled: false
     sqlserver.database.io:
       enabled: false
     sqlserver.database.latency:
       enabled: false
+    sqlserver.database.lock_timeout.rate:
+      enabled: false
+    sqlserver.database.login.rate:
+      enabled: false
+    sqlserver.database.logout.rate:
+      enabled: false
+    sqlserver.database.mirror_write_transaction.rate:
+      enabled: false
     sqlserver.database.operations:
+      enabled: false
+    sqlserver.database.version_store_size:
+      enabled: false
+    sqlserver.index.search.rate:
       enabled: false
     sqlserver.lock.wait.rate:
       enabled: false
     sqlserver.lock.wait_time.avg:
+      enabled: false
+    sqlserver.memory.free_list_stalls.rate:
+      enabled: false
+    sqlserver.memory.grants_pending.count:
+      enabled: false
+    sqlserver.memory.usage:
       enabled: false
     sqlserver.page.buffer_cache.hit_ratio:
       enabled: false
@@ -90,15 +156,25 @@ none_set:
       enabled: false
     sqlserver.page.life_expectancy:
       enabled: false
+    sqlserver.page.lookup.rate:
+      enabled: false
     sqlserver.page.operation.rate:
       enabled: false
     sqlserver.page.split.rate:
       enabled: false
     sqlserver.processes.blocked:
       enabled: false
+    sqlserver.replica.received.rate:
+      enabled: false
+    sqlserver.replica.sent.rate:
+      enabled: false
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: false
     sqlserver.resource_pool.disk.throttled.write.rate:
+      enabled: false
+    sqlserver.table.count:
+      enabled: false
+    sqlserver.transaction.delay:
       enabled: false
     sqlserver.transaction.rate:
       enabled: false
