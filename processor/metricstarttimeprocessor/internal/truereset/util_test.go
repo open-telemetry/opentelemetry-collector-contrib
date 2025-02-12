@@ -4,41 +4,10 @@
 package truereset
 
 import (
-	"errors"
-	"sort"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
-
-const (
-	startTimeMetricName = "process_start_time_seconds"
-
-	transport  = "http"
-	dataformat = "prometheus"
-)
-
-var (
-	errNoDataToBuild      = errors.New("there's no data to build")
-	errNoBoundaryLabel    = errors.New("given metricType has no 'le' or 'quantile' label")
-	errEmptyQuantileLabel = errors.New("'quantile' label on summary metric is missing or empty")
-	errEmptyLeLabel       = errors.New("'le' label on histogram metric is missing or empty")
-	errMetricNameNotFound = errors.New("metricName not found from labels")
-	errTransactionAborted = errors.New("transaction aborted")
-	errNoJobInstance      = errors.New("job or instance cannot be found from labels")
-)
-
-func sortString(strs []string) []string {
-	sort.Strings(strs)
-	return strs
-}
-
-func timestampFromFloat64(ts float64) pcommon.Timestamp {
-	secs := int64(ts)
-	nanos := int64((ts - float64(secs)) * 1e9)
-	return pcommon.Timestamp(secs*1e9 + nanos)
-}
 
 func timestampFromMs(timeAtMs int64) pcommon.Timestamp {
 	return pcommon.Timestamp(timeAtMs * 1e6)
@@ -194,39 +163,6 @@ func exponentialHistogramPoint(attributes []*kv, startTimestamp, timestamp pcomm
 func exponentialHistogramPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.ExponentialHistogramDataPoint {
 	hdp := exponentialHistogramPointRaw(attributes, startTimestamp, timestamp)
 	hdp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
-
-	return hdp
-}
-
-// exponentialHistogramPointSimplified let's you define an exponential
-// histogram with just a few parameters.
-// Scale and ZeroCount are set to the provided values.
-// Positive and negative buckets are generated using the offset and bucketCount
-// parameters by adding buckets from offset in both positive and negative
-// directions. Bucket counts start from 1 and increase by 1 for each bucket.
-// Sum and Count will be proportional to the bucket count.
-func exponentialHistogramPointSimplified(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, scale int32, zeroCount uint64, offset int32, bucketCount int) pmetric.ExponentialHistogramDataPoint {
-	hdp := exponentialHistogramPointRaw(attributes, startTimestamp, timestamp)
-	hdp.SetScale(scale)
-	hdp.SetZeroCount(zeroCount)
-
-	positive := hdp.Positive()
-	positive.SetOffset(offset)
-	positive.BucketCounts().EnsureCapacity(bucketCount)
-	negative := hdp.Negative()
-	negative.SetOffset(offset)
-	negative.BucketCounts().EnsureCapacity(bucketCount)
-
-	var sum float64
-	var count uint64
-	for i := 0; i < bucketCount; i++ {
-		positive.BucketCounts().Append(uint64(i + 1))
-		negative.BucketCounts().Append(uint64(i + 1))
-		count += uint64(i+1) + uint64(i+1)
-		sum += float64(i+1)*10 + float64(i+1)*10.0
-	}
-	hdp.SetCount(count)
-	hdp.SetSum(sum)
 
 	return hdp
 }

@@ -8,7 +8,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
@@ -33,18 +32,13 @@ func createMetricsProcessor(
 ) (processor.Metrics, error) {
 	rCfg := cfg.(*Config)
 
-	var processMetrics func(context.Context, pmetric.Metrics) (pmetric.Metrics, error)
-	switch rCfg.Strategy {
-	case truereset.Type:
-		adjuster := truereset.NewAdjuster(set.TelemetrySettings, rCfg.GCInterval)
-		processMetrics = adjuster.AdjustMetrics
-	}
+	adjuster := truereset.NewAdjuster(set.TelemetrySettings, rCfg.GCInterval)
 
 	return processorhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
 		nextConsumer,
-		processMetrics,
+		adjuster.AdjustMetrics,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }

@@ -28,9 +28,7 @@ func createDefaultConfig() component.Config {
 
 // Validate checks the configuration is valid
 func (cfg *Config) Validate() error {
-	switch cfg.Strategy {
-	case truereset.Type:
-	default:
+	if cfg.Strategy != truereset.Type {
 		return fmt.Errorf("%v is not a valid strategy", cfg.Strategy)
 	}
 	if cfg.GCInterval <= 0 {
