@@ -118,7 +118,7 @@ Values are passed as function parameters or are used in a Boolean Expression. Va
 
 ### Paths
 
-A Path Value is a reference to a telemetry field. Paths are composed of lowercase identifiers, dots (`.`), and square brackets containing either a string key (`["key"]`), an integer key (`[0]`), or an expression that might be a [converter](#converters) or another Path.
+A Path Value is a reference to a telemetry field. Paths are composed of lowercase identifiers, dots (`.`), and square brackets containing either a string key (`["key"]`), an integer key (`[0]`), or an expression that might be a [Converter](#converters) or another Path.
 **The interpretation of a Path is NOT implemented by OTTL**. Instead, users must provide a `PathExpressionParser` that OTTL can use to interpret paths.
 As a result, the usage of Path segments is determined by the user. However, it is recommended to use them as follows:
 
