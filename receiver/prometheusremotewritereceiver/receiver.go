@@ -46,6 +46,8 @@ type prometheusRemoteWriteReceiver struct {
 	server *http.Server
 }
 
+var settings receiver.Settings
+
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/write", prw.handlePRW)
@@ -196,7 +198,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			addCounterDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
-			addGaugeDatapoints(rm, ls, ts)
+			addGaugeDatapoints(rm, ls, ts, settings)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
 			addSummaryDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
@@ -226,11 +228,27 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 	}
 }
 
+func getScopeDetails(settings receiver.Settings) (string, string) {
+	scopeName := settings.BuildInfo.Command
+	scopeVersion := settings.BuildInfo.Version
+
+	// If scopeName is empty, assign a default
+	if scopeName == "" {
+		scopeName = "prometheus_receiver"
+	}
+	// If scopeVersion is empty, assign a fallback version
+	if scopeVersion == "" {
+		scopeVersion = "v1.0.0"
+	}
+
+	return scopeName, scopeVersion
+}
+
 func addCounterDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
 	// TODO: Implement this function
 }
 
-func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
+func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries, settings receiver.Settings) {
 	// TODO: Cache metric name+type+unit and look up cache before creating new empty metric.
 	// In OTel name+type+unit is the unique identifier of a metric and we should not create
 	// a new metric if it already exists.
@@ -239,6 +257,17 @@ func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2
 	scopeVersion := ls.Get("otel_scope_version")
 	// TODO: If the scope version or scope name is empty, get the information from the collector build tags.
 	// More: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#:~:text=Metrics%20which%20do%20not%20have%20an%20otel_scope_name%20or%20otel_scope_version%20label%20MUST%20be%20assigned%20an%20instrumentation%20scope%20identifying%20the%20entity%20performing%20the%20translation%20from%20Prometheus%20to%20OpenTelemetry%20(e.g.%20the%20collector%E2%80%99s%20prometheus%20receiver)
+
+	// If labels are missing, fall back to settings
+	if scopeName == "" || scopeVersion == "" {
+		fallbackName, fallbackVersion := getScopeDetails(settings)
+		if scopeName == "" {
+			scopeName = fallbackName
+		}
+		if scopeVersion == "" {
+			scopeVersion = fallbackVersion
+		}
+	}
 
 	// Check if the name and version present in the labels are already present in the ResourceMetrics.
 	// If it is not present, we should create a new ScopeMetrics.
