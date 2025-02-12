@@ -231,37 +231,59 @@ func TestTranslateV2(t *testing.T) {
 		{
 			name:    "valid request",
 			request: writeV2RequestFixture,
+			//	This fixture has 3 timeseries:
+			//  #0 job="service-x/test", instance="107cn001", value=1, ts=1 ms
+			//  #1 same job/instance, value=2, ts=2 ms
+			//  #2 job="foo", instance="bar", value=2, ts=2 ms
 			expectedMetrics: func() pmetric.Metrics {
 				expected := pmetric.NewMetrics()
+
+				// =========================
+				// Resource 1: job="service-x/test", instance="107cn001"
+				// =========================
 				rm1 := expected.ResourceMetrics().AppendEmpty()
-				rmAttributes1 := rm1.Resource().Attributes()
-				rmAttributes1.PutStr("service.namespace", "service-x")
-				rmAttributes1.PutStr("service.name", "test")
-				rmAttributes1.PutStr("service.instance.id", "107cn001")
+				rm1.Resource().Attributes().PutStr("service.namespace", "service-x")
+				rm1.Resource().Attributes().PutStr("service.name", "test")
+				rm1.Resource().Attributes().PutStr("service.instance.id", "107cn001")
 
 				sm1 := rm1.ScopeMetrics().AppendEmpty()
-				dp1 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
-				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				dp1.SetDoubleValue(1.0)
+				sm1.Scope().SetName(buildName)
+				sm1.Scope().SetVersion(buildVersion)
+
+				// Timeseries 0: value=1, ts=1ms
+				gauge0 := sm1.Metrics().AppendEmpty().SetEmptyGauge()
+				dp0 := gauge0.DataPoints().AppendEmpty()
+				dp0.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp0.SetDoubleValue(1.0)
+				dp0.Attributes().PutStr("d", "e")
+				dp0.Attributes().PutStr("foo", "bar")
+
+				// Timeseries 1: value=2, ts=2ms
+				gauge1 := sm1.Metrics().AppendEmpty().SetEmptyGauge()
+				dp1 := gauge1.DataPoints().AppendEmpty()
+				dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+				dp1.SetDoubleValue(2.0)
 				dp1.Attributes().PutStr("d", "e")
 				dp1.Attributes().PutStr("foo", "bar")
 
-				dp2 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				// =========================
+				// Resource 2: job="foo", instance="bar"
+				// =========================
+				rm2 := expected.ResourceMetrics().AppendEmpty()
+				rm2.Resource().Attributes().PutStr("service.name", "foo")
+				rm2.Resource().Attributes().PutStr("service.instance.id", "bar")
+
+				sm2 := rm2.ScopeMetrics().AppendEmpty()
+				sm2.Scope().SetName(buildName)
+				sm2.Scope().SetVersion(buildVersion)
+
+				// Timeseries 2: value=2, ts=2ms
+				gauge2 := sm2.Metrics().AppendEmpty().SetEmptyGauge()
+				dp2 := gauge2.DataPoints().AppendEmpty()
 				dp2.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
 				dp2.SetDoubleValue(2.0)
 				dp2.Attributes().PutStr("d", "e")
 				dp2.Attributes().PutStr("foo", "bar")
-
-				rm2 := expected.ResourceMetrics().AppendEmpty()
-				rmAttributes2 := rm2.Resource().Attributes()
-				rmAttributes2.PutStr("service.name", "foo")
-				rmAttributes2.PutStr("service.instance.id", "bar")
-
-				dp3 := rm2.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
-				dp3.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
-				dp3.SetDoubleValue(2.0)
-				dp3.Attributes().PutStr("d", "e")
-				dp3.Attributes().PutStr("foo", "bar")
 
 				return expected
 			}(),
