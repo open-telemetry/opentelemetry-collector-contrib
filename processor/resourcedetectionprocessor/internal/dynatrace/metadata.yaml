@@ -1,6 +1,7 @@
 type: resourcedetectionprocessor/dynatrace
 
 status:
+  class: processor
   codeowners:
     active: [bacherfl]
 
