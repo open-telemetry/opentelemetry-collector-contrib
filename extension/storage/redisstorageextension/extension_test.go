@@ -245,7 +245,7 @@ func TestGetPrefix(t *testing.T) {
 			}
 			rs := redisStorage{cfg: cfg}
 			got := rs.getPrefix(tt.ent, tt.kind, tt.name)
-			require.Equal(t, got, tt.expected)
+			require.Equal(t, tt.expected, got)
 		})
 	}
 }
