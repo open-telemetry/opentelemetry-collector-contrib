@@ -119,7 +119,6 @@ func TestE2EClusterScoped(t *testing.T) {
 		),
 		)
 	}, 3*time.Minute, 1*time.Second)
-
 }
 
 // TestE2ENamespaceScoped tests the k8s cluster receiver with a real k8s cluster.
@@ -206,7 +205,6 @@ func TestE2ENamespaceScoped(t *testing.T) {
 		),
 		)
 	}, 3*time.Minute, 1*time.Second)
-
 }
 
 func shortenNames(value string) string {
