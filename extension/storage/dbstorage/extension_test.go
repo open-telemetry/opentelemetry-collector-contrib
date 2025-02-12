@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"testing"
@@ -121,7 +122,8 @@ func newSqliteTestExtension(t *testing.T) storage.Extension {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.DriverName = driverSQLite
-	cfg.DataSource = fmt.Sprintf("file:%s/foo.db?_busy_timeout=10000&_journal=WAL&_sync=NORMAL", t.TempDir())
+	p := filepath.Join(t.TempDir(), "foo.db")
+	cfg.DataSource = fmt.Sprintf("%s?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)", p)
 
 	extension, err := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), cfg)
 	require.NoError(t, err)
@@ -163,7 +165,7 @@ func newPostgresTestExtension(t *testing.T) storage.Extension {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.DriverName = driverPostgreSQL
-	cfg.DataSource = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", "127.0.0.1", port.Port(), "root", "passwd", "db")
+	cfg.DataSource = fmt.Sprintf("host=%s port=%s user=%s password=%s database=%s sslmode=disable", "127.0.0.1", port.Port(), "root", "passwd", "db")
 
 	extension, err := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), cfg)
 	require.NoError(t, err)

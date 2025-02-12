@@ -12,7 +12,7 @@ import (
 	// Postgres driver
 	_ "github.com/jackc/pgx/v5/stdlib"
 	// SQLite driver
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 )
