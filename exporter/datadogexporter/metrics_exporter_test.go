@@ -161,6 +161,13 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":      []any{"env:dev"},
 					},
 					map[string]any{
+						"metric":    "datadog.otel.gateway",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(0)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"version:latest", "command:otelcol"},
+					},
+					map[string]any{
 						"metric":    "otel.datadog_exporter.metrics.running",
 						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(1)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
@@ -219,6 +226,13 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":      []any{"env:new_env"},
 					},
 					map[string]any{
+						"metric":    "datadog.otel.gateway",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(0)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"version:latest", "command:otelcol"},
+					},
+					map[string]any{
 						"metric":    "otel.datadog_exporter.metrics.running",
 						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(1)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
@@ -258,6 +272,13 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"env:dev"},
+					},
+					map[string]any{
+						"metric":    "datadog.otel.gateway",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(0)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"version:latest", "command:otelcol"},
 					},
 					map[string]any{
 						"metric":    "otel.datadog_exporter.metrics.running",
@@ -333,6 +354,13 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":      []any{"env:dev", "key1:value1", "key2:value2"},
 					},
 					map[string]any{
+						"metric":    "datadog.otel.gateway",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(0)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"version:latest", "command:otelcol", "key1:value1", "key2:value2"},
+					},
+					map[string]any{
 						"metric":    "otel.datadog_exporter.metrics.running",
 						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(1)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
@@ -343,8 +371,9 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			},
 		},
 	}
+	gatewayUsage := attributes.NewGatewayUsage()
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("kind=%s,histgramMode=%s", tt.source.Kind, tt.histogramMode), func(t *testing.T) {
+		t.Run(fmt.Sprintf("kind=%s,histogramMode=%s", tt.source.Kind, tt.histogramMode), func(t *testing.T) {
 			seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.MetricV2Endpoint}
 			sketchRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.SketchesMetricEndpoint}
 			server := testutil.DatadogServerMock(
@@ -370,6 +399,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				&testutil.MockSourceProvider{Src: tt.source},
 				reporter,
 				nil,
+				gatewayUsage,
 			)
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")
@@ -787,8 +817,9 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			},
 		},
 	}
+	gatewayUsage := attributes.NewGatewayUsage()
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("kind=%s,histgramMode=%s", tt.source.Kind, tt.histogramMode), func(t *testing.T) {
+		t.Run(fmt.Sprintf("kind=%s,histogramMode=%s", tt.source.Kind, tt.histogramMode), func(t *testing.T) {
 			seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.MetricV1Endpoint}
 			sketchRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.SketchesMetricEndpoint}
 			server := testutil.DatadogServerMock(
@@ -814,6 +845,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				&testutil.MockSourceProvider{Src: tt.source},
 				reporter,
 				nil,
+				gatewayUsage,
 			)
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")

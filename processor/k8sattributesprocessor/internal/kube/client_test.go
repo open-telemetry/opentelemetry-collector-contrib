@@ -428,7 +428,7 @@ func TestPodDelete(t *testing.T) {
 	// delete empty IP pod
 	c.handlePodDelete(&api_v1.Pod{})
 
-	// delete non-existent IP
+	// delete nonexistent IP
 	c.deleteQueue = c.deleteQueue[:0]
 	pod := &api_v1.Pod{}
 	pod.Status.PodIP = "9.9.9.9"
@@ -494,14 +494,14 @@ func TestNamespaceDelete(t *testing.T) {
 	// delete empty namespace
 	c.handleNamespaceDelete(&api_v1.Namespace{})
 
-	// delete non-existent namespace
+	// delete nonexistent namespace
 	namespace := &api_v1.Namespace{}
 	namespace.Name = "namespaceC"
 	c.handleNamespaceDelete(namespace)
 	assert.Len(t, c.Namespaces, 2)
 	got := c.Namespaces["namespaceA"]
 	assert.Equal(t, "namespaceA", got.Name)
-	// delete non-existent namespace when DeletedFinalStateUnknown
+	// delete nonexistent namespace when DeletedFinalStateUnknown
 	c.handleNamespaceDelete(cache.DeletedFinalStateUnknown{Obj: namespace})
 	assert.Len(t, c.Namespaces, 2)
 	got = c.Namespaces["namespaceA"]
@@ -529,14 +529,14 @@ func TestNodeDelete(t *testing.T) {
 	// delete empty node
 	c.handleNodeDelete(&api_v1.Node{})
 
-	// delete non-existent node
+	// delete nonexistent node
 	node := &api_v1.Node{}
 	node.Name = "nodeC"
 	c.handleNodeDelete(node)
 	assert.Len(t, c.Nodes, 2)
 	got := c.Nodes["nodeA"]
 	assert.Equal(t, "nodeA", got.Name)
-	// delete non-existent namespace when DeletedFinalStateUnknown
+	// delete nonexistent namespace when DeletedFinalStateUnknown
 	c.handleNodeDelete(cache.DeletedFinalStateUnknown{Obj: node})
 	assert.Len(t, c.Nodes, 2)
 	got = c.Nodes["nodeA"]

@@ -38,7 +38,7 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 		consumer consumer.Metrics,
 	) (receiver.Metrics, error) {
 		sqlCfg := cfg.(*Config)
-		var opts []scraperhelper.ScraperControllerOption
+		var opts []scraperhelper.ControllerOption
 		for i, query := range sqlCfg.Queries {
 			if len(query.Metrics) == 0 {
 				continue
@@ -54,7 +54,7 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 			opt := scraperhelper.AddScraper(metadata.Type, mp)
 			opts = append(opts, opt)
 		}
-		return scraperhelper.NewScraperControllerReceiver(
+		return scraperhelper.NewMetricsController(
 			&sqlCfg.ControllerConfig,
 			settings,
 			consumer,

@@ -68,6 +68,17 @@ func createDefaultConfig() component.Config {
 				ReadTimeout:  defaultReadTimeout,
 				WriteTimeout: defaultWriteTimeout,
 			},
+			GitHubHeaders: GitHubHeaders{
+				Customizable: map[string]string{
+					defaultUserAgentHeader: "",
+				},
+				Fixed: map[string]string{
+					defaultGitHubEventHeader:        "",
+					defaultGitHubDeliveryHeader:     "",
+					defaultGitHubHookIDHeader:       "",
+					defaultGitHubSignature256Header: "",
+				},
+			},
 			Path:       defaultPath,
 			HealthPath: defaultHealthPath,
 		},
@@ -93,7 +104,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewMetricsController(
 		&conf.ControllerConfig,
 		params,
 		consumer,
@@ -121,8 +132,8 @@ func createAddScraperOpts(
 	params receiver.Settings,
 	cfg *Config,
 	factories map[string]internal.ScraperFactory,
-) ([]scraperhelper.ScraperControllerOption, error) {
-	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(cfg.Scrapers))
+) ([]scraperhelper.ControllerOption, error) {
+	scraperControllerOptions := make([]scraperhelper.ControllerOption, 0, len(cfg.Scrapers))
 
 	for key, cfg := range cfg.Scrapers {
 		githubScraper, err := createGitHubScraper(ctx, params, key, cfg, factories)

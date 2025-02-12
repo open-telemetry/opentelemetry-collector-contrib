@@ -13,7 +13,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"github.com/klauspost/compress/zstd"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/stretchr/testify/assert"
@@ -232,7 +232,7 @@ func TestSAPMClientTokenAccess(t *testing.T) {
 			accessTokenPassthrough: true,
 		},
 		{
-			name:                   "Token in config wihout passthrough",
+			name:                   "Token in config without passthrough",
 			inContext:              false,
 			accessTokenPassthrough: false,
 		},

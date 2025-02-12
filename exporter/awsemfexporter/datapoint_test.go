@@ -1968,7 +1968,7 @@ func TestCreateLabels(t *testing.T) {
 	labels := createLabels(labelsMap, "")
 	assert.Equal(t, expectedLabels, labels)
 
-	// With isntrumentation library name
+	// With instrumentation library name
 	labels = createLabels(labelsMap, "cloudwatch-otel")
 	expectedLabels[oTellibDimensionKey] = "cloudwatch-otel"
 	assert.Equal(t, expectedLabels, labels)
@@ -1977,7 +1977,7 @@ func TestCreateLabels(t *testing.T) {
 func TestGetDataPoints(t *testing.T) {
 	logger := zap.NewNop()
 
-	normalDeltraMetricMetadata := generateDeltaMetricMetadata(false, "foo", false)
+	normalDeltaMetricMetadata := generateDeltaMetricMetadata(false, "foo", false)
 	cumulativeDeltaMetricMetadata := generateDeltaMetricMetadata(true, "foo", false)
 
 	testCases := []struct {
@@ -1991,7 +1991,7 @@ func TestGetDataPoints(t *testing.T) {
 			name:                   "Int gauge",
 			isPrometheusMetrics:    false,
 			metric:                 generateTestGaugeMetric("foo", intValueType),
-			expectedDatapointSlice: numberDataPointSlice{normalDeltraMetricMetadata, pmetric.NumberDataPointSlice{}},
+			expectedDatapointSlice: numberDataPointSlice{normalDeltaMetricMetadata, pmetric.NumberDataPointSlice{}},
 			expectedAttributes:     map[string]any{"label1": "value1"},
 		},
 		{
@@ -2019,7 +2019,7 @@ func TestGetDataPoints(t *testing.T) {
 			name:                   "Summary from SDK",
 			isPrometheusMetrics:    false,
 			metric:                 generateTestSummaryMetric("foo"),
-			expectedDatapointSlice: summaryDataPointSlice{normalDeltraMetricMetadata, pmetric.SummaryDataPointSlice{}},
+			expectedDatapointSlice: summaryDataPointSlice{normalDeltaMetricMetadata, pmetric.SummaryDataPointSlice{}},
 			expectedAttributes:     map[string]any{"label1": "value1"},
 		},
 		{

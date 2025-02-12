@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
@@ -343,19 +344,18 @@ func Test_e2e_editors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
-			settings := componenttest.NewNopTelemetrySettings()
-			logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
-			assert.NoError(t, err)
-			logStatements, err := logParser.ParseStatement(tt.statement)
+			logStatements, err := parseStatementWithAndWithoutPathContext(tt.statement)
 			assert.NoError(t, err)
 
-			tCtx := constructLogTransformContextEditors()
-			_, _, _ = logStatements.Execute(context.Background(), tCtx)
+			for _, statement := range logStatements {
+				tCtx := constructLogTransformContextEditors()
+				_, _, _ = statement.Execute(context.Background(), tCtx)
 
-			exTCtx := constructLogTransformContextEditors()
-			tt.want(exTCtx)
+				exTCtx := constructLogTransformContextEditors()
+				tt.want(exTCtx)
 
-			assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+				assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+			}
 		})
 	}
 }
@@ -979,6 +979,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["time"], FormatTime(time, "%Y-%m-%d"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("time", "2020-02-11")
+			},
+		},
+		{
 			statement: `set(attributes["test"], "pass") where UnixMicro(time) > 0`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
@@ -1080,24 +1086,23 @@ func Test_e2e_converters(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
-			settings := componenttest.NewNopTelemetrySettings()
-			logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
-			assert.NoError(t, err)
-			logStatements, err := logParser.ParseStatement(tt.statement)
+			logStatements, err := parseStatementWithAndWithoutPathContext(tt.statement)
 			assert.NoError(t, err)
 
-			tCtx := constructLogTransformContext()
-			_, _, err = logStatements.Execute(context.Background(), tCtx)
-			if tt.errMsg == "" {
-				assert.NoError(t, err)
-			} else {
-				assert.Contains(t, err.Error(), tt.errMsg)
+			for _, statement := range logStatements {
+				tCtx := constructLogTransformContext()
+				_, _, err = statement.Execute(context.Background(), tCtx)
+				if tt.errMsg == "" {
+					assert.NoError(t, err)
+				} else {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+
+				exTCtx := constructLogTransformContext()
+				tt.want(exTCtx)
+
+				assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
 			}
-
-			exTCtx := constructLogTransformContext()
-			tt.want(exTCtx)
-
-			assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
 		})
 	}
 }
@@ -1204,19 +1209,73 @@ func Test_e2e_ottl_features(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
+			logStatements, err := parseStatementWithAndWithoutPathContext(tt.statement)
+			assert.NoError(t, err)
+
+			for _, statement := range logStatements {
+				tCtx := constructLogTransformContext()
+				_, _, _ = statement.Execute(context.Background(), tCtx)
+
+				exTCtx := constructLogTransformContext()
+				tt.want(exTCtx)
+
+				assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+			}
+		})
+	}
+}
+
+func Test_e2e_ottl_value_expressions(t *testing.T) {
+	tests := []struct {
+		name      string
+		statement string
+		want      any
+	}{
+		{
+			name:      "string literal",
+			statement: `"foo"`,
+			want:      "foo",
+		},
+		{
+			name:      "attribute value",
+			statement: `resource.attributes["host.name"]`,
+			want:      "localhost",
+		},
+		{
+			name:      "accessing enum",
+			statement: `SEVERITY_NUMBER_TRACE`,
+			want:      int64(1),
+		},
+		{
+			name:      "Using converter",
+			statement: `TraceID(0x0102030405060708090a0b0c0d0e0f10)`,
+			want:      pcommon.TraceID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x10},
+		},
+		{
+			name:      "Adding results of two converter operations",
+			statement: `Len(attributes) + Len(attributes)`,
+			want:      int64(24),
+		},
+		{
+			name:      "Nested converter operations",
+			statement: `Hex(Len(attributes) + Len(attributes))`,
+			want:      "0000000000000018",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
 			settings := componenttest.NewNopTelemetrySettings()
 			logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
 			assert.NoError(t, err)
-			logStatements, err := logParser.ParseStatement(tt.statement)
+			valueExpr, err := logParser.ParseValueExpression(tt.statement)
 			assert.NoError(t, err)
 
 			tCtx := constructLogTransformContext()
-			_, _, _ = logStatements.Execute(context.Background(), tCtx)
+			val, err := valueExpr.Eval(context.Background(), tCtx)
+			assert.NoError(t, err)
 
-			exTCtx := constructLogTransformContext()
-			tt.want(exTCtx)
-
-			assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+			assert.Equal(t, tt.want, val)
 		})
 	}
 }
@@ -1254,6 +1313,42 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			assert.NoError(t, ptracetest.CompareResourceSpans(newResourceSpans(exTCtx), newResourceSpans(tCtx)))
 		})
 	}
+}
+
+func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statement[ottllog.TransformContext], error) {
+	settings := componenttest.NewNopTelemetrySettings()
+	parserWithoutPathCtx, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
+	if err != nil {
+		return nil, err
+	}
+
+	withoutPathCtxResult, err := parserWithoutPathCtx.ParseStatement(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	parserWithPathCtx, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	if err != nil {
+		return nil, err
+	}
+
+	pc, err := ottl.NewParserCollection(settings,
+		ottl.WithParserCollectionContext[ottllog.TransformContext, *ottl.Statement[ottllog.TransformContext]](
+			ottllog.ContextName,
+			&parserWithPathCtx,
+			func(_ *ottl.ParserCollection[*ottl.Statement[ottllog.TransformContext]], _ *ottl.Parser[ottllog.TransformContext], _ string, _ ottl.StatementsGetter, parsedStatements []*ottl.Statement[ottllog.TransformContext]) (*ottl.Statement[ottllog.TransformContext], error) {
+				return parsedStatements[0], nil
+			}))
+	if err != nil {
+		return nil, err
+	}
+
+	withPathCtxResult, err := pc.ParseStatementsWithContext(ottllog.ContextName, ottl.NewStatementsGetter([]string{statement}), true)
+	if err != nil {
+		return nil, err
+	}
+
+	return []*ottl.Statement[ottllog.TransformContext]{withoutPathCtxResult, withPathCtxResult}, nil
 }
 
 func constructLogTransformContext() ottllog.TransformContext {

@@ -354,7 +354,7 @@ func TestLogsSamplingState(t *testing.T) {
 			tid: mustParseTID("fefefefefefefefefefefefefefefefe"),
 			attrs: map[string]any{
 				"sampling.threshold": "c", // Corresponds with 25%
-				"prio":               37,  // Lower than 50, higher than 25
+				"prio":               37,  // Lower than 50, greater than 25
 			},
 			sampled:  true,
 			adjCount: 4,

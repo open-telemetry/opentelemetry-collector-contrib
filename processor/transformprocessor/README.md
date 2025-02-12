@@ -40,6 +40,7 @@ If a context doesn't meet any of the conditions, then the associated statement w
 Each statement may have a Where clause that acts as an additional check for whether to execute the statement.
 
 The transform processor also allows configuring an optional field, `error_mode`, which will determine how the processor reacts to errors that occur while processing a statement.
+The top-level `error_mode` can be overridden at context statements level, offering more granular control over error handling. 
 
 | error_mode | description                                                                                                                                 |
 |------------|---------------------------------------------------------------------------------------------------------------------------------------------|
@@ -54,6 +55,7 @@ transform:
   error_mode: ignore
   <trace|metric|log>_statements:
     - context: string
+      error_mode: propagate
       conditions: 
         - string
         - string
@@ -62,6 +64,7 @@ transform:
         - string
         - string
     - context: string
+      error_mode: silent
       statements:
         - string
         - string
@@ -264,7 +267,7 @@ The `extract_count_metric` function creates a new Sum metric from a Histogram, E
 
 `is_monotonic` is a boolean representing the monotonicity of the new metric.
 
-The name for the new metric will be `<original metric name>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
+The name for the new metric will be `<original metric name>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
 
 The new metric that is created will be passed to all subsequent statements in the metrics statements list.
 
@@ -288,7 +291,7 @@ The `extract_sum_metric` function creates a new Sum metric from a Histogram, Exp
 
 `is_monotonic` is a boolean representing the monotonicity of the new metric.
 
-The name for the new metric will be `<original metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
+The name for the new metric will be `<original metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
 
 The new metric that is created will be passed to all subsequent statements in the metrics statements list.
 
@@ -309,7 +312,7 @@ The `convert_summary_count_val_to_sum` function creates a new Sum metric from a 
 
 `aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
 
-The name for the new metric will be `<summary metric name>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
+The name for the new metric will be `<summary metric name>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 
 **NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
 
@@ -328,7 +331,7 @@ The `convert_summary_sum_val_to_sum` function creates a new Sum metric from a Su
 
 `aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
 
-The name for the new metric will be `<summary metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
+The name for the new metric will be `<summary metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 
 **NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
 
@@ -644,6 +647,25 @@ transform:
         # To access nested maps you can chain index ([]) operations.
         # If nested or attr3 do no exist in cache then nothing happens.
         - set(attributes["nested.attr3"], cache["nested"]["attr3"])
+```
+
+### Override context statements error mode
+
+```yaml
+transform:
+  # default error mode applied to all context statements
+  error_mode: propagate
+  log_statements:
+    - context: log
+      # overrides the default error mode for these statements
+      error_mode: ignore
+      statements:
+        - merge_maps(cache, ParseJSON(body), "upsert") where IsMatch(body, "^\\{")
+        - set(attributes["attr1"], cache["attr1"])
+
+    - context: log
+      statements:
+        - set(attributes["namespace"], attributes["k8s.namespace.name"])
 ```
 
 ### Get Severity of an Unstructured Log Body

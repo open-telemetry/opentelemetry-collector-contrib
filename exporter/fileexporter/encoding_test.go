@@ -43,7 +43,7 @@ func TestEncoding(t *testing.T) {
 	ef := otlpencodingextension.NewFactory()
 	efCfg := ef.CreateDefaultConfig().(*otlpencodingextension.Config)
 	efCfg.Protocol = "otlp_json"
-	ext, err := ef.Create(context.Background(), extensiontest.NewNopSettings(), efCfg)
+	ext, err := ef.Create(context.Background(), extensiontest.NewNopSettingsWithType(ef.Type()), efCfg)
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -94,14 +94,14 @@ func generateLogs() plog.Logs {
 }
 
 func generateProfiles() pprofile.Profiles {
-	proflies := pprofile.NewProfiles()
-	rp := proflies.ResourceProfiles().AppendEmpty()
+	profiles := pprofile.NewProfiles()
+	rp := profiles.ResourceProfiles().AppendEmpty()
 	rp.Resource().Attributes().PutStr("resource", "R1")
 	p := rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 	p.SetProfileID(pprofile.NewProfileIDEmpty())
 	p.SetStartTime(pcommon.NewTimestampFromTime(time.Now().Add(-1 * time.Second)))
 	p.SetDuration(pcommon.Timestamp(1 * time.Second / time.Nanosecond))
-	return proflies
+	return profiles
 }
 
 func generateMetrics() pmetric.Metrics {

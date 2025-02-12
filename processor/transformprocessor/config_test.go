@@ -4,13 +4,14 @@
 package transformprocessor
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.uber.org/multierr"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -23,7 +24,7 @@ func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		id       component.ID
 		expected component.Config
-		errorLen int
+		errors   []error
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
@@ -144,12 +145,208 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "unknown_function_log"),
 		},
 		{
-			id:       component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
-			errorLen: 3,
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
+			errors: []error{
+				errors.New("unexpected token \"where\""),
+				errors.New("unexpected token \"attributes\""),
+				errors.New("unexpected token \"none\""),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "structured_configuration_with_path_context"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Context:    "span",
+						Statements: []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						Context:    "metric",
+						Statements: []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						Context:    "log",
+						Statements: []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "structured_configuration_with_inferred_context"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Statements: []string{
+							`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						Statements: []string{
+							`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						Statements: []string{
+							`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "flat_configuration"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "mixed_configuration_styles"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
+					},
+					{
+						Context: "span",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+					{
+						Statements: []string{`set(span.attributes["name"], "lion")`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(span.name, "lion") where span.attributes["http.path"] == "/animal"`},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+					{
+						Statements: []string{`set(metric.name, "lion")`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(metric.name, "lion") where resource.attributes["http.path"] == "/animal"`},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						SharedCache: true,
+						Statements:  []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+					{
+						Statements: []string{`set(log.attributes["name"], "lion")`},
+					},
+					{
+						SharedCache: true,
+						Statements:  []string{`set(log.body, "lion") where log.attributes["http.path"] == "/animal"`},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "context_statements_error_mode"),
+			expected: &Config{
+				ErrorMode: ottl.IgnoreError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(resource.attributes["name"], "propagate")`},
+						ErrorMode:  ottl.PropagateError,
+					},
+					{
+						Statements: []string{`set(resource.attributes["name"], "ignore")`},
+						ErrorMode:  "",
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(resource.attributes["name"], "silent")`},
+						ErrorMode:  ottl.SilentError,
+					},
+					{
+						Statements: []string{`set(resource.attributes["name"], "ignore")`},
+						ErrorMode:  "",
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(resource.attributes["name"], "propagate")`},
+						ErrorMode:  ottl.PropagateError,
+					},
+					{
+						Statements: []string{`set(resource.attributes["name"], "ignore")`},
+						ErrorMode:  "",
+					},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.id.String(), func(t *testing.T) {
+		t.Run(tt.id.Name(), func(t *testing.T) {
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 			assert.NoError(t, err)
 
@@ -161,17 +358,18 @@ func TestLoadConfig(t *testing.T) {
 			assert.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				err = component.ValidateConfig(cfg)
+				err = xconfmap.Validate(cfg)
 				assert.Error(t, err)
 
-				if tt.errorLen > 0 {
-					assert.Len(t, multierr.Errors(err), tt.errorLen)
+				if len(tt.errors) > 0 {
+					for _, expectedErr := range tt.errors {
+						assert.ErrorContains(t, err, expectedErr.Error())
+					}
 				}
-
-				return
+			} else {
+				assert.NoError(t, xconfmap.Validate(cfg))
+				assert.Equal(t, tt.expected, cfg)
 			}
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }

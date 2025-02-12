@@ -533,7 +533,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 						z.Close()
 						require.NoError(t, err)
 					}
-					timeStr := fmt.Sprintf(`"time":%d,`, i+1)
+					timeStr := fmt.Sprintf(`"time":%d}`, i+1)
 					if strings.Contains(string(batchBody), timeStr) {
 						assert.False(t, eventFound, "span event %d found in multiple batches", i)
 						eventFound = true
@@ -1716,7 +1716,7 @@ func Benchmark_pushLogData_compressed_10_10_1024(b *testing.B) {
 	benchPushLogData(b, 10, 10, 1024, true)
 }
 
-// 10 resources, 10 records, 8Kb max HEC batch: 1 HEC batche
+// 10 resources, 10 records, 8Kb max HEC batch: 1 HEC batch
 func Benchmark_pushLogData_compressed_10_10_8K(b *testing.B) {
 	benchPushLogData(b, 10, 10, 8*1024, true)
 }
@@ -1805,7 +1805,7 @@ func Benchmark_pushMetricData_compressed_10_10_1024(b *testing.B) {
 	benchPushMetricData(b, 10, 10, 1024, true, false)
 }
 
-// 10 resources, 10 records, 8Kb max HEC batch: 1 HEC batche
+// 10 resources, 10 records, 8Kb max HEC batch: 1 HEC batch
 func Benchmark_pushMetricData_compressed_10_10_8K(b *testing.B) {
 	benchPushMetricData(b, 10, 10, 8*1024, true, false)
 }
@@ -1865,7 +1865,7 @@ func Benchmark_pushMetricData_compressed_10_10_1024_MultiMetric(b *testing.B) {
 	benchPushMetricData(b, 10, 10, 1024, true, true)
 }
 
-// 10 resources, 10 records, 8Kb max HEC batch: 1 HEC batche
+// 10 resources, 10 records, 8Kb max HEC batch: 1 HEC batch
 func Benchmark_pushMetricData_compressed_10_10_8K_MultiMetric(b *testing.B) {
 	benchPushMetricData(b, 10, 10, 8*1024, true, true)
 }

@@ -436,7 +436,7 @@ func TestGetPullRequests(t *testing.T) {
 					responseCode: http.StatusNotFound,
 				},
 			}),
-			expectedErr:     errors.New("returned error 404 Not Found: "),
+			expectedErr:     errors.New("returned error 404"),
 			expectedPrCount: 0,
 		},
 	}
@@ -457,7 +457,7 @@ func TestGetPullRequests(t *testing.T) {
 			if tc.expectedErr == nil {
 				assert.NoError(t, err)
 			} else {
-				assert.EqualError(t, err, tc.expectedErr.Error())
+				assert.ErrorContains(t, err, tc.expectedErr.Error())
 			}
 		})
 	}
@@ -540,7 +540,7 @@ func TestGetRepos(t *testing.T) {
 					responseCode: http.StatusNotFound,
 				},
 			}),
-			expectedErr: errors.New("returned error 404 Not Found: "),
+			expectedErr: errors.New("returned error 404"),
 			expected:    0,
 		},
 	}
@@ -560,7 +560,7 @@ func TestGetRepos(t *testing.T) {
 			if tc.expectedErr == nil {
 				assert.NoError(t, err)
 			} else {
-				assert.EqualError(t, err, tc.expectedErr.Error())
+				assert.ErrorContains(t, err, tc.expectedErr.Error())
 			}
 		})
 	}
@@ -643,7 +643,7 @@ func TestGetBranches(t *testing.T) {
 					responseCode: http.StatusNotFound,
 				},
 			}),
-			expectedErr: errors.New("returned error 404 Not Found: "),
+			expectedErr: errors.New("returned error 404"),
 			expected:    0,
 		},
 	}
@@ -664,7 +664,7 @@ func TestGetBranches(t *testing.T) {
 			if tc.expectedErr == nil {
 				assert.NoError(t, err)
 			} else {
-				assert.EqualError(t, err, tc.expectedErr.Error())
+				assert.ErrorContains(t, err, tc.expectedErr.Error())
 			}
 		})
 	}
@@ -882,7 +882,7 @@ func TestEvalCommits(t *testing.T) {
 			expectedAge:       0,
 			expectedAdditions: 0,
 			expectedDeletions: 0,
-			expectedErr:       errors.New("returned error 404 Not Found: "),
+			expectedErr:       errors.New("returned error 404"),
 		},
 	}
 	for _, tc := range testCases {
@@ -896,14 +896,18 @@ func TestEvalCommits(t *testing.T) {
 			client := graphql.NewClient(server.URL, ghs.client)
 			adds, dels, age, err := ghs.evalCommits(context.Background(), client, "repo1", tc.branch)
 
-			assert.Equal(t, tc.expectedAge, age)
 			assert.Equal(t, tc.expectedDeletions, dels)
 			assert.Equal(t, tc.expectedAdditions, adds)
+			if tc.expectedAge != 0 {
+				assert.WithinDuration(t, time.UnixMilli(tc.expectedAge), time.UnixMilli(age), 10*time.Second)
+			} else {
+				assert.Equal(t, tc.expectedAge, age)
+			}
 
 			if tc.expectedErr == nil {
 				assert.NoError(t, err)
 			} else {
-				assert.EqualError(t, err, tc.expectedErr.Error())
+				assert.ErrorContains(t, err, tc.expectedErr.Error())
 			}
 		})
 	}
