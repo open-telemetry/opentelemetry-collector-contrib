@@ -25,7 +25,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// ResourceAttributesConfig provides config for resourcedetectionprocessor/dynatrace resource attributes.
+// ResourceAttributesConfig provides config for dynatracedetector resource attributes.
 type ResourceAttributesConfig struct {
 	DtEntityHost ResourceAttributeConfig `mapstructure:"dt.entity.host"`
 	HostName     ResourceAttributeConfig `mapstructure:"host.name"`

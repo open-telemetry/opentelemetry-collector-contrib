@@ -1,7 +1,9 @@
-type: resourcedetectionprocessor/dynatrace
+type: dynatracedetector
 
 status:
   class: processor
+  stability:
+    alpha: [traces, metrics, logs]
   codeowners:
     active: [bacherfl]
 
