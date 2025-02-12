@@ -120,7 +120,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "err1"),
-			errorMessage: "url cannot be empty when auth type is not connection_string",
+			errorMessage: "endpoint cannot be empty when auth type is not connection_string",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "err2"),

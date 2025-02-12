@@ -5,18 +5,14 @@ go 1.22.0
 require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.119.0
+	go.opentelemetry.io/collector/component/componenttest v0.119.0
 	go.opentelemetry.io/collector/confmap v1.25.0
 	go.opentelemetry.io/collector/consumer v1.25.0
-	go.opentelemetry.io/collector/consumer/consumererror v0.119.0 // indirect
 	go.opentelemetry.io/collector/exporter v0.119.0
-	go.opentelemetry.io/collector/pdata v1.25.0
-	go.uber.org/zap v1.27.0
-)
-
-require (
-	go.opentelemetry.io/collector/component/componenttest v0.119.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.119.0
+	go.opentelemetry.io/collector/pdata v1.25.0
 	go.opentelemetry.io/collector/pipeline v0.119.0
+	go.uber.org/zap v1.27.0
 )
 
 require (
@@ -40,6 +36,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.25.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.119.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.119.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.119.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.119.0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.119.0 // indirect
