@@ -86,7 +86,8 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 	require.NoError(t, mzr.Flush())
 
 	// We expect back the exact JSON that was received
-	wants := []string{`
+	wants := []string{
+		`
 		[{
 		  "traceId": "4d1e00c0db9010db86154a4ba6e91385","parentId": "86154a4ba6e91385","id": "4d1e00c0db9010db",
 		  "kind": "CLIENT","name": "get",
@@ -120,7 +121,8 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 		  "timestamp": 1472470996199000,
 		  "duration": 207000
 		}]
-		`}
+		`,
+	}
 	for i, s := range wants {
 		want := unmarshalZipkinSpanArrayToMap(t, s)
 		gotBytes := buf.Next(int(sizes[i]))
