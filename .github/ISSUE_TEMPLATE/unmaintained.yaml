@@ -107,6 +107,7 @@ body:
       - extension/healthcheckv2
       - extension/httpforwarder
       - extension/jaegerremotesampling
+      - extension/k8sleaderelector
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/cfgardenobserver
@@ -130,6 +131,7 @@ body:
       - internal/aws
       - internal/collectd
       - internal/core
+      - internal/datadog
       - internal/docker
       - internal/exp/metrics
       - internal/filter

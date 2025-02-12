@@ -36,6 +36,7 @@ pkg/translator/prometheus
 pkg/translator/prometheusremotewrite
 exporter/prometheusremotewriteexporter
 receiver/prometheusreceiver
+internal/datadog
 pkg/datadog
 processor/tailsamplingprocessor
 exporter/datadogexporter
@@ -162,6 +163,7 @@ pkg/status
 extension/healthcheckv2extension
 extension/httpforwarderextension
 extension/jaegerremotesampling
+extension/k8sleaderelector
 extension/oauth2clientauthextension
 extension/observer
 extension/observer/cfgardenobserver
