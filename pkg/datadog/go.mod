@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.62.2
