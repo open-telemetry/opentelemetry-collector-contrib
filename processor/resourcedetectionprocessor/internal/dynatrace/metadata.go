@@ -16,7 +16,7 @@ func (dummyFactory) Type() component.Type {
 }
 
 func (dummyFactory) CreateDefaultConfig() component.Config {
-	return nil
+	return struct{}{}
 }
 
 // Necessary to satisfy mdatagen tests
