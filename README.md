@@ -90,7 +90,7 @@ Emeritus Triagers:
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
 - [Antoine Toulme](https://github.com/atoulme), Splunk
-- [Christos Markou](https://github.com/ChrsMark), Elastic
+- [Christos Markou](https://github.com/ChrsMark), Elastic (on leave)
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
 - [Matt Wear](https://github.com/mwear), Lightstep
