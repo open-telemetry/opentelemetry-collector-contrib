@@ -5,7 +5,7 @@ status:
   stability:
     alpha: [traces, metrics, logs]
   codeowners:
-    active: [bacherfl]
+    active: [bacherfl, evan-bradley]
 
 tests:
   skip_lifecycle: true
