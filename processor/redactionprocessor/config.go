@@ -20,8 +20,12 @@ type Config struct {
 	IgnoredKeys []string `mapstructure:"ignored_keys"`
 
 	// BlockedValues is a list of regular expressions for blocking values of
-	// allowed span attributes. Values that match are masked
+	// allowed span attributes. Values that match are masked.
 	BlockedValues []string `mapstructure:"blocked_values"`
+
+	// AllowedValues is a list of regular expressions for allowing values of
+	// blocked span attributes. Values that match are not masked.
+	AllowedValues []string `mapstructure:"allowed_values"`
 
 	// Summary controls the verbosity level of the diagnostic attributes that
 	// the processor adds to the spans when it redacts or masks other

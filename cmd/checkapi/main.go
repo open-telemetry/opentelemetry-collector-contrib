@@ -83,6 +83,12 @@ func run(folder string, allowlistFilePath string) error {
 	return nil
 }
 
+func isTestFunction(fnName string) bool {
+	return strings.HasPrefix(fnName, "Test") ||
+		strings.HasPrefix(fnName, "Benchmark") ||
+		strings.HasPrefix(fnName, "Fuzz")
+}
+
 func handleFile(f *ast.File, result *api) {
 	for _, d := range f.Decls {
 		if str, isStr := d.(*ast.GenDecl); isStr {
@@ -107,7 +113,7 @@ func handleFile(f *ast.File, result *api) {
 			}
 			exported := false
 			receiver := ""
-			if fn.Recv.NumFields() == 0 && !strings.HasPrefix(fn.Name.String(), "Test") && !strings.HasPrefix(fn.Name.String(), "Benchmark") {
+			if fn.Recv.NumFields() == 0 && !isTestFunction(fn.Name.String()) {
 				exported = true
 			}
 			if fn.Recv.NumFields() > 0 {
