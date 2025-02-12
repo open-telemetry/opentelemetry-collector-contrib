@@ -1,6 +1,8 @@
 type: resourcedetectionprocessor/dynatrace
 
-parent: resourcedetection
+status:
+  codeowners:
+    active: [bacherfl]
 
 resource_attributes:
   dt.entity.host:
