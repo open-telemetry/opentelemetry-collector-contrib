@@ -6,6 +6,15 @@ tests:              # generated_component_test.go looking for test.config from m
     username: "testuser"
     password: "testpassword"
     collection_interval: 10s
+    metrics:
+      rabbitmq.node.disk_free:
+        enabled: true
+      rabbitmq.node.fd_used:
+        enabled: true
+      rabbitmq.node.mem_limit:
+        enabled: true
+      rabbitmq.node.mem_used:
+        enabled: true
 
 status:
   class: receiver
@@ -38,7 +47,6 @@ attributes:
     enum:
       - ready
       - unacknowledged
-
 metrics:
   rabbitmq.consumer.count:
     description: The number of consumers currently reading from the queue.
@@ -96,7 +104,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
   rabbitmq.node.fd_used:
     description: The number of file descriptors used on the node.
     unit: "{fd}"
@@ -104,7 +112,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
   rabbitmq.node.mem_limit:
     description: The memory limit on the node.
     unit: "{bytes}"
@@ -112,7 +120,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
   rabbitmq.node.mem_used:
     description: The memory used on the node.
     unit: "{bytes}"
@@ -120,4 +128,4 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false

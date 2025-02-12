@@ -28,49 +28,32 @@ func NewFactory() receiver.Factory {
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
-// createDefaultConfig creates the default configuration for the RabbitMQ receiver.
 func createDefaultConfig() component.Config {
-	defaultControllerConfig := scraperhelper.NewDefaultControllerConfig()
-	defaultControllerConfig.CollectionInterval = 10 * time.Second
+	cfg := scraperhelper.NewDefaultControllerConfig()
+	cfg.CollectionInterval = 10 * time.Second
 
-	defaultClientConfig := confighttp.NewDefaultClientConfig()
-	defaultClientConfig.Endpoint = defaultEndpoint
-	defaultClientConfig.Timeout = 10 * time.Second
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+	clientConfig.Timeout = 10 * time.Second
 
 	return &Config{
-		ControllerConfig:     defaultControllerConfig,
-		ClientConfig:         defaultClientConfig,
+		ControllerConfig:     cfg,
+		ClientConfig:         clientConfig,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		EnableNodeMetrics:    true, // Default to enabling node metrics.
 	}
 }
 
-// createMetricsReceiver creates the metrics receiver for RabbitMQ.
-func createMetricsReceiver(
-	_ context.Context,
-	params receiver.Settings,
-	rConf component.Config,
-	consumer consumer.Metrics,
-) (receiver.Metrics, error) {
+func createMetricsReceiver(_ context.Context, params receiver.Settings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	cfg, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotRabbit
 	}
 
 	rabbitScraper := newScraper(params.Logger, cfg, params)
-
-	s, err := scraper.NewMetrics(
-		rabbitScraper.scrape,
-		scraper.WithStart(rabbitScraper.start),
-	)
+	s, err := scraper.NewMetrics(rabbitScraper.scrape, scraper.WithStart(rabbitScraper.start))
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewMetricsController(
-		&cfg.ControllerConfig,
-		params,
-		consumer,
-		scraperhelper.AddScraper(metadata.Type, s),
-	)
+	return scraperhelper.NewMetricsController(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, s))
 }

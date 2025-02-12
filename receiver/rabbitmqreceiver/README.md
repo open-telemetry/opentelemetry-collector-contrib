@@ -34,9 +34,7 @@ The following settings are optional:
 
 - `endpoint` (default: `http://localhost:15672`): The URL of the node to be monitored.
 - `collection_interval` (default = `10s`): This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
-
 - `tls`: TLS control. [By default, insecure settings are rejected and certificate verification is on](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
-- `enable_node_metrics` (default = `true`): Enables collection of RabbitMQ node-level metrics such as memory usage, file descriptors, and disk space.
 
 ### Example Configuration
 
@@ -47,7 +45,15 @@ receivers:
     username: otelu
     password: ${env:RABBITMQ_PASSWORD}
     collection_interval: 10s
-    enable_node_metrics: true
+    metrics:  # Enable node metrics by explicitly setting them to true
+      rabbitmq.node.disk_free:
+        enabled: true
+      rabbitmq.node.fd_used:
+        enabled: true
+      rabbitmq.node.mem_limit:
+        enabled: true
+      rabbitmq.node.mem_used:
+        enabled: true
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).

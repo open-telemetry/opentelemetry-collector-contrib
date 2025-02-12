@@ -27,7 +27,7 @@ const (
 type client interface {
 	// GetQueues calls "/api/queues" endpoint to get list of queues for the target node
 	GetQueues(ctx context.Context) ([]*models.Queue, error)
-	// GetQueues calls "/api/nodes" endpoint to get list of nodes for the target node
+	// GetNodes calls "/api/nodes" endpoint to get list of nodes for the target node
 	GetNodes(ctx context.Context) ([]*models.Node, error)
 }
 
@@ -77,7 +77,7 @@ func (c *rabbitmqClient) GetNodes(ctx context.Context) ([]*models.Node, error) {
 	var nodes []*models.Node
 
 	if err := c.get(ctx, nodePath, &nodes); err != nil {
-		c.logger.Error("Failed to retrieve nodes", zap.Error(err))
+		c.logger.Debug("Failed to retrieve nodes", zap.Error(err))
 		return nil, err
 	}
 
@@ -112,11 +112,15 @@ func (c *rabbitmqClient) get(ctx context.Context, path string, respObj any) erro
 	if resp.StatusCode != http.StatusOK {
 		c.logger.Debug("rabbitMQ API non-200", zap.Error(err), zap.Int("status_code", resp.StatusCode))
 
-		payload, readErr := io.ReadAll(resp.Body)
-		if readErr == nil {
-			c.logger.Debug("Error response payload", zap.ByteString("error_payload", payload))
+		// Attempt to extract the error payload
+		payloadData, err := io.ReadAll(resp.Body)
+		if err != nil {
+			c.logger.Debug("failed to read payload error message", zap.Error(err))
+		} else {
+			c.logger.Debug("rabbitMQ API Error", zap.ByteString("api_error", payloadData))
 		}
-		return fmt.Errorf("non-200 response code: %d", resp.StatusCode)
+
+		return fmt.Errorf("non 200 code returned %d", resp.StatusCode)
 	}
 
 	// Decode the payload into the passed in response object

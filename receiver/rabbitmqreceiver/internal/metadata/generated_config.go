@@ -61,16 +61,16 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		RabbitmqNodeDiskFree: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeFdUsed: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeMemLimit: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeMemUsed: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }
