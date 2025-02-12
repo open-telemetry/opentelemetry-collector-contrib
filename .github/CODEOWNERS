@@ -11,6 +11,11 @@
 
 * @open-telemetry/collector-contrib-approvers
 
+# Files owned by collector-releases-approvers
+.github/workflows/prepare-release.yml                            @open-telemetry/collector-contrib-approvers @open-telemetry/collector-releases-approvers
+.github/workflows/scripts/release-prepare-release.sh             @open-telemetry/collector-contrib-approvers @open-telemetry/collector-releases-approvers
+.github/workflows/scripts/set_release_tag.sh                     @open-telemetry/collector-contrib-approvers @open-telemetry/collector-releases-approvers
+
 # Start components list
 
 cmd/githubgen/                                                   @open-telemetry/collector-contrib-approvers @atoulme
@@ -100,6 +105,7 @@ extension/healthcheckextension/                                  @open-telemetry
 extension/healthcheckv2extension/                                @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 extension/httpforwarderextension/                                @open-telemetry/collector-contrib-approvers @atoulme
 extension/jaegerremotesampling/                                  @open-telemetry/collector-contrib-approvers @yurishkuro @frzifus
+extension/k8sleaderelector/                                      @open-telemetry/collector-contrib-approvers @dmitryax @rakesh-garimella
 extension/oauth2clientauthextension/                             @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
 extension/observer/                                              @open-telemetry/collector-contrib-approvers @dmitryax
 extension/observer/cfgardenobserver/                             @open-telemetry/collector-contrib-approvers @crobert-1 @cemdk @m1rp @jriguera
@@ -122,6 +128,7 @@ extension/sumologicextension/                                    @open-telemetry
 internal/aws/                                                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 internal/collectd/                                               @open-telemetry/collector-contrib-approvers @atoulme
 internal/coreinternal/                                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
+internal/datadog/                                                @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96 @jade-guiton-dd @IbraheemA
 internal/docker/                                                 @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 internal/exp/metrics/                                            @open-telemetry/collector-contrib-approvers @sh0rez @RichieSams
 internal/filter/                                                 @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
