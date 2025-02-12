@@ -4,7 +4,6 @@
 package serializeprofiles // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
 
 import (
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/ebpf-profiler/libpf"
 )
 
@@ -36,8 +35,8 @@ type StackPayload struct {
 // in the schema mapping.
 type StackTraceEvent struct {
 	EcsVersion
-	TimeStamp    pcommon.Timestamp `json:"@timestamp"`
-	StackTraceID string            `json:"Stacktrace.id"` // 128-bit hash in binary form
+	TimeStamp    unixTime64 `json:"@timestamp"`
+	StackTraceID string     `json:"Stacktrace.id"` // 128-bit hash in binary form
 
 	// Event-specific metadata
 	PodName          string `json:"orchestrator.resource.name,omitempty"`

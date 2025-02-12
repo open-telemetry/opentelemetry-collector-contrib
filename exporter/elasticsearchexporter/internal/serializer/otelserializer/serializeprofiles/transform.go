@@ -112,7 +112,7 @@ func stackPayloads(_ pcommon.Resource, _ pcommon.InstrumentationScope, profile p
 		// Add one event per timestamp and its count value.
 		for j := 0; j < sample.TimestampsUnixNano().Len(); j++ {
 			t := sample.TimestampsUnixNano().At(j)
-			event.TimeStamp = pcommon.Timestamp(t)
+			event.TimeStamp = newUnixTime64(t)
 
 			if j < sample.Value().Len() {
 				event.Count = uint16(sample.Value().At(j))

@@ -76,7 +76,7 @@ func TestSerializeProfile(t *testing.T) {
 					"upsert":          map[string]any{},
 				},
 				{
-					"@timestamp":          json.Number("0"),
+					"@timestamp":          "1970-01-01T00:00:00Z",
 					"Stacktrace.count":    json.Number("1"),
 					"Stacktrace.id":       "02VzuClbpt_P3xxwox83Ng",
 					"ecs.version":         "1.12.0",

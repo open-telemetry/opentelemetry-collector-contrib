@@ -11,7 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/ebpf-profiler/libpf"
 	semconv "go.opentelemetry.io/otel/semconv/v1.22.0"
@@ -221,7 +220,7 @@ func TestTransform(t *testing.T) {
 				{
 					StackTraceEvent: StackTraceEvent{
 						EcsVersion:   EcsVersion{V: EcsVersionString},
-						TimeStamp:    42,
+						TimeStamp:    42000000000,
 						StackTraceID: wantedTraceID,
 						Count:        1,
 					},
@@ -333,7 +332,7 @@ func TestStackPayloads(t *testing.T) {
 				{
 					StackTraceEvent: StackTraceEvent{
 						EcsVersion:   EcsVersion{V: EcsVersionString},
-						TimeStamp:    1,
+						TimeStamp:    1000000000,
 						StackTraceID: wantedTraceID,
 						Count:        1,
 					},
@@ -418,7 +417,7 @@ func TestStackPayloads(t *testing.T) {
 				{
 					StackTraceEvent: StackTraceEvent{
 						EcsVersion:   EcsVersion{V: EcsVersionString},
-						TimeStamp:    1,
+						TimeStamp:    1000000000,
 						StackTraceID: wantedTraceID,
 						Count:        2,
 					},
@@ -470,7 +469,7 @@ func TestStackTraceEvent(t *testing.T) {
 		},
 		{
 			name:      "sets the timestamp",
-			timestamp: 1704067273,
+			timestamp: 1000000000,
 			buildResourceProfiles: func() pprofile.ResourceProfiles {
 				rp := pprofile.NewResourceProfiles()
 				sp := rp.ScopeProfiles().AppendEmpty()
@@ -484,7 +483,7 @@ func TestStackTraceEvent(t *testing.T) {
 
 			wantEvent: StackTraceEvent{
 				EcsVersion:   EcsVersion{V: EcsVersionString},
-				TimeStamp:    1704067273,
+				TimeStamp:    1000000000000000000,
 				StackTraceID: stacktraceIDBase64,
 				Count:        1,
 			},
@@ -551,7 +550,7 @@ func TestStackTraceEvent(t *testing.T) {
 			s := p.Sample().At(0)
 
 			event := stackTraceEvent(stacktraceIDBase64, p, s)
-			event.TimeStamp = pcommon.Timestamp(tt.timestamp)
+			event.TimeStamp = newUnixTime64(tt.timestamp)
 
 			assert.Equal(t, tt.wantEvent, event)
 		})
