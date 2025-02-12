@@ -17,8 +17,10 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -257,6 +259,68 @@ func TestTranslateV2(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(tc.expectedMetrics, metrics))
 			assert.Equal(t, tc.expectedStats, stats)
+		})
+	}
+}
+
+func TestGetScopeDetails(t *testing.T) {
+	tests := []struct {
+		name            string
+		settings        receiver.Settings
+		expectedName    string
+		expectedVersion string
+	}{
+		{
+			name: "Valid scope details",
+			settings: receiver.Settings{
+				BuildInfo: component.BuildInfo{
+					Command: "otel_collector",
+					Version: "v2.0.0",
+				},
+			},
+			expectedName:    "otel_collector",
+			expectedVersion: "v2.0.0",
+		},
+		{
+			name: "Empty scope name and version should use defaults",
+			settings: receiver.Settings{
+				BuildInfo: component.BuildInfo{
+					Command: "",
+					Version: "",
+				},
+			},
+			expectedName:    "prometheus_receiver",
+			expectedVersion: "v1.0.0",
+		},
+		{
+			name: "Only name is empty, fallback should apply",
+			settings: receiver.Settings{
+				BuildInfo: component.BuildInfo{
+					Command: "",
+					Version: "v3.1.4",
+				},
+			},
+			expectedName:    "prometheus_receiver",
+			expectedVersion: "v3.1.4",
+		},
+		{
+			name: "Only version is empty, fallback should apply",
+			settings: receiver.Settings{
+				BuildInfo: component.BuildInfo{
+					Command: "custom_receiver",
+					Version: "",
+				},
+			},
+			expectedName:    "custom_receiver",
+			expectedVersion: "v1.0.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scopeName, scopeVersion := getScopeDetails(tt.settings)
+			assert.Equal(t, tt.expectedName, scopeName)
+			assert.Equal(t, tt.expectedVersion, scopeVersion)
 		})
 	}
 }
