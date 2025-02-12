@@ -655,7 +655,7 @@ with detailed sample configurations in [testdata/config.yaml](./testdata/config.
 
 **Note:**
 
-If you want to disable the ordering of the detectors and instead have a non-blocking resource detection in case of a detection failure, set the `order` parameter to `false`. For example:
+If you want to ignore the order of configured detectors, where multiple of them are inserting data with the same attribute name, and instead do not consider the configuration order of the detectors, set the `order` parameter to `false`. For example:
 
 ```yaml
 processors:

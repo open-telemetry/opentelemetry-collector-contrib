@@ -42,7 +42,6 @@ type Config struct {
 	// Deprecated: Please use detector's resource_attributes config instead
 	Attributes []string `mapstructure:"attributes"`
 	// Order is a parameter which perserves the order of detectors and the detection of data
-	// This also introduces a blocking behavior, if one of the detectors cannot detect the resource
 	Order bool `mapstructure:"order"`
 }
 
