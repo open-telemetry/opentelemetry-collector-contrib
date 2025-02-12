@@ -29,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "sp"),
 			expected: &Config{
-				URL: "https://<account>.blob.core.windows.net/",
+				Endpoint: "https://<account>.blob.core.windows.net/",
 				Auth: &Authentication{
 					Type:         "service_principal",
 					TenantID:     "<tenand id>",
@@ -54,7 +54,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "smi"),
 			expected: &Config{
-				URL: "https://<account>.blob.core.windows.net/",
+				Endpoint: "https://<account>.blob.core.windows.net/",
 				Auth: &Authentication{
 					Type: "system_managed_identity",
 				},
@@ -76,7 +76,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "umi"),
 			expected: &Config{
-				URL: "https://<account>.blob.core.windows.net/",
+				Endpoint: "https://<account>.blob.core.windows.net/",
 				Auth: &Authentication{
 					Type:     "user_managed_identity",
 					ClientID: "<user managed identity id>",

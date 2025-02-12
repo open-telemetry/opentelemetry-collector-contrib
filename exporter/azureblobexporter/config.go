@@ -56,7 +56,7 @@ const (
 
 // Config contains the main configuration options for the azure storage blob exporter
 type Config struct {
-	URL            string          `mapstructure:"url"`
+	Endpoint       string          `mapstructure:"endpoint"`
 	Container      *Container      `mapstructure:"container"`
 	Auth           *Authentication `mapstructure:"auth"`
 	BlobNameFormat *BlobNameFormat `mapstructure:"blob_name_format"`
@@ -66,8 +66,8 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	if c.URL == "" && c.Auth.Type != ConnectionString {
-		return errors.New("url cannot be empty when auth type is not connection_string")
+	if c.Endpoint == "" && c.Auth.Type != ConnectionString {
+		return errors.New("endpoint cannot be empty when auth type is not connection_string")
 	}
 
 	switch c.Auth.Type {

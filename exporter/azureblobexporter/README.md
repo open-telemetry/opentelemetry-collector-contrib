@@ -15,7 +15,7 @@
 
 The following settings are required:
 
-- url: Must be specified if auth type is not connection_string. If auth type is connection_string, it's optional or will be override by the auth.connection_string. Azure storage account endpoint. e.g. https://<account-name>.blob.core.windows.net/
+- endpoint: Must be specified if auth type is not connection_string. If auth type is connection_string, it's optional or will be override by the auth.connection_string. Azure storage account endpoint. e.g. https://<account-name>.blob.core.windows.net/
 - auth (no default): Authentication method for exporter to ingest data.
   - type (no default): Authentication type for expoter. supported values are: connection_string, service_principal, system_managed_identity, user_managed_identity and etc.
   - tenand_id: Tenand Id for the client, only needed when type is service_principal.
@@ -26,7 +26,7 @@ The following settings are required:
 
 The following settings can be optionally configured and have default values:
 
-- container: container for metrics, logs and traces.
+- container: container for metrics, logs and traces. A container organizes a set of blobs, similar to a directory in a file system. More details can refer [this](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blobs-introduction#containers).
   - metrics (default `metrics`): container to store metrics. default value is `metrics`.
   - logs (default `logs`): container to store logs. default value is `logs`.
   - traces (default `traces`): container to store traces. default value is `traces`.
