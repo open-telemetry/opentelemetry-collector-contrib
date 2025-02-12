@@ -179,8 +179,8 @@ var (
 		SQLParameter: func(_ int) string {
 			return "?"
 		},
-		CheckCompatibility: func(t *testing.T) {
-			t.Skip("Skipping the test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27577 is fixed")
+		CheckCompatibility: func(_ *testing.T) {
+			// t.Skip("Skipping the test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27577 is fixed")
 		},
 		ConnectionString: func(host string, externalPort nat.Port) string {
 			return fmt.Sprintf("tds://otel:otel1234@%s:%s/otel", host, externalPort.Port())
