@@ -191,7 +191,7 @@ processor/probabilisticsamplerprocessor/                         @open-telemetry
 processor/redactionprocessor/                                    @open-telemetry/collector-contrib-approvers @dmitryax @mx-psi @TylerHelmuth
 processor/remotetapprocessor/                                    @open-telemetry/collector-contrib-approvers @atoulme @jaronoff97
 processor/resourcedetectionprocessor/                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
-processor/resourcedetectionprocessor/internal/dynatrace          @open-telemetry/collector-contrib-approvers @bacherfl
+processor/resourcedetectionprocessor/internal/dynatrace/         @open-telemetry/collector-contrib-approvers @bacherfl
 processor/resourceprocessor/                                     @open-telemetry/collector-contrib-approvers @dmitryax
 processor/routingprocessor/                                      @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/schemaprocessor/                                       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @ankitpatel96
