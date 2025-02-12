@@ -2220,6 +2220,24 @@ func Test_parseValueExpression_full(t *testing.T) {
 				return []any{"list", "of", "strings"}
 			},
 		},
+		{
+			name:            "nested list",
+			valueExpression: `[{"list":[{"foo":"bar"}]}, {"bar":"baz"}]`,
+			expected: func() any {
+				return []any{
+					map[string]any{
+						"list": []any{
+							map[string]any{
+								"foo": "bar",
+							},
+						},
+					},
+					map[string]any{
+						"bar": "baz",
+					},
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {

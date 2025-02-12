@@ -1057,6 +1057,14 @@ func Test_e2e_converters(t *testing.T) {
 				m2.PutStr("foo", "bar")
 			},
 		},
+		{
+			statement: `set(attributes["arr"], [{"list":[{"foo":"bar"}]}, {"bar":"baz"}])`,
+			want: func(tCtx ottllog.TransformContext) {
+				arr := tCtx.GetLogRecord().Attributes().PutEmptySlice("arr")
+				arr.AppendEmpty().SetEmptyMap().PutEmptySlice("list").AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
+				arr.AppendEmpty().SetEmptyMap().PutStr("bar", "baz")
+			},
+		},
 	}
 
 	for _, tt := range tests {
