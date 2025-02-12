@@ -4,8 +4,9 @@
 package dynatrace // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/dynatrace"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/dynatrace/internal/metadata"
 )
 
 type dummyFactory struct{}
@@ -13,6 +14,7 @@ type dummyFactory struct{}
 func (dummyFactory) Type() component.Type {
 	return metadata.Type
 }
+
 func (dummyFactory) CreateDefaultConfig() component.Config {
 	return nil
 }
