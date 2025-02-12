@@ -15,3 +15,7 @@ resource_attributes:
 tests:
   skip_lifecycle: true
   skip_shutdown: true
+
+status:
+  codeowners:
+    active: [bacherfl]
