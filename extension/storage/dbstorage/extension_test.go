@@ -123,7 +123,7 @@ func newSqliteTestExtension(t *testing.T) storage.Extension {
 	cfg.DriverName = "sqlite3"
 	cfg.DataSource = fmt.Sprintf("file:%s/foo.db?_busy_timeout=10000&_journal=WAL&_sync=NORMAL", t.TempDir())
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -165,7 +165,7 @@ func newPostgresTestExtension(t *testing.T) storage.Extension {
 	cfg.DriverName = "pgx"
 	cfg.DataSource = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", "127.0.0.1", port.Port(), "root", "passwd", "db")
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
