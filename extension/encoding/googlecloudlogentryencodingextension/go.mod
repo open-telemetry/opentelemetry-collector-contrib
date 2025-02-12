@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encod
 
 go 1.23.0
 
-toolchain go1.23.6
-
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.119.0
 	github.com/stretchr/testify v1.10.0
