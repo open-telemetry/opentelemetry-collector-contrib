@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
@@ -75,19 +76,16 @@ type mappingModel interface {
 	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string, elasticsearch.Index, *bytes.Buffer) error
 	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string, elasticsearch.Index, *bytes.Buffer) error
 	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string, idx elasticsearch.Index, buf *bytes.Buffer)
-	encodeDocument(objmodel.Document, *bytes.Buffer) error
 	encodeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx elasticsearch.Index, buf *bytes.Buffer) (map[string]string, error)
+	encodeProfile(pcommon.Resource, pcommon.InstrumentationScope, pprofile.Profile, func(*bytes.Buffer, string, string) error) error
 }
 
 // encodeModel tries to keep the event as close to the original open telemetry semantics as is.
 // No fields will be mapped by default.
 //
-// Field deduplication and dedotting of attributes is supported by the encodeModel.
-//
 // See: https://github.com/open-telemetry/oteps/blob/master/text/logs/0097-log-data-model.md
 type encodeModel struct {
-	dedot bool
-	mode  MappingMode
+	mode MappingMode
 }
 
 const (
@@ -108,9 +106,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL str
 	default:
 		document = m.encodeLogDefaultMode(resource, record, scope, idx)
 	}
-	document.Dedup()
-
-	return document.Serialize(buf, m.dedot)
+	return document.Serialize(buf, m.mode == MappingECS)
 }
 
 func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope, idx elasticsearch.Index) objmodel.Document {
@@ -187,16 +183,6 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 	return document
 }
 
-func (m *encodeModel) encodeDocument(document objmodel.Document, buf *bytes.Buffer) error {
-	document.Dedup()
-
-	err := document.Serialize(buf, m.dedot)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (m *encodeModel) encodeDataPointsECSMode(resource pcommon.Resource, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx elasticsearch.Index, buf *bytes.Buffer) (map[string]string, error) {
 	dp0 := dataPoints[0]
 	var document objmodel.Document
@@ -213,7 +199,7 @@ func (m *encodeModel) encodeDataPointsECSMode(resource pcommon.Resource, dataPoi
 		}
 		document.AddAttribute(dp.Metric().Name(), value)
 	}
-	err := m.encodeDocument(document, buf)
+	err := document.Serialize(buf, true)
 
 	return document.DynamicTemplates(), err
 }
@@ -243,9 +229,7 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL st
 	default:
 		document = m.encodeSpanDefaultMode(resource, span, scope, idx)
 	}
-	document.Dedup()
-	err := document.Serialize(buf, m.dedot)
-	return err
+	return document.Serialize(buf, m.mode == MappingECS)
 }
 
 func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope, idx elasticsearch.Index) objmodel.Document {
@@ -275,6 +259,15 @@ func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaU
 		return
 	}
 	otelserializer.SerializeSpanEvent(resource, resourceSchemaURL, scope, scopeSchemaURL, span, spanEvent, idx, buf)
+}
+
+func (m *encodeModel) encodeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, record pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
+	switch m.mode {
+	case MappingOTel:
+		return otelserializer.SerializeProfile(resource, scope, record, pushData)
+	default:
+		return errors.New("profiles can only be encoded in OTel mode")
+	}
 }
 
 func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map, idx elasticsearch.Index) {

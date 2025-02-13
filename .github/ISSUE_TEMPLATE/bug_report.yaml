@@ -95,6 +95,7 @@ body:
       - extension/cgroupruntime
       - extension/encoding
       - extension/encoding/avrologencoding
+      - extension/encoding/googlecloudlogentryencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
       - extension/encoding/otlpencoding
@@ -107,6 +108,7 @@ body:
       - extension/healthcheckv2
       - extension/httpforwarder
       - extension/jaegerremotesampling
+      - extension/k8sleaderelector
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/cfgardenobserver
@@ -130,6 +132,7 @@ body:
       - internal/aws
       - internal/collectd
       - internal/core
+      - internal/datadog
       - internal/docker
       - internal/exp/metrics
       - internal/filter
@@ -193,6 +196,7 @@ body:
       - processor/remotetap
       - processor/resource
       - processor/resourcedetection
+      - processor/resourcedetection/internal/dynatrace
       - processor/routing
       - processor/schema
       - processor/span
