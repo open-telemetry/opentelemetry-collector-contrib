@@ -36,6 +36,7 @@ type StackPayload struct {
 type StackTraceEvent struct {
 	EcsVersion
 	TimeStamp    unixTime64 `json:"@timestamp"`
+	HostID       string     `json:"host.id"`
 	StackTraceID string     `json:"Stacktrace.id"` // 128-bit hash in binary form
 
 	// Event-specific metadata

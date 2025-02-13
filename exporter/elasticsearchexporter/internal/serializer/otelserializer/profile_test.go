@@ -42,6 +42,11 @@ func TestSerializeProfile(t *testing.T) {
 				a = profile.AttributeTable().AppendEmpty()
 				a.SetKey("profile.frame.type")
 				a.Value().SetStr("native")
+				a = profile.AttributeTable().AppendEmpty()
+				a.SetKey("host.id")
+				a.Value().SetStr("localhost")
+
+				profile.AttributeIndices().Append(2)
 
 				sample := profile.Sample().AppendEmpty()
 				sample.TimestampsUnixNano().Append(0)
@@ -80,6 +85,7 @@ func TestSerializeProfile(t *testing.T) {
 					"Stacktrace.count":    json.Number("1"),
 					"Stacktrace.id":       "02VzuClbpt_P3xxwox83Ng",
 					"ecs.version":         "1.12.0",
+					"host.id":             "localhost",
 					"process.thread.name": "",
 				},
 			},

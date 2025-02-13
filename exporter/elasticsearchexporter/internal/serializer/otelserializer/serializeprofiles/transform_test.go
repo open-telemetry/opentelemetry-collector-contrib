@@ -549,7 +549,7 @@ func TestStackTraceEvent(t *testing.T) {
 			p := rp.ScopeProfiles().At(0).Profiles().At(0)
 			s := p.Sample().At(0)
 
-			event := stackTraceEvent(stacktraceIDBase64, p, s)
+			event := stackTraceEvent(stacktraceIDBase64, p, s, map[string]string{})
 			event.TimeStamp = newUnixTime64(tt.timestamp)
 
 			assert.Equal(t, tt.wantEvent, event)

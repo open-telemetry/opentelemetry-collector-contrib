@@ -76,9 +76,11 @@ func checkProfileType(profile pprofile.Profile) error {
 
 // stackPayloads creates a slice of StackPayloads from the given ResourceProfiles,
 // ScopeProfiles, and ProfileContainer.
-func stackPayloads(_ pcommon.Resource, _ pcommon.InstrumentationScope, profile pprofile.Profile) ([]StackPayload, error) {
+func stackPayloads(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) ([]StackPayload, error) {
 	unsymbolizedLeafFrames := make([]libpf.FrameID, 0, profile.Sample().Len())
 	stackPayload := make([]StackPayload, 0, profile.Sample().Len())
+
+	hostMetadata := newHostMetadata(resource, scope, profile)
 
 	for i := 0; i < profile.Sample().Len(); i++ {
 		sample := profile.Sample().At(i)
@@ -96,7 +98,7 @@ func stackPayloads(_ pcommon.Resource, _ pcommon.InstrumentationScope, profile p
 			return nil, fmt.Errorf("failed to create stacktrace ID: %w", err)
 		}
 
-		event := stackTraceEvent(traceID, profile, sample)
+		event := stackTraceEvent(traceID, profile, sample, hostMetadata)
 
 		// Set the stacktrace and stackframes to the payload.
 		// The docs only need to be written once.
@@ -157,9 +159,10 @@ func isFrameSymbolized(frame StackFrame) bool {
 	return len(frame.FileName) > 0 || len(frame.FunctionName) > 0
 }
 
-func stackTraceEvent(traceID string, profile pprofile.Profile, sample pprofile.Sample) StackTraceEvent {
+func stackTraceEvent(traceID string, profile pprofile.Profile, sample pprofile.Sample, hostMetadata map[string]string) StackTraceEvent {
 	event := StackTraceEvent{
 		EcsVersion:   EcsVersion{V: EcsVersionString},
+		HostID:       hostMetadata[string(semconv.HostIDKey)],
 		StackTraceID: traceID,
 		Count:        1, // TODO: Check whether count can be dropped with nanosecond timestamps
 	}
@@ -172,6 +175,8 @@ func stackTraceEvent(traceID string, profile pprofile.Profile, sample pprofile.S
 		attr := profile.AttributeTable().At(i)
 
 		switch attribute.Key(attr.Key()) {
+		case semconv.HostIDKey:
+			event.HostID = attr.Value().AsString()
 		case semconv.ContainerIDKey:
 			event.ContainerID = attr.Value().AsString()
 		case semconv.K8SPodNameKey:
@@ -414,4 +419,25 @@ func getString(profile pprofile.Profile, index int) string {
 
 func GetStartOfWeekFromTime(t time.Time) uint32 {
 	return uint32(t.Truncate(time.Hour * 24 * 7).Unix())
+}
+
+func newHostMetadata(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) map[string]string {
+	attrs := make(map[string]string, 128)
+
+	addEventHostData(attrs, resource.Attributes())
+	addEventHostData(attrs, scope.Attributes())
+	addEventHostData(attrs, pprofile.FromAttributeIndices(profile.AttributeTable(), profile))
+
+	if len(attrs) == 0 {
+		return nil
+	}
+
+	return attrs
+}
+
+func addEventHostData(data map[string]string, attrs pcommon.Map) {
+	attrs.Range(func(k string, v pcommon.Value) bool {
+		data[k] = v.AsString()
+		return true
+	})
 }
