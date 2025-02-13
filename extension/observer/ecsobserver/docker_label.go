@@ -17,7 +17,7 @@ import (
 // NOTE: it's possible to make DockerLabelConfig part of CommonExporterConfig
 // and use it both ServiceConfig and TaskDefinitionConfig.
 // However, based on existing users, few people mix different types of filters.
-// If that usecase arises in the future, we can rewrite the top level docker lable filter
+// If that usecase arises in the future, we can rewrite the top level docker label filter
 // using a task definition filter with arn_pattern:*.
 type DockerLabelConfig struct {
 	CommonExporterConfig `mapstructure:",squash" yaml:",inline"`

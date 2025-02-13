@@ -48,7 +48,7 @@ func TestCreationFailsWithIncorrectConsumer(t *testing.T) {
 		}},
 	}
 
-	// in the real world, the factory will always receive a consumer with a concerete type of a
+	// in the real world, the factory will always receive a consumer with a concrete type of a
 	// connector router. this tests failure when a consumer of another type is passed in.
 	consumer := &consumertest.TracesSink{}
 
