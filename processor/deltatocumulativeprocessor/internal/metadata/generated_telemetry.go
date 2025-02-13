@@ -52,16 +52,6 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
-// Deprecated: [v0.119.0] use RegisterDeltatocumulativeStreamsTrackedLinearCallback.
-func WithDeltatocumulativeStreamsTrackedLinearCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeDeltatocumulativeStreamsTrackedLinear = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.DeltatocumulativeStreamsTrackedLinear, cb(), opts...)
-			return nil
-		}
-	})
-}
-
 // RegisterDeltatocumulativeStreamsTrackedLinearCallback sets callback for observable DeltatocumulativeStreamsTrackedLinear metric.
 func (builder *TelemetryBuilder) RegisterDeltatocumulativeStreamsTrackedLinearCallback(cb metric.Int64Callback) error {
 	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {

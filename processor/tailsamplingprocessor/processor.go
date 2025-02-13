@@ -22,7 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/cache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
@@ -88,7 +88,7 @@ type Option func(*tailSamplingSpanProcessor)
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform tail sampling according to the given
 // configuration.
-func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config, opts ...Option) (processor.Traces, error) {
+func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
 	telemetrySettings := set.TelemetrySettings
 	telemetry, err := metadata.NewTelemetryBuilder(telemetrySettings)
 	if err != nil {
@@ -124,7 +124,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 	}
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
 
-	for _, opt := range opts {
+	for _, opt := range cfg.Options {
 		opt(tsp)
 	}
 
@@ -174,15 +174,15 @@ func withTickerFrequency(frequency time.Duration) Option {
 	}
 }
 
-// withSampledDecisionCache sets the cache which the processor uses to store recently sampled trace IDs.
-func withSampledDecisionCache(c cache.Cache[bool]) Option {
+// WithSampledDecisionCache sets the cache which the processor uses to store recently sampled trace IDs.
+func WithSampledDecisionCache(c cache.Cache[bool]) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.sampledIDCache = c
 	}
 }
 
-// withSampledDecisionCache sets the cache which the processor uses to store recently sampled trace IDs.
-func withNonSampledDecisionCache(c cache.Cache[bool]) Option {
+// WithNonSampledDecisionCache sets the cache which the processor uses to store recently non-sampled trace IDs.
+func WithNonSampledDecisionCache(c cache.Cache[bool]) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.nonSampledIDCache = c
 	}
@@ -210,7 +210,9 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewLatency(settings, lfCfg.ThresholdMs, lfCfg.UpperThresholdmsMs), nil
 	case NumericAttribute:
 		nafCfg := cfg.NumericAttributeCfg
-		return sampling.NewNumericAttributeFilter(settings, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue, nafCfg.InvertMatch), nil
+		minValue := nafCfg.MinValue
+		maxValue := nafCfg.MaxValue
+		return sampling.NewNumericAttributeFilter(settings, nafCfg.Key, &minValue, &maxValue, nafCfg.InvertMatch), nil
 	case Probabilistic:
 		pCfg := cfg.ProbabilisticCfg
 		return sampling.NewProbabilisticSampler(settings, pCfg.HashSalt, pCfg.SamplingPercentage), nil
