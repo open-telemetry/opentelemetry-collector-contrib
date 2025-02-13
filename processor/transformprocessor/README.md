@@ -256,8 +256,8 @@ metric_statements:
 ```
 
 In this configuration, the `datapoint` Path prefixed is used in the same group of statements as the `convert_sum_to_gauge`
-function. Since `convert_sum_to_gauge` can only be used with the Metric signal, not the Datapoint signal, but the list
-statements contains a reference to the Datapoint signal via the `datapoint` Path prefix, the group of statements cannot
+function. Since `convert_sum_to_gauge` can only be used with the metrics, not datapoints, but the list
+statements contains a reference to the datapoints via the `datapoint` Path prefix, the group of statements cannot
 be parsed.
 
 The solution is to separate the statements into separate groups:
