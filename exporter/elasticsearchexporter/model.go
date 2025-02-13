@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
 
@@ -83,6 +84,7 @@ type mappingModel interface {
 	hashDataPoint(datapoints.DataPoint) uint32
 	encodeDocument(objmodel.Document, *bytes.Buffer) error
 	encodeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx elasticsearch.Index, buf *bytes.Buffer) (map[string]string, error)
+	encodeProfile(pcommon.Resource, pcommon.InstrumentationScope, pprofile.Profile, func(*bytes.Buffer, string, string) error) error
 }
 
 // encodeModel tries to keep the event as close to the original open telemetry semantics as is.
@@ -292,6 +294,15 @@ func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaU
 		return
 	}
 	otelserializer.SerializeSpanEvent(resource, resourceSchemaURL, scope, scopeSchemaURL, span, spanEvent, idx, buf)
+}
+
+func (m *encodeModel) encodeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, record pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
+	switch m.mode {
+	case MappingOTel:
+		return otelserializer.SerializeProfile(resource, scope, record, pushData)
+	default:
+		return errors.New("profiles can only be encoded in OTel mode")
+	}
 }
 
 func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map, idx elasticsearch.Index) {
