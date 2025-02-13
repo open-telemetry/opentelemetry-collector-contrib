@@ -65,12 +65,12 @@ The top-level `error_mode` can be overridden at statement group level, offering 
 | silent     | The processor ignores errors returned by statements, does not log the error, and continues on to the next statement.                        |
 | propagate  | The processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.                         |
 
-### Flat Config
+### Basic Config
 
 > [!NOTE]
 > If you don't know how to write OTTL statements yet, first see [Writing OTTL](#writing-ottl).
 
-The flat configuration style allows you to configure OTTL statements as a list,
+The basic configuration style allows you to configure OTTL statements as a list,
 without worrying about extra configurations.
 
 **This is the simplest way to configure the Transform Processor.** If you need global conditions or specific error modes see [Statement Group Config](#statement-group-config).
@@ -111,29 +111,13 @@ transform:
 
 If you're interested in how OTTL parses these statements, see [Context Inference](#context-inference).
 
-### Statement Group Config
+### Advanced Config
 
 > [!NOTE]
 > If you don't know how to write OTTL statements yet, first see [Writing OTTL](#writing-ottl).
 
-For more complex use cases you may need to use Statement Groups to group related OTTL statements.
-
-```yaml
-  - error_mode: propagate
-    conditions: 
-    - string
-    - string
-    statements:
-    - string
-    - string
-    - string
-```
-
-`error_mode`: allows overriding the top-level `error_mode`. See [General Config](#general-config) for details on how to configure `error_mode`.
-
-`conditions`: a list comprised of multiple where clauses, which will be processed as global conditions for the accompanying set of statements. The conditions are ORed together, which means only one condition needs to evaluate to true in order for the statements (including their individual Where clauses) to be executed.
-
-Each Statement Group will be processed in the order specified.
+For more complex use cases you may need to use the Transform Processor's
+advanced configuration style to group related OTTL statements.
 
 Format:
 
@@ -158,6 +142,12 @@ transform:
         - string
 ```
 
+`error_mode`: allows overriding the top-level `error_mode`. See [General Config](#general-config) for details on how to configure `error_mode`.
+
+`conditions`: a list comprised of multiple where clauses, which will be processed as global conditions for the accompanying set of statements. The conditions are ORed together, which means only one condition needs to evaluate to true in order for the statements (including their individual Where clauses) to be executed.
+
+`statements`: a list of OTTL statements.
+
 Example:
 
 ```yaml
@@ -177,9 +167,8 @@ transform:
         - set(log.body, log.attributes["http.route"])
 ```
 
-Like the flat configuration style, the OTTL Context in which the statement in the group are executed
-is [inferred](#context-inference), but this time from ALL the statements.
-In some situations the automatic Context inference is not possible. For example:
+The Transform Processor will enforce that all the Paths, functions, and enums used in a group's `statements` are parsable.
+In some situations a combination of Paths, functions, or enums is not allowed. For example:
 
 ```yaml
 metric_statements:
@@ -188,11 +177,12 @@ metric_statements:
     - limit(datapoint.attributes, 100, ["host.name"])
 ```
 
-In this configuration, while the `datapoint` context appears suitable for parsing both `metric`
-and `datapoint` data, it does not fulfill the function requirement since `convert_sum_to_gauge` is
-a specific `metric` function. Conversely, the `metric` context cannot parse `datapoint`, as it
-cannot access "lower" items in the protobuf definition. Therefore, the conflicting statements must
-be placed into separate statement groups:
+In this configuration, the `datapoint` Path prefixed is used in the same group of statements as the `convert_sum_to_gauge`
+function. Since `convert_sum_to_gauge` can only be used with the Metric signal, not the Datapoint signal, but the list
+statements contains a reference to the Datapoint signal via the `datapoint` Path prefix, the group of statements cannot
+be parsed.
+
+The solution is to separate the statements into separate groups:
 
 ```yaml
 metric_statements:
@@ -202,7 +192,7 @@ metric_statements:
     - convert_sum_to_gauge() where metric.name == "system.processes.count" 
 ```
 
-Alternatively, for simplicity, you can use the [flat configuration](#flat-config) style:
+Alternatively, for simplicity, you can use the [basic configuration](#basic-config) style:
 
 ```yaml
 metric_statements:
