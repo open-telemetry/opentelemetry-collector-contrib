@@ -998,6 +998,10 @@ func TestExporterMetrics(t *testing.T) {
 		scopeBA := resourceB.ScopeMetrics().AppendEmpty()
 		addToMetricSlice(scopeBA.Metrics())
 
+		scopeBB := resourceB.ScopeMetrics().AppendEmpty()
+		scopeBB.Scope().SetName("scope.bb")
+		addToMetricSlice(scopeBB.Metrics())
+
 		// identical resource
 		resourceAnotherB := metrics.ResourceMetrics().AppendEmpty()
 		fillAttributeMap(resourceAnotherB.Resource().Attributes(), map[string]any{
@@ -1057,11 +1061,11 @@ func TestExporterMetrics(t *testing.T) {
 			mustSendMetrics(t, exporter, metrics)
 
 			assertDocsInIndices(t, map[string]int{
-				"metrics-generic.otel-bar":                3, // AA->bar, AC->bar, BA->bar
+				"metrics-generic.otel-bar":                4, // AA->bar, AC->bar, BA->bar, BB->bar
 				"metrics-generic.otel-resource.namespace": 6, // AA, AC
 				"metrics-scope.b.otel-bar":                1, // AB->bar
 				"metrics-scope.b.otel-resource.namespace": 3, // AB
-				"metrics-generic.otel-default":            3, // BA
+				"metrics-generic.otel-default":            6, // BA, BB
 			}, rec)
 		})
 	})

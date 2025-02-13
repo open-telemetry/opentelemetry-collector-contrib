@@ -42,11 +42,12 @@ type (
 func (h ecsDataPointHasher) hashDataPoint(resource pcommon.Resource, _ pcommon.InstrumentationScope, dp datapoints.DataPoint) uint32 {
 	hasher := fnv.New32a()
 
+	mapHashExcludeReservedAttrs(hasher, resource.Attributes())
+
 	timestampBuf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(dp.Timestamp()))
 	hasher.Write(timestampBuf)
 
-	mapHashExcludeReservedAttrs(hasher, resource.Attributes())
 	mapHashExcludeReservedAttrs(hasher, dp.Attributes())
 
 	return hasher.Sum32()
@@ -54,6 +55,10 @@ func (h ecsDataPointHasher) hashDataPoint(resource pcommon.Resource, _ pcommon.I
 
 func (h otelDataPointHasher) hashDataPoint(resource pcommon.Resource, scope pcommon.InstrumentationScope, dp datapoints.DataPoint) uint32 {
 	hasher := fnv.New32a()
+
+	mapHashExcludeReservedAttrs(hasher, resource.Attributes(), elasticsearch.MappingHintsAttrKey)
+	hasher.Write([]byte(scope.Name()))
+	mapHashExcludeReservedAttrs(hasher, scope.Attributes(), elasticsearch.MappingHintsAttrKey)
 
 	timestampBuf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(dp.Timestamp()))
@@ -64,8 +69,6 @@ func (h otelDataPointHasher) hashDataPoint(resource pcommon.Resource, scope pcom
 
 	hasher.Write([]byte(dp.Metric().Unit()))
 
-	mapHashExcludeReservedAttrs(hasher, resource.Attributes(), elasticsearch.MappingHintsAttrKey)
-	mapHashExcludeReservedAttrs(hasher, scope.Attributes(), elasticsearch.MappingHintsAttrKey)
 	mapHashExcludeReservedAttrs(hasher, dp.Attributes(), elasticsearch.MappingHintsAttrKey)
 
 	return hasher.Sum32()
