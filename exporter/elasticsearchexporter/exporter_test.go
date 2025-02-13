@@ -969,18 +969,26 @@ func TestExporterMetrics(t *testing.T) {
 		}
 
 		metrics := pmetric.NewMetrics()
-		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
-		fillAttributeMap(resourceMetrics.Resource().Attributes(), map[string]any{
+		resourceA := metrics.ResourceMetrics().AppendEmpty()
+		fillAttributeMap(resourceA.Resource().Attributes(), map[string]any{
 			elasticsearch.DataStreamNamespace: "resource.namespace",
 		})
-		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
-		addToMetricSlice(scopeA.Metrics())
+		scopeAA := resourceA.ScopeMetrics().AppendEmpty()
+		addToMetricSlice(scopeAA.Metrics())
 
-		scopeB := resourceMetrics.ScopeMetrics().AppendEmpty()
-		fillAttributeMap(scopeB.Scope().Attributes(), map[string]any{
-			elasticsearch.DataStreamDataset: "scope.b",
+		scopeAB := resourceA.ScopeMetrics().AppendEmpty()
+		fillAttributeMap(scopeAB.Scope().Attributes(), map[string]any{
+			elasticsearch.DataStreamDataset: "scope.b", // routes to a different index and should not be grouped together
 		})
-		addToMetricSlice(scopeB.Metrics())
+		addToMetricSlice(scopeAB.Metrics())
+
+		scopeAC := resourceA.ScopeMetrics().AppendEmpty()
+		fillAttributeMap(scopeAC.Scope().Attributes(), map[string]any{
+			// ecs: scope attributes are ignored, and duplicates are dropped silently.
+			// otel: scope attributes are dimensions and should result in a separate group.
+			"some.scope.attribute": "scope.c",
+		})
+		addToMetricSlice(scopeAC.Metrics())
 
 		t.Run("ecs", func(t *testing.T) {
 			rec := newBulkRecorder()
