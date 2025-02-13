@@ -52,16 +52,16 @@ func TestPrometheusAPIServer(t *testing.T) {
 		"localhost:9090": nil,
 		"localhost:9091": nil,
 	}
-	for endpoint, _ := range endpointsToReceivers {
+	for endpoint := range endpointsToReceivers {
 
 		ctx := context.Background()
 		mp, cfg, err := setupMockPrometheus(targets...)
-		require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+		require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 		defer mp.Close()
 
 		require.NoError(t, err)
 		receiver := newPrometheusReceiver(receivertest.NewNopSettings(), &Config{
-			PrometheusConfig: (*PromConfig)(cfg),
+			PrometheusConfig: cfg,
 			APIServer: &APIServer{
 				Enabled: true,
 				ServerConfig: confighttp.ServerConfig{
@@ -101,34 +101,36 @@ func callAPI(endpoint, path string) (*apiResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	var apiResponse apiResponse
-	err = json.NewDecoder(resp.Body).Decode(&apiResponse)
+	var response apiResponse
+	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
 		return nil, err
 	}
 
-	if apiResponse.Status != "success" {
-		return nil, fmt.Errorf("API call failed: %s", apiResponse.Error)
+	if response.Status != "success" {
+		return nil, fmt.Errorf("API call failed: %s", response.Error)
 	}
 
-	return &apiResponse, nil
+	return &response, nil
 }
 
 func testScrapePools(t *testing.T, endpoint string) {
 	scrapePoolsResponse, err := callAPI(endpoint, "/scrape_pools")
 	assert.NoError(t, err)
-	var scrapePoolsData scrapePoolsData
-	json.Unmarshal([]byte(scrapePoolsResponse.Data), &scrapePoolsData)
-	assert.NotNil(t, scrapePoolsData)
-	assert.NotEmpty(t, scrapePoolsData.ScrapePools)
-	assert.Contains(t, scrapePoolsData.ScrapePools, "target1")
+	var scrapePools scrapePoolsData
+	err = json.Unmarshal([]byte(scrapePoolsResponse.Data), &scrapePools)
+	assert.NoError(t, err)
+	assert.NotNil(t, scrapePools)
+	assert.NotEmpty(t, scrapePools.ScrapePools)
+	assert.Contains(t, scrapePools.ScrapePools, "target1")
 }
 
 func testTargets(t *testing.T, endpoint string) {
 	targetsResponse, err := callAPI(endpoint, "/targets")
 	assert.NoError(t, err)
 	var targets v1.TargetsResult
-	json.Unmarshal([]byte(targetsResponse.Data), &targets)
+	err = json.Unmarshal([]byte(targetsResponse.Data), &targets)
+	assert.NoError(t, err)
 	assert.NotNil(t, targets)
 	assert.NotNil(t, targets.Active)
 	for _, target := range targets.Active {
@@ -144,7 +146,8 @@ func testTargetsMetadata(t *testing.T, endpoint string) {
 	assert.NotNil(t, targetsMetadataResponse)
 
 	var metricMetadataResult []v1.MetricMetadata
-	json.Unmarshal([]byte(targetsMetadataResponse.Data), &metricMetadataResult)
+	err = json.Unmarshal([]byte(targetsMetadataResponse.Data), &metricMetadataResult)
+	assert.NoError(t, err)
 	assert.NotNil(t, metricMetadataResult)
 	for _, metricMetadata := range metricMetadataResult {
 		assert.NotNil(t, metricMetadata)

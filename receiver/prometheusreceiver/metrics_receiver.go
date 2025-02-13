@@ -121,7 +121,10 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 
 	if r.cfg.APIServer != nil && r.cfg.APIServer.Enabled {
-		r.initAPIServer(discoveryCtx, host)
+		err = r.initAPIServer(discoveryCtx, host)
+		if err != nil {
+			r.settings.Logger.Error("Failed to initAPIServer", zap.Error(err))
+		}
 	}
 
 	r.loadConfigOnce.Do(func() {
@@ -373,7 +376,9 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	webconfig := ""
 
 	go func() {
-		toolkit_web.Serve(listener, r.apiServer, &toolkit_web.FlagConfig{WebConfigFile: &webconfig}, logger)
+		if err := toolkit_web.Serve(listener, r.apiServer, &toolkit_web.FlagConfig{WebConfigFile: &webconfig}, logger); err != nil {
+			r.settings.Logger.Error("API server failed", zap.Error(err))
+		}
 	}()
 
 	return nil
@@ -381,7 +386,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 
 // Helper function from the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L582-L630
 func setPathWithPrefix(prefix string) func(handlerName string, handler http.HandlerFunc) http.HandlerFunc {
-	return func(handlerName string, handler http.HandlerFunc) http.HandlerFunc {
+	return func(_ string, handler http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			handler(w, r.WithContext(httputil.ContextWithPath(r.Context(), prefix+r.URL.Path)))
 		}
