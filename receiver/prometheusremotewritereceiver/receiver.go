@@ -27,14 +27,6 @@ import (
 )
 
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-	if settings.BuildInfo.Version != "" {
-		buildVersion = settings.BuildInfo.Version
-	}
-
-	if settings.BuildInfo.Description != "" {
-		buildName = settings.BuildInfo.Description
-	}
-
 	return &prometheusRemoteWriteReceiver{
 		settings:     settings,
 		nextConsumer: nextConsumer,
@@ -203,7 +195,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			addCounterDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
-			addGaugeDatapoints(rm, ls, ts)
+			prw.addGaugeDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
 			addSummaryDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
@@ -237,27 +229,21 @@ func addCounterDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.
 	// TODO: Implement this function
 }
 
-var (
-	buildVersion string = ""
-	buildName    string = ""
-)
-
-func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
+func (prw *prometheusRemoteWriteReceiver) addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
 	// TODO: Cache metric name+type+unit and look up cache before creating new empty metric.
 	// In OTel name+type+unit is the unique identifier of a metric and we should not create
 	// a new metric if it already exists.
 
-	scopeName := ls.Get("otel_scope_name")
-	scopeVersion := ls.Get("otel_scope_version")
+	// Use BuildInfo defaults from settings.
+	scopeName := prw.settings.BuildInfo.Description
+	scopeVersion := prw.settings.BuildInfo.Version
 
-	// If the scope version or scope name is empty, get the information from the collector build tags.
-	// More: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#:~:text=Metrics%20which%20do%20not%20have%20an%20otel_scope_name%20or%20otel_scope_version%20label%20MUST%20be%20assigned%20an%20instrumentation%20scope%20identifying%20the%20entity%20performing%20the%20translation%20from%20Prometheus%20to%20OpenTelemetry%20(e.g.%20the%20collector%E2%80%99s%20prometheus%20receiver)
-	if scopeName == "" {
-		scopeName = buildName
+	// Override defaults only if the label values are non-empty.
+	if v := ls.Get("otel_scope_name"); v != "" {
+		scopeName = v
 	}
-
-	if scopeVersion == "" {
-		scopeVersion = buildVersion
+	if v := ls.Get("otel_scope_version"); v != "" {
+		scopeVersion = v
 	}
 
 	// Check if the name and version present in the labels are already present in the ResourceMetrics.
