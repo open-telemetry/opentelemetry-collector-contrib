@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.25.0
 	go.opentelemetry.io/collector/config/configretry v1.25.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/confmap v1.25.1-0.20250210123122-44b3eeda354c
+	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250212224258-3c6ce2bb5b70
 	go.opentelemetry.io/collector/exporter v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/exporter/exportertest v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/pdata v1.25.1-0.20250210123122-44b3eeda354c
