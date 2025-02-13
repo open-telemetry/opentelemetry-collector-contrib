@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
@@ -90,7 +91,7 @@ func TestValidate(t *testing.T) {
 				Hosts:            hosts,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			}
-			err := component.ValidateConfig(cfg)
+			err := xconfmap.Validate(cfg)
 			if tc.expected == nil {
 				require.NoError(t, err)
 			} else {
@@ -142,7 +143,7 @@ func TestBadTLSConfigs(t *testing.T) {
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 				ClientConfig:     tc.tlsConfig,
 			}
-			err := component.ValidateConfig(cfg)
+			err := xconfmap.Validate(cfg)
 			if tc.expectError {
 				require.Error(t, err)
 			} else {

@@ -15,7 +15,7 @@ resourceMetrics:
             stringValue: test
     scopeMetrics:
       - metrics:
-          - description: A histogram created from gague values
+          - description: A histogram created from gauge values
             histogram:
               aggregationTemporality: 1
               dataPoints:

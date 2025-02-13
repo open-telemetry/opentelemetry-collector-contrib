@@ -4,23 +4,27 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"runtime"
 	"sync"
 
+	"github.com/elastic/go-docappender/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
 )
 
 type elasticsearchExporter struct {
@@ -35,6 +39,16 @@ type elasticsearchExporter struct {
 	wg          sync.WaitGroup // active sessions
 	bulkIndexer bulkIndexer
 
+	// Profiles requires multiple bulk indexers depending on the data type
+	// Bulk indexer for profiling-events-*
+	biEvents bulkIndexer
+	// Bulk indexer for profiling-stacktraces
+	biStackTraces bulkIndexer
+	// Bulk indexer for profiling-stackframes
+	biStackFrames bulkIndexer
+	// Bulk indexer for profiling-executables
+	biExecutables bulkIndexer
+
 	bufferPool *pool.BufferPool
 }
 
@@ -45,8 +59,7 @@ func newExporter(
 	dynamicIndex bool,
 ) *elasticsearchExporter {
 	model := &encodeModel{
-		dedot: cfg.Mapping.Dedot,
-		mode:  cfg.MappingMode(),
+		mode: cfg.MappingMode(),
 	}
 
 	userAgent := fmt.Sprintf(
@@ -74,17 +87,58 @@ func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) 
 	if err != nil {
 		return err
 	}
-	bulkIndexer, err := newBulkIndexer(e.Logger, client, e.config)
+	bulkIndexer, err := newBulkIndexer(e.Logger, client, e.config, e.config.MappingMode() == MappingOTel)
 	if err != nil {
 		return err
 	}
 	e.bulkIndexer = bulkIndexer
+	biEvents, err := newBulkIndexer(e.Logger, client, e.config, true)
+	if err != nil {
+		return err
+	}
+	e.biEvents = biEvents
+	biStackTraces, err := newBulkIndexer(e.Logger, client, e.config, false)
+	if err != nil {
+		return err
+	}
+	e.biStackTraces = biStackTraces
+	biStackFrames, err := newBulkIndexer(e.Logger, client, e.config, false)
+	if err != nil {
+		return err
+	}
+	e.biStackFrames = biStackFrames
+	biExecutables, err := newBulkIndexer(e.Logger, client, e.config, false)
+	if err != nil {
+		return err
+	}
+	e.biExecutables = biExecutables
+
 	return nil
 }
 
 func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	if e.bulkIndexer != nil {
 		if err := e.bulkIndexer.Close(ctx); err != nil {
+			return err
+		}
+	}
+	if e.biEvents != nil {
+		if err := e.biEvents.Close(ctx); err != nil {
+			return err
+		}
+	}
+	if e.biStackTraces != nil {
+		if err := e.biStackTraces.Close(ctx); err != nil {
+			return err
+		}
+	}
+	if e.biStackFrames != nil {
+		if err := e.biStackFrames.Close(ctx); err != nil {
+			return err
+		}
+	}
+	if e.biExecutables != nil {
+		if err := e.biExecutables.Close(ctx); err != nil {
 			return err
 		}
 	}
@@ -174,7 +228,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 	}
 
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, docID, buf, nil)
+	return bulkIndexerSession.Add(ctx, index.Index, docID, buf, nil, docappender.ActionCreate)
 }
 
 type dataPointsGroup struct {
@@ -316,7 +370,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 				errs = append(errs, err)
 				continue
 			}
-			if err := session.Add(ctx, index.Index, "", buf, dynamicTemplates); err != nil {
+			if err := session.Add(ctx, index.Index, "", buf, dynamicTemplates, docappender.ActionCreate); err != nil {
 				// not recycling after Add returns an error as we don't know if it's already recycled
 				if cerr := ctx.Err(); cerr != nil {
 					return cerr
@@ -412,7 +466,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, "", buf, nil)
+	return bulkIndexerSession.Add(ctx, index.Index, "", buf, nil, docappender.ActionCreate)
 }
 
 func (e *elasticsearchExporter) pushSpanEvent(
@@ -438,7 +492,7 @@ func (e *elasticsearchExporter) pushSpanEvent(
 		return nil
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, "", buf, nil)
+	return bulkIndexerSession.Add(ctx, index.Index, "", buf, nil, docappender.ActionCreate)
 }
 
 func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string {
@@ -451,4 +505,118 @@ func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string
 		return ""
 	}
 	return v.AsString()
+}
+
+func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofile.Profiles) error {
+	e.wg.Add(1)
+	defer e.wg.Done()
+
+	defaultSession, err := e.bulkIndexer.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer defaultSession.End()
+	eventsSession, err := e.biEvents.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer eventsSession.End()
+	stackTracesSession, err := e.biStackTraces.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer stackTracesSession.End()
+	stackFramesSession, err := e.biStackFrames.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer stackFramesSession.End()
+	executablesSession, err := e.biExecutables.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer executablesSession.End()
+
+	var errs []error
+	rps := pd.ResourceProfiles()
+	for i := 0; i < rps.Len(); i++ {
+		rp := rps.At(i)
+		resource := rp.Resource()
+		sps := rp.ScopeProfiles()
+		for j := 0; j < sps.Len(); j++ {
+			sp := sps.At(j)
+			scope := sp.Scope()
+			p := sp.Profiles()
+			for k := 0; k < p.Len(); k++ {
+				if err := e.pushProfileRecord(ctx, resource, p.At(k), scope, defaultSession, eventsSession, stackTracesSession, stackFramesSession, executablesSession); err != nil {
+					if cerr := ctx.Err(); cerr != nil {
+						return cerr
+					}
+
+					if errors.Is(err, ErrInvalidTypeForBodyMapMode) {
+						e.Logger.Warn("dropping profile record", zap.Error(err))
+						continue
+					}
+
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+
+	if err := defaultSession.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
+	if err := eventsSession.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
+	if err := stackTracesSession.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
+	if err := stackFramesSession.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
+	if err := executablesSession.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
+
+	return errors.Join(errs...)
+}
+
+func (e *elasticsearchExporter) pushProfileRecord(
+	ctx context.Context,
+	resource pcommon.Resource,
+	record pprofile.Profile,
+	scope pcommon.InstrumentationScope,
+	defaultSession, eventsSession, stackTracesSession, stackFramesSession, executablesSession bulkIndexerSession,
+) error {
+	return e.model.encodeProfile(resource, scope, record, func(buf *bytes.Buffer, docID, index string) error {
+		switch index {
+		case otelserializer.StackTraceIndex:
+			return stackTracesSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
+		case otelserializer.StackFrameIndex:
+			return stackFramesSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
+		case otelserializer.AllEventsIndex:
+			return eventsSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
+		case otelserializer.ExecutablesIndex:
+			return executablesSession.Add(ctx, index, docID, buf, nil, docappender.ActionUpdate)
+		default:
+			return defaultSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
+		}
+	})
 }

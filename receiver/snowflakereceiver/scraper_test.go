@@ -11,8 +11,8 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -25,7 +25,7 @@ func TestScraper(t *testing.T) {
 	cfg.Username = "uname"
 	cfg.Password = "pwd"
 	cfg.Warehouse = "warehouse"
-	err := component.ValidateConfig(cfg)
+	err := xconfmap.Validate(cfg)
 	if err != nil {
 		t.Fatal("an error occurred when validating config", err)
 	}
@@ -67,7 +67,7 @@ func TestStart(t *testing.T) {
 	cfg.Username = "uname"
 	cfg.Password = "pwd"
 	cfg.Warehouse = "warehouse"
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 
 	scraper := newSnowflakeMetricsScraper(receivertest.NewNopSettings(), cfg)
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
