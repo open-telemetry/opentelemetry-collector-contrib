@@ -36,13 +36,13 @@ func TestRedactUnknownAttributes(t *testing.T) {
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
 
-	outTraces := runTest(t, allowed, redacted, nil, ignored, config)
-	outLogs := runLogsTest(t, allowed, redacted, nil, ignored, config)
-	outMetricsGauge := runMetricsTest(t, allowed, redacted, nil, ignored, config, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, allowed, redacted, nil, ignored, config, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, allowed, redacted, nil, ignored, config, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, allowed, redacted, nil, ignored, config, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, allowed, redacted, nil, ignored, config, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, allowed, redacted, nil, nil, ignored, config)
+	outLogs := runLogsTest(t, allowed, redacted, nil, nil, ignored, config)
+	outMetricsGauge := runMetricsTest(t, allowed, redacted, nil, nil, ignored, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, redacted, nil, nil, ignored, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, redacted, nil, nil, ignored, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, redacted, nil, nil, ignored, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, redacted, nil, nil, ignored, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
@@ -81,13 +81,13 @@ func TestAllowAllKeys(t *testing.T) {
 		"name":  pcommon.NewValueStr("placeholder"),
 	}
 
-	outTraces := runTest(t, allowed, nil, nil, nil, config)
-	outLogs := runLogsTest(t, allowed, nil, nil, nil, config)
-	outMetricsGauge := runMetricsTest(t, allowed, nil, nil, nil, config, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, allowed, nil, nil, nil, config, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, allowed, nil, nil, nil, config, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, allowed, nil, nil, nil, config, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, allowed, nil, nil, nil, config, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, allowed, nil, nil, nil, nil, config)
+	outLogs := runLogsTest(t, allowed, nil, nil, nil, nil, config)
+	outMetricsGauge := runMetricsTest(t, allowed, nil, nil, nil, nil, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, nil, nil, nil, nil, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, nil, nil, nil, nil, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, nil, nil, nil, nil, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, nil, nil, nil, nil, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
@@ -112,11 +112,12 @@ func TestAllowAllKeys(t *testing.T) {
 
 // TestAllowAllKeysMaskValues validates that the processor still redacts
 // span attribute values if Config.AllowAllKeys is set to true
-func TestAllowAllKeysMaskValues(t *testing.T) {
+func TestAllowAllKeysMaskValuesAllowValues(t *testing.T) {
 	config := &Config{
 		AllowedKeys:   []string{"group", "id", "name"},
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
 		AllowAllKeys:  true,
+		AllowedValues: []string{"4111111111111112", ".+@mycompany.com"},
 	}
 	allowed := map[string]pcommon.Value{
 		"group": pcommon.NewValueStr("temporary"),
@@ -126,14 +127,18 @@ func TestAllowAllKeysMaskValues(t *testing.T) {
 	masked := map[string]pcommon.Value{
 		"credit_card": pcommon.NewValueStr("placeholder 4111111111111111"),
 	}
+	allowedValues := map[string]pcommon.Value{
+		"credit_card2": pcommon.NewValueStr("placeholder 4111111111111112"),
+		"email":        pcommon.NewValueStr("user@mycompany.com"),
+	}
 
-	outTraces := runTest(t, allowed, nil, masked, nil, config)
-	outLogs := runLogsTest(t, allowed, nil, masked, nil, config)
-	outMetricsGauge := runMetricsTest(t, allowed, nil, masked, nil, config, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, allowed, nil, masked, nil, config, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, allowed, nil, masked, nil, config, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, allowed, nil, masked, nil, config, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, allowed, nil, masked, nil, config, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, allowed, nil, masked, allowedValues, nil, config)
+	outLogs := runLogsTest(t, allowed, nil, masked, allowedValues, nil, config)
+	outMetricsGauge := runMetricsTest(t, allowed, nil, nil, masked, allowedValues, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, nil, masked, allowedValues, nil, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, nil, masked, allowedValues, nil, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, nil, masked, allowedValues, nil, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, nil, masked, allowedValues, nil, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
@@ -153,6 +158,12 @@ func TestAllowAllKeysMaskValues(t *testing.T) {
 		}
 		value, _ := attr.Get("credit_card")
 		assert.Equal(t, "placeholder ****", value.Str())
+
+		value, _ = attr.Get("credit_card2")
+		assert.Equal(t, "placeholder 4111111111111112", value.Str())
+
+		value, _ = attr.Get("email")
+		assert.Equal(t, "user@mycompany.com", value.Str())
 	}
 }
 
@@ -163,9 +174,10 @@ func TestAllowAllKeysMaskValues(t *testing.T) {
 // redaction.redacted.count span attributes while set to full debug output
 func TestRedactSummaryDebug(t *testing.T) {
 	config := &Config{
-		AllowedKeys:   []string{"id", "group", "name", "group.id", "member (id)"},
+		AllowedKeys:   []string{"id", "group", "name", "group.id", "member (id)", "email"},
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
 		IgnoredKeys:   []string{"safe_attribute"},
+		AllowedValues: []string{".+@mycompany.com"},
 		Summary:       "debug",
 	}
 	allowed := map[string]pcommon.Value{
@@ -182,14 +194,17 @@ func TestRedactSummaryDebug(t *testing.T) {
 	redacted := map[string]pcommon.Value{
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
+	allowedValues := map[string]pcommon.Value{
+		"email": pcommon.NewValueStr("user@mycompany.com"),
+	}
 
-	outTraces := runTest(t, allowed, redacted, masked, ignored, config)
-	outLogs := runLogsTest(t, allowed, redacted, masked, ignored, config)
-	outMetricsGauge := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, allowed, redacted, masked, allowedValues, ignored, config)
+	outLogs := runLogsTest(t, allowed, redacted, masked, allowedValues, ignored, config)
+	outMetricsGauge := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
@@ -229,6 +244,12 @@ func TestRedactSummaryDebug(t *testing.T) {
 		assert.Equal(t, int64(1), maskedValueCount.Int())
 		value, _ := attr.Get("name")
 		assert.Equal(t, "placeholder ****", value.Str())
+
+		allowedValueCount, ok := attr.Get(allowedValueCount)
+		assert.True(t, ok)
+		assert.Equal(t, int64(1), allowedValueCount.Int())
+		value, _ = attr.Get("email")
+		assert.Equal(t, "user@mycompany.com", value.Str())
 	}
 }
 
@@ -238,9 +259,10 @@ func TestRedactSummaryDebug(t *testing.T) {
 // of output
 func TestRedactSummaryInfo(t *testing.T) {
 	config := &Config{
-		AllowedKeys:   []string{"id", "name", "group"},
+		AllowedKeys:   []string{"id", "name", "group", "email"},
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
 		IgnoredKeys:   []string{"safe_attribute"},
+		AllowedValues: []string{".+@mycompany.com"},
 		Summary:       "info",
 	}
 	allowed := map[string]pcommon.Value{
@@ -255,14 +277,17 @@ func TestRedactSummaryInfo(t *testing.T) {
 	redacted := map[string]pcommon.Value{
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
+	allowedValues := map[string]pcommon.Value{
+		"email": pcommon.NewValueStr("user@mycompany.com"),
+	}
 
-	outTraces := runTest(t, allowed, redacted, masked, ignored, config)
-	outLogs := runLogsTest(t, allowed, redacted, masked, ignored, config)
-	outMetricsGauge := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, allowed, redacted, masked, ignored, config, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, allowed, redacted, masked, allowedValues, ignored, config)
+	outLogs := runLogsTest(t, allowed, redacted, masked, allowedValues, ignored, config)
+	outMetricsGauge := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
@@ -295,6 +320,12 @@ func TestRedactSummaryInfo(t *testing.T) {
 		value, _ := attr.Get("name")
 		assert.Equal(t, "placeholder ****", value.Str())
 
+		allowedValueCount, ok := attr.Get(allowedValueCount)
+		assert.True(t, ok)
+		assert.Equal(t, int64(1), allowedValueCount.Int())
+		value, _ = attr.Get("email")
+		assert.Equal(t, "user@mycompany.com", value.Str())
+
 		ignoredKeyCount, ok := attr.Get(ignoredKeyCount)
 		assert.True(t, ok)
 		assert.Equal(t, int64(1), ignoredKeyCount.Int())
@@ -321,13 +352,13 @@ func TestRedactSummarySilent(t *testing.T) {
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
 
-	outTraces := runTest(t, allowed, redacted, masked, nil, config)
-	outLogs := runLogsTest(t, allowed, redacted, masked, nil, config)
-	outMetricsGauge := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, allowed, redacted, masked, nil, nil, config)
+	outLogs := runLogsTest(t, allowed, redacted, masked, nil, nil, config)
+	outMetricsGauge := runMetricsTest(t, allowed, redacted, nil, masked, nil, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, nil, nil, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, nil, nil, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, redacted, masked, nil, nil, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, redacted, masked, nil, nil, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
@@ -371,13 +402,13 @@ func TestRedactSummaryDefault(t *testing.T) {
 		"name": pcommon.NewValueStr("placeholder 4111111111111111"),
 	}
 
-	outTraces := runTest(t, allowed, nil, masked, ignored, config)
-	outLogs := runLogsTest(t, allowed, nil, masked, ignored, config)
-	outMetricsGauge := runMetricsTest(t, allowed, nil, masked, ignored, config, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, allowed, nil, masked, ignored, config, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, allowed, nil, masked, ignored, config, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, allowed, nil, masked, ignored, config, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, allowed, nil, masked, ignored, config, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, allowed, nil, masked, nil, ignored, config)
+	outLogs := runLogsTest(t, allowed, nil, masked, nil, ignored, config)
+	outMetricsGauge := runMetricsTest(t, allowed, nil, masked, nil, ignored, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, nil, masked, nil, ignored, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, nil, masked, nil, ignored, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, nil, masked, nil, ignored, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, nil, masked, nil, ignored, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
@@ -422,13 +453,13 @@ func TestMultipleBlockValues(t *testing.T) {
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
 
-	outTraces := runTest(t, allowed, redacted, masked, nil, config)
-	outLogs := runLogsTest(t, allowed, redacted, masked, nil, config)
-	outMetricsGauge := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeGauge)
-	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeSum)
-	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeHistogram)
-	outMetricsExponentialHistogram := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeExponentialHistogram)
-	outMetricsSummary := runMetricsTest(t, allowed, redacted, masked, nil, config, pmetric.MetricTypeSummary)
+	outTraces := runTest(t, allowed, redacted, masked, nil, nil, config)
+	outLogs := runLogsTest(t, allowed, redacted, masked, nil, nil, config)
+	outMetricsGauge := runMetricsTest(t, allowed, redacted, masked, nil, nil, config, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, nil, nil, config, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, nil, nil, config, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, allowed, redacted, masked, nil, nil, config, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, allowed, redacted, masked, nil, nil, config, pmetric.MetricTypeSummary)
 
 	attrs := []pcommon.Map{
 		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
@@ -516,6 +547,7 @@ func runTest(
 	allowed map[string]pcommon.Value,
 	redacted map[string]pcommon.Value,
 	masked map[string]pcommon.Value,
+	allowedValues map[string]pcommon.Value,
 	ignored map[string]pcommon.Value,
 	config *Config,
 ) ptrace.Traces {
@@ -529,11 +561,14 @@ func runTest(
 	span.SetName("first-batch-first-span")
 	span.SetTraceID([16]byte{1, 2, 3, 4})
 
-	length := len(allowed) + len(masked) + len(redacted) + len(ignored)
+	length := len(allowed) + len(masked) + len(redacted) + len(ignored) + len(allowedValues)
 	for k, v := range allowed {
 		v.CopyTo(span.Attributes().PutEmpty(k))
 	}
 	for k, v := range masked {
+		v.CopyTo(span.Attributes().PutEmpty(k))
+	}
+	for k, v := range allowedValues {
 		v.CopyTo(span.Attributes().PutEmpty(k))
 	}
 	for k, v := range redacted {
@@ -564,6 +599,7 @@ func runLogsTest(
 	allowed map[string]pcommon.Value,
 	redacted map[string]pcommon.Value,
 	masked map[string]pcommon.Value,
+	allowedValues map[string]pcommon.Value,
 	ignored map[string]pcommon.Value,
 	config *Config,
 ) plog.Logs {
@@ -578,11 +614,14 @@ func runLogsTest(
 	logEntry.Body().SetStr("first-batch-first-logEntry")
 	logEntry.SetTraceID([16]byte{1, 2, 3, 4})
 
-	length := len(allowed) + len(masked) + len(redacted) + len(ignored)
+	length := len(allowed) + len(masked) + len(redacted) + len(ignored) + len(allowedValues)
 	for k, v := range allowed {
 		v.CopyTo(logEntry.Attributes().PutEmpty(k))
 	}
 	for k, v := range masked {
+		v.CopyTo(logEntry.Attributes().PutEmpty(k))
+	}
+	for k, v := range allowedValues {
 		v.CopyTo(logEntry.Attributes().PutEmpty(k))
 	}
 	for k, v := range redacted {
@@ -613,6 +652,7 @@ func runMetricsTest(
 	allowed map[string]pcommon.Value,
 	redacted map[string]pcommon.Value,
 	masked map[string]pcommon.Value,
+	allowedValues map[string]pcommon.Value,
 	ignored map[string]pcommon.Value,
 	config *Config,
 	metricType pmetric.MetricType,
@@ -626,7 +666,7 @@ func runMetricsTest(
 	metric := ils.Metrics().AppendEmpty()
 	metric.SetDescription("first-batch-first-metric")
 
-	length := len(allowed) + len(masked) + len(redacted) + len(ignored)
+	length := len(allowed) + len(masked) + len(redacted) + len(ignored) + len(allowedValues)
 
 	var dataPointAttrs pcommon.Map
 	switch metricType {
@@ -647,6 +687,10 @@ func runMetricsTest(
 		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
 	}
 	for k, v := range masked {
+		v.CopyTo(dataPointAttrs.PutEmpty(k))
+		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
+	}
+	for k, v := range allowedValues {
 		v.CopyTo(dataPointAttrs.PutEmpty(k))
 		v.CopyTo(rl.Resource().Attributes().PutEmpty(k))
 	}
