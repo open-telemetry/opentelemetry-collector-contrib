@@ -931,17 +931,6 @@ func TestExporterMetrics(t *testing.T) {
 	})
 
 	t.Run("publish with metrics grouping", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
-
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.MetricsIndex = "metrics.index"
-			cfg.Mapping.Mode = "ecs"
-		})
-
 		addToMetricSlice := func(metricSlice pmetric.MetricSlice) {
 			fooMetric := metricSlice.AppendEmpty()
 			fooMetric.SetName("metric.foo")
@@ -993,44 +982,57 @@ func TestExporterMetrics(t *testing.T) {
 		})
 		addToMetricSlice(scopeB.Metrics())
 
-		mustSendMetrics(t, exporter, metrics)
+		t.Run("ecs", func(t *testing.T) {
+			rec := newBulkRecorder()
+			server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+				rec.Record(docs)
+				return itemsAllOK(docs)
+			})
 
-		expected := []itemRequest{
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-bar"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"bar","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0,"foo":1.0}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"metric":{"bar":1.0,"foo":1}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1.0}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-scope.b-bar"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"bar","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0,"foo":1.0}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"bar":1.0,"foo":1}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1.0}}`),
-			},
-		}
+			exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+				cfg.MetricsIndex = "metrics.index"
+				cfg.Mapping.Mode = "ecs"
+			})
 
-		assertRecordedItems(t, expected, rec, false)
+			mustSendMetrics(t, exporter, metrics)
+
+			expected := []itemRequest{
+				{
+					Action:   []byte(`{"create":{"_index":"metrics-generic-bar"}}`),
+					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"bar","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0}}`),
+				},
+				{
+					Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
+					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0,"foo":1.0}}`),
+				},
+				{
+					Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
+					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"metric":{"bar":1.0,"foo":1}}`),
+				},
+				{
+					Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
+					Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1.0}}`),
+				},
+				{
+					Action:   []byte(`{"create":{"_index":"metrics-scope.b-bar"}}`),
+					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"bar","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0}}`),
+				},
+				{
+					Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
+					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0,"foo":1.0}}`),
+				},
+				{
+					Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
+					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"bar":1.0,"foo":1}}`),
+				},
+				{
+					Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
+					Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1.0}}`),
+				},
+			}
+
+			assertRecordedItems(t, expected, rec, false)
+		})
 	})
 
 	t.Run("publish histogram", func(t *testing.T) {
