@@ -17,8 +17,10 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
+var typ = component.MustNewType("roundrobin")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "roundrobin", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
