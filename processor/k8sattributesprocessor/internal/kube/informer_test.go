@@ -55,6 +55,10 @@ func Test_informerListFuncWithSelectors(t *testing.T) {
 				Value: "lv1",
 				Op:    selection.NotEquals,
 			},
+			{
+				Key: "lk2",
+				Op:  selection.Exists,
+			},
 		},
 	})
 	assert.NoError(t, err)

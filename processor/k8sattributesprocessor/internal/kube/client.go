@@ -949,7 +949,11 @@ func (c *WatchClient) shouldIgnorePod(pod *api_v1.Pod) bool {
 func selectorsFromFilters(filters Filters) (labels.Selector, fields.Selector, error) {
 	labelSelector := labels.Everything()
 	for _, f := range filters.Labels {
-		r, err := labels.NewRequirement(f.Key, f.Op, []string{f.Value})
+		var value []string
+		if f.Value != "" {
+			value = []string{f.Value}
+		}
+		r, err := labels.NewRequirement(f.Key, f.Op, value)
 		if err != nil {
 			return nil, nil, err
 		}
