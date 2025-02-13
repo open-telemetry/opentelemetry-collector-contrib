@@ -149,6 +149,7 @@ extension/basicauthextension
 extension/bearertokenauthextension
 extension/cgroupruntimeextension
 extension/encoding/avrologencodingextension
+extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
 pkg/translator/skywalking
