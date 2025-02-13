@@ -10,20 +10,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func Test_replaceCompatDSNOptions(t *testing.T) {
+	logger := zap.L()
 	tests := []struct {
 		name    string
 		dsn     string
 		want    url.Values
-		wantErr string
+		wantErr bool
 	}{
 		{
 			name:    "Should keep DSN as is if no options provided",
 			dsn:     "file://foo.db?",
 			want:    url.Values{},
-			wantErr: "",
+			wantErr: false,
 		},
 		{
 			name: "Should keep new driver options",
@@ -35,7 +37,7 @@ func Test_replaceCompatDSNOptions(t *testing.T) {
 					"synchronous(NORMAL)",
 				},
 			},
-			wantErr: "",
+			wantErr: false,
 		},
 		{
 			name: "Should convert legacy driver options",
@@ -47,13 +49,13 @@ func Test_replaceCompatDSNOptions(t *testing.T) {
 					"synchronous(NORMAL)",
 				},
 			},
-			wantErr: "",
+			wantErr: false,
 		},
 		{
 			name:    "Should return error on incorrect query sting",
 			dsn:     "file://foo.db?;malformed_query_string",
 			want:    url.Values{},
-			wantErr: "invalid semicolon separator in query",
+			wantErr: true,
 		},
 		{
 			name: "Should return error on unknown legacy driver option",
@@ -64,12 +66,12 @@ func Test_replaceCompatDSNOptions(t *testing.T) {
 					"synchronous(NORMAL)",
 				},
 			},
-			wantErr: "unknown SQLite Driver option",
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := replaceCompatDSNOptions(tt.dsn)
+			got, err := replaceCompatDSNOptions(logger, tt.dsn)
 			pos := strings.IndexRune(got, '?')
 			values, _ := url.ParseQuery(got[pos+1:])
 			// Sort value slices to avoid flaky test results
@@ -79,8 +81,8 @@ func Test_replaceCompatDSNOptions(t *testing.T) {
 				}
 			}
 			assert.Equal(t, tt.want, values)
-			if tt.wantErr != "" {
-				assert.ErrorContains(t, err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}

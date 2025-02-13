@@ -42,9 +42,9 @@ func (ds *databaseStorage) Start(context.Context, component.Host) error {
 		ds.driverName = driverSQLite
 		// Try to convert legacy driver options and log errors if any
 		var err error
-		ds.datasourceName, err = replaceCompatDSNOptions(ds.datasourceName)
+		ds.datasourceName, err = replaceCompatDSNOptions(ds.logger, ds.datasourceName)
 		if err != nil {
-			ds.logger.Warn("Legacy driver options conversion errors", zap.Error(err))
+			return err
 		}
 	}
 

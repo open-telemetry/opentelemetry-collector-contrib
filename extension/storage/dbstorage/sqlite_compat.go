@@ -4,10 +4,11 @@
 package dbstorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 const (
@@ -43,9 +44,7 @@ var sqlitePragmaOptsMapping = map[string]string{
 	"_writable_schema":          "writable_schema",
 }
 
-func replaceCompatDSNOptions(dsn string) (string, error) {
-	var errs []error
-
+func replaceCompatDSNOptions(logger *zap.Logger, dsn string) (string, error) {
 	pos := strings.IndexRune(dsn, '?')
 
 	// If no query params present in DSN - we have nothing to do here
@@ -54,6 +53,8 @@ func replaceCompatDSNOptions(dsn string) (string, error) {
 	}
 
 	q, err := url.ParseQuery(dsn[pos+1:])
+	// This is unrecoverable error we should stop processing
+	// `sqlite` driver is using the same approach for options parsing
 	if err != nil {
 		return dsn, fmt.Errorf("unable to parse datasource options: %w", err)
 	}
@@ -80,11 +81,11 @@ func replaceCompatDSNOptions(dsn string) (string, error) {
 		}
 
 		// Unknown or non-conversable option - add to errors
-		errs = append(errs, fmt.Errorf("unknown SQLite Driver option %s", key))
+		logger.Warn("Unknown SQLite Driver option", zap.String(key, fmt.Sprintf("%v", values)))
 	}
 
 	// Convert options back to query string and substitute it in DSN
 	dsn = dsn[:pos+1] + options.Encode()
 
-	return dsn, errors.Join(errs...)
+	return dsn, nil
 }
