@@ -210,7 +210,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, nil, true, md1, md2)
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, false, md1, md2)
 
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
