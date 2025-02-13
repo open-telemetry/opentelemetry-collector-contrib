@@ -236,15 +236,6 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 			name = fmt.Sprintf("k8s.%v.%v.%v", a.From, fieldType, a.Key)
 		}
 
-		var r *regexp.Regexp
-		if a.Regex != "" {
-			var err error
-			r, err = regexp.Compile(a.Regex)
-			if err != nil {
-				return rules, err
-			}
-		}
-
 		var keyRegex *regexp.Regexp
 		var hasKeyRegexReference bool
 		if a.KeyRegex != "" {
@@ -260,7 +251,7 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 		}
 
 		rules = append(rules, kube.FieldExtractionRule{
-			Name: name, Key: a.Key, KeyRegex: keyRegex, HasKeyRegexReference: hasKeyRegexReference, Regex: r, From: a.From,
+			Name: name, Key: a.Key, KeyRegex: keyRegex, HasKeyRegexReference: hasKeyRegexReference, From: a.From,
 		})
 	}
 	return rules, nil
