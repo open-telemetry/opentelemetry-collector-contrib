@@ -638,9 +638,18 @@ resourcedetection:
         enabled: false
 ```
 
-## Ordering
+## Ordering and asynchronous detection
 
-By default, if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.platform` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
+By default, the detectors are run asynchronously and therefore possibly out of order. If you want to keep the order of detectors, set the `async_detection` to `false`. This will also mean, that the retry mechanism for detectors will be disabled and therefore one pending detector can block the whole processor.
+
+```yaml
+processors:
+  resourcedetection:
+    detectors: [docker]
+    async_detection: false
+```
+
+When the `async_detection` is set to `false` and multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.platform` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
 
 ### AWS
 
@@ -652,14 +661,3 @@ By default, if multiple detectors are inserting the same attribute name, the fir
 
 The full list of settings exposed for this extension are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
-
-**Note:**
-
-If you want to ignore the order of configured detectors, where multiple of them are inserting data with the same attribute name, and instead do not consider the configuration order of the detectors, set the `order` parameter to `false`. For example:
-
-```yaml
-processors:
-  resourcedetection:
-    detectors: [docker]
-    order: false
-```

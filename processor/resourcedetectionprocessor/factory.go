@@ -96,7 +96,7 @@ func createDefaultConfig() component.Config {
 		Override:       true,
 		Attributes:     nil,
 		DetectorConfig: detectorCreateDefaultConfig(),
-		Order:          true,
+		AsyncDetection: true,
 		// TODO: Once issue(https://github.com/open-telemetry/opentelemetry-collector/issues/4001) gets resolved,
 		//		 Set the default value of 'hostname_source' here instead of 'system' detector
 	}
@@ -200,7 +200,7 @@ func (f *factory) getResourceDetectionProcessor(
 	if oCfg.Attributes != nil {
 		params.Logger.Warn("You are using deprecated `attributes` option that will be removed soon; use `resource_attributes` instead, details on configuration: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#migration-from-attributes-to-resource_attributes")
 	}
-	provider, err := f.getResourceProvider(params, oCfg.ClientConfig.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes, oCfg.Order)
+	provider, err := f.getResourceProvider(params, oCfg.ClientConfig.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes, oCfg.AsyncDetection)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func (f *factory) getResourceProvider(
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,
 	attributes []string,
-	order bool,
+	asyncDetection bool,
 ) (*internal.ResourceProvider, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
@@ -233,7 +233,7 @@ func (f *factory) getResourceProvider(
 		detectorTypes = append(detectorTypes, internal.DetectorType(strings.TrimSpace(key)))
 	}
 
-	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, attributes, &detectorConfigs, order, detectorTypes...)
+	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, attributes, &detectorConfigs, asyncDetection, detectorTypes...)
 	if err != nil {
 		return nil, err
 	}

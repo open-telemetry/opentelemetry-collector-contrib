@@ -41,8 +41,9 @@ type Config struct {
 	// If a supplied attribute is not a valid attribute of a supplied detector it will be ignored.
 	// Deprecated: Please use detector's resource_attributes config instead
 	Attributes []string `mapstructure:"attributes"`
-	// Order is a parameter which perserves the order of detectors and the detection of data
-	Order bool `mapstructure:"order"`
+	// AsyncDetection is a parameter which enables asynchronously detection of resources.
+	// This means that the detectors are run asynchronously and therefore possibly out of order
+	AsyncDetection bool `mapstructure:"async_detection"`
 }
 
 // DetectorConfig contains user-specified configurations unique to all individual detectors

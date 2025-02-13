@@ -17,6 +17,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const MAX_RETRY_INTERVAL = 32 * time.Second
+
 type DetectorType string
 
 type Detector interface {
@@ -45,7 +47,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 	timeout time.Duration,
 	attributes []string,
 	detectorConfigs ResourceDetectorConfig,
-	order bool,
+	asyncDetection bool,
 	detectorTypes ...DetectorType,
 ) (*ResourceProvider, error) {
 	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes)
@@ -60,7 +62,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 		}
 	}
 
-	provider := NewResourceProvider(params.Logger, timeout, attributesToKeep, order, detectors...)
+	provider := NewResourceProvider(params.Logger, timeout, attributesToKeep, asyncDetection, detectors...)
 	return provider, nil
 }
 
@@ -90,7 +92,7 @@ type ResourceProvider struct {
 	detectedResource *resourceResult
 	once             sync.Once
 	attributesToKeep map[string]struct{}
-	order            bool
+	asyncDetection   bool
 }
 
 type resourceResult struct {
@@ -99,13 +101,13 @@ type resourceResult struct {
 	err       error
 }
 
-func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesToKeep map[string]struct{}, order bool, detectors ...Detector) *ResourceProvider {
+func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesToKeep map[string]struct{}, asyncDetection bool, detectors ...Detector) *ResourceProvider {
 	return &ResourceProvider{
 		logger:           logger,
 		timeout:          timeout,
 		detectors:        detectors,
 		attributesToKeep: attributesToKeep,
-		order:            order,
+		asyncDetection:   asyncDetection,
 	}
 }
 
@@ -148,19 +150,21 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 				r, schemaURL, err := detector.Detect(ctx)
 				if err != nil {
 					p.logger.Warn("failed to detect resource", zap.Error(err))
-					time.Sleep(sleep)
-					sleep *= 2
+					time.Sleep(sleep * time.Second)
+					if sleep < MAX_RETRY_INTERVAL {
+						sleep *= 2
+					}
 				} else {
 					resultsChan <- detectResult{r: r, schemaURL: schemaURL, err: nil}
 					return
 				}
 			}
 		}(detector)
-		if p.order {
+		if !p.asyncDetection {
 			mergedSchemaURL = handleResult(&res, resultsChan, mergedSchemaURL)
 		}
 	}
-	if !p.order {
+	if p.asyncDetection {
 		for range p.detectors {
 			mergedSchemaURL = handleResult(&res, resultsChan, mergedSchemaURL)
 		}
