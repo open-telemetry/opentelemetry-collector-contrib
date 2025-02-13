@@ -979,7 +979,7 @@ func TestExporterMetrics(t *testing.T) {
 
 		scopeAB := resourceA.ScopeMetrics().AppendEmpty()
 		fillAttributeMap(scopeAB.Scope().Attributes(), map[string]any{
-			elasticsearch.DataStreamDataset: "scope.b", // routes to a different index and should not be grouped together
+			elasticsearch.DataStreamDataset: "scope.ab", // routes to a different index and should not be grouped together
 		})
 		addToMetricSlice(scopeAB.Metrics())
 
@@ -987,7 +987,7 @@ func TestExporterMetrics(t *testing.T) {
 		fillAttributeMap(scopeAC.Scope().Attributes(), map[string]any{
 			// ecs: scope attributes are ignored, and duplicates are dropped silently.
 			// otel: scope attributes are dimensions and should result in a separate group.
-			"some.scope.attribute": "scope.c",
+			"some.scope.attribute": "scope.ac",
 		})
 		addToMetricSlice(scopeAC.Metrics())
 
@@ -1039,11 +1039,11 @@ func TestExporterMetrics(t *testing.T) {
 			mustSendMetrics(t, exporter, metrics)
 
 			assertDocsInIndices(t, map[string]int{
-				"metrics-generic-bar":                2, // AA, BA
-				"metrics-generic-resource.namespace": 3,
-				"metrics-scope.b-bar":                1,
-				"metrics-scope.b-resource.namespace": 3,
-				"metrics-generic-default":            3,
+				"metrics-generic-bar":                 2, // AA, BA
+				"metrics-generic-resource.namespace":  3,
+				"metrics-scope.ab-bar":                1,
+				"metrics-scope.ab-resource.namespace": 3,
+				"metrics-generic-default":             3,
 			}, rec)
 		})
 
@@ -1061,11 +1061,11 @@ func TestExporterMetrics(t *testing.T) {
 			mustSendMetrics(t, exporter, metrics)
 
 			assertDocsInIndices(t, map[string]int{
-				"metrics-generic.otel-bar":                4, // AA->bar, AC->bar, BA->bar, BB->bar
-				"metrics-generic.otel-resource.namespace": 6, // AA, AC
-				"metrics-scope.b.otel-bar":                1, // AB->bar
-				"metrics-scope.b.otel-resource.namespace": 3, // AB
-				"metrics-generic.otel-default":            6, // BA, BB
+				"metrics-generic.otel-bar":                 4, // AA->bar, AC->bar, BA->bar, BB->bar
+				"metrics-generic.otel-resource.namespace":  6, // AA, AC
+				"metrics-scope.ab.otel-bar":                1, // AB->bar
+				"metrics-scope.ab.otel-resource.namespace": 3, // AB
+				"metrics-generic.otel-default":             6, // BA, BB
 			}, rec)
 		})
 	})
