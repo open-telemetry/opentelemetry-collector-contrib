@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
+//nolint:unused
 var disallowFieldExtractConfigRegex = featuregate.GlobalRegistry().MustRegister(
 	"k8sattr.fieldExtractConfigRegex.disallow",
 	featuregate.StageStable,
