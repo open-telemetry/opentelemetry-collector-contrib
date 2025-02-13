@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode"
 )
 
 func main() {
@@ -34,10 +35,15 @@ type function struct {
 	ParamTypes  []string `json:"param_types,omitempty"`
 }
 
+type apistruct struct {
+	Name   string   `json:"name"`
+	Fields []string `json:"fields"`
+}
+
 type api struct {
-	Values    []string    `json:"values,omitempty"`
-	Structs   []string    `json:"structs,omitempty"`
-	Functions []*function `json:"functions,omitempty"`
+	Values    []string     `json:"values,omitempty"`
+	Structs   []*apistruct `json:"structs,omitempty"`
+	Functions []*function  `json:"functions,omitempty"`
 }
 
 func run(folder string, allowlistFilePath string) error {
@@ -101,9 +107,17 @@ func handleFile(f *ast.File, result *api) {
 					}
 				}
 				if t, ok := s.(*ast.TypeSpec); ok {
-					if t.Name.IsExported() {
-						result.Structs = append(result.Structs, t.Name.String())
+					var fieldNames []string
+					if t.TypeParams != nil {
+						fieldNames = make([]string, len(t.TypeParams.List))
+						for i, f := range t.TypeParams.List {
+							fieldNames[i] = f.Names[0].Name
+						}
 					}
+					result.Structs = append(result.Structs, &apistruct{
+						Name:   t.Name.String(),
+						Fields: fieldNames,
+					})
 				}
 			}
 		}
@@ -164,7 +178,9 @@ func walkFolder(folder string, componentType string) error {
 			handleFile(f, result)
 		}
 	}
-	sort.Strings(result.Structs)
+	sort.Slice(result.Structs, func(i int, j int) bool {
+		return strings.Compare(result.Structs[i].Name, result.Structs[j].Name) > 0
+	})
 	sort.Strings(result.Values)
 	sort.Slice(result.Functions, func(i int, j int) bool {
 		return strings.Compare(result.Functions[i].Name, result.Functions[j].Name) < 0
@@ -177,14 +193,18 @@ func walkFolder(folder string, componentType string) error {
 		return nil
 	}
 
-	if len(result.Functions) == 0 {
-		return nil
-	}
 	if len(result.Functions) > 1 {
 		return fmt.Errorf("%s has more than one function: %q", folder, strings.Join(fnNames, ","))
 	}
-	if err := checkFactoryFunction(result.Functions[0], folder, componentType); err != nil {
-		return err
+	if len(result.Functions) == 1 {
+		if err := checkFactoryFunction(result.Functions[0], folder, componentType); err != nil {
+			return err
+		}
+	}
+	for _, s := range result.Structs {
+		if err := checkStructDisallowUnkeyedLiteral(s, folder); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -206,6 +226,18 @@ func checkFactoryFunction(newFactoryFn *function, folder string, componentType s
 		return fmt.Errorf("%s NewFactory function does not return a valid type: %s, expected %s.Factory", folder, returnType, componentType)
 	}
 	return nil
+}
+
+func checkStructDisallowUnkeyedLiteral(s *apistruct, folder string) error {
+	if !unicode.IsUpper(rune(s.Name[0])) {
+		return nil
+	}
+	for _, f := range s.Fields {
+		if !unicode.IsUpper(rune(f[0])) {
+			return nil
+		}
+	}
+	return fmt.Errorf("%s struct %q does not prevent unkeyed literal initialization", folder, s.Name)
 }
 
 func exprToString(expr ast.Expr) string {
