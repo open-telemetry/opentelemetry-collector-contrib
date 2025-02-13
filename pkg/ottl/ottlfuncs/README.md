@@ -466,6 +466,7 @@ Available Converters:
 - [String](#string)
 - [Substring](#substring)
 - [Time](#time)
+- [ToCamelCase](#tocamelcase)
 - [ToKeyValueString](#tokeyvaluestring)
 - [ToLowerCase](#tolowercase)
 - [ToSnakeCase](#tosnakecase)
@@ -2020,6 +2021,18 @@ Examples:
 
 - `Time("mercoledì set 4 2024", "%A %h %e %Y", "", "it")`
 - `Time("Febrero 25 lunes, 2002, 02:03:04 p.m.", "%B %d %A, %Y, %r", "America/New_York", "es-ES")`
+
+### ToCamelCase
+
+`ToCamelCase(target)`
+
+The `ToCamelCase` Converter converts the `target` string into camel case (e.g. `my_metric_name` to `MyMetricName`).
+
+`target` is a string.
+
+Examples:
+
+- `ToCamelCase(metric.name)`
 
 ### ToKeyValueString
 
