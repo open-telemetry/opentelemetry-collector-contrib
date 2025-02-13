@@ -10,6 +10,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"gopkg.in/yaml.v3"
 	"io/fs"
 	"log"
 	"os"
@@ -46,6 +47,15 @@ type api struct {
 	Functions []*function  `json:"functions,omitempty"`
 }
 
+type metadata struct {
+	Type   string `yaml:"type"`
+	Status status `yaml:"status"`
+}
+
+type status struct {
+	Class string `yaml:"class"`
+}
+
 func run(folder string, allowlistFilePath string) error {
 	allowlistData, err := os.ReadFile(allowlistFilePath)
 	if err != nil {
@@ -61,9 +71,22 @@ func run(folder string, allowlistFilePath string) error {
 			if err != nil {
 				return err
 			}
-			componentType := strings.Split(relativeBase, string(os.PathSeparator))[0]
-			switch componentType {
-			case "receiver", "processor", "exporter", "connector", "extension":
+			if _, err := os.Stat(filepath.Join(base, "metadata.yaml")); errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
+			m, err := os.ReadFile(filepath.Join(base, "metadata.yaml"))
+			if err != nil {
+				return err
+			}
+			var componentInfo metadata
+			if err = yaml.Unmarshal(m, &componentInfo); err != nil {
+				return err
+			}
+
+			switch componentInfo.Status.Class {
+			case "receiver", "processor", "exporter", "connector", "extension", "pkg":
+			case "internal":
+				return nil
 			default:
 				return nil
 			}
@@ -74,7 +97,7 @@ func run(folder string, allowlistFilePath string) error {
 					return nil
 				}
 			}
-			if err = walkFolder(base, componentType); err != nil {
+			if err = walkFolder(base, componentInfo.Status.Class); err != nil {
 				errs = append(errs, err)
 			}
 		}
@@ -193,10 +216,10 @@ func walkFolder(folder string, componentType string) error {
 		return nil
 	}
 
-	if len(result.Functions) > 1 {
+	if len(result.Functions) > 1 && componentType != "pkg" {
 		return fmt.Errorf("%s has more than one function: %q", folder, strings.Join(fnNames, ","))
 	}
-	if len(result.Functions) == 1 {
+	if len(result.Functions) == 1 && componentType != "pkg" {
 		if err := checkFactoryFunction(result.Functions[0], folder, componentType); err != nil {
 			return err
 		}
@@ -212,7 +235,7 @@ func walkFolder(folder string, componentType string) error {
 // check the only exported function of the module is NewFactory, matching the signature of the factory expected by the collector builder.
 func checkFactoryFunction(newFactoryFn *function, folder string, componentType string) error {
 	if newFactoryFn.Name != "NewFactory" {
-		return fmt.Errorf("%s does not define a NewFactory function", folder)
+		return fmt.Errorf("%s does not define a NewFactory function as a %s", folder, componentType)
 	}
 	if newFactoryFn.Receiver != "" {
 		return fmt.Errorf("%s associated NewFactory with a receiver type", folder)
@@ -284,6 +307,12 @@ func exprToString(expr ast.Expr) string {
 		return fmt.Sprintf("%s[%s]", exprToString(e.X), exprToString(e.Index))
 	case *ast.BasicLit:
 		return e.Value
+	case *ast.IndexListExpr:
+		var exprs []string
+		for _, e := range e.Indices {
+			exprs = append(exprs, exprToString(e))
+		}
+		return strings.Join(exprs, ",")
 	default:
 		panic(fmt.Sprintf("Unsupported expr type: %#v", expr))
 	}
