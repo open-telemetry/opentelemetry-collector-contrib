@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 )
@@ -71,10 +72,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expectedErr != nil {
-				assert.ErrorContains(t, component.ValidateConfig(cfg), tt.expectedErr.Error())
+				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.expectedErr.Error())
 				return
 			}
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -83,7 +84,7 @@ func TestLoadConfig(t *testing.T) {
 func TestConfigValidateMissingAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "someQueue"
-	err := component.ValidateConfig(cfg)
+	err := xconfmap.Validate(cfg)
 	assert.ErrorContains(t, err, errMissingAuthDetails.Error())
 }
 
@@ -92,14 +93,14 @@ func TestConfigValidateMultipleAuth(t *testing.T) {
 	cfg.Queue = "someQueue"
 	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
 	cfg.Auth.XAuth2 = &SaslXAuth2Config{"Username", "Bearer"}
-	err := component.ValidateConfig(cfg)
+	err := xconfmap.Validate(cfg)
 	assert.ErrorContains(t, err, errTooManyAuthDetails.Error())
 }
 
 func TestConfigValidateMissingQueue(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
-	err := component.ValidateConfig(cfg)
+	err := xconfmap.Validate(cfg)
 	assert.ErrorContains(t, err, errMissingQueueName.Error())
 }
 
@@ -145,7 +146,7 @@ func TestConfigValidateSuccess(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Queue = "someQueue"
 			configure(cfg)
-			err := component.ValidateConfig(cfg)
+			err := xconfmap.Validate(cfg)
 			assert.NoError(t, err)
 		})
 	}
