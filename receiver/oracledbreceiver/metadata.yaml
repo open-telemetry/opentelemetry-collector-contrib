@@ -129,7 +129,7 @@ metrics:
     unit: "{requests}"
   oracledb.physical_writes:
     description: Number of physical writes
-    enabled: true
+    enabled: false
     sum:
       aggregation_temporality: cumulative
       monotonic: true
