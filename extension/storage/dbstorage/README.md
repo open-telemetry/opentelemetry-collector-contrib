@@ -39,13 +39,10 @@ service:
   pipelines:
     traces:
       receivers: [nop]
-      processors: [nop]
       exporters: [nop]
 
 # Data pipeline is required to load the config.
 receivers:
-  nop:
-processors:
   nop:
 exporters:
   nop:

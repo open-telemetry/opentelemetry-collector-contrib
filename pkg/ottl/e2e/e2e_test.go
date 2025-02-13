@@ -460,6 +460,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], ToLowerCase("PASS"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ConvertAttributesToElementsXML("<Log id=\"1\"><Message>This is a log message!</Message></Log>"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", `<Log><Message>This is a log message!</Message><id>1</id></Log>`)
