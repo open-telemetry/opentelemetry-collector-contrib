@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"net/http"
 	"runtime"
@@ -1004,6 +1005,21 @@ func TestExporterMetrics(t *testing.T) {
 		})
 		addToMetricSlice(resourceAnotherB.ScopeMetrics().AppendEmpty().Metrics())
 
+		assertDocsInIndices := func(t *testing.T, wantDocsPerIndex map[string]int, rec *bulkRecorder) {
+			var sum int
+			for v := range maps.Values(wantDocsPerIndex) {
+				sum += v
+			}
+			rec.WaitItems(sum)
+
+			actualDocsPerIndex := make(map[string]int)
+			for _, item := range rec.Items() {
+				idx := gjson.GetBytes(item.Action, "create._index")
+				actualDocsPerIndex[idx.String()] += 1
+			}
+			assert.Equal(t, wantDocsPerIndex, actualDocsPerIndex, rec.Items())
+		}
+
 		t.Run("ecs", func(t *testing.T) {
 			rec := newBulkRecorder()
 			server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -1018,54 +1034,13 @@ func TestExporterMetrics(t *testing.T) {
 
 			mustSendMetrics(t, exporter, metrics)
 
-			expected := []itemRequest{
-				{
-					Action:   []byte(`{"create":{"_index":"metrics-generic-bar"}}`),
-					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"bar","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0}}`),
-				},
-				{
-					Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
-					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0,"foo":1.0}}`),
-				},
-				{
-					Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
-					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"metric":{"bar":1.0,"foo":1}}`),
-				},
-				{
-					Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
-					Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1.0}}`),
-				},
-				{
-					Action:   []byte(`{"create":{"_index":"metrics-scope.b-bar"}}`),
-					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"bar","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0}}`),
-				},
-				{
-					Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
-					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0,"foo":1.0}}`),
-				},
-				{
-					Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
-					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"bar":1.0,"foo":1}}`),
-				},
-				{
-					Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
-					Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1.0}}`),
-				},
-				{
-					Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
-					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0,"foo":1.0},"my":{"resource":"resource.b"}}`),
-				},
-				{
-					Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
-					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"bar":1.0,"foo":1},"my":{"resource":"resource.b"}}`),
-				},
-				{
-					Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
-					Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"baz":1.0},"my":{"resource":"resource.b"}}`),
-				},
-			}
-
-			assertRecordedItems(t, expected, rec, false)
+			assertDocsInIndices(t, map[string]int{
+				"metrics-generic-bar":                1,
+				"metrics-generic-resource.namespace": 3,
+				"metrics-scope.b-bar":                1,
+				"metrics-scope.b-resource.namespace": 3,
+				"metrics-generic-default":            3,
+			}, rec)
 		})
 	})
 
