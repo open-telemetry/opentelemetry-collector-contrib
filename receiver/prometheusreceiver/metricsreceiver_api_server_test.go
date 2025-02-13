@@ -208,7 +208,8 @@ func testBuildInfo(t *testing.T, endpoint string) {
 	assert.NoError(t, err)
 
 	var prometheusVersion api_v1.PrometheusVersion
-	json.Unmarshal([]byte(prometheusConfigResponse.Data), &prometheusVersion)
+	err = json.Unmarshal([]byte(prometheusConfigResponse.Data), &prometheusVersion)
+	assert.NoError(t, err)
 	assert.NotNil(t, prometheusVersion)
 	assert.NotEmpty(t, prometheusVersion.GoVersion)
 }
@@ -217,7 +218,8 @@ func testFlags(t *testing.T, endpoint string) {
 	prometheusConfigResponse, err := callAPI(endpoint, "/status/flags")
 	assert.NoError(t, err)
 	var flagsMap map[string]string
-	json.Unmarshal([]byte(prometheusConfigResponse.Data), &flagsMap)
+	err = json.Unmarshal([]byte(prometheusConfigResponse.Data), &flagsMap)
+	assert.NoError(t, err)
 	assert.NotNil(t, flagsMap)
 }
 
