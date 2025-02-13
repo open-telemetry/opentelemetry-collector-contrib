@@ -98,6 +98,7 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.120.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.120.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.120.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter v0.120.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.120.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.120.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.120.0
