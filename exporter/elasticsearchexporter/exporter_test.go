@@ -1019,7 +1019,7 @@ func TestExporterMetrics(t *testing.T) {
 			actualDocsPerIndex := make(map[string]int)
 			for _, item := range rec.Items() {
 				idx := gjson.GetBytes(item.Action, "create._index")
-				actualDocsPerIndex[idx.String()] += 1
+				actualDocsPerIndex[idx.String()]++
 			}
 			assert.Equal(t, wantDocsPerIndex, actualDocsPerIndex)
 		}
