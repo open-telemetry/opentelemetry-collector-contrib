@@ -171,6 +171,11 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 		return rm.ScopeMetrics().Len() == 0
 	})
 
+	// Don't send empty metrics downstream
+	if md.ResourceMetrics().Len() == 0 {
+		return errs
+	}
+
 	if err := p.nextConsumer.ConsumeMetrics(ctx, md); err != nil {
 		errs = errors.Join(errs, err)
 	}
@@ -222,6 +227,11 @@ func (p *Processor) exportMetrics() {
 
 		return out
 	}()
+
+	// Don't send empty metrics downstream
+	if md.ResourceMetrics().Len() == 0 {
+		return
+	}
 
 	if err := p.nextConsumer.ConsumeMetrics(p.ctx, md); err != nil {
 		p.logger.Error("Metrics export failed", zap.Error(err))
