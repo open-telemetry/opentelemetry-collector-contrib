@@ -83,7 +83,7 @@ func (e *kafkaTracesProducer) start(ctx context.Context, host component.Host) er
 	if e.marshaler == nil {
 		return errUnrecognizedEncoding
 	}
-	producer, err := newSaramaProducer(ctx, e.cfg)
+	producer, err := newSaramaProducer(ctx, e.cfg, e.logger)
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func (e *kafkaMetricsProducer) start(ctx context.Context, host component.Host) e
 	if e.marshaler == nil {
 		return errUnrecognizedEncoding
 	}
-	producer, err := newSaramaProducer(ctx, e.cfg)
+	producer, err := newSaramaProducer(ctx, e.cfg, e.logger)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func (e *kafkaLogsProducer) start(ctx context.Context, host component.Host) erro
 	if e.marshaler == nil {
 		return errUnrecognizedEncoding
 	}
-	producer, err := newSaramaProducer(ctx, e.cfg)
+	producer, err := newSaramaProducer(ctx, e.cfg, e.logger)
 	if err != nil {
 		return err
 	}
@@ -207,8 +207,29 @@ func (e *kafkaLogsProducer) start(ctx context.Context, host component.Host) erro
 	return nil
 }
 
-func newSaramaProducer(ctx context.Context, config Config) (sarama.SyncProducer, error) {
+type saramaLogWrapper struct {
+	logger *zap.Logger
+}
+
+func NewSaramaLogWrapper(logger *zap.Logger) sarama.StdLogger {
+	return &saramaLogWrapper{logger: logger}
+}
+
+func (w *saramaLogWrapper) Print(v ...interface{}) {
+	w.logger.Debug(fmt.Sprint(v...))
+}
+
+func (w *saramaLogWrapper) Printf(format string, v ...interface{}) {
+	w.logger.Debug(fmt.Sprintf(format, v...))
+}
+
+func (w *saramaLogWrapper) Println(v ...interface{}) {
+	w.logger.Debug(fmt.Sprintln(v...))
+}
+
+func newSaramaProducer(ctx context.Context, config Config, logger *zap.Logger) (sarama.SyncProducer, error) {
 	c := sarama.NewConfig()
+	sarama.Logger = NewSaramaLogWrapper(logger)
 
 	c.ClientID = config.ClientID
 
