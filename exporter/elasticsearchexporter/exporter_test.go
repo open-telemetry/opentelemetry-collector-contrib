@@ -947,7 +947,7 @@ func TestExporterMetrics(t *testing.T) {
 			barMetric := metricSlice.AppendEmpty()
 			barMetric.SetName("metric.bar")
 			barDps := barMetric.SetEmptyGauge().DataPoints()
-			barDp := barDps.AppendEmpty()
+			barDp := barDps.AppendEmpty() // dp without attribute
 			barDp.SetDoubleValue(1.0)
 			barOtherDp := barDps.AppendEmpty()
 			fillAttributeMap(barOtherDp.Attributes(), map[string]any{
@@ -965,7 +965,7 @@ func TestExporterMetrics(t *testing.T) {
 			bazMetric.SetName("metric.baz")
 			bazDps := bazMetric.SetEmptyGauge().DataPoints()
 			bazDp := bazDps.AppendEmpty()
-			bazDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+			bazDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0))) // dp with different timestamp
 			bazDp.SetDoubleValue(1.0)
 		}
 
@@ -1017,7 +1017,7 @@ func TestExporterMetrics(t *testing.T) {
 				idx := gjson.GetBytes(item.Action, "create._index")
 				actualDocsPerIndex[idx.String()] += 1
 			}
-			assert.Equal(t, wantDocsPerIndex, actualDocsPerIndex, rec.Items())
+			assert.Equal(t, wantDocsPerIndex, actualDocsPerIndex)
 		}
 
 		t.Run("ecs", func(t *testing.T) {
@@ -1040,6 +1040,28 @@ func TestExporterMetrics(t *testing.T) {
 				"metrics-scope.b-bar":                1,
 				"metrics-scope.b-resource.namespace": 3,
 				"metrics-generic-default":            3,
+			}, rec)
+		})
+
+		t.Run("otel", func(t *testing.T) {
+			rec := newBulkRecorder()
+			server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+				rec.Record(docs)
+				return itemsAllOK(docs)
+			})
+
+			exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+				cfg.Mapping.Mode = "otel"
+			})
+
+			mustSendMetrics(t, exporter, metrics)
+
+			assertDocsInIndices(t, map[string]int{
+				"metrics-generic.otel-bar":                3, // AA->bar, AC->bar, BA->bar
+				"metrics-generic.otel-resource.namespace": 6, // AA, AC
+				"metrics-scope.b.otel-bar":                1, // AB->bar
+				"metrics-scope.b.otel-resource.namespace": 3, // AB
+				"metrics-generic.otel-default":            3, // BA
 			}, rec)
 		})
 	})
