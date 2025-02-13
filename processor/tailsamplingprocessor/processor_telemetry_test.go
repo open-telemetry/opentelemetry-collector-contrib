@@ -20,6 +20,8 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TestMetricsAfterOneEvaluation(t *testing.T) {
@@ -39,10 +41,13 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 				},
 			},
 		},
+		Options: []Option{
+			withDecisionBatcher(syncBatcher),
+		},
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
 		err = proc.Shutdown(context.Background())
@@ -232,11 +237,14 @@ func TestMetricsWithComponentID(t *testing.T) {
 				},
 			},
 		},
+		Options: []Option{
+			withDecisionBatcher(syncBatcher),
+		},
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
 	ct.ID = component.MustNewIDWithName("tail_sampling", "unique_id") // e.g tail_sampling/unique_id
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
 		err = proc.Shutdown(context.Background())
@@ -336,10 +344,13 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 				},
 			},
 		},
+		Options: []Option{
+			withDecisionBatcher(syncBatcher),
+		},
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
 		err = proc.Shutdown(context.Background())
@@ -401,10 +412,13 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 				},
 			},
 		},
+		Options: []Option{
+			withDecisionBatcher(syncBatcher),
+		},
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
 		err = proc.Shutdown(context.Background())
@@ -462,10 +476,13 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 				},
 			},
 		},
+		Options: []Option{
+			withDecisionBatcher(syncBatcher),
+		},
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.newSettings()
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, withDecisionBatcher(syncBatcher))
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
 	require.NoError(t, err)
 	defer func() {
 		err = proc.Shutdown(context.Background())
@@ -519,6 +536,144 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 
 	got := s.getMetric(m.Name, md)
 
+	metricdatatest.AssertEqual(t, m, got, metricdatatest.IgnoreTimestamp())
+}
+
+func TestProcessorTailSamplingSamplingTraceDroppedTooEarly(t *testing.T) {
+	// prepare
+	s := setupTestTelemetry()
+	b := newSyncIDBatcher()
+	syncBatcher := b.(*syncIDBatcher)
+
+	cfg := Config{
+		DecisionWait: 1,
+		NumTraces:    2,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "always",
+					Type: AlwaysSample,
+				},
+			},
+		},
+		Options: []Option{
+			withDecisionBatcher(syncBatcher),
+		},
+	}
+	cs := &consumertest.TracesSink{}
+	ct := s.newSettings()
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
+	require.NoError(t, err)
+	defer func() {
+		err = proc.Shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	err = proc.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	// test
+	_, batches := generateIDsAndBatches(3)
+	for _, batch := range batches {
+		err = proc.ConsumeTraces(context.Background(), batch)
+		require.NoError(t, err)
+	}
+
+	tsp := proc.(*tailSamplingSpanProcessor)
+	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
+	tsp.policyTicker.OnTick()
+
+	// verify
+	var md metricdata.ResourceMetrics
+	require.NoError(t, s.reader.Collect(context.Background(), &md))
+
+	m := metricdata.Metrics{
+		Name:        "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
+		Description: "Count of traces that needed to be dropped before the configured wait time",
+		Unit:        "{traces}",
+		Data: metricdata.Sum[int64]{
+			IsMonotonic: true,
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints: []metricdata.DataPoint[int64]{
+				{
+					Value: 1,
+				},
+			},
+		},
+	}
+
+	got := s.getMetric(m.Name, md)
+	metricdatatest.AssertEqual(t, m, got, metricdatatest.IgnoreTimestamp())
+}
+
+func TestProcessorTailSamplingSamplingPolicyEvaluationError(t *testing.T) {
+	// prepare
+	s := setupTestTelemetry()
+	b := newSyncIDBatcher()
+	syncBatcher := b.(*syncIDBatcher)
+
+	cfg := Config{
+		DecisionWait: 1,
+		NumTraces:    100,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "ottl",
+					Type: OTTLCondition,
+					OTTLConditionCfg: OTTLConditionCfg{
+						ErrorMode:      ottl.PropagateError,
+						SpanConditions: []string{"attributes[1] == \"test\""},
+					},
+				},
+			},
+		},
+		Options: []Option{
+			withDecisionBatcher(syncBatcher),
+		},
+	}
+	cs := &consumertest.TracesSink{}
+	ct := s.newSettings()
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
+	require.NoError(t, err)
+	defer func() {
+		err = proc.Shutdown(context.Background())
+		require.NoError(t, err)
+	}()
+
+	err = proc.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	// test
+	_, batches := generateIDsAndBatches(2)
+	for _, batch := range batches {
+		err = proc.ConsumeTraces(context.Background(), batch)
+		require.NoError(t, err)
+	}
+
+	tsp := proc.(*tailSamplingSpanProcessor)
+	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
+	tsp.policyTicker.OnTick()
+
+	// verify
+	var md metricdata.ResourceMetrics
+	require.NoError(t, s.reader.Collect(context.Background(), &md))
+
+	m := metricdata.Metrics{
+		Name:        "otelcol_processor_tail_sampling_sampling_policy_evaluation_error",
+		Description: "Count of sampling policy evaluation errors",
+		Unit:        "{errors}",
+		Data: metricdata.Sum[int64]{
+			IsMonotonic: true,
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints: []metricdata.DataPoint[int64]{
+				{
+					Value: 2,
+				},
+			},
+		},
+	}
+
+	got := s.getMetric(m.Name, md)
 	metricdatatest.AssertEqual(t, m, got, metricdatatest.IgnoreTimestamp())
 }
 

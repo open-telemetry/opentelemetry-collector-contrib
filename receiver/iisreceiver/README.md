@@ -33,7 +33,7 @@ Example:
 
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go).
 
 ## Metrics
 

@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
@@ -46,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 func TestMissingConnection(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	err := component.ValidateConfig(cfg)
+	err := xconfmap.Validate(cfg)
 	assert.EqualError(t, err, "missing connection")
 }
 
@@ -54,7 +55,7 @@ func TestInvalidConnectionString(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Connection = "foo"
-	err := component.ValidateConfig(cfg)
+	err := xconfmap.Validate(cfg)
 	assert.EqualError(t, err, "failed parsing connection string due to unmatched key value separated by '='")
 }
 
@@ -70,6 +71,6 @@ func TestInvalidFormat(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 	cfg.(*Config).Format = "invalid"
-	err := component.ValidateConfig(cfg)
+	err := xconfmap.Validate(cfg)
 	assert.ErrorContains(t, err, "invalid format; must be one of")
 }

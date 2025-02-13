@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -646,10 +646,10 @@ func BenchmarkConsumeTraces_10E1000T(b *testing.B) {
 }
 
 func randomTraces() ptrace.Traces {
-	v1 := uint8(rand.Intn(256))
-	v2 := uint8(rand.Intn(256))
-	v3 := uint8(rand.Intn(256))
-	v4 := uint8(rand.Intn(256))
+	v1 := uint8(rand.IntN(256))
+	v2 := uint8(rand.IntN(256))
+	v3 := uint8(rand.IntN(256))
+	v4 := uint8(rand.IntN(256))
 	traces := ptrace.NewTraces()
 	appendSimpleTraceWithID(traces.ResourceSpans().AppendEmpty(), [16]byte{v1, v2, v3, v4})
 	return traces

@@ -21,16 +21,17 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 )
 
 // https://cloud.google.com/pubsub/docs/reference/rpc/google.pubsub.v1#streamingpullrequest
 type pubsubReceiver struct {
-	logger             *zap.Logger
+	settings           receiver.Settings
 	obsrecv            *receiverhelper.ObsReport
 	tracesConsumer     consumer.Traces
 	metricsConsumer    consumer.Metrics
@@ -43,6 +44,7 @@ type pubsubReceiver struct {
 	logsUnmarshaler    plog.Unmarshaler
 	handler            *internal.StreamHandler
 	startOnce          sync.Once
+	telemetryBuilder   *metadata.TelemetryBuilder
 }
 
 type buildInEncoding int
@@ -118,6 +120,11 @@ func (receiver *pubsubReceiver) Start(ctx context.Context, host component.Host) 
 			return
 		}
 		receiver.client = client
+		receiver.telemetryBuilder, err = metadata.NewTelemetryBuilder(receiver.settings.TelemetrySettings)
+		if err != nil {
+			startErr = fmt.Errorf("failed to create telemetry builder: %w", err)
+			return
+		}
 
 		err = createHandlerFn(ctx)
 		if err != nil {
@@ -194,9 +201,9 @@ func (receiver *pubsubReceiver) setMarshallerFromEncodingID(encodingID buildInEn
 
 func (receiver *pubsubReceiver) Shutdown(_ context.Context) error {
 	if receiver.handler != nil {
-		receiver.logger.Info("Stopping Google Pubsub receiver")
+		receiver.settings.Logger.Info("Stopping Google Pubsub receiver")
 		receiver.handler.CancelNow()
-		receiver.logger.Info("Stopped Google Pubsub receiver")
+		receiver.settings.Logger.Info("Stopped Google Pubsub receiver")
 		receiver.handler = nil
 	}
 	if receiver.client == nil {
@@ -370,7 +377,8 @@ func (receiver *pubsubReceiver) createMultiplexingReceiverHandler(ctx context.Co
 	var err error
 	receiver.handler, err = internal.NewHandler(
 		ctx,
-		receiver.logger,
+		receiver.settings,
+		receiver.telemetryBuilder,
 		receiver.client,
 		receiver.config.ClientID,
 		receiver.config.Subscription,
@@ -432,7 +440,8 @@ func (receiver *pubsubReceiver) createReceiverHandler(ctx context.Context) error
 
 	receiver.handler, err = internal.NewHandler(
 		ctx,
-		receiver.logger,
+		receiver.settings,
+		receiver.telemetryBuilder,
 		receiver.client,
 		receiver.config.ClientID,
 		receiver.config.Subscription,
