@@ -34,9 +34,6 @@ Each statement can access and transform telemetry using functions and allow the 
 
 The Transform Processor allows configuring OTTL statements for traces, metrics, and logs.
 
-> [!NOTE]
-> If you don't know how to write OTTL statements yet, first see [Writing OTTL](#writing-ottl).
-
 ### General Config
 
 > [!NOTE]
