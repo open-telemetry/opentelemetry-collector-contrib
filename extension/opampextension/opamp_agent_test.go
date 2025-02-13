@@ -42,6 +42,7 @@ func TestNewOpampAgent(t *testing.T) {
 	assert.NotEmpty(t, o.instanceID.String())
 	assert.True(t, o.capabilities.ReportsEffectiveConfig)
 	assert.True(t, o.capabilities.ReportsHealth)
+	assert.True(t, o.capabilities.ReportsAvailableComponents)
 	assert.Empty(t, o.effectiveConfig)
 	assert.Nil(t, o.agentDescription)
 	assert.NoError(t, o.Shutdown(context.Background()))
@@ -54,12 +55,141 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 	set.Resource.Attributes().PutStr(semconv.AttributeServiceName, "otelcol-distro")
 	set.Resource.Attributes().PutStr(semconv.AttributeServiceVersion, "distro.0")
 	set.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, "f8999bc1-4c9b-4619-9bae-7f009d2411ec")
+	set.ModuleInfo = generateTestModuleInfo(t)
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 	assert.Equal(t, "otelcol-distro", o.agentType)
 	assert.Equal(t, "distro.0", o.agentVersion)
 	assert.Equal(t, "f8999bc1-4c9b-4619-9bae-7f009d2411ec", o.instanceID.String())
+	assert.Equal(t, generateTestAvailableComponents(), o.availableComponents)
 	assert.NoError(t, o.Shutdown(context.Background()))
+}
+
+func generateTestModuleInfo(t *testing.T) extension.ModuleInfo {
+	return extension.ModuleInfo{
+		Receiver: map[component.Type]string{
+			componentNewTypeNoErr(t, "otlp"):        "otlp@v0.117.0",        // Receiver type and version
+			componentNewTypeNoErr(t, "apachespark"): "apachespark@v0.117.0", // Receiver type and version
+		},
+		Processor: map[component.Type]string{
+			componentNewTypeNoErr(t, "batch"): "batch@v0.117.0", // Processor type and version
+		},
+		Exporter: map[component.Type]string{
+			componentNewTypeNoErr(t, "logging"): "logging@v0.117.0", // Exporter type and version
+		},
+		Extension: map[component.Type]string{
+			componentNewTypeNoErr(t, "health_check"): "health_check@v0.117.0", // Extension type and version
+		},
+		Connector: map[component.Type]string{
+			componentNewTypeNoErr(t, "routing"): "routing@v0.117.0", // Connector type and version
+		},
+	}
+}
+
+func componentNewTypeNoErr(t *testing.T, typeName string) component.Type {
+	newType, err := component.NewType(typeName)
+	require.NoError(t, err)
+	return newType
+}
+
+func generateTestAvailableComponents() *protobufs.AvailableComponents {
+	return &protobufs.AvailableComponents{
+		Hash: []byte("(L\f|m.\xfb\x14n\xe9>ѱ퀜\xf5NEg\xa4\xca\f\x0f\xe0P6\xb3\x96\x04\xb0\xc9"),
+		Components: map[string]*protobufs.ComponentDetails{
+			"receivers": {
+				SubComponentMap: map[string]*protobufs.ComponentDetails{
+					"otlp": {
+						Metadata: []*protobufs.KeyValue{
+							{
+								Key: "code.namespace",
+								Value: &protobufs.AnyValue{
+									Value: &protobufs.AnyValue_StringValue{
+										StringValue: "otlp@v0.117.0",
+									},
+								},
+							},
+						},
+					},
+					"apachespark": {
+						Metadata: []*protobufs.KeyValue{
+							{
+								Key: "code.namespace",
+								Value: &protobufs.AnyValue{
+									Value: &protobufs.AnyValue_StringValue{
+										StringValue: "apachespark@v0.117.0",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"processors": {
+				SubComponentMap: map[string]*protobufs.ComponentDetails{
+					"batch": {
+						Metadata: []*protobufs.KeyValue{
+							{
+								Key: "code.namespace",
+								Value: &protobufs.AnyValue{
+									Value: &protobufs.AnyValue_StringValue{
+										StringValue: "batch@v0.117.0",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"exporters": {
+				SubComponentMap: map[string]*protobufs.ComponentDetails{
+					"logging": {
+						Metadata: []*protobufs.KeyValue{
+							{
+								Key: "code.namespace",
+								Value: &protobufs.AnyValue{
+									Value: &protobufs.AnyValue_StringValue{
+										StringValue: "logging@v0.117.0",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"extensions": {
+				SubComponentMap: map[string]*protobufs.ComponentDetails{
+					"health_check": {
+						Metadata: []*protobufs.KeyValue{
+							{
+								Key: "code.namespace",
+								Value: &protobufs.AnyValue{
+									Value: &protobufs.AnyValue_StringValue{
+										StringValue: "health_check@v0.117.0",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"connectors": {
+				SubComponentMap: map[string]*protobufs.ComponentDetails{
+					"routing": {
+						Metadata: []*protobufs.KeyValue{
+							{
+								Key: "code.namespace",
+								Value: &protobufs.AnyValue{
+									Value: &protobufs.AnyValue_StringValue{
+										StringValue: "routing@v0.117.0",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 func TestCreateAgentDescription(t *testing.T) {
@@ -657,6 +787,10 @@ func (m mockOpAMPClient) SendCustomMessage(_ *protobufs.CustomMessage) (messageS
 }
 
 func (m mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) {}
+
+func (m mockOpAMPClient) SetAvailableComponents(_ *protobufs.AvailableComponents) error {
+	return nil
+}
 
 type mockStatusEvent struct {
 	status    componentstatus.Status
