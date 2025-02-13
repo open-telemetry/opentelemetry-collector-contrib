@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"maps"
 	"math"
 	"net/http"
 	"runtime"
@@ -1011,7 +1010,7 @@ func TestExporterMetrics(t *testing.T) {
 
 		assertDocsInIndices := func(t *testing.T, wantDocsPerIndex map[string]int, rec *bulkRecorder) {
 			var sum int
-			for v := range maps.Values(wantDocsPerIndex) {
+			for _, v := range wantDocsPerIndex {
 				sum += v
 			}
 			rec.WaitItems(sum)
