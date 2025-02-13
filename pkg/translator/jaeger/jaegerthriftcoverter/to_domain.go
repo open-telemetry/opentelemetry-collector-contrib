@@ -3,7 +3,7 @@
 // Copyright (c) 2017 Uber Technologies, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-package jaeger // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger/internal"
+package jaeger // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger/jaegerthriftcoverter"
 
 import (
 	"fmt"
