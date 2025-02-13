@@ -229,6 +229,29 @@ func (p *Processor) exportMetrics() {
 	}()
 
 	// Don't send empty metrics downstream
+	md.ResourceMetrics().RemoveIf(func(rm pmetric.ResourceMetrics) bool {
+		rm.ScopeMetrics().RemoveIf(func(sm pmetric.ScopeMetrics) bool {
+			sm.Metrics().RemoveIf(func(m pmetric.Metric) bool {
+				switch m.Type() {
+				case pmetric.MetricTypeSummary:
+					return m.Summary().DataPoints().Len() == 0
+				case pmetric.MetricTypeGauge:
+					return m.Gauge().DataPoints().Len() == 0
+				case pmetric.MetricTypeSum:
+					return m.Sum().DataPoints().Len() == 0
+				case pmetric.MetricTypeHistogram:
+					return m.Histogram().DataPoints().Len() == 0
+				case pmetric.MetricTypeExponentialHistogram:
+					return m.ExponentialHistogram().DataPoints().Len() == 0
+				default:
+					p.logger.Error("invalid MetricType", zap.Int32("type", int32(m.Type())))
+					return true
+				}
+			})
+			return sm.Metrics().Len() == 0
+		})
+		return rm.ScopeMetrics().Len() == 0
+	})
 	if md.ResourceMetrics().Len() == 0 {
 		return
 	}
