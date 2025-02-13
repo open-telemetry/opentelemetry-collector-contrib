@@ -20,13 +20,12 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 	grafanaRegexp "github.com/grafana/regexp"
 	"github.com/mwitkow/go-conntrack"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	commonconfig "github.com/prometheus/common/config"
+	"github.com/prometheus/common/promslog"
 	"github.com/prometheus/common/route"
 	"github.com/prometheus/common/version"
 	toolkit_web "github.com/prometheus/exporter-toolkit/web"
@@ -254,9 +253,9 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	}
 
 	o := &web.Options{
-		ScrapeManager: r.scrapeManager,
-		Context:       ctx,
-		ListenAddress: r.cfg.APIServer.ServerConfig.Endpoint,
+		ScrapeManager:   r.scrapeManager,
+		Context:         ctx,
+		ListenAddresses: []string{r.cfg.APIServer.ServerConfig.Endpoint},
 		ExternalURL: &url.URL{
 			Scheme: "http",
 			Host:   r.cfg.APIServer.ServerConfig.Endpoint,
@@ -280,7 +279,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	factoryAr := func(_ context.Context) api_v1.AlertmanagerRetriever { return nil }
 	factoryRr := func(_ context.Context) api_v1.RulesRetriever { return nil }
 	var app storage.Appendable
-	logger := log.NewNopLogger()
+	logger := promslog.NewNopLogger()
 
 	apiV1 := api_v1.NewAPI(o.QueryEngine, o.Storage, app, o.ExemplarStorage, factorySPr, factoryTr, factoryAr,
 
@@ -290,7 +289,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 		},
 		o.Flags, // nil
 		api_v1.GlobalURLOptions{
-			ListenAddress: o.ListenAddress,
+			ListenAddress: o.ListenAddresses[0],
 			Host:          o.ExternalURL.Host,
 			Scheme:        o.ExternalURL.Scheme,
 		},
@@ -328,12 +327,14 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 			BuildDate: version.BuildDate,
 			GoVersion: version.GoVersion,
 		},
+		o.NotificationsGetter,
+		o.NotificationsSub,
 		o.Gatherer,
 		o.Registerer,
 		nil,
-		o.EnableRemoteWriteReceiver,  // nil
-		o.AcceptRemoteWriteProtoMsgs, // nil
-		o.EnableOTLPWriteReceiver,    // nil
+		o.EnableRemoteWriteReceiver,
+		o.AcceptRemoteWriteProtoMsgs,
+		o.EnableOTLPWriteReceiver,
 	)
 
 	// Create listener and monitor with conntrack in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579
@@ -355,7 +356,7 @@ func (r *pReceiver) initAPIServer(ctx context.Context, host component.Host) erro
 	apiPath := "/api"
 	if o.RoutePrefix != "/" {
 		apiPath = o.RoutePrefix + apiPath
-		level.Info(logger).Log("msg", "Router prefix", "prefix", o.RoutePrefix)
+		logger.Info("Router prefix", "prefix", o.RoutePrefix)
 	}
 	av1 := route.New().
 		WithInstrumentation(setPathWithPrefix(apiPath + "/v1"))

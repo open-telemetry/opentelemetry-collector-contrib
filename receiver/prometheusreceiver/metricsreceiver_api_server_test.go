@@ -161,7 +161,7 @@ func testPrometheusConfig(t *testing.T, endpoint string, receiver *pReceiver) {
 	json.Unmarshal([]byte(prometheusConfigResponse.Data), &prometheusConfigResult)
 	assert.NotNil(t, prometheusConfigResult)
 	assert.NotNil(t, prometheusConfigResult.YAML)
-	prometheusConfig, err := config.Load(prometheusConfigResult.YAML, true, nil)
+	prometheusConfig, err := config.Load(prometheusConfigResult.YAML, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, prometheusConfig)
 
@@ -177,7 +177,7 @@ func testPrometheusConfig(t *testing.T, endpoint string, receiver *pReceiver) {
 	json.Unmarshal([]byte(newPrometheusConfigResponse.Data), &newPrometheusConfigResult)
 	assert.NotNil(t, newPrometheusConfigResult)
 	assert.NotNil(t, newPrometheusConfigResult.YAML)
-	newPrometheusConfig, err := config.Load(newPrometheusConfigResult.YAML, true, nil)
+	newPrometheusConfig, err := config.Load(newPrometheusConfigResult.YAML, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, newPrometheusConfig)
 	assert.Equal(t, newScrapeInterval, newPrometheusConfig.GlobalConfig.ScrapeInterval)
