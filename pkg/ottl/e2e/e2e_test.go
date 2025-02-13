@@ -1268,10 +1268,10 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 			want: map[string]any{
 				"bar":   "pass",
 				"flags": "pass",
-				"slice": []interface{}{
+				"slice": []any{
 					"val",
 				},
-				"nested": map[string]interface{}{
+				"nested": map[string]any{
 					"test": "pass",
 				},
 			},
@@ -1279,9 +1279,9 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 		{
 			name:      "return list",
 			statement: `attributes["things"]`,
-			want: []interface{}{
-				map[string]interface{}{"name": "foo", "value": int64(2)},
-				map[string]interface{}{"name": "bar", "value": int64(5)},
+			want: []any{
+				map[string]any{"name": "foo", "value": int64(2)},
+				map[string]any{"name": "bar", "value": int64(5)},
 			},
 		},
 	}
