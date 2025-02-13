@@ -82,7 +82,6 @@ type mappingModel interface {
 	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string, elasticsearch.Index, *bytes.Buffer) error
 	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string, idx elasticsearch.Index, buf *bytes.Buffer)
 	hashDataPoint(datapoints.DataPoint) uint32
-	encodeDocument(objmodel.Document, *bytes.Buffer) error
 	encodeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx elasticsearch.Index, buf *bytes.Buffer) (map[string]string, error)
 	encodeProfile(pcommon.Resource, pcommon.InstrumentationScope, pprofile.Profile, func(*bytes.Buffer, string, string) error) error
 }
@@ -90,12 +89,9 @@ type mappingModel interface {
 // encodeModel tries to keep the event as close to the original open telemetry semantics as is.
 // No fields will be mapped by default.
 //
-// Field deduplication and dedotting of attributes is supported by the encodeModel.
-//
 // See: https://github.com/open-telemetry/oteps/blob/master/text/logs/0097-log-data-model.md
 type encodeModel struct {
-	dedot bool
-	mode  MappingMode
+	mode MappingMode
 }
 
 const (
@@ -116,9 +112,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL str
 	default:
 		document = m.encodeLogDefaultMode(resource, record, scope, idx)
 	}
-	document.Dedup()
-
-	return document.Serialize(buf, m.dedot)
+	return document.Serialize(buf, m.mode == MappingECS)
 }
 
 func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope, idx elasticsearch.Index) objmodel.Document {
@@ -195,16 +189,6 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 	return document
 }
 
-func (m *encodeModel) encodeDocument(document objmodel.Document, buf *bytes.Buffer) error {
-	document.Dedup()
-
-	err := document.Serialize(buf, m.dedot)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // upsertMetricDataPointValue upserts a datapoint value to documents which is already hashed by resource and index
 func (m *encodeModel) hashDataPoint(dp datapoints.DataPoint) uint32 {
 	switch m.mode {
@@ -232,7 +216,7 @@ func (m *encodeModel) encodeDataPointsECSMode(resource pcommon.Resource, dataPoi
 		}
 		document.AddAttribute(dp.Metric().Name(), value)
 	}
-	err := m.encodeDocument(document, buf)
+	err := document.Serialize(buf, true)
 
 	return document.DynamicTemplates(), err
 }
@@ -262,9 +246,7 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL st
 	default:
 		document = m.encodeSpanDefaultMode(resource, span, scope, idx)
 	}
-	document.Dedup()
-	err := document.Serialize(buf, m.dedot)
-	return err
+	return document.Serialize(buf, m.mode == MappingECS)
 }
 
 func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope, idx elasticsearch.Index) objmodel.Document {
