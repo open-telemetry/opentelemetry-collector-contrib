@@ -53,7 +53,6 @@ func TestPrometheusAPIServer(t *testing.T) {
 		"localhost:9091": nil,
 	}
 	for endpoint := range endpointsToReceivers {
-
 		ctx := context.Background()
 		mp, cfg, err := setupMockPrometheus(targets...)
 		require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
@@ -161,7 +160,8 @@ func testPrometheusConfig(t *testing.T, endpoint string, receiver *pReceiver) {
 	prometheusConfigResponse, err := callAPI(endpoint, "/status/config")
 	assert.NoError(t, err)
 	var prometheusConfigResult v1.ConfigResult
-	json.Unmarshal([]byte(prometheusConfigResponse.Data), &prometheusConfigResult)
+	err = json.Unmarshal([]byte(prometheusConfigResponse.Data), &prometheusConfigResult)
+	assert.NoError(t, err)
 	assert.NotNil(t, prometheusConfigResult)
 	assert.NotNil(t, prometheusConfigResult.YAML)
 	prometheusConfig, err := config.Load(prometheusConfigResult.YAML, nil)
@@ -177,7 +177,8 @@ func testPrometheusConfig(t *testing.T, endpoint string, receiver *pReceiver) {
 	newPrometheusConfigResponse, err := callAPI(endpoint, "/status/config")
 	assert.NoError(t, err)
 	var newPrometheusConfigResult v1.ConfigResult
-	json.Unmarshal([]byte(newPrometheusConfigResponse.Data), &newPrometheusConfigResult)
+	err = json.Unmarshal([]byte(newPrometheusConfigResponse.Data), &newPrometheusConfigResult)
+	assert.NoError(t, err)
 	assert.NotNil(t, newPrometheusConfigResult)
 	assert.NotNil(t, newPrometheusConfigResult.YAML)
 	newPrometheusConfig, err := config.Load(newPrometheusConfigResult.YAML, nil)
@@ -194,7 +195,8 @@ func testRuntimeInfo(t *testing.T, endpoint string) {
 	prometheusConfigResponse, err := callAPI(endpoint, "/status/runtimeinfo")
 	assert.NoError(t, err)
 	var runtimeInfo api_v1.RuntimeInfo
-	json.Unmarshal([]byte(prometheusConfigResponse.Data), &runtimeInfo)
+	err = json.Unmarshal([]byte(prometheusConfigResponse.Data), &runtimeInfo)
+	assert.NoError(t, err)
 	assert.NotNil(t, runtimeInfo)
 	assert.NotEmpty(t, runtimeInfo.GoroutineCount)
 	assert.NotEmpty(t, runtimeInfo.GOMAXPROCS)

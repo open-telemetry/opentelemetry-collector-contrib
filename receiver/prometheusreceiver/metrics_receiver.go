@@ -424,7 +424,10 @@ func (r *pReceiver) Shutdown(ctx context.Context) error {
 		r.unregisterMetrics()
 	}
 	if r.apiServer != nil {
-		r.apiServer.Shutdown(ctx)
+		err := r.apiServer.Shutdown(ctx)
+		if err != nil {
+			r.settings.Logger.Error("API server shutdown failed", zap.Error(err))
+		}
 	}
 	return nil
 }
