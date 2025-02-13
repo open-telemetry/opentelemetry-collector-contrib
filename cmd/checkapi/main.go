@@ -18,6 +18,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"unicode"
 
 	"gopkg.in/yaml.v3"
 
@@ -40,10 +41,15 @@ type function struct {
 	ParamTypes  []string `json:"param_types,omitempty"`
 }
 
+type apistruct struct {
+	Name   string   `json:"name"`
+	Fields []string `json:"fields"`
+}
+
 type api struct {
-	Values    []string    `json:"values,omitempty"`
-	Structs   []string    `json:"structs,omitempty"`
-	Functions []*function `json:"functions,omitempty"`
+	Values    []string     `json:"values,omitempty"`
+	Structs   []*apistruct `json:"structs,omitempty"`
+	Functions []*function  `json:"functions,omitempty"`
 }
 
 type functionDescription struct {
@@ -127,9 +133,17 @@ func handleFile(cfg config, f *ast.File, result *api) {
 					}
 				}
 				if t, ok := s.(*ast.TypeSpec); ok {
-					if t.Name.IsExported() {
-						result.Structs = append(result.Structs, t.Name.String())
+					var fieldNames []string
+					if t.TypeParams != nil {
+						fieldNames = make([]string, len(t.TypeParams.List))
+						for i, f := range t.TypeParams.List {
+							fieldNames[i] = f.Names[0].Name
+						}
 					}
+					result.Structs = append(result.Structs, &apistruct{
+						Name:   t.Name.String(),
+						Fields: fieldNames,
+					})
 				}
 			}
 		}
@@ -190,7 +204,9 @@ func walkFolder(cfg config, folder string, _ string) error {
 			handleFile(cfg, f, result)
 		}
 	}
-	sort.Strings(result.Structs)
+	sort.Slice(result.Structs, func(i int, j int) bool {
+		return strings.Compare(result.Structs[i].Name, result.Structs[j].Name) > 0
+	})
 	sort.Strings(result.Values)
 	sort.Slice(result.Functions, func(i int, j int) bool {
 		return strings.Compare(result.Functions[i].Name, result.Functions[j].Name) < 0
@@ -218,5 +234,23 @@ OUTER:
 	if len(functionsPresent) == 0 {
 		return fmt.Errorf("[%s] no function matching configuration found", folder)
 	}
+
+	for _, s := range result.Structs {
+		if err := checkStructDisallowUnkeyedLiteral(s, folder); err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func checkStructDisallowUnkeyedLiteral(s *apistruct, folder string) error {
+	if !unicode.IsUpper(rune(s.Name[0])) {
+		return nil
+	}
+	for _, f := range s.Fields {
+		if !unicode.IsUpper(rune(f[0])) {
+			return nil
+		}
+	}
+	return fmt.Errorf("%s struct %q does not prevent unkeyed literal initialization", folder, s.Name)
 }
