@@ -1246,6 +1246,28 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 			statement: `Hex(Len(attributes) + Len(attributes))`,
 			want:      "0000000000000018",
 		},
+		{
+			name:      "return map type",
+			statement: `attributes["foo"]`,
+			want: map[string]any{
+				"bar":   "pass",
+				"flags": "pass",
+				"slice": []interface{}{
+					"val",
+				},
+				"nested": map[string]interface{}{
+					"test": "pass",
+				},
+			},
+		},
+		{
+			name:      "return list",
+			statement: `attributes["things"]`,
+			want: []interface{}{
+				map[string]interface{}{"name": "foo", "value": int64(2)},
+				map[string]interface{}{"name": "bar", "value": int64(5)},
+			},
+		},
 	}
 
 	for _, tt := range tests {
