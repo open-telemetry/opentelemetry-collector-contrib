@@ -32,7 +32,7 @@ type ConnAttr interface {
 // Conn implements connAttr interface.
 type Conn struct{}
 
-func (c *Conn) getEC2Region(s aws.Config) (string, error) { 
+func (c *Conn) getEC2Region(s aws.Config) (string, error) {
 	imdsClient := imds.NewFromConfig(s)
 	regionOutput, err := imdsClient.GetRegion(context.TODO(), &imds.GetRegionInput{})
 	if err != nil {
@@ -40,7 +40,6 @@ func (c *Conn) getEC2Region(s aws.Config) (string, error) {
 	}
 	return regionOutput.Region, nil
 }
-
 
 // AWS STS endpoint constants
 const (
@@ -115,8 +114,7 @@ func getProxyURL(finalProxyAddress string) (*url.URL, error) {
 // GetAWSConfigSession returns AWS config and session instances.
 func GetAWSConfig(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSettings) (*aws.Config, aws.Config, error) {
 	var awsRegion string
-
-	// Create a custom HTTP client
+	var err error
 	httpClient, err := newHTTPClient(logger, cfg.NumberOfWorkers, cfg.RequestTimeoutSeconds, cfg.NoVerifySSL, cfg.ProxyAddress)
 	if err != nil {
 		logger.Error("Unable to obtain proxy URL", zap.Error(err))
@@ -128,27 +126,26 @@ func GetAWSConfig(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSettings) (*aw
 	switch {
 	case cfg.Region == "" && regionEnv != "":
 		awsRegion = regionEnv
-		logger.Debug("Fetched region from environment variables", zap.String("region", awsRegion))
+		logger.Debug("Fetch region from environment variables", zap.String("region", awsRegion))
 	case cfg.Region != "":
 		awsRegion = cfg.Region
-		logger.Debug("Fetched region from command line/config file", zap.String("region", awsRegion))
+		logger.Debug("Fetch region from command-line/config file", zap.String("region", awsRegion))
 	case !cfg.NoVerifySSL:
-		// Use GetDefaultConfig instead of directly loading default config
 		awsCfg, err := GetDefaultConfig(logger)
 		if err != nil {
-			logger.Error("Unable to retrieve default AWS config", zap.Error(err))
+			logger.Error("Unable to retrieve default session", zap.Error(err))
 		} else {
-			awsRegion, err := cn.getEC2Region(awsCfg)
+			awsRegion, err = cn.getEC2Region(awsCfg)
 			if err != nil {
-				logger.Error("Unable to retrieve the region from EC2 instance", zap.Error(err))
+				logger.Error("Unable to retrieve the region from the EC2 instance", zap.Error(err))
 			} else {
-				logger.Debug("Fetched region from EC2 metadata", zap.String("region", awsRegion))
+				logger.Debug("Fetch region from EC2 metadata", zap.String("region", awsRegion))
 			}
 		}
 	}
 
 	if awsRegion == "" {
-		msg := "Cannot fetch region variable from config file, environment variables, or EC2 metadata."
+		msg := "Cannot fetch region variable from config file, environment variables, and EC2 metadata."
 		logger.Error(msg)
 		return nil, aws.Config{}, errors.New("NoAwsRegion")
 	}
@@ -160,9 +157,9 @@ func GetAWSConfig(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSettings) (*aw
 	}
 
 	config := &aws.Config{
-		Region:                 awsRegion,
-		RetryMaxAttempts:       cfg.MaxRetries,
-		HTTPClient:             httpClient,
+		Region:           awsRegion,
+		RetryMaxAttempts: cfg.MaxRetries,
+		HTTPClient:       httpClient,
 	}
 	return config, awsCfg, nil
 }
@@ -216,7 +213,7 @@ func (c *Conn) newAWSSession(logger *zap.Logger, roleArn string, region string) 
 		}
 
 		cfg, err = config.LoadDefaultConfig(context.TODO(),
-    		config.WithCredentialsProvider(stsCreds),
+			config.WithCredentialsProvider(stsCreds),
 		)
 		if err != nil {
 			logger.Error("Error in creating session object : ", zap.Error(err))
@@ -229,13 +226,11 @@ func (c *Conn) newAWSSession(logger *zap.Logger, roleArn string, region string) 
 // getSTSCreds gets STS credentials from regional endpoint. ErrCodeRegionDisabledException is received if the
 // STS regional endpoint is disabled. In this case STS credentials are fetched from STS primary regional endpoint
 // in the respective AWS partition.
-	
 func getSTSCreds(logger *zap.Logger, region string, roleArn string) (*stscreds.AssumeRoleProvider, error) {
 	t, err := GetDefaultConfig(logger)
 	if err != nil {
 		return nil, err
 	}
-		
 	stsCred := getSTSCredsFromRegionEndpoint(logger, t, region, roleArn)
 	// Make explicit call to fetch credentials.
 	_, err = stsCred.Retrieve(context.TODO())
@@ -243,34 +238,31 @@ func getSTSCreds(logger *zap.Logger, region string, roleArn string) (*stscreds.A
 		var apiErr smithy.APIError
 		if errors.As(err, &apiErr) {
 			err = nil
-				
-		if apiErr.ErrorCode() == "RegionDisabledException" {
-            logger.Error("Region ", zap.String("region", region), zap.Error(apiErr))
-            stsCred = getSTSCredsFromPrimaryRegionEndpoint(logger, t, roleArn, region)
-        }
-        }
-    }
-    return stsCred, err
+
+			if apiErr.ErrorCode() == "RegionDisabledException" {
+				logger.Error("Region ", zap.String("region", region), zap.Error(apiErr))
+				stsCred = getSTSCredsFromPrimaryRegionEndpoint(logger, t, roleArn, region)
+			}
+		}
+	}
+	return stsCred, err
 }
 
 // getSTSCredsFromRegionEndpoint fetches STS credentials for provided roleARN from regional endpoint.
 // AWS STS recommends that you provide both the Region and endpoint when you make calls to a Regional endpoint.
-// Reference: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html#id_credentials_temp_enable-regions_writing_code	
+// Reference: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html#id_credentials_temp_enable-regions_writing_code
 func getSTSCredsFromRegionEndpoint(logger *zap.Logger, conf aws.Config, region string, roleArn string) *stscreds.AssumeRoleProvider {
 	regionalEndpoint := getSTSRegionalEndpoint(region)
-		// if regionalEndpoint is "", the STS endpoint is Global endpoint for classic regions except ap-east-1 - (HKG)
-		// for other opt-in regions, region value will create STS regional endpoint.
-		// This will be only in the case, if provided region is not present in aws_regions.go
-
+	// if regionalEndpoint is "", the STS endpoint is Global endpoint for classic regions except ap-east-1 - (HKG)
+	// for other opt-in regions, region value will create STS regional endpoint.
+	// This will be only in the case, if provided region is not present in aws_regions.go
 	st := sts.NewFromConfig(conf, func(o *sts.Options) {
 		o.Region = region
 		if regionalEndpoint != "" {
 			o.BaseEndpoint = &regionalEndpoint
 		}
 	})
-
 	logger.Info("STS Endpoint", zap.String("endpoint", regionalEndpoint))
-
 	return stscreds.NewAssumeRoleProvider(st, roleArn)
 }
 
@@ -279,7 +271,6 @@ func getSTSCredsFromRegionEndpoint(logger *zap.Logger, conf aws.Config, region s
 func getSTSCredsFromPrimaryRegionEndpoint(logger *zap.Logger, t aws.Config, roleArn string, region string) *stscreds.AssumeRoleProvider {
 	logger.Info("Credentials for provided RoleARN being fetched from STS primary region endpoint.")
 	partitionID := getPartition(region)
-
 	var primaryRegion string
 	switch partitionID {
 	case "aws":
@@ -292,7 +283,6 @@ func getSTSCredsFromPrimaryRegionEndpoint(logger *zap.Logger, t aws.Config, role
 		logger.Error("Unsupported partition ID")
 		return nil
 	}
-
 	return getSTSCredsFromRegionEndpoint(logger, t, primaryRegion, roleArn)
 }
 
@@ -300,7 +290,6 @@ func getSTSCredsFromPrimaryRegionEndpoint(logger *zap.Logger, t aws.Config, role
 // This is a temporary solution to get the regional endpoint from the region.
 func getSTSRegionalEndpoint(region string) string {
 	partition := getPartition(region)
-
 	switch partition {
 	case "aws", "aws-us-gov":
 		return STSEndpointPrefix + region + STSEndpointSuffix
