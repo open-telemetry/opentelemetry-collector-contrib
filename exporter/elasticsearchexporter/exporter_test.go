@@ -1035,7 +1035,7 @@ func TestExporterMetrics(t *testing.T) {
 			mustSendMetrics(t, exporter, metrics)
 
 			assertDocsInIndices(t, map[string]int{
-				"metrics-generic-bar":                1,
+				"metrics-generic-bar":                2, // AA, BA
 				"metrics-generic-resource.namespace": 3,
 				"metrics-scope.b-bar":                1,
 				"metrics-scope.b-resource.namespace": 3,
