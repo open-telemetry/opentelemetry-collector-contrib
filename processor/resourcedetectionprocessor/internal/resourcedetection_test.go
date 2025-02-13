@@ -241,13 +241,13 @@ func TestDetectResource_Reconnect(t *testing.T) {
 	md1 := &MockDetector{}
 	res1 := pcommon.NewResource()
 	require.NoError(t, res1.Attributes().FromRaw(map[string]any{"a": "1", "b": "2"}))
-	md1.On("Detect").Return(pcommon.NewResource(), errors.New("connection error")).Twice()
+	md1.On("Detect").Return(pcommon.NewResource(), errors.New("connection error1")).Twice()
 	md1.On("Detect").Return(res1, nil)
 
 	md2 := &MockDetector{}
 	res2 := pcommon.NewResource()
 	require.NoError(t, res2.Attributes().FromRaw(map[string]any{"c": "3"}))
-	md2.On("Detect").Return(pcommon.NewResource(), errors.New("connection error")).Once()
+	md2.On("Detect").Return(pcommon.NewResource(), errors.New("connection error2")).Once()
 	md2.On("Detect").Return(res2, nil)
 
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}

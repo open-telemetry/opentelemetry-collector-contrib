@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const MAX_RETRY_INTERVAL = 32 * time.Second
+const MaxRetryInterval = 32 * time.Second
 
 type DetectorType string
 
@@ -145,13 +145,13 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 	resultsChan := make(chan detectResult, len(p.detectors))
 	for _, detector := range p.detectors {
 		go func(detector Detector) {
-			sleep := 2 * time.Second
+			sleep := 1 * time.Second
 			for {
 				r, schemaURL, err := detector.Detect(ctx)
 				if err != nil {
 					p.logger.Warn("failed to detect resource", zap.Error(err))
-					time.Sleep(sleep * time.Second)
-					if sleep < MAX_RETRY_INTERVAL {
+					time.Sleep(sleep)
+					if sleep < MaxRetryInterval {
 						sleep *= 2
 					}
 				} else {
