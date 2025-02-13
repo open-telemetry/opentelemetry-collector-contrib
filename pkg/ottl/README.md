@@ -25,7 +25,7 @@ An OTTL statement is made up of 2 parts:
 1. A function that transforms telemetry
 2. Optionally, a condition that determines whether the function is executed.
 
-Here is an example OTTL statment:
+Here is an example OTTL statement:
 
 ```
 set(span.attributes["test"], "pass") where span.attributes["test"] == nil
