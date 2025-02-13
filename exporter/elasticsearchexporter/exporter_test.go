@@ -997,6 +997,13 @@ func TestExporterMetrics(t *testing.T) {
 		scopeBA := resourceB.ScopeMetrics().AppendEmpty()
 		addToMetricSlice(scopeBA.Metrics())
 
+		// identical resource
+		resourceAnotherB := metrics.ResourceMetrics().AppendEmpty()
+		fillAttributeMap(resourceAnotherB.Resource().Attributes(), map[string]any{
+			"my.resource": "resource.b",
+		})
+		addToMetricSlice(resourceAnotherB.ScopeMetrics().AppendEmpty().Metrics())
+
 		t.Run("ecs", func(t *testing.T) {
 			rec := newBulkRecorder()
 			server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
