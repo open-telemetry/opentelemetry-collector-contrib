@@ -21,14 +21,92 @@ The Transform Processor modifies telemetry based on configuration using the [Ope
 For each signal type, the processor takes a list of statements and executes them against the incoming telemetry, following the order specified in the configuration.
 Each statement can access and transform telemetry using functions, and allows the use of a condition to help decide whether the function should be executed.
 
-- [Config](#config)
 - [Writing OTTL](#writing-ottl)
+- [Config](#config)
 - [Grammar](#grammar)
 - [Supported functions](#supported-functions)
 - [Examples](#examples)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [Feature Gate](#feature-gate)
+
+## Writing OTTL
+
+The Transform Processor utilizes OTTL statements to transform telemetry. An OTTL statement is made up of 2 parts:
+  1. A function that transforms telemetry
+  2. Optionally, a condition that determines whether the function is executed.
+
+For this document we'll use the following OTTL statement as an example:
+
+```
+set(span.attributes["test"], "pass") where span.attributes["test"] == nil
+```
+
+This statement sets a new span attribute named `"test"` with a value of `"pass"` whenever the span does not already
+have an attribute named `"test"`. In this example, the **function** is `set`, which uses the second parameter to set the value of the first parameter, and the **condition** is `span.attributes["test"] == nil`.
+
+Within a statement you utilize OTTL Paths to access telemetry. The example uses the Path `span.attributes` to access
+the span's attributes. For each Open Telemetry Signal, OTTL has a Path to every field (plus some extras to help make
+interacting with the data easier).
+
+To see a list of available Paths for each Open Telemetry Signal, checkout the links below.
+- [Resource](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlresource)
+- [Scope](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlscope)
+- [Span](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan) <!-- markdown-link-check-disable-line -->
+- [SpanEvent](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanevent)
+- [Metric](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlmetric)
+- [DataPoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint) <!-- markdown-link-check-disable-line -->
+- [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllog) <!-- markdown-link-check-disable-line -->
+
+OTTL does not support cross-signal interactions at this time. That means you cannot write a statement like
+
+```
+set(span.attributes["log body"], log.body)
+```
+
+To see further examples of OTTL statements see [Examples](#examples).
+
+To see what functions you can use in an OTTL statements see [Supported functions](#supported-functions).
+
+There is a lot more OTTL can do, like nested functions, arithmetic, indexing, and enums. To explore it further checkout the [Grammar](#grammar).
+
+If you're ready to configure a Transform Processor, see [Config](#config)
+
+### Context inference
+
+> [!NOTE]
+> This is an advanced topic and is not necessary to get started using the Transform Processor.
+> Read on if you're interested in how the Transform Processor parses your OTTL statements.
+
+An OTTL Context defines which Paths, functions, and enums are available when parsing the statement.
+The Transform Processor automatically infers the OTTL Context based on the paths defined in a statement.
+
+This inference is based on the Path names, functions, and enums present in the statements.
+
+The inference happens automatically because Path names are prefixed with the Context name. For example:
+
+```yaml
+metric_statements:
+  - set(metric.description, "test passed") where datapoint.attributes["test"] == "pass"
+```
+
+In this configuration, the inferred Context value is `datapoint`, as it is the only Context 
+that supports parsing both `datapoint` and `metric` Paths.
+
+In the following example, the inferred Context is `metric`, 
+as `metric` is the context capable of parsing both `metric` and `resource` data.
+
+```yaml
+metric_statements:
+  - set(resource.attributes["test"], "passed")
+  - set(metric.description, "test passed")
+```
+
+The primary benefit of context inference is that it enhances the efficiency of statement processing 
+by linking them to the most suitable context. This optimization ensures that data transformations 
+are both accurate and performant, leveraging the hierarchical structure of contexts to avoid unnecessary 
+iterations and improve overall processing efficiency.
+All of this happens automatically, leaving you to write OTTL statements without worrying about Context.
 
 ## Config
 
@@ -86,7 +164,7 @@ transform:
     - string
 ```
 
-Example: 
+Example:
 
 ```yaml
 transform:
@@ -199,82 +277,6 @@ metric_statements:
   - limit(datapoint.attributes, 100, ["host.name"])
   - convert_sum_to_gauge() where metric.name == "system.processes.count" 
 ```
-
-## Writing OTTL
-
-The Transform Processor utilizes OTTL statements to transform telemetry. An OTTL statement is made up of 2 parts:
-  1. A function that transforms telemetry
-  2. Optionally, a condition that determines whether the function is executed.
-
-For this document we'll use the following OTTL statement as an example:
-
-```
-set(span.attributes["test"], "pass") where span.attributes["test"] == nil
-```
-
-This statement sets a new span attribute named `"test"` with a value of `"pass"` whenever the span does not already
-have an attribute named `"test"`. In this example, the **function** is `set`, which uses the second parameter to set the value of the first parameter, and the **condition** is `span.attributes["test"] == nil`.
-
-Within a statement you utilize OTTL Paths to access telemetry. The example uses the Path `span.attributes` to access
-the span's attributes. For each Open Telemetry Signal, OTTL has a Path to every field (plus some extras to help make
-interacting with the data easier).
-
-To see a list of available Paths for each Open Telemetry Signal, checkout the links below.
-- [Resource](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlresource)
-- [Scope](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlscope)
-- [Span](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspan) <!-- markdown-link-check-disable-line -->
-- [SpanEvent](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlspanevent)
-- [Metric](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlmetric)
-- [DataPoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint) <!-- markdown-link-check-disable-line -->
-- [Log](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottllog) <!-- markdown-link-check-disable-line -->
-
-OTTL does not support cross-signal interactions at this time. That means you cannot write a statement like
-
-```
-set(span.attributes["log body"], log.body)
-```
-
-To see further examples of OTTL statements see [Examples](#examples).
-
-To see what functions you can use in an OTTL statements see [Supported functions](#supported-functions).
-
-There is a lot more OTTL can do, like nested functions, arithmetic, indexing, and enums. To explore it further checkout the [Grammar](#grammar).
-
-### Context inference
-
-> [!NOTE]
-> This is an advanced topic and is not necessary to get started using the Transform Processor.
-> Read on if you're interested in how the Transform Processor parses your OTTL statements.
-
-An OTTL Context defines which Paths, functions, and enums are available when parsing the statement.
-The Transform Processor automatically infers the OTTL Context based on the paths defined in a statement.
-
-This inference is based on the Path names, functions, and enums present in the statements.
-
-The inference happens automatically because Path names are prefixed with the Context name. For example:
-
-```yaml
-metric_statements:
-  - set(metric.description, "test passed") where datapoint.attributes["test"] == "pass"
-```
-
-In this configuration, the inferred Context value is `datapoint`, as it is the only Context 
-that supports parsing both `datapoint` and `metric` Paths.
-
-In the following example, the inferred Context is `metric`, 
-as `metric` is the context capable of parsing both `metric` and `resource` data.
-
-```yaml
-metric_statements:
-  - set(resource.attributes["test"], "passed")
-  - set(metric.description, "test passed")
-```
-
-The primary benefit of context inference is that it enhances the efficiency of statement processing 
-by linking them to the most suitable context. This optimization ensures that data transformations 
-are both accurate and performant, leveraging the hierarchical structure of contexts to avoid unnecessary 
-iterations and improve overall processing efficiency.
-All of this happens automatically, leaving you to write OTTL statements without worrying about Context.
 
 ## Grammar
 
