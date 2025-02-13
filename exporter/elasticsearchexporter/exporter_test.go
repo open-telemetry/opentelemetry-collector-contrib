@@ -990,6 +990,13 @@ func TestExporterMetrics(t *testing.T) {
 		})
 		addToMetricSlice(scopeAC.Metrics())
 
+		resourceB := metrics.ResourceMetrics().AppendEmpty()
+		fillAttributeMap(resourceB.Resource().Attributes(), map[string]any{
+			"my.resource": "resource.b",
+		})
+		scopeBA := resourceB.ScopeMetrics().AppendEmpty()
+		addToMetricSlice(scopeBA.Metrics())
+
 		t.Run("ecs", func(t *testing.T) {
 			rec := newBulkRecorder()
 			server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -1036,6 +1043,18 @@ func TestExporterMetrics(t *testing.T) {
 				{
 					Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
 					Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1.0}}`),
+				},
+				{
+					Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0,"foo":1.0},"my":{"resource":"resource.b"}}`),
+				},
+				{
+					Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+					Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"bar":1.0,"foo":1},"my":{"resource":"resource.b"}}`),
+				},
+				{
+					Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+					Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"metric":{"baz":1.0},"my":{"resource":"resource.b"}}`),
 				},
 			}
 
