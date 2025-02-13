@@ -18,8 +18,8 @@
 
 The Transform Processor modifies telemetry based on configuration using the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl) (OTTL).
 
-For each signal type, the processor takes a list of statements and executes statements against the incoming telemetry in the order specified in the config.
-Each statement can access and transform telemetry using functions and allow the use of a condition to help decide whether the function should be executed.
+For each signal type, the processor takes a list of statements and executes them against the incoming telemetry, following the order specified in the configuration.
+Each statement can access and transform telemetry using functions, and allows the use of a condition to help decide whether the function should be executed.
 
 - [Config](#config)
 - [Writing OTTL](#writing-ottl)
@@ -55,9 +55,9 @@ Only certain OTTL Path prefixes can be used for each signal:
 
 This means, for example, that you cannot use the Path `span.attributes` within the `log_statements` configuration section.
 
-`error_mode`: determines how the processor reacts to errors that occur while processing a statement.
+`error_mode`: determines how the processor treats errors that occur while processing a statement.
 If the top-level `error_mode` is not specified, `propagate` will be used.
-The top-level `error_mode` can be overridden at context statements level, offering more granular control over error handling. If context statement `error_mode` is not used, the top-level `error_mode` is used.
+The top-level `error_mode` can be overridden at statement group level, offering more granular control over error handling. If the statement group `error_mode` is not specified, the top-level `error_mode` is applied.
 
 | error_mode | description                                                                                                                                 |
 |------------|---------------------------------------------------------------------------------------------------------------------------------------------|
@@ -109,7 +109,7 @@ transform:
     - set(log.body, log.attributes["http.route"])
 ```
 
-If you're interested in how OTTL parses these statements, see [Conetxt Inference](#context-inference).
+If you're interested in how OTTL parses these statements, see [Context Inference](#context-inference).
 
 ### Statement Group Config
 
@@ -178,7 +178,7 @@ transform:
 ```
 
 Like the flat configuration style, the OTTL Context in which the statement in the group are executed
-is [inferred](#context-inference), but this time from ALL the statement.
+is [inferred](#context-inference), but this time from ALL the statements.
 In some situations the automatic Context inference is not possible. For example:
 
 ```yaml
@@ -202,7 +202,7 @@ metric_statements:
     - convert_sum_to_gauge() where metric.name == "system.processes.count" 
 ```
 
-Alternatively, for simplicity, you can use the [flat configuration](#context-inferred-configurations) style:
+Alternatively, for simplicity, you can use the [flat configuration](#flat-config) style:
 
 ```yaml
 metric_statements:
@@ -214,7 +214,7 @@ metric_statements:
 
 The Transform Processor utilizes OTTL statements to transform telemetry. An OTTL statement is made up of 2 parts:
   1. A function that transforms telemetry
-  2. Optionally a condition that determines whether the function is executed.
+  2. Optionally, a condition that determines whether the function is executed.
 
 For this document we'll use the following OTTL statement as an example:
 
