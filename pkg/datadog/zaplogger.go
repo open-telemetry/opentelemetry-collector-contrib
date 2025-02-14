@@ -6,8 +6,8 @@ package datadog // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 
-	"go.uber.org/zap"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
+	"go.uber.org/zap"
 )
 
 var _ tracelog.Logger = &Zaplogger{}
