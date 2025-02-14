@@ -168,10 +168,6 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 }
 
 func TestSamplingMultiplePolicies_WithRecordPolicy(t *testing.T) {
-	cfg := Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
-	}
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
 	ct := s.newSettings()
@@ -185,7 +181,13 @@ func TestSamplingMultiplePolicies_WithRecordPolicy(t *testing.T) {
 		{name: "mock-policy-2", evaluator: mpe2, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-2"))},
 	}
 
-	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies), withRecordPolicy())
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		Options:      []Option{withDecisionBatcher(idb), withPolicies(policies), withRecordPolicy()},
+	}
+
+	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -267,10 +269,6 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 }
 
 func TestSamplingPolicyDecisionNotSampled_WithRecordPolicy(t *testing.T) {
-	cfg := Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
-	}
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
 	ct := s.newSettings()
@@ -282,7 +280,13 @@ func TestSamplingPolicyDecisionNotSampled_WithRecordPolicy(t *testing.T) {
 		{name: "mock-policy-1", evaluator: mpe1, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
 	}
 
-	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies), withRecordPolicy())
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		Options:      []Option{withDecisionBatcher(idb), withPolicies(policies), withRecordPolicy()},
+	}
+
+	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -361,10 +365,6 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 }
 
 func TestSamplingPolicyDecisionInvertNotSampled_WithRecordPolicy(t *testing.T) {
-	cfg := Config{
-		DecisionWait: defaultTestDecisionWait,
-		NumTraces:    defaultNumTraces,
-	}
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
 	ct := s.newSettings()
@@ -378,7 +378,13 @@ func TestSamplingPolicyDecisionInvertNotSampled_WithRecordPolicy(t *testing.T) {
 		{name: "mock-policy-2", evaluator: mpe2, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-2"))},
 	}
 
-	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies), withRecordPolicy())
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		Options:      []Option{withDecisionBatcher(idb), withPolicies(policies), withRecordPolicy()},
+	}
+
+	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
