@@ -11,6 +11,7 @@ require (
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi v0.119.0
 	go.opentelemetry.io/build-tools/checkfile v0.18.0
 	go.opentelemetry.io/build-tools/chloggen v0.18.0
 	go.opentelemetry.io/build-tools/crosslink v0.18.0
@@ -19,7 +20,6 @@ require (
 	go.opentelemetry.io/build-tools/multimod v0.18.0
 	go.opentelemetry.io/collector/cmd/builder v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/cmd/mdatagen v0.119.1-0.20250210123122-44b3eeda354c
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi v0.119.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.30.0
 	golang.org/x/vuln v1.1.4
