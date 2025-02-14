@@ -114,6 +114,7 @@ extension/observer/dockerobserver/                               @open-telemetry
 extension/observer/ecsobserver/                                  @open-telemetry/collector-contrib-approvers @dmitryax
 extension/observer/hostobserver/                                 @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/k8sobserver/                                  @open-telemetry/collector-contrib-approvers @dmitryax @ChrsMark
+extension/observer/kafkatopicsobserver/                          @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/oidcauthextension/                                     @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/opampcustommessages/                                   @open-telemetry/collector-contrib-approvers @evan-bradley
 extension/opampextension/                                        @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan
