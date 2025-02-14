@@ -501,8 +501,8 @@ checkmetadata: $(CHECKFILE)
 	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "metadata.yaml"
 
 .PHONY: checkapi
-checkapi:
-	$(GOCMD) run cmd/checkapi/main.go .
+checkapi: $(CHECKAPI)
+	$(CHECKAPI) -folder .
 
 .PHONY: kind-ready
 kind-ready:
