@@ -31,8 +31,6 @@ Each statement can access and transform telemetry using functions, and allows th
 
 ## Config
 
-The Transform Processor allows configuring OTTL statements for traces, metrics, and logs.
-
 ### General Config
 
 > [!NOTE]
@@ -44,7 +42,13 @@ transform:
   <trace|metric|log>_statements: []
 ```
 
-Only certain OTTL Path prefixes can be used for each signal:
+The Transform Processor's primary configuration section is broken down by signal (traces, metrics, and logs)
+and allows you to configure a list of statements for the processor to execute. The list can be made of:
+
+- OTTL statements. This option will meet most user's needs. See [Basic Config](#basic-config) for more details.
+- Objects, which allows users to apply configuration options to a specific-list of statements. See [Advanced Config](#advanced-config) for more details.
+
+Within each `<signal_statements>` list, only certain OTTL Path prefixes can be used:
 
 | Signal            | Path Prefix Values                             |
 |-------------------|------------------------------------------------|
