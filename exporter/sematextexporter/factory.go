@@ -7,8 +7,14 @@ package sematextexporter // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"time"
 
+	"github.com/google/uuid"
+	"github.com/influxdata/influxdb-observability/common"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -16,6 +22,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter/internal/metadata"
 )
+
+var metricsAppToken = uuid.NewString()
 
 // NewFactory creates a factory for the Sematext metrics exporter.
 func NewFactory() exporter.Factory {
@@ -28,7 +36,24 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := &Config{}
+	cfg := &Config{
+		ClientConfig: confighttp.ClientConfig{
+			Timeout: 5 * time.Second,
+			Headers: map[string]configopaque.String{
+				"User-Agent": "OpenTelemetry -> Sematext",
+			},
+		},
+		MetricsConfig: MetricsConfig{
+			MetricsEndpoint: usMetricsEndpoint,
+			MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
+			AppToken:        metricsAppToken,
+			QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+			PayloadMaxLines: 1_000,
+			PayloadMaxBytes: 300_000,
+		},
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		Region:        usRegion,
+	}
 	return cfg
 }
 
