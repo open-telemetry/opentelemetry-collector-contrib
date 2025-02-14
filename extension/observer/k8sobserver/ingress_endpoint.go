@@ -51,7 +51,7 @@ func convertIngressToEndpoints(idNamespace string, ingress *v1.Ingress) []observ
 	return endpoints
 }
 
-// getTLSHosts return a list of tls hosts for an ingress ressource.
+// getTLSHosts return a list of tls hosts for an ingress resource.
 func getTLSHosts(i *v1.Ingress) []string {
 	var hosts []string
 
