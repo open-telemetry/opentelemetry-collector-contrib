@@ -582,10 +582,29 @@ processors:
 
 See: [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 
+### Dynatrace
+
+Loads resource information from the `dt_host_metadata.properties` file which is located in
+the `/var/lib/dynatrace/enrichment` (on *nix systems) or `%ProgramData%\dynatrace\enrichment` (on Windows) directories.
+If present in the file, the following attributes will be added:
+
+- `dt.entity.host`
+- `host.name`
+
+The Dynatrace detector does not require any additional configuration, other than being added to the list of detectors.
+
+Example:
+
+```yaml
+processors:
+  resourcedetection/dynatrace:
+    detectors: [dynatrace]
+```
+
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift", "dynatrace"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

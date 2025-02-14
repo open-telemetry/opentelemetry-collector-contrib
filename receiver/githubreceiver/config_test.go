@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -49,9 +50,19 @@ func TestLoadConfig(t *testing.T) {
 		},
 		Path:       "some/path",
 		HealthPath: "health/path",
-		RequiredHeader: RequiredHeader{
-			Key:   "key-present",
-			Value: "value-present",
+		RequiredHeaders: map[string]configopaque.String{
+			"key": "value-present",
+		},
+		GitHubHeaders: GitHubHeaders{
+			Customizable: map[string]string{
+				"User-Agent": "",
+			},
+			Fixed: map[string]string{
+				"X-GitHub-Delivery":   "",
+				"X-GitHub-Event":      "",
+				"X-GitHub-Hook-ID":    "",
+				"X-Hub-Signature-256": "",
+			},
 		},
 	}
 
@@ -74,9 +85,19 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Path:       "some/path",
 			HealthPath: "health/path",
-			RequiredHeader: RequiredHeader{
-				Key:   "key-present",
-				Value: "value-present",
+			RequiredHeaders: map[string]configopaque.String{
+				"key": "value-present",
+			},
+			GitHubHeaders: GitHubHeaders{
+				Customizable: map[string]string{
+					"User-Agent": "",
+				},
+				Fixed: map[string]string{
+					"X-GitHub-Delivery":   "",
+					"X-GitHub-Event":      "",
+					"X-GitHub-Hook-ID":    "",
+					"X-Hub-Signature-256": "",
+				},
 			},
 		},
 	}

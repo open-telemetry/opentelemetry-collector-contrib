@@ -160,7 +160,6 @@ func TestWAL_persist(t *testing.T) {
 }
 
 func TestExportWithWALEnabled(t *testing.T) {
-	t.Skip("skipping test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37715")
 	cfg := &Config{
 		WAL: &WALConfig{
 			Directory: t.TempDir(),
@@ -191,6 +190,8 @@ func TestExportWithWALEnabled(t *testing.T) {
 
 		assert.Len(t, writeReq.Timeseries, 1)
 	}))
+	defer server.Close()
+
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
 	cfg.ClientConfig = clientConfig
