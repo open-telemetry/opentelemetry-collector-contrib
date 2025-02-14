@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.119.0
 	github.com/prometheus/common v0.62.0
-	github.com/prometheus/prometheus v0.54.1
+	github.com/prometheus/prometheus v0.300.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/featuregate v1.25.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/pdata v1.25.1-0.20250210123122-44b3eeda354c
