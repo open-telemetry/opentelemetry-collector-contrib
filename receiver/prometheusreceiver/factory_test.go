@@ -49,7 +49,7 @@ func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
 	assert.NoError(t, sub.Unmarshal(cfg))
 }
 
-func TestMultipleCreate(t *testing.T) {
+func TestMultipleCreateWithAPIServer(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.APIServer = &APIServer{
@@ -71,7 +71,7 @@ func TestMultipleCreate(t *testing.T) {
 	require.NoError(t, secondRcvr.Shutdown(context.Background()))
 }
 
-func TestMultipleCreateWithAPIServer(t *testing.T) {
+func TestMultipleCreate(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	set := receivertest.NewNopSettings()

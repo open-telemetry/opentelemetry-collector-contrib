@@ -426,7 +426,7 @@ func (r *pReceiver) Shutdown(ctx context.Context) error {
 	if r.apiServer != nil {
 		err := r.apiServer.Shutdown(ctx)
 		if err != nil {
-			r.settings.Logger.Error("API server shutdown failed", zap.Error(err))
+			return err
 		}
 	}
 	return nil
