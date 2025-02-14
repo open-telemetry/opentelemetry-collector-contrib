@@ -7,7 +7,10 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
+	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 )
+
+var _ tracelog.Logger = &Zaplogger{}
 
 // Zaplogger implements the tracelog.Logger interface on top of a zap.Logger
 type Zaplogger struct {

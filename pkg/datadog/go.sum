@@ -54,6 +54,8 @@ github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.62.2 h1:u2rELKT/fpFFOEd
 github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.62.2/go.mod h1:EO/0NFsoCnH2oc89rlojW4EizU1BwKJKfIwaH0vA6og=
 github.com/DataDog/datadog-agent/pkg/proto v0.64.0-devel h1:tkoy0fLsNkSDDxszdm9EDpzQFGnWUzwjanselsIAC+U=
 github.com/DataDog/datadog-agent/pkg/proto v0.64.0-devel/go.mod h1:QOAaPRsuM4WNXtP3Rbw+gWamge9lGnDH8ZKB6HdzoAs=
+github.com/DataDog/datadog-agent/pkg/trace v0.62.2 h1:cNh40K5cve2Do5Rl4hd6QygA+8HtW7ZJBlOXwQjYX4c=
+github.com/DataDog/datadog-agent/pkg/trace v0.62.2/go.mod h1:emSxVBmRslNGZ+VY4boI3Jg7Xk+WHS1CDtpLL00DVKQ=
 github.com/DataDog/datadog-agent/pkg/util/executable v0.62.2 h1:vEhhL6nIQppnU71aPG5YDcNf1DFFO4iPZ0belWsoxOE=
 github.com/DataDog/datadog-agent/pkg/util/executable v0.62.2/go.mod h1:qW5HWFQdos50jsH0LoPlWdtP15G5wRCat65YLeyOzf0=
 github.com/DataDog/datadog-agent/pkg/util/filesystem v0.62.2 h1:Woz3vmafCy33ilL0EzhxvUtpgUcjbmnwap5P1saZURY=
@@ -94,8 +96,8 @@ github.com/DataDog/sketches-go v1.4.6 h1:acd5fb+QdUzGrosfNLwrIhqyrbMORpvBy7mE+vH
 github.com/DataDog/sketches-go v1.4.6/go.mod h1:7Y8GN8Jf66DLyDhc94zuWA3uHEt/7ttt8jHOBWWrSOg=
 github.com/DataDog/viper v1.14.0 h1:dIjTe/uJiah+QFqFZ+MXeqgmUvWhg37l37ZxFWxr3is=
 github.com/DataDog/viper v1.14.0/go.mod h1:wDdUVJ2SHaMaPrCZrlRCObwkubsX8j5sme3LaR/SGTc=
-github.com/DataDog/zstd v1.5.2 h1:vUG4lAyuPCXO0TLbXvPv7EB7cNK1QV/luu55UHLrrn8=
-github.com/DataDog/zstd v1.5.2/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
+github.com/DataDog/zstd v1.5.6 h1:LbEglqepa/ipmmQJUDnSsfvA8e8IStVcGaFWDuxvGOY=
+github.com/DataDog/zstd v1.5.6/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.26.0 h1:f2Qw/Ehhimh5uO1fayV0QIW7DShEQqhtUfhYc+cBPlw=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.26.0/go.mod h1:2bIszWvQRlJVmJLiuLhukLImRjKPcYdzzsx6darK02A=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
@@ -664,8 +666,8 @@ golang.org/x/time v0.0.0-20181108054448-85acf8d2951c/go.mod h1:tRJNPiyCQ0inRvYxb
 golang.org/x/time v0.0.0-20190308202827-9d24e82272b4/go.mod h1:tRJNPiyCQ0inRvYxbN9jk5I+vvW/OXSQhTDSoE431IQ=
 golang.org/x/time v0.0.0-20191024005414-555d28b269f0/go.mod h1:tRJNPiyCQ0inRvYxbN9jk5I+vvW/OXSQhTDSoE431IQ=
 golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba/go.mod h1:tRJNPiyCQ0inRvYxbN9jk5I+vvW/OXSQhTDSoE431IQ=
-golang.org/x/time v0.7.0 h1:ntUhktv3OPE6TgYxXWv9vKvUSJyIFJlyohwbkEwPrKQ=
-golang.org/x/time v0.7.0/go.mod h1:3BpzKBy/shNhVucY/MWOyx10tF3SFh9QdLuxbVysPQM=
+golang.org/x/time v0.8.0 h1:9i3RxcPv3PZnitoVGMPDKZSq1xW1gK1Xy3ArNOGZfEg=
+golang.org/x/time v0.8.0/go.mod h1:3BpzKBy/shNhVucY/MWOyx10tF3SFh9QdLuxbVysPQM=
 golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
 golang.org/x/tools v0.0.0-20190114222345-bf090417da8b/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
 golang.org/x/tools v0.0.0-20190226205152-f727befe758c/go.mod h1:9Yl7xja0Znq3iFh3HoIrodX9oNMXvdceNzlUR8zjMvY=
