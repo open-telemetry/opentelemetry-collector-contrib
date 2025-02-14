@@ -22,7 +22,7 @@ func TestSetupTelemetry(t *testing.T) {
 	defer tb.Shutdown()
 	tb.ExporterPrometheusremotewriteConsumers.Record(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteFailedTranslations.Add(context.Background(), 1)
-	tb.ExporterPrometheusremotewriteSentBatchCount.Add(context.Background(), 1)
+	tb.ExporterPrometheusremotewriteSentBatch.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(context.Background(), 1)
 	AssertEqualExporterPrometheusremotewriteConsumers(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
@@ -30,7 +30,7 @@ func TestSetupTelemetry(t *testing.T) {
 	AssertEqualExporterPrometheusremotewriteFailedTranslations(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
-	AssertEqualExporterPrometheusremotewriteSentBatchCount(t, testTel,
+	AssertEqualExporterPrometheusremotewriteSentBatch(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterPrometheusremotewriteTranslatedTimeSeries(t, testTel,

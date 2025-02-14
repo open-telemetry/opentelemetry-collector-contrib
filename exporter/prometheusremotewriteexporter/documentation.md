@@ -22,9 +22,9 @@ Number of translation operations that failed to translate metrics from Otel to P
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### otelcol_exporter_prometheusremotewrite_sent_batch_count
+### otelcol_exporter_prometheusremotewrite_sent_batch
 
-Number of remote write request batches sent to the remote write endpoint
+Number of remote write request batches sent to the remote write endpoint regardless of success or failure
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

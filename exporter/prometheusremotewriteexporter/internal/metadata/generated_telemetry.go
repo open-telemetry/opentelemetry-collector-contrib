@@ -28,7 +28,7 @@ type TelemetryBuilder struct {
 	registrations                                     []metric.Registration
 	ExporterPrometheusremotewriteConsumers            metric.Int64Gauge
 	ExporterPrometheusremotewriteFailedTranslations   metric.Int64Counter
-	ExporterPrometheusremotewriteSentBatchCount       metric.Int64Counter
+	ExporterPrometheusremotewriteSentBatch            metric.Int64Counter
 	ExporterPrometheusremotewriteTranslatedTimeSeries metric.Int64Counter
 }
 
@@ -73,9 +73,9 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ExporterPrometheusremotewriteSentBatchCount, err = builder.meter.Int64Counter(
-		"otelcol_exporter_prometheusremotewrite_sent_batch_count",
-		metric.WithDescription("Number of remote write request batches sent to the remote write endpoint"),
+	builder.ExporterPrometheusremotewriteSentBatch, err = builder.meter.Int64Counter(
+		"otelcol_exporter_prometheusremotewrite_sent_batch",
+		metric.WithDescription("Number of remote write request batches sent to the remote write endpoint regardless of success or failure"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
