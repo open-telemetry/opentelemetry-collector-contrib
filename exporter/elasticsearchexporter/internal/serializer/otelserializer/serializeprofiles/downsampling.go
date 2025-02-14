@@ -102,9 +102,6 @@ func initEventIndexes(count int) []string {
 }
 
 func IndexDownsampledEvent(event StackTraceEvent, pushData func(any, string, string) error) error {
-	origCount := event.Count
-	defer func() { event.Count = origCount }()
-
 	// Each event has a probability of p=1/5=0.2 to go from one index into the next downsampled
 	// index. Since we aggregate identical stacktrace events by timestamp when reported and stored,
 	// we have a 'Count' value for each. To be statistically correct, we have to apply p=0.2 to
