@@ -101,7 +101,7 @@ type prwExporter struct {
 	batchStatePool sync.Pool
 }
 
-func newPRWTelemetry(set exporter.Settings, endpointURL *url.URL) (prwTelemetry, error) {
+func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -127,7 +127,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		return nil, errors.New("invalid endpoint")
 	}
 
-	telemetry, err := newPRWTelemetry(set, endpointURL)
+	telemetry, err := newPRWTelemetry(set)
 	if err != nil {
 		return nil, err
 	}
