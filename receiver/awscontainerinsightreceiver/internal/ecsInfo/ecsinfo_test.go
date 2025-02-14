@@ -77,7 +77,7 @@ func (c *MockCgroupScanner) getMEMReservedInTask(_ string, _ string, _ []ECSCont
 }
 
 func TestNewECSInfo(t *testing.T) {
-	// test the case when containerInstanceInfor fails to initialize
+	// test the case when containerInstanceInfoCreator fails to initialize
 	containerInstanceInfoCreatorOpt := func(ei *EcsInfo) {
 		ei.containerInstanceInfoCreator = func(context.Context, hostIPProvider, time.Duration, *zap.Logger, doer, chan bool) containerInstanceInfoProvider {
 			return &MockInstanceInfo{

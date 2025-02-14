@@ -110,7 +110,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return err
 	}
 
-	// custom unmarhalling is required to get []kubelet.MetricGroup, the default
+	// custom unmarshalling is required to get []kubelet.MetricGroup, the default
 	// unmarshaller does not correctly overwrite slices.
 	if !componentParser.IsSet(metricGroupsConfig) {
 		cfg.MetricGroupsToCollect = defaultMetricGroups

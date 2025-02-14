@@ -948,7 +948,7 @@ func TestTranslation(t *testing.T) {
 				_ *awsxray.Segment,
 				_ ptrace.ResourceSpans, _ ptrace.Traces, err error,
 			) {
-				assert.EqualError(t, err, `segment "start_time" can not be nil`,
+				assert.EqualError(t, err, `segment "start_time" cannot be nil`,
 					testCase+": translation should've failed")
 			},
 		},
@@ -957,7 +957,7 @@ func TestTranslation(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.testCase, func(t *testing.T) {
 			content, err := os.ReadFile(tc.samplePath)
-			assert.NoError(t, err, "can not read raw segment")
+			assert.NoError(t, err, "cannot read raw segment")
 			assert.NotEmpty(t, content, "content length is 0")
 
 			var (
@@ -968,7 +968,7 @@ func TestTranslation(t *testing.T) {
 				err = json.Unmarshal(content, &actualSeg)
 				// the correctness of the actual segment
 				// has been verified in the tracesegment_test.go
-				assert.NoError(t, err, "failed to unmarhal raw segment")
+				assert.NoError(t, err, "failed to unmarshal raw segment")
 				expectedRs = initResourceSpans(t,
 					&actualSeg,
 					tc.expectedResourceAttrs(&actualSeg),

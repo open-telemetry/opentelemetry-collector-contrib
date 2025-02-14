@@ -5,4 +5,4 @@ prometheus:
         scrape_interval: 5s
         fallback_scrape_protocol: "PrometheusText1.0.0"
         file_sd_configs:
-        - files: ["./testdata/non-existent-sd-file.json"]
+        - files: ["./testdata/nonexistent-sd-file.json"]
