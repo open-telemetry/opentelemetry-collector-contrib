@@ -20,8 +20,6 @@ import (
 	"strings"
 	"unicode"
 
-	"gopkg.in/yaml.v3"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal"
 )
 
@@ -83,11 +81,23 @@ func run(folder string, configPath string) error {
 			if err != nil {
 				return err
 			}
-			componentType := strings.Split(relativeBase, string(os.PathSeparator))[0]
-			switch componentType {
-			case "receiver", "processor", "exporter", "connector", "extension":
-			default:
+			if strings.HasPrefix(relativeBase, "internal") {
 				return nil
+			}
+
+			var componentType string
+			if _, err := os.Stat(filepath.Join(base, "metadata.yaml")); errors.Is(err, os.ErrNotExist) {
+				componentType = "pkg"
+			} else {
+				m, err := os.ReadFile(filepath.Join(base, "metadata.yaml"))
+				if err != nil {
+					return err
+				}
+				var componentInfo metadata
+				if err = yaml.Unmarshal(m, &componentInfo); err != nil {
+					return err
+				}
+				componentType = componentInfo.Status.Class
 			}
 
 			for _, a := range cfg.IgnoredPaths {
@@ -96,7 +106,7 @@ func run(folder string, configPath string) error {
 					return nil
 				}
 			}
-			if err = walkFolder(cfg, base, componentType); err != nil {
+			if err = walkFolder(base, componentType); err != nil {
 				errs = append(errs, err)
 			}
 		}

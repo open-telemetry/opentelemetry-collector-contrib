@@ -31,12 +31,16 @@ func ExprToString(expr ast.Expr) string {
 		return fmt.Sprintf("chan(%s)", ExprToString(e.Value))
 	case *ast.FuncType:
 		var results []string
-		for _, r := range e.Results.List {
-			results = append(results, ExprToString(r.Type))
+		if e.Results != nil {
+			for _, r := range e.Results.List {
+				results = append(results, ExprToString(r.Type))
+			}
 		}
 		var params []string
-		for _, r := range e.Params.List {
-			params = append(params, ExprToString(r.Type))
+		if e.Params != nil {
+			for _, r := range e.Params.List {
+				params = append(params, ExprToString(r.Type))
+			}
 		}
 		return fmt.Sprintf("func(%s) %s", strings.Join(params, ","), strings.Join(results, ","))
 	case *ast.SelectorExpr:
@@ -53,6 +57,12 @@ func ExprToString(expr ast.Expr) string {
 		return fmt.Sprintf("%s[%s]", ExprToString(e.X), ExprToString(e.Index))
 	case *ast.BasicLit:
 		return e.Value
+	case *ast.IndexListExpr:
+		var exprs []string
+		for _, e := range e.Indices {
+			exprs = append(exprs, ExprToString(e))
+		}
+		return strings.Join(exprs, ",")
 	default:
 		panic(fmt.Sprintf("Unsupported expr type: %#v", expr))
 	}
