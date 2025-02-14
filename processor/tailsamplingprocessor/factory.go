@@ -39,10 +39,9 @@ func createTracesProcessor(
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
 	tCfg := cfg.(*Config)
-	opts := []Option{}
 
 	if telemetry.IsRecordPolicyEnabled() {
-		opts = append(opts, withRecordPolicy())
+		tCfg.Options = append(tCfg.Options, withRecordPolicy())
 	}
-	return newTracesProcessor(ctx, params, nextConsumer, *tCfg, opts...)
+	return newTracesProcessor(ctx, params, nextConsumer, *tCfg)
 }
