@@ -3,7 +3,6 @@
 package metadatatest
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,34 +13,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
-
-type Telemetry struct {
-	*componenttest.Telemetry
-}
-
-func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
-	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
-}
-
-func (tt *Telemetry) NewSettings() processor.Settings {
-	set := processortest.NewNopSettings()
-	set.ID = component.NewID(component.MustNewType("tail_sampling"))
-	set.TelemetrySettings = tt.NewTelemetrySettings()
-	return set
-}
-
-func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	// ensure all required metrics are present
-	for _, want := range expected {
-		got := getMetricFromResource(want.Name, md)
-		metricdatatest.AssertEqual(t, want, got, opts...)
-	}
-
-	// ensure no additional metrics are emitted
-	require.Equal(t, len(expected), lenMetrics(md))
-}
 
 func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 	set := processortest.NewNopSettings()
@@ -148,8 +119,8 @@ func AssertEqualProcessorTailSamplingSamplingDecisionLatency(t *testing.T, tt *c
 func AssertEqualProcessorTailSamplingSamplingDecisionTimerLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_decision_timer_latency",
-		Description: "Latency (in microseconds) of each run of the sampling decision timer",
-		Unit:        "µs",
+		Description: "Latency (in milliseconds) of each run of the sampling decision timer",
+		Unit:        "ms",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			DataPoints:  dps,

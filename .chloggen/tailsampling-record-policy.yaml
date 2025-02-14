@@ -1,0 +1,15 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: processor/tailsampling
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: |
+  Adds support for optionally recording the policy (and any composite policy) associated with an inclusive tail processor sampling decision. 
+  This functionality is disabled by default, you can enable it by passing the following feature flag to the collector: `+processor.tailsamplingprocessor.recordpolicy`
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [35180]

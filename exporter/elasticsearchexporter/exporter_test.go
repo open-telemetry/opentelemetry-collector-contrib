@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
 func TestExporterLogs(t *testing.T) {
@@ -219,7 +221,8 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "ecs"
-			cfg.Mapping.Dedot = true
+			// deduplication is always performed except in otel mapping mode -
+			// there is no other configuration that controls it
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{"attr.key": "value"},
@@ -233,7 +236,7 @@ func TestExporterLogs(t *testing.T) {
 	t.Run("publish with dedup", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			assert.JSONEq(t, `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Scope":{"name":"","value":"value","version":""},"SeverityNumber":0,"TraceFlags":0}`, string(docs[0].Document))
+			assert.JSONEq(t, `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Scope.name":"","Scope.value":"value","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`, string(docs[0].Document))
 			rec.Record(docs)
 			return itemsAllOK(docs)
 		})
@@ -350,12 +353,12 @@ func TestExporterLogs(t *testing.T) {
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
-				dataStreamDataset: "record.dataset.\\/*?\"<>| ,#:",
+				elasticsearch.DataStreamDataset: "record.dataset.\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
-				dataStreamDataset:   "resource.dataset",
-				dataStreamNamespace: "resource.namespace.-\\/*?\"<>| ,#:",
+				elasticsearch.DataStreamDataset:   "resource.dataset",
+				elasticsearch.DataStreamNamespace: "resource.namespace.-\\/*?\"<>| ,#:",
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
@@ -664,6 +667,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
 			cfg.Flush.Interval = 50 * time.Millisecond
 			cfg.Retry.InitialInterval = 1 * time.Millisecond
 			cfg.Retry.MaxInterval = 10 * time.Millisecond
@@ -752,14 +756,14 @@ func TestExporterLogs(t *testing.T) {
 				name:          "empty document id attribute should not set _id",
 				expectedDocID: "",
 				recordAttrs: map[string]any{
-					documentIDAttributeName: "",
+					elasticsearch.DocumentIDAttributeName: "",
 				},
 			},
 			{
 				name:          "record attributes",
 				expectedDocID: exampleDocID,
 				recordAttrs: map[string]any{
-					documentIDAttributeName: exampleDocID,
+					elasticsearch.DocumentIDAttributeName: exampleDocID,
 				},
 			},
 		}
@@ -790,7 +794,7 @@ func TestExporterLogs(t *testing.T) {
 						}
 
 						// Ensure the document id attribute is removed from the final document.
-						assert.NotContains(t, string(docs[0].Document), documentIDAttributeName, "expected document id attribute to be removed")
+						assert.NotContains(t, string(docs[0].Document), elasticsearch.DocumentIDAttributeName, "expected document id attribute to be removed")
 						return itemsAllOK(docs)
 					})
 
@@ -912,12 +916,12 @@ func TestExporterMetrics(t *testing.T) {
 		})
 		metrics := newMetricsWithAttributes(
 			map[string]any{
-				dataStreamNamespace: "data.point.namespace.-\\/*?\"<>| ,#:",
+				elasticsearch.DataStreamNamespace: "data.point.namespace.-\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
-				dataStreamDataset:   "resource.dataset.\\/*?\"<>| ,#:",
-				dataStreamNamespace: "resource.namespace",
+				elasticsearch.DataStreamDataset:   "resource.dataset.\\/*?\"<>| ,#:",
+				elasticsearch.DataStreamNamespace: "resource.namespace",
 			},
 		)
 		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
@@ -927,17 +931,6 @@ func TestExporterMetrics(t *testing.T) {
 	})
 
 	t.Run("publish with metrics grouping", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
-
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.MetricsIndex = "metrics.index"
-			cfg.Mapping.Mode = "ecs"
-		})
-
 		addToMetricSlice := func(metricSlice pmetric.MetricSlice) {
 			fooMetric := metricSlice.AppendEmpty()
 			fooMetric.SetName("metric.foo")
@@ -953,7 +946,7 @@ func TestExporterMetrics(t *testing.T) {
 			barMetric := metricSlice.AppendEmpty()
 			barMetric.SetName("metric.bar")
 			barDps := barMetric.SetEmptyGauge().DataPoints()
-			barDp := barDps.AppendEmpty()
+			barDp := barDps.AppendEmpty() // dp without attribute
 			barDp.SetDoubleValue(1.0)
 			barOtherDp := barDps.AppendEmpty()
 			fillAttributeMap(barOtherDp.Attributes(), map[string]any{
@@ -962,8 +955,8 @@ func TestExporterMetrics(t *testing.T) {
 			barOtherDp.SetDoubleValue(1.0)
 			barOtherIndexDp := barDps.AppendEmpty()
 			fillAttributeMap(barOtherIndexDp.Attributes(), map[string]any{
-				"dp.attribute":      "dp.attribute.value",
-				dataStreamNamespace: "bar",
+				"dp.attribute":                    "dp.attribute.value",
+				elasticsearch.DataStreamNamespace: "bar",
 			})
 			barOtherIndexDp.SetDoubleValue(1.0)
 
@@ -971,62 +964,109 @@ func TestExporterMetrics(t *testing.T) {
 			bazMetric.SetName("metric.baz")
 			bazDps := bazMetric.SetEmptyGauge().DataPoints()
 			bazDp := bazDps.AppendEmpty()
-			bazDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+			bazDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0))) // dp with different timestamp
 			bazDp.SetDoubleValue(1.0)
 		}
 
 		metrics := pmetric.NewMetrics()
-		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
-		fillAttributeMap(resourceMetrics.Resource().Attributes(), map[string]any{
-			dataStreamNamespace: "resource.namespace",
+		resourceA := metrics.ResourceMetrics().AppendEmpty()
+		fillAttributeMap(resourceA.Resource().Attributes(), map[string]any{
+			elasticsearch.DataStreamNamespace: "resource.namespace",
 		})
-		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
-		addToMetricSlice(scopeA.Metrics())
+		scopeAA := resourceA.ScopeMetrics().AppendEmpty()
+		addToMetricSlice(scopeAA.Metrics())
 
-		scopeB := resourceMetrics.ScopeMetrics().AppendEmpty()
-		fillAttributeMap(scopeB.Scope().Attributes(), map[string]any{
-			dataStreamDataset: "scope.b",
+		scopeAB := resourceA.ScopeMetrics().AppendEmpty()
+		fillAttributeMap(scopeAB.Scope().Attributes(), map[string]any{
+			elasticsearch.DataStreamDataset: "scope.ab", // routes to a different index and should not be grouped together
 		})
-		addToMetricSlice(scopeB.Metrics())
+		addToMetricSlice(scopeAB.Metrics())
 
-		mustSendMetrics(t, exporter, metrics)
+		scopeAC := resourceA.ScopeMetrics().AppendEmpty()
+		fillAttributeMap(scopeAC.Scope().Attributes(), map[string]any{
+			// ecs: scope attributes are ignored, and duplicates are dropped silently.
+			// otel: scope attributes are dimensions and should result in a separate group.
+			"some.scope.attribute": "scope.ac",
+		})
+		addToMetricSlice(scopeAC.Metrics())
 
-		expected := []itemRequest{
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-bar"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"bar","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0,"foo":1.0}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"metric":{"bar":1.0,"foo":1}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1.0}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-scope.b-bar"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"bar","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1.0,"foo":1.0}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"bar":1.0,"foo":1}}`),
-			},
-			{
-				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1.0}}`),
-			},
+		resourceB := metrics.ResourceMetrics().AppendEmpty()
+		fillAttributeMap(resourceB.Resource().Attributes(), map[string]any{
+			"my.resource": "resource.b",
+		})
+		scopeBA := resourceB.ScopeMetrics().AppendEmpty()
+		addToMetricSlice(scopeBA.Metrics())
+
+		scopeBB := resourceB.ScopeMetrics().AppendEmpty()
+		scopeBB.Scope().SetName("scope.bb")
+		addToMetricSlice(scopeBB.Metrics())
+
+		// identical resource
+		resourceAnotherB := metrics.ResourceMetrics().AppendEmpty()
+		fillAttributeMap(resourceAnotherB.Resource().Attributes(), map[string]any{
+			"my.resource": "resource.b",
+		})
+		addToMetricSlice(resourceAnotherB.ScopeMetrics().AppendEmpty().Metrics())
+
+		assertDocsInIndices := func(t *testing.T, wantDocsPerIndex map[string]int, rec *bulkRecorder) {
+			var sum int
+			for _, v := range wantDocsPerIndex {
+				sum += v
+			}
+			rec.WaitItems(sum)
+
+			actualDocsPerIndex := make(map[string]int)
+			for _, item := range rec.Items() {
+				idx := gjson.GetBytes(item.Action, "create._index")
+				actualDocsPerIndex[idx.String()]++
+			}
+			assert.Equal(t, wantDocsPerIndex, actualDocsPerIndex)
 		}
 
-		assertRecordedItems(t, expected, rec, false)
+		t.Run("ecs", func(t *testing.T) {
+			rec := newBulkRecorder()
+			server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+				rec.Record(docs)
+				return itemsAllOK(docs)
+			})
+
+			exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+				cfg.MetricsIndex = "metrics.index"
+				cfg.Mapping.Mode = "ecs"
+			})
+
+			mustSendMetrics(t, exporter, metrics)
+
+			assertDocsInIndices(t, map[string]int{
+				"metrics-generic-bar":                 2, // AA, BA
+				"metrics-generic-resource.namespace":  3,
+				"metrics-scope.ab-bar":                1,
+				"metrics-scope.ab-resource.namespace": 3,
+				"metrics-generic-default":             3,
+			}, rec)
+		})
+
+		t.Run("otel", func(t *testing.T) {
+			rec := newBulkRecorder()
+			server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+				rec.Record(docs)
+				return itemsAllOK(docs)
+			})
+
+			exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+				cfg.Mapping.Mode = "otel"
+			})
+
+			mustSendMetrics(t, exporter, metrics)
+
+			assertDocsInIndices(t, map[string]int{
+				"metrics-generic.otel-bar":                 4, // AA->bar, AC->bar, BA->bar, BB->bar
+				"metrics-generic.otel-resource.namespace":  6, // AA, AC
+				"metrics-scope.ab.otel-bar":                1, // AB->bar
+				"metrics-scope.ab.otel-resource.namespace": 3, // AB
+				"metrics-generic.otel-default":             6, // BA, BB
+			}, rec)
+		})
 	})
 
 	t.Run("publish histogram", func(t *testing.T) {
@@ -1604,11 +1644,11 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
 			map[string]any{
-				dataStreamDataset: "span.dataset.\\/*?\"<>| ,#:",
+				elasticsearch.DataStreamDataset: "span.dataset.\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
-				dataStreamDataset: "resource.dataset",
+				elasticsearch.DataStreamDataset: "resource.dataset",
 			},
 		))
 
@@ -1845,6 +1885,7 @@ func TestExporterBatcher(t *testing.T) {
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
 		cfg.Batcher = BatcherConfig{Enabled: &batcherEnabled}
 		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
+		cfg.Retry.Enabled = false
 	})
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{

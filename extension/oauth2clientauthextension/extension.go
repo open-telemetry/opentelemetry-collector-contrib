@@ -55,6 +55,7 @@ func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticat
 			},
 			ClientIDFile:     cfg.ClientIDFile,
 			ClientSecretFile: cfg.ClientSecretFile,
+			ExpiryBuffer:     cfg.ExpiryBuffer,
 		},
 		logger: logger,
 		client: &http.Client{
