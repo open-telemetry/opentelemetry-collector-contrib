@@ -104,8 +104,6 @@ func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID str
 	receiverOptions := []eventhub.ReceiveOption{}
 	if applyOffset && h.config.Offset != "" {
 		receiverOptions = append(receiverOptions, eventhub.ReceiveWithStartingOffset(h.config.Offset))
-	} else {
-		receiverOptions = append(receiverOptions, eventhub.ReceiveWithLatestOffset())
 	}
 
 	if h.config.ConsumerGroup != "" {
