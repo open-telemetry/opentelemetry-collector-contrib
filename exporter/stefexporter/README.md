@@ -13,3 +13,49 @@
 
 Export data via gRPC using
 [Otel/STEF format](https://github.com/splunk/stef/tree/main/go/otel) format.
+
+## Getting Started
+
+The following settings are required:
+
+- `endpoint` (no default): host:port to which the exporter is going to send STEF metric data,
+  using the STEF/gRPC protocol. The valid syntax is described
+  [here](https://github.com/grpc/grpc/blob/master/doc/naming.md).
+  If a scheme of `https` is used then client transport security is enabled and overrides the `insecure` setting.
+- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
+  for the full set of available options.
+
+Example:
+
+```yaml
+exporters:
+  stef:
+    endpoint: otelcol2:4317
+    tls:
+      cert_file: file.cert
+      key_file: file.key
+  stef/2:
+    endpoint: otelcol2:4317
+    tls:
+      insecure: true
+```
+
+By default, no compression is enabled. The only supported compression method is zstd.
+To enable, configure as follows:
+
+```yaml
+exporters:
+  otlp:
+    ...
+    compression: zstd
+```
+
+## Advanced Configuration
+
+Several helper files are leveraged to provide additional capabilities automatically:
+
+- [gRPC settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configgrpc/README.md)
+- [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
+- [Queuing, timeout and retry settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
+  Note that `timeout` setting controls how long the exporter waits for ACK of a data sent
+  over STEF/gRPC stream.
