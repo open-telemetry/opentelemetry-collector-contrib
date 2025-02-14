@@ -19,7 +19,7 @@ import (
 // dataPointHasher is an interface for hashing data points by their identity,
 // for grouping into a single document.
 type dataPointHasher interface {
-	hashDataPoint(datapoints.DataPoint) uint32
+	hashDataPoint(pcommon.Resource, pcommon.InstrumentationScope, datapoints.DataPoint) uint32
 }
 
 func newDataPointHasher(mode MappingMode) dataPointHasher {
@@ -39,8 +39,10 @@ type (
 	otelDataPointHasher struct{}
 )
 
-func (h ecsDataPointHasher) hashDataPoint(dp datapoints.DataPoint) uint32 {
+func (h ecsDataPointHasher) hashDataPoint(resource pcommon.Resource, _ pcommon.InstrumentationScope, dp datapoints.DataPoint) uint32 {
 	hasher := fnv.New32a()
+
+	mapHashExcludeReservedAttrs(hasher, resource.Attributes())
 
 	timestampBuf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(dp.Timestamp()))
@@ -51,8 +53,12 @@ func (h ecsDataPointHasher) hashDataPoint(dp datapoints.DataPoint) uint32 {
 	return hasher.Sum32()
 }
 
-func (h otelDataPointHasher) hashDataPoint(dp datapoints.DataPoint) uint32 {
+func (h otelDataPointHasher) hashDataPoint(resource pcommon.Resource, scope pcommon.InstrumentationScope, dp datapoints.DataPoint) uint32 {
 	hasher := fnv.New32a()
+
+	mapHashExcludeReservedAttrs(hasher, resource.Attributes(), elasticsearch.MappingHintsAttrKey)
+	hasher.Write([]byte(scope.Name()))
+	mapHashExcludeReservedAttrs(hasher, scope.Attributes(), elasticsearch.MappingHintsAttrKey)
 
 	timestampBuf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(dp.Timestamp()))
