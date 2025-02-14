@@ -16,8 +16,10 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
+var typ = component.MustNewType("windowseventlog")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "windowseventlog", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
