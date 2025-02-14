@@ -248,6 +248,31 @@ If you are using a proxy server on your EC2 instance, it's important that you ex
 
 If the instance is part of AWS ParallelCluster and the detector is failing to connect to the metadata server, check the iptable and make sure the chain `PARALLELCLUSTER_IMDS` contains a rule that allows OTEL user to access `169.254.169.254/32`
 
+In some cases, you might need to change the behavior of the AWS metadata client from the [standard retryer](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-retries-timeouts.html)
+
+By default, the client retries 3 times with a max backoff delay of 20s.
+
+We offer a limited set of options to override those defaults specifically, such that you can set the client to retry 10 times, for up to 5 minutes, for example:
+
+```yaml
+processors:
+  resourcedetection/ec2:
+    detectors: ["ec2"]
+    ec2:
+      max_attempts: 10
+      max_backoff: 5m
+```
+
+The EC2 detector will report an error in logs if the EC2 metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/ec2:
+    detectors: ["ec2"]
+    ec2:
+      fail_on_missing_metadata: true
+```
+
 ### Amazon ECS
 
 Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html) (TMDE) to record information about the current ECS Task. Only TMDE V4 and V3 are supported.
@@ -557,10 +582,29 @@ processors:
 
 See: [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 
+### Dynatrace
+
+Loads resource information from the `dt_host_metadata.properties` file which is located in
+the `/var/lib/dynatrace/enrichment` (on *nix systems) or `%ProgramData%\dynatrace\enrichment` (on Windows) directories.
+If present in the file, the following attributes will be added:
+
+- `dt.entity.host`
+- `host.name`
+
+The Dynatrace detector does not require any additional configuration, other than being added to the list of detectors.
+
+Example:
+
+```yaml
+processors:
+  resourcedetection/dynatrace:
+    detectors: [dynatrace]
+```
+
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift", "dynatrace"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

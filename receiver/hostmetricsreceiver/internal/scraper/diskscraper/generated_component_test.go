@@ -14,8 +14,10 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapertest"
 )
 
+var typ = component.MustNewType("disk")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "disk", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -26,8 +28,8 @@ func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {
-		name     string
 		createFn func(ctx context.Context, set scraper.Settings, cfg component.Config) (component.Component, error)
+		name     string
 	}{
 
 		{

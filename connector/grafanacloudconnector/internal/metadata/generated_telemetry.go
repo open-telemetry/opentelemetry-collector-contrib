@@ -5,13 +5,13 @@ package metadata
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/otel/metric"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
+	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -25,10 +25,13 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                        metric.Meter
-	GrafanacloudDatapointCount   metric.Int64Counter
-	GrafanacloudFlushCount       metric.Int64Counter
-	GrafanacloudHostCount        metric.Int64ObservableGauge
+	meter                      metric.Meter
+	mu                         sync.Mutex
+	registrations              []metric.Registration
+	GrafanacloudDatapointCount metric.Int64Counter
+	GrafanacloudFlushCount     metric.Int64Counter
+	GrafanacloudHostCount      metric.Int64ObservableGauge
+	// TODO: Remove in v0.119.0 when remove deprecated funcs.
 	observeGrafanacloudHostCount func(context.Context, metric.Observer) error
 }
 
@@ -43,14 +46,38 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
-// WithGrafanacloudHostCountCallback sets callback for observable GrafanacloudHostCount metric.
-func WithGrafanacloudHostCountCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeGrafanacloudHostCount = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.GrafanacloudHostCount, cb(), opts...)
-			return nil
-		}
-	})
+// RegisterGrafanacloudHostCountCallback sets callback for observable GrafanacloudHostCount metric.
+func (builder *TelemetryBuilder) RegisterGrafanacloudHostCountCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.GrafanacloudHostCount, obs: o})
+		return nil
+	}, builder.GrafanacloudHostCount)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+type observerInt64 struct {
+	embedded.Int64Observer
+	inst metric.Int64Observable
+	obs  metric.Observer
+}
+
+func (oi *observerInt64) Observe(value int64, opts ...metric.ObserveOption) {
+	oi.obs.ObserveInt64(oi.inst, value, opts...)
+}
+
+// Shutdown unregister all registered callbacks for async instruments.
+func (builder *TelemetryBuilder) Shutdown() {
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	for _, reg := range builder.registrations {
+		reg.Unregister()
+	}
 }
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
@@ -62,32 +89,30 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.GrafanacloudDatapointCount, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.GrafanacloudDatapointCount, err = builder.meter.Int64Counter(
 		"otelcol_grafanacloud_datapoint_count",
 		metric.WithDescription("Number of datapoints sent to Grafana Cloud"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.GrafanacloudFlushCount, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.GrafanacloudFlushCount, err = builder.meter.Int64Counter(
 		"otelcol_grafanacloud_flush_count",
 		metric.WithDescription("Number of metrics flushes"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.GrafanacloudHostCount, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableGauge(
+	builder.GrafanacloudHostCount, err = builder.meter.Int64ObservableGauge(
 		"otelcol_grafanacloud_host_count",
 		metric.WithDescription("Number of unique hosts"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeGrafanacloudHostCount, builder.GrafanacloudHostCount)
-	errs = errors.Join(errs, err)
-	return &builder, errs
-}
-
-func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
-	if cfgLevel <= srvLevel {
-		return meter
+	if builder.observeGrafanacloudHostCount != nil {
+		reg, err := builder.meter.RegisterCallback(builder.observeGrafanacloudHostCount, builder.GrafanacloudHostCount)
+		errs = errors.Join(errs, err)
+		if err == nil {
+			builder.registrations = append(builder.registrations, reg)
+		}
 	}
-	return noopmetric.Meter{}
+	return &builder, errs
 }

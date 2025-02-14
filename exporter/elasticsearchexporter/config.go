@@ -53,6 +53,9 @@ type Config struct {
 	// fall back to pure TracesIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
 	TracesDynamicIndex DynamicIndexSetting `mapstructure:"traces_dynamic_index"`
 
+	// LogsDynamicID configures whether log record attribute `elasticsearch.document_id` is set as the document ID in ES.
+	LogsDynamicID DynamicIDSettings `mapstructure:"logs_dynamic_id"`
+
 	// Pipeline configures the ingest node pipeline name that should be used to process the
 	// events.
 	//
@@ -109,6 +112,10 @@ type LogstashFormatSettings struct {
 }
 
 type DynamicIndexSetting struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+type DynamicIDSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
@@ -182,11 +189,6 @@ type RetrySettings struct {
 type MappingsSettings struct {
 	// Mode configures the field mappings.
 	Mode string `mapstructure:"mode"`
-
-	// Deprecated: [v0.104.0] dedotting will always be applied for ECS mode
-	// in future, and never for other modes. Elasticsearch's "dot_expander"
-	// Ingest processor may be used as an alternative for non-ECS modes.
-	Dedot bool `mapstructure:"dedot"`
 }
 
 type MappingMode int
@@ -356,9 +358,6 @@ func (cfg *Config) MappingMode() MappingMode {
 }
 
 func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
-	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS || !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
-		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")
-	}
 	if cfg.Retry.MaxRequests != 0 {
 		cfg.Retry.MaxRetries = cfg.Retry.MaxRequests - 1
 		// Do not set cfg.Retry.Enabled = false if cfg.Retry.MaxRequest = 1 to avoid breaking change on behavior

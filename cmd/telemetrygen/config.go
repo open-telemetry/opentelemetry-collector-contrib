@@ -12,10 +12,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/traces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/traces"
 )
 
 var (
@@ -64,13 +64,13 @@ var logsCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(tracesCmd, metricsCmd, logsCmd)
 
-	tracesCfg = new(traces.Config)
+	tracesCfg = traces.NewConfig()
 	tracesCfg.Flags(tracesCmd.Flags())
 
-	metricsCfg = new(metrics.Config)
+	metricsCfg = metrics.NewConfig()
 	metricsCfg.Flags(metricsCmd.Flags())
 
-	logsCfg = new(logs.Config)
+	logsCfg = logs.NewConfig()
 	logsCfg.Flags(logsCmd.Flags())
 
 	// Disabling completion command for end user
@@ -81,7 +81,7 @@ func init() {
 // Execute tries to run the input command
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		// TODO: Uncomment the line below when using Run instead of RunE in the xxxCmd functions
+		// TODO: Uncomment the line below when using run instead of RunE in the xxxCmd functions
 		// fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

@@ -34,11 +34,6 @@ func newLogsConnector(
 	logs consumer.Logs,
 ) (*logsConnector, error) {
 	cfg := config.(*Config)
-
-	if cfg.MatchOnce != nil {
-		set.Logger.Error("The 'match_once' field has been deprecated and no longer has any effect. It will be removed in v0.120.0.")
-	}
-
 	lr, ok := logs.(connector.LogsRouterAndConsumer)
 	if !ok {
 		return nil, errUnexpectedConsumer
@@ -61,7 +56,7 @@ func newLogsConnector(
 }
 
 func (c *logsConnector) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
+	return consumer.Capabilities{MutatesData: true}
 }
 
 func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
