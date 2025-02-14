@@ -298,9 +298,62 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	return 0, nil // never return errors, as that fails the whole scrape
 }
 
-func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, _ labels.Labels, _, _ int64) (storage.SeriesRef, error) {
-	// TODO: implement this func
-	return 0, nil
+func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64) (storage.SeriesRef, error) {
+	return t.setCreationTimestamp(ls, atMs, ctMs, false)
+}
+
+func (t *transaction) AppendHistogramCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64, _ *histogram.Histogram, _ *histogram.FloatHistogram) (storage.SeriesRef, error) {
+	return t.setCreationTimestamp(ls, atMs, ctMs, true)
+}
+
+func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64, histogram bool) (storage.SeriesRef, error) {
+	select {
+	case <-t.ctx.Done():
+		return 0, errTransactionAborted
+	default:
+	}
+
+	if t.externalLabels.Len() != 0 {
+		b := labels.NewBuilder(ls)
+		t.externalLabels.Range(func(l labels.Label) {
+			b.Set(l.Name, l.Value)
+		})
+		ls = b.Labels()
+	}
+
+	rKey, err := t.initTransaction(ls)
+	if err != nil {
+		return 0, err
+	}
+
+	// Any datapoint with duplicate labels MUST be rejected per:
+	// * https://github.com/open-telemetry/wg-prometheus/issues/44
+	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
+	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
+	if dupLabel, hasDup := ls.HasDuplicateLabelNames(); hasDup {
+		return 0, fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
+	}
+
+	metricName := ls.Get(model.MetricNameLabel)
+	if metricName == "" {
+		return 0, errMetricNameNotFound
+	}
+
+	curMF, existing := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
+
+	if histogram {
+		if !existing {
+			curMF.mtype = pmetric.MetricTypeExponentialHistogram
+		} else if curMF.mtype != pmetric.MetricTypeExponentialHistogram {
+			// Already scraped as classic histogram.
+			return 0, nil
+		}
+	}
+
+	seriesRef := t.getSeriesRef(ls, curMF.mtype)
+	curMF.addCreationTimestamp(seriesRef, ls, atMs, ctMs)
+
+	return storage.SeriesRef(seriesRef), nil
 }
 
 func (t *transaction) AppendHistogramCTZeroSample(_ storage.SeriesRef, _ labels.Labels, _, _ int64, _ *histogram.Histogram, _ *histogram.FloatHistogram) (storage.SeriesRef, error) {
