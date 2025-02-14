@@ -71,24 +71,23 @@ func run(folder string, allowlistFilePath string) error {
 			if err != nil {
 				return err
 			}
-			if _, err := os.Stat(filepath.Join(base, "metadata.yaml")); errors.Is(err, os.ErrNotExist) {
+			if strings.HasPrefix(relativeBase, "internal") {
 				return nil
-			}
-			m, err := os.ReadFile(filepath.Join(base, "metadata.yaml"))
-			if err != nil {
-				return err
-			}
-			var componentInfo metadata
-			if err = yaml.Unmarshal(m, &componentInfo); err != nil {
-				return err
 			}
 
-			switch componentInfo.Status.Class {
-			case "receiver", "processor", "exporter", "connector", "extension", "pkg":
-			case "internal":
-				return nil
-			default:
-				return nil
+			var componentType string
+			if _, err := os.Stat(filepath.Join(base, "metadata.yaml")); errors.Is(err, os.ErrNotExist) {
+				componentType = "pkg"
+			} else {
+				m, err := os.ReadFile(filepath.Join(base, "metadata.yaml"))
+				if err != nil {
+					return err
+				}
+				var componentInfo metadata
+				if err = yaml.Unmarshal(m, &componentInfo); err != nil {
+					return err
+				}
+				componentType = componentInfo.Status.Class
 			}
 
 			for _, a := range allowlist {
@@ -97,7 +96,7 @@ func run(folder string, allowlistFilePath string) error {
 					return nil
 				}
 			}
-			if err = walkFolder(base, componentInfo.Status.Class); err != nil {
+			if err = walkFolder(base, componentType); err != nil {
 				errs = append(errs, err)
 			}
 		}
@@ -285,12 +284,16 @@ func exprToString(expr ast.Expr) string {
 		return fmt.Sprintf("chan(%s)", exprToString(e.Value))
 	case *ast.FuncType:
 		var results []string
-		for _, r := range e.Results.List {
-			results = append(results, exprToString(r.Type))
+		if e.Results != nil {
+			for _, r := range e.Results.List {
+				results = append(results, exprToString(r.Type))
+			}
 		}
 		var params []string
-		for _, r := range e.Params.List {
-			params = append(params, exprToString(r.Type))
+		if e.Params != nil {
+			for _, r := range e.Params.List {
+				params = append(params, exprToString(r.Type))
+			}
 		}
 		return fmt.Sprintf("func(%s) %s", strings.Join(params, ","), strings.Join(results, ","))
 	case *ast.SelectorExpr:
