@@ -98,7 +98,7 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 			}})
 			require.NoError(t, err)
 
-			bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, &tt.config, false)
+			bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, &tt.config)
 			require.NoError(t, err)
 			session, err := bulkIndexer.StartSession(context.Background())
 			require.NoError(t, err)
@@ -173,7 +173,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			require.NoError(t, err)
 			core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
 
-			bulkIndexer, err := newAsyncBulkIndexer(zap.New(core), client, &cfg, false)
+			bulkIndexer, err := newAsyncBulkIndexer(zap.New(core), client, &cfg)
 			require.NoError(t, err)
 			defer bulkIndexer.Close(context.Background())
 
@@ -254,7 +254,7 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 }
 
 func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Client) *asyncBulkIndexer {
-	bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, config, false)
+	bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, config)
 	require.NoError(t, err)
 	session, err := bulkIndexer.StartSession(context.Background())
 	require.NoError(t, err)
@@ -282,7 +282,7 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 	}})
 	require.NoError(t, err)
 
-	bi := newSyncBulkIndexer(zap.NewNop(), client, &cfg, false)
+	bi := newSyncBulkIndexer(zap.NewNop(), client, &cfg)
 	session, err := bi.StartSession(context.Background())
 	require.NoError(t, err)
 
