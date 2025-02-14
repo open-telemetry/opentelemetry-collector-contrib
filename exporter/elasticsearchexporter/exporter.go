@@ -249,6 +249,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 ) error {
 	mappingMode := e.config.MappingMode()
 	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
+	hasher := newDataPointHasher(mappingMode)
 
 	e.wg.Add(1)
 	defer e.wg.Done()
@@ -284,7 +285,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 						groupedDataPoints = make(map[uint32]*dataPointsGroup)
 						groupedDataPointsByIndex[index] = groupedDataPoints
 					}
-					dpHash := e.model.hashDataPoint(dp)
+					dpHash := hasher.hashDataPoint(resource, scope, dp)
 					dpGroup, ok := groupedDataPoints[dpHash]
 					if !ok {
 						groupedDataPoints[dpHash] = &dataPointsGroup{

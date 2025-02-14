@@ -172,6 +172,7 @@ extension/observer/ecsobserver
 extension/observer/ecstaskobserver
 extension/observer/hostobserver
 extension/observer/k8sobserver
+extension/observer/kafkatopicsobserver
 extension/oidcauthextension
 extension/opampcustommessages
 extension/opampextension

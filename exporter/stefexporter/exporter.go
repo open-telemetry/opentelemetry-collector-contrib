@@ -191,7 +191,7 @@ func (s *stefExporter) exportMetrics(ctx context.Context, md pmetric.Metrics) er
 	s.stefWriterMutex.Lock()
 	defer s.stefWriterMutex.Unlock()
 
-	converter := stefpdatametrics.OtlpToTEFUnsorted{}
+	converter := stefpdatametrics.OtlpToSTEFUnsorted{}
 	err := converter.WriteMetrics(md, s.stefWriter)
 	if err != nil {
 		// Error to write to STEF stream typically indicates either:
