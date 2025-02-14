@@ -60,8 +60,9 @@ func Test_flattenedSettings_OnConnecting(t *testing.T) {
 func Test_flattenedSettings_OnMessage(t *testing.T) {
 	onMessageFuncCalled := false
 	fs := flattenedSettings{
-		onMessage: func(_ serverTypes.Connection, _ *protobufs.AgentToServer) {
+		onMessage: func(_ serverTypes.Connection, _ *protobufs.AgentToServer) *protobufs.ServerToAgent {
 			onMessageFuncCalled = true
+			return &protobufs.ServerToAgent{}
 		},
 	}
 
