@@ -18,8 +18,8 @@ import (
 	"testing"
 	"time"
 
-	gokitlog "github.com/go-kit/log"
 	"github.com/gogo/protobuf/proto"
+	"github.com/prometheus/common/promslog"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
@@ -163,7 +163,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 	for _, t := range tds {
 		t.attributes = internal.CreateResource(t.name, u.Host, labels.New(l...)).Attributes()
 	}
-	pCfg, err := promcfg.Load(string(cfg), false, gokitlog.NewNopLogger())
+	pCfg, err := promcfg.Load(string(cfg), promslog.NewNopLogger())
 	return mp, (*PromConfig)(pCfg), err
 }
 
