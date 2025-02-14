@@ -76,7 +76,7 @@ The top-level `error_mode` can be overridden at statement group level, offering 
 The basic configuration style allows you to configure OTTL statements as a list,
 without worrying about extra configurations.
 
-**This is the simplest way to configure the Transform Processor.** If you need global conditions or specific error modes see [Statement Group Config](#statement-group-config).
+**This is the simplest way to configure the Transform Processor.** If you need global conditions or specific error modes see [Advanced Config](#advanced-config).
 
 Format:
 
