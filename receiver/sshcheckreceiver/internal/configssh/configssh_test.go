@@ -92,7 +92,7 @@ func TestAllSSHClientSettings(t *testing.T) {
 			shouldError: false,
 		},
 		{
-			name: "invalid_settings_non-existent_keyfile_path",
+			name: "invalid_settings_nonexistent_keyfile_path",
 			settings: SSHClientSettings{
 				Endpoint: endpoint,
 				Timeout:  timeout,
