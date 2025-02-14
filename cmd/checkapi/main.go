@@ -86,7 +86,7 @@ func run(folder string, configPath string) error {
 			}
 
 			var componentType string
-			if _, err := os.Stat(filepath.Join(base, "metadata.yaml")); errors.Is(err, os.ErrNotExist) {
+			if _, err = os.Stat(filepath.Join(base, "metadata.yaml")); errors.Is(err, os.ErrNotExist) {
 				componentType = "pkg"
 			} else {
 				m, err := os.ReadFile(filepath.Join(base, "metadata.yaml"))
@@ -249,6 +249,42 @@ OUTER:
 		if err := checkStructDisallowUnkeyedLiteral(s, folder); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func checkProviderFactoryFunction(newFactoryFn *function, folder string, componentType string) error {
+	if newFactoryFn.Name != "NewFactory" {
+		return fmt.Errorf("%s does not define a NewFactory function as a %s", folder, componentType)
+	}
+	if newFactoryFn.Receiver != "" {
+		return fmt.Errorf("%s associated NewFactory with a receiver type", folder)
+	}
+	if len(newFactoryFn.ReturnTypes) != 1 {
+		return fmt.Errorf("%s NewFactory function returns more than one result", folder)
+	}
+	returnType := newFactoryFn.ReturnTypes[0]
+
+	if returnType != "confmap.ProviderFactory" {
+		return fmt.Errorf("%s NewFactory function does not return a valid type: %s, expected confmap.ProviderFactory", folder, returnType)
+	}
+	return nil
+}
+
+func checkComponentFactoryFunction(newFactoryFn *function, folder string, componentType string) error {
+	if newFactoryFn.Name != "NewFactory" {
+		return fmt.Errorf("%s does not define a NewFactory function as a %s", folder, componentType)
+	}
+	if newFactoryFn.Receiver != "" {
+		return fmt.Errorf("%s associated NewFactory with a receiver type", folder)
+	}
+	if len(newFactoryFn.ReturnTypes) != 1 {
+		return fmt.Errorf("%s NewFactory function returns more than one result", folder)
+	}
+	returnType := newFactoryFn.ReturnTypes[0]
+
+	if returnType != fmt.Sprintf("%s.Factory", componentType) {
+		return fmt.Errorf("%s NewFactory function does not return a valid type: %s, expected %s.Factory", folder, returnType, componentType)
 	}
 	return nil
 }
