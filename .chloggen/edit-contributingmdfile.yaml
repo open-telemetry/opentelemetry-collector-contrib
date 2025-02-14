@@ -1,0 +1,19 @@
+# Use this changelog template to create an entry for release notes.
+change_type: bug_fix
+
+# The component or area this change affects
+component: documentation
+
+# Brief description of the change
+note: "Remove outdated reference to component_type_tests.go file from CONTRIBUTING.md"
+
+# Issue tracking the change
+issues: [37914]
+
+# Additional context for the change
+subtext: |
+  Updates the component testing requirements section in CONTRIBUTING.md to remove reference 
+  to a deleted test file while maintaining guidance about stability requirements.
+
+# This affects end users since it updates contributor documentation
+change_logs: [user]
