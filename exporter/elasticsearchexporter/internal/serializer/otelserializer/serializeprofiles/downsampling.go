@@ -76,14 +76,14 @@ import (
 // The average benefit on the read/query path depends on the query. But it seems that in average
 // a factor of few hundred to a few thousand in terms of I/O, CPU and latency can be achieved.
 const (
-	MaxEventsIndexes = 11
-	SamplingFactor   = 5
-	SamplingRatio    = 1.0 / float64(SamplingFactor)
+	maxEventsIndexes = 11
+	samplingFactor   = 5
+	samplingRatio    = 1.0 / float64(samplingFactor)
 
 	eventsIndexPrefix = "profiling-events"
 )
 
-var eventIndices = initEventIndexes(MaxEventsIndexes)
+var eventIndices = initEventIndexes(maxEventsIndexes)
 
 // A fixed seed is used for deterministic tests and development.
 // There is no downside in using a fixed seed in production.
@@ -95,7 +95,7 @@ func initEventIndexes(count int) []string {
 
 	for i := range count {
 		indices = append(indices, fmt.Sprintf("%s-%dpow%02d",
-			eventsIndexPrefix, SamplingFactor, i+1))
+			eventsIndexPrefix, samplingFactor, i+1))
 	}
 
 	return indices
@@ -115,7 +115,7 @@ func IndexDownsampledEvent(event StackTraceEvent, pushData func(any, string, str
 		for range event.Count {
 			// samplingRatio is the probability p=0.2 for an event to be copied into the next
 			// downsampled index.
-			if rnd.Float64() < SamplingRatio {
+			if rnd.Float64() < samplingRatio {
 				count++
 			}
 		}
