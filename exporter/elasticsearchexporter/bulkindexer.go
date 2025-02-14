@@ -29,9 +29,18 @@ type bulkIndexer interface {
 	Close(ctx context.Context) error
 }
 
+type bulkIndexerItem struct {
+	Index             string
+	DocumentID        string
+	Document          io.WriterTo
+	DynamicTemplates  map[string]string
+	RequireDataStream bool
+	Action            string
+}
+
 type bulkIndexerSession interface {
 	// Add adds a document to the bulk indexing session.
-	Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string, action string) error
+	Add(ctx context.Context, doc bulkIndexerItem) error
 
 	// End must be called on the session object once it is no longer
 	// needed, in order to release any associated resources.
@@ -135,13 +144,14 @@ type syncBulkIndexerSession struct {
 }
 
 // Add adds an item to the sync bulk indexer session.
-func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
+func (s *syncBulkIndexerSession) Add(ctx context.Context, item bulkIndexerItem) error {
 	doc := docappender.BulkIndexerItem{
-		Index:            index,
-		Body:             document,
-		DocumentID:       docID,
-		DynamicTemplates: dynamicTemplates,
-		Action:           action,
+		Index:             item.Index,
+		Body:              item.Document,
+		DocumentID:        item.DocumentID,
+		DynamicTemplates:  item.DynamicTemplates,
+		RequireDataStream: item.RequireDataStream && !s.s.config.RequireDataStream,
+		Action:            item.Action,
 	}
 	err := s.bi.Add(doc)
 	if err != nil {
@@ -198,14 +208,15 @@ func newAsyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Con
 	}
 
 	pool := &asyncBulkIndexer{
-		wg:    sync.WaitGroup{},
-		items: make(chan docappender.BulkIndexerItem, config.NumWorkers),
-		stats: bulkIndexerStats{},
+		config: bulkIndexerConfig(client, config),
+		wg:     sync.WaitGroup{},
+		items:  make(chan docappender.BulkIndexerItem, config.NumWorkers),
+		stats:  bulkIndexerStats{},
 	}
 	pool.wg.Add(numWorkers)
 
 	for i := 0; i < numWorkers; i++ {
-		bi, err := docappender.NewBulkIndexer(bulkIndexerConfig(client, config))
+		bi, err := docappender.NewBulkIndexer(pool.config)
 		if err != nil {
 			return nil, err
 		}
@@ -231,9 +242,10 @@ type bulkIndexerStats struct {
 }
 
 type asyncBulkIndexer struct {
-	items chan docappender.BulkIndexerItem
-	wg    sync.WaitGroup
-	stats bulkIndexerStats
+	config docappender.BulkIndexerConfig
+	items  chan docappender.BulkIndexerItem
+	wg     sync.WaitGroup
+	stats  bulkIndexerStats
 }
 
 type asyncBulkIndexerSession struct {
@@ -264,18 +276,18 @@ func (a *asyncBulkIndexer) Close(ctx context.Context) error {
 // Add adds an item to the async bulk indexer session.
 //
 // Adding an item after a call to Close() will panic.
-func (s asyncBulkIndexerSession) Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
-	item := docappender.BulkIndexerItem{
-		Index:            index,
-		Body:             document,
-		DocumentID:       docID,
-		DynamicTemplates: dynamicTemplates,
-		Action:           action,
-	}
+func (s asyncBulkIndexerSession) Add(ctx context.Context, item bulkIndexerItem) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case s.items <- item:
+	case s.items <- docappender.BulkIndexerItem{
+		Index:             item.Index,
+		Body:              item.Document,
+		DocumentID:        item.DocumentID,
+		DynamicTemplates:  item.DynamicTemplates,
+		RequireDataStream: item.RequireDataStream && !s.config.RequireDataStream,
+		Action:            item.Action,
+	}:
 		return nil
 	}
 }

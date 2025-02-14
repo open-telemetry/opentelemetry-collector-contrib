@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
 )
 
 type elasticsearchExporter struct {
@@ -176,7 +177,12 @@ func (e *elasticsearchExporter) pushLogRecord(
 	}
 
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, docID, buf, nil, docappender.ActionCreate)
+	return bulkIndexerSession.Add(ctx, bulkIndexerItem{
+		Index:      index.Index,
+		DocumentID: docID,
+		Document:   buf,
+		Action:     docappender.ActionCreate,
+	})
 }
 
 type dataPointsGroup struct {
@@ -319,7 +325,12 @@ func (e *elasticsearchExporter) pushMetricsData(
 				errs = append(errs, err)
 				continue
 			}
-			if err := session.Add(ctx, index.Index, "", buf, dynamicTemplates, docappender.ActionCreate); err != nil {
+			if err := session.Add(ctx, bulkIndexerItem{
+				Index:            index.Index,
+				Document:         buf,
+				DynamicTemplates: dynamicTemplates,
+				Action:           docappender.ActionCreate,
+			}); err != nil {
 				// not recycling after Add returns an error as we don't know if it's already recycled
 				if cerr := ctx.Err(); cerr != nil {
 					return cerr
@@ -415,7 +426,11 @@ func (e *elasticsearchExporter) pushTraceRecord(
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, "", buf, nil, docappender.ActionCreate)
+	return bulkIndexerSession.Add(ctx, bulkIndexerItem{
+		Index:    index.Index,
+		Document: buf,
+		Action:   docappender.ActionCreate,
+	})
 }
 
 func (e *elasticsearchExporter) pushSpanEvent(
@@ -441,7 +456,11 @@ func (e *elasticsearchExporter) pushSpanEvent(
 		return nil
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, "", buf, nil, docappender.ActionCreate)
+	return bulkIndexerSession.Add(ctx, bulkIndexerItem{
+		Index:    index.Index,
+		Document: buf,
+		Action:   docappender.ActionCreate,
+	})
 }
 
 func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string {
@@ -510,6 +529,13 @@ func (e *elasticsearchExporter) pushProfileRecord(
 	session bulkIndexerSession,
 ) error {
 	return e.model.encodeProfile(resource, scope, record, func(buf *bytes.Buffer, docID, index string) error {
-		return session.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
+		requireDataStream := index == otelserializer.AllEventsIndex
+		return session.Add(ctx, bulkIndexerItem{
+			Index:             index,
+			DocumentID:        docID,
+			Document:          buf,
+			RequireDataStream: requireDataStream,
+			Action:            docappender.ActionCreate,
+		})
 	})
 }
