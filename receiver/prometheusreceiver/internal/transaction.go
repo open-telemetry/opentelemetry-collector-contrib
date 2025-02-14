@@ -30,8 +30,8 @@ import (
 	mdata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
-var removeStartTimeAdjuster = featuregate.GlobalRegistry().MustRegister(
-	"receiver.prometheusreceiver.RemoveStartTimeAdjuster",
+var removeStartTimeAdjustment = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheusreceiver.RemoveStartTimeAdjustment",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will"+
 		" leave the start time unset. Use the new metricstarttime processor instead."),
@@ -473,7 +473,7 @@ func (t *transaction) Commit() error {
 		return nil
 	}
 
-	if !removeStartTimeAdjuster.IsEnabled() {
+	if !removeStartTimeAdjustment.IsEnabled() {
 		if err = t.metricAdjuster.AdjustMetrics(md); err != nil {
 			t.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, err)
 			return err

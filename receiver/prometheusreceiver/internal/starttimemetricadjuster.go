@@ -60,7 +60,7 @@ func NewStartTimeMetricAdjuster(logger *zap.Logger, startTimeMetricRegex *regexp
 }
 
 func (stma *startTimeMetricAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
-	if removeStartTimeAdjuster.IsEnabled() {
+	if removeStartTimeAdjustment.IsEnabled() {
 		return nil
 	}
 	startTime, err := stma.getStartTime(metrics)
