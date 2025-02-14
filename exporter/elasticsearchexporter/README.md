@@ -231,6 +231,7 @@ The Elasticsearch Exporter's own telemetry settings for testing and debugging pu
 - `telemetry`:
   - `log_request_body` (default=false): Logs Elasticsearch client request body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
   - `log_response_body` (default=false): Logs Elasticsearch client response body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
+  - `log_failed_docs_source` (default=false): Include the source (action and document) of failed bulk request item in "source" field when logging "failed to index document". WARNING: Enabling this config may expose sensitive data.
 
 ## Exporting metrics
 

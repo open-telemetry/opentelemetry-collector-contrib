@@ -75,12 +75,13 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 		compressionLevel = gzip.BestSpeed
 	}
 	return docappender.BulkIndexerConfig{
-		Client:                client,
-		MaxDocumentRetries:    maxDocRetries,
-		Pipeline:              config.Pipeline,
-		RetryOnDocumentStatus: config.Retry.RetryOnStatus,
-		RequireDataStream:     requireDataStream,
-		CompressionLevel:      compressionLevel,
+		Client:                   client,
+		MaxDocumentRetries:       maxDocRetries,
+		Pipeline:                 config.Pipeline,
+		RetryOnDocumentStatus:    config.Retry.RetryOnStatus,
+		RequireDataStream:        requireDataStream,
+		CompressionLevel:         compressionLevel,
+		PopulateFailedDocsSource: config.LogFailedDocsSource,
 	}
 }
 
@@ -351,6 +352,9 @@ func flushBulkIndexer(
 		}
 		if hint := getErrorHint(resp.Index, resp.Error.Type); hint != "" {
 			fields = append(fields, zap.String("hint", hint))
+		}
+		if resp.Source != "" {
+			fields = append(fields, zap.String("source", resp.Source))
 		}
 		logger.Error("failed to index document", fields...)
 	}
