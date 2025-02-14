@@ -8,13 +8,15 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v69/github"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
@@ -93,6 +95,9 @@ func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host)
 	// setup health route
 	router.HandleFunc(gtr.cfg.WebHook.HealthPath, gtr.handleHealthCheck)
 
+	// setup webhook route for traces
+	router.HandleFunc(gtr.cfg.WebHook.Path, gtr.handleReq)
+
 	// webhook server standup and configuration
 	gtr.server, err = gtr.cfg.WebHook.ServerConfig.ToServer(ctx, host, gtr.settings.TelemetrySettings, router)
 	if err != nil {
@@ -122,6 +127,67 @@ func (gtr *githubTracesReceiver) Shutdown(_ context.Context) error {
 	err := gtr.server.Close()
 	gtr.shutdownWG.Wait()
 	return err
+}
+
+// handleReq handles incoming request sent to the webhook endoint. On success
+// returns a 200 response code.
+func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Request) {
+	ctx := gtr.obsrecv.StartTracesOp(req.Context())
+
+	p, err := github.ValidatePayload(req, []byte(gtr.cfg.WebHook.Secret))
+	if err != nil {
+		gtr.logger.Sugar().Debugf("unable to validate payload", zap.Error(err))
+		http.Error(w, "invalid payload", http.StatusBadRequest)
+		return
+	}
+
+	eventType := github.WebHookType(req)
+	event, err := github.ParseWebHook(eventType, p)
+	if err != nil {
+		gtr.logger.Sugar().Debugf("failed to parse event", zap.Error(err))
+		http.Error(w, "failed to parse event", http.StatusBadRequest)
+		return
+	}
+
+	var td ptrace.Traces
+	switch e := event.(type) {
+	case *github.WorkflowRunEvent:
+		if strings.ToLower(e.GetWorkflowRun().GetStatus()) != "completed" {
+			gtr.logger.Debug("workflow run not complete, skipping...", zap.String("status", e.GetWorkflowRun().GetStatus()))
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		td, err = gtr.handleWorkflowRun(e)
+	case *github.WorkflowJobEvent:
+		if strings.ToLower(e.GetWorkflowJob().GetStatus()) != "completed" {
+			gtr.logger.Debug("workflow job not complete, skipping...", zap.String("status", e.GetWorkflowJob().GetStatus()))
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		return
+		// TODO: Enable when handleWorkflowJob is implemented
+		// See: https://github.com/open-telemetry/semantic-conventions/issues/1645
+		// td, err = gtr.handleWorkflowJob(ctx, e)
+	case *github.PingEvent:
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		return
+	default:
+		gtr.logger.Sugar().Debugf("event type not supported", zap.String("event_type", eventType))
+		http.Error(w, "event type not supported", http.StatusBadRequest)
+		return
+	}
+
+	if td.SpanCount() > 0 {
+		err = gtr.traceConsumer.ConsumeTraces(ctx, td)
+		if err != nil {
+			http.Error(w, "failed to consume traces", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}
+
+	gtr.obsrecv.EndTracesOp(ctx, "protobuf", td.SpanCount(), err)
 }
 
 // Simple healthcheck endpoint.

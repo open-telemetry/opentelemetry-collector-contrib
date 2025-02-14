@@ -107,8 +107,7 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "none",
-					Dedot: true,
+					Mode: "none",
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -181,8 +180,7 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "none",
-					Dedot: true,
+					Mode: "none",
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -255,8 +253,7 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "none",
-					Dedot: true,
+					Mode: "none",
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
