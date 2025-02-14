@@ -25,6 +25,7 @@ The following settings are optional:
 - `auth` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
 - `resource_groups` (default = none): Filter metrics for specific resource groups, not setting a value will scrape metrics for all resources in the subscription.
 - `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
+- `metrics` (default = none): Filter specific metrics (e.g., `metrics: ["MetricName"]`) and aggregations (e.g., `metrics: ["MetricName/Total"]`).
 - `cache_resources` (default = 86400): List of resources will be cached for the provided amount of time in seconds.
 - `cache_resources_definitions` (default = 86400): List of metrics definitions will be cached for the provided amount of time in seconds.
 - `maximum_number_of_metrics_in_a_call` (default = 20): Maximum number of metrics to fetch in per API call, current limit in Azure is 20 (as of 03/27/2023).
@@ -48,6 +49,10 @@ Authenticating using managed identities has the following optional settings:
 
 - `client_id`
 
+### Filtering metrics
+
+The `metrics` configuration setting is designed to constrain scraping to particular metrics and their specific aggregations. It accepts an array of metrics, where each metric can optionally include an aggregation method following a `/` (slash): `MetricName/Aggregation`. The metric name should correspond to a supported Azure Monitor metric for the designated resource groups and services. The aggregation method can be any aggregation compatible with Azure Monitor (e.g., Average, Minimum, Maximum, Total, Count). The case of the metric name and aggregation does not affect the functionality.
+
 ### Example Configurations
 
 Using [Service Principal](https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#service-principal-with-a-secret) for authentication:
@@ -66,6 +71,10 @@ receivers:
     services:
       - "${service1}"
       - "${service2}"
+    metrics:
+      - "${metric1}"
+      - "${metric2}/${aggregator1}"
+      - "${metric2}/${aggregator2}"
     collection_interval: 60s
     initial_delay: 1s
 ```
@@ -101,6 +110,18 @@ receivers:
     auth: "default_credentials"
 ```
 
+Scrapping limited metrics and aggregations:
+
+```yaml
+receivers:
+  azuremonitor:
+    subscription_id: "${subscription_id}"
+    auth: "default_credentials"
+    metrics:
+      - metric1 # This will scrape all known aggregations for "metric1"
+      - metric2/total # This will include "metric2" with the "Total" aggregation in the scraping
+      - metric3/average # This will include "metric3" with the "Average" aggregation in the scraping
+```
 
 ## Metrics
 
