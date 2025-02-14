@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline"
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter"
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
@@ -60,6 +61,12 @@ var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterDescription("Datadog Exporter will not compute APM Stats"),
 )
 
+var metricExportSerializerClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.metricexportserializerclient",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses the serializer exporter from the Datadog Agent."),
+)
+
 // isMetricExportV2Enabled returns true if metric export in datadogexporter uses native Datadog client APIs, false if it uses Zorkian APIs
 func isMetricExportV2Enabled() bool {
 	return metricExportNativeClientFeatureGate.IsEnabled()
@@ -67,6 +74,10 @@ func isMetricExportV2Enabled() bool {
 
 func isLogsAgentExporterEnabled() bool {
 	return logsAgentExporterFeatureGate.IsEnabled()
+}
+
+func isMetricExportSerializerEnabled() bool {
+	return metricExportSerializerClientFeatureGate.IsEnabled()
 }
 
 // enableNativeMetricExport switches metric export to call native Datadog APIs instead of Zorkian APIs.
@@ -83,6 +94,13 @@ func consumeResource(metadataReporter *inframetadata.Reporter, res pcommon.Resou
 	if err := metadataReporter.ConsumeResource(res); err != nil {
 		logger.Warn("failed to consume resource for host metadata", zap.Error(err), zap.Any("resource", res))
 	}
+}
+
+func enableMetricExportSerializer() error {
+	if err := featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), true); err != nil {
+		return err
+	}
+	return nil
 }
 
 type factory struct {
@@ -300,6 +318,25 @@ func (f *factory) createMetricsExporter(
 			}
 			return nil
 		}
+	} else if isMetricExportSerializerEnabled() {
+		sf := serializerexporter.NewFactory()
+		ex := &serializerexporter.ExporterConfig{
+			Metrics: serializerexporter.MetricsConfig{
+				Metrics: cfg.Metrics,
+			},
+			TimeoutConfig: exporterhelper.TimeoutConfig{
+				Timeout: cfg.Timeout,
+			},
+			QueueConfig: cfg.QueueSettings,
+			API:         cfg.API,
+		}
+		c, err := sf.CreateMetrics(ctx, set, ex)
+		if err != nil {
+			cancel()  // first cancel Context
+			wg.Wait() // then wait for ShutdownFunc
+			return nil, err
+		}
+		pushMetricsFn = c.ConsumeMetrics
 	} else {
 		exp, metricsErr := newMetricsExporter(ctx, set, cfg, acfg, &f.onceMetadata, attrsTranslator, hostProvider, metadataReporter, statsIn, f.gatewayUsage)
 		if metricsErr != nil {
