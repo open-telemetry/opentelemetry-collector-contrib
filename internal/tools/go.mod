@@ -19,6 +19,7 @@ require (
 	go.opentelemetry.io/build-tools/multimod v0.18.0
 	go.opentelemetry.io/collector/cmd/builder v0.119.1-0.20250210123122-44b3eeda354c
 	go.opentelemetry.io/collector/cmd/mdatagen v0.119.1-0.20250210123122-44b3eeda354c
+	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi v0.119.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.30.0
 	golang.org/x/vuln v1.1.4
@@ -268,6 +269,8 @@ require (
 	honnef.co/go/tools v0.5.1 // indirect
 	mvdan.cc/unparam v0.0.0-20240528143540-8a5130ca722f // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi => ../../cmd/checkapi
 
 // openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
 replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
