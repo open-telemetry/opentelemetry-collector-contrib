@@ -6,25 +6,26 @@ package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"bufio"
 	"net/http"
-	"net/textproto"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
 )
 
-func reqToLog(sc *bufio.Scanner,
+const (
+	headerNamespace = "header"
+)
+
+func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
 	headers http.Header,
 	query url.Values,
-	cfg *Config,
-	settings receiver.Settings,
 ) (plog.Logs, int) {
-	if cfg.SplitLogsAtNewLine {
+	if er.cfg.SplitLogsAtNewLine {
 		sc.Split(bufio.ScanLines)
 	} else {
 		// we simply dont split the data passed into scan (i.e. scan the whole thing)
@@ -46,18 +47,18 @@ func reqToLog(sc *bufio.Scanner,
 	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
 
 	scopeLog.Scope().SetName(scopeLogName)
-	scopeLog.Scope().SetVersion(settings.BuildInfo.Version)
-	scopeLog.Scope().Attributes().PutStr("source", settings.ID.String())
+	scopeLog.Scope().SetVersion(er.settings.BuildInfo.Version)
+	scopeLog.Scope().Attributes().PutStr("source", er.settings.ID.String())
 	scopeLog.Scope().Attributes().PutStr("receiver", metadata.Type.String())
-	if cfg.ConvertHeadersToAttributes {
-		appendHeaders(cfg, scopeLog, headers)
-	}
 
 	for sc.Scan() {
 		logRecord := scopeLog.LogRecords().AppendEmpty()
 		logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		line := sc.Text()
 		logRecord.Body().SetStr(line)
+		if er.includeHeadersRegex != nil {
+			appendHeaders(headers, logRecord, er.includeHeadersRegex)
+		}
 	}
 
 	return log, scopeLog.LogRecords().Len()
@@ -72,20 +73,24 @@ func appendMetadata(resourceLog plog.ResourceLogs, query url.Values) {
 	}
 }
 
-// append headers as attributes
-func appendHeaders(config *Config, scopeLog plog.ScopeLogs, headers http.Header) {
-	for k := range headers {
+// append headers as logRecord attributes if they match supplied regex
+func appendHeaders(h http.Header, l plog.LogRecord, r *regexp.Regexp) {
+	for k := range h {
 		// Skip the required header used for authentication
-		if k == textproto.CanonicalMIMEHeaderKey(config.RequiredHeader.Key) {
-			continue
+		if r.MatchString(k) {
+			slice := l.Attributes().PutEmptySlice(headerAttributeKey(k))
+			for _, v := range h.Values(k) {
+				slice.AppendEmpty().SetStr(v)
+			}
 		}
-		scopeLog.Scope().Attributes().PutStr(headerAttributeKey(k), strings.Join(headers.Values(k), ";"))
 	}
 }
 
-// convert given header to snake_case and add "header" as a namespace prefix
+// https://opentelemetry.io/docs/specs/semconv/general/naming/
+// header attribute key contains the header namespace and the header name
+// is normalized to snake_case
 func headerAttributeKey(header string) string {
 	snakeCaseHeader := strings.ReplaceAll(header, "-", "_")
 	snakeCaseHeader = strings.ToLower(snakeCaseHeader)
-	return "header." + snakeCaseHeader
+	return strings.Join([]string{headerNamespace, snakeCaseHeader}, ".")
 }
