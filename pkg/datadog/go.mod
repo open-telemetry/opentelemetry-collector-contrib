@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog
 go 1.23.0
 
 require (
+	github.com/DataDog/datadog-agent/pkg/trace v0.62.2
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.62.2
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.25.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.25.0
@@ -34,7 +35,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.25.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.25.0 // indirect
 	github.com/DataDog/sketches-go v1.4.6 // indirect
-	github.com/DataDog/zstd v1.5.2 // indirect
+	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.26.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.1 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.29.6 // indirect
@@ -136,7 +137,7 @@ require (
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/term v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	golang.org/x/time v0.7.0 // indirect
+	golang.org/x/time v0.8.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241230172942-26aa7a208def // indirect
 	google.golang.org/grpc v1.70.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
