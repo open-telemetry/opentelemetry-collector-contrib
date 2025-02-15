@@ -1,0 +1,9 @@
+type: datadogsemantics
+
+status:
+  class: processor
+  stability:
+    development: [traces]
+  distributions: [contrib]
+  codeowners:
+    active: [songy23, IbraheemA]
