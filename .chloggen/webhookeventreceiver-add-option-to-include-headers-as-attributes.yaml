@@ -16,9 +16,8 @@ issues: [37815]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Adds new `convert_headers_to_attributes` option. If set, all headers, with the exception of the
-  required header (if also enabled) will be added as log attributes. Header names are normalized
-  to snake_case and then prefixed with the namespace `header`.
+  Adds new `header_attribute_regex` option. If set, add headers matching supplied regex as log attributes.
+  Header attributes will be prefixed with `header.` and header keys will be normalized to snake_case
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
