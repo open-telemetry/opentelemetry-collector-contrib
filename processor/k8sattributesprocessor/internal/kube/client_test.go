@@ -4,7 +4,6 @@
 package kube
 
 import (
-	"fmt"
 	"regexp"
 	"testing"
 	"time"
@@ -21,16 +20,8 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
-
-func newFakeAPIClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
-	return fake.NewSimpleClientset(), nil
-}
 
 func newPodIdentifier(from string, name string, value string) PodIdentifier {
 	if from == "connection" {
@@ -144,58 +135,159 @@ func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", got.NodeUID)
 }
 
-func TestDefaultClientset(t *testing.T) {
-	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, nil, nil, nil, false, 10*time.Second)
-	require.EqualError(t, err, "invalid authType for kubernetes: ")
-	assert.Nil(t, c)
-
-	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, nil, nil, nil, false, 10*time.Second)
-	assert.NoError(t, err)
-	assert.NotNil(t, c)
-}
-
 func TestBadFilters(t *testing.T) {
-	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{Fields: []FieldFilter{{Op: selection.Exists}}}, []Association{}, Excludes{}, newFakeAPIClientset, NewFakeInformer, NewFakeNamespaceInformer, NewFakeReplicaSetInformer, false, 10*time.Second)
+	c, err := New(
+		componenttest.NewNopTelemetrySettings(),
+		ExtractionRules{},
+		Filters{Fields: []FieldFilter{{Op: selection.Exists}}},
+		[]Association{},
+		Excludes{},
+		NewFakeInformerProviders(),
+		false,
+		10*time.Second,
+	)
 	assert.Error(t, err)
 	assert.Nil(t, c)
 }
 
-func TestClientStartStop(t *testing.T) {
-	c, _ := newTestClient(t)
-	ctr := c.informer.GetController()
-	require.IsType(t, &FakeController{}, ctr)
-	fctr := ctr.(*FakeController)
-	require.NotNil(t, fctr)
+func TestNewClientInformers(t *testing.T) {
+	testCases := []struct {
+		name               string
+		extractionRules    ExtractionRules
+		namespaceInformer  bool
+		replicaSetInformer bool
+		nodeInformer       bool
+	}{
+		{
+			name:            "default",
+			extractionRules: ExtractionRules{},
+		},
+		{
+			name: "namespace labels",
+			extractionRules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						From: MetadataFromNamespace,
+					},
+				},
+			},
+			namespaceInformer: true,
+		},
+		{
+			name: "namespace annotations",
+			extractionRules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						From: MetadataFromNamespace,
+					},
+				},
+			},
+			namespaceInformer: true,
+		},
+		{
+			name: "cluster id",
+			extractionRules: ExtractionRules{
+				ClusterUID: true,
+			},
+			namespaceInformer: true,
+		},
+		{
+			name: "deployment name",
+			extractionRules: ExtractionRules{
+				DeploymentName: true,
+			},
+			replicaSetInformer: true,
+		},
+		{
+			name: "deployment uid",
+			extractionRules: ExtractionRules{
+				DeploymentUID: true,
+			},
+			replicaSetInformer: true,
+		},
+		{
+			name: "deployment uid",
+			extractionRules: ExtractionRules{
+				DeploymentUID: true,
+			},
+			replicaSetInformer: true,
+		},
+		{
+			name: "node labels",
+			extractionRules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						From: MetadataFromNode,
+					},
+				},
+			},
+			nodeInformer: true,
+		},
+		{
+			name: "node annotations",
+			extractionRules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						From: MetadataFromNode,
+					},
+				},
+			},
+			nodeInformer: true,
+		},
+		{
+			name: "node uid",
+			extractionRules: ExtractionRules{
+				NodeUID: true,
+			},
+			nodeInformer: true,
+		},
+	}
 
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			client, _ := newTestClientWithRulesAndFilters(t, Filters{}, tc.extractionRules)
+			assert.NotNil(t, client)
+			assert.NotNil(t, client.informer)
+			assert.Equal(t, tc.namespaceInformer, client.namespaceInformer != nil)
+			assert.Equal(t, tc.replicaSetInformer, client.replicasetInformer != nil)
+			assert.Equal(t, tc.nodeInformer, client.nodeInformer != nil)
+		})
+	}
+}
+
+func TestClientStartStop(t *testing.T) {
+	rulesForAllInformers := ExtractionRules{
+		DeploymentName: true,
+		ClusterUID:     true,
+		NodeUID:        true,
+	}
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{}, rulesForAllInformers)
+	informers := []cache.SharedInformer{
+		c.informer, c.namespaceInformer, c.replicasetInformer, c.nodeInformer,
+	}
+	for _, informer := range informers {
+		ctr := informer.GetController()
+		require.IsType(t, &FakeController{}, ctr)
+		fctr := ctr.(*FakeController)
+		require.NotNil(t, fctr)
+	}
 	done := make(chan struct{})
-	assert.False(t, fctr.HasStopped())
 	go func() {
 		assert.NoError(t, c.Start())
 		close(done)
 	}()
-	c.Stop()
 	<-done
-	time.Sleep(time.Second)
-	assert.True(t, fctr.HasStopped())
-}
+	c.Stop()
 
-func TestConstructorErrors(t *testing.T) {
-	er := ExtractionRules{}
-	ff := Filters{}
-	t.Run("client-provider-call", func(t *testing.T) {
-		var gotAPIConfig k8sconfig.APIConfig
-		apiCfg := k8sconfig.APIConfig{
-			AuthType: "test-auth-type",
-		}
-		clientProvider := func(c k8sconfig.APIConfig) (kubernetes.Interface, error) {
-			gotAPIConfig = c
-			return nil, fmt.Errorf("error creating k8s client")
-		}
-		c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, NewFakeInformer, NewFakeNamespaceInformer, nil, false, 10*time.Second)
-		assert.Nil(t, c)
-		require.EqualError(t, err, "error creating k8s client")
-		assert.Equal(t, apiCfg, gotAPIConfig)
-	})
+	for _, informer := range informers {
+		ctr := informer.GetController()
+		require.IsType(t, &FakeController{}, ctr)
+		fctr := ctr.(*FakeController)
+		require.NotNil(t, fctr)
+		assert.EventuallyWithT(t, func(collect *assert.CollectT) {
+			assert.True(collect, fctr.HasStopped())
+		}, time.Second, time.Millisecond)
+	}
 }
 
 func TestPodAdd(t *testing.T) {
@@ -619,7 +711,7 @@ func TestGetIgnoredPod(t *testing.T) {
 }
 
 func TestHandlerWrongType(t *testing.T) {
-	c, logs := newTestClientWithRulesAndFilters(t, Filters{})
+	c, logs := newTestClient(t)
 	assert.Equal(t, 0, logs.Len())
 	c.handlePodAdd(1)
 	c.handlePodDelete(1)
@@ -631,7 +723,7 @@ func TestHandlerWrongType(t *testing.T) {
 }
 
 func TestExtractionRules(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c, _ := newTestClient(t)
 
 	// Disable saving ip into k8s.pod.ip
 	c.Associations[0].Sources[0].Name = ""
@@ -987,7 +1079,7 @@ func TestExtractionRules(t *testing.T) {
 }
 
 func TestReplicaSetExtractionRules(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c, _ := newTestClient(t)
 	// Disable saving ip into k8s.pod.ip
 	c.Associations[0].Sources[0].Name = ""
 
@@ -1143,7 +1235,7 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 }
 
 func TestNamespaceExtractionRules(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c, _ := newTestClient(t)
 
 	namespace := &api_v1.Namespace{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -1239,7 +1331,7 @@ func TestNamespaceExtractionRules(t *testing.T) {
 }
 
 func TestNodeExtractionRules(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c, _ := newTestClient(t)
 
 	node := &api_v1.Node{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -1390,7 +1482,7 @@ func TestFilters(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c, _ := newTestClientWithRulesAndFilters(t, tc.filters)
+			c, _ := newTestClientWithRulesAndFilters(t, tc.filters, ExtractionRules{})
 			inf := c.informer.(*FakeInformer)
 			assert.Equal(t, tc.filters.Namespace, inf.namespace)
 			assert.Equal(t, tc.labels, inf.labelSelector.String())
@@ -1864,7 +1956,6 @@ func TestErrorSelectorsFromFilters(t *testing.T) {
 }
 
 func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 	testCases := []struct {
 		name                   string
 		shouldExtractNamespace bool
@@ -1921,13 +2012,12 @@ func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c.Rules = tc.rules
-			assert.Equal(t, tc.shouldExtractNamespace, c.extractNamespaceLabelsAnnotations())
+			assert.Equal(t, tc.shouldExtractNamespace, tc.rules.extractNamespaceLabelsAnnotations())
 		})
 	}
 }
 
-func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *observer.ObservedLogs) {
+func newTestClientWithRulesAndFilters(t *testing.T, f Filters, rules ExtractionRules) (*WatchClient, *observer.ObservedLogs) {
 	set := componenttest.NewNopTelemetrySettings()
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
 	set.Logger = zap.New(observedLogger)
@@ -1954,13 +2044,22 @@ func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *o
 			},
 		},
 	}
-	c, err := New(set, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, NewFakeInformer, NewFakeNamespaceInformer, NewFakeReplicaSetInformer, false, 10*time.Second)
+	c, err := New(
+		set,
+		rules,
+		f,
+		associations,
+		exclude,
+		NewFakeInformerProviders(),
+		false,
+		10*time.Second,
+	)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
 }
 
 func newTestClient(t *testing.T) (*WatchClient, *observer.ObservedLogs) {
-	return newTestClientWithRulesAndFilters(t, Filters{})
+	return newTestClientWithRulesAndFilters(t, Filters{}, ExtractionRules{})
 }
 
 type neverSyncedFakeClient struct {
@@ -1994,23 +2093,46 @@ func TestWaitForMetadata(t *testing.T) {
 		err:              false,
 	}, {
 		name: "wait but never synced",
-		informerProvider: func(client kubernetes.Interface, namespace string, labelSelector labels.Selector, fieldSelector fields.Selector) cache.SharedInformer {
-			return &neverSyncedFakeClient{NewFakeInformer(client, namespace, labelSelector, fieldSelector)}
+		informerProvider: func(
+			namespace string,
+			labelSelector labels.Selector,
+			fieldSelector fields.Selector,
+			transformFunc cache.TransformFunc,
+			stopCh <-chan struct{},
+		) (cache.SharedInformer, error) {
+			informer, err := NewFakeInformer(namespace, labelSelector, fieldSelector, transformFunc, stopCh)
+			if err != nil {
+				return nil, err
+			}
+			return &neverSyncedFakeClient{informer}, nil
 		},
 		err: true,
 	}}
 
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, tc.informerProvider, nil, nil, true, 1*time.Second)
-			require.NoError(t, err)
-
-			err = c.Start()
-			if tc.err {
-				require.Error(t, err)
-			} else {
+		t.Run(
+			tc.name, func(t *testing.T) {
+				informerProviders := NewFakeInformerProviders()
+				informerProviders.PodInformerProvider = tc.informerProvider
+				c, err := New(
+					componenttest.NewNopTelemetrySettings(),
+					ExtractionRules{},
+					Filters{},
+					[]Association{},
+					Excludes{},
+					informerProviders,
+					true,
+					1*time.Second,
+				)
 				require.NoError(t, err)
-			}
-		})
+
+				err = c.Start()
+				if tc.err {
+					require.Error(t, err)
+				} else {
+					require.NoError(t, err)
+				}
+			},
+		)
 	}
 }

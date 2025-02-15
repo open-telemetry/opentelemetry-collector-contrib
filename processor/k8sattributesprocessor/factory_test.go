@@ -24,9 +24,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 
-	realClient := kubeClientProvider
-	kubeClientProvider = newFakeClient
-
 	cfg := factory.CreateDefaultConfig()
 	params := processortest.NewNopSettings()
 
@@ -64,7 +61,4 @@ func TestCreateProcessor(t *testing.T) {
 	pp, err = factory.(xprocessor.Factory).CreateProfiles(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, pp)
 	assert.NoError(t, err)
-
-	// Switch it back so other tests run afterwards will not fail on unexpected state
-	kubeClientProvider = realClient
 }
