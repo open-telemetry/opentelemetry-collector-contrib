@@ -82,6 +82,8 @@ go.opentelemetry.io/collector/pipeline v0.119.1-0.20250210123122-44b3eeda354c h1
 go.opentelemetry.io/collector/pipeline v0.119.1-0.20250210123122-44b3eeda354c/go.mod h1:qE3DmoB05AW0C3lmPvdxZqd/H4po84NPzd5MrqgtL74=
 go.opentelemetry.io/collector/processor v0.119.1-0.20250210123122-44b3eeda354c h1:VGcWcSqnHp0h6eiTTtR6GhjIdRHgSR5jRoXPNjUBnI0=
 go.opentelemetry.io/collector/processor v0.119.1-0.20250210123122-44b3eeda354c/go.mod h1:dpdXEiHFP/8dXC/8JTrwt1fn4F7mBKLhmaffNGiyUmU=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.119.0 h1:4WycsCvkb354qnD28Pt734l3UWfNDL+Ak4EQE8cG4JA=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.119.0/go.mod h1:gKTFrNsq2Y9YSiUWYaBnNUSqyBytmMif0za1MzQht44=
 go.opentelemetry.io/collector/processor/processortest v0.119.1-0.20250210123122-44b3eeda354c h1:5p4tdAYNxhekpACxjLpfBs5Mdft3ZfDzALmnvu4Qe30=
 go.opentelemetry.io/collector/processor/processortest v0.119.1-0.20250210123122-44b3eeda354c/go.mod h1:6UJc2rw3nTCTEqOzRhEODZvZTDaALNa5uGHRe5EtPd0=
 go.opentelemetry.io/collector/processor/xprocessor v0.119.1-0.20250210123122-44b3eeda354c h1:ZlJqsWiciJ3EoVNOQSOtN7M6zFdV7hihV9Hz+Fb7xcI=
@@ -111,8 +113,8 @@ golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3/go.mod h1:t9HGtf8HONx5eT2rtn
 golang.org/x/net v0.0.0-20190620200207-3b0461eec859/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
 golang.org/x/net v0.0.0-20200226121028-0de0cce0169b/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
 golang.org/x/net v0.0.0-20201021035429-f5854403a974/go.mod h1:sp8m0HH+o8qH0wwXwYZr8TS3Oi6o0r6Gce1SSxlDquU=
-golang.org/x/net v0.33.0 h1:74SYHlV8BIgHIFC/LrYkOGIwL19eTYXQ5wc6TBuO36I=
-golang.org/x/net v0.33.0/go.mod h1:HXLR5J+9DxmrqMwG9qjGCxZ+zKXxBru04zlTvWlWuN4=
+golang.org/x/net v0.34.0 h1:Mb7Mrk043xzHgnRM88suvJFwzVrRfHEHJEl5/71CKw0=
+golang.org/x/net v0.34.0/go.mod h1:di0qlW3YNM5oh6GqDGQr92MyTozJPmybPK4Ev/Gm31k=
 golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
