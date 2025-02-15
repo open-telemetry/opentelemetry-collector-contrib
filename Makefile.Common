@@ -207,29 +207,21 @@ ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
 misspell: $(TOOLS_BIN_DIR)/misspell
 	@echo "running $(MISSPELL)"
 	# Windows has a low limit, 8192 chars, to create a process. Workaround it by breaking it in smaller commands.
-	MISSPELL_CMD := $(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL)
-	@$(MISSPELL_CMD)
+	@$$(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL)
 else
 misspell: $(TOOLS_BIN_DIR)/misspell
 	@echo "running $(MISSPELL)"
-	ALL_SRC_AND_DOC := $(shell $(ALL_SRC_AND_DOC_CMD))
-	MISSPELL_CMD := $(MISSPELL) $(ALL_SRC_AND_DOC)
-	@$(MISSPELL_CMD)
+	@$(MISSPELL) $$($(ALL_SRC_AND_DOC_CMD))
 endif
 
 .PHONY: misspell-correction
 ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
 misspell-correction: $(TOOLS_BIN_DIR)/misspell
-
 	# Windows has a low limit, 8192 chars, to create a process. Workaround it by breaking it in smaller commands.
-	MISSPELL_CORRECTION_CMD := $(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL_CORRECTION)
-	$(MISSPELL_CORRECTION_CMD)
+	@$$(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL_CORRECTION)
 else
 misspell-correction: $(TOOLS_BIN_DIR)/misspell
-
-	ALL_SRC_AND_DOC := $(shell $(ALL_SRC_AND_DOC_CMD))
-	MISSPELL_CORRECTION_CMD := $(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
-	$(MISSPELL_CORRECTION_CMD)
+	@$(MISSPELL_CORRECTION) $$($(ALL_SRC_AND_DOC_CMD))
 endif
 
 .PHONY: moddownload
@@ -247,9 +239,8 @@ testifylint-fix:
 
 .PHONY: gci
 gci: $(TOOLS_BIN_DIR)/gci
-	ALL_SRC_AND_DOC := $(shell $(ALL_SRC_AND_DOC_CMD))
 	@echo "running $(GCI)"
-	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" $(ALL_SRC_AND_DOC)
+	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" $$($(ALL_SRC_AND_DOC_CMD))
 
 CHANGED_GOLANG_SOURCES?=$(shell git diff main --name-only | grep -E '.*\.go$$' | grep -v -E '.*_test\.go$$')
 .PHONY: for-affected-components
