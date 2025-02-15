@@ -44,6 +44,7 @@ func TestLoadConfig(t *testing.T) {
 			S3Bucket:     "foo",
 			S3Partition:  "minute",
 			StorageClass: "STANDARD",
+			CannedACL:    "private",
 		},
 		MarshalerName: "otlp_json",
 	}, e,
@@ -79,13 +80,14 @@ func TestConfig(t *testing.T) {
 			S3Partition:  "minute",
 			Endpoint:     "http://endpoint.com",
 			StorageClass: "STANDARD",
+			CannedACL:    "private",
 		},
 		MarshalerName: "otlp_json",
 	}, e,
 	)
 }
 
-func TestConfigS3StorageClaas(t *testing.T) {
+func TestConfigS3StorageClass(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
 	assert.NoError(t, err)
 
@@ -110,6 +112,40 @@ func TestConfigS3StorageClaas(t *testing.T) {
 			S3Partition:  "minute",
 			Endpoint:     "http://endpoint.com",
 			StorageClass: "STANDARD_IA",
+			CannedACL:    "private",
+		},
+		QueueSettings: queueCfg,
+		MarshalerName: "otlp_json",
+	}, e,
+	)
+}
+
+func TestConfigS3CannedACL(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "config-s3_storage_class.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.Enabled = false
+
+	assert.Equal(t, &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:       "us-east-1",
+			S3Bucket:     "foo",
+			S3Prefix:     "bar",
+			S3Partition:  "minute",
+			Endpoint:     "http://endpoint.com",
+			StorageClass: "STANDARD_IA",
+			CannedACL:    "private",
 		},
 		QueueSettings: queueCfg,
 		MarshalerName: "otlp_json",
@@ -145,6 +181,7 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 			S3ForcePathStyle: true,
 			DisableSSL:       true,
 			StorageClass:     "STANDARD",
+			CannedACL:        "private",
 		},
 		MarshalerName: "otlp_json",
 	}, e,
@@ -256,6 +293,7 @@ func TestMarshallerName(t *testing.T) {
 			S3Bucket:     "foo",
 			S3Partition:  "minute",
 			StorageClass: "STANDARD",
+			CannedACL:    "private",
 		},
 		MarshalerName: "sumo_ic",
 	}, e,
@@ -270,6 +308,7 @@ func TestMarshallerName(t *testing.T) {
 			S3Bucket:     "bar",
 			S3Partition:  "minute",
 			StorageClass: "STANDARD",
+			CannedACL:    "private",
 		},
 		MarshalerName: "otlp_proto",
 	}, e,
@@ -301,6 +340,7 @@ func TestCompressionName(t *testing.T) {
 			S3Partition:  "minute",
 			Compression:  "gzip",
 			StorageClass: "STANDARD",
+			CannedACL:    "private",
 		},
 		MarshalerName: "otlp_json",
 	}, e,
@@ -316,6 +356,7 @@ func TestCompressionName(t *testing.T) {
 			S3Partition:  "minute",
 			Compression:  "none",
 			StorageClass: "STANDARD",
+			CannedACL:    "private",
 		},
 		MarshalerName: "otlp_proto",
 	}, e,
