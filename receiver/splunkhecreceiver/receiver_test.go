@@ -57,13 +57,13 @@ func Test_splunkhecreceiver_NewReceiver(t *testing.T) {
 	emptyEndpointConfig := createDefaultConfig().(*Config)
 	emptyEndpointConfig.Endpoint = ""
 	type args struct {
-		config       Config
 		logsConsumer consumer.Logs
+		config       Config
 	}
 	tests := []struct {
-		name    string
 		args    args
 		wantErr error
+		name    string
 	}{
 		{
 			name: "empty_endpoint",
@@ -113,11 +113,11 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 
 	tests := []struct {
-		name              string
 		req               *http.Request
 		assertResponse    func(t *testing.T, resp *http.Response, body any)
 		assertSink        func(t *testing.T, sink *consumertest.LogsSink)
 		assertMetricsSink func(t *testing.T, sink *consumertest.MetricsSink)
+		name              string
 	}{
 		{
 			name: "incorrect_method",
@@ -485,9 +485,9 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 	tests := []struct {
 		name          string
-		passthrough   bool
 		tokenProvided string
 		tokenExpected string
+		passthrough   bool
 		metric        bool
 	}{
 		{
@@ -891,9 +891,9 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 
 	tests := []struct {
-		name           string
 		req            *http.Request
 		assertResponse func(t *testing.T, resp *http.Response, body any)
+		name           string
 	}{
 		{
 			name: "incorrect_method",
@@ -1074,8 +1074,8 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 
 func Test_splunkhecReceiver_Start(t *testing.T) {
 	tests := []struct {
-		name          string
 		getConfig     func() *Config
+		name          string
 		errorExpected bool
 	}{
 		{
@@ -1122,10 +1122,10 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 	config.Ack.Extension = &id
 
 	tests := []struct {
-		name                  string
 		req                   *http.Request
 		setupMockAckExtension func() component.Component
 		assertResponse        func(t *testing.T, resp *http.Response, body any)
+		name                  string
 	}{
 		{
 			name: "incorrect_method",
@@ -1355,10 +1355,10 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 	currAckID := uint64(0)
 	tests := []struct {
-		name                  string
 		req                   *http.Request
 		setupMockAckExtension func() component.Component
 		assertResponse        func(t *testing.T, resp *http.Response, body any)
+		name                  string
 	}{
 		{
 			name: "no_channel_header",
@@ -1520,11 +1520,11 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
 
 	tests := []struct {
-		name                  string
 		req                   *http.Request
 		assertResponse        func(t *testing.T, resp *http.Response, body any)
 		assertSink            func(t *testing.T, sink *consumertest.LogsSink)
 		setupMockAckExtension func() component.Component
+		name                  string
 	}{
 		{
 			name: "no_channel_header",
@@ -1723,8 +1723,8 @@ func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name    string
 		field   any
+		name    string
 		success bool
 	}{
 		{
@@ -1812,9 +1812,9 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
 		req            *http.Request
 		assertResource func(t *testing.T, got []plog.Logs)
+		name           string
 	}{
 		{
 			name: "all_metadata",
@@ -1947,9 +1947,9 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	tests := []struct {
-		name           string
 		req            *http.Request
 		assertResponse func(t *testing.T, status int, body string)
+		name           string
 	}{
 		{
 			name: "correct_healthcheck",
