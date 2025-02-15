@@ -50,7 +50,7 @@ func (pki *PartitionKeyBuilder) Build(ts time.Time) string {
 
 func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time) string {
 	if pki.PartitionPrefix != "" {
-		pki.PartitionPrefix = pki.PartitionPrefix + "/"
+		pki.PartitionPrefix += "/"
 	}
 	return pki.PartitionPrefix + timefmt.Format(ts, pki.PartitionFormat)
 }
