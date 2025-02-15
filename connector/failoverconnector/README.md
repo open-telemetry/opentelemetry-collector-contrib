@@ -36,6 +36,7 @@ The following settings are available:
 - `retry_interval (optional)`: the frequency at which the pipeline levels will attempt to reestablish connection with all higher priority levels. Default value is 10 minutes. (See Example below for further explanation)
 - `retry_gap (optional)`: the amount of time between trying two separate priority levels in a single retry_interval timeframe. Default value is 30 seconds. (See Example below for further explanation)
 - `max_retries (optional)`: the maximum retries per level. Default value is 10. Set to 0 to allow unlimited retries.
+- `retry_backoff (optional`: the interval of time the collector will stop retrying a level if max_retries is hit. Set to 0 to disable (Permanently stop retrying a level if max retries is hit). Disabled by default.
 
 The connector intakes a list of `priority_levels` each of which can contain multiple pipelines.
 If any pipeline at a stable level fails, the level is considered unhealthy and the connector will move down one priority level and route all data to the new level (assuming it is stable).
