@@ -18,6 +18,8 @@ issues: [37915, 37503]
 subtext: |
   Users can provide custom file partitions using [strftime](https://linux.die.net/man/3/strftime) formatting.
   The default value of `year=%Y/month=%m/day=%d/hour=%H/minute=%M` matches the older pattern (with `s3_partition: minute`)
+  
+  If users do not provide a value for `s3_prefix`, the exporter will not create a `/` folder in the bucket.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
