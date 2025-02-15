@@ -46,16 +46,6 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
-// Deprecated: [v0.119.0] use RegisterGrafanacloudHostCountCallback.
-func WithGrafanacloudHostCountCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeGrafanacloudHostCount = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.GrafanacloudHostCount, cb(), opts...)
-			return nil
-		}
-	})
-}
-
 // RegisterGrafanacloudHostCountCallback sets callback for observable GrafanacloudHostCount metric.
 func (builder *TelemetryBuilder) RegisterGrafanacloudHostCountCallback(cb metric.Int64Callback) error {
 	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {

@@ -32,9 +32,15 @@ func TestFromMetricsV2(t *testing.T) {
 					{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1.23},
 				},
 			},
+			"1": {
+				LabelsRefs: []uint32{1, 9, 3, 4, 5, 6, 7, 8},
+				Samples: []writev2.Sample{
+					{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1.23},
+				},
+			},
 		}
 	}
-	wantedSymbols := []string{"", "series_name_2", "value-2", "series_name_3", "value-3", "__name__", "gauge_1", "series_name_1", "value-1"}
+	wantedSymbols := []string{"", "series_name_2", "value-2", "series_name_3", "value-3", "__name__", "gauge_1", "series_name_1", "value-1", "sum_1"}
 	tsMap, symbolsTable, err := FromMetricsV2(payload.Metrics(), settings)
 	require.NoError(t, err)
 	require.Equal(t, want(), tsMap)

@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/metadata"
@@ -222,11 +223,11 @@ func TestLoadConfig(t *testing.T) {
 
 			if len(tt.expectedErrs) > 0 {
 				for _, err := range tt.expectedErrs {
-					assert.ErrorContains(t, component.ValidateConfig(cfg), err)
+					assert.ErrorContains(t, xconfmap.Validate(cfg), err)
 				}
 				return
 			}
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

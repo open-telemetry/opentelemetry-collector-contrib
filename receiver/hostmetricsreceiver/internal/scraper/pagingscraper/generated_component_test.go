@@ -14,8 +14,10 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapertest"
 )
 
+var typ = component.MustNewType("paging")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "paging", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {

@@ -20,8 +20,10 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
+var typ = component.MustNewType("coralogix")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "coralogix", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {

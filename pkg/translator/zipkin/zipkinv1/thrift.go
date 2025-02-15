@@ -14,11 +14,11 @@ import (
 	"net"
 
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/zipkincore"
-	jaegerzipkin "github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
+	jaegerzipkin "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
 
 type thriftUnmarshaler struct{}

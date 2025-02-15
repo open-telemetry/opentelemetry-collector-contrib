@@ -29,7 +29,7 @@ liveness and/or readiness probe on Kubernetes.
 
 The following settings are required:
 
-- `endpoint` (default = localhost:13133): Address to publish the health check status. For full list of `ServerConfig` refer [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
+- `endpoint` (default = localhost:13133): Address to publish the health check status. You can review the [full list of `ServerConfig`](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 - `path` (default = "/"): Specifies the path to be configured for the health check server.
 - `response_body` (default = ""): Specifies a static body that overrides the default response returned by the health check service. 
 
@@ -47,5 +47,5 @@ extensions:
     path: "/health/status"
 ```
 
-The full list of settings exposed for this exporter is documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this exporter is documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).

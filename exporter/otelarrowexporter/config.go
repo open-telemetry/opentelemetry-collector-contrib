@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/grpc"
@@ -106,7 +107,7 @@ type ArrowConfig struct {
 
 var _ component.Config = (*Config)(nil)
 
-var _ component.ConfigValidator = (*ArrowConfig)(nil)
+var _ xconfmap.Validator = (*ArrowConfig)(nil)
 
 func (cfg *Config) Validate() error {
 	err := cfg.Arrow.Validate()

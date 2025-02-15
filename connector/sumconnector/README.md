@@ -59,7 +59,7 @@ service:
 
 The sum connector has three required configuration settings and numerous optional settings
 
-- Telemetry type: Nested below the `sum:` connector declaration. Declared as `logs:` in the [Basic Example](#basic-configuration).
+- Telemetry type: Nested below the `sum:` connector declaration. Declared as `spans:` in the [Basic Example](#basic-configuration).
   - Can be any of `spans`, `spanevents`, `datapoints`, or `logs`.
   - For metrics use `datapoints`
   - For traces use `spans` or `spanevents`

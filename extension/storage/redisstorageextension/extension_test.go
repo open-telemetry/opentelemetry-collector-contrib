@@ -188,7 +188,7 @@ func newTestExtension(t *testing.T) storage.Extension {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)

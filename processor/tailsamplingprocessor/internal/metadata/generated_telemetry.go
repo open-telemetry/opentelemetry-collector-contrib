@@ -108,8 +108,8 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingSamplingDecisionTimerLatency, err = builder.meter.Int64Histogram(
 		"otelcol_processor_tail_sampling_sampling_decision_timer_latency",
-		metric.WithDescription("Latency (in microseconds) of each run of the sampling decision timer"),
-		metric.WithUnit("µs"),
+		metric.WithDescription("Latency (in milliseconds) of each run of the sampling decision timer"),
+		metric.WithUnit("ms"),
 		metric.WithExplicitBucketBoundaries([]float64{1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000}...),
 	)
 	errs = errors.Join(errs, err)
