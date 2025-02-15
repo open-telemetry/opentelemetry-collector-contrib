@@ -13,11 +13,10 @@ import (
 
 // persistentState represents persistent state for the supervisor
 type persistentState struct {
-	InstanceID uuid.UUID `yaml:"instance_id"`
-
 	// Path to the config file that the state should be saved to.
 	// This is not marshaled.
-	configPath string `yaml:"-"`
+	configPath string    `yaml:"-"`
+	InstanceID uuid.UUID `yaml:"instance_id"`
 }
 
 func (p *persistentState) SetInstanceID(id uuid.UUID) error {
