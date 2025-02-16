@@ -1,6 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-
+// receiver/prometheusremotewritereceiver/receiver.go
 package prometheusremotewritereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver"
 
 import (
@@ -269,15 +269,23 @@ func addHistogramDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev
 // addDatapoints adds the labels to the datapoints attributes.
 // TODO: We're still not handling several fields that make a datapoint complete, e.g. StartTimestamp,
 // Timestamp, Value, etc.
-func addDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, _ writev2.TimeSeries) {
-	attributes := datapoints.AppendEmpty().Attributes()
+func addDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
+	// Add samples from the timeseries
+	for _, sample := range ts.Samples {
+		dp := datapoints.AppendEmpty()
 
-	for _, l := range ls {
-		if l.Name == "instance" || l.Name == "job" || // Become resource attributes "service.name", "service.instance.id" and "service.namespace"
-			l.Name == labels.MetricName || // Becomes metric name
-			l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
-			continue
+		// Set timestamp in nanoseconds (Prometheus uses milliseconds)
+		dp.SetTimestamp(pcommon.Timestamp(sample.Timestamp * 1e6))
+		dp.SetDoubleValue(sample.Value)
+
+		attributes := dp.Attributes()
+		for _, l := range ls {
+			if l.Name == "instance" || l.Name == "job" || // Become resource attributes
+				l.Name == labels.MetricName || // Becomes metric name
+				l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
+				continue
+			}
+			attributes.PutStr(l.Name, l.Value)
 		}
-		attributes.PutStr(l.Name, l.Value)
 	}
 }
