@@ -139,12 +139,12 @@ func TestS3ManagerUpload(t *testing.T) {
 			sm := NewS3Manager(
 				"my-bucket",
 				&PartitionKeyBuilder{
-					PartitionPrefix:     "telemetry",
-					PartitionTruncation: "minute",
-					FilePrefix:          "signal-data-",
-					Metadata:            "noop",
-					FileFormat:          "metrics",
-					Compression:         tc.compression,
+					PartitionPrefix: "telemetry",
+					PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+					FilePrefix:      "signal-data-",
+					Metadata:        "noop",
+					FileFormat:      "metrics",
+					Compression:     tc.compression,
 					UniqueKeyFunc: func() string {
 						return "random"
 					},
