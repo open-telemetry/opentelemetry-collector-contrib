@@ -5,6 +5,7 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"strconv"
 	"strings"
@@ -14,15 +15,15 @@ import (
 	"github.com/docker/docker/api/types"
 	dtypes "github.com/docker/docker/api/types"
 	ctypes "github.com/docker/docker/api/types/container"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/multierr"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
+	"go.uber.org/zap"
 )
 
 var (
@@ -52,21 +53,46 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 	}
 }
 
+func (c *Config) resolveTLSConfig() (*tls.Config, error) {
+	if c.TLSConfig == nil {
+		return nil, nil
+	}
+
+	return c.TLSConfig.LoadTLSConfig(context.Background())
+}
+
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
+
+	tlsConfig, tlsErr := r.config.resolveTLSConfig()
+	if tlsErr != nil {
+		r.settings.Logger.Error("Failed to resolve TLS config", zap.Error(tlsErr))
+		return fmt.Errorf("failed to resolve TLS config: %w", tlsErr)
+	}
+
+	if tlsConfig == nil {
+		r.settings.Logger.Info("TLS is not enabled, running without TLS.")
+	} else {
+		r.settings.Logger.Info("TLS is enabled.")
+	}
+	// Initialize Docker client
 	var err error
 	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger)
 	if err != nil {
 		return err
 	}
 
+	// Load container list
 	if err = r.client.LoadContainerList(ctx); err != nil {
 		return err
 	}
 
+	// Set up context for the event loop
 	cctx, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
 
+	// Start container event loop
 	go r.client.ContainerEventLoop(cctx)
+
 	return nil
 }
 

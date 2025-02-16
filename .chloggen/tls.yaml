@@ -1,0 +1,9 @@
+change_type: "bug_fix"
+component: "metricsReceiver"
+note: "Fixed TLS configuration resolution in metricsReceiver to properly handle enabled/disabled TLS states."
+issues: [33557]
+subtext: |
+  - The start function now correctly determines whether TLS is enabled or not.
+  - If TLS is disabled, it logs a message and proceeds without it.
+  - Ensures secure TLS configuration handling to prevent misconfigurations.
+change_logs: ["user"]
