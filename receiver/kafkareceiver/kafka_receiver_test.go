@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -308,35 +309,69 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consume")
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
-	c := tracesConsumerGroupHandler{
-		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewErr(consumerError),
-		obsrecv:          obsrecv,
-		headerExtractor:  &nopHeaderExtractor{},
-		telemetryBuilder: nopTelemetryBuilder(t),
+
+	tests := []struct {
+		name               string
+		err, expectedError error
+		expectedBackoff    time.Duration
+	}{
+		{
+			name:            "memory limiter data refused error",
+			err:             errMemoryLimiterDataRefused,
+			expectedError:   errMemoryLimiterDataRefused,
+			expectedBackoff: backoff.DefaultInitialInterval,
+		},
+		{
+			name:            "consumer error that does not require backoff",
+			err:             consumerError,
+			expectedError:   consumerError,
+			expectedBackoff: 0,
+		},
 	}
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	groupClaim := &testConsumerGroupClaim{
-		messageChan: make(chan *sarama.ConsumerMessage),
-	}
-	go func() {
-		e := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
-		assert.EqualError(t, e, consumerError.Error())
-		wg.Done()
-	}()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			backOff := backoff.NewExponentialBackOff()
+			backOff.RandomizationFactor = 0
+			c := tracesConsumerGroupHandler{
+				unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
+				logger:           zap.NewNop(),
+				ready:            make(chan bool),
+				nextConsumer:     consumertest.NewErr(tt.err),
+				obsrecv:          obsrecv,
+				headerExtractor:  &nopHeaderExtractor{},
+				telemetryBuilder: nopTelemetryBuilder(t),
+				backOff:          backOff,
+			}
 
-	td := ptrace.NewTraces()
-	td.ResourceSpans().AppendEmpty()
-	unmarshaler := &ptrace.ProtoMarshaler{}
-	bts, err := unmarshaler.MarshalTraces(td)
-	require.NoError(t, err)
-	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
-	close(groupClaim.messageChan)
-	wg.Wait()
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+			groupClaim := &testConsumerGroupClaim{
+				messageChan: make(chan *sarama.ConsumerMessage),
+			}
+			go func() {
+				start := time.Now()
+				e := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
+				end := time.Now()
+				if tt.expectedError != nil {
+					assert.EqualError(t, e, tt.expectedError.Error())
+				} else {
+					assert.NoError(t, e)
+				}
+				assert.WithinDuration(t, start.Add(tt.expectedBackoff), end, 100*time.Millisecond)
+				wg.Done()
+			}()
+
+			td := ptrace.NewTraces()
+			td.ResourceSpans().AppendEmpty()
+			unmarshaler := &ptrace.ProtoMarshaler{}
+			bts, err := unmarshaler.MarshalTraces(td)
+			require.NoError(t, err)
+			groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
+			close(groupClaim.messageChan)
+			wg.Wait()
+		})
+	}
 }
 
 func TestTracesReceiver_encoding_extension(t *testing.T) {
@@ -618,34 +653,68 @@ func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consume")
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
-	c := metricsConsumerGroupHandler{
-		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewErr(consumerError),
-		obsrecv:          obsrecv,
-		headerExtractor:  &nopHeaderExtractor{},
-		telemetryBuilder: nopTelemetryBuilder(t),
+
+	tests := []struct {
+		name               string
+		err, expectedError error
+		expectedBackoff    time.Duration
+	}{
+		{
+			name:            "memory limiter data refused error",
+			err:             errMemoryLimiterDataRefused,
+			expectedError:   errMemoryLimiterDataRefused,
+			expectedBackoff: backoff.DefaultInitialInterval,
+		},
+		{
+			name:            "consumer error that does not require backoff",
+			err:             consumerError,
+			expectedError:   consumerError,
+			expectedBackoff: 0,
+		},
 	}
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	groupClaim := &testConsumerGroupClaim{
-		messageChan: make(chan *sarama.ConsumerMessage),
-	}
-	go func() {
-		e := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
-		assert.EqualError(t, e, consumerError.Error())
-		wg.Done()
-	}()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			backOff := backoff.NewExponentialBackOff()
+			backOff.RandomizationFactor = 0
+			c := metricsConsumerGroupHandler{
+				unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
+				logger:           zap.NewNop(),
+				ready:            make(chan bool),
+				nextConsumer:     consumertest.NewErr(tt.err),
+				obsrecv:          obsrecv,
+				headerExtractor:  &nopHeaderExtractor{},
+				telemetryBuilder: nopTelemetryBuilder(t),
+				backOff:          backOff,
+			}
 
-	ld := testdata.GenerateMetrics(1)
-	unmarshaler := &pmetric.ProtoMarshaler{}
-	bts, err := unmarshaler.MarshalMetrics(ld)
-	require.NoError(t, err)
-	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
-	close(groupClaim.messageChan)
-	wg.Wait()
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+			groupClaim := &testConsumerGroupClaim{
+				messageChan: make(chan *sarama.ConsumerMessage),
+			}
+			go func() {
+				start := time.Now()
+				e := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
+				end := time.Now()
+				if tt.expectedError != nil {
+					assert.EqualError(t, e, tt.expectedError.Error())
+				} else {
+					assert.NoError(t, e)
+				}
+				assert.WithinDuration(t, start.Add(tt.expectedBackoff), end, 100*time.Millisecond)
+				wg.Done()
+			}()
+
+			ld := testdata.GenerateMetrics(1)
+			unmarshaler := &pmetric.ProtoMarshaler{}
+			bts, err := unmarshaler.MarshalMetrics(ld)
+			require.NoError(t, err)
+			groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
+			close(groupClaim.messageChan)
+			wg.Wait()
+		})
+	}
 }
 
 func TestMetricsReceiver_encoding_extension(t *testing.T) {
@@ -945,34 +1014,68 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consume")
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
-	c := logsConsumerGroupHandler{
-		unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewErr(consumerError),
-		obsrecv:          obsrecv,
-		headerExtractor:  &nopHeaderExtractor{},
-		telemetryBuilder: nopTelemetryBuilder(t),
+
+	tests := []struct {
+		name               string
+		err, expectedError error
+		expectedBackoff    time.Duration
+	}{
+		{
+			name:            "memory limiter data refused error",
+			err:             errMemoryLimiterDataRefused,
+			expectedError:   errMemoryLimiterDataRefused,
+			expectedBackoff: backoff.DefaultInitialInterval,
+		},
+		{
+			name:            "consumer error that does not require backoff",
+			err:             consumerError,
+			expectedError:   consumerError,
+			expectedBackoff: 0,
+		},
 	}
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	groupClaim := &testConsumerGroupClaim{
-		messageChan: make(chan *sarama.ConsumerMessage),
-	}
-	go func() {
-		e := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
-		assert.EqualError(t, e, consumerError.Error())
-		wg.Done()
-	}()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			backOff := backoff.NewExponentialBackOff()
+			backOff.RandomizationFactor = 0
+			c := logsConsumerGroupHandler{
+				unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
+				logger:           zap.NewNop(),
+				ready:            make(chan bool),
+				nextConsumer:     consumertest.NewErr(tt.err),
+				obsrecv:          obsrecv,
+				headerExtractor:  &nopHeaderExtractor{},
+				telemetryBuilder: nopTelemetryBuilder(t),
+				backOff:          backOff,
+			}
 
-	ld := testdata.GenerateLogs(1)
-	unmarshaler := &plog.ProtoMarshaler{}
-	bts, err := unmarshaler.MarshalLogs(ld)
-	require.NoError(t, err)
-	groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
-	close(groupClaim.messageChan)
-	wg.Wait()
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+			groupClaim := &testConsumerGroupClaim{
+				messageChan: make(chan *sarama.ConsumerMessage),
+			}
+			go func() {
+				start := time.Now()
+				e := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
+				end := time.Now()
+				if tt.expectedError != nil {
+					assert.EqualError(t, e, tt.expectedError.Error())
+				} else {
+					assert.NoError(t, e)
+				}
+				assert.WithinDuration(t, start.Add(tt.expectedBackoff), end, 100*time.Millisecond)
+				wg.Done()
+			}()
+
+			ld := testdata.GenerateLogs(1)
+			unmarshaler := &plog.ProtoMarshaler{}
+			bts, err := unmarshaler.MarshalLogs(ld)
+			require.NoError(t, err)
+			groupClaim.messageChan <- &sarama.ConsumerMessage{Value: bts}
+			close(groupClaim.messageChan)
+			wg.Wait()
+		})
+	}
 }
 
 // Test unmarshaler for different charsets and encodings.
@@ -1205,7 +1308,6 @@ func (t testConsumerGroupSession) MarkOffset(string, int32, int64, string) {
 }
 
 func (t testConsumerGroupSession) ResetOffset(string, int32, int64, string) {
-	panic("implement me")
 }
 
 func (t testConsumerGroupSession) MarkMessage(*sarama.ConsumerMessage, string) {}
