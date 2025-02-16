@@ -35,9 +35,10 @@ func TestRedactUnknownAttributes(t *testing.T) {
 	redacted := map[string]pcommon.Value{
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
+	logBody := pcommon.NewValueStr("first-batch-first-logEntry")
 
 	outTraces := runTest(t, allowed, redacted, nil, nil, ignored, config)
-	outLogs := runLogsTest(t, allowed, redacted, nil, nil, ignored, config)
+	outLogs := runLogsTest(t, allowed, redacted, nil, nil, ignored, logBody, config)
 	outMetricsGauge := runMetricsTest(t, allowed, redacted, nil, nil, ignored, config, pmetric.MetricTypeGauge)
 	outMetricsSum := runMetricsTest(t, allowed, redacted, nil, nil, ignored, config, pmetric.MetricTypeSum)
 	outMetricsHistogram := runMetricsTest(t, allowed, redacted, nil, nil, ignored, config, pmetric.MetricTypeHistogram)
@@ -80,9 +81,10 @@ func TestAllowAllKeys(t *testing.T) {
 		"id":    pcommon.NewValueInt(5),
 		"name":  pcommon.NewValueStr("placeholder"),
 	}
+	logBody := pcommon.NewValueStr("first-batch-first-logEntry")
 
 	outTraces := runTest(t, allowed, nil, nil, nil, nil, config)
-	outLogs := runLogsTest(t, allowed, nil, nil, nil, nil, config)
+	outLogs := runLogsTest(t, allowed, nil, nil, nil, nil, logBody, config)
 	outMetricsGauge := runMetricsTest(t, allowed, nil, nil, nil, nil, config, pmetric.MetricTypeGauge)
 	outMetricsSum := runMetricsTest(t, allowed, nil, nil, nil, nil, config, pmetric.MetricTypeSum)
 	outMetricsHistogram := runMetricsTest(t, allowed, nil, nil, nil, nil, config, pmetric.MetricTypeHistogram)
@@ -131,9 +133,10 @@ func TestAllowAllKeysMaskValuesAllowValues(t *testing.T) {
 		"credit_card2": pcommon.NewValueStr("placeholder 4111111111111112"),
 		"email":        pcommon.NewValueStr("user@mycompany.com"),
 	}
+	logBody := pcommon.NewValueStr("first-batch-first-logEntry")
 
 	outTraces := runTest(t, allowed, nil, masked, allowedValues, nil, config)
-	outLogs := runLogsTest(t, allowed, nil, masked, allowedValues, nil, config)
+	outLogs := runLogsTest(t, allowed, nil, masked, allowedValues, nil, logBody, config)
 	outMetricsGauge := runMetricsTest(t, allowed, nil, nil, masked, allowedValues, config, pmetric.MetricTypeGauge)
 	outMetricsSum := runMetricsTest(t, allowed, nil, masked, allowedValues, nil, config, pmetric.MetricTypeSum)
 	outMetricsHistogram := runMetricsTest(t, allowed, nil, masked, allowedValues, nil, config, pmetric.MetricTypeHistogram)
@@ -197,9 +200,10 @@ func TestRedactSummaryDebug(t *testing.T) {
 	allowedValues := map[string]pcommon.Value{
 		"email": pcommon.NewValueStr("user@mycompany.com"),
 	}
+	logBody := pcommon.NewValueStr("placeholder 4111111111111111")
 
 	outTraces := runTest(t, allowed, redacted, masked, allowedValues, ignored, config)
-	outLogs := runLogsTest(t, allowed, redacted, masked, allowedValues, ignored, config)
+	outLogs := runLogsTest(t, allowed, redacted, masked, allowedValues, ignored, logBody, config)
 	outMetricsGauge := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeGauge)
 	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeSum)
 	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeHistogram)
@@ -251,6 +255,12 @@ func TestRedactSummaryDebug(t *testing.T) {
 		value, _ = attr.Get("email")
 		assert.Equal(t, "user@mycompany.com", value.Str())
 	}
+
+	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, "placeholder ****", outLog.Body().Str())
+	outLogBodyMaskedCount, ok := outLog.Attributes().Get(bodyMaskedCount)
+	assert.True(t, ok)
+	assert.Equal(t, int64(1), outLogBodyMaskedCount.Int())
 }
 
 // TestRedactSummaryInfo validates that the processor writes a verbose summary
@@ -280,9 +290,10 @@ func TestRedactSummaryInfo(t *testing.T) {
 	allowedValues := map[string]pcommon.Value{
 		"email": pcommon.NewValueStr("user@mycompany.com"),
 	}
+	logBody := pcommon.NewValueStr("placeholder 4111111111111111")
 
 	outTraces := runTest(t, allowed, redacted, masked, allowedValues, ignored, config)
-	outLogs := runLogsTest(t, allowed, redacted, masked, allowedValues, ignored, config)
+	outLogs := runLogsTest(t, allowed, redacted, masked, allowedValues, ignored, logBody, config)
 	outMetricsGauge := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeGauge)
 	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeSum)
 	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, allowedValues, ignored, config, pmetric.MetricTypeHistogram)
@@ -332,6 +343,12 @@ func TestRedactSummaryInfo(t *testing.T) {
 		value, _ = attr.Get("safe_attribute")
 		assert.Equal(t, "harmless but suspicious 4111111111111141", value.Str())
 	}
+
+	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, "placeholder ****", outLog.Body().Str())
+	outLogBodyMaskedCount, ok := outLog.Attributes().Get(bodyMaskedCount)
+	assert.True(t, ok)
+	assert.Equal(t, int64(1), outLogBodyMaskedCount.Int())
 }
 
 // TestRedactSummarySilent validates that the processor does not create the
@@ -351,9 +368,10 @@ func TestRedactSummarySilent(t *testing.T) {
 	redacted := map[string]pcommon.Value{
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
+	logBody := pcommon.NewValueStr("placeholder 4111111111111111")
 
-	outTraces := runTest(t, allowed, redacted, masked, nil, nil, config)
-	outLogs := runLogsTest(t, allowed, redacted, masked, nil, nil, config)
+	outTraces := runTest(t, allowed, nil, masked, nil, nil, config)
+	outLogs := runLogsTest(t, allowed, nil, masked, nil, nil, logBody, config)
 	outMetricsGauge := runMetricsTest(t, allowed, redacted, nil, masked, nil, config, pmetric.MetricTypeGauge)
 	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, nil, nil, config, pmetric.MetricTypeSum)
 	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, nil, nil, config, pmetric.MetricTypeHistogram)
@@ -386,12 +404,20 @@ func TestRedactSummarySilent(t *testing.T) {
 		value, _ := attr.Get("name")
 		assert.Equal(t, "placeholder ****", value.Str())
 	}
+
+	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, "placeholder ****", outLog.Body().Str())
+	_, ok := outLog.Attributes().Get(bodyMaskedCount)
+	assert.False(t, ok)
 }
 
 // TestRedactSummaryDefault validates that the processor does not create the
 // summary attributes by default
 func TestRedactSummaryDefault(t *testing.T) {
-	config := &Config{AllowedKeys: []string{"id", "name", "group"}}
+	config := &Config{
+		AllowedKeys:   []string{"id", "name", "group"},
+		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+	}
 	allowed := map[string]pcommon.Value{
 		"id": pcommon.NewValueInt(5),
 	}
@@ -401,9 +427,10 @@ func TestRedactSummaryDefault(t *testing.T) {
 	masked := map[string]pcommon.Value{
 		"name": pcommon.NewValueStr("placeholder 4111111111111111"),
 	}
+	logBody := pcommon.NewValueStr("placeholder 4111111111111111")
 
-	outTraces := runTest(t, allowed, nil, masked, nil, ignored, config)
-	outLogs := runLogsTest(t, allowed, nil, masked, nil, ignored, config)
+	outTraces := runTest(t, allowed, nil, masked, nil, nil, config)
+	outLogs := runLogsTest(t, allowed, nil, masked, nil, nil, logBody, config)
 	outMetricsGauge := runMetricsTest(t, allowed, nil, masked, nil, ignored, config, pmetric.MetricTypeGauge)
 	outMetricsSum := runMetricsTest(t, allowed, nil, masked, nil, ignored, config, pmetric.MetricTypeSum)
 	outMetricsHistogram := runMetricsTest(t, allowed, nil, masked, nil, ignored, config, pmetric.MetricTypeHistogram)
@@ -431,7 +458,14 @@ func TestRedactSummaryDefault(t *testing.T) {
 		assert.False(t, ok)
 		_, ok = attr.Get(ignoredKeyCount)
 		assert.False(t, ok)
+		value, _ := attr.Get("name")
+		assert.Equal(t, "placeholder ****", value.Str())
 	}
+
+	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, "placeholder ****", outLog.Body().Str())
+	_, ok := outLog.Attributes().Get(bodyMaskedCount)
+	assert.False(t, ok)
 }
 
 // TestMultipleBlockValues validates that the processor can block multiple
@@ -452,9 +486,10 @@ func TestMultipleBlockValues(t *testing.T) {
 	redacted := map[string]pcommon.Value{
 		"credit_card": pcommon.NewValueStr("4111111111111111"),
 	}
+	logBody := pcommon.NewValueStr("placeholder 4111111111111111 52000")
 
 	outTraces := runTest(t, allowed, redacted, masked, nil, nil, config)
-	outLogs := runLogsTest(t, allowed, redacted, masked, nil, nil, config)
+	outLogs := runLogsTest(t, allowed, redacted, masked, nil, nil, logBody, config)
 	outMetricsGauge := runMetricsTest(t, allowed, redacted, masked, nil, nil, config, pmetric.MetricTypeGauge)
 	outMetricsSum := runMetricsTest(t, allowed, redacted, masked, nil, nil, config, pmetric.MetricTypeSum)
 	outMetricsHistogram := runMetricsTest(t, allowed, redacted, masked, nil, nil, config, pmetric.MetricTypeHistogram)
@@ -500,6 +535,12 @@ func TestMultipleBlockValues(t *testing.T) {
 		assert.Equal(t, "placeholder **** ****", nameValue.Str())
 		assert.Equal(t, "mystery ****", mysteryValue.Str())
 	}
+
+	outLog := outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	assert.Equal(t, "placeholder **** ****", outLog.Body().Str())
+	outLogBodyMaskedCount, ok := outLog.Attributes().Get(bodyMaskedCount)
+	assert.True(t, ok)
+	assert.Equal(t, int64(2), outLogBodyMaskedCount.Int())
 }
 
 // TestProcessAttrsAppliedTwice validates a use case when data is coming through redaction processor more than once.
@@ -601,6 +642,7 @@ func runLogsTest(
 	masked map[string]pcommon.Value,
 	allowedValues map[string]pcommon.Value,
 	ignored map[string]pcommon.Value,
+	body pcommon.Value,
 	config *Config,
 ) plog.Logs {
 	inBatch := plog.NewLogs()
@@ -611,7 +653,7 @@ func runLogsTest(
 	library := ils.Scope()
 	library.SetName("first-library")
 	logEntry := ils.LogRecords().AppendEmpty()
-	logEntry.Body().SetStr("first-batch-first-logEntry")
+	body.CopyTo(logEntry.Body())
 	logEntry.SetTraceID([16]byte{1, 2, 3, 4})
 
 	length := len(allowed) + len(masked) + len(redacted) + len(ignored) + len(allowedValues)
