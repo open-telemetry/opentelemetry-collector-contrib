@@ -72,5 +72,6 @@ func newUploadManager(
 		},
 		s3.NewFromConfig(cfg, s3Opts...),
 		s3types.StorageClass(conf.S3Uploader.StorageClass),
+		s3types.ObjectCannedACL(conf.S3Uploader.CannedACL),
 	), nil
 }
