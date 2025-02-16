@@ -6,9 +6,25 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_exporter_prometheusremotewrite_consumers
+
+Number of configured workers to use to fan out the outgoing requests
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ### otelcol_exporter_prometheusremotewrite_failed_translations
 
 Number of translation operations that failed to translate metrics from Otel to Prometheus
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_exporter_prometheusremotewrite_sent_batch
+
+Number of remote write request batches sent to the remote write endpoint regardless of success or failure
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
