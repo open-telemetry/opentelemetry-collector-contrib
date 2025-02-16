@@ -1,0 +1,59 @@
+azureblob/sp:
+  endpoint: "https://<account>.blob.core.windows.net/"
+  auth:
+    type: "service_principal"
+    tenant_id: "<tenand id>"
+    client_id: "<client id>"
+    client_secret: "<client secret>"
+  container:
+    metrics: "test"
+    logs: "test"
+    traces: "test"
+azureblob/smi:
+  endpoint: "https://<account>.blob.core.windows.net/"
+  auth:
+    type: "system_managed_identity"
+  format: "proto"
+  container:
+    metrics: "test"
+    logs: "test"
+    traces: "test"
+azureblob/umi:
+  endpoint: "https://<account>.blob.core.windows.net/"
+  auth:
+    type: "user_managed_identity"
+    client_id: "<user managed identity id>"
+  container:
+    metrics: "test"
+    logs: "test"
+    traces: "test"
+azureblob/conn-string:
+  # for connection string auth, no need to specify endpoint, because it's already included in connection string
+  auth:
+    type: "connection_string"
+    connection_string: "DefaultEndpointsProtocol=https;AccountName=<account>;AccountKey=<account key>;EndpointSuffix=core.windows.net"
+  container:
+    metrics: "test"
+    logs: "test"
+    traces: "test"
+azureblob/err1:
+  auth:
+    type: "system_managed_identity"
+azureblob/err2:
+  auth:
+    type: "connection_string"
+azureblob/err3:
+  endpoint: "https://<account>.blob.core.windows.net/"
+  auth:
+    type: "service_principal"
+    client_id: "<client id>"
+    client_secret: "<client secret>"
+azureblob/err4:
+  endpoint: "https://<account>.blob.core.windows.net/"
+  auth:
+    type: "user_managed_identity"
+azureblob/err5:
+  endpoint: "https://<account>.blob.core.windows.net/"
+  auth:
+    type: "system_managed_identity"
+  format: "custom"
