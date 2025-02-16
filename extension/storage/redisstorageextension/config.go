@@ -15,4 +15,5 @@ type Config struct {
 	Password   configopaque.String `mapstructure:"password"`
 	DB         int                 `mapstructure:"db"`
 	Expiration time.Duration       `mapstructure:"expiration"`
+	Prefix     string              `mapstructure:"prefix"`
 }
