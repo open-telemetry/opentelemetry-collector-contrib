@@ -35,6 +35,7 @@ __debug_bin*
 coverage/*
 *-coverage.txt
 integration-coverage.html
+internal/tools/testresults/*
 
 # Wix
 *.wixobj
