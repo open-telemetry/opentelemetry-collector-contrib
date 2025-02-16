@@ -65,11 +65,13 @@ func TestLogs(t *testing.T) {
 	require.NoError(t, err)
 	ts := int64(pcommon.NewTimestampFromTime(tm))
 
+	nodeID := &corev3.Node{
+		Id:      "test-id",
+		Cluster: "test-cluster",
+	}
+
 	identifier := &alsv3.StreamAccessLogsMessage_Identifier{
-		Node: &corev3.Node{
-			Id:      "test-id",
-			Cluster: "test-cluster",
-		},
+		Node:    nodeID,
 		LogName: "test-log-name",
 	}
 
@@ -113,14 +115,17 @@ func TestLogs(t *testing.T) {
 					},
 				},
 			},
-			expected: generateLogs([]Log{
+			expected: generateLogs(map[string]string{
+				"node":     nodeID.String(),
+				"log_name": "test-log-name",
+			}, []Log{
 				{
 					Timestamp: ts,
 					Attributes: map[string]any{
 						"api_version": "v3",
 						"log_type":    "http",
 					},
-					Body: pcommon.NewValueStr(httpLog.String()),
+					Body: httpLog.String(),
 				},
 			}),
 		},
@@ -136,14 +141,17 @@ func TestLogs(t *testing.T) {
 					},
 				},
 			},
-			expected: generateLogs([]Log{
+			expected: generateLogs(map[string]string{
+				"node":     nodeID.String(),
+				"log_name": "test-log-name",
+			}, []Log{
 				{
 					Timestamp: ts,
 					Attributes: map[string]any{
 						"api_version": "v3",
 						"log_type":    "tcp",
 					},
-					Body: pcommon.NewValueStr(tcpLog.String()),
+					Body: tcpLog.String(),
 				},
 			}),
 		},
@@ -170,19 +178,23 @@ func TestLogs(t *testing.T) {
 
 type Log struct {
 	Timestamp  int64
-	Body       pcommon.Value
+	Body       string
 	Attributes map[string]any
 }
 
-func generateLogs(logs []Log) plog.Logs {
+func generateLogs(resourceAttrs map[string]string, logs []Log) plog.Logs {
 	ld := plog.NewLogs()
-	logSlice := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	rls := ld.ResourceLogs().AppendEmpty()
+	for k, v := range resourceAttrs {
+		rls.Resource().Attributes().PutStr(k, v)
+	}
+	logSlice := rls.ScopeLogs().AppendEmpty().LogRecords()
 
 	for _, log := range logs {
 		lr := logSlice.AppendEmpty()
 		_ = lr.Attributes().FromRaw(log.Attributes)
 		lr.SetTimestamp(pcommon.Timestamp(log.Timestamp))
-		lr.Body().SetStr(log.Body.AsString())
+		lr.Body().SetStr(log.Body)
 	}
 	return ld
 }
