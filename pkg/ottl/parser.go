@@ -12,6 +12,7 @@ import (
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -480,6 +481,29 @@ func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error
 	}
 
 	return &ValueExpression[K]{
-		getter: getter,
+		getter: &StandardGetSetter[K]{
+			Getter: func(ctx context.Context, tCtx K) (any, error) {
+				val, err := getter.Get(ctx, tCtx)
+				if err != nil {
+					return nil, err
+				}
+				switch v := val.(type) {
+				case pcommon.Map:
+					return v.AsRaw(), nil
+				case pcommon.Slice:
+					return v.AsRaw(), nil
+				case []any:
+					for index, elem := range v {
+						// make sure also nested maps within a slice are returned in their raw form
+						if m, ok := elem.(pcommon.Map); ok {
+							v[index] = m.AsRaw()
+						}
+					}
+					return v, nil
+				default:
+					return v, nil
+				}
+			},
+		},
 	}, nil
 }

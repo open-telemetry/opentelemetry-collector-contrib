@@ -1065,6 +1065,30 @@ func Test_e2e_converters(t *testing.T) {
 				m.PutInt("bar", 5)
 			},
 		},
+		{
+			statement: `set(attributes["test"], {"list":[{"foo":"bar"}]})`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m2 := m.PutEmptySlice("list").AppendEmpty().SetEmptyMap()
+				m2.PutStr("foo", "bar")
+			},
+		},
+		{
+			statement: `set(attributes, {"list":[{"foo":"bar"}]})`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().Clear()
+				m2 := tCtx.GetLogRecord().Attributes().PutEmptySlice("list").AppendEmpty().SetEmptyMap()
+				m2.PutStr("foo", "bar")
+			},
+		},
+		{
+			statement: `set(attributes["arr"], [{"list":[{"foo":"bar"}]}, {"bar":"baz"}])`,
+			want: func(tCtx ottllog.TransformContext) {
+				arr := tCtx.GetLogRecord().Attributes().PutEmptySlice("arr")
+				arr.AppendEmpty().SetEmptyMap().PutEmptySlice("list").AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
+				arr.AppendEmpty().SetEmptyMap().PutStr("bar", "baz")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1243,6 +1267,28 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 			name:      "Nested converter operations",
 			statement: `Hex(Len(attributes) + Len(attributes))`,
 			want:      "0000000000000018",
+		},
+		{
+			name:      "return map type",
+			statement: `attributes["foo"]`,
+			want: map[string]any{
+				"bar":   "pass",
+				"flags": "pass",
+				"slice": []any{
+					"val",
+				},
+				"nested": map[string]any{
+					"test": "pass",
+				},
+			},
+		},
+		{
+			name:      "return list",
+			statement: `attributes["things"]`,
+			want: []any{
+				map[string]any{"name": "foo", "value": int64(2)},
+				map[string]any{"name": "bar", "value": int64(5)},
+			},
 		},
 	}
 
