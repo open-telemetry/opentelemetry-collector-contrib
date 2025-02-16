@@ -6,6 +6,7 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,6 +45,22 @@ type metricsReceiver struct {
 	cancel   context.CancelFunc
 }
 
+const (
+	defaultEndpoint = "unix:///var/run/docker.sock"
+	dockerHostEnv   = "DOCKER_HOST"
+)
+
+func (c *Config) resolveDockerEndpoint() string {
+	if c.Endpoint != "" {
+		return c.Endpoint
+	}
+
+	if dockerHost := os.Getenv(dockerHostEnv); dockerHost != "" {
+		return dockerHost
+	}
+	return defaultEndpoint
+}
+
 func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver {
 	return &metricsReceiver{
 		config:   config,
@@ -53,6 +70,9 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
+	// Resolve the Docker endpoint before creating the client
+	r.config.Endpoint = r.config.resolveDockerEndpoint()
+
 	var err error
 	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger)
 	if err != nil {

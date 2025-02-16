@@ -120,6 +120,72 @@ var (
 	}
 )
 
+const (
+	DefaultEndpoint = "unix:///var/run/docker.sock"
+	DockerHostEnv   = "DOCKER_HOST"
+)
+
+func TestResolveDockerEndpoint(t *testing.T) {
+	tests := []struct {
+		name        string
+		cfg         Config
+		env         string
+		expected    string
+		description string
+	}{
+		{
+			name:        "Explicit endpoint in config",
+			cfg:         Config{Endpoint: "tcp://192.168.1.100:2375"},
+			expected:    "tcp://192.168.1.100:2375",
+			description: "Should return the endpoint from the config if it's set.",
+		},
+		{
+			name:        "DOCKER_HOST env variable set",
+			cfg:         Config{},
+			env:         "tcp://dockerhost:2376",
+			expected:    "tcp://dockerhost:2376",
+			description: "Should return the value of the DOCKER_HOST environment variable.",
+		},
+		{
+			name:        "Default endpoint",
+			cfg:         Config{},
+			expected:    defaultEndpoint,
+			description: "Should return the default endpoint if no config or env variable is set.",
+		},
+		{
+			name:        "Empty DOCKER_HOST env variable",
+			cfg:         Config{},
+			env:         "", // Explicitly set to empty string
+			expected:    defaultEndpoint,
+			description: "Should return the default endpoint if DOCKER_HOST is empty.",
+		},
+		{
+			name:        "Config takes precedence over DOCKER_HOST",
+			cfg:         Config{Endpoint: "tcp://config:1234"},
+			env:         "tcp://env:5678",
+			expected:    "tcp://config:1234",
+			description: "Should return the config endpoint even if DOCKER_HOST is set.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Set the environment variable for the test
+			if tt.env != "" {
+				os.Setenv(dockerHostEnv, tt.env)
+				defer os.Unsetenv(dockerHostEnv)
+			} else {
+				os.Unsetenv(dockerHostEnv)
+			}
+
+			got := tt.cfg.resolveDockerEndpoint()
+			if got != tt.expected {
+				t.Errorf("resolveDockerEndpoint() = %v, want %v, test: %s", got, tt.expected, tt.description)
+			}
+		})
+	}
+}
+
 func TestNewReceiver(t *testing.T) {
 	cfg := &Config{
 		ControllerConfig: scraperhelper.ControllerConfig{

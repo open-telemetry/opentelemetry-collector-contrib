@@ -1,0 +1,13 @@
+change_type: enhancement  
+
+component: dockerstatsreceiver  
+
+note: "Respect the `DOCKER_HOST` environment variable when resolving the Docker endpoint. The receiver now prioritizes the endpoint in the following order: YAML config > `DOCKER_HOST` env variable > default `unix:///var/run/docker.sock`."  
+
+issues: [35779]  
+
+subtext: |  
+  - Previously, the receiver required explicit configuration of the endpoint.  
+  - This change allows automatic detection of `DOCKER_HOST`, improving flexibility in different environments.  
+
+change_logs: []  
