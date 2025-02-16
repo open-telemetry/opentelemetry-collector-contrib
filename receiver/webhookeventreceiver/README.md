@@ -31,6 +31,7 @@ The following settings are optional:
 * `required_header` (optional):  
     * `key` (required if `required_header` config option is set): Represents the key portion of the required header.
     * `value` (required if `required_header` config option is set): Represents the value portion of the required header.
+* `header_attribute_regex` (optional): add headers matching supplied regex as log attributes. Header attributes will be prefixed with `header.` and header keys will be normalized to snake_case
 
 Example:
 ```yaml
