@@ -1,12 +1,6 @@
 resourceSpans:
   - resource:
       attributes:
-        - key: host.ip
-          value:
-            stringValue: 1.2.3.4
-        - key: ip
-          value:
-            stringValue: 1.2.3.4
     scopeSpans:
       - scope: {}
         spans:
@@ -19,8 +13,14 @@ resourceSpans:
                   stringValue: https://www.foo.bar/search?q=OpenTelemetry#SemConv
               - key: http.response.status_code
                 value:
-                  intValue: 201
-            endTimeUnixNano: "1581452773000000789"
+                  intValue: "201"
+              - key: ip
+                value:
+                  stringValue: 1.2.2.1
+              - key: client.address
+                value:
+                  stringValue: 1.2.3.4
+                  endTimeUnixNano: "1581452773000000789"
             events:
               - attributes:
                   - key: event.attr1
@@ -32,5 +32,8 @@ resourceSpans:
                 name: event2
                 timeUnixNano: "1581452773000000123"
             name: span-elastic-http
-            parentSpanId: "bcff497b5a47310f"
+            parentSpanId: bcff497b5a47310f
+            spanId: ""
             startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
