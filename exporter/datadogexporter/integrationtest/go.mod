@@ -8,7 +8,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.119.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.119.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.119.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.119.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tinylib/msgp v1.2.5
@@ -262,7 +264,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.119.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.119.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.119.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.119.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.119.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.119.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.119.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.119.0 // indirect
@@ -283,6 +285,7 @@ require (
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
+	github.com/prometheus-community/windows_exporter v0.27.2 // indirect
 	github.com/prometheus/client_golang v1.20.5 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
@@ -302,6 +305,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stormcat24/protodep v0.1.8 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
+	github.com/tilinna/clock v1.1.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.9.0 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
@@ -342,6 +346,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.119.1-0.20250210123122-44b3eeda354c // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.119.1-0.20250210123122-44b3eeda354c // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.119.1-0.20250210123122-44b3eeda354c // indirect
+	go.opentelemetry.io/collector/filter v0.119.1-0.20250210123122-44b3eeda354c // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.119.1-0.20250210123122-44b3eeda354c // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.119.1-0.20250210123122-44b3eeda354c // indirect
 	go.opentelemetry.io/collector/pdata v1.25.1-0.20250210123122-44b3eeda354c // indirect
@@ -353,6 +358,8 @@ require (
 	go.opentelemetry.io/collector/processor/xprocessor v0.119.1-0.20250210123122-44b3eeda354c // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.119.1-0.20250210123122-44b3eeda354c // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.119.1-0.20250210123122-44b3eeda354c // indirect
+	go.opentelemetry.io/collector/scraper v0.119.1-0.20250210123122-44b3eeda354c // indirect
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.119.1-0.20250210123122-44b3eeda354c // indirect
 	go.opentelemetry.io/collector/semconv v0.119.1-0.20250210123122-44b3eeda354c // indirect
 	go.opentelemetry.io/collector/service v0.119.1-0.20250210123122-44b3eeda354c // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.9.0 // indirect
