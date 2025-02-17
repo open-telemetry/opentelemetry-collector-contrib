@@ -5,13 +5,13 @@ go 1.23.0
 require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.25.1-0.20250217163935-4397ebc2111c
-	go.opentelemetry.io/collector/component v0.119.1-0.20250210123122-44b3eeda354c
-	go.opentelemetry.io/collector/component/componenttest v0.119.1-0.20250210123122-44b3eeda354c
+	go.opentelemetry.io/collector/component v0.119.1-0.20250217163935-4397ebc2111c
+	go.opentelemetry.io/collector/component/componenttest v0.119.1-0.20250217163935-4397ebc2111c
 	go.opentelemetry.io/collector/confmap v1.25.1-0.20250217163935-4397ebc2111c
-	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250210155359-76f44e1e21d1
-	go.opentelemetry.io/collector/extension v0.119.1-0.20250210123122-44b3eeda354c
-	go.opentelemetry.io/collector/extension/auth v0.119.1-0.20250210123122-44b3eeda354c
-	go.opentelemetry.io/collector/extension/extensiontest v0.119.1-0.20250210123122-44b3eeda354c
+	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250217163935-4397ebc2111c
+	go.opentelemetry.io/collector/extension v0.119.1-0.20250217163935-4397ebc2111c
+	go.opentelemetry.io/collector/extension/auth v0.119.1-0.20250217163935-4397ebc2111c
+	go.opentelemetry.io/collector/extension/extensiontest v0.119.1-0.20250217142445-a567a0176541
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.70.0

@@ -6,13 +6,13 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/solarwindscloud/apm-proto v1.0.8
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.119.1-0.20250210123122-44b3eeda354c
-	go.opentelemetry.io/collector/component/componenttest v0.119.1-0.20250210123122-44b3eeda354c
-	go.opentelemetry.io/collector/config/configgrpc v0.119.1-0.20250210123122-44b3eeda354c
+	go.opentelemetry.io/collector/component v0.119.1-0.20250217163935-4397ebc2111c
+	go.opentelemetry.io/collector/component/componenttest v0.119.1-0.20250217163935-4397ebc2111c
+	go.opentelemetry.io/collector/config/configgrpc v0.119.1-0.20250217163935-4397ebc2111c
 	go.opentelemetry.io/collector/confmap v1.25.1-0.20250217163935-4397ebc2111c
-	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250210155359-76f44e1e21d1
-	go.opentelemetry.io/collector/extension v0.119.1-0.20250210123122-44b3eeda354c
-	go.opentelemetry.io/collector/extension/extensiontest v0.119.1-0.20250210123122-44b3eeda354c
+	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250217163935-4397ebc2111c
+	go.opentelemetry.io/collector/extension v0.119.1-0.20250217163935-4397ebc2111c
+	go.opentelemetry.io/collector/extension/extensiontest v0.119.1-0.20250217142445-a567a0176541
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.70.0
@@ -37,12 +37,12 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.25.1-0.20250217163935-4397ebc2111c // indirect
-	go.opentelemetry.io/collector/config/configauth v0.119.1-0.20250210123122-44b3eeda354c // indirect
+	go.opentelemetry.io/collector/config/configauth v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.25.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/config/confignet v1.25.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.25.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/config/configtls v1.25.1-0.20250217163935-4397ebc2111c // indirect
-	go.opentelemetry.io/collector/extension/auth v0.119.1-0.20250210123122-44b3eeda354c // indirect
+	go.opentelemetry.io/collector/extension/auth v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/pdata v1.25.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect

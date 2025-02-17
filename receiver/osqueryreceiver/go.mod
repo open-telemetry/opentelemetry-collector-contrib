@@ -4,10 +4,10 @@ go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.119.1-0.20250210123122-44b3eeda354c
-	go.opentelemetry.io/collector/component/componenttest v0.119.1-0.20250210123122-44b3eeda354c
-	go.opentelemetry.io/collector/receiver v0.119.1-0.20250210123122-44b3eeda354c
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.119.1-0.20250210123122-44b3eeda354c
+	go.opentelemetry.io/collector/component v0.119.1-0.20250217163935-4397ebc2111c
+	go.opentelemetry.io/collector/component/componenttest v0.119.1-0.20250217163935-4397ebc2111c
+	go.opentelemetry.io/collector/receiver v0.119.1-0.20250217163935-4397ebc2111c
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.119.1-0.20250217163935-4397ebc2111c
 	go.uber.org/goleak v1.3.0
 )
 
@@ -24,8 +24,8 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/consumer v1.25.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/pdata v1.25.1-0.20250217163935-4397ebc2111c // indirect
-	go.opentelemetry.io/collector/pipeline v0.119.1-0.20250210123122-44b3eeda354c // indirect
-	go.opentelemetry.io/collector/scraper v0.119.1-0.20250210123122-44b3eeda354c // indirect
+	go.opentelemetry.io/collector/pipeline v0.119.1-0.20250217163935-4397ebc2111c // indirect
+	go.opentelemetry.io/collector/scraper v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
