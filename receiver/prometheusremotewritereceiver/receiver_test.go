@@ -181,15 +181,15 @@ func TestTranslateV2(t *testing.T) {
 				expected := pmetric.NewMetrics()
 				rm := expected.ResourceMetrics().AppendEmpty()
 				parseJobAndInstance(rm.Resource().Attributes(), "service-x/test", "107cn001")
+
 				sm1 := rm.ScopeMetrics().AppendEmpty()
 				sm1.Scope().SetName("scope1")
 				sm1.Scope().SetVersion("v1")
-				m1 := sm1.Metrics().AppendEmpty().SetEmptyGauge()
-				dp1 := m1.DataPoints().AppendEmpty()
-				dp1.Attributes().PutStr("d", "e")
-				m2 := sm1.Metrics().AppendEmpty().SetEmptyGauge()
-				dp2 := m2.DataPoints().AppendEmpty()
-				dp2.Attributes().PutStr("d", "e")
+				m1 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				m1.Attributes().PutStr("d", "e")
+				m2 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				m2.Attributes().PutStr("d", "e")
+
 				sm2 := rm.ScopeMetrics().AppendEmpty()
 				sm2.Scope().SetName("scope2")
 				sm2.Scope().SetVersion("v2")
@@ -239,14 +239,12 @@ func TestTranslateV2(t *testing.T) {
 				sm1.Scope().SetName(defaultBuildName)
 				sm1.Scope().SetVersion(defaultBuildVersion)
 				// Expect 2 separate gauge metrics, one per timeseries.
-				m1 := sm1.Metrics().AppendEmpty().SetEmptyGauge()
-				dp1 := m1.DataPoints().AppendEmpty()
-				dp1.Attributes().PutStr("d", "e")
-				dp1.Attributes().PutStr("foo", "bar")
-				m2 := sm1.Metrics().AppendEmpty().SetEmptyGauge()
-				dp2 := m2.DataPoints().AppendEmpty()
-				dp2.Attributes().PutStr("d", "e")
-				dp2.Attributes().PutStr("foo", "bar")
+				sm1Attributes := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
+				sm1Attributes.PutStr("d", "e")
+				sm1Attributes.PutStr("foo", "bar")
+				sm2Attributes := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
+				sm2Attributes.PutStr("d", "e")
+				sm2Attributes.PutStr("foo", "bar")
 
 				// For job "foo" with instance "bar", fallback to BuildInfo.
 				rm2 := expected.ResourceMetrics().AppendEmpty()
@@ -297,7 +295,7 @@ func TestTranslateV2(t *testing.T) {
 			// When missing, ls.Get returns "" so the defaults from BuildInfo are preserved.
 			request: &writev2.Request{
 				Symbols: []string{
-					"",                
+					"",
 					"__name__",
 					"metric_no_scope",
 					"job",
@@ -323,8 +321,8 @@ func TestTranslateV2(t *testing.T) {
 				parseJobAndInstance(rm.Resource().Attributes(), "service-z/xyz", "inst-42")
 				sm := rm.ScopeMetrics().AppendEmpty()
 				// Expect fallback to default BuildInfo.
-				sm.Scope().SetName("")
-				sm.Scope().SetVersion("")
+				sm.Scope().SetName(defaultBuildName)
+				sm.Scope().SetVersion(defaultBuildVersion)
 				m := sm.Metrics().AppendEmpty().SetEmptyGauge()
 				dp := m.DataPoints().AppendEmpty()
 				dp.Attributes().PutStr("d", "e")
