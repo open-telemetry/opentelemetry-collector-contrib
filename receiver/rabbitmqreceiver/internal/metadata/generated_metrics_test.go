@@ -92,6 +92,18 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRabbitmqMessagePublishedDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordRabbitmqNodeDiskFreeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRabbitmqNodeFdUsedDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRabbitmqNodeMemLimitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordRabbitmqNodeMemUsedDataPoint(ts, 1)
+
 			rb := mb.NewResourceBuilder()
 			rb.SetRabbitmqNodeName("rabbitmq.node.name-val")
 			rb.SetRabbitmqQueueName("rabbitmq.queue.name-val")
@@ -199,6 +211,62 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "The number of messages published to a queue.", ms.At(i).Description())
 					assert.Equal(t, "{messages}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "rabbitmq.node.disk_free":
+					assert.False(t, validatedMetrics["rabbitmq.node.disk_free"], "Found a duplicate in the metrics slice: rabbitmq.node.disk_free")
+					validatedMetrics["rabbitmq.node.disk_free"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Free disk space on the node.", ms.At(i).Description())
+					assert.Equal(t, "{bytes}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "rabbitmq.node.fd_used":
+					assert.False(t, validatedMetrics["rabbitmq.node.fd_used"], "Found a duplicate in the metrics slice: rabbitmq.node.fd_used")
+					validatedMetrics["rabbitmq.node.fd_used"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of file descriptors used on the node.", ms.At(i).Description())
+					assert.Equal(t, "{fd}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "rabbitmq.node.mem_limit":
+					assert.False(t, validatedMetrics["rabbitmq.node.mem_limit"], "Found a duplicate in the metrics slice: rabbitmq.node.mem_limit")
+					validatedMetrics["rabbitmq.node.mem_limit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The memory limit on the node.", ms.At(i).Description())
+					assert.Equal(t, "{bytes}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "rabbitmq.node.mem_used":
+					assert.False(t, validatedMetrics["rabbitmq.node.mem_used"], "Found a duplicate in the metrics slice: rabbitmq.node.mem_used")
+					validatedMetrics["rabbitmq.node.mem_used"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The memory used on the node.", ms.At(i).Description())
+					assert.Equal(t, "{bytes}", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

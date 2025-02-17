@@ -15,10 +15,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-var typ = component.MustNewType("rabbitmq")
-
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, typ, NewFactory().Type())
+	require.Equal(t, "rabbitmq", NewFactory().Type().String())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -29,8 +27,8 @@ func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {
-		createFn func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error)
 		name     string
+		createFn func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error)
 	}{
 
 		{
