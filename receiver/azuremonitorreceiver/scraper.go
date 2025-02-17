@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -57,6 +58,7 @@ const (
 	attributeResourceType  = "type"
 	metadataPrefix         = "metadata_"
 	tagPrefix              = "tags_"
+	filterAllAggregations  = "*"
 )
 
 type azureResource struct {
@@ -339,7 +341,7 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 
 		for _, v := range nextResult.Value {
 			name := *v.Name.Value
-			metricAggregations := getMetricAggregations(name, s.cfg.Metrics)
+			metricAggregations := getMetricAggregations(*v.Namespace, name, s.cfg.Metrics)
 			if len(metricAggregations) == 0 {
 				continue
 			}
@@ -512,23 +514,48 @@ func (s *azureScraper) processTimeseriesData(
 	}
 }
 
-func getMetricAggregations(name string, filters []string) []string {
+func getMetricAggregations(metricNamespace, metricName string, filters map[string]map[string][]string) []string {
+	// default behavior when no metric filters specified: pass all metrics with all aggregations
 	if len(filters) == 0 {
 		return aggregations
 	}
 
-	out := []string{}
-	for _, filter := range filters {
-		if strings.EqualFold(name, filter) {
-			return aggregations
-		}
+	metricsFilters, ok := mapFindInsensitive(filters, metricNamespace)
+	// metric namespace not found or it's empty: pass all metrics from the namespace
+	if !ok || len(metricsFilters) == 0 {
+		return aggregations
+	}
 
+	aggregationsFilters, ok := mapFindInsensitive(metricsFilters, metricName)
+	// if target metric is absent in metrics map: filter out metric
+	if !ok {
+		return []string{}
+	}
+	// allow all aggregations if others are not specified
+	if len(aggregationsFilters) == 0 || slices.Contains(aggregationsFilters, filterAllAggregations) {
+		return aggregations
+	}
+
+	// collect known supported aggregations
+	out := []string{}
+	for _, filter := range aggregationsFilters {
 		for _, aggregation := range aggregations {
-			if strings.EqualFold(name+"/"+aggregation, filter) {
+			if strings.EqualFold(aggregation, filter) {
 				out = append(out, aggregation)
 			}
 		}
 	}
 
 	return out
+}
+
+func mapFindInsensitive[T any](m map[string]T, key string) (T, bool) {
+	for k, v := range m {
+		if strings.EqualFold(key, k) {
+			return v, true
+		}
+	}
+
+	var got T
+	return got, false
 }
