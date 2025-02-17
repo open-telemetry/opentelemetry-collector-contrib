@@ -200,6 +200,10 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ContainerImageTag = true
 			case clusterUID:
 				p.rules.ClusterUID = true
+			case containerPorts:
+				p.rules.ContainerPorts = true
+			case containerCpuRequest:
+				p.rules.ContainerCpuRequest = true
 			}
 		}
 		return nil
