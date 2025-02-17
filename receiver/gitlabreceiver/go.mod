@@ -38,7 +38,6 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/component/componentattribute v0.0.0-20250207221750-83d93cd7cf86 // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.25.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.25.1-0.20250217142445-a567a0176541 // indirect
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v1.25.1-0.20250217163935-4397ebc2111c // indirect
@@ -55,6 +54,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.119.1-0.20250217142445-a567a0176541 // indirect
 	go.opentelemetry.io/collector/featuregate v1.25.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.119.1-0.20250217163935-4397ebc2111c // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.0.0-20250214114048-c713e7c4d760 // indirect
 	go.opentelemetry.io/collector/otelcol v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.119.1-0.20250217163935-4397ebc2111c // indirect
@@ -131,9 +131,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/net v0.34.0 // indirect
+	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.70.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect

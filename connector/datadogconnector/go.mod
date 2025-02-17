@@ -247,7 +247,6 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/client v1.25.1-0.20250217163935-4397ebc2111c // indirect
-	go.opentelemetry.io/collector/component/componentattribute v0.0.0-20250207221750-83d93cd7cf86 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/config/configauth v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.25.1-0.20250217163935-4397ebc2111c // indirect
@@ -277,6 +276,7 @@ require (
 	go.opentelemetry.io/collector/extension/xextension v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.119.1-0.20250217163935-4397ebc2111c // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.0.0-20250214114048-c713e7c4d760 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.119.1-0.20250217163935-4397ebc2111c // indirect

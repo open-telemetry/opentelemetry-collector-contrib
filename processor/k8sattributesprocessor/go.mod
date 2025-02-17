@@ -93,7 +93,6 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector v0.119.1-0.20250217163935-4397ebc2111c // indirect
-	go.opentelemetry.io/collector/component/componentattribute v0.0.0-20250207221750-83d93cd7cf86 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.25.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.119.1-0.20250217163935-4397ebc2111c // indirect
@@ -105,6 +104,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/extension/auth v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.119.1-0.20250217163935-4397ebc2111c // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.0.0-20250214114048-c713e7c4d760 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/receiver v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0 // indirect
@@ -113,10 +113,10 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.30.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
-	golang.org/x/net v0.34.0 // indirect
+	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
-	golang.org/x/sys v0.29.0 // indirect
-	golang.org/x/term v0.28.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/term v0.29.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
