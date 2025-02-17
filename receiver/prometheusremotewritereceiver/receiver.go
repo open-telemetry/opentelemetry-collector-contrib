@@ -262,8 +262,59 @@ func addSummaryDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.
 	// TODO: Implement this function
 }
 
-func addHistogramDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
+func addHistogramDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
+	// getting scope name and version from labels
+
+	scopeName := ls.Get("otel_scope_name")
+	scopeVersion := ls.Get("otel_scope_version")
+
+	// Checks if the scope already exists
+	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		scope := rm.ScopeMetrics().At(j)
+		if scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
+			appendHistogramDatapoints(scope.Metrics().AppendEmpty().SetEmptyHistogram().DataPoints(), ls, ts)
+			return
+		}
+	}
+
+	// If no existing scope, create a new one
+	scope := rm.ScopeMetrics().AppendEmpty()
+	scope.Scope().SetName(scopeName)
+	scope.Scope().SetVersion(scopeVersion)
+
+	// Create a new histogram metric
+	m := scope.Metrics().AppendEmpty().SetEmptyHistogram()
+	appendHistogramDatapoints(m.DataPoints(), ls, ts)
+
+}
+
+func appendHistogramDatapoints(datapoints pmetric.HistogramDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
+	// If samples
+	if len(ts.Samples) == 0 {
+		return
+	}
+
+	// Create a new histogram data point
+	dp := datapoints.AppendEmpty()
+	attributes := dp.Attributes()
+
+	// Copy relevant labels into attributes
+	for _, l := range ls {
+		if l.Name == "instance" || l.Name == "job" ||
+			l.Name == labels.MetricName ||
+			l.Name == "otel_scope_name" || l.Name == "otel_scope_version" {
+			continue
+		}
+		attributes.PutStr(l.Name, l.Value)
+	}
+	// Set histogram count
+	dp.SetCount(uint64(len(ts.Samples)))
+	dp.SetSum(0)
+
+	// Compute total sum of all sample values
+	for _, sample := range ts.Samples {
+		dp.SetSum(dp.Sum() + sample.Value)
+	}
 }
 
 // addDatapoints adds the labels to the datapoints attributes.
