@@ -226,27 +226,20 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 	}
 }
 
-func addCounterDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
-}
-
-func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
-	// TODO: Cache metric name+type+unit and look up cache before creating new empty metric.
-	// In OTel name+type+unit is the unique identifier of a metric and we should not create
-	// a new metric if it already exists.
-
+func addCounterDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
 	scopeName := ls.Get("otel_scope_name")
 	scopeVersion := ls.Get("otel_scope_version")
-	// TODO: If the scope version or scope name is empty, get the information from the collector build tags.
-	// More: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#:~:text=Metrics%20which%20do%20not%20have%20an%20otel_scope_name%20or%20otel_scope_version%20label%20MUST%20be%20assigned%20an%20instrumentation%20scope%20identifying%20the%20entity%20performing%20the%20translation%20from%20Prometheus%20to%20OpenTelemetry%20(e.g.%20the%20collector%E2%80%99s%20prometheus%20receiver)
 
-	// Check if the name and version present in the labels are already present in the ResourceMetrics.
-	// If it is not present, we should create a new ScopeMetrics.
-	// Otherwise, we should append to the existing ScopeMetrics.
+	// Check if the name and version present in the labels are already present in the ResourceMetrics
 	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 		scope := rm.ScopeMetrics().At(j)
 		if scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
-			addDatapoints(scope.Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
+			metric := scope.Metrics().AppendEmpty()
+			sum := metric.SetEmptySum()
+			sum.SetIsMonotonic(true)
+			sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+			metric.SetName(ls.Get(labels.MetricName))
+			addDatapoints(sum.DataPoints(), ls, ts)
 			return
 		}
 	}
@@ -254,8 +247,36 @@ func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2
 	scope := rm.ScopeMetrics().AppendEmpty()
 	scope.Scope().SetName(scopeName)
 	scope.Scope().SetVersion(scopeVersion)
-	m := scope.Metrics().AppendEmpty().SetEmptyGauge()
-	addDatapoints(m.DataPoints(), ls, ts)
+	metric := scope.Metrics().AppendEmpty()
+	sum := metric.SetEmptySum()
+	// Set monotonic to true since Prometheus counters are always monotonic
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	metric.SetName(ls.Get(labels.MetricName))
+	addDatapoints(sum.DataPoints(), ls, ts)
+}
+
+func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
+	scopeName := ls.Get("otel_scope_name")
+	scopeVersion := ls.Get("otel_scope_version")
+
+	// Check if the name and version present in the labels are already present in the ResourceMetrics
+	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		scope := rm.ScopeMetrics().At(j)
+		if scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
+			metric := scope.Metrics().AppendEmpty()
+			metric.SetName(ls.Get(labels.MetricName))
+			addDatapoints(metric.SetEmptyGauge().DataPoints(), ls, ts)
+			return
+		}
+	}
+
+	scope := rm.ScopeMetrics().AppendEmpty()
+	scope.Scope().SetName(scopeName)
+	scope.Scope().SetVersion(scopeVersion)
+	metric := scope.Metrics().AppendEmpty()
+	metric.SetName(ls.Get(labels.MetricName))
+	addDatapoints(metric.SetEmptyGauge().DataPoints(), ls, ts)
 }
 
 func addSummaryDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
@@ -269,15 +290,22 @@ func addHistogramDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev
 // addDatapoints adds the labels to the datapoints attributes.
 // TODO: We're still not handling several fields that make a datapoint complete, e.g. StartTimestamp,
 // Timestamp, Value, etc.
-func addDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, _ writev2.TimeSeries) {
-	attributes := datapoints.AppendEmpty().Attributes()
+func addDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
+	for _, sample := range ts.Samples {
+		dp := datapoints.AppendEmpty()
+		attributes := dp.Attributes()
 
-	for _, l := range ls {
-		if l.Name == "instance" || l.Name == "job" || // Become resource attributes "service.name", "service.instance.id" and "service.namespace"
-			l.Name == labels.MetricName || // Becomes metric name
-			l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
-			continue
+		for _, l := range ls {
+			if l.Name == "instance" || l.Name == "job" || // Become resource attributes
+				l.Name == labels.MetricName || // Becomes metric name
+				l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
+				continue
+			}
+			attributes.PutStr(l.Name, l.Value)
 		}
-		attributes.PutStr(l.Name, l.Value)
+
+		// Convert milliseconds to nanoseconds
+		dp.SetTimestamp(pcommon.Timestamp(sample.Timestamp * 1_000_000))
+		dp.SetDoubleValue(sample.Value)
 	}
 }
