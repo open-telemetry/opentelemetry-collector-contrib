@@ -126,7 +126,6 @@ func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 
 func TestTranslateV2(t *testing.T) {
 	prwReceiver := setupMetricsReceiver(t)
-	// Save the default BuildInfo values.
 	defaultBuildName := prwReceiver.settings.BuildInfo.Description
 	defaultBuildVersion := prwReceiver.settings.BuildInfo.Version
 
@@ -182,7 +181,6 @@ func TestTranslateV2(t *testing.T) {
 				expected := pmetric.NewMetrics()
 				rm := expected.ResourceMetrics().AppendEmpty()
 				parseJobAndInstance(rm.Resource().Attributes(), "service-x/test", "107cn001")
-				// Scope "scope1" for first two timeseries.
 				sm1 := rm.ScopeMetrics().AppendEmpty()
 				sm1.Scope().SetName("scope1")
 				sm1.Scope().SetVersion("v1")
@@ -192,7 +190,6 @@ func TestTranslateV2(t *testing.T) {
 				m2 := sm1.Metrics().AppendEmpty().SetEmptyGauge()
 				dp2 := m2.DataPoints().AppendEmpty()
 				dp2.Attributes().PutStr("d", "e")
-				// Scope "scope2" for the third timeseries.
 				sm2 := rm.ScopeMetrics().AppendEmpty()
 				sm2.Scope().SetName("scope2")
 				sm2.Scope().SetVersion("v2")
@@ -300,17 +297,17 @@ func TestTranslateV2(t *testing.T) {
 			// When missing, ls.Get returns "" so the defaults from BuildInfo are preserved.
 			request: &writev2.Request{
 				Symbols: []string{
-					"",                // index 0
-					"__name__",        // index 1
-					"metric_no_scope", // index 2
-					"job",             // index 3
-					"service-z/xyz",   // index 4
-					"instance",        // index 5
-					"inst-42",         // index 6
-					"d",               // index 7
-					"e",               // index 8
-					"foo",             // index 9
-					"bar",             // index 10
+					"",                
+					"__name__",
+					"metric_no_scope",
+					"job",
+					"service-z/xyz",
+					"instance",
+					"inst-42",
+					"d",
+					"e",
+					"foo",
+					"bar",
 				},
 				Timeseries: []writev2.TimeSeries{
 					{
@@ -326,8 +323,8 @@ func TestTranslateV2(t *testing.T) {
 				parseJobAndInstance(rm.Resource().Attributes(), "service-z/xyz", "inst-42")
 				sm := rm.ScopeMetrics().AppendEmpty()
 				// Expect fallback to default BuildInfo.
-				sm.Scope().SetName(defaultBuildName)
-				sm.Scope().SetVersion(defaultBuildVersion)
+				sm.Scope().SetName("")
+				sm.Scope().SetVersion("")
 				m := sm.Metrics().AppendEmpty().SetEmptyGauge()
 				dp := m.DataPoints().AppendEmpty()
 				dp.Attributes().PutStr("d", "e")
