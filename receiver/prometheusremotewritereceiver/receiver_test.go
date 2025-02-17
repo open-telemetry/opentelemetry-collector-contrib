@@ -363,8 +363,8 @@ func TestTranslateV2(t *testing.T) {
 				parseJobAndInstance(rm.Resource().Attributes(), "service-z/xyz", "inst-42")
 				sm := rm.ScopeMetrics().AppendEmpty()
 				// Expect fallback to default BuildInfo.
-				sm.Scope().SetName("")
-				sm.Scope().SetVersion("")
+				sm.Scope().SetName(defaultBuildName)
+				sm.Scope().SetVersion(defaultBuildVersion)
 				m := sm.Metrics().AppendEmpty().SetEmptyGauge()
 				dp := m.DataPoints().AppendEmpty()
 				dp.Attributes().PutStr("d", "e")
