@@ -356,11 +356,6 @@ func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64, h
 	return storage.SeriesRef(seriesRef), nil
 }
 
-func (t *transaction) AppendHistogramCTZeroSample(_ storage.SeriesRef, _ labels.Labels, _, _ int64, _ *histogram.Histogram, _ *histogram.FloatHistogram) (storage.SeriesRef, error) {
-	// TODO: implement this func
-	return 0, nil
-}
-
 func (t *transaction) SetOptions(_ *storage.AppendOptions) {
 	// TODO: implement this func
 }
