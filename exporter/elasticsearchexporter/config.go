@@ -101,9 +101,11 @@ type BatcherConfig struct {
 }
 
 type TelemetrySettings struct {
-	LogRequestBody      bool `mapstructure:"log_request_body"`
-	LogResponseBody     bool `mapstructure:"log_response_body"`
-	LogFailedDocsSource bool `mapstructure:"log_failed_docs_source"`
+	LogRequestBody  bool `mapstructure:"log_request_body"`
+	LogResponseBody bool `mapstructure:"log_response_body"`
+
+	LogFailedDocsSource          bool          `mapstructure:"log_failed_docs_source"`
+	LogFailedDocsSourceRateLimit time.Duration `mapstructure:"log_failed_docs_source_rate_limit"`
 }
 
 type LogstashFormatSettings struct {

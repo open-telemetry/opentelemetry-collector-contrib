@@ -86,8 +86,10 @@ func createDefaultConfig() component.Config {
 			DateFormat:      "%Y.%m.%d",
 		},
 		TelemetrySettings: TelemetrySettings{
-			LogRequestBody:  false,
-			LogResponseBody: false,
+			LogRequestBody:               false,
+			LogResponseBody:              false,
+			LogFailedDocsSource:          false,
+			LogFailedDocsSourceRateLimit: time.Second,
 		},
 		Batcher: BatcherConfig{
 			FlushTimeout: 30 * time.Second,
