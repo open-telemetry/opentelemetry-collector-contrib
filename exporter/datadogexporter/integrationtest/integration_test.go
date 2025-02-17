@@ -162,7 +162,7 @@ func getIntegrationTestComponents(t *testing.T) otelcol.Factories {
 		factories otelcol.Factories
 		err       error
 	)
-	factories.Receivers, err = receiver.MakeFactoryMap(
+	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		[]receiver.Factory{
 			otlpreceiver.NewFactory(),
 			prometheusreceiver.NewFactory(),
@@ -170,20 +170,20 @@ func getIntegrationTestComponents(t *testing.T) otelcol.Factories {
 		}...,
 	)
 	require.NoError(t, err)
-	factories.Processors, err = processor.MakeFactoryMap(
+	factories.Processors, err = otelcol.MakeFactoryMap[processor.Factory](
 		[]processor.Factory{
 			batchprocessor.NewFactory(),
 			tailsamplingprocessor.NewFactory(),
 		}...,
 	)
 	require.NoError(t, err)
-	factories.Connectors, err = connector.MakeFactoryMap(
+	factories.Connectors, err = otelcol.MakeFactoryMap[connector.Factory](
 		[]connector.Factory{
 			datadogconnector.NewFactory(),
 		}...,
 	)
 	require.NoError(t, err)
-	factories.Exporters, err = exporter.MakeFactoryMap(
+	factories.Exporters, err = otelcol.MakeFactoryMap[exporter.Factory](
 		[]exporter.Factory{
 			datadogexporter.NewFactory(),
 			debugexporter.NewFactory(),
