@@ -98,6 +98,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/snowflakedb/gosnowflake v1.12.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
+	github.com/thda/tds v0.1.7 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.119.1-0.20250210123122-44b3eeda354c // indirect
