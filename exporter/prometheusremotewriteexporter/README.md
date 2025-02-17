@@ -29,14 +29,16 @@ how this exporter works.
 
 The following settings are required:
 
-- `endpoint` (no default): The remote write URL to send remote write samples.
+- `prw_client`
+  - `endpoint` (no default): The remote write URL to send remote write samples.
+- `endpoint`: DEPRECATED
 
-By default, TLS is enabled and must be configured under `tls:`:
+By default, TLS is enabled and must be configured under `prw_client.tls:`:
 
 - `insecure` (default = `false`): whether to enable client transport security for
   the exporter's connection.
 
-As a result, the following parameters are also required under `tls:`:
+As a result, the following parameters are also required under `prw_client.tls:`:
 
 - `cert_file` (no default): path to the TLS cert to use for TLS required connections. Should
   only be used if `insecure` is set to false.
@@ -46,8 +48,11 @@ As a result, the following parameters are also required under `tls:`:
 The following settings can be optionally configured:
 
 - `external_labels`: map of labels names and values to be attached to each metric data point
-- `headers`: additional headers attached to each HTTP request.
-  - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
+- `prw_client`
+  - `headers`: additional headers attached to each HTTP request.
+    - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
+  - `timeout`: sets timeout for HTTP requests to Prometheus remote write endpoint (default 5s).
+- `headers`: DEPRECATED
 - `namespace`: prefix attached to each exported metric name.
 - `add_metric_suffixes`: If set to false, type and unit suffixes will not be added to metrics. Default: true.
 - `send_metadata`: If set to true, prometheus metadata will be generated and sent. Default: false.
@@ -73,7 +78,8 @@ Example:
 ```yaml
 exporters:
   prometheusremotewrite:
-    endpoint: "https://my-cortex:7900/api/v1/push"
+    prw_client:
+      endpoint: "https://my-cortex:7900/api/v1/push"
     wal: # Enabling the Write-Ahead-Log for the exporter.
       directory: ./prom_rw # The directory to store the WAL in
       buffer_size: 100 # Optional count of elements to be read from the WAL before truncating; default of 300
@@ -87,7 +93,8 @@ Example:
 ```yaml
 exporters:
   prometheusremotewrite:
-    endpoint: "https://my-cortex:7900/api/v1/push"
+    prw_client:
+      endpoint: "https://my-cortex:7900/api/v1/push"
     external_labels:
       label_name1: label_value1
       label_name2: label_value2

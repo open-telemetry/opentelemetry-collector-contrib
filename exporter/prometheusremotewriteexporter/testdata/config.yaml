@@ -27,6 +27,11 @@ prometheusremotewrite/2:
     queue_size: 2000
     num_consumers: 10
 
+prometheusremotewrite/prw_client:
+  prw_client:
+    endpoint: "localhost:8888"
+    timeout: "11s"
+
 prometheusremotewrite/negative_queue_size:
   endpoint: "localhost:8888"
   remote_write_queue:
