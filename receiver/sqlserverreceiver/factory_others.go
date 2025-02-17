@@ -38,3 +38,28 @@ func createMetricsReceiver(
 		opts...,
 	)
 }
+
+// createLogsReceiver create a logs receiver based on provided config.
+func createLogsReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	receiverCfg component.Config,
+	logsConsumer consumer.Logs,
+) (receiver.Logs, error) {
+	cfg, ok := receiverCfg.(*Config)
+	if !ok {
+		return nil, errConfigNotSQLServer
+	}
+
+	opts, err := setupLogsScrapers(params, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return scraperhelper.NewLogsController(
+		&cfg.ControllerConfig,
+		params,
+		logsConsumer,
+		opts...,
+	)
+}
