@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -253,7 +254,7 @@ func containerImageShorten(value string) string {
 	return shortenNames(value[(strings.LastIndex(value, "/") + 1):])
 }
 
-func startUpSink(t *testing.T, consumer interface{}) func() {
+func startUpSink(t *testing.T, consumer any) func() {
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
 	cfg.HTTP = nil
@@ -279,7 +280,7 @@ func startUpSink(t *testing.T, consumer interface{}) func() {
 	}
 }
 
-func waitForData(t *testing.T, entriesNum int, consumer interface{}) {
+func waitForData(t *testing.T, entriesNum int, consumer any) {
 	timeoutMinutes := 3
 	require.Eventuallyf(t, func() bool {
 		switch c := consumer.(type) {
