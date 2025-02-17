@@ -347,11 +347,10 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	const queryPlan = "query_plan"
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
-		if errors.Is(err, sqlquery.ErrNullValueWarning) {
-			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
-		} else {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return plog.Logs{}, fmt.Errorf("sqlServerScraperHelper failed getting rows: %w", err)
 		}
+		s.logger.Warn("problems encountered getting log rows", zap.Error(err))
 	}
 	var errs []error
 
