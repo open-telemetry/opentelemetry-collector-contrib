@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250217163935-4397ebc2111c
 	go.opentelemetry.io/collector/consumer v1.25.1-0.20250217163935-4397ebc2111c
 	go.opentelemetry.io/collector/consumer/consumertest v0.119.1-0.20250217163935-4397ebc2111c
-	go.opentelemetry.io/collector/extension/extensiontest v0.119.1-0.20250217142445-a567a0176541
+	go.opentelemetry.io/collector/extension/extensiontest v0.119.1-0.20250217163935-4397ebc2111c
 	go.opentelemetry.io/collector/pipeline v0.119.1-0.20250217163935-4397ebc2111c
 	go.opentelemetry.io/collector/receiver v0.119.1-0.20250217163935-4397ebc2111c
 	go.opentelemetry.io/collector/receiver/receivertest v0.119.1-0.20250217163935-4397ebc2111c
