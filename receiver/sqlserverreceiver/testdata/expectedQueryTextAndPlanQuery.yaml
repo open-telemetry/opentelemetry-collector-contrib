@@ -55,4 +55,4 @@ resourceLogs:
             traceId: ""
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
-          version: development
+          version: v0.0.1

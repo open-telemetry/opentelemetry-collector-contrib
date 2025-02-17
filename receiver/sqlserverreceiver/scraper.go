@@ -332,7 +332,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 
 func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context, topQueryCount uint) (plog.Logs, error) {
 	// Constants are the column names of the database status
-	const DBPrefix = "db."
+	const dbPrefix = "db."
 	const totalElapsedTime = "total_elapsed_time"
 	const rowsReturned = "total_rows"
 	const totalWorkerTime = "total_worker_time"
@@ -374,8 +374,9 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		}
 	}
 
-	// sort the rows based on the totalElapsedTimeDiffs in descending order
-	rows = sortRows(rows, totalElapsedTimeDiffs)
+	// sort the rows based on the totalElapsedTimeDiffs in descending order,
+	// only report first T(T=topQueryCount) rows.
+	rows = sortRows(rows, totalElapsedTimeDiffs, topQueryCount)
 
 	// sort the totalElapsedTimeDiffs in descending order as well
 	sort.Slice(totalElapsedTimeDiffs, func(i, j int) bool { return totalElapsedTimeDiffs[i] > totalElapsedTimeDiffs[j] })
@@ -386,15 +387,10 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
 	scopedLog.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver")
-	scopedLog.Scope().SetVersion("development")
+	scopedLog.Scope().SetVersion("v0.0.1")
 
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	for i, row := range rows {
-		// we skip the query if we already export enough queries in this run.
-		if i > int(topQueryCount) {
-			continue
-		}
-
 		// reporting human-readable query hash and query hash plan
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
@@ -405,12 +401,12 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		record.Attributes().PutStr(computerNameKey, row[computerNameKey])
 		record.Attributes().PutStr(instanceNameKey, row[instanceNameKey])
 
-		record.Attributes().PutStr(DBPrefix+queryHash, queryHashVal)
-		record.Attributes().PutStr(DBPrefix+queryPlanHash, queryPlanHashVal)
+		record.Attributes().PutStr(dbPrefix+queryHash, queryHashVal)
+		record.Attributes().PutStr(dbPrefix+queryPlanHash, queryPlanHashVal)
 
 		s.logger.Debug(fmt.Sprintf("QueryHash: %v, PlanHash: %v, DataRow: %v", queryHashVal, queryPlanHashVal, row))
 
-		record.Attributes().PutInt(DBPrefix+totalElapsedTime, totalElapsedTimeDiffs[i])
+		record.Attributes().PutInt(dbPrefix+totalElapsedTime, totalElapsedTimeDiffs[i])
 
 		// handling `total_rows`
 		rowsReturnVal, err := strconv.ParseInt(row[rowsReturned], 10, 64)
@@ -419,7 +415,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			errs = append(errs, err)
 		}
 		if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, rowsReturned, rowsReturnVal); cached {
-			record.Attributes().PutInt(DBPrefix+rowsReturned, diff)
+			record.Attributes().PutInt(dbPrefix+rowsReturned, diff)
 		}
 
 		// handling `total_logical_reads`
@@ -429,7 +425,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			errs = append(errs, err)
 		}
 		if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, logicalReads, logicalReadsVal); cached {
-			record.Attributes().PutInt(DBPrefix+logicalReads, diff)
+			record.Attributes().PutInt(dbPrefix+logicalReads, diff)
 		}
 
 		// handling `total_logical_writes`
@@ -439,7 +435,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			errs = append(errs, err)
 		}
 		if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, logicalWrites, logicalWritesVal); cached {
-			record.Attributes().PutInt(DBPrefix+logicalWrites, diff)
+			record.Attributes().PutInt(dbPrefix+logicalWrites, diff)
 		}
 
 		// handling `physical_reads`
@@ -449,7 +445,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			errs = append(errs, err)
 		}
 		if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, physicalReads, physicalReadsVal); cached {
-			record.Attributes().PutInt(DBPrefix+physicalReads, diff)
+			record.Attributes().PutInt(dbPrefix+physicalReads, diff)
 		}
 
 		// handling `execution_count`
@@ -459,7 +455,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			errs = append(errs, err)
 		} else {
 			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, executionCount, totalExecutionCount); cached {
-				record.Attributes().PutInt(DBPrefix+executionCount, diff)
+				record.Attributes().PutInt(dbPrefix+executionCount, diff)
 			}
 		}
 
@@ -470,7 +466,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			errs = append(errs, err)
 		} else {
 			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTime, workerTime/1000); cached {
-				record.Attributes().PutInt(DBPrefix+totalWorkerTime, diff)
+				record.Attributes().PutInt(dbPrefix+totalWorkerTime, diff)
 			}
 		}
 
@@ -481,25 +477,25 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			errs = append(errs, err)
 		} else {
 			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalGrant, memoryGranted); cached {
-				record.Attributes().PutInt(DBPrefix+totalGrant, diff)
+				record.Attributes().PutInt(dbPrefix+totalGrant, diff)
 			}
 		}
 
 		// handling `query_text`
 		obfuscatedSQL, err := obfuscateSQL(row[queryText])
 		if err != nil {
-			s.logger.Error("failed to obfuscate query text", zap.Error(err))
+			err = fmt.Errorf("row %d: %w", i, err)
 			errs = append(errs, err)
 		}
-		record.Attributes().PutStr(DBPrefix+queryText, obfuscatedSQL)
+		record.Attributes().PutStr(dbPrefix+queryText, obfuscatedSQL)
 
 		// handling `query_plan`
 		obfuscatedQueryPlan, err := obfuscateXMLPlan(row[queryPlan])
 		if err != nil {
-			s.logger.Error("failed to obfuscate query plan", zap.Error(err))
+			err = fmt.Errorf("row %d: %w", i, err)
 			errs = append(errs, err)
 		}
-		record.Attributes().PutStr(DBPrefix+queryPlan, obfuscatedQueryPlan)
+		record.Attributes().PutStr(dbPrefix+queryPlan, obfuscatedQueryPlan)
 	}
 
 	return logs, errors.Join(errs...)
@@ -534,10 +530,17 @@ func (s *sqlServerScraperHelper) cacheAndDiff(queryHash string, queryPlanHash st
 	return true, 0
 }
 
-// sortRows sorts the rows based on the `values` slice in descending order
-// Input: (row: [row1, row2, row3], values: [100, 10, 1000]
-// Expected Output: (row: [row3, row1, row2]
-func sortRows(rows []sqlquery.StringMap, values []int64) []sqlquery.StringMap {
+// sortRows sorts the rows based on the `values` slice in descending order and return the first M(M=maximum) rows
+// Input: (row: [row1, row2, row3], values: [100, 10, 1000], maximum: 2
+// Expected Output: (row: [row3, row1]
+func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquery.StringMap {
+	if len(rows) == 0 ||
+		len(values) == 0 ||
+		len(rows) != len(values) ||
+		maximum <= 0 {
+		return []sqlquery.StringMap{}
+	}
+
 	// Create an index slice to track the original indices of rows
 	indices := make([]int, len(values))
 	for i := range indices {
@@ -550,8 +553,11 @@ func sortRows(rows []sqlquery.StringMap, values []int64) []sqlquery.StringMap {
 	})
 
 	// Create a new sorted slice for rows based on the sorted indices
-	sorted := make([]sqlquery.StringMap, len(rows))
+	sorted := make([]sqlquery.StringMap, min(len(rows), int(maximum)))
 	for i, idx := range indices {
+		if i > int(maximum) {
+			break
+		}
 		sorted[i] = rows[idx]
 	}
 

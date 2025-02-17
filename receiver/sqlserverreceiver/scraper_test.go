@@ -187,6 +187,11 @@ func TestScrapeCacheAndDiff(t *testing.T) {
 }
 
 func TestSortRows(t *testing.T) {
+	assert.Equal(t, []sqlquery.StringMap{}, sortRows(nil, nil, 0))
+	assert.Equal(t, []sqlquery.StringMap{}, sortRows([]sqlquery.StringMap{}, []int64{}, 0))
+	assert.Equal(t, []sqlquery.StringMap{}, sortRows([]sqlquery.StringMap{
+		{"column": "1"},
+	}, []int64{1, 2}, 1))
 	weights := make([]int64, 50)
 
 	for i := range weights {
@@ -198,7 +203,7 @@ func TestSortRows(t *testing.T) {
 		rows = append(rows, sqlquery.StringMap{"column": strconv.FormatInt(v, 10)})
 	}
 
-	rows = sortRows(rows, weights)
+	rows = sortRows(rows, weights, uint(len(weights)))
 	sort.Slice(weights, func(i, j int) bool {
 		return weights[i] > weights[j]
 	})
@@ -218,6 +223,7 @@ type mockClient struct {
 	instanceName        string
 	maxQuerySampleCount uint
 	lookbackTime        uint
+	topQueryCount       uint
 }
 
 type mockInvalidClient struct {
@@ -323,6 +329,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 		SQL:                 scraper.sqlQuery,
 		maxQuerySampleCount: 1000,
 		lookbackTime:        20,
+		topQueryCount:       200,
 	}
 
 	actualLogs, err := scraper.ScrapeLogs(context.Background())

@@ -43,7 +43,7 @@ func obfuscateSQL(rawQuery string) (string, error) {
 
 // Ending source(Apache 2.0): https://github.com/DataDog/datadog-agent/blob/main/pkg/collector/python/datadog_agent.go
 
-var XMLPlanObfuscationAttrs = []string{
+var xmlPlanObfuscationAttrs = []string{
 	"StatementText",
 	"ConstValue",
 	"ScalarString",
@@ -68,7 +68,7 @@ func obfuscateXMLPlan(rawPlan string) (string, error) {
 		switch elem := token.(type) {
 		case xml.StartElement:
 			for i := range elem.Attr {
-				for _, attrName := range XMLPlanObfuscationAttrs {
+				for _, attrName := range xmlPlanObfuscationAttrs {
 					if elem.Attr[i].Name.Local == attrName {
 						if elem.Attr[i].Value == "" {
 							continue
