@@ -645,8 +645,6 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 		VirtualNodeExtraLabel:     true,
 		// Reduce flush interval for faster test execution
 		MetricsFlushInterval: 10 * time.Millisecond,
-		// Reduce store expiration interval
-		StoreExpirationLoop: 10 * time.Millisecond,
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
@@ -663,16 +661,13 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
+	conn.store.Expire()
 	// Wait for metrics to be generated with timeout
-	deadline := time.Now().Add(5 * time.Second)
 	var metrics []pmetric.Metrics
-	for time.Now().Before(deadline) {
+	assert.Eventually(t, func() bool {
 		metrics = conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
-		if len(metrics) > 0 {
-			break
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
+		return len(metrics) > 0
+	}, 5*time.Second, 10*time.Millisecond)
 
 	require.NotEmpty(t, metrics, "no metrics generated within timeout")
 	require.NoError(t, conn.Shutdown(context.Background()))
@@ -696,9 +691,7 @@ func TestVirtualNodeClientLabels(t *testing.T) {
 		VirtualNodePeerAttributes: virtualNodeDimensions,
 		VirtualNodeExtraLabel:     true,
 		// Reduce flush interval for faster test execution
-		MetricsFlushInterval: 10 * time.Millisecond,
-		// Reduce store expiration interval
-		StoreExpirationLoop: 10 * time.Millisecond,
+		MetricsFlushInterval: 1 * time.Millisecond,
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
@@ -715,16 +708,13 @@ func TestVirtualNodeClientLabels(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
+	conn.store.Expire()
 	// Wait for metrics to be generated with timeout
-	deadline := time.Now().Add(5 * time.Second)
 	var metrics []pmetric.Metrics
-	for time.Now().Before(deadline) {
+	assert.Eventually(t, func() bool {
 		metrics = conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
-		if len(metrics) > 0 {
-			break
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
+		return len(metrics) > 0
+	}, 5*time.Second, 10*time.Millisecond)
 
 	require.NotEmpty(t, metrics, "no metrics generated within timeout")
 	require.NoError(t, conn.Shutdown(context.Background()))
