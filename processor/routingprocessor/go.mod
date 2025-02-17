@@ -66,7 +66,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector v0.119.1-0.20250217085205-36e046737251 // indirect
+	go.opentelemetry.io/collector v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/config/configauth v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.25.1-0.20250217163935-4397ebc2111c // indirect
