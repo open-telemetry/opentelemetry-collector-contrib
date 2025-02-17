@@ -119,8 +119,8 @@ func AssertEqualProcessorTailSamplingSamplingDecisionLatency(t *testing.T, tt *c
 func AssertEqualProcessorTailSamplingSamplingDecisionTimerLatency(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_tail_sampling_sampling_decision_timer_latency",
-		Description: "Latency (in microseconds) of each run of the sampling decision timer",
-		Unit:        "µs",
+		Description: "Latency (in milliseconds) of each run of the sampling decision timer",
+		Unit:        "ms",
 		Data: metricdata.Histogram[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			DataPoints:  dps,

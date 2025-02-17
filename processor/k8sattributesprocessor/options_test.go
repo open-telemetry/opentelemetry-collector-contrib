@@ -372,7 +372,7 @@ func TestWithFilterLabels(t *testing.T) {
 	tests := []struct {
 		name  string
 		args  []FieldFilterConfig
-		want  []kube.FieldFilter
+		want  []kube.LabelFilter
 		error string
 	}{
 		{
@@ -389,7 +389,7 @@ func TestWithFilterLabels(t *testing.T) {
 					Value: "v1",
 				},
 			},
-			[]kube.FieldFilter{
+			[]kube.LabelFilter{
 				{
 					Key:   "k1",
 					Value: "v1",
@@ -407,7 +407,7 @@ func TestWithFilterLabels(t *testing.T) {
 					Op:    "equals",
 				},
 			},
-			[]kube.FieldFilter{
+			[]kube.LabelFilter{
 				{
 					Key:   "k1",
 					Value: "v1",
@@ -425,7 +425,7 @@ func TestWithFilterLabels(t *testing.T) {
 					Op:    "not-equals",
 				},
 			},
-			[]kube.FieldFilter{
+			[]kube.LabelFilter{
 				{
 					Key:   "k1",
 					Value: "v1",
@@ -442,7 +442,7 @@ func TestWithFilterLabels(t *testing.T) {
 					Op:  "exists",
 				},
 			},
-			[]kube.FieldFilter{
+			[]kube.LabelFilter{
 				{
 					Key: "k1",
 					Op:  selection.Exists,
@@ -458,7 +458,7 @@ func TestWithFilterLabels(t *testing.T) {
 					Op:  "does-not-exist",
 				},
 			},
-			[]kube.FieldFilter{
+			[]kube.LabelFilter{
 				{
 					Key: "k1",
 					Op:  selection.DoesNotExist,

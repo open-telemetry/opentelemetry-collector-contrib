@@ -101,7 +101,7 @@ func TestEncodeMetric(t *testing.T) {
 	dps := m.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dp := datapoints.NewNumber(m, dps.At(i))
-		dpHash := hasher.hashDataPoint(dp)
+		dpHash := hasher.hashDataPoint(rm.Resource(), sm.Scope(), dp)
 		dataPoints, ok := groupedDataPoints[dpHash]
 		if !ok {
 			groupedDataPoints[dpHash] = []datapoints.DataPoint{dp}
