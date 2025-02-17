@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -132,6 +133,63 @@ func TestNewReceiver(t *testing.T) {
 	}
 	mr := newMetricsReceiver(receivertest.NewNopSettings(), cfg)
 	assert.NotNil(t, mr)
+}
+
+func TestResolveTLSConfig(t *testing.T) {
+	testCases := []struct {
+		name          string
+		tlsConfig     *configtls.ClientConfig
+		expectedNil   bool
+		expectedError bool
+	}{
+		{
+			name:          "No TLS Config",
+			tlsConfig:     nil,
+			expectedNil:   true,
+			expectedError: false,
+		},
+		{
+			name: "Insecure TLS Config",
+			tlsConfig: &configtls.ClientConfig{
+				Insecure: true,
+			},
+			expectedNil:   false,
+			expectedError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			config := &Config{
+				TLSConfig: tc.tlsConfig,
+			}
+
+			tlsConfig, err := config.resolveTLSConfig()
+
+			if tc.expectedError {
+				if err == nil {
+					t.Errorf("Expected an error, but got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if tc.expectedNil {
+				if tlsConfig != nil {
+					t.Errorf("Expected nil TLS config, but got %v", tlsConfig)
+				}
+				return
+			}
+
+			if tlsConfig == nil {
+				t.Errorf("Expected non-nil TLS config")
+			}
+		})
+	}
 }
 
 func TestErrorsInStart(t *testing.T) {
