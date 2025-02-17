@@ -1,0 +1,32 @@
+# Use this changelog template to create an entry for release notes.
+
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: k8sclusterreceiver
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Adds new descriptive attributes/metadata to the k8s.namespace and the container entity emitted from k8sclusterreceiver.
+
+# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+issues: [37580]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  - Adds the following attributes to k8s.namespace entity:
+    - k8s.namespace.phase: The phase of a namespace indicates where the namespace is in its lifecycle. E.g. 'active', 'terminating'
+    - k8s.namespace.creation_timestamp: The time when the namespace object was created.
+  - Adds the following attributes to container entity:
+    - container.creation_timestamp: The time when the container was started. Only available if container is either in 'running' or 'terminated' state.
+
+# If your change doesn't affect end users or the exported elements of any package,
+# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
+# Optional: The change log or logs in which this entry should be included.
+# e.g. '[user]' or '[user, api]'
+# Include 'user' if the change is relevant to end users.
+# Include 'api' if there is a change to a library API.
+# Default: '[user]'
+change_logs: []
