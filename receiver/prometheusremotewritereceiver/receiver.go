@@ -162,7 +162,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		otelMetrics      = pmetric.NewMetrics()
 		labelsBuilder    = labels.NewScratchBuilder(0)
 		stats            = promremote.WriteResponseStats{}
-		// Prometheus Remote-Write can send multiple time series with the same labels in the same request.
 		// Instead of creating a whole new OTLP metric, we just append the new sample to the existing OTLP metric.
 		// This cache is called "intra" because in the future we'll have a "interRequestCache" to cache resourceAttributes
 		// between requests based on the metric "target_info".
@@ -177,6 +176,30 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			continue
 		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))
+			continue
+		}
+
+		metricName := ls.Get(labels.MetricName)
+		if metricName == "target_info" {
+			// Use job+instance as the key.
+			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
+			var rm pmetric.ResourceMetrics
+			if existing, ok := intraRequestCache[hashedLabels]; ok {
+				rm = existing
+			} else {
+				rm = otelMetrics.ResourceMetrics().AppendEmpty()
+				parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
+				intraRequestCache[hashedLabels] = rm
+			}
+			// Merge target_info labels into the resource attributes.
+			for _, l := range ls {
+				// Skip labels already used for resource identification.
+				if l.Name == labels.MetricName || l.Name == "job" || l.Name == "instance" {
+					continue
+				}
+				rm.Resource().Attributes().PutStr(l.Name, l.Value)
+			}
+			// Skip further processing of target_info timeseries.
 			continue
 		}
 
