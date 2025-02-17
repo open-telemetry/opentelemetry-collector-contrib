@@ -384,7 +384,7 @@ func makeMetric(val int) *metricspb.Metric {
 	}
 
 	descriptor := &metricspb.MetricDescriptor{
-		Name:        fmt.Sprintf("%s%d", "metric_descriptort_", val),
+		Name:        fmt.Sprintf("%s%d", "metric_descriptor_", val),
 		Description: "metric descriptor",
 		Unit:        "1",
 		Type:        metricspb.MetricDescriptor_GAUGE_INT64,
