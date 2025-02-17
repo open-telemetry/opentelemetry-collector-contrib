@@ -367,3 +367,15 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 		logger.Warn("retry::max_requests has been deprecated, and will be removed in a future version. Use retry::max_retries instead.")
 	}
 }
+
+func handleTelemetryConfig(cfg *Config, logger *zap.Logger) {
+	if cfg.TelemetrySettings.LogRequestBody {
+		logger.Warn("telemetry::log_request_body is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
+	}
+	if cfg.TelemetrySettings.LogResponseBody {
+		logger.Warn("telemetry::log_response_body is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
+	}
+	if cfg.TelemetrySettings.LogFailedDocsSource {
+		logger.Warn("telemetry::log_failed_docs_source is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
+	}
+}

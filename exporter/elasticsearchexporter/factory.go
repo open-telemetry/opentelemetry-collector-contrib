@@ -118,6 +118,7 @@ func createLogsExporter(
 	cf := cfg.(*Config)
 
 	handleDeprecatedConfig(cf, set.Logger)
+	handleTelemetryConfig(cf, set.Logger)
 
 	exporter := newExporter(cf, set, cf.LogsIndex, cf.LogsDynamicIndex.Enabled)
 
@@ -137,6 +138,7 @@ func createMetricsExporter(
 ) (exporter.Metrics, error) {
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
+	handleTelemetryConfig(cf, set.Logger)
 
 	exporter := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
 
@@ -155,6 +157,7 @@ func createTracesExporter(ctx context.Context,
 ) (exporter.Traces, error) {
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
+	handleTelemetryConfig(cf, set.Logger)
 
 	exporter := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
 
@@ -178,6 +181,7 @@ func createProfilesExporter(
 	cf := cfg.(*Config)
 
 	handleDeprecatedConfig(cf, set.Logger)
+	handleTelemetryConfig(cf, set.Logger)
 
 	exporter := newExporter(cf, set, "", false)
 
