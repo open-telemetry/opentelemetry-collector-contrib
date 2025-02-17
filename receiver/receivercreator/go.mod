@@ -72,7 +72,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.25.1-0.20250217163935-4397ebc2111c // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.25.1-0.20250217142445-a567a0176541 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.25.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v1.25.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.25.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/connector v0.119.1-0.20250217163935-4397ebc2111c // indirect
