@@ -86,11 +86,7 @@ func appendHeaders(h http.Header, l plog.LogRecord, r *regexp.Regexp) {
 	}
 }
 
-// https://opentelemetry.io/docs/specs/semconv/general/naming/
-// header attribute key contains the header namespace and the header name
-// is normalized to snake_case
+// prepend the header key with the "header." namespace
 func headerAttributeKey(header string) string {
-	snakeCaseHeader := strings.ReplaceAll(header, "-", "_")
-	snakeCaseHeader = strings.ToLower(snakeCaseHeader)
-	return strings.Join([]string{headerNamespace, snakeCaseHeader}, ".")
+	return strings.Join([]string{headerNamespace, header}, ".")
 }

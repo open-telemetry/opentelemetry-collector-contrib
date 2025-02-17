@@ -17,7 +17,7 @@ issues: [37815]
 # Use pipe (|) for multiline entries.
 subtext: |
   Adds new `header_attribute_regex` option. If set, add headers matching supplied regex as log attributes.
-  Header attributes will be prefixed with `header.` and header keys will be normalized to snake_case
+  Header attributes will be prefixed with `header.`
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

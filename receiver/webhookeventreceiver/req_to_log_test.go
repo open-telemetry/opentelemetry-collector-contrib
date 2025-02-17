@@ -201,10 +201,10 @@ func TestReqToLog(t *testing.T) {
 				processLogRecords(reqLog, func(lr plog.LogRecord) {
 					// expect no additional attributes even though headers are set
 					require.Equal(t, 2, lr.Attributes().Len())
-					v, exists := lr.Attributes().Get("header.x_foo")
+					v, exists := lr.Attributes().Get("header.X-Foo")
 					require.True(t, exists)
 					require.Equal(t, "1", v.Slice().At(0).AsString())
-					v, exists = lr.Attributes().Get("header.x_bar")
+					v, exists = lr.Attributes().Get("header.X-Bar")
 					require.True(t, exists)
 					require.Equal(t, "2", v.Slice().At(0).AsString())
 					require.Equal(t, "3", v.Slice().At(1).AsString())
@@ -242,10 +242,10 @@ func TestReqToLog(t *testing.T) {
 				processLogRecords(reqLog, func(lr plog.LogRecord) {
 					// X-Fizz and X-Buzz are missing because the regex is specific
 					require.Equal(t, 2, lr.Attributes().Len())
-					v, exists := lr.Attributes().Get("header.x_foo")
+					v, exists := lr.Attributes().Get("header.X-Foo")
 					require.True(t, exists)
 					require.Equal(t, "1", v.Slice().At(0).AsString())
-					v, exists = lr.Attributes().Get("header.x_bar")
+					v, exists = lr.Attributes().Get("header.X-Bar")
 					require.True(t, exists)
 					require.Equal(t, "2", v.Slice().At(0).AsString())
 					require.Equal(t, "3", v.Slice().At(1).AsString())
@@ -278,8 +278,8 @@ func TestHeaderAttributeKey(t *testing.T) {
 	// Test mix of header values to ensure consistent output
 	require.Equal(t, "header.foo", headerAttributeKey("foo"))
 	require.Equal(t, "header.1", headerAttributeKey("1"))
-	require.Equal(t, "header.content_type", headerAttributeKey("Content-type"))
-	require.Equal(t, "header.unexpected_camel_case_header", headerAttributeKey("UnExPectEd-CaMeL-CaSe-HeAdEr"))
+	require.Equal(t, "header.Content-type", headerAttributeKey("Content-type"))
+	require.Equal(t, "header.UnExPectEd-CaMeL-CaSe-HeAdEr", headerAttributeKey("UnExPectEd-CaMeL-CaSe-HeAdEr"))
 }
 
 // helper to run a func against each log record
