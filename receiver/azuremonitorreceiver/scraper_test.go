@@ -346,7 +346,13 @@ func TestAzureScraperScrape(t *testing.T) {
 
 	cfgLimitedMertics := createDefaultConfig().(*Config)
 	cfgLimitedMertics.MaximumNumberOfMetricsInACall = 2
-	cfgLimitedMertics.Metrics = []string{"metric1", "metric3/total", "metric4/average", "metric4/minimum", "metric4/maximum"}
+	cfgLimitedMertics.Metrics = map[string]map[string][]string{
+		"namespace1": {
+			"metric1": {"*"},
+			"metric3": {"total"},
+			"metric4": {"average", "minimum", "maximum"},
+		},
+	}
 
 	tests := []struct {
 		name    string
@@ -443,9 +449,7 @@ func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
 			current: counters,
 			pages:   pages,
 		}
-		metricsValuesClientMock := &metricsValuesClientMock{
-			lists: getMetricsValuesMockData(),
-		}
+		metricsValuesClientMock := &metricsValuesClientMock{}
 
 		return &azureScraper{
 			cfg:                      createDefaultConfig().(*Config),
@@ -565,8 +569,8 @@ func getResourcesMockData(tags bool) []armresources.ClientListResponse {
 }
 
 func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.MetricDefinitionsClientListResponse) {
-	name1, name2, name3, name4, name5, name6, name7, timeGrain1, timeGrain2, dimension1, dimension2 := "metric1",
-		"metric2", "metric3", "metric4", "metric5", "metric6", "metric7", "PT1M", "PT1H", "dimension1", "dimension2"
+	namespace1, namespace2, name1, name2, name3, name4, name5, name6, name7, timeGrain1, timeGrain2, dimension1, dimension2 := "namespace1",
+		"namespace2", "metric1", "metric2", "metric3", "metric4", "metric5", "metric6", "metric7", "PT1M", "PT1H", "dimension1", "dimension2"
 
 	counters := map[string]int{
 		"/resourceGroups/group1/resourceId1": 0,
@@ -580,6 +584,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
 					Value: []*armmonitor.MetricDefinition{
 						{
+							Namespace: &namespace1,
 							Name: &armmonitor.LocalizableString{
 								Value: &name1,
 							},
@@ -590,6 +595,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 							},
 						},
 						{
+							Namespace: &namespace1,
 							Name: &armmonitor.LocalizableString{
 								Value: &name2,
 							},
@@ -600,6 +606,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 							},
 						},
 						{
+							Namespace: &namespace1,
 							Name: &armmonitor.LocalizableString{
 								Value: &name3,
 							},
@@ -618,6 +625,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
 					Value: []*armmonitor.MetricDefinition{
 						{
+							Namespace: &namespace1,
 							Name: &armmonitor.LocalizableString{
 								Value: &name4,
 							},
@@ -628,6 +636,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 							},
 						},
 						{
+							Namespace: &namespace1,
 							Name: &armmonitor.LocalizableString{
 								Value: &name5,
 							},
@@ -646,6 +655,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 							},
 						},
 						{
+							Namespace: &namespace1,
 							Name: &armmonitor.LocalizableString{
 								Value: &name6,
 							},
@@ -669,6 +679,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
 					Value: []*armmonitor.MetricDefinition{
 						{
+							Namespace: &namespace2,
 							Name: &armmonitor.LocalizableString{
 								Value: &name7,
 							},
@@ -753,48 +764,133 @@ func TestAzureScraperClientOptions(t *testing.T) {
 }
 
 func TestGetMetricAggregations(t *testing.T) {
+	testNamespaceName := "Microsoft.AAD/DomainServices"
 	testMetricName := "MetricName"
 	tests := []struct {
 		name    string
-		filters []string
+		filters map[string]map[string][]string
 		want    []string
 	}{
 		{
-			"filters_empty",
+			"should return all aggregations when metrics filter empty",
+			map[string]map[string][]string{},
+			aggregations,
+		},
+		{
+			"should return all aggregations when namespace not in filters",
+			map[string]map[string][]string{
+				"another.namespace": nil,
+			},
+			aggregations,
+		},
+		{
+			"should return all aggregations when metric in filters",
+			map[string]map[string][]string{
+				testNamespaceName: {
+					testMetricName: {},
+				},
+			},
+			aggregations,
+		},
+		{
+			"should return all aggregations ignoring metric name case",
+			map[string]map[string][]string{
+				testNamespaceName: {
+					strings.ToLower(testMetricName): {},
+				},
+			},
+			aggregations,
+		},
+		{
+			"should return all aggregations when asterisk in filters",
+			map[string]map[string][]string{
+				testNamespaceName: {
+					testMetricName: {filterAllAggregations},
+				},
+			},
+			aggregations,
+		},
+		{
+			"should be empty when metric not in filters",
+			map[string]map[string][]string{
+				testNamespaceName: {
+					"not_this_metric": {},
+				},
+			},
 			[]string{},
-			aggregations,
 		},
 		{
-			"filters_include_metric",
-			[]string{"foo", testMetricName, "bar"},
-			aggregations,
-		},
-		{
-			"filters_include_metric_ignore_case",
-			[]string{"foo", strings.ToLower(testMetricName), "bar"},
-			aggregations,
-		},
-		{
-			"filters_include_metric_aggregation",
-			[]string{"foo/count", testMetricName + "/" + aggregations[0], "bar/total"},
+			"should return one aggregations",
+			map[string]map[string][]string{
+				testNamespaceName: {
+					testMetricName: {aggregations[0]},
+				},
+			},
 			[]string{aggregations[0]},
 		},
 		{
-			"filters_include_metric_aggregation_ignore_case",
-			[]string{"foo/count", testMetricName + "/" + strings.ToLower(aggregations[0]), "bar/total"},
+			"should return one aggregations ignoring aggregation case",
+			map[string]map[string][]string{
+				testNamespaceName: {
+					testMetricName: {strings.ToLower(aggregations[0])},
+				},
+			},
 			[]string{aggregations[0]},
 		},
 		{
-			"filters_include_metric_multiple_aggregations",
-			[]string{"foo/count", testMetricName + "/" + aggregations[0], testMetricName + "/" + aggregations[2]},
+			"should return many aggregations",
+			map[string]map[string][]string{
+				testNamespaceName: {
+					testMetricName: {aggregations[0], aggregations[2]},
+				},
+			},
 			[]string{aggregations[0], aggregations[2]},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := getMetricAggregations(testMetricName, tt.filters)
+			got := getMetricAggregations(testNamespaceName, testMetricName, tt.filters)
 			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestMapFindInsensitive(t *testing.T) {
+	testNamespace := "Microsoft.AAD/DomainServices"
+	testStr := "should be fine"
+	testFilters := map[string]string{
+		"microsoft.insights/components": "text",
+		testNamespace:                   testStr,
+	}
+	tests := []struct {
+		name string
+		key  string
+		want bool
+	}{
+		{
+			"should find when same case",
+			testNamespace,
+			true,
+		},
+		{
+			"should find when different case",
+			strings.ToLower(testNamespace),
+			true,
+		},
+		{
+			"should not find when not exists",
+			"microsoft.eventhub/namespaces",
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := mapFindInsensitive(testFilters, tt.key)
+			require.Equal(t, tt.want, ok)
+			if ok {
+				require.Equal(t, testStr, got)
+			}
 		})
 	}
 }
