@@ -104,13 +104,12 @@ func TestAESCredentialProvider(t *testing.T) {
 
 			p := NewFactory().Create(confmap.ProviderSettings{})
 			retrieved, err := p.Retrieve(context.Background(), tt.configValue, nil)
-			if tt.expectedError == "" {
-				require.NoError(t, err)
-			} else {
+			if tt.expectedError != "" {
 				require.Error(t, err)
 				require.Equal(t, tt.expectedError, err.Error())
 				return
 			}
+			require.NoError(t, err)
 			require.NotNil(t, retrieved)
 			stringValue, err := retrieved.AsString()
 			require.NoError(t, err)

@@ -109,12 +109,11 @@ func updateWithPrefixedValues(target map[string]any, prefix string, separator st
 			// now the last value wins
 			// Should the first value win?
 			_, found := target[prefix]
-			if found && len(suffix) > 0 {
-				prefix += suffix
-			} else {
+			if !found || len(suffix) == 0 {
 				target[prefix] = source
 				break
 			}
+			prefix += suffix
 		}
 	}
 

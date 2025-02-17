@@ -110,7 +110,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `otlpjsonfilereceiver`: Include file attributes and append it to the log record (#36641)
 - `routingconnector`: The connector splits the original payload so that it may be emitted in parts to each route. (#37390)
 - `pkg/stanza`: Fix default source identifier in recombine operator (#37210)
-  Its defualt value is now aligned with the semantic conventions: `attributes["log.file.path"]`
+  Its default value is now aligned with the semantic conventions: `attributes["log.file.path"]`
   
 - `tailsamplingprocessor`: Fixed sampling decision metrics `otelcol_processor_tail_sampling_sampling_trace_dropped_too_early` and `otelcol_processor_tail_sampling_sampling_policy_evaluation_error_total`, these were sometimes overcounted. (#37212)
   As a result of this change non-zero values of `otelcol_processor_tail_sampling_sampling_trace_dropped_too_early`
@@ -789,7 +789,7 @@ arrow.waiter_limit -> admission.waiter_limit
 
 ### 🚀 New components 🚀
 
-- `azurelogs_translater`: Adds a new translater that converts Azure EventHub logs to OpenTelemetry logs used by the Azure Events Hub receiver. (#39704)
+- `azurelogs_translator`: Adds a new translator that converts Azure EventHub logs to OpenTelemetry logs used by the Azure Events Hub receiver. (#39704)
 - `dorisexporter`: logs implementation (#33479)
 - `dorisexporter`: traces implementation (#33479)
 
