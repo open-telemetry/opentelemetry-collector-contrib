@@ -4,8 +4,10 @@
 package udp // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 
 import (
+	"errors"
 	"fmt"
 	"net"
+	"regexp"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -45,7 +47,7 @@ func NewConfigWithID(operatorID string) *Config {
 			Encoding:        "utf-8",
 			OneLogPerPacket: false,
 			SplitConfig: split.Config{
-				LineEndPattern: ".^", // Use never matching regex to not split data by default
+				LineEndPattern: regexp.MustCompile(".^"), // Use never matching regex to not split data by default
 			},
 		},
 	}
@@ -75,14 +77,10 @@ type BaseConfig struct {
 }
 
 // Build will build a udp input operator.
-func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
+func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(set)
 	if err != nil {
 		return nil, err
-	}
-
-	if c.ListenAddress == "" {
-		return nil, fmt.Errorf("missing required parameter 'listen_address'")
 	}
 
 	address, err := net.ResolveUDPAddr("udp", c.ListenAddress)
@@ -141,4 +139,11 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		}
 	}
 	return udpInput, nil
+}
+
+func (c *BaseConfig) Validate() error {
+	if c.ListenAddress == "" {
+		return errors.New("missing required parameter 'listen_address'")
+	}
+	return nil
 }
