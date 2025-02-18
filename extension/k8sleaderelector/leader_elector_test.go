@@ -14,7 +14,7 @@ import (
 
 func TestLeaderElector(t *testing.T) {
 	fakeClient := fake.NewClientset()
-	onStartedLeading := func(ctx context.Context) {}
+	onStartedLeading := func(_ context.Context) {}
 	onStoppedLeading := func() {}
 	leConfig := Config{
 		LeaseName:      "foo",
