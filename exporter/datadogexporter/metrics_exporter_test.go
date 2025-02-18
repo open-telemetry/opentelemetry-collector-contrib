@@ -89,7 +89,6 @@ func TestNewExporter(t *testing.T) {
 
 func TestNewExporter_serializer(t *testing.T) {
 	// Skipping for now as we test the serializer
-	t.Skip()
 	require.NoError(t, enableMetricExportSerializer())
 	defer require.NoError(t, enableNativeMetricExport())
 	server := testutil.DatadogServerMock()
@@ -121,6 +120,9 @@ func TestNewExporter_serializer(t *testing.T) {
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 
 	params := exportertest.NewNopSettings()
+	var err error
+	params.Logger, err = zap.NewDevelopment()
+	require.NoError(t, err)
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -132,11 +134,13 @@ func TestNewExporter_serializer(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
+	fmt.Printf("#### server.MetadataChan: %v\n", server.MetadataChan)
 
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
+	fmt.Printf("#### server.MetadataChan: %v\n", server.MetadataChan)
 	recvMetadata := <-server.MetadataChan
 	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
 }
