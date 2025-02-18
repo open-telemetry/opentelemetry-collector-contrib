@@ -384,7 +384,7 @@ func flushBulkIndexer(
 				logger.Error("invalid bulk index item response index", zap.String("index", resp.Index))
 				continue
 			}
-			fields = append(fields, zap.ByteString("source", reqDocs[idx]))
+			fields = append(fields, zap.ByteString("source", reqDocs[idx])) // FIXME: the source will contain document only, not the action line
 		}
 		failedDocsSourceLogger.Debug("failed to index document; source may contain sensitive data", fields...)
 	}
