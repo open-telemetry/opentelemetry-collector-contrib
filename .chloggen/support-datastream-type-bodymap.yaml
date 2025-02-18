@@ -10,13 +10,7 @@ component: elasticsearchexporter
 note: Add support for `data_stream.type` attribute to create dynamic index in bodymap mode.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [#38000]
+issues: [38000]
 
-# (Optional) One or more lines of additional information to render under the primary note.
-# These lines will be padded with 2 spaces and then inserted directly into the document.
-# Use pipe (|) for multiline entries.
-subtext: By default, `data_stream.type` is set based on pipeline signal type.
-This enhancement adds support for setting `data_stream.type` attribute that overrides this default behavior.
-It is limited to bodymap mode.
 
 

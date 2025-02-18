@@ -28,7 +28,6 @@ var renderWantRoute = func(dsType, dsDataset string, mode MappingMode) elasticse
 }
 
 func createRouteTests(dsType string) []routeTestCase {
-
 	return []routeTestCase{
 		{
 			name: "default",
@@ -83,7 +82,7 @@ func TestRouteLogRecord(t *testing.T) {
 	}
 
 	t.Run("test data_stream.type for bodymap mode", func(t *testing.T) {
-		var datastreamType = "metrics"
+		datastreamType := "metrics"
 		router := dynamicDocumentRouter{mode: MappingBodyMap}
 		attrs := pcommon.NewMap()
 		attrs.PutStr("data_stream.type", datastreamType)
