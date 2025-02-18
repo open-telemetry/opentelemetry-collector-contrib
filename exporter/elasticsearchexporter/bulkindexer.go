@@ -96,7 +96,7 @@ func newSyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Conf
 		flushBytes:             config.Flush.Bytes,
 		retryConfig:            config.Retry,
 		logger:                 logger,
-		failedDocsSourceLogger: logger.WithOptions(logging.WithRateLimit(config.LogFailedDocsSourceRateLimit)),
+		failedDocsSourceLogger: newFailedDocsSourceLogger(logger, config),
 	}
 }
 
@@ -215,7 +215,7 @@ func newAsyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Con
 			flushTimeout:           config.Timeout,
 			flushBytes:             config.Flush.Bytes,
 			logger:                 logger,
-			failedDocsSourceLogger: logger.WithOptions(logging.WithRateLimit(config.LogFailedDocsSourceRateLimit)),
+			failedDocsSourceLogger: newFailedDocsSourceLogger(logger, config),
 			stats:                  &pool.stats,
 		}
 		go func() {
@@ -378,6 +378,13 @@ func getErrorHint(index, errorType string) string {
 		return "check the \"Known issues\" section of Elasticsearch Exporter docs"
 	}
 	return ""
+}
+
+func newFailedDocsSourceLogger(logger *zap.Logger, config *Config) *zap.Logger {
+	if !config.LogFailedDocsSource {
+		return zap.NewNop()
+	}
+	return logger.WithOptions(logging.WithRateLimit(config.LogFailedDocsSourceRateLimit))
 }
 
 type bulkIndexers struct {
