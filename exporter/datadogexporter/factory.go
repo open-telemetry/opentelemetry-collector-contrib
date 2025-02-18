@@ -318,7 +318,7 @@ func (f *factory) createMetricsExporter(
 			}
 			return nil
 		}
-	case isMetricExportV2Enabled():
+	case isMetricExportSerializerEnabled():
 		set.Logger.Info("Using Datadog serializerexporter for metric export")
 		sf := serializerexporter.NewFactory()
 		ex := &serializerexporter.ExporterConfig{
@@ -331,9 +331,9 @@ func (f *factory) createMetricsExporter(
 			QueueConfig: cfg.QueueSettings,
 			API:         cfg.API,
 			HostProvider: func(ctx context.Context) (string, error) {
-				h, err := hostProvider.Source(ctx)
-				if err != nil {
-					return "", err
+				h, err2 := hostProvider.Source(ctx)
+				if err2 != nil {
+					return "", err2
 				}
 				return h.Identifier, nil
 			},

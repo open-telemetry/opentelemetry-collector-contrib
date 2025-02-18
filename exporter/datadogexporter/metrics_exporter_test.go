@@ -87,6 +87,60 @@ func TestNewExporter(t *testing.T) {
 	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
 }
 
+func TestNewExporter_serializer(t *testing.T) {
+	// Skipping for now as we test the serializer
+	t.Skip()
+	require.NoError(t, enableMetricExportSerializer())
+	defer require.NoError(t, enableNativeMetricExport())
+	server := testutil.DatadogServerMock()
+	defer server.Close()
+
+	cfg := &Config{
+		API: APIConfig{
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+		Metrics: MetricsConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: server.URL,
+			},
+			DeltaTTL: 3600,
+			HistConfig: HistogramConfig{
+				Mode:             HistogramModeDistributions,
+				SendAggregations: false,
+			},
+			SumConfig: SumConfig{
+				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+			},
+		},
+		HostMetadata: HostMetadataConfig{
+			Enabled:        true,
+			ReporterPeriod: 30 * time.Minute,
+			HostnameSource: HostnameSourceFirstResource,
+		},
+	}
+	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
+
+	params := exportertest.NewNopSettings()
+	f := NewFactory()
+
+	// The client should have been created correctly
+	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, exp)
+	testMetrics := pmetric.NewMetrics()
+	testutil.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	require.NoError(t, err)
+	assert.Empty(t, server.MetadataChan)
+
+	testMetrics = pmetric.NewMetrics()
+	testutil.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	require.NoError(t, err)
+	recvMetadata := <-server.MetadataChan
+	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
+}
+
 func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	if !isMetricExportV2Enabled() {
 		require.NoError(t, enableNativeMetricExport())
