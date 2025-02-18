@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -57,6 +58,7 @@ const (
 	attributeResourceType  = "type"
 	metadataPrefix         = "metadata_"
 	tagPrefix              = "tags_"
+	filterAllAggregations  = "*"
 )
 
 type azureResource struct {
@@ -67,8 +69,9 @@ type azureResource struct {
 }
 
 type metricsCompositeKey struct {
-	dimensions string // comma separated sorted dimensions
-	timeGrain  string
+	dimensions   string // comma separated sorted dimensions
+	aggregations string // comma separated sorted aggregations
+	timeGrain    string
 }
 
 type azureResourceMetrics struct {
@@ -337,9 +340,17 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 		}
 
 		for _, v := range nextResult.Value {
-			timeGrain := *v.MetricAvailabilities[0].TimeGrain
 			name := *v.Name.Value
-			compositeKey := metricsCompositeKey{timeGrain: timeGrain}
+			metricAggregations := getMetricAggregations(*v.Namespace, name, s.cfg.Metrics)
+			if len(metricAggregations) == 0 {
+				continue
+			}
+
+			timeGrain := *v.MetricAvailabilities[0].TimeGrain
+			compositeKey := metricsCompositeKey{
+				timeGrain:    timeGrain,
+				aggregations: strings.Join(metricAggregations, ","),
+			}
 
 			if len(v.Dimensions) > 0 {
 				var dimensionsSlice []string
@@ -388,6 +399,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 				metricsByGrain.metrics,
 				compositeKey.dimensions,
 				compositeKey.timeGrain,
+				compositeKey.aggregations,
 				start,
 				end,
 				s.cfg.MaximumNumberOfRecordsPerResource,
@@ -435,6 +447,7 @@ func getResourceMetricsValuesRequestOptions(
 	metrics []string,
 	dimensionsStr string,
 	timeGrain string,
+	aggregations string,
 	start int,
 	end int,
 	top int32,
@@ -444,7 +457,7 @@ func getResourceMetricsValuesRequestOptions(
 		Metricnames: &resType,
 		Interval:    to.Ptr(timeGrain),
 		Timespan:    to.Ptr(timeGrain),
-		Aggregation: to.Ptr(strings.Join(aggregations, ",")),
+		Aggregation: to.Ptr(aggregations),
 		Top:         to.Ptr(top),
 	}
 
@@ -499,4 +512,50 @@ func (s *azureScraper) processTimeseriesData(
 			)
 		}
 	}
+}
+
+func getMetricAggregations(metricNamespace, metricName string, filters map[string]map[string][]string) []string {
+	// default behavior when no metric filters specified: pass all metrics with all aggregations
+	if len(filters) == 0 {
+		return aggregations
+	}
+
+	metricsFilters, ok := mapFindInsensitive(filters, metricNamespace)
+	// metric namespace not found or it's empty: pass all metrics from the namespace
+	if !ok || len(metricsFilters) == 0 {
+		return aggregations
+	}
+
+	aggregationsFilters, ok := mapFindInsensitive(metricsFilters, metricName)
+	// if target metric is absent in metrics map: filter out metric
+	if !ok {
+		return []string{}
+	}
+	// allow all aggregations if others are not specified
+	if len(aggregationsFilters) == 0 || slices.Contains(aggregationsFilters, filterAllAggregations) {
+		return aggregations
+	}
+
+	// collect known supported aggregations
+	out := []string{}
+	for _, filter := range aggregationsFilters {
+		for _, aggregation := range aggregations {
+			if strings.EqualFold(aggregation, filter) {
+				out = append(out, aggregation)
+			}
+		}
+	}
+
+	return out
+}
+
+func mapFindInsensitive[T any](m map[string]T, key string) (T, bool) {
+	for k, v := range m {
+		if strings.EqualFold(key, k) {
+			return v, true
+		}
+	}
+
+	var got T
+	return got, false
 }
