@@ -175,6 +175,10 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 		if _, err := flushBulkIndexer(ctx, s.bi, s.s.flushTimeout, s.s.logger, s.s.failedDocsSourceLogger, s.reqDocs); err != nil {
 			return err
 		}
+		// FIXME: the indices will be incorrect after the first flush,
+		// as it is unclear to syncBulkIndexerSession which documents are undergoing per-document retry,
+		// and which succeeded.
+		s.reqDocs = nil
 		if s.bi.Items() == 0 {
 			// No documents in buffer waiting for per-document retry, exit retry loop.
 			return nil
