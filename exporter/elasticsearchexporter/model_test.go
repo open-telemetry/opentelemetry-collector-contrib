@@ -90,6 +90,7 @@ func TestEncodeMetric(t *testing.T) {
 	model := &encodeModel{
 		mode: MappingECS,
 	}
+	hasher := newDataPointHasher(model.mode)
 
 	groupedDataPoints := make(map[uint32][]datapoints.DataPoint)
 
@@ -100,7 +101,7 @@ func TestEncodeMetric(t *testing.T) {
 	dps := m.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dp := datapoints.NewNumber(m, dps.At(i))
-		dpHash := model.hashDataPoint(dp)
+		dpHash := hasher.hashDataPoint(rm.Resource(), sm.Scope(), dp)
 		dataPoints, ok := groupedDataPoints[dpHash]
 		if !ok {
 			groupedDataPoints[dpHash] = []datapoints.DataPoint{dp}
@@ -1153,11 +1154,13 @@ func TestEncodeLogOtelMode(t *testing.T) {
 
 	for _, tc := range tests {
 		record, scope, resource := createTestOTelLogRecord(t, tc.rec)
+		router := newDocumentRouter(MappingOTel, true, "", &Config{})
 
-		idx := routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), "", true, scope.Name())
+		idx, err := router.routeLogRecord(resource, scope, record.Attributes())
+		require.NoError(t, err)
 
 		var buf bytes.Buffer
-		err := m.encodeLog(resource, tc.rec.Resource.SchemaURL, record, scope, tc.rec.Scope.SchemaURL, idx, &buf)
+		err = m.encodeLog(resource, tc.rec.Resource.SchemaURL, record, scope, tc.rec.Scope.SchemaURL, idx, &buf)
 		require.NoError(t, err)
 
 		want := tc.rec

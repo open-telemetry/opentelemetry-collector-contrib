@@ -5,14 +5,9 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"bytes"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash"
-	"hash/fnv"
-	"math"
-	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -81,7 +76,6 @@ type mappingModel interface {
 	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string, elasticsearch.Index, *bytes.Buffer) error
 	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string, elasticsearch.Index, *bytes.Buffer) error
 	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string, idx elasticsearch.Index, buf *bytes.Buffer)
-	hashDataPoint(datapoints.DataPoint) uint32
 	encodeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx elasticsearch.Index, buf *bytes.Buffer) (map[string]string, error)
 	encodeProfile(pcommon.Resource, pcommon.InstrumentationScope, pprofile.Profile, func(*bytes.Buffer, string, string) error) error
 }
@@ -187,17 +181,6 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 	}
 
 	return document
-}
-
-// upsertMetricDataPointValue upserts a datapoint value to documents which is already hashed by resource and index
-func (m *encodeModel) hashDataPoint(dp datapoints.DataPoint) uint32 {
-	switch m.mode {
-	case MappingOTel:
-		return metricOTelHash(dp, dp.Metric().Unit())
-	default:
-		// Defaults to ECS for backward compatibility
-		return metricECSHash(dp.Timestamp(), dp.Attributes())
-	}
 }
 
 func (m *encodeModel) encodeDataPointsECSMode(resource pcommon.Resource, dataPoints []datapoints.DataPoint, validationErrors *[]error, idx elasticsearch.Index, buf *bytes.Buffer) (map[string]string, error) {
@@ -449,96 +432,4 @@ func encodeLogTimestampECSMode(document *objmodel.Document, record plog.LogRecor
 	}
 
 	document.AddTimestamp("@timestamp", record.ObservedTimestamp())
-}
-
-// TODO use https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/exp/metrics/identity
-func metricECSHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
-	hasher := fnv.New32a()
-
-	timestampBuf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(timestampBuf, uint64(timestamp))
-	hasher.Write(timestampBuf)
-
-	mapHashExcludeReservedAttrs(hasher, attributes)
-
-	return hasher.Sum32()
-}
-
-func metricOTelHash(dp datapoints.DataPoint, unit string) uint32 {
-	hasher := fnv.New32a()
-
-	timestampBuf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(timestampBuf, uint64(dp.Timestamp()))
-	hasher.Write(timestampBuf)
-
-	binary.LittleEndian.PutUint64(timestampBuf, uint64(dp.StartTimestamp()))
-	hasher.Write(timestampBuf)
-
-	hasher.Write([]byte(unit))
-
-	mapHashExcludeReservedAttrs(hasher, dp.Attributes(), elasticsearch.MappingHintsAttrKey)
-
-	return hasher.Sum32()
-}
-
-// mapHashExcludeReservedAttrs is mapHash but ignoring some reserved attributes.
-// e.g. index is already considered during routing and DS attributes do not need to be considered in hashing
-func mapHashExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extra ...string) {
-	m.Range(func(k string, v pcommon.Value) bool {
-		switch k {
-		case elasticsearch.DataStreamType, elasticsearch.DataStreamDataset, elasticsearch.DataStreamNamespace:
-			return true
-		}
-		if slices.Contains(extra, k) {
-			return true
-		}
-		hasher.Write([]byte(k))
-		valueHash(hasher, v)
-
-		return true
-	})
-}
-
-func mapHash(hasher hash.Hash, m pcommon.Map) {
-	m.Range(func(k string, v pcommon.Value) bool {
-		hasher.Write([]byte(k))
-		valueHash(hasher, v)
-
-		return true
-	})
-}
-
-func valueHash(h hash.Hash, v pcommon.Value) {
-	switch v.Type() {
-	case pcommon.ValueTypeEmpty:
-		h.Write([]byte{0})
-	case pcommon.ValueTypeStr:
-		h.Write([]byte(v.Str()))
-	case pcommon.ValueTypeBool:
-		if v.Bool() {
-			h.Write([]byte{1})
-		} else {
-			h.Write([]byte{0})
-		}
-	case pcommon.ValueTypeDouble:
-		buf := make([]byte, 8)
-		binary.LittleEndian.PutUint64(buf, math.Float64bits(v.Double()))
-		h.Write(buf)
-	case pcommon.ValueTypeInt:
-		buf := make([]byte, 8)
-		binary.LittleEndian.PutUint64(buf, uint64(v.Int()))
-		h.Write(buf)
-	case pcommon.ValueTypeBytes:
-		h.Write(v.Bytes().AsRaw())
-	case pcommon.ValueTypeMap:
-		mapHash(h, v.Map())
-	case pcommon.ValueTypeSlice:
-		sliceHash(h, v.Slice())
-	}
-}
-
-func sliceHash(h hash.Hash, s pcommon.Slice) {
-	for i := 0; i < s.Len(); i++ {
-		valueHash(h, s.At(i))
-	}
 }
