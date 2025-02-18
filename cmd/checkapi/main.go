@@ -183,8 +183,14 @@ func walkFolder(folder string, componentType string) error {
 	if len(result.Functions) > 1 {
 		return fmt.Errorf("%s has more than one function: %q", folder, strings.Join(fnNames, ","))
 	}
+	if err := checkFactoryFunction(result.Functions[0], folder, componentType); err != nil {
+		return err
+	}
+	return nil
+}
 
-	newFactoryFn := result.Functions[0]
+// check the only exported function of the module is NewFactory, matching the signature of the factory expected by the collector builder.
+func checkFactoryFunction(newFactoryFn *function, folder string, componentType string) error {
 	if newFactoryFn.Name != "NewFactory" {
 		return fmt.Errorf("%s does not define a NewFactory function", folder)
 	}
