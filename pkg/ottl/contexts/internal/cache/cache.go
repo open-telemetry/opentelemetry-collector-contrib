@@ -17,11 +17,13 @@ type Getter[K any] func(K) pcommon.Map
 
 // GetSetter returns a GetSetter for accessing a map in a transform context.
 // The transform context must have a field that returns the cache.
-func GetSetter[K any](m Getter[K], keys []ottl.Key[K]) (ottl.GetSetter[K], error) {
-	if keys == nil {
-		return accessMap(m), nil
+func GetSetter[K any](m Getter[K]) func(path ottl.Path[K]) (ottl.GetSetter[K], error) {
+	return func(path ottl.Path[K]) (ottl.GetSetter[K], error) {
+		if path.Keys() == nil {
+			return accessMap(m), nil
+		}
+		return accessMapKey(m, path.Keys()), nil
 	}
-	return accessMapKey(m, keys), nil
 }
 
 func accessMap[K any](m Getter[K]) ottl.StandardGetSetter[K] {

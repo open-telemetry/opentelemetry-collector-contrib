@@ -19,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathparse"
 	common "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
@@ -122,11 +123,28 @@ func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
 	return tCtx.resourceLogs
 }
 
+func newPathExpressionParser(telemetrySettings component.TelemetrySettings) *pathparse.Parser[TransformContext] {
+	pathFuncs := LogPathFuncs()
+	pathFuncs["cache"] = cache.GetSetter[TransformContext](TransformContext.getCache)
+	pathFuncs[internal.ResourceContextName] = internal.ResourcePathGetSetter[TransformContext]("log")
+	pathFuncs[internal.InstrumentationScopeContextName] = internal.ScopePathGetSetter[TransformContext]("log")
+	pathParser := pathparse.NewParser[TransformContext](
+		telemetrySettings,
+		ContextName,
+		contextNameDescription,
+		pathFuncs,
+		func(path ottl.Path[TransformContext]) error {
+			return internal.FormatDefaultErrorMessage(path.Context(), path.String(), contextNameDescription, internal.LogRef)
+		},
+	)
+	return pathParser
+}
+
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
-	pep := pathExpressionParser{telemetrySettings}
+	pathParser := newPathExpressionParser(telemetrySettings)
 	p, err := ottl.NewParser[TransformContext](
 		functions,
-		pep.parsePath,
+		pathParser.Parse,
 		telemetrySettings,
 		ottl.WithEnumParser[TransformContext](parseEnum),
 	)
@@ -224,98 +242,24 @@ func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
-type pathExpressionParser struct {
-	telemetrySettings component.TelemetrySettings
-}
-
-func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
-	if path == nil {
-		return nil, fmt.Errorf("path cannot be nil")
-	}
-	// Higher contexts parsing
-	if path.Context() != "" && path.Context() != ContextName {
-		return pep.parseHigherContextPath(path.Context(), path)
-	}
-	// Backward compatibility with paths without context
-	if path.Context() == "" && (path.Name() == internal.ResourceContextName || path.Name() == internal.InstrumentationScopeContextName) {
-		return pep.parseHigherContextPath(path.Name(), path.Next())
-	}
-
-	switch path.Name() {
-	case "cache":
-		return cache.GetSetter(TransformContext.getCache, path.Keys())
-	case "time_unix_nano":
-		return accessTimeUnixNano(), nil
-	case "observed_time_unix_nano":
-		return accessObservedTimeUnixNano(), nil
-	case "time":
-		return accessTime(), nil
-	case "observed_time":
-		return accessObservedTime(), nil
-	case "severity_number":
-		return accessSeverityNumber(), nil
-	case "severity_text":
-		return accessSeverityText(), nil
-	case "body":
-		nextPath := path.Next()
-		if nextPath != nil {
-			if nextPath.Name() == "string" {
-				return accessStringBody(), nil
-			}
-			return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), contextNameDescription, internal.LogRef)
-		}
-		if path.Keys() == nil {
-			return accessBody(), nil
-		}
-		return accessBodyKey(path.Keys()), nil
-	case "attributes":
-		if path.Keys() == nil {
-			return accessAttributes(), nil
-		}
-		return accessAttributesKey(path.Keys()), nil
-	case "dropped_attributes_count":
-		return accessDroppedAttributesCount(), nil
-	case "flags":
-		return accessFlags(), nil
-	case "trace_id":
-		nextPath := path.Next()
-		if nextPath != nil {
-			if nextPath.Name() == "string" {
-				return accessStringTraceID(), nil
-			}
-			return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), contextNameDescription, internal.LogRef)
-		}
-		return accessTraceID(), nil
-	case "span_id":
-		nextPath := path.Next()
-		if nextPath != nil {
-			if nextPath.Name() == "string" {
-				return accessStringSpanID(), nil
-			}
-			return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), path.String(), contextNameDescription, internal.LogRef)
-		}
-		return accessSpanID(), nil
-	default:
-		return nil, internal.FormatDefaultErrorMessage(path.Name(), path.String(), contextNameDescription, internal.LogRef)
+func LogPathFuncs() map[string]pathparse.PathFunc[TransformContext] {
+	return map[string]pathparse.PathFunc[TransformContext]{
+		"time_unix_nano":           accessTimeUnixNano,
+		"observed_time_unix_nano":  accessObservedTimeUnixNano,
+		"time":                     accessTime,
+		"observed_time":            accessObservedTime,
+		"severity_number":          accessSeverityNumber,
+		"severity_text":            accessSeverityText,
+		"body":                     accessBody,
+		"attributes":               accessAttributes,
+		"dropped_attributes_count": accessDroppedAttributesCount,
+		"flags":                    accessFlags,
+		"trace_id":                 accessTraceID,
+		"span_id":                  accessSpanID,
 	}
 }
 
-func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
-	switch context {
-	case internal.ResourceContextName:
-		return internal.ResourcePathGetSetter(ContextName, path)
-	case internal.InstrumentationScopeContextName:
-		return internal.ScopePathGetSetter(ContextName, path)
-	default:
-		var fullPath string
-		if path != nil {
-			fullPath = path.String()
-		}
-		return nil, internal.FormatDefaultErrorMessage(context, fullPath, contextNameDescription, internal.LogRef)
-	}
-}
-
-func accessTimeUnixNano() ottl.StandardGetSetter[TransformContext] {
+func accessTimeUnixNano(_ ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			return tCtx.GetLogRecord().Timestamp().AsTime().UnixNano(), nil
@@ -326,10 +270,10 @@ func accessTimeUnixNano() ottl.StandardGetSetter[TransformContext] {
 			}
 			return nil
 		},
-	}
+	}, nil
 }
 
-func accessObservedTimeUnixNano() ottl.StandardGetSetter[TransformContext] {
+func accessObservedTimeUnixNano(_ ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			return tCtx.GetLogRecord().ObservedTimestamp().AsTime().UnixNano(), nil
@@ -340,10 +284,10 @@ func accessObservedTimeUnixNano() ottl.StandardGetSetter[TransformContext] {
 			}
 			return nil
 		},
-	}
+	}, nil
 }
 
-func accessTime() ottl.StandardGetSetter[TransformContext] {
+func accessTime(_ ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			return tCtx.GetLogRecord().Timestamp().AsTime(), nil
@@ -354,10 +298,10 @@ func accessTime() ottl.StandardGetSetter[TransformContext] {
 			}
 			return nil
 		},
-	}
+	}, nil
 }
 
-func accessObservedTime() ottl.StandardGetSetter[TransformContext] {
+func accessObservedTime(_ ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			return tCtx.GetLogRecord().ObservedTimestamp().AsTime(), nil
@@ -368,10 +312,10 @@ func accessObservedTime() ottl.StandardGetSetter[TransformContext] {
 			}
 			return nil
 		},
-	}
+	}, nil
 }
 
-func accessSeverityNumber() ottl.StandardGetSetter[TransformContext] {
+func accessSeverityNumber(_ ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			return int64(tCtx.GetLogRecord().SeverityNumber()), nil
@@ -382,10 +326,10 @@ func accessSeverityNumber() ottl.StandardGetSetter[TransformContext] {
 			}
 			return nil
 		},
-	}
+	}, nil
 }
 
-func accessSeverityText() ottl.StandardGetSetter[TransformContext] {
+func accessSeverityText(_ ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			return tCtx.GetLogRecord().SeverityText(), nil
@@ -396,10 +340,17 @@ func accessSeverityText() ottl.StandardGetSetter[TransformContext] {
 			}
 			return nil
 		},
-	}
+	}, nil
 }
 
-func accessBody() ottl.StandardGetSetter[TransformContext] {
+func accessBody(path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
+	if path.Name() == "string" {
+		return accessStringBody(path)
+	}
+	if path.Keys() != nil {
+		return accessBodyKey(path.Keys())
+	}
+
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			return common.GetValue(tCtx.GetLogRecord().Body()), nil
@@ -407,10 +358,10 @@ func accessBody() ottl.StandardGetSetter[TransformContext] {
 		Setter: func(_ context.Context, tCtx TransformContext, val any) error {
 			return internal.SetValue(tCtx.GetLogRecord().Body(), val)
 		},
-	}
+	}, nil
 }
 
-func accessBodyKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
+func accessBodyKey(key []ottl.Key[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
 			body := tCtx.GetLogRecord().Body()
@@ -434,10 +385,10 @@ func accessBodyKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[Tran
 				return fmt.Errorf("log bodies of type %s cannot be indexed", body.Type().String())
 			}
 		},
-	}
+	}, nil
 }
 
-func accessStringBody() ottl.StandardGetSetter[TransformContext] {
+func accessStringBody(_ ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			return tCtx.GetLogRecord().Body().AsString(), nil
@@ -448,10 +399,14 @@ func accessStringBody() ottl.StandardGetSetter[TransformContext] {
 			}
 			return nil
 		},
-	}
+	}, nil
 }
 
-func accessAttributes() ottl.StandardGetSetter[TransformContext] {
+func accessAttributes(path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
+	if path.Keys() != nil {
+		return accessAttributesKey(path.Keys())
+	}
+
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			return tCtx.GetLogRecord().Attributes(), nil
@@ -462,10 +417,10 @@ func accessAttributes() ottl.StandardGetSetter[TransformContext] {
 			}
 			return nil
 		},
-	}
+	}, nil
 }
 
-func accessAttributesKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
+func accessAttributesKey(key []ottl.Key[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
 			return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Attributes(), key)
@@ -473,10 +428,10 @@ func accessAttributesKey(key []ottl.Key[TransformContext]) ottl.StandardGetSette
 		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
 			return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Attributes(), key, val)
 		},
-	}
+	}, nil
 }
 
-func accessDroppedAttributesCount() ottl.StandardGetSetter[TransformContext] {
+func accessDroppedAttributesCount(_ ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			return int64(tCtx.GetLogRecord().DroppedAttributesCount()), nil
@@ -487,10 +442,10 @@ func accessDroppedAttributesCount() ottl.StandardGetSetter[TransformContext] {
 			}
 			return nil
 		},
-	}
+	}, nil
 }
 
-func accessFlags() ottl.StandardGetSetter[TransformContext] {
+func accessFlags(_ ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			return int64(tCtx.GetLogRecord().Flags()), nil
@@ -501,10 +456,13 @@ func accessFlags() ottl.StandardGetSetter[TransformContext] {
 			}
 			return nil
 		},
-	}
+	}, nil
 }
 
-func accessTraceID() ottl.StandardGetSetter[TransformContext] {
+func accessTraceID(path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
+	if path.Name() == "string" {
+		return accessStringTraceID(path)
+	}
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			return tCtx.GetLogRecord().TraceID(), nil
@@ -515,10 +473,10 @@ func accessTraceID() ottl.StandardGetSetter[TransformContext] {
 			}
 			return nil
 		},
-	}
+	}, nil
 }
 
-func accessStringTraceID() ottl.StandardGetSetter[TransformContext] {
+func accessStringTraceID(_ ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			id := tCtx.GetLogRecord().TraceID()
@@ -534,10 +492,13 @@ func accessStringTraceID() ottl.StandardGetSetter[TransformContext] {
 			}
 			return nil
 		},
-	}
+	}, nil
 }
 
-func accessSpanID() ottl.StandardGetSetter[TransformContext] {
+func accessSpanID(path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
+	if path.Name() == "string" {
+		return accessStringSpanID(path)
+	}
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			return tCtx.GetLogRecord().SpanID(), nil
@@ -548,10 +509,10 @@ func accessSpanID() ottl.StandardGetSetter[TransformContext] {
 			}
 			return nil
 		},
-	}
+	}, nil
 }
 
-func accessStringSpanID() ottl.StandardGetSetter[TransformContext] {
+func accessStringSpanID(_ ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			id := tCtx.GetLogRecord().SpanID()
@@ -567,5 +528,5 @@ func accessStringSpanID() ottl.StandardGetSetter[TransformContext] {
 			}
 			return nil
 		},
-	}
+	}, nil
 }

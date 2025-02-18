@@ -6,13 +6,13 @@ package ottllog
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"slices"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -180,9 +180,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: newBodySlice,
 			modified: func(log plog.LogRecord, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
-				fmt.Println(log.Body().Slice().At(0).AsString())
 				newBodySlice.CopyTo(log.Body().Slice())
-				fmt.Println(log.Body().Slice().At(0).AsString())
 			},
 			bodyType: "slice",
 		},
@@ -612,8 +610,8 @@ func Test_newPathGetSetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
+			pep := newPathExpressionParser(componenttest.NewNopTelemetrySettings())
+			accessor, err := pep.Parse(tt.path)
 			assert.NoError(t, err)
 
 			log, il, resource := createTelemetry(tt.bodyType)
@@ -681,10 +679,10 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 	}
 
-	pep := pathExpressionParser{}
+	pep := newPathExpressionParser(componenttest.NewNopTelemetrySettings())
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := pep.parsePath(tt.path)
+			accessor, err := pep.Parse(tt.path)
 			require.NoError(t, err)
 
 			got, err := accessor.Get(context.Background(), ctx)
@@ -791,8 +789,8 @@ func Test_InvalidBodyIndexing(t *testing.T) {
 		},
 	}
 
-	pep := pathExpressionParser{}
-	accessor, err := pep.parsePath(&path)
+	pep := newPathExpressionParser(componenttest.NewNopTelemetrySettings())
+	accessor, err := pep.Parse(&path)
 	assert.NoError(t, err)
 
 	log, il, resource := createTelemetry("string")

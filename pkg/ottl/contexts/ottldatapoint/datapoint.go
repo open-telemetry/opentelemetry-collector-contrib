@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathparse"
 )
 
 const (
@@ -126,10 +127,18 @@ func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
 }
 
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
-	pep := pathExpressionParser{telemetrySettings}
+	pathParser := pathparse.NewPathParser[TransformContext](
+		telemetrySettings,
+		internal.DataPointContextName,
+		internal.DataPointContextNameDescription,
+		handlePath,
+		pathparse.WithHigherContext(internal.ResourceContextName, internal.ResourcePathGetSetter[TransformContext]),
+		pathparse.WithHigherContext(internal.InstrumentationScopeContextName, internal.ScopePathGetSetter[TransformContext]),
+		pathparse.WithHigherContext(internal.MetricContextName, internal.MetricPathGetSetter[TransformContext]),
+	)
 	p, err := ottl.NewParser[TransformContext](
 		functions,
-		pep.parsePath,
+		pathParser.ParsePath,
 		telemetrySettings,
 		ottl.WithEnumParser[TransformContext](parseEnum),
 	)
@@ -211,23 +220,9 @@ func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
-type pathExpressionParser struct {
-	telemetrySettings component.TelemetrySettings
-}
-
-func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
+func handlePath(path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	if path == nil {
 		return nil, fmt.Errorf("path cannot be nil")
-	}
-	// Higher contexts parsing
-	if path.Context() != "" && path.Context() != ContextName {
-		return pep.parseHigherContextPath(path.Context(), path)
-	}
-	// Backward compatibility with paths without context
-	if path.Context() == "" && (path.Name() == internal.ResourceContextName ||
-		path.Name() == internal.InstrumentationScopeContextName ||
-		path.Name() == internal.MetricContextName) {
-		return pep.parseHigherContextPath(path.Name(), path.Next())
 	}
 
 	switch path.Name() {
@@ -295,24 +290,7 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 	case "quantile_values":
 		return accessQuantileValues(), nil
 	default:
-		return nil, internal.FormatDefaultErrorMessage(path.Name(), path.String(), contextNameDescription, internal.DataPointRef)
-	}
-}
-
-func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
-	switch context {
-	case internal.ResourceContextName:
-		return internal.ResourcePathGetSetter(ContextName, path)
-	case internal.InstrumentationScopeContextName:
-		return internal.ScopePathGetSetter(ContextName, path)
-	case internal.MetricContextName:
-		return internal.MetricPathGetSetter(path)
-	default:
-		var fullPath string
-		if path != nil {
-			fullPath = path.String()
-		}
-		return nil, internal.FormatDefaultErrorMessage(context, fullPath, contextNameDescription, internal.DataPointRef)
+		return nil, internal.FormatDefaultErrorMessage(path.Name(), path.String(), contextNameDescription, internal.LogRef)
 	}
 }
 

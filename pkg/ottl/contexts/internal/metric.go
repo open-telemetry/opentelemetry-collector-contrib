@@ -12,7 +12,10 @@ import (
 )
 
 const (
-	MetricContextName = "metric"
+	MetricContextName               = "metric"
+	MetricContextNameDescription    = "Metric"
+	DataPointContextName            = "data_point"
+	DataPointContextNameDescription = "Data Point"
 )
 
 type MetricContext interface {

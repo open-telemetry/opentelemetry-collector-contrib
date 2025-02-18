@@ -13,14 +13,28 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-var _ ottl.Key[testContext] = testKey{}
-
-type testContext struct {
-	cache pcommon.Map
+type testPath struct {
+	keys []ottl.Key[testContext]
 }
 
-func (t testContext) getCache() pcommon.Map {
-	return t.cache
+func (p testPath) Context() string {
+	return "test"
+}
+
+func (p testPath) Name() string {
+	return "test"
+}
+
+func (p testPath) Keys() []ottl.Key[testContext] {
+	return p.keys
+}
+
+func (p testPath) Next() ottl.Path[testContext] {
+	return nil
+}
+
+func (p testPath) String() string {
+	return "test"
 }
 
 type testKey struct {
@@ -39,6 +53,14 @@ func (k testKey) ExpressionGetter(_ context.Context, _ testContext) (ottl.Getter
 	return nil, nil
 }
 
+type testContext struct {
+	cache pcommon.Map
+}
+
+func (t testContext) getCache() pcommon.Map {
+	return t.cache
+}
+
 func createKey(s string) ottl.Key[testContext] {
 	return testKey{s: &s}
 }
@@ -48,7 +70,8 @@ func Test_GetSetter_Get_NoKeys(t *testing.T) {
 	cache.PutStr("test", "value")
 
 	ctx := testContext{cache: cache}
-	getter, err := GetSetter[testContext](testContext.getCache, nil)
+	path := testPath{}
+	getter, err := GetSetter[testContext](testContext.getCache)(path)
 	assert.NoError(t, err)
 
 	val, err := getter.Get(context.Background(), ctx)
@@ -62,7 +85,8 @@ func Test_GetSetter_Set_NoKeys(t *testing.T) {
 	newCache.PutStr("new", "cache")
 
 	ctx := testContext{cache: cache}
-	getter, err := GetSetter[testContext](testContext.getCache, nil)
+	path := testPath{}
+	getter, err := GetSetter[testContext](testContext.getCache)(path)
 	assert.NoError(t, err)
 
 	err = getter.Set(context.Background(), ctx, newCache)
@@ -78,15 +102,17 @@ func Test_GetSetter_Get_WithKeys(t *testing.T) {
 	outer := cache.PutEmptyMap("outer")
 	outer.PutStr("inner", "value")
 
-	ctx := testContext{cache: cache}
-	keys := []ottl.Key[testContext]{
-		createKey("outer"),
-		createKey("inner"),
+	path := testPath{
+		keys: []ottl.Key[testContext]{
+			createKey("outer"),
+			createKey("inner"),
+		},
 	}
 
-	getter, err := GetSetter[testContext](testContext.getCache, keys)
+	getter, err := GetSetter[testContext](testContext.getCache)(path)
 	assert.NoError(t, err)
 
+	ctx := testContext{cache: cache}
 	val, err := getter.Get(context.Background(), ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, "value", val)
@@ -103,7 +129,11 @@ func Test_GetSetter_Set_WithKeys(t *testing.T) {
 		createKey("inner"),
 	}
 
-	getter, err := GetSetter[testContext](testContext.getCache, keys)
+	path := testPath{
+		keys: keys,
+	}
+
+	getter, err := GetSetter[testContext](testContext.getCache)(path)
 	assert.NoError(t, err)
 
 	err = getter.Set(context.Background(), ctx, "new_value")
@@ -119,7 +149,8 @@ func Test_GetSetter_Set_WithKeys(t *testing.T) {
 func Test_GetSetter_Set_InvalidType(t *testing.T) {
 	cache := pcommon.NewMap()
 	ctx := testContext{cache: cache}
-	getter, err := GetSetter[testContext](testContext.getCache, nil)
+	path := testPath{}
+	getter, err := GetSetter[testContext](testContext.getCache)(path)
 	assert.NoError(t, err)
 
 	err = getter.Set(context.Background(), ctx, "not a map")
@@ -134,7 +165,11 @@ func Test_GetSetter_Get_InvalidKey(t *testing.T) {
 		createKey("nonexistent"),
 	}
 
-	getter, err := GetSetter[testContext](testContext.getCache, keys)
+	path := testPath{
+		keys: keys,
+	}
+
+	getter, err := GetSetter[testContext](testContext.getCache)(path)
 	assert.NoError(t, err)
 
 	val, err := getter.Get(context.Background(), ctx)

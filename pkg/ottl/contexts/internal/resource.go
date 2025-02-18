@@ -20,24 +20,26 @@ type ResourceContext interface {
 	GetResourceSchemaURLItem() SchemaURLItem
 }
 
-func ResourcePathGetSetter[K ResourceContext](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
-	if path == nil {
-		return nil, FormatDefaultErrorMessage(ResourceContextName, ResourceContextName, "Resource", ResourceContextRef)
-	}
-	switch path.Name() {
-	case "attributes":
-		if path.Keys() == nil {
-			return accessResourceAttributes[K](), nil
+func ResourcePathGetSetter[K ResourceContext](lowerContext string) func(path ottl.Path[K]) (ottl.GetSetter[K], error) {
+	return func(path ottl.Path[K]) (ottl.GetSetter[K], error) {
+		if path == nil {
+			return nil, FormatDefaultErrorMessage(ResourceContextName, ResourceContextName, "Resource", ResourceContextRef)
 		}
-		return accessResourceAttributesKey[K](path.Keys()), nil
-	case "dropped_attributes_count":
-		return accessResourceDroppedAttributesCount[K](), nil
-	case "schema_url":
-		return accessResourceSchemaURLItem[K](), nil
-	case "cache":
-		return nil, FormatCacheErrorMessage(lowerContext, path.Context(), path.String())
-	default:
-		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Resource", ResourceContextRef)
+		switch path.Name() {
+		case "attributes":
+			if path.Keys() == nil {
+				return accessResourceAttributes[K](), nil
+			}
+			return accessResourceAttributesKey[K](path.Keys()), nil
+		case "dropped_attributes_count":
+			return accessResourceDroppedAttributesCount[K](), nil
+		case "schema_url":
+			return accessResourceSchemaURLItem[K](), nil
+		case "cache":
+			return nil, FormatCacheErrorMessage(lowerContext, path.Context(), path.String())
+		default:
+			return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Resource", ResourceContextRef)
+		}
 	}
 }
 

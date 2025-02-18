@@ -18,8 +18,10 @@ import (
 )
 
 const (
-	SpanContextName            = "span"
-	SpanContextNameDescription = "Span"
+	SpanContextName                 = "span"
+	SpanContextNameDescription      = "Span"
+	SpanEventContextName            = "span_event"
+	SpanEventContextNameDescription = "Span Event"
 )
 
 type SpanContext interface {

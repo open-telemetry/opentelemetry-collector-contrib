@@ -71,9 +71,8 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
-			assert.NoError(t, err)
+			accessor, err := handlePath(tt.path)
+			require.NoError(t, err)
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 
@@ -517,9 +516,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
-			assert.NoError(t, err)
+			accessor, err := handlePath(tt.path)
+			require.NoError(t, err)
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 
@@ -961,9 +959,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
-			assert.NoError(t, err)
+			accessor, err := handlePath(tt.path)
+			require.NoError(t, err)
 
 			histogramDataPoint := createHistogramDataPointTelemetry()
 
@@ -1489,9 +1486,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
-			assert.NoError(t, err)
+			accessor, err := handlePath(tt.path)
+			require.NoError(t, err)
 
 			expoHistogramDataPoint := createExpoHistogramDataPointTelemetry()
 
@@ -1918,9 +1914,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
-			assert.NoError(t, err)
+			accessor, err := handlePath(tt.path)
+			require.NoError(t, err)
 
 			summaryDataPoint := createSummaryDataPointTelemetry()
 
@@ -2100,9 +2095,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
-			assert.NoError(t, err)
+			accessor, err := handlePath(tt.path)
+			require.NoError(t, err)
 
 			metric := createMetricTelemetry()
 
@@ -2292,10 +2286,9 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 	}
 
-	pep := pathExpressionParser{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := pep.parsePath(tt.path)
+			accessor, err := handlePath(tt.path)
 			require.NoError(t, err)
 
 			got, err := accessor.Get(context.Background(), ctx)

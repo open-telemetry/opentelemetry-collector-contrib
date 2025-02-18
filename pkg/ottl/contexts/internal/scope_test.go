@@ -350,7 +350,7 @@ func TestScopePathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := ScopePathGetSetter[*instrumentationScopeContext](tt.path.Context(), tt.path)
+			accessor, err := ScopePathGetSetter[*instrumentationScopeContext](tt.path.Context())(tt.path)
 			assert.NoError(t, err)
 
 			is := createInstrumentationScope()
@@ -382,7 +382,7 @@ func TestScopePathGetSetterCacheAccessError(t *testing.T) {
 		FullPath: "instrumentation_scope.cache[key]",
 	}
 
-	_, err := ScopePathGetSetter[*instrumentationScopeContext]("metric", path)
+	_, err := ScopePathGetSetter[*instrumentationScopeContext]("metric")(path)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), `replace "instrumentation_scope.cache[key]" with "metric.cache[key]"`)
 }

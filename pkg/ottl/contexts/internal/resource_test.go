@@ -312,7 +312,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := ResourcePathGetSetter[*resourceContext](tt.path.Context(), tt.path)
+			accessor, err := ResourcePathGetSetter[*resourceContext](tt.path.Context())(tt.path)
 			assert.NoError(t, err)
 
 			resource := createResource()
@@ -344,7 +344,7 @@ func TestResourcePathGetSetterCacheAccessError(t *testing.T) {
 		FullPath: "resource.cache[key]",
 	}
 
-	_, err := ResourcePathGetSetter[*resourceContext]("log", path)
+	_, err := ResourcePathGetSetter[*resourceContext]("log")(path)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), `replace "resource.cache[key]" with "log.cache[key]"`)
 }

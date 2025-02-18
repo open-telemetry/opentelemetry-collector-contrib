@@ -21,29 +21,31 @@ type InstrumentationScopeContext interface {
 	GetScopeSchemaURLItem() SchemaURLItem
 }
 
-func ScopePathGetSetter[K InstrumentationScopeContext](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
-	if path == nil {
-		return nil, FormatDefaultErrorMessage(InstrumentationScopeContextName, InstrumentationScopeContextName, "Instrumentation Scope", InstrumentationScopeRef)
-	}
-	switch path.Name() {
-	case "name":
-		return accessInstrumentationScopeName[K](), nil
-	case "version":
-		return accessInstrumentationScopeVersion[K](), nil
-	case "attributes":
-		mapKeys := path.Keys()
-		if mapKeys == nil {
-			return accessInstrumentationScopeAttributes[K](), nil
+func ScopePathGetSetter[K InstrumentationScopeContext](lowerContext string) func(path ottl.Path[K]) (ottl.GetSetter[K], error) {
+	return func(path ottl.Path[K]) (ottl.GetSetter[K], error) {
+		if path == nil {
+			return nil, FormatDefaultErrorMessage(InstrumentationScopeContextName, InstrumentationScopeContextName, "Instrumentation Scope", InstrumentationScopeRef)
 		}
-		return accessInstrumentationScopeAttributesKey[K](mapKeys), nil
-	case "dropped_attributes_count":
-		return accessInstrumentationScopeDroppedAttributesCount[K](), nil
-	case "schema_url":
-		return accessInstrumentationScopeSchemaURLItem[K](), nil
-	case "cache":
-		return nil, FormatCacheErrorMessage(lowerContext, path.Context(), path.String())
-	default:
-		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Instrumentation Scope", InstrumentationScopeRef)
+		switch path.Name() {
+		case "name":
+			return accessInstrumentationScopeName[K](), nil
+		case "version":
+			return accessInstrumentationScopeVersion[K](), nil
+		case "attributes":
+			mapKeys := path.Keys()
+			if mapKeys == nil {
+				return accessInstrumentationScopeAttributes[K](), nil
+			}
+			return accessInstrumentationScopeAttributesKey[K](mapKeys), nil
+		case "dropped_attributes_count":
+			return accessInstrumentationScopeDroppedAttributesCount[K](), nil
+		case "schema_url":
+			return accessInstrumentationScopeSchemaURLItem[K](), nil
+		case "cache":
+			return nil, FormatCacheErrorMessage(lowerContext, path.Context(), path.String())
+		default:
+			return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Instrumentation Scope", InstrumentationScopeRef)
+		}
 	}
 }
 
