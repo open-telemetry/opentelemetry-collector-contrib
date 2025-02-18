@@ -31,6 +31,11 @@ type Dimension struct {
 	Default *string `mapstructure:"default"`
 }
 
+type InstrumentationScope struct {
+	Name    string  `mapstructure:"name"`
+	Default *string `mapstructure:"default"`
+}
+
 // Config defines the configuration options for spanmetricsconnector.
 type Config struct {
 	// Dimensions defines the list of additional dimensions on top of the provided:
@@ -84,6 +89,9 @@ type Config struct {
 
 	// Events defines the configuration for events section of spans.
 	Events EventsConfig `mapstructure:"events"`
+
+	InstrumentationScope        []InstrumentationScope `mapstructure:"instrumentation_scope"`
+	ExcludeInstrumentationScope []string               `mapstructure:"exclude_instrumentation_scope"`
 }
 
 type HistogramConfig struct {
