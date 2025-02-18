@@ -1,0 +1,26 @@
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'otel-collector'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['localhost:8890']
+            - targets: ['localhost:8889']
+            - targets: ['localhost:8888']
+
+exporters:
+  huaweicloud_aom/logs:
+    endpoint: "lts-access.cn-north-4.huaweicloud.com"
+    region_id: "region-id"
+    project_id: "demo-project-id"
+    log_group_id: "demo-group-id"
+    log_stream_id: "demo-group-id"
+    access_key_id: "access-key-id"
+    access_key_secret: "access-key-secret"
+
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      exporters: [huaweicloud_aom/logs]
