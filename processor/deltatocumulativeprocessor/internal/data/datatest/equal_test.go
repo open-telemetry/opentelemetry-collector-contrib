@@ -36,11 +36,11 @@ func ExampleT_Equal() {
 	is.Equal(want, got)
 
 	// Output:
-	// equal_test.go:35: Negative().BucketCounts().AsRaw(): [1 1 2] != [4]
-	// equal_test.go:35: Negative().BucketCounts().Len(): 3 != 1
-	// equal_test.go:35: Positive().BucketCounts().AsRaw(): [1 1 2] != [4]
-	// equal_test.go:35: Positive().BucketCounts().Len(): 3 != 1
-	// equal_test.go:35: Scale(): 0 != 1
+	// equal_test.go:36: Negative().BucketCounts().AsRaw(): [1 1 2] != [4]
+	// equal_test.go:36: Negative().BucketCounts().Len(): 3 != 1
+	// equal_test.go:36: Positive().BucketCounts().AsRaw(): [1 1 2] != [4]
+	// equal_test.go:36: Positive().BucketCounts().Len(): 3 != 1
+	// equal_test.go:36: Scale(): 0 != 1
 }
 
 type testStruct struct {
