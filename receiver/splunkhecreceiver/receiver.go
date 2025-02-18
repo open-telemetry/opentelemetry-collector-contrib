@@ -83,15 +83,15 @@ var (
 
 // splunkReceiver implements the receiver.Metrics for Splunk HEC metric protocol.
 type splunkReceiver struct {
-	settings        receiver.Settings
-	config          *Config
 	logsConsumer    consumer.Logs
 	metricsConsumer consumer.Metrics
+	ackExt          ackextension.AckExtension
+	config          *Config
 	server          *http.Server
-	shutdownWG      sync.WaitGroup
 	obsrecv         *receiverhelper.ObsReport
 	gzipReaderPool  *sync.Pool
-	ackExt          ackextension.AckExtension
+	settings        receiver.Settings
+	shutdownWG      sync.WaitGroup
 }
 
 var (
