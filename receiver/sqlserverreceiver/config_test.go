@@ -112,6 +112,12 @@ func TestLoadConfig(t *testing.T) {
 				SqlserverComputerName: metadata.ResourceAttributeConfig{
 					Enabled: true,
 				},
+				ServerAddress: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
+				ServerPort: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
 			},
 		}
 		expected.ComputerName = "CustomServer"
