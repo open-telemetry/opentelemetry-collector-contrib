@@ -15,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/kubeadm"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
 var _ kubeadm.Provider = (*mockMetadata)(nil)
@@ -37,7 +38,7 @@ func TestDetect(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettingsWithType(metadata.Type), cfg)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(context.Background())
@@ -61,7 +62,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettingsWithType(metadata.Type), cfg)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(context.Background())

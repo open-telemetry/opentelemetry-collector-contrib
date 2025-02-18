@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
@@ -145,7 +146,7 @@ func runTest(
 	// Make retries quick. We will be testing failure modes and don't want test to take too long.
 	cfg.RetryConfig.InitialInterval = 10 * time.Millisecond
 
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettingsWithType(metadata.Type)
 	set.TelemetrySettings.Logger = logger
 
 	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
@@ -296,7 +297,7 @@ func TestStartServerAfterClient(t *testing.T) {
 		TLSSetting: configtls.ClientConfig{Insecure: true},
 	}
 
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettingsWithType(metadata.Type)
 	set.TelemetrySettings.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)

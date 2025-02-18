@@ -13,10 +13,11 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector(processortest.NewNopSettings(), nil)
+	d, err := NewDetector(processortest.NewNopSettingsWithType(metadata.Type), nil)
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
 }

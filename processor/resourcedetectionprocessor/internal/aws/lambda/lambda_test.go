@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
 // Tests Lambda resource detector running in Lambda environment
@@ -21,7 +23,7 @@ func TestLambda(t *testing.T) {
 	t.Setenv(awsLambdaFunctionNameEnvVar, functionName)
 
 	// Call Lambda Resource detector to detect resources
-	lambdaDetector, err := NewDetector(processortest.NewNopSettings(), CreateDefaultConfig())
+	lambdaDetector, err := NewDetector(processortest.NewNopSettingsWithType(metadata.Type), CreateDefaultConfig())
 	require.NoError(t, err)
 	res, _, err := lambdaDetector.Detect(ctx)
 	require.NoError(t, err)
@@ -37,7 +39,7 @@ func TestLambda(t *testing.T) {
 // Tests Lambda resource detector not running in Lambda environment
 func TestNotLambda(t *testing.T) {
 	ctx := context.Background()
-	lambdaDetector, err := NewDetector(processortest.NewNopSettings(), CreateDefaultConfig())
+	lambdaDetector, err := NewDetector(processortest.NewNopSettingsWithType(metadata.Type), CreateDefaultConfig())
 	require.NoError(t, err)
 	res, _, err := lambdaDetector.Detect(ctx)
 	require.NoError(t, err)

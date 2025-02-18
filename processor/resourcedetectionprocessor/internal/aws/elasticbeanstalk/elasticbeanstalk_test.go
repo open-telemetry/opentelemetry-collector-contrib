@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
 const xrayConf = "{\"deployment_id\":23,\"version_label\":\"env-version-1234\",\"environment_name\":\"BETA\"}"
@@ -40,7 +42,7 @@ func (mfs *mockFileSystem) IsWindows() bool {
 
 func Test_windowsPath(t *testing.T) {
 	mfs := &mockFileSystem{windows: true, exists: true, contents: xrayConf}
-	d, err := NewDetector(processortest.NewNopSettings(), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettingsWithType(metadata.Type), CreateDefaultConfig())
 	require.NoError(t, err)
 	d.(*Detector).fs = mfs
 
@@ -74,7 +76,7 @@ func Test_fileMalformed(t *testing.T) {
 }
 
 func Test_AttributesDetectedSuccessfully(t *testing.T) {
-	d, err := NewDetector(processortest.NewNopSettings(), CreateDefaultConfig())
+	d, err := NewDetector(processortest.NewNopSettingsWithType(metadata.Type), CreateDefaultConfig())
 	require.NoError(t, err)
 	d.(*Detector).fs = &mockFileSystem{exists: true, contents: xrayConf}
 

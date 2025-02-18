@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -48,7 +49,7 @@ func (je *SapmDataSender) Start() error {
 	if je.compression == "" {
 		cfg.DisableCompression = true
 	}
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettingsWithType(metadata.Type)
 	params.Logger = zap.L()
 
 	exporter, err := factory.CreateTraces(context.Background(), params, cfg)

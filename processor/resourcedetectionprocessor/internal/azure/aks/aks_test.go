@@ -15,11 +15,12 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 )
 
 func TestNewDetector(t *testing.T) {
 	dcfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(), dcfg)
+	d, err := NewDetector(processortest.NewNopSettingsWithType(metadata.Type), dcfg)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }

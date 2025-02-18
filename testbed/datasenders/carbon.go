@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -49,7 +50,7 @@ func (cs *CarbonDataSender) Start() error {
 			Timeout: 5 * time.Second,
 		},
 	}
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettingsWithType(metadata.Type)
 	params.Logger = zap.L()
 
 	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
