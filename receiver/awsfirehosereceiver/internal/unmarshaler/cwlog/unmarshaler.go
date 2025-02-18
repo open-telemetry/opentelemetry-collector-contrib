@@ -122,7 +122,11 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 		resourceAttrs := rl.Resource().Attributes()
 		resourceAttrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 		resourceAttrs.PutStr(conventions.AttributeCloudAccountID, resourceKey.owner)
+		resourceAttrs.PutEmptySlice(conventions.AttributeAWSLogGroupNames).AppendEmpty().SetStr(resourceKey.logGroup)
+		resourceAttrs.PutEmptySlice(conventions.AttributeAWSLogStreamNames).AppendEmpty().SetStr(resourceKey.logStream)
+		// Deprecated: [v0.121.0] Use `conventions.AttributeAWSLogGroupNames` instead
 		resourceAttrs.PutStr(attributeAWSCloudWatchLogGroupName, resourceKey.logGroup)
+		// Deprecated: [v0.121.0] Use `conventions.AttributeAWSLogStreamNames` instead
 		resourceAttrs.PutStr(attributeAWSCloudWatchLogStreamName, resourceKey.logStream)
 		logRecords.MoveAndAppendTo(rl.ScopeLogs().AppendEmpty().LogRecords())
 	}

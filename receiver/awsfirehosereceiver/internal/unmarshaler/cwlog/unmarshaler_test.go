@@ -10,7 +10,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -22,34 +25,44 @@ func TestType(t *testing.T) {
 func TestUnmarshal(t *testing.T) {
 	unmarshaler := NewUnmarshaler(zap.NewNop())
 	testCases := map[string]struct {
-		filename          string
-		wantResourceCount int
-		wantLogCount      int
-		wantErr           error
+		filename               string
+		wantResourceCount      int
+		wantLogCount           int
+		wantErr                error
+		wantResourceLogGroups  [][]string
+		wantResourceLogStreams [][]string
 	}{
 		"WithMultipleRecords": {
-			filename:          "multiple_records",
-			wantResourceCount: 1,
-			wantLogCount:      2,
+			filename:               "multiple_records",
+			wantResourceCount:      1,
+			wantLogCount:           2,
+			wantResourceLogGroups:  [][]string{{"test"}},
+			wantResourceLogStreams: [][]string{{"test"}},
 		},
 		"WithSingleRecord": {
-			filename:          "single_record",
-			wantResourceCount: 1,
-			wantLogCount:      1,
+			filename:               "single_record",
+			wantResourceCount:      1,
+			wantLogCount:           1,
+			wantResourceLogGroups:  [][]string{{"test"}},
+			wantResourceLogStreams: [][]string{{"test"}},
 		},
 		"WithInvalidRecords": {
 			filename: "invalid_records",
 			wantErr:  errInvalidRecords,
 		},
 		"WithSomeInvalidRecords": {
-			filename:          "some_invalid_records",
-			wantResourceCount: 1,
-			wantLogCount:      2,
+			filename:               "some_invalid_records",
+			wantResourceCount:      1,
+			wantLogCount:           2,
+			wantResourceLogGroups:  [][]string{{"test"}},
+			wantResourceLogStreams: [][]string{{"test"}},
 		},
 		"WithMultipleResources": {
-			filename:          "multiple_resources",
-			wantResourceCount: 3,
-			wantLogCount:      6,
+			filename:               "multiple_resources",
+			wantResourceCount:      3,
+			wantLogCount:           6,
+			wantResourceLogGroups:  [][]string{{"test"}, {"test2"}, {"test2"}},
+			wantResourceLogStreams: [][]string{{"test"}, {"test1"}, {"test2"}},
 		},
 	}
 	for name, testCase := range testCases {
@@ -72,6 +85,11 @@ func TestUnmarshal(t *testing.T) {
 				for i := 0; i < got.ResourceLogs().Len(); i++ {
 					rm := got.ResourceLogs().At(i)
 					require.Equal(t, 1, rm.ScopeLogs().Len())
+					attrs := rm.Resource().Attributes()
+					assertString(t, attrs, conventions.AttributeCloudProvider, "aws")
+					assertString(t, attrs, conventions.AttributeCloudAccountID, "123")
+					assertStringArray(t, attrs, conventions.AttributeAWSLogGroupNames, testCase.wantResourceLogGroups[i])
+					assertStringArray(t, attrs, conventions.AttributeAWSLogStreamNames, testCase.wantResourceLogStreams[i])
 					ilm := rm.ScopeLogs().At(0)
 					gotLogCount += ilm.LogRecords().Len()
 				}
@@ -113,4 +131,25 @@ func gzipData(data []byte) ([]byte, error) {
 		return nil, err
 	}
 	return b.Bytes(), nil
+}
+
+func assertString(t *testing.T, m pcommon.Map, key, expected string) {
+	t.Helper()
+
+	v, ok := m.Get(key)
+	require.True(t, ok)
+	assert.Equal(t, expected, v.AsRaw())
+}
+
+func assertStringArray(t *testing.T, m pcommon.Map, key string, expected []string) {
+	t.Helper()
+
+	v, ok := m.Get(key)
+	require.True(t, ok)
+	s := v.Slice().AsRaw()
+	vAsStrings := make([]string, len(s))
+	for i, v := range s {
+		vAsStrings[i] = v.(string)
+	}
+	assert.ElementsMatch(t, expected, vAsStrings)
 }
