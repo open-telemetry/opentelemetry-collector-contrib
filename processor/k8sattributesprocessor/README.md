@@ -274,10 +274,19 @@ k8sattributes/2:
       - k8s.node.name
       - k8s.pod.start_time
     labels:
-     # This label extraction rule takes the value 'app.kubernetes.io/component' label and maps it to the 'app.label.component' attribute which will be added to the associated resources
-     - tag_name: app.label.component
-       key: app.kubernetes.io/component
-       from: pod
+      # This label extraction rule takes the value 'app.kubernetes.io/component' label and maps it to the 'app.label.component' attribute which will be added to the associated resources
+      - tag_name: app.label.component
+        key: app.kubernetes.io/component
+        from: pod
+    operator_rules:
+      # Apply the operator rules - see https://github.com/open-telemetry/opentelemetry-operator#configure-resource-attributes
+      enabled: true
+      # Also translate the following labels to the specified resource attributes: 
+      # app.kubernetes.io/name    => service.name
+      # app.kubernetes.io/version => service.version
+      # app.kubernetes.io/part-of => service.namespace
+      # This setting is ignored if 'enabled' is set to false
+      labels: true 
   pod_association:
     - sources:
         # This rule associates all resources containing the 'k8s.pod.ip' attribute with the matching pods. If this attribute is not present in the resource, this rule will not be able to find the matching pod.
