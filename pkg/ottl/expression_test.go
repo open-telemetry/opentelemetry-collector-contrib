@@ -392,8 +392,10 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "empty list",
 			val: value{
-				List: &list{
-					Values: []value{},
+				List: &listOrComprehension{
+					List: &list{
+						Values: []value{},
+					},
 				},
 			},
 			want: []any{},
@@ -401,13 +403,15 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "string list",
 			val: value{
-				List: &list{
-					Values: []value{
-						{
-							String: ottltest.Strp("test0"),
-						},
-						{
-							String: ottltest.Strp("test1"),
+				List: &listOrComprehension{
+					List: &list{
+						Values: []value{
+							{
+								String: ottltest.Strp("test0"),
+							},
+							{
+								String: ottltest.Strp("test1"),
+							},
 						},
 					},
 				},
@@ -417,16 +421,18 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "int list",
 			val: value{
-				List: &list{
-					Values: []value{
-						{
-							Literal: &mathExprLiteral{
-								Int: ottltest.Intp(1),
+				List: &listOrComprehension{
+					List: &list{
+						Values: []value{
+							{
+								Literal: &mathExprLiteral{
+									Int: ottltest.Intp(1),
+								},
 							},
-						},
-						{
-							Literal: &mathExprLiteral{
-								Int: ottltest.Intp(2),
+							{
+								Literal: &mathExprLiteral{
+									Int: ottltest.Intp(2),
+								},
 							},
 						},
 					},
@@ -437,16 +443,18 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "float list",
 			val: value{
-				List: &list{
-					Values: []value{
-						{
-							Literal: &mathExprLiteral{
-								Float: ottltest.Floatp(1.2),
+				List: &listOrComprehension{
+					List: &list{
+						Values: []value{
+							{
+								Literal: &mathExprLiteral{
+									Float: ottltest.Floatp(1.2),
+								},
 							},
-						},
-						{
-							Literal: &mathExprLiteral{
-								Float: ottltest.Floatp(2.4),
+							{
+								Literal: &mathExprLiteral{
+									Float: ottltest.Floatp(2.4),
+								},
 							},
 						},
 					},
@@ -457,13 +465,15 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "bool list",
 			val: value{
-				List: &list{
-					Values: []value{
-						{
-							Bool: (*boolean)(ottltest.Boolp(true)),
-						},
-						{
-							Bool: (*boolean)(ottltest.Boolp(false)),
+				List: &listOrComprehension{
+					List: &list{
+						Values: []value{
+							{
+								Bool: (*boolean)(ottltest.Boolp(true)),
+							},
+							{
+								Bool: (*boolean)(ottltest.Boolp(false)),
+							},
 						},
 					},
 				},
@@ -473,13 +483,15 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "byte slice list",
 			val: value{
-				List: &list{
-					Values: []value{
-						{
-							Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
-						},
-						{
-							Bytes: (*byteSlice)(&[]byte{9, 8, 7, 6, 5, 4, 3, 2}),
+				List: &listOrComprehension{
+					List: &list{
+						Values: []value{
+							{
+								Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+							},
+							{
+								Bytes: (*byteSlice)(&[]byte{9, 8, 7, 6, 5, 4, 3, 2}),
+							},
 						},
 					},
 				},
@@ -489,14 +501,16 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "path expression",
 			val: value{
-				List: &list{
-					Values: []value{
-						{
-							Literal: &mathExprLiteral{
-								Path: &path{
-									Fields: []field{
-										{
-											Name: "name",
+				List: &listOrComprehension{
+					List: &list{
+						Values: []value{
+							{
+								Literal: &mathExprLiteral{
+									Path: &path{
+										Fields: []field{
+											{
+												Name: "name",
+											},
 										},
 									},
 								},
@@ -511,12 +525,14 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "function call",
 			val: value{
-				List: &list{
-					Values: []value{
-						{
-							Literal: &mathExprLiteral{
-								Converter: &converter{
-									Function: "Hello",
+				List: &listOrComprehension{
+					List: &list{
+						Values: []value{
+							{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Hello",
+									},
 								},
 							},
 						},
@@ -528,13 +544,15 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "nil slice",
 			val: value{
-				List: &list{
-					Values: []value{
-						{
-							IsNil: (*isNil)(ottltest.Boolp(true)),
-						},
-						{
-							IsNil: (*isNil)(ottltest.Boolp(true)),
+				List: &listOrComprehension{
+					List: &list{
+						Values: []value{
+							{
+								IsNil: (*isNil)(ottltest.Boolp(true)),
+							},
+							{
+								IsNil: (*isNil)(ottltest.Boolp(true)),
+							},
 						},
 					},
 				},
@@ -544,14 +562,16 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "heterogeneous slice",
 			val: value{
-				List: &list{
-					Values: []value{
-						{
-							String: ottltest.Strp("test0"),
-						},
-						{
-							Literal: &mathExprLiteral{
-								Int: ottltest.Intp(1),
+				List: &listOrComprehension{
+					List: &list{
+						Values: []value{
+							{
+								String: ottltest.Strp("test0"),
+							},
+							{
+								Literal: &mathExprLiteral{
+									Int: ottltest.Intp(1),
+								},
 							},
 						},
 					},
@@ -631,14 +651,16 @@ func Test_newGetter(t *testing.T) {
 										{
 											Key: ottltest.Strp("listAttr"),
 											Value: &value{
-												List: &list{
-													Values: []value{
-														{
-															String: ottltest.Strp("test0"),
-														},
-														{
-															Literal: &mathExprLiteral{
-																Int: ottltest.Intp(1),
+												List: &listOrComprehension{
+													List: &list{
+														Values: []value{
+															{
+																String: ottltest.Strp("test0"),
+															},
+															{
+																Literal: &mathExprLiteral{
+																	Int: ottltest.Intp(1),
+																},
 															},
 														},
 													},

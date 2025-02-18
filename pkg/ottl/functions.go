@@ -657,21 +657,24 @@ func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc
 		return nil, fmt.Errorf("must be a list of type %v", name)
 	}
 
+	// TODO - handle list comprehension.
 	vals := []T{}
-	values := argVal.List.Values
-	for j := 0; j < len(values); j++ {
-		untypedVal, err := buildArg(values[j], argType.Elem())
-		if err != nil {
-			return nil, fmt.Errorf("error while parsing list argument at index %v: %w", j, err)
+	if argVal.List.List != nil {
+		values := argVal.List.List.Values
+		for j := 0; j < len(values); j++ {
+			untypedVal, err := buildArg(values[j], argType.Elem())
+			if err != nil {
+				return nil, fmt.Errorf("error while parsing list argument at index %v: %w", j, err)
+			}
+
+			val, ok := untypedVal.(T)
+
+			if !ok {
+				return nil, fmt.Errorf("invalid element type at list index %v, must be of type %v", j, name)
+			}
+
+			vals = append(vals, val)
 		}
-
-		val, ok := untypedVal.(T)
-
-		if !ok {
-			return nil, fmt.Errorf("invalid element type at list index %v, must be of type %v", j, name)
-		}
-
-		vals = append(vals, val)
 	}
 
 	return vals, nil
