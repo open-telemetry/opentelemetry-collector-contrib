@@ -151,11 +151,10 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
-		if errors.Is(err, sqlquery.ErrNullValueWarning) {
-			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
-		} else {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return fmt.Errorf("sqlServerScraperHelper: %w", err)
 		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
 	}
 
 	var errs []error
@@ -214,11 +213,10 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
-		if errors.Is(err, sqlquery.ErrNullValueWarning) {
-			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
-		} else {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return fmt.Errorf("sqlServerScraperHelper: %w", err)
 		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
 	}
 
 	var errs []error
@@ -303,11 +301,10 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
-		if errors.Is(err, sqlquery.ErrNullValueWarning) {
-			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
-		} else {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return fmt.Errorf("sqlServerScraperHelper failed getting metric rows: %w", err)
 		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
 	}
 
 	var errs []error
