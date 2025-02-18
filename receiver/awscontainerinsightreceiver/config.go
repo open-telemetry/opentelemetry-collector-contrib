@@ -19,7 +19,7 @@ type Config struct {
 	TagService bool `mapstructure:"add_service_as_attribute"`
 
 	// The "PodName" attribute is set based on the name of the relevant controllers like Daemonset, Job, ReplicaSet, ReplicationController, ...
-	// If it can not be set that way and PrefFullPodName is true, the "PodName" attribute is set to the pod's own name.
+	// If it cannot be set that way and PrefFullPodName is true, the "PodName" attribute is set to the pod's own name.
 	// The default value is false
 	PrefFullPodName bool `mapstructure:"prefer_full_pod_name"`
 

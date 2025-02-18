@@ -45,6 +45,7 @@ body:
       - exporter/awskinesis
       - exporter/awss3
       - exporter/awsxray
+      - exporter/azureblob
       - exporter/azuredataexplorer
       - exporter/azuremonitor
       - exporter/bmchelix
@@ -116,6 +117,7 @@ body:
       - extension/observer/ecstaskobserver
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
+      - extension/observer/kafkatopicsobserver
       - extension/oidcauth
       - extension/opamp
       - extension/opampcustommessages
