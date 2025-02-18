@@ -192,17 +192,15 @@ func (mp *MatchProperties) ValidateForLogs() error {
 
 // Attribute specifies the attribute key and optional value to match against.
 type Attribute struct {
-	// Key specifies the attribute key.
-	Key string `mapstructure:"key"`
-
 	// Values specifies the value to match against.
 	// If it is not set, any value will match.
 	Value any `mapstructure:"value"`
+	// Key specifies the attribute key.
+	Key string `mapstructure:"key"`
 }
 
 // InstrumentationLibrary specifies the instrumentation library and optional version to match against.
 type InstrumentationLibrary struct {
-	Name string `mapstructure:"name"`
 	// version match
 	//  expected actual  match
 	//  nil      <blank> yes
@@ -212,6 +210,7 @@ type InstrumentationLibrary struct {
 	//  1        <blank> no
 	//  1        1       yes
 	Version *string `mapstructure:"version"`
+	Name    string  `mapstructure:"name"`
 }
 
 // LogSeverityNumberMatchProperties defines how to match based on a log record's SeverityNumber field.
