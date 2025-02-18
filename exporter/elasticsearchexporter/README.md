@@ -394,23 +394,26 @@ processors:
 
 ### version_conflict_engine_exception
 
-Symptom: elasticsearchexporter logs an error "failed to index document" with `error.type` "version_conflict_engine_exception" and `error.reason` containing "version conflict, document already exists".
+Symptom: `elasticsearchexporter` logs an error "failed to index document" with `error.type` "version_conflict_engine_exception" and `error.reason` containing "version conflict, document already exists".
 
-This happens when the target data stream is a TSDB metrics data stream (e.g. using OTel mapping mode sending to a 8.16+ Elasticsearch). See the following scenarios.
+This happens when the target data stream is a TSDB metrics data stream (e.g. using OTel mapping mode sending to a 8.16+ Elasticsearch).
 
-1. When sending different metrics with the same dimension (mostly made up of resource attributes, scope attributes, attributes),
-`version_conflict_engine_exception` is returned by Elasticsearch when these metrics are not grouped into the same document.
-It also means that they have to be in the same batch in the exporter, as metric grouping is done per-batch in elasticsearchexporter.
-To work around the issue, use a [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md) to ensure different metrics to never share the same set of dimensions. This is done at the expense of storage efficiency.
-This workaround will no longer be necessary once the limitation is lifted in Elasticsearch (see [issue](https://github.com/elastic/elasticsearch/issues/99123)).
+Elasticsearch [Time Series Data Streams](https://www.elastic.co/guide/en/elasticsearch/reference/current/tsds.html) requires that there must only be one document per timestamp with the same dimensions.
+The purpose is to avoid duplicate data when re-trying a batch of metrics that were previously sent but failed to be indexed.
+The dimensions are mostly made up of resource attributes, scope attributes, scope name, attributes, and the unit.
 
-```yaml
-processors:
-  transform/unique_dimensions:
-    metric_statements:
-      - context: datapoint
-        statements:
-          - set(attributes["metric_name"], metric.name)
-```
+The exporter can only group metrics with the same dimensions into the same document if they arrive in the same batch.
+To ensure metrics are not dropped even if they arrive in different batches in the exporter, the exporter adds a fingerprint of the metric names to the document in the `otel` mapping mode.
+
+While in most situations, this is just a sign that Elasticsearch's duplicate detection is working as intended, the data may be classified as a duplicate while it was not.
+This implies data is lost.
+
+1. If the data is not sent to `metrics-*.otel-*` data streams it may be related to data that the `elasticinframetricsprocessor` has derived from the original metrics.
+These are used to light up the host and k8s dashboards in Kibana.
+If these metrics arrive in the `elasticsearchexporter` in different batches, they will not be grouped to the same document.
+This can cause the `version_conflict_engine_exception` error.
+Try to remove the `batchprocessor` from the pipeline (or remove `send_batch_max_size`) to ensure all metrics are sent in the same batch.
+This gives the exporter the opportunity to group all related metrics into the same document.
 
 2. Otherwise, check your metrics pipeline setup for misconfiguration that causes an actual violation of the [single writer principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer).
+ This means that the same metric with the same dimensions is sent from multiple sources, which is not allowed in the OTel metrics data model.
