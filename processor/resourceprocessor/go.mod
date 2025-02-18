@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.26.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.120.0
 	go.opentelemetry.io/collector/processor v0.120.0
-	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.119.0
+	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.120.0
 	go.opentelemetry.io/collector/processor/processortest v0.120.0
 	go.opentelemetry.io/collector/processor/xprocessor v0.120.0
 	go.uber.org/goleak v1.3.0
@@ -52,10 +52,10 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.34.0 // indirect
-	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/net v0.35.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250212204824-5a70512c5d8b // indirect
 	google.golang.org/grpc v1.70.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
