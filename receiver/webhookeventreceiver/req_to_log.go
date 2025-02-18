@@ -17,7 +17,7 @@ import (
 
 func reqToLog(sc *bufio.Scanner,
 	query url.Values,
-	_ *Config,
+	cfg *Config,
 	settings receiver.Settings,
 ) (plog.Logs, int) {
 	if cfg.SplitLogsAtNewLine {
