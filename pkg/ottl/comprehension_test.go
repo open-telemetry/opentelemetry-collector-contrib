@@ -14,7 +14,7 @@ import (
 
 type testListGetter[K any] struct{}
 
-func (t testListGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
+func (t testListGetter[K]) Get(_ context.Context, tCtx K) (any, error) {
 	return tCtx, nil
 }
 
@@ -22,12 +22,11 @@ type testYieldExpr struct {
 	Yield func(tCtx comprehensionContext[any]) (any, error)
 }
 
-func (t testYieldExpr) Get(ctx context.Context, tCtx comprehensionContext[any]) (any, error) {
+func (t testYieldExpr) Get(_ context.Context, tCtx comprehensionContext[any]) (any, error) {
 	return t.Yield(tCtx)
 }
 
 func Test_comprehensions(t *testing.T) {
-
 	tests := []struct {
 		name       string
 		collection any
@@ -39,14 +38,14 @@ func Test_comprehensions(t *testing.T) {
 			collection: []any{"one", "two"},
 			want: func() any {
 				r := pcommon.NewSlice()
-				r.FromRaw([]any{"one", "two"})
+				_ = r.FromRaw([]any{"one", "two"})
 				return r
 			}(),
 			expr: comprehensionExpr[any]{
-				currentValueId: "x",
+				currentValueID: "x",
 				listExpr:       testListGetter[any]{},
 				condExpr: BoolExpr[comprehensionContext[any]]{
-					func(ctx context.Context, tCtx comprehensionContext[any]) (bool, error) {
+					func(context.Context, comprehensionContext[any]) (bool, error) {
 						return true, nil
 					},
 				},
@@ -62,14 +61,14 @@ func Test_comprehensions(t *testing.T) {
 			collection: []any{"one", "two"},
 			want: func() any {
 				r := pcommon.NewSlice()
-				r.FromRaw([]any{"one"})
+				_ = r.FromRaw([]any{"one"})
 				return r
 			}(),
 			expr: comprehensionExpr[any]{
-				currentValueId: "x",
+				currentValueID: "x",
 				listExpr:       testListGetter[any]{},
 				condExpr: BoolExpr[comprehensionContext[any]]{
-					func(ctx context.Context, tCtx comprehensionContext[any]) (bool, error) {
+					func(_ context.Context, tCtx comprehensionContext[any]) (bool, error) {
 						return tCtx.index == 0, nil
 					},
 				},
@@ -85,14 +84,14 @@ func Test_comprehensions(t *testing.T) {
 			collection: []any{"one", "two"},
 			want: func() any {
 				r := pcommon.NewSlice()
-				r.FromRaw([]any{"one-extra", "two-extra"})
+				_ = r.FromRaw([]any{"one-extra", "two-extra"})
 				return r
 			}(),
 			expr: comprehensionExpr[any]{
-				currentValueId: "x",
+				currentValueID: "x",
 				listExpr:       testListGetter[any]{},
 				condExpr: BoolExpr[comprehensionContext[any]]{
-					func(ctx context.Context, tCtx comprehensionContext[any]) (bool, error) {
+					func(context.Context, comprehensionContext[any]) (bool, error) {
 						return true, nil
 					},
 				},
@@ -107,7 +106,7 @@ func Test_comprehensions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := tt.expr.Get(context.Background(), tt.collection)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.want, result)
 		})
 	}

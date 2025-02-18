@@ -115,7 +115,6 @@ func Test_listComprehension(t *testing.T) {
 			},
 		},
 	}, comp.List)
-
 }
 
 func Test_parse(t *testing.T) {
@@ -141,61 +140,6 @@ func Test_parse(t *testing.T) {
 				WhereClause: nil,
 			},
 		},
-		// {
-		// 	name:      "list comprehension",
-		// 	statement: `set([x for x in mylist])`,
-		// 	expected: &parsedStatement{
-		// 		Editor: editor{
-		// 			Function: "set",
-		// 			Arguments: []argument{
-		// 				{
-		// 					Value: value{
-		// 						List: &listOrComprehension{
-		// 							Comprehension: &listComprehension{
-		// 								Ident: "x",
-		// 								Yield: value{
-		// 									Literal: &mathExprLiteral{
-		// 										Path: &path{
-		// 											Pos: lexer.Position{
-		// 												Offset: 1,
-		// 												Line:   1,
-		// 												Column: 2,
-		// 											},
-		// 											Context: "",
-		// 											Fields: []field{
-		// 												{
-		// 													Name: "x",
-		// 												},
-		// 											},
-		// 										},
-		// 									},
-		// 								},
-		// 								List: value{
-		// 									Literal: &mathExprLiteral{
-		// 										Path: &path{
-		// 											Pos: lexer.Position{
-		// 												Offset: 12,
-		// 												Line:   1,
-		// 												Column: 13,
-		// 											},
-		// 											Context: "",
-		// 											Fields: []field{
-		// 												{
-		// 													Name: "mylist",
-		// 												},
-		// 											},
-		// 										},
-		// 									},
-		// 								},
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 		WhereClause: nil,
-		// 	},
-		// },
 		{
 			name:      "editor with float",
 			statement: `met(1.2)`,
@@ -2389,7 +2333,7 @@ func Test_parseValueExpression_full(t *testing.T) {
 			valueExpression: `[x*2 for x in [1, 2, 3, 4] if x > 2]`,
 			expected: func() any {
 				result := pcommon.NewSlice()
-				result.FromRaw([]any{6, 8})
+				_ = result.FromRaw([]any{6, 8})
 				return result
 			},
 		},

@@ -15,14 +15,14 @@ import (
 type comprehensionContext[K any] struct {
 	// Must of type K
 	underlying     any
-	currentValueId string
+	currentValueID string
 	currentValue   any
 	index          int
 }
 
 // An expression like `[{yield} for {list} where {cond}]`.
 type comprehensionExpr[K any] struct {
-	currentValueId string
+	currentValueID string
 	// The list we're iterating over.
 	listExpr Getter[K]
 	// When is the iterator over. This is against the comprhension
@@ -47,11 +47,11 @@ func (c comprehensionExpr[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	}
 	result := []any{}
 	for i, v := range list {
-		subCtx := comprehensionContext[any]{tCtx, c.currentValueId, v, i}
+		subCtx := comprehensionContext[any]{tCtx, c.currentValueID, v, i}
 
-		cond, err := c.condExpr.Eval(ctx, subCtx)
-		if err != nil {
-			return nil, err
+		cond, err2 := c.condExpr.Eval(ctx, subCtx)
+		if err2 != nil {
+			return nil, err2
 		}
 		if cond {
 			// Evaluate next value for result.
@@ -65,7 +65,10 @@ func (c comprehensionExpr[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	}
 	// We always return results in a pslice.
 	sr := pcommon.NewSlice()
-	sr.FromRaw(result)
+	err3 := sr.FromRaw(result)
+	if err3 != nil {
+		return nil, err3
+	}
 	return sr, nil
 }
 
@@ -94,7 +97,7 @@ func newListComprehensionGetter[K any](p *Parser[K], c *listComprehension) (Gett
 		}
 	}
 	return &comprehensionExpr[K]{
-		currentValueId: c.Ident,
+		currentValueID: c.Ident,
 		listExpr:       list,
 		yieldExpr:      yield,
 		condExpr:       cond,
@@ -104,7 +107,7 @@ func newListComprehensionGetter[K any](p *Parser[K], c *listComprehension) (Gett
 // Builds a new list-comprehension as an argument to a function.
 // c: the list comprehension.
 // argType: The type expected.
-func (p *Parser[K]) buildComprehensionSliceArg(c *listComprehension, argType reflect.Type) (any, error) {
+func (p *Parser[K]) buildComprehensionSliceArg(c *listComprehension, _ reflect.Type) (any, error) {
 	getter, err := newListComprehensionGetter(p, c)
 	// TODO - deal with argType reflection.
 	return getter, err
@@ -114,7 +117,7 @@ func (p *Parser[K]) buildComprehensionSliceArg(c *listComprehension, argType ref
 func newComprehensionParser[K any](p *Parser[K], ident string) (Parser[comprehensionContext[any]], error) {
 	forceFunc := map[string]Factory[comprehensionContext[any]]{}
 	for n, f := range p.functions {
-		forceFunc[n] = NewFactory[comprehensionContext[any]](
+		forceFunc[n] = NewFactory(
 			f.Name(),
 			f.CreateDefaultArguments(),
 			func(fCtx FunctionContext, args Arguments) (ExprFunc[comprehensionContext[any]], error) {
@@ -131,16 +134,16 @@ func newComprehensionParser[K any](p *Parser[K], ident string) (Parser[comprehen
 	pathParser := func(path Path[comprehensionContext[any]]) (GetSetter[comprehensionContext[any]], error) {
 		if path.Name() == ident {
 			return &StandardGetSetter[comprehensionContext[any]]{
-				Getter: func(ctx context.Context, tCtx comprehensionContext[any]) (any, error) {
+				Getter: func(_ context.Context, tCtx comprehensionContext[any]) (any, error) {
 					// TODO - Remove this limitation in the future.
 					// Likely forces rewrite of Getter/Setter pattern.
-					if tCtx.currentValueId != ident {
-						return nil, fmt.Errorf("list comprehensions cannot be nested!")
+					if tCtx.currentValueID != ident {
+						return nil, fmt.Errorf("list comprehensions cannot be nested")
 					}
 					return tCtx.currentValue, nil
 				},
-				Setter: func(ctx context.Context, tCtx comprehensionContext[any], val any) error {
-					return fmt.Errorf("cannot set loop index value: %s", ident)
+				Setter: func(context.Context, comprehensionContext[any], any) error {
+					return fmt.Errorf("cannot set loop value: %s", ident)
 				},
 			}, nil
 		}
@@ -158,7 +161,7 @@ func newComprehensionParser[K any](p *Parser[K], ident string) (Parser[comprehen
 			},
 		}, nil
 	}
-	return NewParser[comprehensionContext[any]](
+	return NewParser(
 		forceFunc,
 		pathParser,
 		p.telemetrySettings,
