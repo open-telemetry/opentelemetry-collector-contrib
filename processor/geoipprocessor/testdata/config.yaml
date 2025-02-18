@@ -15,3 +15,13 @@ geoip/invalid_source:
     maxmind:
       database_path: /tmp/db
   context: not.an.otlp.context
+geoip/invalid_source_attributes:
+  providers:
+    maxmind:
+      database_path: /tmp/db
+  attributes: []
+geoip/custom_source_attributes:
+  providers:
+    maxmind:
+      database_path: /tmp/db
+  attributes: [client.address, source.address, custom.address]
