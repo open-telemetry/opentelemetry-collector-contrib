@@ -42,9 +42,7 @@ type getExporters interface {
 	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }
 
-func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
-	ctx, kr.cancel = context.WithCancel(ctx)
-
+func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.Host) error {
 	if err := kr.resourceWatcher.initialize(); err != nil {
 		return err
 	}
@@ -97,6 +95,14 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 			}
 		}
 	}()
+}
+
+func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
+	ctx, kr.cancel = context.WithCancel(ctx)
+
+	if kr.config.LeaderElector.Name() != "" {
+
+	}
 
 	return nil
 }
