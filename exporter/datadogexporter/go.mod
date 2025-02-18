@@ -10,11 +10,11 @@ require (
 	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.62.3
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.62.3
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.62.3
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.62.0-devel.0.20241213165407-f95df913d2b7
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.64.0-devel.0.20250218192636-64fdfe7ec366
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.62.3
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.62.3
 	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.62.3
-	github.com/DataDog/datadog-agent/pkg/config/model v0.62.3
+	github.com/DataDog/datadog-agent/pkg/config/model v0.64.0-devel
 	github.com/DataDog/datadog-agent/pkg/config/setup v0.62.3
 	github.com/DataDog/datadog-agent/pkg/logs/auditor v0.62.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/client v0.62.3 // indirect
@@ -119,9 +119,9 @@ require (
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.62.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.62.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/mock v0.62.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.62.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.64.0-devel // indirect
 	github.com/DataDog/datadog-agent/pkg/config/structure v0.62.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.62.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.64.0-devel // indirect
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.62.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/message v0.62.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/metrics v0.62.3 // indirect
@@ -327,10 +327,10 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.1 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
-	github.com/spf13/cast v1.7.0 // indirect
+	github.com/spf13/cast v1.7.1 // indirect
 	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/stormcat24/protodep v0.1.8 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/tilinna/clock v1.1.0 // indirect
@@ -409,20 +409,20 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap/exp v0.3.0 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
-	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c // indirect
-	golang.org/x/mod v0.22.0 // indirect
+	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac // indirect
+	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/oauth2 v0.25.0 // indirect
+	golang.org/x/oauth2 v0.26.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/term v0.29.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
-	golang.org/x/tools v0.29.0 // indirect
+	golang.org/x/tools v0.30.0 // indirect
 	gonum.org/v1/gonum v0.15.1 // indirect
 	google.golang.org/api v0.199.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250127172529-29210b9bc287 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250212204824-5a70512c5d8b // indirect
 	google.golang.org/grpc v1.70.0 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

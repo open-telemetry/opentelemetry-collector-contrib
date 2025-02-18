@@ -50,8 +50,8 @@ github.com/DataDog/datadog-agent/pkg/config/setup v0.62.3 h1:dtmBwo6vKJPptMvMzQO
 github.com/DataDog/datadog-agent/pkg/config/setup v0.62.3/go.mod h1:LJmx9Zbj46AFHiOqe7HsXzBfj/2M16OvI6mOz3cBZcU=
 github.com/DataDog/datadog-agent/pkg/config/structure v0.62.3 h1:o4dlCc/EiUdSGSAI4bGaeZ20nmpUChc0CSmPdOJsX3A=
 github.com/DataDog/datadog-agent/pkg/config/structure v0.62.3/go.mod h1:EQjDEH5t1lwk8k6P9ARV/m552klFrMPIhmUfyIItbq8=
-github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.62.3 h1:hT3UL159TdVuDoHFF1mLqt1oQ57gneERYTpgjCFXzoY=
-github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.62.3/go.mod h1:XZ5R1izscFAXwcXPDcXueC/uEvBbkmyHDOq0FNkN42c=
+github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.64.0-devel h1:r6hBXaNdMKAHDz+W7Q8qTRtFcw44jvr95UAhjwRfhr4=
+github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.64.0-devel/go.mod h1:PXmsKApzRL20VQsoMwb/mPGOkeiyq/s+tdCQRZf5m2E=
 github.com/DataDog/datadog-agent/pkg/proto v0.64.0-devel h1:tkoy0fLsNkSDDxszdm9EDpzQFGnWUzwjanselsIAC+U=
 github.com/DataDog/datadog-agent/pkg/proto v0.64.0-devel/go.mod h1:QOAaPRsuM4WNXtP3Rbw+gWamge9lGnDH8ZKB6HdzoAs=
 github.com/DataDog/datadog-agent/pkg/trace v0.62.3 h1:ikSQ0m7QWEpHdOOsT+kBF3iOE9zDj6BTZg1X+FZJ4C0=
@@ -400,8 +400,8 @@ github.com/shirou/gopsutil/v4 v4.25.1/go.mod h1:RoUCUpndaJFtT+2zsZzzmhvbfGoDCJ7n
 github.com/spf13/afero v1.2.2/go.mod h1:9ZxEEn6pIJ8Rxe320qSDBk6AsU0r9pR7Q4OcevTdifk=
 github.com/spf13/afero v1.11.0 h1:WJQKhtpdm3v2IzqG8VMqrr6Rf3UYpEF239Jy9wNepM8=
 github.com/spf13/afero v1.11.0/go.mod h1:GH9Y3pIexgf1MTIWtNGyogA5MwRIDXGUr+hbWNoBjkY=
-github.com/spf13/cast v1.7.0 h1:ntdiHjuueXFgm5nzDRdOS4yfT43P5Fnud6DH50rz/7w=
-github.com/spf13/cast v1.7.0/go.mod h1:ancEpBxwJDODSW/UG4rDrAqiKolqNNh2DX3mk86cAdo=
+github.com/spf13/cast v1.7.1 h1:cuNEagBQEHWN1FnbGEjCXL2szYEXqfJPbP2HNUaca9Y=
+github.com/spf13/cast v1.7.1/go.mod h1:ancEpBxwJDODSW/UG4rDrAqiKolqNNh2DX3mk86cAdo=
 github.com/spf13/jwalterweatherman v1.1.0 h1:ue6voC5bR5F8YxI5S67j9i582FU4Qvo2bmqnqMYADFk=
 github.com/spf13/jwalterweatherman v1.1.0/go.mod h1:aNWZUN0dPAAO/Ljvb5BEdw96iTZ0EXowPYD95IqWIGo=
 github.com/spf13/pflag v0.0.0-20170130214245-9ff6c6923cff/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=

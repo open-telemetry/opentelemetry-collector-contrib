@@ -48,7 +48,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.62.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/setup v0.62.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/structure v0.62.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.62.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.64.0-devel // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.62.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/executable v0.62.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.62.3 // indirect
@@ -123,7 +123,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.12 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.1 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
-	github.com/spf13/cast v1.7.0 // indirect
+	github.com/spf13/cast v1.7.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
