@@ -11,10 +11,15 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
+
+func init() {
+	model.NameValidationScheme = model.LegacyValidation
+}
 
 type prometheusExporter struct {
 	config       Config
