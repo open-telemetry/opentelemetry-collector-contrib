@@ -37,7 +37,7 @@ type MetricsConfig struct {
 	// App token is the token of Sematext Monitoring App to which you want to send the metrics.
 	AppToken string `mapstructure:"app_token"`
 	// MetricsEndpoint specifies the endpoint for receiving metrics in Sematext
-	MetricsEndpoint string                     `mapstructure:"metrics_endpoint"`
+	MetricsEndpoint string                     `mapstructure:"-"`
 	// MetricsSchema indicates the metrics schema to emit to line protocol.
 	// Default: telegraf-prometheus-v2
 	MetricsSchema string `mapstructure:"metrics_schema"`
