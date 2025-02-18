@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
@@ -243,7 +244,7 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 	require.NoError(b, err)
 	options = append(options, scraperhelper.WithTickerChannel(tickerCh))
 
-	receiver, err := scraperhelper.NewMetricsController(&cfg.ControllerConfig, receivertest.NewNopSettings(), sink, options...)
+	receiver, err := scraperhelper.NewMetricsController(&cfg.ControllerConfig, receivertest.NewNopSettingsWithType(metadata.Type), sink, options...)
 	require.NoError(b, err)
 
 	require.NoError(b, receiver.Start(context.Background(), componenttest.NewNopHost()))

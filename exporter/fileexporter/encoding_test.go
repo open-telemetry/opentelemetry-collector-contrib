@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension"
 )
 
@@ -47,13 +48,13 @@ func TestEncoding(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
-	me, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
+	me, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
 	require.NoError(t, err)
-	te, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
+	te, err := f.CreateTraces(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
 	require.NoError(t, err)
-	le, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
+	le, err := f.CreateLogs(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
 	require.NoError(t, err)
-	pe, err := f.(xexporter.Factory).CreateProfiles(context.Background(), exportertest.NewNopSettings(), cfg)
+	pe, err := f.(xexporter.Factory).CreateProfiles(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
 	require.NoError(t, err)
 	host := hostWithEncoding{
 		map[component.ID]component.Component{id: ext},

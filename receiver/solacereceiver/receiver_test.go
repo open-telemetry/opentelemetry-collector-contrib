@@ -758,7 +758,7 @@ func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *m
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	receiver := &solaceTracesReceiver{
-		settings: receivertest.NewNopSettings(),
+		settings: receivertest.NewNopSettingsWithType(metadata.Type),
 		config: &Config{
 			Flow: FlowControl{
 				DelayedRetry: &FlowControlDelayedRetry{

@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
 func enableAllScraperMetrics(cfg *Config) {
@@ -61,7 +62,7 @@ func TestEmptyScrape(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLRecompilationRate.Enabled = false
 	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLCompilationRate.Enabled = false
 	cfg.MetricsBuilderConfig.Metrics.SqlserverUserConnectionCount.Enabled = false
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
 	assert.Empty(t, scrapers)
 }
 
@@ -76,7 +77,7 @@ func TestSuccessfulScrape(t *testing.T) {
 
 	enableAllScraperMetrics(cfg)
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
 
 	for _, scraper := range scrapers {
@@ -126,7 +127,7 @@ func TestScrapeInvalidQuery(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 
 	enableAllScraperMetrics(cfg)
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	for _, scraper := range scrapers {

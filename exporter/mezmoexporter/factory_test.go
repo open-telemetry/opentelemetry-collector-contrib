@@ -68,13 +68,13 @@ func TestCreateLogs(t *testing.T) {
 	cfg.IngestURL = "https://example.com:8088/otel/ingest/rest"
 	cfg.IngestKey = "1234-1234"
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettingsWithType(metadata.Type)
 	_, err := createLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 }
 
 func TestCreateLogsNoConfig(t *testing.T) {
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettingsWithType(metadata.Type)
 	_, err := createLogsExporter(context.Background(), params, nil)
 	assert.Error(t, err)
 }

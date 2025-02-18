@@ -32,6 +32,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/metadata"
 )
 
 const (
@@ -273,7 +274,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine DbEngineUnderTest, co
 	trackingColumn := engine.ConvertColumnName("id")
 	trackingStartValue := "0"
 
-	receiverCreateSettings := receivertest.NewNopSettings()
+	receiverCreateSettings := receivertest.NewNopSettingsWithType(metadata.Type)
 	receiver, config, consumer := createTestLogsReceiver(t, engine.Driver, engine.ConnectionString(dbHost, dbPort), receiverCreateSettings)
 	config.CollectionInterval = time.Second
 	config.Telemetry.Logs.Query = true
@@ -381,7 +382,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine DbEngineUnderTest, co
 }
 
 func runTestForLogTrackingWithoutStorage(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container, trackingColumn, trackingStartValue, trackingStartValueFormat string) {
-	receiverCreateSettings := receivertest.NewNopSettings()
+	receiverCreateSettings := receivertest.NewNopSettingsWithType(metadata.Type)
 	dbHost, dbPort := getContainerHostAndPort(t, container, engine.Port)
 	receiver, config, consumer := createTestLogsReceiver(t, engine.Driver, engine.ConnectionString(dbHost, dbPort), receiverCreateSettings)
 	config.CollectionInterval = 100 * time.Millisecond

@@ -85,7 +85,7 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 		DrainInterval:  10,
 		ClientConfig:   clientConfig,
 	}
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettingsWithType(metadata.Type)
 	logger := hclog2ZapLogger{
 		Zap:  params.Logger,
 		name: loggerName,
