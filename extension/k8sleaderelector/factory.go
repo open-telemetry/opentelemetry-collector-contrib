@@ -6,8 +6,9 @@ package k8sleaderelector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"errors"
-	"os"
 	"time"
+
+	"github.com/google/uuid"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -52,10 +53,7 @@ func createExtension(
 		return nil, errors.New("failed to create k8s client")
 	}
 
-	leaseHolderID, err := os.Hostname()
-	if err != nil {
-		return nil, err
-	}
+	leaseHolderID := uuid.New().String()
 
 	return &leaderElectionExtension{
 		config:        baseCfg,
