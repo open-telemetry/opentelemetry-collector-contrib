@@ -22,8 +22,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/consumer v1.25.1-0.20250217163935-4397ebc2111c // indirect
-	go.opentelemetry.io/collector/pdata v1.25.1-0.20250217163935-4397ebc2111c // indirect
+	go.opentelemetry.io/collector/consumer v1.26.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.26.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/collector/scraper v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect

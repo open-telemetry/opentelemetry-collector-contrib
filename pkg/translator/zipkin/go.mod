@@ -11,7 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.119.0
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.25.1-0.20250217163935-4397ebc2111c
+	go.opentelemetry.io/collector/pdata v1.26.0
 	go.opentelemetry.io/collector/semconv v0.119.1-0.20250217163935-4397ebc2111c
 	go.opentelemetry.io/otel/trace v1.34.0
 	go.uber.org/goleak v1.3.0

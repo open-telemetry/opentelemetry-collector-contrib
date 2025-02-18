@@ -17,7 +17,7 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6
 	go.opentelemetry.io/collector/component v0.119.1-0.20250217163935-4397ebc2111c
 	go.opentelemetry.io/collector/component/componenttest v0.119.1-0.20250217163935-4397ebc2111c
-	go.opentelemetry.io/collector/pdata v1.25.1-0.20250217163935-4397ebc2111c
+	go.opentelemetry.io/collector/pdata v1.26.0
 	go.opentelemetry.io/collector/semconv v0.119.1-0.20250217163935-4397ebc2111c
 	go.opentelemetry.io/otel/trace v1.34.0
 	go.uber.org/goleak v1.3.0

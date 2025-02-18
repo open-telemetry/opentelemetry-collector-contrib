@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/component v0.119.1-0.20250217163935-4397ebc2111c
 	go.opentelemetry.io/collector/component/componentstatus v0.119.1-0.20250217163935-4397ebc2111c
 	go.opentelemetry.io/collector/component/componenttest v0.119.1-0.20250217163935-4397ebc2111c
-	go.opentelemetry.io/collector/confmap v1.25.1-0.20250217163935-4397ebc2111c
+	go.opentelemetry.io/collector/confmap v1.26.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250217163935-4397ebc2111c
 	go.opentelemetry.io/collector/extension v0.119.1-0.20250217163935-4397ebc2111c
 	go.opentelemetry.io/collector/extension/extensiontest v0.119.1-0.20250217163935-4397ebc2111c
@@ -34,7 +34,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.25.1-0.20250217163935-4397ebc2111c // indirect
+	go.opentelemetry.io/collector/pdata v1.26.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.119.1-0.20250217163935-4397ebc2111c // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
