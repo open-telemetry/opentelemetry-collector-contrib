@@ -44,9 +44,7 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		MetricsConfig: MetricsConfig{
-			MetricsEndpoint: usMetricsEndpoint,
 			MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
-			AppToken:        metricsAppToken,
 			QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 			PayloadMaxLines: 1_000,
 			PayloadMaxBytes: 300_000,

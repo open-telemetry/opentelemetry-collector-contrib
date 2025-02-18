@@ -44,7 +44,11 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id:       component.NewIDWithName(metadata.Type, "default-config"),
-			expected: createDefaultConfig(),
+			expected: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.MetricsEndpoint = usMetricsEndpoint
+				return cfg
+			}(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "override-config"),

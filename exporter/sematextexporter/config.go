@@ -51,7 +51,7 @@ func (cfg *Config) Validate() error {
 	if strings.ToLower(cfg.Region) != euRegion && strings.ToLower(cfg.Region) != usRegion {
 		return fmt.Errorf("invalid region: %s. please use either 'EU' or 'US'", cfg.Region)
 	}
-	if !isValidUUID(cfg.MetricsConfig.AppToken) {
+	if !isValidUUID(cfg.MetricsConfig.AppToken) && cfg.MetricsConfig.AppToken != "" {
 		return fmt.Errorf("invalid metrics app_token: %s. app_token is not a valid UUID", cfg.MetricsConfig.AppToken)
 	}
 
