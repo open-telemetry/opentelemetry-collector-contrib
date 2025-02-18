@@ -47,7 +47,7 @@ func (detectorUtils *MockDetectorUtils) getCloudAccountID(_ context.Context, _ *
 
 func TestNewDetector(t *testing.T) {
 	dcfg := CreateDefaultConfig()
-	detector, err := NewDetector(processortest.NewNopSettingsWithType(metadata.Type), dcfg)
+	detector, err := NewDetector(processortest.NewNopSettingsWithType(processortest.NopType), dcfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, detector)
 }

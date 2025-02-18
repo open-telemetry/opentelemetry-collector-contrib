@@ -42,7 +42,7 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	receiverID := component.MustNewID("test")
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             receiverID,
-		ReceiverCreateSettings: receivertest.NewNopSettingsWithType(metadata.Type),
+		ReceiverCreateSettings: receivertest.NewNopSettingsWithType(receiverID.Type()),
 	})
 	if err != nil {
 		return nil, err
