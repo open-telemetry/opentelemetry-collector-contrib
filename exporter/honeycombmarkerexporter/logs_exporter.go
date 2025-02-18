@@ -75,12 +75,12 @@ func newHoneycombLogsExporter(set exporter.Settings, config *Config) (*honeycomb
 }
 
 func (e *honeycombLogsExporter) exportMarkers(ctx context.Context, ld plog.Logs) error {
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+	for i := range ld.ResourceLogs().Len() {
 		rlogs := ld.ResourceLogs().At(i)
-		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
+		for j := range rlogs.ScopeLogs().Len() {
 			slogs := rlogs.ScopeLogs().At(j)
 			logs := slogs.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
+			for k := range logs.Len() {
 				logRecord := logs.At(k)
 				tCtx := ottllog.NewTransformContext(logRecord, slogs.Scope(), rlogs.Resource(), slogs, rlogs)
 				for _, m := range e.markers {

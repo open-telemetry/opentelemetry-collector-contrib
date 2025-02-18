@@ -103,7 +103,7 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 	groups := map[string]spanGroup{}
 
 	var errs error
-	for i := 0; i < t.ResourceSpans().Len(); i++ {
+	for i := range t.ResourceSpans().Len() {
 		rspans := t.ResourceSpans().At(i)
 		stx := ottlspan.NewTransformContext(
 			ptrace.NewSpan(),
@@ -159,7 +159,7 @@ func (p *tracesProcessor) group(key string, groups map[string]spanGroup, exporte
 func (p *tracesProcessor) recordNonRoutedResourceSpans(ctx context.Context, routingKey string, rspans ptrace.ResourceSpans) {
 	spanCount := 0
 	ilss := rspans.ScopeSpans()
-	for j := 0; j < ilss.Len(); j++ {
+	for j := range ilss.Len() {
 		spanCount += ilss.At(j).Spans().Len()
 	}
 

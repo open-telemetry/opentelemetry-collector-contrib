@@ -89,7 +89,7 @@ func (kv *KeyValues) labelToStringBuilder(sb *strings.Builder) {
 
 func formatMetricName(name string) string {
 	var newName []byte
-	for i := 0; i < len(name); i++ {
+	for i := range len(name) {
 		b := name[i]
 		if (b >= 'a' && b <= 'z') ||
 			(b >= 'A' && b <= 'Z') ||
@@ -148,7 +148,7 @@ func resourceToMetricLabels(labels *KeyValues, resource pcommon.Resource) {
 }
 
 func numberMetricsToLogs(name string, data pmetric.NumberDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
-	for i := 0; i < data.Len(); i++ {
+	for i := range data.Len() {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
@@ -179,7 +179,7 @@ func numberMetricsToLogs(name string, data pmetric.NumberDataPointSlice, default
 }
 
 func doubleHistogramMetricsToLogs(name string, data pmetric.HistogramDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
-	for i := 0; i < data.Len(); i++ {
+	for i := range data.Len() {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
@@ -198,7 +198,7 @@ func doubleHistogramMetricsToLogs(name string, data pmetric.HistogramDataPointSl
 
 		bounds := dataPoint.ExplicitBounds()
 		boundsStr := make([]string, bounds.Len()+1)
-		for i := 0; i < bounds.Len(); i++ {
+		for i := range bounds.Len() {
 			boundsStr[i] = strconv.FormatFloat(bounds.At(i), 'g', -1, 64)
 		}
 		boundsStr[len(boundsStr)-1] = infinityBoundValue
@@ -208,7 +208,7 @@ func doubleHistogramMetricsToLogs(name string, data pmetric.HistogramDataPointSl
 		bucketLabels := labels.Clone()
 		bucketLabels.Append(bucketLabelKey, "")
 		bucketLabels.Sort()
-		for i := 0; i < bucketCount; i++ {
+		for i := range bucketCount {
 			bucket := dataPoint.BucketCounts().At(i)
 			bucketLabels.Replace(bucketLabelKey, boundsStr[i])
 
@@ -226,7 +226,7 @@ func doubleHistogramMetricsToLogs(name string, data pmetric.HistogramDataPointSl
 }
 
 func doubleSummaryMetricsToLogs(name string, data pmetric.SummaryDataPointSlice, defaultLabels KeyValues) (logs []*sls.Log) {
-	for i := 0; i < data.Len(); i++ {
+	for i := range data.Len() {
 		dataPoint := data.At(i)
 		attributeMap := dataPoint.Attributes()
 		labels := defaultLabels.Clone()
@@ -249,7 +249,7 @@ func doubleSummaryMetricsToLogs(name string, data pmetric.SummaryDataPointSlice,
 		summaryLabels.Sort()
 
 		values := dataPoint.QuantileValues()
-		for i := 0; i < values.Len(); i++ {
+		for i := range values.Len() {
 			value := values.At(i)
 			summaryLabels.Replace(summaryLabelKey, strconv.FormatFloat(value.Quantile(), 'g', -1, 64))
 			logs = append(logs, newMetricLogFromRaw(name,
@@ -283,16 +283,16 @@ func metricsDataToLogServiceData(
 	md pmetric.Metrics,
 ) (logs []*sls.Log) {
 	resMetrics := md.ResourceMetrics()
-	for i := 0; i < resMetrics.Len(); i++ {
+	for i := range resMetrics.Len() {
 		resMetricSlice := resMetrics.At(i)
 		var defaultLabels KeyValues
 		resourceToMetricLabels(&defaultLabels, resMetricSlice.Resource())
 		insMetricSlice := resMetricSlice.ScopeMetrics()
-		for j := 0; j < insMetricSlice.Len(); j++ {
+		for j := range insMetricSlice.Len() {
 			insMetrics := insMetricSlice.At(j)
 			// ignore insMetrics.Scope()
 			metricSlice := insMetrics.Metrics()
-			for k := 0; k < metricSlice.Len(); k++ {
+			for k := range metricSlice.Len() {
 				oneMetric := metricSlice.At(k)
 				logs = append(logs, metricDataToLogServiceData(oneMetric, defaultLabels)...)
 			}

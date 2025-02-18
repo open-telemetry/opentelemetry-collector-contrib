@@ -16,11 +16,11 @@ func decomposeHistograms(md pmetric.Metrics) pmetric.Metrics {
 	// short circuit and do nothing if no Histograms are present
 	foundHistogram := false
 outer:
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+	for i := range md.ResourceMetrics().Len() {
 		resourceMetric := md.ResourceMetrics().At(i)
-		for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
+		for j := range resourceMetric.ScopeMetrics().Len() {
 			scopeMetric := resourceMetric.ScopeMetrics().At(j)
-			for k := 0; k < scopeMetric.Metrics().Len(); k++ {
+			for k := range scopeMetric.Metrics().Len() {
 				foundHistogram = scopeMetric.Metrics().At(k).Type() == pmetric.MetricTypeHistogram
 				if foundHistogram {
 					break outer
@@ -35,11 +35,11 @@ outer:
 	decomposed := pmetric.NewMetrics()
 	md.CopyTo(decomposed)
 
-	for i := 0; i < decomposed.ResourceMetrics().Len(); i++ {
+	for i := range decomposed.ResourceMetrics().Len() {
 		resourceMetric := decomposed.ResourceMetrics().At(i)
-		for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
+		for j := range resourceMetric.ScopeMetrics().Len() {
 			metrics := resourceMetric.ScopeMetrics().At(j).Metrics()
-			for k := 0; k < metrics.Len(); k++ {
+			for k := range metrics.Len() {
 				metric := metrics.At(k)
 				if metric.Type() == pmetric.MetricTypeHistogram {
 					decomposedHistogram := decomposeHistogram(metric)
@@ -78,12 +78,12 @@ func getHistogramBucketsMetric(metric pmetric.Metric) pmetric.Metric {
 	bucketsMetric.SetEmptyGauge()
 	bucketsDatapoints := bucketsMetric.Gauge().DataPoints()
 
-	for i := 0; i < histogram.DataPoints().Len(); i++ {
+	for i := range histogram.DataPoints().Len() {
 		histogramDataPoint := histogram.DataPoints().At(i)
 		histogramBounds := histogramDataPoint.ExplicitBounds()
 		var cumulative uint64
 
-		for j := 0; j < histogramBounds.Len(); j++ {
+		for j := range histogramBounds.Len() {
 			bucketDataPoint := bucketsDatapoints.AppendEmpty()
 			bound := histogramBounds.At(j)
 			histogramDataPoint.Attributes().CopyTo(bucketDataPoint.Attributes())
@@ -116,7 +116,7 @@ func getHistogramSumMetric(metric pmetric.Metric) pmetric.Metric {
 	sumMetric.SetEmptyGauge()
 	sumDataPoints := sumMetric.Gauge().DataPoints()
 
-	for i := 0; i < histogram.DataPoints().Len(); i++ {
+	for i := range histogram.DataPoints().Len() {
 		histogramDataPoint := histogram.DataPoints().At(i)
 		sumDataPoint := sumDataPoints.AppendEmpty()
 		histogramDataPoint.Attributes().CopyTo(sumDataPoint.Attributes())
@@ -137,7 +137,7 @@ func getHistogramCountMetric(metric pmetric.Metric) pmetric.Metric {
 	countMetric.SetEmptyGauge()
 	countDataPoints := countMetric.Gauge().DataPoints()
 
-	for i := 0; i < histogram.DataPoints().Len(); i++ {
+	for i := range histogram.DataPoints().Len() {
 		histogramDataPoint := histogram.DataPoints().At(i)
 		countDataPoint := countDataPoints.AppendEmpty()
 		histogramDataPoint.Attributes().CopyTo(countDataPoint.Attributes())

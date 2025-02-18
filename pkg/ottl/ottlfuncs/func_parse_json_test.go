@@ -250,7 +250,7 @@ func BenchmarkParseJSON(b *testing.B) {
 	ctx := context.Background()
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, err := parseJSON(ottl.StandardStringGetter[any]{
 			Getter: func(_ context.Context, _ any) (any, error) {
 				return benchData, nil

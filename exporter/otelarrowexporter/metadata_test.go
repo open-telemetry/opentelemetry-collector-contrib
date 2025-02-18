@@ -85,10 +85,10 @@ func TestSendTracesWithMetadata(t *testing.T) {
 
 	requestCount := 3
 	spansPerRequest := 33
-	for requestNum := 0; requestNum < requestCount; requestNum++ {
+	for requestNum := range requestCount {
 		td := testdata.GenerateTraces(spansPerRequest)
 		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
+		for spanIndex := range spansPerRequest {
 			spans.At(spanIndex).SetName(fmt.Sprintf("%d-%d", requestNum, spanIndex))
 		}
 
@@ -172,7 +172,7 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 	// Ensure that initially there is no data in the receiver.
 	assert.EqualValues(t, 0, rcv.requestCount.Load())
 
-	for requestNum := 0; requestNum < cardLimit; requestNum++ {
+	for requestNum := range cardLimit {
 		td := testdata.GenerateTraces(1)
 		ctx := client.NewContext(bg, client.Info{
 			Metadata: client.NewMetadata(map[string][]string{

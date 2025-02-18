@@ -19,7 +19,7 @@ type SpanEventSignalNameChange struct {
 func (c SpanEventSignalNameChange) IsMigrator() {}
 
 func (c SpanEventSignalNameChange) Do(ss migrate.StateSelector, span ptrace.Span) error {
-	for e := 0; e < span.Events().Len(); e++ {
+	for e := range span.Events().Len() {
 		event := span.Events().At(e)
 		c.SignalNameChange.Do(ss, event)
 	}

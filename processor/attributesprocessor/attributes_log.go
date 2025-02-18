@@ -33,15 +33,15 @@ func newLogAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc
 
 func (a *logAttributesProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		rs := rls.At(i)
 		ilss := rs.ScopeLogs()
 		resource := rs.Resource()
-		for j := 0; j < ilss.Len(); j++ {
+		for j := range ilss.Len() {
 			ils := ilss.At(j)
 			logs := ils.LogRecords()
 			library := ils.Scope()
-			for k := 0; k < logs.Len(); k++ {
+			for k := range logs.Len() {
 				lr := logs.At(k)
 				if a.skipExpr != nil {
 					skip, err := a.skipExpr.Eval(ctx, ottllog.NewTransformContext(lr, library, resource, ils, rs))

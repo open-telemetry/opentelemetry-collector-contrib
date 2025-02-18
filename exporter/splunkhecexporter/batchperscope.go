@@ -29,9 +29,9 @@ func (rb *perScopeBatcher) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 	var profilingFound bool
 	var otherLogsFound bool
 
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		rs := logs.ResourceLogs().At(i)
-		for j := 0; j < rs.ScopeLogs().Len(); j++ {
+		for j := range rs.ScopeLogs().Len() {
 			if isProfilingData(rs.ScopeLogs().At(j)) {
 				profilingFound = true
 			} else {
@@ -63,11 +63,11 @@ func (rb *perScopeBatcher) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 	profilingLogs := plog.NewLogs()
 	otherLogs := plog.NewLogs()
 
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		rs := logs.ResourceLogs().At(i)
 		profilingFound = false
 		otherLogsFound = false
-		for j := 0; j < rs.ScopeLogs().Len(); j++ {
+		for j := range rs.ScopeLogs().Len() {
 			sl := rs.ScopeLogs().At(j)
 			if isProfilingData(sl) {
 				profilingFound = true
@@ -108,7 +108,7 @@ func (rb *perScopeBatcher) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 
 func copyResourceLogs(src plog.ResourceLogs, dest plog.ResourceLogs, isProfiling bool) {
 	src.Resource().CopyTo(dest.Resource())
-	for j := 0; j < src.ScopeLogs().Len(); j++ {
+	for j := range src.ScopeLogs().Len() {
 		sl := src.ScopeLogs().At(j)
 		if isProfilingData(sl) == isProfiling {
 			sl.CopyTo(dest.ScopeLogs().AppendEmpty())

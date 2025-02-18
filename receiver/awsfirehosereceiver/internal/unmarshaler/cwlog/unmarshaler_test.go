@@ -69,7 +69,7 @@ func TestUnmarshal(t *testing.T) {
 				require.NotNil(t, got)
 				require.Equal(t, testCase.wantResourceCount, got.ResourceLogs().Len())
 				gotLogCount := 0
-				for i := 0; i < got.ResourceLogs().Len(); i++ {
+				for i := range got.ResourceLogs().Len() {
 					rm := got.ResourceLogs().At(i)
 					require.Equal(t, 1, rm.ScopeLogs().Len())
 					ilm := rm.ScopeLogs().At(0)

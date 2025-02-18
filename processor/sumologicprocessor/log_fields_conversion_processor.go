@@ -117,12 +117,12 @@ func (proc *logFieldsConversionProcessor) processLogs(logs plog.Logs) error {
 	}
 
 	rls := logs.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		ills := rls.At(i).ScopeLogs()
 
-		for j := 0; j < ills.Len(); j++ {
+		for j := range ills.Len() {
 			logs := ills.At(j).LogRecords()
-			for k := 0; k < logs.Len(); k++ {
+			for k := range logs.Len() {
 				proc.addAttributes(logs.At(k))
 			}
 		}

@@ -133,7 +133,7 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 			scopeAttr := AttributesToMap(model.metadata.ScopeInstr.Attributes())
 			serviceName := GetServiceName(model.metadata.ResAttr)
 
-			for i := 0; i < model.expHistogram.DataPoints().Len(); i++ {
+			for i := range model.expHistogram.DataPoints().Len() {
 				dp := model.expHistogram.DataPoints().At(i)
 				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
 				_, err = statement.ExecContext(ctx,

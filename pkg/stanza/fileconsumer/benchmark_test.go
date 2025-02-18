@@ -156,7 +156,7 @@ func BenchmarkFileInput(b *testing.B) {
 	// and to reduce the amount of syscalls in the benchmark.
 	uniqueLines := 10
 	severalLines := ""
-	for i := 0; i < uniqueLines; i++ {
+	for range uniqueLines {
 		severalLines += string(filetest.TokenWithLength(999)) + "\n"
 	}
 
@@ -171,7 +171,7 @@ func BenchmarkFileInput(b *testing.B) {
 				_, err := f.WriteString(f.Name() + "\n")
 				require.NoError(b, err)
 				// Write half the content before starting the benchmark
-				for i := 0; i < b.N/2; i++ {
+				for range b.N / 2 {
 					_, err := f.WriteString(severalLines)
 					require.NoError(b, err)
 				}
@@ -210,7 +210,7 @@ func BenchmarkFileInput(b *testing.B) {
 				go func(f *os.File) {
 					defer wg.Done()
 					// Write the other half of the content while running
-					for i := 0; i < b.N/2; i++ {
+					for range b.N / 2 {
 						_, err := f.WriteString(severalLines)
 						assert.NoError(b, err)
 					}
@@ -222,7 +222,7 @@ func BenchmarkFileInput(b *testing.B) {
 			}
 
 			// Timer continues to run until all files have been read
-			for dones := 0; dones < len(files); dones++ {
+			for range files {
 				<-doneChan
 			}
 			wg.Wait()

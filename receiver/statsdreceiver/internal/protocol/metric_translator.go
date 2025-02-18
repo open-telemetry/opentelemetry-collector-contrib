@@ -136,7 +136,7 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 
 		out.BucketCounts().EnsureCapacity(int(in.Len()))
 
-		for i := uint32(0); i < in.Len(); i++ {
+		for i := range in.Len() {
 			out.BucketCounts().Append(in.At(i))
 		}
 	}

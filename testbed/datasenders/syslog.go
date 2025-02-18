@@ -66,10 +66,10 @@ func (f *SyslogWriter) Start() (err error) {
 }
 
 func (f *SyslogWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
-		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+	for i := range logs.ResourceLogs().Len() {
+		for j := range logs.ResourceLogs().At(i).ScopeLogs().Len() {
 			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
-			for k := 0; k < ills.LogRecords().Len(); k++ {
+			for k := range ills.LogRecords().Len() {
 				err := f.Send(ills.LogRecords().At(k))
 				if err != nil {
 					return err

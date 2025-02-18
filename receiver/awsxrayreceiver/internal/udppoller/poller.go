@@ -117,7 +117,7 @@ func New(cfg *Config, set receiver.Settings) (Poller, error) {
 
 func (p *poller) Start(receiverLongTermCtx context.Context) {
 	p.receiverLongLivedCtx = receiverLongTermCtx
-	for i := 0; i < p.maxPollerCount; i++ {
+	for range p.maxPollerCount {
 		p.wg.Add(1)
 		go p.poll()
 	}

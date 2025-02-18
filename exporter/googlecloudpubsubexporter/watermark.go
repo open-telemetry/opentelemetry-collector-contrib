@@ -63,44 +63,44 @@ func earliestMetricsWatermark(metrics pmetric.Metrics, processingTime time.Time,
 
 // traverse the metric data, with a collectFunc
 func traverseMetrics(metrics pmetric.Metrics, collect collectFunc) {
-	for rix := 0; rix < metrics.ResourceMetrics().Len(); rix++ {
+	for rix := range metrics.ResourceMetrics().Len() {
 		r := metrics.ResourceMetrics().At(rix)
-		for lix := 0; lix < r.ScopeMetrics().Len(); lix++ {
+		for lix := range r.ScopeMetrics().Len() {
 			l := r.ScopeMetrics().At(lix)
-			for dix := 0; dix < l.Metrics().Len(); dix++ {
+			for dix := range l.Metrics().Len() {
 				d := l.Metrics().At(dix)
 				//exhaustive:enforce
 				switch d.Type() {
 				case pmetric.MetricTypeHistogram:
-					for pix := 0; pix < d.Histogram().DataPoints().Len(); pix++ {
+					for pix := range d.Histogram().DataPoints().Len() {
 						p := d.Histogram().DataPoints().At(pix)
 						if collect(p.Timestamp()) {
 							return
 						}
 					}
 				case pmetric.MetricTypeExponentialHistogram:
-					for pix := 0; pix < d.ExponentialHistogram().DataPoints().Len(); pix++ {
+					for pix := range d.ExponentialHistogram().DataPoints().Len() {
 						p := d.ExponentialHistogram().DataPoints().At(pix)
 						if collect(p.Timestamp()) {
 							return
 						}
 					}
 				case pmetric.MetricTypeSum:
-					for pix := 0; pix < d.Sum().DataPoints().Len(); pix++ {
+					for pix := range d.Sum().DataPoints().Len() {
 						p := d.Sum().DataPoints().At(pix)
 						if collect(p.Timestamp()) {
 							return
 						}
 					}
 				case pmetric.MetricTypeGauge:
-					for pix := 0; pix < d.Gauge().DataPoints().Len(); pix++ {
+					for pix := range d.Gauge().DataPoints().Len() {
 						p := d.Gauge().DataPoints().At(pix)
 						if collect(p.Timestamp()) {
 							return
 						}
 					}
 				case pmetric.MetricTypeSummary:
-					for pix := 0; pix < d.Summary().DataPoints().Len(); pix++ {
+					for pix := range d.Summary().DataPoints().Len() {
 						p := d.Summary().DataPoints().At(pix)
 						if collect(p.Timestamp()) {
 							return
@@ -130,11 +130,11 @@ func earliestLogsWatermark(logs plog.Logs, processingTime time.Time, allowedDrif
 
 // traverse the log data, with a collectFunc
 func traverseLogs(logs plog.Logs, collect collectFunc) {
-	for rix := 0; rix < logs.ResourceLogs().Len(); rix++ {
+	for rix := range logs.ResourceLogs().Len() {
 		r := logs.ResourceLogs().At(rix)
-		for lix := 0; lix < r.ScopeLogs().Len(); lix++ {
+		for lix := range r.ScopeLogs().Len() {
 			l := r.ScopeLogs().At(lix)
-			for dix := 0; dix < l.LogRecords().Len(); dix++ {
+			for dix := range l.LogRecords().Len() {
 				d := l.LogRecords().At(dix)
 				if collect(d.Timestamp()) {
 					return
@@ -162,11 +162,11 @@ func earliestTracesWatermark(traces ptrace.Traces, processingTime time.Time, all
 
 // traverse the trace data, with a collectFunc
 func traverseTraces(traces ptrace.Traces, collect collectFunc) {
-	for rix := 0; rix < traces.ResourceSpans().Len(); rix++ {
+	for rix := range traces.ResourceSpans().Len() {
 		r := traces.ResourceSpans().At(rix)
-		for lix := 0; lix < r.ScopeSpans().Len(); lix++ {
+		for lix := range r.ScopeSpans().Len() {
 			l := r.ScopeSpans().At(lix)
-			for dix := 0; dix < l.Spans().Len(); dix++ {
+			for dix := range l.Spans().Len() {
 				d := l.Spans().At(dix)
 				if collect(d.StartTimestamp()) {
 					return

@@ -75,14 +75,14 @@ func (e *metricsExporter) shutdown(_ context.Context) error {
 
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	metricsMap := internal.NewMetricsModel(e.tablesConfig)
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+	for i := range md.ResourceMetrics().Len() {
 		metrics := md.ResourceMetrics().At(i)
 		resAttr := metrics.Resource().Attributes()
-		for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
+		for j := range metrics.ScopeMetrics().Len() {
 			rs := metrics.ScopeMetrics().At(j).Metrics()
 			scopeInstr := metrics.ScopeMetrics().At(j).Scope()
 			scopeURL := metrics.ScopeMetrics().At(j).SchemaUrl()
-			for k := 0; k < rs.Len(); k++ {
+			for k := range rs.Len() {
 				r := rs.At(k)
 				var errs error
 				//exhaustive:enforce

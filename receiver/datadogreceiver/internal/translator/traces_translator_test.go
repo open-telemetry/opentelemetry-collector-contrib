@@ -146,7 +146,7 @@ func TestTracePayloadV07Unmarshalling(t *testing.T) {
 
 func BenchmarkTranslatorv05(b *testing.B) {
 	b.StartTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		TestTracePayloadV05Unmarshalling(&testing.T{})
 	}
 	b.StopTimer()
@@ -154,7 +154,7 @@ func BenchmarkTranslatorv05(b *testing.B) {
 
 func BenchmarkTranslatorv07(b *testing.B) {
 	b.StartTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		TestTracePayloadV07Unmarshalling(&testing.T{})
 	}
 	b.StopTimer()
@@ -186,7 +186,7 @@ func TestTracePayloadApiV02Unmarshalling(t *testing.T) {
 func agentPayloadFromTraces(traces *pb.Traces) (agentPayload pb.AgentPayload) {
 	numberOfTraces := 2
 	var tracerPayloads []*pb.TracerPayload
-	for i := 0; i < numberOfTraces; i++ {
+	for i := range numberOfTraces {
 		payload := &pb.TracerPayload{
 			LanguageName:    strconv.Itoa(i),
 			LanguageVersion: strconv.Itoa(i),

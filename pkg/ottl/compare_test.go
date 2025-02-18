@@ -122,7 +122,7 @@ func BenchmarkCompareEQInt64(b *testing.B) {
 	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		testParser.compare(i64a, i64b, eq)
 	}
 }
@@ -131,7 +131,7 @@ func BenchmarkCompareEQFloat(b *testing.B) {
 	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		testParser.compare(f64a, f64b, eq)
 	}
 }
@@ -140,7 +140,7 @@ func BenchmarkCompareEQString(b *testing.B) {
 	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		testParser.compare(sa, sb, eq)
 	}
 }
@@ -149,7 +149,7 @@ func BenchmarkCompareEQPString(b *testing.B) {
 	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		testParser.compare(&sa, &sb, eq)
 	}
 }
@@ -158,7 +158,7 @@ func BenchmarkCompareEQBytes(b *testing.B) {
 	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		testParser.compare(ba, bb, eq)
 	}
 }
@@ -167,7 +167,7 @@ func BenchmarkCompareEQNil(b *testing.B) {
 	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		testParser.compare(nil, nil, eq)
 	}
 }
@@ -176,7 +176,7 @@ func BenchmarkCompareNEInt(b *testing.B) {
 	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		testParser.compare(i64a, i64b, ne)
 	}
 }
@@ -185,7 +185,7 @@ func BenchmarkCompareNEFloat(b *testing.B) {
 	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		testParser.compare(f64a, f64b, ne)
 	}
 }
@@ -194,7 +194,7 @@ func BenchmarkCompareNEString(b *testing.B) {
 	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		testParser.compare(sa, sb, ne)
 	}
 }
@@ -203,7 +203,7 @@ func BenchmarkCompareLTFloat(b *testing.B) {
 	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		testParser.compare(f64a, f64b, lt)
 	}
 }
@@ -212,7 +212,7 @@ func BenchmarkCompareLTString(b *testing.B) {
 	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		testParser.compare(sa, sb, lt)
 	}
 }
@@ -221,7 +221,7 @@ func BenchmarkCompareLTNil(b *testing.B) {
 	testParser, _ := NewParser[any](nil, nil, componenttest.NewNopTelemetrySettings())
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		testParser.compare(nil, nil, lt)
 	}
 }
@@ -240,7 +240,7 @@ func compareEq(a any, b any, op compareOp) bool {
 }
 
 func BenchmarkCompareEQFunction(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		compareEq(sa, sb, eq)
 	}
 }

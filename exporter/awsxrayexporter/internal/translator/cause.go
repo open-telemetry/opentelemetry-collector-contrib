@@ -44,7 +44,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 	isAwsSdkSpan := isAwsSdkSpan(span)
 	hasExceptionEvents := false
 	hasAwsIndividualHTTPError := false
-	for i := 0; i < span.Events().Len(); i++ {
+	for i := range span.Events().Len() {
 		event := span.Events().At(i)
 		if event.Name() == ExceptionEventName {
 			hasExceptionEvents = true
@@ -69,7 +69,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 
 		var exceptions []awsxray.Exception
-		for i := 0; i < span.Events().Len(); i++ {
+		for i := range span.Events().Len() {
 			event := span.Events().At(i)
 			if event.Name() == ExceptionEventName {
 				exceptionType := ""

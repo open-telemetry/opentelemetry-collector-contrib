@@ -157,7 +157,7 @@ func main() {
 		span.End()
 		latencyMs := float64(time.Since(startTime)) / 1e6
 		nr := rand.IntN(7)
-		for i := 0; i < nr; i++ {
+		for i := range nr {
 			randLineLength := rand.Int64N(999)
 			lineCounts.Add(ctx, 1, metric.WithAttributes(commonLabels...))
 			lineLengths.Record(ctx, randLineLength, metric.WithAttributes(commonLabels...))

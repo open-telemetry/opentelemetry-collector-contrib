@@ -200,7 +200,7 @@ func assertValidProcessResourceAttributes(t *testing.T, resourceMetrics pmetric.
 		conventions.AttributeProcessOwner,
 		"process.parent_pid", // TODO: use this from conventions when it is available
 	}
-	for i := 0; i < resourceMetrics.Len(); i++ {
+	for i := range resourceMetrics.Len() {
 		attrs := resourceMetrics.At(i).Resource().Attributes().AsRaw()
 		for _, attr := range requiredResourceAttributes {
 			_, ok := attrs[attr]
@@ -288,9 +288,9 @@ func assertThreadsCountValid(t *testing.T, resourceMetrics pmetric.ResourceMetri
 }
 
 func assertMetricMissing(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, expectedMetricName string) {
-	for i := 0; i < resourceMetrics.Len(); i++ {
+	for i := range resourceMetrics.Len() {
 		metrics := getMetricSlice(t, resourceMetrics.At(i))
-		for j := 0; j < metrics.Len(); j++ {
+		for j := range metrics.Len() {
 			metric := metrics.At(j)
 			if metric.Name() == expectedMetricName {
 				require.Fail(t, fmt.Sprintf("metric with name %s should not be present", expectedMetricName))
@@ -347,9 +347,9 @@ func assertOpenFileDescriptorMetricValid(t *testing.T, resourceMetrics pmetric.R
 }
 
 func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
-	for i := 0; i < resourceMetrics.Len(); i++ {
+	for i := range resourceMetrics.Len() {
 		ilms := resourceMetrics.At(i).ScopeMetrics()
-		for j := 0; j < ilms.Len(); j++ {
+		for j := range ilms.Len() {
 			internal.AssertSameTimeStampForAllMetrics(t, ilms.At(j).Metrics())
 		}
 	}
@@ -359,16 +359,16 @@ func assertUptimeMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetri
 	m := getMetric(t, "process.uptime", resourceMetrics)
 	assert.Equal(t, "process.uptime", m.Name())
 
-	for i := 0; i < m.Gauge().DataPoints().Len(); i++ {
+	for i := range m.Gauge().DataPoints().Len() {
 		dp := m.Gauge().DataPoints().At(i)
 		assert.Equal(t, float64(199.9), dp.DoubleValue(), "Must have an uptime of 199s")
 	}
 }
 
 func getMetric(t *testing.T, expectedMetricName string, rms pmetric.ResourceMetricsSlice) pmetric.Metric {
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		metrics := getMetricSlice(t, rms.At(i))
-		for j := 0; j < metrics.Len(); j++ {
+		for j := range metrics.Len() {
 			metric := metrics.At(j)
 			if metric.Name() == expectedMetricName {
 				return metric
@@ -1354,7 +1354,7 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 			md, err := scraper.scrape(context.Background())
 			assert.NoError(t, err)
 
-			for k := 0; k < md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len(); k++ {
+			for k := range md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len() {
 				fmt.Println(md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(k).Name())
 			}
 			assert.Equal(t, testCase.expectedMetricCount, md.MetricCount())

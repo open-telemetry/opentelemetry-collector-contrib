@@ -130,16 +130,16 @@ func pushLogsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config, pusher c
 	var errs error
 
 	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		rl := rls.At(i)
 		resourceAttrs := attrsValue(rl.Resource().Attributes())
 
 		sls := rl.ScopeLogs()
-		for j := 0; j < sls.Len(); j++ {
+		for j := range sls.Len() {
 			sl := sls.At(j)
 			scope := sl.Scope()
 			logs := sl.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
+			for k := range logs.Len() {
 				log := logs.At(k)
 				event, err := logToCWLog(resourceAttrs, scope, log, config)
 				if err != nil {

@@ -392,7 +392,7 @@ func TestFlappyUpdates(t *testing.T) {
 	defer client.Shutdown()
 
 	// Do some flappy updates
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		require.NoError(t, client.acceptDimension(&DimensionUpdate{
 			Name:  "pod_uid",
 			Value: "abcd",

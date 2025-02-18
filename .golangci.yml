@@ -210,6 +210,7 @@ linters:
     - goimports
     - gosec
     - govet
+    - intrange
     - misspell
     - nolintlint
     - predeclared

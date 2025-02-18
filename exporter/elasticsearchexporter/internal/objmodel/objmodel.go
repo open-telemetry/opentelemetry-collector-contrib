@@ -196,7 +196,7 @@ func (doc *Document) AddAttribute(key string, attribute pcommon.Value) {
 
 // AddEvents converts and adds span events to the document.
 func (doc *Document) AddEvents(key string, events ptrace.SpanEventSlice) {
-	for i := 0; i < events.Len(); i++ {
+	for i := range events.Len() {
 		e := events.At(i)
 		doc.AddTimestamp(flattenKey(key, e.Name()+".time"), e.Timestamp())
 		doc.AddAttributes(flattenKey(key, e.Name()), e.Attributes())
@@ -237,7 +237,7 @@ func (doc *Document) Dedup() {
 	//
 	//    This step removes potential conflicts when dedotting and serializing fields.
 	var renamed bool
-	for i := 0; i < len(doc.fields)-1; i++ {
+	for i := range len(doc.fields) - 1 {
 		key, nextKey := doc.fields[i].key, doc.fields[i+1].key
 		if len(key) < len(nextKey) && strings.HasPrefix(nextKey, key) && nextKey[len(key)] == '.' {
 			renamed = true
@@ -252,7 +252,7 @@ func (doc *Document) Dedup() {
 	//
 	//    This step ensures that we do not have duplicate fields names when serializing.
 	//    Elasticsearch JSON parser will fail otherwise.
-	for i := 0; i < len(doc.fields)-1; i++ {
+	for i := range len(doc.fields) - 1 {
 		if doc.fields[i].key == doc.fields[i+1].key {
 			doc.fields[i].value = ignoreValue
 		}
@@ -555,7 +555,7 @@ func arrFromAttributes(aa pcommon.Slice) []Value {
 	}
 
 	values := make([]Value, aa.Len())
-	for i := 0; i < aa.Len(); i++ {
+	for i := range aa.Len() {
 		values[i] = ValueFromAttribute(aa.At(i))
 	}
 	return values
@@ -597,7 +597,7 @@ func commonObjPrefix(a, b string) int {
 		end = alt
 	}
 
-	for i := 0; i < end; i++ {
+	for i := range end {
 		if a[i] != b[i] {
 			return i
 		}

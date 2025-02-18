@@ -142,7 +142,7 @@ func TestMessageEventConversionWithErrors(t *testing.T) {
 	b = msgp.AppendString(b, "a")
 	b = msgp.AppendFloat64(b, 5.0)
 
-	for i := 0; i < len(b)-1; i++ {
+	for i := range len(b) - 1 {
 		t.Run(fmt.Sprintf("EOF at byte %d", i), func(t *testing.T) {
 			reader := msgp.NewReader(bytes.NewReader(b[:i]))
 
@@ -156,7 +156,7 @@ func TestMessageEventConversionWithErrors(t *testing.T) {
 func TestForwardEventConversionWithErrors(t *testing.T) {
 	b := parseHexDump("testdata/forward-event")
 
-	for i := 0; i < len(b)-1; i++ {
+	for i := range len(b) - 1 {
 		t.Run(fmt.Sprintf("EOF at byte %d", i), func(t *testing.T) {
 			reader := msgp.NewReader(bytes.NewReader(b[:i]))
 
@@ -170,7 +170,7 @@ func TestForwardEventConversionWithErrors(t *testing.T) {
 func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 	b := parseHexDump("testdata/forward-packed-compressed")
 
-	for i := 0; i < len(b)-1; i++ {
+	for i := range len(b) - 1 {
 		t.Run(fmt.Sprintf("EOF at byte %d", i), func(t *testing.T) {
 			reader := msgp.NewReader(bytes.NewReader(b[:i]))
 

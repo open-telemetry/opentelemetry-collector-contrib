@@ -35,7 +35,7 @@ func TestInputGenerate(t *testing.T) {
 		require.NoError(t, op.Stop())
 	}()
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		fake.ExpectBody(t, "test message")
 	}
 }

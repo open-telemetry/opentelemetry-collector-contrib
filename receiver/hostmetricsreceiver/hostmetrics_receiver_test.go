@@ -122,7 +122,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 	returnedMetrics := make(map[string]struct{})
 	returnedResourceMetrics := make(map[string]struct{})
 	rms := got.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		rm := rms.At(i)
 		metrics := getMetricSlice(t, rm)
 		returnedMetricNames := getReturnedMetricNames(metrics)
@@ -168,7 +168,7 @@ func getMetricSlice(t *testing.T, rm pmetric.ResourceMetrics) pmetric.MetricSlic
 
 func getReturnedMetricNames(metrics pmetric.MetricSlice) map[string]struct{} {
 	metricNames := make(map[string]struct{})
-	for i := 0; i < metrics.Len(); i++ {
+	for i := range metrics.Len() {
 		metricNames[metrics.At(i).Name()] = struct{}{}
 	}
 	return metricNames
@@ -249,7 +249,7 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 	require.NoError(b, receiver.Start(context.Background(), componenttest.NewNopHost()))
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		tickerCh <- time.Now()
 		<-sink.ch
 	}

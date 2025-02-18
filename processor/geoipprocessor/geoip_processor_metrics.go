@@ -11,7 +11,7 @@ import (
 
 func (g *geoIPProcessor) processMetrics(ctx context.Context, ms pmetric.Metrics) (pmetric.Metrics, error) {
 	rm := ms.ResourceMetrics()
-	for i := 0; i < rm.Len(); i++ {
+	for i := range rm.Len() {
 		switch g.cfg.Context {
 		case resource:
 			err := g.processAttributes(ctx, rm.At(i).Resource().Attributes())
@@ -19,8 +19,8 @@ func (g *geoIPProcessor) processMetrics(ctx context.Context, ms pmetric.Metrics)
 				return ms, err
 			}
 		case record:
-			for j := 0; j < rm.At(i).ScopeMetrics().Len(); j++ {
-				for k := 0; k < rm.At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
+			for j := range rm.At(i).ScopeMetrics().Len() {
+				for k := range rm.At(i).ScopeMetrics().At(j).Metrics().Len() {
 					err := g.processMetricAttributes(ctx, rm.At(i).ScopeMetrics().At(j).Metrics().At(k))
 					if err != nil {
 						return ms, err
@@ -42,7 +42,7 @@ func (g *geoIPProcessor) processMetricAttributes(ctx context.Context, m pmetric.
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:
 		dps := m.Gauge().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
+		for i := range dps.Len() {
 			err := g.processAttributes(ctx, dps.At(i).Attributes())
 			if err != nil {
 				return err
@@ -50,7 +50,7 @@ func (g *geoIPProcessor) processMetricAttributes(ctx context.Context, m pmetric.
 		}
 	case pmetric.MetricTypeSum:
 		dps := m.Sum().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
+		for i := range dps.Len() {
 			err := g.processAttributes(ctx, dps.At(i).Attributes())
 			if err != nil {
 				return err
@@ -58,7 +58,7 @@ func (g *geoIPProcessor) processMetricAttributes(ctx context.Context, m pmetric.
 		}
 	case pmetric.MetricTypeHistogram:
 		dps := m.Histogram().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
+		for i := range dps.Len() {
 			err := g.processAttributes(ctx, dps.At(i).Attributes())
 			if err != nil {
 				return err
@@ -66,7 +66,7 @@ func (g *geoIPProcessor) processMetricAttributes(ctx context.Context, m pmetric.
 		}
 	case pmetric.MetricTypeExponentialHistogram:
 		dps := m.ExponentialHistogram().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
+		for i := range dps.Len() {
 			err := g.processAttributes(ctx, dps.At(i).Attributes())
 			if err != nil {
 				return err
@@ -74,7 +74,7 @@ func (g *geoIPProcessor) processMetricAttributes(ctx context.Context, m pmetric.
 		}
 	case pmetric.MetricTypeSummary:
 		dps := m.Summary().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
+		for i := range dps.Len() {
 			err := g.processAttributes(ctx, dps.At(i).Attributes())
 			if err != nil {
 				return err

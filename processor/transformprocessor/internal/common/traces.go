@@ -32,12 +32,12 @@ func (t traceStatements) Context() ContextID {
 }
 
 func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, cache *pcommon.Map) error {
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		rspans := td.ResourceSpans().At(i)
-		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
+		for j := range rspans.ScopeSpans().Len() {
 			sspans := rspans.ScopeSpans().At(j)
 			spans := sspans.Spans()
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				tCtx := ottlspan.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource(), sspans, rspans, ottlspan.WithCache(cache))
 				condition, err := t.BoolExpr.Eval(ctx, tCtx)
 				if err != nil {
@@ -65,15 +65,15 @@ func (s spanEventStatements) Context() ContextID {
 }
 
 func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, cache *pcommon.Map) error {
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		rspans := td.ResourceSpans().At(i)
-		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
+		for j := range rspans.ScopeSpans().Len() {
 			sspans := rspans.ScopeSpans().At(j)
 			spans := sspans.Spans()
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				span := spans.At(k)
 				spanEvents := span.Events()
-				for n := 0; n < spanEvents.Len(); n++ {
+				for n := range spanEvents.Len() {
 					tCtx := ottlspanevent.NewTransformContext(spanEvents.At(n), span, sspans.Scope(), rspans.Resource(), sspans, rspans, ottlspanevent.WithCache(cache))
 					condition, err := s.BoolExpr.Eval(ctx, tCtx)
 					if err != nil {

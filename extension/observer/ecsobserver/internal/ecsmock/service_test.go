@@ -151,7 +151,7 @@ func TestCluster_DescribeInstancesWithContext(t *testing.T) {
 	t.Run("get by id", func(t *testing.T) {
 		var ids []*string
 		nIDs := 100
-		for i := 0; i < nIDs; i++ {
+		for i := range nIDs {
 			ids = append(ids, aws.String(fmt.Sprintf("i-%d", i*10)))
 		}
 		req := &ec2.DescribeInstancesInput{InstanceIds: ids}
@@ -191,7 +191,7 @@ func TestCluster_DescribeContainerInstancesWithContext(t *testing.T) {
 	t.Run("get by id", func(t *testing.T) {
 		var ids []*string
 		nIDs := count
-		for i := 0; i < nIDs; i++ {
+		for i := range nIDs {
 			ids = append(ids, aws.String(fmt.Sprintf("foo%d", i)))
 		}
 		req := &ecs.DescribeContainerInstancesInput{ContainerInstances: ids}

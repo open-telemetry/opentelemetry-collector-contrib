@@ -213,7 +213,7 @@ func BenchmarkStringTagFilterEvaluatePlainText(b *testing.B) {
 	trace := newTraceStringAttrs(map[string]any{"example": "value"}, "", "")
 	filter := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", []string{"value"}, false, 0, false)
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
 		assert.NoError(b, err)
 	}
@@ -223,7 +223,7 @@ func BenchmarkStringTagFilterEvaluateRegex(b *testing.B) {
 	trace := newTraceStringAttrs(map[string]any{"example": "grpc.health.v1.HealthCheck"}, "", "")
 	filter := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", []string{"v[0-9]+.HealthCheck$"}, true, 0, false)
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
 		assert.NoError(b, err)
 	}

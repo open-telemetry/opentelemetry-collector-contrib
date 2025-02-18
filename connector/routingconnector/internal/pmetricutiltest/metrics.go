@@ -24,17 +24,17 @@ import "go.opentelemetry.io/collector/pdata/pmetric"
 // Each byte in the input string is a unique ID for the corresponding element.
 func NewGauges(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetric.Metrics {
 	md := pmetric.NewMetrics()
-	for resourceN := 0; resourceN < len(resourceIDs); resourceN++ {
+	for resourceN := range len(resourceIDs) {
 		rm := md.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().PutStr("resourceName", "resource"+string(resourceIDs[resourceN]))
-		for scopeN := 0; scopeN < len(scopeIDs); scopeN++ {
+		for scopeN := range len(scopeIDs) {
 			sm := rm.ScopeMetrics().AppendEmpty()
 			sm.Scope().SetName("scope" + string(scopeIDs[scopeN]))
-			for metricN := 0; metricN < len(metricIDs); metricN++ {
+			for metricN := range len(metricIDs) {
 				m := sm.Metrics().AppendEmpty()
 				m.SetName("metric" + string(metricIDs[metricN]))
 				dps := m.SetEmptyGauge()
-				for dataPointN := 0; dataPointN < len(dataPointIDs); dataPointN++ {
+				for dataPointN := range len(dataPointIDs) {
 					dp := dps.DataPoints().AppendEmpty()
 					dp.Attributes().PutStr("dpName", "dp"+string(dataPointIDs[dataPointN]))
 				}
@@ -46,17 +46,17 @@ func NewGauges(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetric.Me
 
 func NewSums(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetric.Metrics {
 	md := pmetric.NewMetrics()
-	for resourceN := 0; resourceN < len(resourceIDs); resourceN++ {
+	for resourceN := range len(resourceIDs) {
 		rm := md.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().PutStr("resourceName", "resource"+string(resourceIDs[resourceN]))
-		for scopeN := 0; scopeN < len(scopeIDs); scopeN++ {
+		for scopeN := range len(scopeIDs) {
 			sm := rm.ScopeMetrics().AppendEmpty()
 			sm.Scope().SetName("scope" + string(scopeIDs[scopeN]))
-			for metricN := 0; metricN < len(metricIDs); metricN++ {
+			for metricN := range len(metricIDs) {
 				m := sm.Metrics().AppendEmpty()
 				m.SetName("metric" + string(metricIDs[metricN]))
 				dps := m.SetEmptySum()
-				for dataPointN := 0; dataPointN < len(dataPointIDs); dataPointN++ {
+				for dataPointN := range len(dataPointIDs) {
 					dp := dps.DataPoints().AppendEmpty()
 					dp.Attributes().PutStr("dpName", "dp"+string(dataPointIDs[dataPointN]))
 				}
@@ -68,17 +68,17 @@ func NewSums(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetric.Metr
 
 func NewHistograms(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetric.Metrics {
 	md := pmetric.NewMetrics()
-	for resourceN := 0; resourceN < len(resourceIDs); resourceN++ {
+	for resourceN := range len(resourceIDs) {
 		rm := md.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().PutStr("resourceName", "resource"+string(resourceIDs[resourceN]))
-		for scopeN := 0; scopeN < len(scopeIDs); scopeN++ {
+		for scopeN := range len(scopeIDs) {
 			sm := rm.ScopeMetrics().AppendEmpty()
 			sm.Scope().SetName("scope" + string(scopeIDs[scopeN]))
-			for metricN := 0; metricN < len(metricIDs); metricN++ {
+			for metricN := range len(metricIDs) {
 				m := sm.Metrics().AppendEmpty()
 				m.SetName("metric" + string(metricIDs[metricN]))
 				dps := m.SetEmptyHistogram()
-				for dataPointN := 0; dataPointN < len(dataPointIDs); dataPointN++ {
+				for dataPointN := range len(dataPointIDs) {
 					dp := dps.DataPoints().AppendEmpty()
 					dp.Attributes().PutStr("dpName", "dp"+string(dataPointIDs[dataPointN]))
 				}
@@ -90,17 +90,17 @@ func NewHistograms(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetri
 
 func NewExponentialHistograms(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetric.Metrics {
 	md := pmetric.NewMetrics()
-	for resourceN := 0; resourceN < len(resourceIDs); resourceN++ {
+	for resourceN := range len(resourceIDs) {
 		rm := md.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().PutStr("resourceName", "resource"+string(resourceIDs[resourceN]))
-		for scopeN := 0; scopeN < len(scopeIDs); scopeN++ {
+		for scopeN := range len(scopeIDs) {
 			sm := rm.ScopeMetrics().AppendEmpty()
 			sm.Scope().SetName("scope" + string(scopeIDs[scopeN]))
-			for metricN := 0; metricN < len(metricIDs); metricN++ {
+			for metricN := range len(metricIDs) {
 				m := sm.Metrics().AppendEmpty()
 				m.SetName("metric" + string(metricIDs[metricN]))
 				dps := m.SetEmptyExponentialHistogram()
-				for dataPointN := 0; dataPointN < len(dataPointIDs); dataPointN++ {
+				for dataPointN := range len(dataPointIDs) {
 					dp := dps.DataPoints().AppendEmpty()
 					dp.Attributes().PutStr("dpName", "dp"+string(dataPointIDs[dataPointN]))
 				}
@@ -112,17 +112,17 @@ func NewExponentialHistograms(resourceIDs, scopeIDs, metricIDs, dataPointIDs str
 
 func NewSummaries(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetric.Metrics {
 	md := pmetric.NewMetrics()
-	for resourceN := 0; resourceN < len(resourceIDs); resourceN++ {
+	for resourceN := range len(resourceIDs) {
 		rm := md.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().PutStr("resourceName", "resource"+string(resourceIDs[resourceN]))
-		for scopeN := 0; scopeN < len(scopeIDs); scopeN++ {
+		for scopeN := range len(scopeIDs) {
 			sm := rm.ScopeMetrics().AppendEmpty()
 			sm.Scope().SetName("scope" + string(scopeIDs[scopeN]))
-			for metricN := 0; metricN < len(metricIDs); metricN++ {
+			for metricN := range len(metricIDs) {
 				m := sm.Metrics().AppendEmpty()
 				m.SetName("metric" + string(metricIDs[metricN]))
 				dps := m.SetEmptySummary()
-				for dataPointN := 0; dataPointN < len(dataPointIDs); dataPointN++ {
+				for dataPointN := range len(dataPointIDs) {
 					dp := dps.DataPoints().AppendEmpty()
 					dp.Attributes().PutStr("dpName", "dp"+string(dataPointIDs[dataPointN]))
 				}

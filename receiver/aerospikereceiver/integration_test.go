@@ -175,7 +175,7 @@ func populateMetrics(host *as.Host) error {
 	sibin := "bin2"
 
 	// write 100 records to get some memory usage
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		var key *as.Key
 		key, err = as.NewKey(ns, set, i)
 		if err != nil {

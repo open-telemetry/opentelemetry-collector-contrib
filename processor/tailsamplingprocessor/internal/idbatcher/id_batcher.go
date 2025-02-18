@@ -77,7 +77,7 @@ func New(numBatches, newBatchesInitialCapacity, batchChannelSize uint64) (Batche
 	// CloseCurrentAndTakeFirstBatch on a timer and want to delay the processing of the first
 	// batch with actual data. This way there is no need for accounting on the client side and
 	// a single timer can be started immediately.
-	for i := uint64(0); i < numBatches; i++ {
+	for range numBatches {
 		batches <- nil
 	}
 

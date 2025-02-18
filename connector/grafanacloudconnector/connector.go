@@ -70,7 +70,7 @@ func (c *connectorImp) Capabilities() consumer.Capabilities {
 
 // ConsumeTraces implements connector.Traces.
 func (c *connectorImp) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		resourceSpan := td.ResourceSpans().At(i)
 		attrs := resourceSpan.Resource().Attributes()
 		mapping := attrs.AsRaw()

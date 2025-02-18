@@ -70,7 +70,7 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.StopTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		b.StartTimer()
 		require.NoError(b, exporter.ConsumeLogs(ctx, logs))
 		b.StopTimer()
@@ -100,7 +100,7 @@ func benchmarkMetrics(b *testing.B, batchSize int, mappingMode string) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.StopTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		b.StartTimer()
 		require.NoError(b, exporter.ConsumeMetrics(ctx, metrics))
 		b.StopTimer()
@@ -130,7 +130,7 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.StopTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		b.StartTimer()
 		require.NoError(b, exporter.ConsumeTraces(ctx, traces))
 		b.StopTimer()

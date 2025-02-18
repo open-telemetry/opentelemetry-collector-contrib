@@ -822,7 +822,7 @@ func TestReceiverEOF(t *testing.T) {
 	ctc.start(ctc.newRealConsumer, defaultBQ())
 
 	go func() {
-		for i := 0; i < times; i++ {
+		for range times {
 			td := testdata.GenerateTraces(2)
 			expectData = append(expectData, td)
 
@@ -844,13 +844,13 @@ func TestReceiverEOF(t *testing.T) {
 		wg.Done()
 	}()
 
-	for i := 0; i < times; i++ {
+	for range times {
 		actualData = append(actualData, (<-ctc.consume).Data.(ptrace.Traces))
 	}
 
 	assert.Equal(t, len(expectData), len(actualData))
 
-	for i := 0; i < len(expectData); i++ {
+	for i := range expectData {
 		otelAssert.Equiv(stdTesting, []json.Marshaler{
 			compareJSONTraces{expectData[i]},
 		}, []json.Marshaler{
@@ -980,7 +980,7 @@ func TestHeaderReceiverStreamContextOnly(t *testing.T) {
 
 	h := newHeaderReceiver(ctx, nil, true)
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		cc, _, err := h.combineHeaders(ctx, nil)
 
 		require.NoError(t, err)
@@ -998,7 +998,7 @@ func TestHeaderReceiverNoIncludeMetadata(t *testing.T) {
 
 	h := newHeaderReceiver(ctx, nil, false)
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		cc, _, err := h.combineHeaders(ctx, nil)
 
 		require.NoError(t, err)
@@ -1022,7 +1022,7 @@ func TestHeaderReceiverAuthServerNoIncludeMetadata(t *testing.T) {
 
 	h := newHeaderReceiver(ctx, as, false)
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		cc, hdrs, err := h.combineHeaders(ctx, nil)
 
 		// The incoming metadata keys are not in the context.
@@ -1052,7 +1052,7 @@ func TestHeaderReceiverRequestNoStreamMetadata(t *testing.T) {
 
 	h := newHeaderReceiver(ctx, nil, true)
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		hpb.Reset()
 
 		for key, vals := range expect {
@@ -1092,7 +1092,7 @@ func TestHeaderReceiverAuthServerIsSetNoIncludeMetadata(t *testing.T) {
 
 	h := newHeaderReceiver(ctx, as, true)
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		hpb.Reset()
 
 		for key, vals := range expect {
@@ -1151,7 +1151,7 @@ func TestHeaderReceiverBothMetadata(t *testing.T) {
 
 	h := newHeaderReceiver(ctx, nil, true)
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		hpb.Reset()
 
 		for key, vals := range expectL {
@@ -1197,7 +1197,7 @@ func TestHeaderReceiverDuplicateMetadata(t *testing.T) {
 
 	h := newHeaderReceiver(ctx, nil, true)
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		hpb.Reset()
 
 		for key, vals := range expectRequest {
@@ -1385,7 +1385,7 @@ func TestHeaderReceiverIsTraced(t *testing.T) {
 
 	h := newHeaderReceiver(ctx, nil, true)
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		hpb.Reset()
 
 		for key, vals := range requestHeaders {

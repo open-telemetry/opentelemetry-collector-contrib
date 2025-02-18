@@ -43,7 +43,7 @@ func (mp *MetricsProducer) ProduceHelixPayload(metrics pmetric.Metrics) ([]BMCHe
 
 	// Iterate through each pmetric.ResourceMetrics instance
 	rmetrics := metrics.ResourceMetrics()
-	for i := 0; i < rmetrics.Len(); i++ {
+	for i := range rmetrics.Len() {
 		resourceMetric := rmetrics.At(i)
 		resource := resourceMetric.Resource()
 
@@ -52,12 +52,12 @@ func (mp *MetricsProducer) ProduceHelixPayload(metrics pmetric.Metrics) ([]BMCHe
 
 		// Iterate through each pmetric.ScopeMetrics within the pmetric.ResourceMetrics instance
 		scopeMetrics := resourceMetric.ScopeMetrics()
-		for j := 0; j < scopeMetrics.Len(); j++ {
+		for j := range scopeMetrics.Len() {
 			scopeMetric := scopeMetrics.At(j)
 
 			// Iterate through each individual pmetric.Metric instance
 			metrics := scopeMetric.Metrics()
-			for k := 0; k < metrics.Len(); k++ {
+			for k := range metrics.Len() {
 				metric := metrics.At(k)
 
 				// Create the payload for each metric
@@ -136,12 +136,12 @@ func (mp *MetricsProducer) createHelixMetric(metric pmetric.Metric, resourceAttr
 	switch metric.Type() {
 	case pmetric.MetricTypeSum:
 		dataPoints := metric.Sum().DataPoints()
-		for i := 0; i < dataPoints.Len(); i++ {
+		for i := range dataPoints.Len() {
 			samples = mp.processDatapoint(samples, dataPoints.At(i), labels, metric, resourceAttrs)
 		}
 	case pmetric.MetricTypeGauge:
 		dataPoints := metric.Gauge().DataPoints()
-		for i := 0; i < dataPoints.Len(); i++ {
+		for i := range dataPoints.Len() {
 			samples = mp.processDatapoint(samples, dataPoints.At(i), labels, metric, resourceAttrs)
 		}
 	default:

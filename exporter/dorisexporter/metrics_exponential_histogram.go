@@ -52,12 +52,12 @@ func (m *metricModelExponentialHistogram) add(pm pmetric.Metric, dm *dMetric, e 
 	}
 
 	dataPoints := pm.ExponentialHistogram().DataPoints()
-	for i := 0; i < dataPoints.Len(); i++ {
+	for i := range dataPoints.Len() {
 		dp := dataPoints.At(i)
 
 		exemplars := dp.Exemplars()
 		newExemplars := make([]*dExemplar, 0, exemplars.Len())
-		for j := 0; j < exemplars.Len(); j++ {
+		for j := range exemplars.Len() {
 			exemplar := exemplars.At(j)
 
 			newExemplar := &dExemplar{
@@ -73,13 +73,13 @@ func (m *metricModelExponentialHistogram) add(pm pmetric.Metric, dm *dMetric, e 
 
 		positiveBucketCounts := dp.Positive().BucketCounts()
 		newPositiveBucketCounts := make([]int64, 0, positiveBucketCounts.Len())
-		for j := 0; j < positiveBucketCounts.Len(); j++ {
+		for j := range positiveBucketCounts.Len() {
 			newPositiveBucketCounts = append(newPositiveBucketCounts, int64(positiveBucketCounts.At(j)))
 		}
 
 		negativeBucketCounts := dp.Negative().BucketCounts()
 		newNegativeBucketCounts := make([]int64, 0, negativeBucketCounts.Len())
-		for j := 0; j < negativeBucketCounts.Len(); j++ {
+		for j := range negativeBucketCounts.Len() {
 			newNegativeBucketCounts = append(newNegativeBucketCounts, int64(negativeBucketCounts.At(j)))
 		}
 

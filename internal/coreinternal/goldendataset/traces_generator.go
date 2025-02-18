@@ -91,7 +91,7 @@ func appendScopeSpans(tracingInputs *PICTTracingInputs, spanPairsFile string,
 	case LibraryTwo:
 		count = 2
 	}
-	for i := 0; i < count; i++ {
+	for i := range count {
 		err := fillScopeSpans(tracingInputs, i, spanPairsFile, random, scopeSpansSlice.AppendEmpty())
 		if err != nil {
 			return err

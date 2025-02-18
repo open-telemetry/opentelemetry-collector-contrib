@@ -62,7 +62,7 @@ func extractSumMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext
 		switch metric.Type() {
 		case pmetric.MetricTypeHistogram:
 			dataPoints := metric.Histogram().DataPoints()
-			for i := 0; i < dataPoints.Len(); i++ {
+			for i := range dataPoints.Len() {
 				dataPoint := dataPoints.At(i)
 				if dataPoint.HasSum() {
 					addSumDataPoint(dataPoint, sumMetric.Sum().DataPoints())
@@ -70,7 +70,7 @@ func extractSumMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext
 			}
 		case pmetric.MetricTypeExponentialHistogram:
 			dataPoints := metric.ExponentialHistogram().DataPoints()
-			for i := 0; i < dataPoints.Len(); i++ {
+			for i := range dataPoints.Len() {
 				dataPoint := dataPoints.At(i)
 				if dataPoint.HasSum() {
 					addSumDataPoint(dataPoint, sumMetric.Sum().DataPoints())
@@ -79,7 +79,7 @@ func extractSumMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext
 		case pmetric.MetricTypeSummary:
 			dataPoints := metric.Summary().DataPoints()
 			// note that unlike Histograms, the Sum field is required for Summaries
-			for i := 0; i < dataPoints.Len(); i++ {
+			for i := range dataPoints.Len() {
 				addSumDataPoint(dataPoints.At(i), sumMetric.Sum().DataPoints())
 			}
 		default:

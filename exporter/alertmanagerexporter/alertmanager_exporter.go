@@ -44,7 +44,7 @@ func (s *alertmanagerExporter) convertEventSliceToArray(eventSlice ptrace.SpanEv
 	if eventSlice.Len() > 0 {
 		events := make([]*alertmanagerEvent, eventSlice.Len())
 
-		for i := 0; i < eventSlice.Len(); i++ {
+		for i := range eventSlice.Len() {
 			var severity string
 			severityAttrValue, ok := eventSlice.At(i).Attributes().Get(s.severityAttribute)
 			if ok {
@@ -74,7 +74,7 @@ func (s *alertmanagerExporter) extractEvents(td ptrace.Traces) []*alertmanagerEv
 		return nil
 	}
 
-	for i := 0; i < rss.Len(); i++ {
+	for i := range rss.Len() {
 		resource := rss.At(i).Resource()
 		ilss := rss.At(i).ScopeSpans()
 
@@ -82,9 +82,9 @@ func (s *alertmanagerExporter) extractEvents(td ptrace.Traces) []*alertmanagerEv
 			return nil
 		}
 
-		for j := 0; j < ilss.Len(); j++ {
+		for j := range ilss.Len() {
 			spans := ilss.At(j).Spans()
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				traceID := spans.At(k).TraceID()
 				spanID := spans.At(k).SpanID()
 				events = append(events, s.convertEventSliceToArray(spans.At(k).Events(), traceID, spanID)...)

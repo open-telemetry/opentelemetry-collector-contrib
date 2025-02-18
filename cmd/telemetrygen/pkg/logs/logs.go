@@ -68,7 +68,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 		return err
 	}
 
-	for i := 0; i < c.WorkerCount; i++ {
+	for i := range c.WorkerCount {
 		wg.Add(1)
 		w := worker{
 			numLogs:        c.NumLogs,

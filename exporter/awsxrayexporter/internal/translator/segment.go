@@ -630,7 +630,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 	annotationKeys, ok := attributes[awsxray.AWSXraySegmentAnnotationsAttribute]
 	if ok && annotationKeys.Type() == pcommon.ValueTypeSlice {
 		slice := annotationKeys.Slice()
-		for i := 0; i < slice.Len(); i++ {
+		for i := range slice.Len() {
 			value := slice.At(i)
 			if value.Type() != pcommon.ValueTypeStr {
 				continue

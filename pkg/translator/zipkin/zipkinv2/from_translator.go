@@ -42,7 +42,7 @@ func (t FromTranslator) FromTraces(td ptrace.Traces) ([]*zipkinmodel.SpanModel, 
 
 	zSpans := make([]*zipkinmodel.SpanModel, 0, td.SpanCount())
 
-	for i := 0; i < resourceSpans.Len(); i++ {
+	for i := range resourceSpans.Len() {
 		batch, err := resourceSpansToZipkinSpans(resourceSpans.At(i), td.SpanCount()/resourceSpans.Len())
 		if err != nil {
 			return zSpans, err
@@ -66,11 +66,11 @@ func resourceSpansToZipkinSpans(rs ptrace.ResourceSpans, estSpanCount int) ([]*z
 	localServiceName, zTags := resourceToZipkinEndpointServiceNameAndAttributeMap(resource)
 
 	zSpans := make([]*zipkinmodel.SpanModel, 0, estSpanCount)
-	for i := 0; i < ilss.Len(); i++ {
+	for i := range ilss.Len() {
 		ils := ilss.At(i)
 		extractScopeTags(ils.Scope(), zTags)
 		spans := ils.Spans()
-		for j := 0; j < spans.Len(); j++ {
+		for j := range spans.Len() {
 			zSpan, err := spanToZipkinSpan(spans.At(j), localServiceName, zTags)
 			if err != nil {
 				return zSpans, err
@@ -198,7 +198,7 @@ func aggregateSpanTags(span ptrace.Span, zTags map[string]string) map[string]str
 func spanEventsToZipkinAnnotations(events ptrace.SpanEventSlice, zs *zipkinmodel.SpanModel) error {
 	if events.Len() > 0 {
 		zAnnos := make([]zipkinmodel.Annotation, events.Len())
-		for i := 0; i < events.Len(); i++ {
+		for i := range events.Len() {
 			event := events.At(i)
 			if event.Attributes().Len() == 0 && event.DroppedAttributesCount() == 0 {
 				zAnnos[i] = zipkinmodel.Annotation{
@@ -223,7 +223,7 @@ func spanEventsToZipkinAnnotations(events ptrace.SpanEventSlice, zs *zipkinmodel
 }
 
 func spanLinksToZipkinTags(links ptrace.SpanLinkSlice, zTags map[string]string) error {
-	for i := 0; i < links.Len(); i++ {
+	for i := range links.Len() {
 		link := links.At(i)
 		key := fmt.Sprintf("otlp.link.%d", i)
 		jsonStr, err := json.Marshal(link.Attributes().AsRaw())
@@ -360,7 +360,7 @@ func zipkinEndpointFromTags(
 }
 
 func isIPv6Address(ipStr string) bool {
-	for i := 0; i < len(ipStr); i++ {
+	for i := range len(ipStr) {
 		if ipStr[i] == ':' {
 			return true
 		}

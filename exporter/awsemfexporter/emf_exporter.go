@@ -99,7 +99,7 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) error {
 	rms := md.ResourceMetrics()
 	labels := map[string]string{}
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		rm := rms.At(i)
 		am := rm.Resource().Attributes()
 		if am.Len() > 0 {
@@ -115,7 +115,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
 	outputDestination := emf.config.OutputDestination
 
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		err := emf.metricTranslator.translateOTelToGroupedMetric(rms.At(i), groupedMetrics, emf.config)
 		if err != nil {
 			return err

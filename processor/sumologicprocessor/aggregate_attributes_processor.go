@@ -26,7 +26,7 @@ type aggregation struct {
 func newAggregateAttributesProcessor(config []aggregationPair) *aggregateAttributesProcessor {
 	aggregations := []*aggregation{}
 
-	for i := 0; i < len(config); i++ {
+	for i := range config {
 		pair := &aggregation{
 			attribute: config[i].Attribute,
 			prefixes:  config[i].Prefixes,
@@ -38,16 +38,16 @@ func newAggregateAttributesProcessor(config []aggregationPair) *aggregateAttribu
 }
 
 func (proc *aggregateAttributesProcessor) processLogs(logs plog.Logs) error {
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		resourceLogs := logs.ResourceLogs().At(i)
 		err := proc.processAttributes(resourceLogs.Resource().Attributes())
 		if err != nil {
 			return err
 		}
 
-		for j := 0; j < resourceLogs.ScopeLogs().Len(); j++ {
+		for j := range resourceLogs.ScopeLogs().Len() {
 			scopeLogs := resourceLogs.ScopeLogs().At(j)
-			for k := 0; k < scopeLogs.LogRecords().Len(); k++ {
+			for k := range scopeLogs.LogRecords().Len() {
 				err := proc.processAttributes(scopeLogs.LogRecords().At(k).Attributes())
 				if err != nil {
 					return err
@@ -59,16 +59,16 @@ func (proc *aggregateAttributesProcessor) processLogs(logs plog.Logs) error {
 }
 
 func (proc *aggregateAttributesProcessor) processMetrics(metrics pmetric.Metrics) error {
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+	for i := range metrics.ResourceMetrics().Len() {
 		resourceMetrics := metrics.ResourceMetrics().At(i)
 		err := proc.processAttributes(resourceMetrics.Resource().Attributes())
 		if err != nil {
 			return err
 		}
 
-		for j := 0; j < resourceMetrics.ScopeMetrics().Len(); j++ {
+		for j := range resourceMetrics.ScopeMetrics().Len() {
 			scopeMetrics := resourceMetrics.ScopeMetrics().At(j)
-			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
+			for k := range scopeMetrics.Metrics().Len() {
 				err := processMetricLevelAttributes(proc, scopeMetrics.Metrics().At(k))
 				if err != nil {
 					return err
@@ -80,16 +80,16 @@ func (proc *aggregateAttributesProcessor) processMetrics(metrics pmetric.Metrics
 }
 
 func (proc *aggregateAttributesProcessor) processTraces(traces ptrace.Traces) error {
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		resourceSpans := traces.ResourceSpans().At(i)
 		err := proc.processAttributes(resourceSpans.Resource().Attributes())
 		if err != nil {
 			return err
 		}
 
-		for j := 0; j < resourceSpans.ScopeSpans().Len(); j++ {
+		for j := range resourceSpans.ScopeSpans().Len() {
 			scopeSpans := resourceSpans.ScopeSpans().At(j)
-			for k := 0; k < scopeSpans.Spans().Len(); k++ {
+			for k := range scopeSpans.Spans().Len() {
 				err := proc.processAttributes(scopeSpans.Spans().At(k).Attributes())
 				if err != nil {
 					return err
@@ -109,12 +109,12 @@ func (*aggregateAttributesProcessor) ConfigPropertyName() string {
 }
 
 func (proc *aggregateAttributesProcessor) processAttributes(attributes pcommon.Map) error {
-	for i := 0; i < len(proc.aggregations); i++ {
+	for i := range len(proc.aggregations) {
 		curr := proc.aggregations[i]
 		names := []string{}
 		attrs := []pcommon.Value{}
 
-		for j := 0; j < len(curr.prefixes); j++ {
+		for j := range len(curr.prefixes) {
 			prefix := curr.prefixes[j]
 			// Create a new map. Unused keys will be added here,
 			// so we can check them against other prefixes.
@@ -153,7 +153,7 @@ func (proc *aggregateAttributesProcessor) processAttributes(attributes pcommon.M
 		if len(names) > 0 {
 			aggregated := attributes.PutEmptyMap(curr.attribute)
 
-			for j := 0; j < len(names); j++ {
+			for j := range names {
 				attrs[j].CopyTo(aggregated.PutEmpty(names[j]))
 			}
 		}

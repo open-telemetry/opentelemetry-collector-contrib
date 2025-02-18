@@ -101,14 +101,14 @@ func TestTranslateStats(t *testing.T) {
 		assert.NoError(t, err)
 
 		var results []*pb.StatsPayload
-		for i := 0; i < mx.ResourceMetrics().Len(); i++ {
+		for i := range mx.ResourceMetrics().Len() {
 			rm := mx.ResourceMetrics().At(i)
-			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			for j := range rm.ScopeMetrics().Len() {
 				sm := rm.ScopeMetrics().At(j)
-				for k := 0; k < sm.Metrics().Len(); k++ {
+				for k := range sm.Metrics().Len() {
 					md := sm.Metrics().At(k)
 					// these metrics are an APM Stats payload; consume it as such
-					for l := 0; l < md.Sum().DataPoints().Len(); l++ {
+					for l := range md.Sum().DataPoints().Len() {
 						if payload, ok := md.Sum().DataPoints().At(l).Attributes().Get(keyStatsPayload); ok {
 							stats := &pb.StatsPayload{}
 							err = proto.Unmarshal(payload.Bytes().AsRaw(), stats)

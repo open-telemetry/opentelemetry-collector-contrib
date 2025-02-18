@@ -648,7 +648,7 @@ func constructLoadOptions(test TestCase) testbed.LoadOptions {
 	options.Attributes = make(map[string]string)
 
 	// Generate attributes.
-	for i := 0; i < test.attrCount; i++ {
+	for range test.attrCount {
 		attrName := genRandByteString(rand.IntN(199) + 1)
 		options.Attributes[attrName] = genRandByteString(rand.IntN(test.attrSizeByte*2-1) + 1)
 	}
@@ -659,7 +659,7 @@ func getLogsID(logToRetry []plog.Logs) []string {
 	var result []string
 	for _, logElement := range logToRetry {
 		logRecord := logElement.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-		for index := 0; index < logRecord.Len(); index++ {
+		for index := range logRecord.Len() {
 			logObj := logRecord.At(index)
 			itemIndex, batchIndex := extractIDFromLog(logObj)
 			result = append(result, fmt.Sprintf("%s%s", batchIndex, itemIndex))

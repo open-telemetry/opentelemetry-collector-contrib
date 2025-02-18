@@ -48,14 +48,14 @@ func WrapMetricsExporter(set Settings, exporter exporter.Metrics) exporter.Metri
 
 func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {
 	rms := md.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		resource := rms.At(i).Resource()
 
 		ilms := rms.At(i).ScopeMetrics()
-		for j := 0; j < ilms.Len(); j++ {
+		for j := range ilms.Len() {
 			ilm := ilms.At(j)
 			metricSlice := ilm.Metrics()
-			for k := 0; k < metricSlice.Len(); k++ {
+			for k := range metricSlice.Len() {
 				addAttributesToMetric(metricSlice.At(k), resource.Attributes())
 			}
 		}
@@ -81,25 +81,25 @@ func addAttributesToMetric(metric pmetric.Metric, labelMap pcommon.Map) {
 }
 
 func addAttributesToNumberDataPoints(ps pmetric.NumberDataPointSlice, newAttributeMap pcommon.Map) {
-	for i := 0; i < ps.Len(); i++ {
+	for i := range ps.Len() {
 		joinAttributeMaps(newAttributeMap, ps.At(i).Attributes())
 	}
 }
 
 func addAttributesToHistogramDataPoints(ps pmetric.HistogramDataPointSlice, newAttributeMap pcommon.Map) {
-	for i := 0; i < ps.Len(); i++ {
+	for i := range ps.Len() {
 		joinAttributeMaps(newAttributeMap, ps.At(i).Attributes())
 	}
 }
 
 func addAttributesToSummaryDataPoints(ps pmetric.SummaryDataPointSlice, newAttributeMap pcommon.Map) {
-	for i := 0; i < ps.Len(); i++ {
+	for i := range ps.Len() {
 		joinAttributeMaps(newAttributeMap, ps.At(i).Attributes())
 	}
 }
 
 func addAttributesToExponentialHistogramDataPoints(ps pmetric.ExponentialHistogramDataPointSlice, newAttributeMap pcommon.Map) {
-	for i := 0; i < ps.Len(); i++ {
+	for i := range ps.Len() {
 		joinAttributeMaps(newAttributeMap, ps.At(i).Attributes())
 	}
 }

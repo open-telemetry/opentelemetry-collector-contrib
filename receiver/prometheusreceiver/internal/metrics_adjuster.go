@@ -263,7 +263,7 @@ func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 	if removeStartTimeAdjustment.IsEnabled() {
 		return nil
 	}
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+	for i := range metrics.ResourceMetrics().Len() {
 		rm := metrics.ResourceMetrics().At(i)
 		_, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
 		if !found {
@@ -276,7 +276,7 @@ func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 		}
 	}
 
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+	for i := range metrics.ResourceMetrics().Len() {
 		rm := metrics.ResourceMetrics().At(i)
 		job, _ := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
 		instance, _ := rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
@@ -285,9 +285,9 @@ func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 		// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
 		// nothing else can modify the data used for adjustment.
 		tsm.Lock()
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		for j := range rm.ScopeMetrics().Len() {
 			ilm := rm.ScopeMetrics().At(j)
-			for k := 0; k < ilm.Metrics().Len(); k++ {
+			for k := range ilm.Metrics().Len() {
 				metric := ilm.Metrics().At(k)
 				switch dataType := metric.Type(); dataType {
 				case pmetric.MetricTypeGauge:
@@ -327,7 +327,7 @@ func (a *initialPointAdjuster) adjustMetricHistogram(tsm *timeseriesMap, current
 	}
 
 	currentPoints := histogram.DataPoints()
-	for i := 0; i < currentPoints.Len(); i++ {
+	for i := range currentPoints.Len() {
 		currentDist := currentPoints.At(i)
 
 		// start timestamp was set from _created
@@ -379,7 +379,7 @@ func (a *initialPointAdjuster) adjustMetricExponentialHistogram(tsm *timeseriesM
 	}
 
 	currentPoints := histogram.DataPoints()
-	for i := 0; i < currentPoints.Len(); i++ {
+	for i := range currentPoints.Len() {
 		currentDist := currentPoints.At(i)
 
 		// start timestamp was set from _created
@@ -425,7 +425,7 @@ func (a *initialPointAdjuster) adjustMetricExponentialHistogram(tsm *timeseriesM
 
 func (a *initialPointAdjuster) adjustMetricSum(tsm *timeseriesMap, current pmetric.Metric) {
 	currentPoints := current.Sum().DataPoints()
-	for i := 0; i < currentPoints.Len(); i++ {
+	for i := range currentPoints.Len() {
 		currentSum := currentPoints.At(i)
 
 		// start timestamp was set from _created
@@ -469,7 +469,7 @@ func (a *initialPointAdjuster) adjustMetricSum(tsm *timeseriesMap, current pmetr
 func (a *initialPointAdjuster) adjustMetricSummary(tsm *timeseriesMap, current pmetric.Metric) {
 	currentPoints := current.Summary().DataPoints()
 
-	for i := 0; i < currentPoints.Len(); i++ {
+	for i := range currentPoints.Len() {
 		currentSummary := currentPoints.At(i)
 
 		// start timestamp was set from _created

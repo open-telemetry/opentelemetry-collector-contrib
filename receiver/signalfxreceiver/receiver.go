@@ -367,7 +367,7 @@ func (r *sfxReceiver) failRequest(
 func (r *sfxReceiver) addAccessTokenLabel(md pmetric.Metrics, req *http.Request) {
 	if r.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
-			for i := 0; i < md.ResourceMetrics().Len(); i++ {
+			for i := range md.ResourceMetrics().Len() {
 				rm := md.ResourceMetrics().At(i)
 				res := rm.Resource()
 				res.Attributes().PutStr(splunk.SFxAccessTokenLabel, accessToken)

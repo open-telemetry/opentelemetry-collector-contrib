@@ -128,7 +128,7 @@ func TestOTLPMetricsJsonMarshaling(t *testing.T) {
 			require.NoError(t, err, "Must have marshaled the data without error")
 			require.Len(t, msgs, len(tt.messagePartitionKeys), "Number of messages must be %d, but was %d", len(tt.messagePartitionKeys), len(msgs))
 
-			for i := 0; i < len(tt.messagePartitionKeys); i++ {
+			for i := range len(tt.messagePartitionKeys) {
 				require.Equal(t, tt.messagePartitionKeys[i], msgs[i].Key, "message %d has incorrect key", i)
 			}
 		})
@@ -189,7 +189,7 @@ func TestOTLPLogsJsonMarshaling(t *testing.T) {
 			require.NoError(t, err, "Must have marshaled the data without error")
 			require.Len(t, msgs, len(tt.messagePartitionKeys), "Number of messages must be %d, but was %d", len(tt.messagePartitionKeys), len(msgs))
 
-			for i := 0; i < len(tt.messagePartitionKeys); i++ {
+			for i := range len(tt.messagePartitionKeys) {
 				require.Equal(t, tt.messagePartitionKeys[i], msgs[i].Key, "message %d has incorrect key", i)
 			}
 		})

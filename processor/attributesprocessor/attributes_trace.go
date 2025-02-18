@@ -33,15 +33,15 @@ func newSpanAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrPro
 
 func (a *spanAttributesProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	rss := td.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
+	for i := range rss.Len() {
 		rs := rss.At(i)
 		resource := rs.Resource()
 		ilss := rs.ScopeSpans()
-		for j := 0; j < ilss.Len(); j++ {
+		for j := range ilss.Len() {
 			ils := ilss.At(j)
 			spans := ils.Spans()
 			scope := ils.Scope()
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				span := spans.At(k)
 				if a.skipExpr != nil {
 					skip, err := a.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource, ils, rs))

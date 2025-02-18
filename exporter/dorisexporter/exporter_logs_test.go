@@ -76,7 +76,7 @@ func simpleLogs(count int) plog.Logs {
 	sl.Scope().SetVersion("1.0.0")
 	sl.Scope().Attributes().PutStr("lib", "doris")
 	timestamp := time.Now()
-	for i := 0; i < count; i++ {
+	for i := range count {
 		r := sl.LogRecords().AppendEmpty()
 		r.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 		r.SetObservedTimestamp(pcommon.NewTimestampFromTime(timestamp))

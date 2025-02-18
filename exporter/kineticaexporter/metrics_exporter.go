@@ -260,20 +260,20 @@ func (e *kineticaMetricsExporter) pushMetricsData(_ context.Context, md pmetric.
 
 	e.logger.Debug("Resource metrics ", zap.Int("count = ", md.ResourceMetrics().Len()))
 
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+	for i := range md.ResourceMetrics().Len() {
 		metrics := md.ResourceMetrics().At(i)
 		resAttr := metrics.Resource().Attributes()
 
 		e.logger.Debug("Scope metrics ", zap.Int("count = ", metrics.ScopeMetrics().Len()))
 
-		for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
+		for j := range metrics.ScopeMetrics().Len() {
 			metricSlice := metrics.ScopeMetrics().At(j).Metrics()
 			scopeInstr := metrics.ScopeMetrics().At(j).Scope()
 			scopeURL := metrics.ScopeMetrics().At(j).SchemaUrl()
 
 			e.logger.Debug("metrics ", zap.Int("count = ", metricSlice.Len()))
 
-			for k := 0; k < metricSlice.Len(); k++ {
+			for k := range metricSlice.Len() {
 				metric := metricSlice.At(k)
 				metricType = metric.Type()
 				switch metric.Type() {
@@ -405,7 +405,7 @@ func (e *kineticaMetricsExporter) createSummaryRecord(resAttr pcommon.Map, _ str
 	var datapointAttribute []SummaryDataPointAttribute
 	datapointAttributes := make(map[string]ValueTypePair)
 
-	for i := 0; i < summaryRecord.DataPoints().Len(); i++ {
+	for i := range summaryRecord.DataPoints().Len() {
 		datapoint := summaryRecord.DataPoints().At(i)
 		summaryDatapoint := &SummaryDatapoint{
 			SummaryID:     summary.SummaryID,
@@ -448,7 +448,7 @@ func (e *kineticaMetricsExporter) createSummaryRecord(resAttr pcommon.Map, _ str
 
 		// Handle quantile values
 		quantileValues := datapoint.QuantileValues()
-		for i := 0; i < quantileValues.Len(); i++ {
+		for i := range quantileValues.Len() {
 			quantileValue := quantileValues.At(i)
 			summaryQV := &SummaryDatapointQuantileValues{
 				SummaryID:   summary.SummaryID,
@@ -560,7 +560,7 @@ func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcomm
 	var datapointBucketPositiveCount []ExponentialHistogramBucketPositiveCount
 	var datapointBucketNegativeCount []ExponentialHistogramBucketNegativeCount
 
-	for i := 0; i < exponentialHistogramRecord.DataPoints().Len(); i++ {
+	for i := range exponentialHistogramRecord.DataPoints().Len() {
 		datapoint := exponentialHistogramRecord.DataPoints().At(i)
 
 		expHistogramDatapoint := ExponentialHistogramDatapoint{
@@ -611,7 +611,7 @@ func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcomm
 		// Handle datapoint exemplars
 		exemplars := datapoint.Exemplars()
 
-		for i := 0; i < exemplars.Len(); i++ {
+		for i := range exemplars.Len() {
 			exemplar := exemplars.At(i)
 			sumDatapointExemplar := ExponentialHistogramDatapointExemplar{
 				HistogramID:    histogram.HistogramID,
@@ -655,7 +655,7 @@ func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcomm
 		}
 
 		// Handle positive and negative bucket counts
-		for i := 0; i < datapoint.Positive().BucketCounts().Len(); i++ {
+		for i := range datapoint.Positive().BucketCounts().Len() {
 			positiveBucketCount := datapoint.Positive().BucketCounts().At(i)
 			datapointBucketPositiveCount = append(datapointBucketPositiveCount, ExponentialHistogramBucketPositiveCount{
 				HistogramID: expHistogramDatapoint.HistogramID,
@@ -666,7 +666,7 @@ func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcomm
 		}
 		kiExpHistogramRecord.histogramBucketPositiveCount = append(kiExpHistogramRecord.histogramBucketPositiveCount, datapointBucketPositiveCount...)
 
-		for i := 0; i < datapoint.Negative().BucketCounts().Len(); i++ {
+		for i := range datapoint.Negative().BucketCounts().Len() {
 			negativeBucketCount := datapoint.Negative().BucketCounts().At(i)
 			datapointBucketNegativeCount = append(datapointBucketNegativeCount, ExponentialHistogramBucketNegativeCount{
 				HistogramID: expHistogramDatapoint.HistogramID,
@@ -777,7 +777,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 	exemplarAttributes := make(map[string]ValueTypePair)
 
 	// Handle data points
-	for i := 0; i < histogramRecord.DataPoints().Len(); i++ {
+	for i := range histogramRecord.DataPoints().Len() {
 		datapoint := histogramRecord.DataPoints().At(i)
 
 		histogramDatapoint := &HistogramDatapoint{
@@ -824,7 +824,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 		// Handle data point exemplars
 		exemplars := datapoint.Exemplars()
 
-		for i := 0; i < exemplars.Len(); i++ {
+		for i := range exemplars.Len() {
 			exemplar := exemplars.At(i)
 			histogramDatapointExemplar := HistogramDatapointExemplar{
 				HistogramID:    histogram.HistogramID,
@@ -868,7 +868,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 		}
 
 		histogramBucketCounts := datapoint.BucketCounts()
-		for i := 0; i < histogramBucketCounts.Len(); i++ {
+		for i := range histogramBucketCounts.Len() {
 			bucketCount := HistogramDatapointBucketCount{
 				HistogramID: histogramDatapoint.HistogramID,
 				DatapointID: histogramDatapoint.ID,
@@ -879,7 +879,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 		}
 
 		histogramExplicitBounds := datapoint.ExplicitBounds()
-		for i := 0; i < histogramExplicitBounds.Len(); i++ {
+		for i := range histogramExplicitBounds.Len() {
 			explicitBound := HistogramDatapointExplicitBound{
 				HistogramID:   histogramDatapoint.HistogramID,
 				DatapointID:   histogramDatapoint.ID,
@@ -997,7 +997,7 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 	var exemplarAttribute []SumDataPointExemplarAttribute
 	exemplarAttributes := make(map[string]ValueTypePair)
 
-	for i := 0; i < sumRecord.DataPoints().Len(); i++ {
+	for i := range sumRecord.DataPoints().Len() {
 		datapoint := sumRecord.DataPoints().At(i)
 
 		sumDatapoint := SumDatapoint{
@@ -1041,7 +1041,7 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 		// Handle data point exemplars
 		exemplars := datapoint.Exemplars()
 
-		for i := 0; i < exemplars.Len(); i++ {
+		for i := range exemplars.Len() {
 			exemplar := exemplars.At(i)
 			sumDatapointExemplar := SumDatapointExemplar{
 				SumID:       sum.SumID,
@@ -1194,7 +1194,7 @@ func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, _ strin
 	var exemplarAttribute []GaugeDataPointExemplarAttribute
 	exemplarAttributes := make(map[string]ValueTypePair)
 
-	for i := 0; i < gaugeRecord.DataPoints().Len(); i++ {
+	for i := range gaugeRecord.DataPoints().Len() {
 		datapoint := gaugeRecord.DataPoints().At(i)
 
 		gaugeDatapoint := GaugeDatapoint{
@@ -1237,7 +1237,7 @@ func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, _ strin
 
 		// Handle data point exemplars
 		exemplars := datapoint.Exemplars()
-		for i := 0; i < exemplars.Len(); i++ {
+		for i := range exemplars.Len() {
 			exemplar := exemplars.At(i)
 			gaugeDatapointExemplar := GaugeDatapointExemplar{
 				GaugeID:     gauge.GaugeID,

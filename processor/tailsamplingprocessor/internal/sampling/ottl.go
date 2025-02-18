@@ -65,13 +65,13 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 	defer trace.Unlock()
 	batches := trace.ReceivedBatches
 
-	for i := 0; i < batches.ResourceSpans().Len(); i++ {
+	for i := range batches.ResourceSpans().Len() {
 		rs := batches.ResourceSpans().At(i)
 		resource := rs.Resource()
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		for j := range rs.ScopeSpans().Len() {
 			ss := rs.ScopeSpans().At(j)
 			scope := ss.Scope()
-			for k := 0; k < ss.Spans().Len(); k++ {
+			for k := range ss.Spans().Len() {
 				span := ss.Spans().At(k)
 
 				var (
@@ -99,7 +99,7 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 				// Span event evaluation
 				if ocf.sampleSpanEventExpr != nil {
 					spanEvents := span.Events()
-					for l := 0; l < spanEvents.Len(); l++ {
+					for l := range spanEvents.Len() {
 						ok, err = ocf.sampleSpanEventExpr.Eval(ctx, ottlspanevent.NewTransformContext(spanEvents.At(l), span, scope, resource, ss, rs))
 						if err != nil {
 							return Error, err

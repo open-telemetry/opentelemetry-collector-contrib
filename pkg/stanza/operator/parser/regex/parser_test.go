@@ -267,7 +267,7 @@ func benchmarkParse(b *testing.B, parser *Parser, input []string) {
 // No cache
 func BenchmarkParseNoCache(b *testing.B) {
 	parser := newTestBenchParser(&testing.T{}, 0)
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		benchmarkParseThreaded(b, parser, benchParsePatterns)
 	}
 }
@@ -275,7 +275,7 @@ func BenchmarkParseNoCache(b *testing.B) {
 // Memory cache at capacity
 func BenchmarkParseWithMemoryCache(b *testing.B) {
 	parser := newTestBenchParser(&testing.T{}, 100)
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		benchmarkParseThreaded(b, parser, benchParsePatterns)
 	}
 }
@@ -283,7 +283,7 @@ func BenchmarkParseWithMemoryCache(b *testing.B) {
 // Memory cache over capacity by one
 func BenchmarkParseWithMemoryCacheFullByOne(b *testing.B) {
 	parser := newTestBenchParser(&testing.T{}, 99)
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		benchmarkParseThreaded(b, parser, benchParsePatterns)
 	}
 }
@@ -291,7 +291,7 @@ func BenchmarkParseWithMemoryCacheFullByOne(b *testing.B) {
 // Memory cache over capacity by 10
 func BenchmarkParseWithMemoryCacheFullBy10(b *testing.B) {
 	parser := newTestBenchParser(&testing.T{}, 90)
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		benchmarkParseThreaded(b, parser, benchParsePatterns)
 	}
 }
@@ -299,7 +299,7 @@ func BenchmarkParseWithMemoryCacheFullBy10(b *testing.B) {
 // Memory cache over capacity by 50
 func BenchmarkParseWithMemoryCacheFullBy50(b *testing.B) {
 	parser := newTestBenchParser(&testing.T{}, 50)
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		benchmarkParseThreaded(b, parser, benchParsePatterns)
 	}
 }
@@ -307,7 +307,7 @@ func BenchmarkParseWithMemoryCacheFullBy50(b *testing.B) {
 // Memory cache over capacity by 90
 func BenchmarkParseWithMemoryCacheFullBy90(b *testing.B) {
 	parser := newTestBenchParser(&testing.T{}, 10)
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		benchmarkParseThreaded(b, parser, benchParsePatterns)
 	}
 }
@@ -315,7 +315,7 @@ func BenchmarkParseWithMemoryCacheFullBy90(b *testing.B) {
 // Memory cache over capacity by 99
 func BenchmarkParseWithMemoryCacheFullBy99(b *testing.B) {
 	parser := newTestBenchParser(&testing.T{}, 1)
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		benchmarkParseThreaded(b, parser, benchParsePatterns)
 	}
 }
@@ -323,7 +323,7 @@ func BenchmarkParseWithMemoryCacheFullBy99(b *testing.B) {
 // No cache one file
 func BenchmarkParseNoCacheOneFile(b *testing.B) {
 	parser := newTestBenchParser(&testing.T{}, 0)
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		pattern := []string{benchParsePatterns[0]}
 		benchmarkParse(b, parser, pattern)
 	}
@@ -332,7 +332,7 @@ func BenchmarkParseNoCacheOneFile(b *testing.B) {
 // Memory cache one file
 func BenchmarkParseWithMemoryCacheOneFile(b *testing.B) {
 	parser := newTestBenchParser(&testing.T{}, 100)
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		pattern := []string{benchParsePatterns[0]}
 		benchmarkParse(b, parser, pattern)
 	}

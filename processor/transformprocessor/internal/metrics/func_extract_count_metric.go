@@ -53,17 +53,17 @@ func extractCountMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformConte
 		switch metric.Type() {
 		case pmetric.MetricTypeHistogram:
 			dataPoints := metric.Histogram().DataPoints()
-			for i := 0; i < dataPoints.Len(); i++ {
+			for i := range dataPoints.Len() {
 				addCountDataPoint(dataPoints.At(i), countMetric.Sum().DataPoints())
 			}
 		case pmetric.MetricTypeExponentialHistogram:
 			dataPoints := metric.ExponentialHistogram().DataPoints()
-			for i := 0; i < dataPoints.Len(); i++ {
+			for i := range dataPoints.Len() {
 				addCountDataPoint(dataPoints.At(i), countMetric.Sum().DataPoints())
 			}
 		case pmetric.MetricTypeSummary:
 			dataPoints := metric.Summary().DataPoints()
-			for i := 0; i < dataPoints.Len(); i++ {
+			for i := range dataPoints.Len() {
 				addCountDataPoint(dataPoints.At(i), countMetric.Sum().DataPoints())
 			}
 		default:

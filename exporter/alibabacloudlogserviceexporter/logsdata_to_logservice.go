@@ -35,16 +35,16 @@ const (
 func logDataToLogService(ld plog.Logs) []*sls.Log {
 	var slsLogs []*sls.Log
 	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		rl := rls.At(i)
 		sl := rl.ScopeLogs()
 		resource := rl.Resource()
 		resourceContents := resourceToLogContents(resource)
-		for j := 0; j < sl.Len(); j++ {
+		for j := range sl.Len() {
 			ils := sl.At(j)
 			instrumentationLibraryContents := instrumentationScopeToLogContents(ils.Scope())
 			logs := ils.LogRecords()
-			for j := 0; j < logs.Len(); j++ {
+			for j := range logs.Len() {
 				slsLog := mapLogRecordToLogService(logs.At(j), resourceContents, instrumentationLibraryContents)
 				if slsLog != nil {
 					slsLogs = append(slsLogs, slsLog)

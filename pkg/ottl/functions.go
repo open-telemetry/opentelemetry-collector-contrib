@@ -340,7 +340,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 	requiredArgs := 0
 	seenNamed := false
 
-	for i := 0; i < len(ed.Arguments); i++ {
+	for i := range len(ed.Arguments) {
 		if !seenNamed && ed.Arguments[i].Name != "" {
 			seenNamed = true
 		} else if seenNamed && ed.Arguments[i].Name == "" {
@@ -348,7 +348,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 		}
 	}
 
-	for i := 0; i < argsVal.NumField(); i++ {
+	for i := range argsVal.NumField() {
 		if !strings.HasPrefix(argsVal.Field(i).Type().Name(), "Optional") {
 			requiredArgs++
 		}
@@ -659,7 +659,7 @@ func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc
 
 	vals := []T{}
 	values := argVal.List.Values
-	for j := 0; j < len(values); j++ {
+	for j := range values {
 		untypedVal, err := buildArg(values[j], argType.Elem())
 		if err != nil {
 			return nil, fmt.Errorf("error while parsing list argument at index %v: %w", j, err)

@@ -129,31 +129,31 @@ func TestStartTimeMetricMatch(t *testing.T) {
 			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, "0")
 			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceName, "job")
 			assert.NoError(t, stma.AdjustMetrics(tt.inputs))
-			for i := 0; i < tt.inputs.ResourceMetrics().Len(); i++ {
+			for i := range tt.inputs.ResourceMetrics().Len() {
 				rm := tt.inputs.ResourceMetrics().At(i)
-				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+				for j := range rm.ScopeMetrics().Len() {
 					ilm := rm.ScopeMetrics().At(j)
-					for k := 0; k < ilm.Metrics().Len(); k++ {
+					for k := range ilm.Metrics().Len() {
 						metric := ilm.Metrics().At(k)
 						switch metric.Type() {
 						case pmetric.MetricTypeSum:
 							dps := metric.Sum().DataPoints()
-							for l := 0; l < dps.Len(); l++ {
+							for l := range dps.Len() {
 								assert.Equal(t, tt.expectedStartTime, dps.At(l).StartTimestamp())
 							}
 						case pmetric.MetricTypeSummary:
 							dps := metric.Summary().DataPoints()
-							for l := 0; l < dps.Len(); l++ {
+							for l := range dps.Len() {
 								assert.Equal(t, tt.expectedStartTime, dps.At(l).StartTimestamp())
 							}
 						case pmetric.MetricTypeHistogram:
 							dps := metric.Histogram().DataPoints()
-							for l := 0; l < dps.Len(); l++ {
+							for l := range dps.Len() {
 								assert.Equal(t, tt.expectedStartTime, dps.At(l).StartTimestamp())
 							}
 						case pmetric.MetricTypeExponentialHistogram:
 							dps := metric.ExponentialHistogram().DataPoints()
-							for l := 0; l < dps.Len(); l++ {
+							for l := range dps.Len() {
 								assert.Equal(t, tt.expectedStartTime, dps.At(l).StartTimestamp())
 							}
 						case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge:
@@ -233,26 +233,26 @@ func TestStartTimeMetricFallback(t *testing.T) {
 			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, "0")
 			pmetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr(semconv.AttributeServiceName, "job")
 			assert.NoError(t, stma.AdjustMetrics(tt.inputs))
-			for i := 0; i < tt.inputs.ResourceMetrics().Len(); i++ {
+			for i := range tt.inputs.ResourceMetrics().Len() {
 				rm := tt.inputs.ResourceMetrics().At(i)
-				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+				for j := range rm.ScopeMetrics().Len() {
 					ilm := rm.ScopeMetrics().At(j)
-					for k := 0; k < ilm.Metrics().Len(); k++ {
+					for k := range ilm.Metrics().Len() {
 						metric := ilm.Metrics().At(k)
 						switch metric.Type() {
 						case pmetric.MetricTypeSum:
 							dps := metric.Sum().DataPoints()
-							for l := 0; l < dps.Len(); l++ {
+							for l := range dps.Len() {
 								assert.Equal(t, tt.expectedStartTime, dps.At(l).StartTimestamp())
 							}
 						case pmetric.MetricTypeSummary:
 							dps := metric.Summary().DataPoints()
-							for l := 0; l < dps.Len(); l++ {
+							for l := range dps.Len() {
 								assert.Equal(t, tt.expectedStartTime, dps.At(l).StartTimestamp())
 							}
 						case pmetric.MetricTypeHistogram:
 							dps := metric.Histogram().DataPoints()
-							for l := 0; l < dps.Len(); l++ {
+							for l := range dps.Len() {
 								assert.Equal(t, tt.expectedStartTime, dps.At(l).StartTimestamp())
 							}
 						}

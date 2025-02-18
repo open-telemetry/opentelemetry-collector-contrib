@@ -180,7 +180,7 @@ func (t *translator) ApplyScopeLogChanges(scopeLogs plog.ScopeLogs, inSchemaURL 
 		return nil
 	}
 	for rev, more := it(); more; rev, more = it() {
-		for l := 0; l < scopeLogs.LogRecords().Len(); l++ {
+		for l := range scopeLogs.LogRecords().Len() {
 			log := scopeLogs.LogRecords().At(l)
 			switch status {
 			case Update:
@@ -215,7 +215,7 @@ func (t *translator) ApplyScopeSpanChanges(scopeSpans ptrace.ScopeSpans, inSchem
 	}
 	it, status := t.iterator(ver)
 	for rev, more := it(); more; rev, more = it() {
-		for i := 0; i < scopeSpans.Spans().Len(); i++ {
+		for i := range scopeSpans.Spans().Len() {
 			span := scopeSpans.Spans().At(i)
 			switch status {
 			case Update:
@@ -227,7 +227,7 @@ func (t *translator) ApplyScopeSpanChanges(scopeSpans ptrace.ScopeSpans, inSchem
 				if err != nil {
 					return err
 				}
-				for e := 0; e < span.Events().Len(); e++ {
+				for e := range span.Events().Len() {
 					event := span.Events().At(e)
 					err = rev.all.Apply(event)
 					if err != nil {
@@ -241,7 +241,7 @@ func (t *translator) ApplyScopeSpanChanges(scopeSpans ptrace.ScopeSpans, inSchem
 				if err = rev.spanEvents.Rollback(span); err != nil {
 					return err
 				}
-				for e := 0; e < span.Events().Len(); e++ {
+				for e := range span.Events().Len() {
 					event := span.Events().At(e)
 					err = rev.all.Rollback(event)
 					if err != nil {
@@ -270,7 +270,7 @@ func (t *translator) ApplyScopeMetricChanges(scopeMetrics pmetric.ScopeMetrics, 
 	}
 	it, status := t.iterator(ver)
 	for rev, more := it(); more; rev, more = it() {
-		for i := 0; i < scopeMetrics.Metrics().Len(); i++ {
+		for i := range scopeMetrics.Metrics().Len() {
 			metric := scopeMetrics.Metrics().At(i)
 			switch status {
 			case Update:

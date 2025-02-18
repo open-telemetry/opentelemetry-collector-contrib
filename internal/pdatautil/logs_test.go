@@ -122,7 +122,7 @@ func TestFlattenResourceLogs(t *testing.T) {
 			expected := setupResourceLogsSlice(tc.expected)
 			FlattenLogs(actual)
 			assert.Equal(t, expected.Len(), actual.Len())
-			for i := 0; i < expected.Len(); i++ {
+			for i := range expected.Len() {
 				assert.NoError(t, plogtest.CompareResourceLogs(expected.At(i), actual.At(i)))
 			}
 		})
@@ -417,7 +417,7 @@ func TestGroupByResourceLogs(t *testing.T) {
 			expected := setupResourceLogsSlice(tc.expected)
 			GroupByResourceLogs(actual)
 			assert.Equal(t, expected.Len(), actual.Len())
-			for i := 0; i < expected.Len(); i++ {
+			for i := range expected.Len() {
 				assert.NoError(t, plogtest.CompareResourceLogs(expected.At(i), actual.At(i)))
 			}
 		})
@@ -486,7 +486,7 @@ func TestGroupByScopeLogs(t *testing.T) {
 			expected := setupScopeLogsSlice(tc.expected)
 			GroupByScopeLogs(actual)
 			assert.Equal(t, expected.Len(), actual.Len())
-			for i := 0; i < expected.Len(); i++ {
+			for i := range expected.Len() {
 				assert.NoError(t, plogtest.CompareScopeLogs(expected.At(i), actual.At(i)))
 			}
 		})

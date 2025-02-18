@@ -82,7 +82,7 @@ func BenchmarkFields(b *testing.B) {
 	sut := newFields(attrMap)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = sut.string()
 	}
 }

@@ -83,7 +83,7 @@ func (e *logsExporter) shutdown(_ context.Context) error {
 func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	logs := make([]*dLog, 0, ld.LogRecordCount())
 
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+	for i := range ld.ResourceLogs().Len() {
 		resourceLogs := ld.ResourceLogs().At(i)
 		resource := resourceLogs.Resource()
 		resourceAttributes := resource.Attributes()
@@ -93,10 +93,10 @@ func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 			serviceName = v.AsString()
 		}
 
-		for j := 0; j < resourceLogs.ScopeLogs().Len(); j++ {
+		for j := range resourceLogs.ScopeLogs().Len() {
 			scopeLogs := resourceLogs.ScopeLogs().At(j)
 
-			for k := 0; k < scopeLogs.LogRecords().Len(); k++ {
+			for k := range scopeLogs.LogRecords().Len() {
 				logRecord := scopeLogs.LogRecords().At(k)
 
 				log := &dLog{

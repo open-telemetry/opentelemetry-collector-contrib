@@ -65,13 +65,13 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 	resourceLogs := lg.ResourceLogs()
 	var payload []model.LogInput
 
-	for i := 0; i < resourceLogs.Len(); i++ {
+	for i := range resourceLogs.Len() {
 		resourceLog := resourceLogs.At(i)
 		libraryLogs := resourceLog.ScopeLogs()
-		for j := 0; j < libraryLogs.Len(); j++ {
+		for j := range libraryLogs.Len() {
 			libraryLog := libraryLogs.At(j)
 			logs := libraryLog.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
+			for k := range logs.Len() {
 				logMetadataMap := make(map[string]any)
 				resourceMapperMap := make(map[string]any)
 				log := logs.At(k)

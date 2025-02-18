@@ -22,13 +22,13 @@ import "go.opentelemetry.io/collector/pdata/plog"
 // Each byte in the input string is a unique ID for the corresponding element.
 func NewLogs(resourceIDs, scopeIDs, logRecordIDs string) plog.Logs {
 	ld := plog.NewLogs()
-	for resourceN := 0; resourceN < len(resourceIDs); resourceN++ {
+	for resourceN := range len(resourceIDs) {
 		rl := ld.ResourceLogs().AppendEmpty()
 		rl.Resource().Attributes().PutStr("resourceName", "resource"+string(resourceIDs[resourceN]))
-		for scopeN := 0; scopeN < len(scopeIDs); scopeN++ {
+		for scopeN := range len(scopeIDs) {
 			sl := rl.ScopeLogs().AppendEmpty()
 			sl.Scope().SetName("scope" + string(scopeIDs[scopeN]))
-			for logRecordN := 0; logRecordN < len(logRecordIDs); logRecordN++ {
+			for logRecordN := range len(logRecordIDs) {
 				lr := sl.LogRecords().AppendEmpty()
 				lr.Body().SetStr("log" + string(logRecordIDs[logRecordN]))
 			}

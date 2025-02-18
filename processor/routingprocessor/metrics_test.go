@@ -322,7 +322,7 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 
 		assert.NoError(b, exp.Start(context.Background(), host))
 
-		for i := 0; i < b.N; i++ {
+		for range b.N {
 			m := pmetric.NewMetrics()
 			rm := m.ResourceMetrics().AppendEmpty()
 

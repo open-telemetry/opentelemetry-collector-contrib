@@ -97,7 +97,7 @@ func TestSendTraces_NoBackend(t *testing.T) {
 	})
 
 	td := testdata.GenerateTraces(1)
-	for i := 0; i < 10000; i++ {
+	for range 10000 {
 		assert.Error(t, exp.ConsumeTraces(context.Background(), td))
 	}
 }
@@ -194,7 +194,7 @@ func TestSendMetrics_NoBackend(t *testing.T) {
 	})
 
 	md := testdata.GenerateMetrics(1)
-	for i := 0; i < 10000; i++ {
+	for range 10000 {
 		assert.Error(t, exp.ConsumeMetrics(context.Background(), md))
 	}
 }

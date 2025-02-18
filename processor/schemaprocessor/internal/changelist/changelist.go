@@ -21,7 +21,7 @@ type ChangeList struct {
 }
 
 func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
-	for i := 0; i < len(c.Migrators); i++ {
+	for i := range len(c.Migrators) {
 		var migrator migrate.Migrator
 		// todo(ankit) in go1.23 switch to reversed iterators for this
 		if ss == migrate.StateSelectorApply {

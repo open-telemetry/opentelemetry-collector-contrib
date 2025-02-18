@@ -22,11 +22,11 @@ func newRawMarshaler() rawMarshaler {
 
 func (r rawMarshaler) Marshal(logs plog.Logs, topic string) ([]*sarama.ProducerMessage, error) {
 	var messages []*sarama.ProducerMessage
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		rl := logs.ResourceLogs().At(i)
-		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+		for j := range rl.ScopeLogs().Len() {
 			sl := rl.ScopeLogs().At(j)
-			for k := 0; k < sl.LogRecords().Len(); k++ {
+			for k := range sl.LogRecords().Len() {
 				lr := sl.LogRecords().At(k)
 				b, err := r.logBodyAsBytes(lr.Body())
 				if err != nil {

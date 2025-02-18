@@ -48,18 +48,18 @@ func newPrometheusConverterV2() *prometheusConverterV2 {
 // fromMetrics converts pmetric.Metrics to Prometheus remote write format.
 func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Settings) (errs error) {
 	resourceMetricsSlice := md.ResourceMetrics()
-	for i := 0; i < resourceMetricsSlice.Len(); i++ {
+	for i := range resourceMetricsSlice.Len() {
 		resourceMetrics := resourceMetricsSlice.At(i)
 		resource := resourceMetrics.Resource()
 		scopeMetricsSlice := resourceMetrics.ScopeMetrics()
 		// keep track of the most recent timestamp in the ResourceMetrics for
 		// use with the "target" info metric
 		var mostRecentTimestamp pcommon.Timestamp
-		for j := 0; j < scopeMetricsSlice.Len(); j++ {
+		for j := range scopeMetricsSlice.Len() {
 			metricSlice := scopeMetricsSlice.At(j).Metrics()
 
 			// TODO: decide if instrumentation library information should be exported as labels
-			for k := 0; k < metricSlice.Len(); k++ {
+			for k := range metricSlice.Len() {
 				metric := metricSlice.At(k)
 				mostRecentTimestamp = max(mostRecentTimestamp, mostRecentTimestampInMetric(metric))
 

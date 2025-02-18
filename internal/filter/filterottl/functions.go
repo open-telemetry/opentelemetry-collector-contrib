@@ -124,7 +124,7 @@ func checkDataPoints(tCtx ottlmetric.TransformContext, key string, expectedVal *
 }
 
 func checkNumberDataPointSlice(dps pmetric.NumberDataPointSlice, key string, expectedVal *string) bool {
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		value, ok := dp.Attributes().Get(key)
 		if ok {
@@ -138,7 +138,7 @@ func checkNumberDataPointSlice(dps pmetric.NumberDataPointSlice, key string, exp
 }
 
 func checkHistogramDataPointSlice(dps pmetric.HistogramDataPointSlice, key string, expectedVal *string) bool {
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		value, ok := dp.Attributes().Get(key)
 		if ok {
@@ -152,7 +152,7 @@ func checkHistogramDataPointSlice(dps pmetric.HistogramDataPointSlice, key strin
 }
 
 func checkExponentialHistogramDataPointSlice(dps pmetric.ExponentialHistogramDataPointSlice, key string, expectedVal *string) bool {
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		value, ok := dp.Attributes().Get(key)
 		if ok {
@@ -166,7 +166,7 @@ func checkExponentialHistogramDataPointSlice(dps pmetric.ExponentialHistogramDat
 }
 
 func checkSummaryDataPointSlice(dps pmetric.SummaryDataPointSlice, key string, expectedVal *string) bool {
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		value, ok := dp.Attributes().Get(key)
 		if ok {

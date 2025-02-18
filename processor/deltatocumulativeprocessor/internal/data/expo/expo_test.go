@@ -40,7 +40,7 @@ func ExampleAbsolute() {
 	}
 
 	fmt.Printf("\n index:")
-	for i := 0; i < bs.BucketCounts().Len(); i++ {
+	for i := range bs.BucketCounts().Len() {
 		fmt.Printf("  %d", i)
 	}
 	fmt.Printf("\n   abs:")

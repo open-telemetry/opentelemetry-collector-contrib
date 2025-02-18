@@ -249,7 +249,7 @@ func benchmarkReceiver(b *testing.B, logsPerIteration int) {
 
 	require.NoError(b, rcv.Start(context.Background(), nil))
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		nextIteration <- struct{}{}
 		<-iterationComplete
 		mockConsumer.receivedLogs.Store(0)
@@ -324,7 +324,7 @@ pipeline:
 	// Populate the file that will be consumed
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0o666)
 	require.NoError(b, err)
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, err := file.WriteString("testlog\n")
 		require.NoError(b, err)
 	}
@@ -386,7 +386,7 @@ func BenchmarkParseAndMap(b *testing.B) {
 	// Populate the file that will be consumed
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0o666)
 	require.NoError(b, err)
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		_, err := file.WriteString(fmt.Sprintf("10.33.121.119 - - [11/Aug/2020:00:00:00 -0400] \"GET /index.html HTTP/1.1\" 404 %d\n", i%1000))
 		require.NoError(b, err)
 	}
@@ -459,7 +459,7 @@ func (t *testInputOperator) Start(_ operator.Persister) error {
 		for {
 			select {
 			case <-t.nextIteration:
-				for i := 0; i < t.numberOfLogEntries; i++ {
+				for range t.numberOfLogEntries {
 					_ = t.Write(context.Background(), e)
 				}
 			case <-ctx.Done():

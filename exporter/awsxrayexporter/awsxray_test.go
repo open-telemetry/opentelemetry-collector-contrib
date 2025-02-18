@@ -95,7 +95,7 @@ func TestTelemetryEnabled(t *testing.T) {
 
 func BenchmarkForTracesExporter(b *testing.B) {
 	traceExporter := initializeTracesExporter(b, generateConfig(b), telemetrytest.NewNopRegistry())
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		b.StopTimer()
 		ctx := context.Background()
 		td := constructSpanData()

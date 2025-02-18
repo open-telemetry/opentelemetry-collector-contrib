@@ -90,14 +90,14 @@ func (proc *translateDockerMetricsProcessor) processMetrics(metrics pmetric.Metr
 		return nil
 	}
 
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+	for i := range metrics.ResourceMetrics().Len() {
 		rm := metrics.ResourceMetrics().At(i)
 		translateDockerResourceAttributes(rm.Resource().Attributes())
 
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		for j := range rm.ScopeMetrics().Len() {
 			metricsSlice := rm.ScopeMetrics().At(j).Metrics()
 
-			for k := 0; k < metricsSlice.Len(); k++ {
+			for k := range metricsSlice.Len() {
 				translateDockerMetric(metricsSlice.At(k))
 			}
 		}

@@ -206,7 +206,7 @@ func TestAutodiscoverLimit(t *testing.T) {
 	mc := &mockClient{}
 
 	logGroups := []*cloudwatchlogs.LogGroup{}
-	for i := 0; i <= 100; i++ {
+	for i := range 101 {
 		logGroups = append(logGroups, &cloudwatchlogs.LogGroup{
 			LogGroupName: aws.String(fmt.Sprintf("test log group: %d", i)),
 		})

@@ -23,15 +23,15 @@ func TestRaceTranslationSpanChanges(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating translator")
 
 	fixture.ParallelRaceCompute(t, 10, func() error {
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			v := &Version{1, 0, 0}
 			spans := NewExampleSpans(t, *v)
-			for i := 0; i < spans.ResourceSpans().Len(); i++ {
+			for i := range spans.ResourceSpans().Len() {
 				rSpan := spans.ResourceSpans().At(i)
 				if err := tn.ApplyAllResourceChanges(rSpan, rSpan.SchemaUrl()); err != nil {
 					return err
 				}
-				for j := 0; j < rSpan.ScopeSpans().Len(); j++ {
+				for j := range rSpan.ScopeSpans().Len() {
 					span := rSpan.ScopeSpans().At(j)
 					if err := tn.ApplyScopeSpanChanges(span, span.SchemaUrl()); err != nil {
 						return err
@@ -54,15 +54,15 @@ func TestRaceTranslationMetricChanges(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating translator")
 
 	fixture.ParallelRaceCompute(t, 10, func() error {
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			spans := NewExampleSpans(t, Version{1, 0, 0})
-			for i := 0; i < spans.ResourceSpans().Len(); i++ {
+			for i := range spans.ResourceSpans().Len() {
 				rSpan := spans.ResourceSpans().At(i)
 				err := tn.ApplyAllResourceChanges(rSpan, rSpan.SchemaUrl())
 				if err != nil {
 					return err
 				}
-				for j := 0; j < rSpan.ScopeSpans().Len(); j++ {
+				for j := range rSpan.ScopeSpans().Len() {
 					span := rSpan.ScopeSpans().At(j)
 					err := tn.ApplyScopeSpanChanges(span, span.SchemaUrl())
 					if err != nil {
@@ -86,15 +86,15 @@ func TestRaceTranslationLogChanges(t *testing.T) {
 	require.NoError(t, err, "Must not error when creating translator")
 
 	fixture.ParallelRaceCompute(t, 10, func() error {
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			metrics := NewExampleMetrics(t, Version{1, 0, 0})
-			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+			for i := range metrics.ResourceMetrics().Len() {
 				rMetrics := metrics.ResourceMetrics().At(i)
 				err := tn.ApplyAllResourceChanges(rMetrics, rMetrics.SchemaUrl())
 				if err != nil {
 					return err
 				}
-				for j := 0; j < rMetrics.ScopeMetrics().Len(); j++ {
+				for j := range rMetrics.ScopeMetrics().Len() {
 					metric := rMetrics.ScopeMetrics().At(j)
 					err := tn.ApplyScopeMetricChanges(metric, metric.SchemaUrl())
 					if err != nil {

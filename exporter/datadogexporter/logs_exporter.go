@@ -126,7 +126,7 @@ func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err err
 		})
 
 		// Consume resources for host metadata
-		for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		for i := range ld.ResourceLogs().Len() {
 			res := ld.ResourceLogs().At(i).Resource()
 			consumeResource(exp.metadataReporter, res, exp.params.Logger)
 		}

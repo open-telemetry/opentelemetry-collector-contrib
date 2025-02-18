@@ -379,7 +379,7 @@ func (g StandardFunctionGetter[K]) Get(args Arguments) (Expr[K], error) {
 	if fArgsVal.NumField() != argsVal.NumField() {
 		return Expr[K]{}, fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", fArgsVal.NumField(), argsVal.NumField())
 	}
-	for i := 0; i < fArgsVal.NumField(); i++ {
+	for i := range fArgsVal.NumField() {
 		field := argsVal.Field(i)
 		fArgsVal.Field(i).Set(field)
 	}

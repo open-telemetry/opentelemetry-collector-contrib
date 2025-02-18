@@ -213,7 +213,7 @@ func (ps *ProviderSender) generate() {
 
 	var workers sync.WaitGroup
 
-	for i := 0; i < numWorkers; i++ {
+	for range numWorkers {
 		workers.Add(1)
 
 		go func() {

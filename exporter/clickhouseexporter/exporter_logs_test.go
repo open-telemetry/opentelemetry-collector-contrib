@@ -189,7 +189,7 @@ func simpleLogs(count int) plog.Logs {
 	sl.Scope().SetVersion("1.0.0")
 	sl.Scope().Attributes().PutStr("lib", "clickhouse")
 	timestamp := time.Unix(1703498029, 0)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		r := sl.LogRecords().AppendEmpty()
 		r.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 		r.SetObservedTimestamp(pcommon.NewTimestampFromTime(timestamp))
@@ -215,7 +215,7 @@ func simpleLogsWithNoTimestamp(count int) plog.Logs {
 	sl.Scope().SetVersion("1.0.0")
 	sl.Scope().Attributes().PutStr("lib", "clickhouse")
 	timestamp := time.Unix(1703498029, 0)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		r := sl.LogRecords().AppendEmpty()
 		r.SetObservedTimestamp(pcommon.NewTimestampFromTime(timestamp))
 		r.SetSeverityNumber(plog.SeverityNumberError2)
@@ -239,7 +239,7 @@ func multipleLogsWithDifferentServiceName(count int) plog.Logs {
 	sl.Scope().SetVersion("1.0.0")
 	sl.Scope().Attributes().PutStr("lib", "clickhouse")
 	timestamp := time.Unix(1703498029, 0)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		r := sl.LogRecords().AppendEmpty()
 		r.SetObservedTimestamp(pcommon.NewTimestampFromTime(timestamp))
 		r.SetSeverityNumber(plog.SeverityNumberError2)

@@ -305,11 +305,11 @@ func verifySingleSpan(
 	count := 0
 	for _, td := range tc.MockBackend.ReceivedTraces {
 		rs := td.ResourceSpans()
-		for i := 0; i < rs.Len(); i++ {
+		for i := range rs.Len() {
 			ils := rs.At(i).ScopeSpans()
-			for j := 0; j < ils.Len(); j++ {
+			for j := range ils.Len() {
 				spans := ils.At(j).Spans()
-				for k := 0; k < spans.Len(); k++ {
+				for k := range spans.Len() {
 					verifyReceived(spans.At(k))
 					count++
 				}

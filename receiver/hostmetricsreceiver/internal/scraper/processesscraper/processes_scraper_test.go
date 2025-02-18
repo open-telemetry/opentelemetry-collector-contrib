@@ -129,7 +129,7 @@ func validateRealData(t *testing.T, metrics pmetric.MetricSlice) {
 
 		assertContainsStatus := func(statusVal string) {
 			points := countMetric.Sum().DataPoints()
-			for i := 0; i < points.Len(); i++ {
+			for i := range points.Len() {
 				v, ok := points.At(i).Attributes().Get("status")
 				if ok && v.Str() == statusVal {
 					return
@@ -154,7 +154,7 @@ func validateRealData(t *testing.T, metrics pmetric.MetricSlice) {
 func validateStartTime(t *testing.T, metrics pmetric.MetricSlice) {
 	startTime, err := host.BootTime()
 	assert.NoError(t, err)
-	for i := 0; i < metricsLength; i++ {
+	for i := range metricsLength {
 		internal.AssertSumMetricStartTimeEquals(t, metrics.At(i), pcommon.Timestamp(startTime*1e9))
 	}
 }
@@ -196,7 +196,7 @@ func validateFakeData(t *testing.T, metrics pmetric.MetricSlice) {
 
 		points := countMetric.Sum().DataPoints()
 		attrs := map[string]int64{}
-		for i := 0; i < points.Len(); i++ {
+		for i := range points.Len() {
 			point := points.At(i)
 			val, ok := point.Attributes().Get("status")
 			assert.Truef(t, ok, "Missing status attribute in data point %d", i)

@@ -216,7 +216,7 @@ func isValidAggregationTemporality(metric pmetric.Metric) bool {
 func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice,
 	resource pcommon.Resource, settings Settings, baseName string,
 ) {
-	for x := 0; x < dataPoints.Len(); x++ {
+	for x := range dataPoints.Len() {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
 		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false)
@@ -301,7 +301,7 @@ type exemplarType interface {
 
 func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 	promExemplars := make([]prompb.Exemplar, 0, pt.Exemplars().Len())
-	for i := 0; i < pt.Exemplars().Len(); i++ {
+	for i := range pt.Exemplars().Len() {
 		exemplar := pt.Exemplars().At(i)
 		exemplarRunes := 0
 
@@ -371,27 +371,27 @@ func mostRecentTimestampInMetric(metric pmetric.Metric) pcommon.Timestamp {
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		dataPoints := metric.Gauge().DataPoints()
-		for x := 0; x < dataPoints.Len(); x++ {
+		for x := range dataPoints.Len() {
 			ts = max(ts, dataPoints.At(x).Timestamp())
 		}
 	case pmetric.MetricTypeSum:
 		dataPoints := metric.Sum().DataPoints()
-		for x := 0; x < dataPoints.Len(); x++ {
+		for x := range dataPoints.Len() {
 			ts = max(ts, dataPoints.At(x).Timestamp())
 		}
 	case pmetric.MetricTypeHistogram:
 		dataPoints := metric.Histogram().DataPoints()
-		for x := 0; x < dataPoints.Len(); x++ {
+		for x := range dataPoints.Len() {
 			ts = max(ts, dataPoints.At(x).Timestamp())
 		}
 	case pmetric.MetricTypeExponentialHistogram:
 		dataPoints := metric.ExponentialHistogram().DataPoints()
-		for x := 0; x < dataPoints.Len(); x++ {
+		for x := range dataPoints.Len() {
 			ts = max(ts, dataPoints.At(x).Timestamp())
 		}
 	case pmetric.MetricTypeSummary:
 		dataPoints := metric.Summary().DataPoints()
-		for x := 0; x < dataPoints.Len(); x++ {
+		for x := range dataPoints.Len() {
 			ts = max(ts, dataPoints.At(x).Timestamp())
 		}
 	}
@@ -401,7 +401,7 @@ func mostRecentTimestampInMetric(metric pmetric.Metric) pcommon.Timestamp {
 func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
 	settings Settings, baseName string,
 ) {
-	for x := 0; x < dataPoints.Len(); x++ {
+	for x := range dataPoints.Len() {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
 		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false)
@@ -430,7 +430,7 @@ func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDat
 		c.addSample(count, countlabels)
 
 		// process each percentile/quantile
-		for i := 0; i < pt.QuantileValues().Len(); i++ {
+		for i := range pt.QuantileValues().Len() {
 			qt := pt.QuantileValues().At(i)
 			quantile := &prompb.Sample{
 				Value:     qt.Value(),

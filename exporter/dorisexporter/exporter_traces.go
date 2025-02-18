@@ -105,7 +105,7 @@ func (e *tracesExporter) shutdown(_ context.Context) error {
 func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	traces := make([]*dTrace, 0, td.SpanCount())
 
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		resourceSpan := td.ResourceSpans().At(i)
 		resource := resourceSpan.Resource()
 		resourceAttributes := resource.Attributes()
@@ -115,15 +115,15 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 			serviceName = v.AsString()
 		}
 
-		for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
+		for j := range resourceSpan.ScopeSpans().Len() {
 			scopeSpan := resourceSpan.ScopeSpans().At(j)
 
-			for k := 0; k < scopeSpan.Spans().Len(); k++ {
+			for k := range scopeSpan.Spans().Len() {
 				span := scopeSpan.Spans().At(k)
 
 				events := span.Events()
 				newEvents := make([]*dEvent, 0, events.Len())
-				for l := 0; l < events.Len(); l++ {
+				for l := range events.Len() {
 					event := events.At(l)
 
 					newEvent := &dEvent{
@@ -137,7 +137,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 
 				links := span.Links()
 				newLinks := make([]*dLink, 0, links.Len())
-				for l := 0; l < links.Len(); l++ {
+				for l := range links.Len() {
 					link := links.At(l)
 
 					newLink := &dLink{

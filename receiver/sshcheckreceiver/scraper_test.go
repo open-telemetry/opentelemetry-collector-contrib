@@ -233,7 +233,7 @@ func TestScraperPropagatesResourceAttributes(t *testing.T) {
 
 	resourceMetrics := actualMetrics.ResourceMetrics()
 	expectedResourceAttributes := map[string]any{"ssh.endpoint": endpoint}
-	for i := 0; i < resourceMetrics.Len(); i++ {
+	for i := range resourceMetrics.Len() {
 		resourceAttributes := resourceMetrics.At(i).Resource().Attributes()
 		for name, value := range expectedResourceAttributes {
 			actualAttributeValue, ok := resourceAttributes.Get(name)

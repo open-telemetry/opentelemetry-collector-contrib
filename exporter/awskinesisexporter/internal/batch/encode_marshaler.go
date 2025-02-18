@@ -37,7 +37,7 @@ func (bm *batchMarshaller) Logs(ld plog.Logs) (*Batch, error) {
 	export.ResourceLogs().AppendEmpty()
 
 	var errs error
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+	for i := range ld.ResourceLogs().Len() {
 		line := ld.ResourceLogs().At(i)
 		line.CopyTo(export.ResourceLogs().At(0))
 
@@ -69,7 +69,7 @@ func (bm *batchMarshaller) Traces(td ptrace.Traces) (*Batch, error) {
 	export.ResourceSpans().AppendEmpty()
 
 	var errs error
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		span := td.ResourceSpans().At(i)
 		span.CopyTo(export.ResourceSpans().At(0))
 
@@ -101,7 +101,7 @@ func (bm *batchMarshaller) Metrics(md pmetric.Metrics) (*Batch, error) {
 	export.ResourceMetrics().AppendEmpty()
 
 	var errs error
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+	for i := range md.ResourceMetrics().Len() {
 		datapoint := md.ResourceMetrics().At(i)
 		datapoint.CopyTo(export.ResourceMetrics().At(0))
 

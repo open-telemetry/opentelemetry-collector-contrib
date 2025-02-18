@@ -75,7 +75,7 @@ func NewFromPdataConverter(set component.TelemetrySettings, workerCount int) *Fr
 func (c *FromPdataConverter) Start() {
 	c.set.Logger.Debug("Starting log converter from pdata", zap.Int("worker_count", cap(c.workerChan)))
 
-	for i := 0; i < cap(c.workerChan); i++ {
+	for range cap(c.workerChan) {
 		c.wg.Add(1)
 		go c.workerLoop()
 	}
@@ -127,9 +127,9 @@ func (c *FromPdataConverter) workerLoop() {
 
 // Batch takes in an set of plog.Logs and sends it to an available worker for processing.
 func (c *FromPdataConverter) Batch(pLogs plog.Logs) error {
-	for i := 0; i < pLogs.ResourceLogs().Len(); i++ {
+	for i := range pLogs.ResourceLogs().Len() {
 		rls := pLogs.ResourceLogs().At(i)
-		for j := 0; j < rls.ScopeLogs().Len(); j++ {
+		for j := range rls.ScopeLogs().Len() {
 			scope := rls.ScopeLogs().At(j)
 			item := fromConverterWorkerItem{
 				Resource:       rls.Resource(),
@@ -151,7 +151,7 @@ func (c *FromPdataConverter) Batch(pLogs plog.Logs) error {
 // convertFromLogs converts the contents of a fromConverterWorkerItem into a slice of entry.Entry
 func convertFromLogs(workerItem fromConverterWorkerItem) []*entry.Entry {
 	result := make([]*entry.Entry, 0, workerItem.LogRecordSlice.Len())
-	for i := 0; i < workerItem.LogRecordSlice.Len(); i++ {
+	for i := range workerItem.LogRecordSlice.Len() {
 		record := workerItem.LogRecordSlice.At(i)
 		entry := entry.Entry{}
 

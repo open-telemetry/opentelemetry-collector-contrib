@@ -30,21 +30,21 @@ func newCloudNamespaceProcessor(addCloudNamespace bool) *cloudNamespaceProcessor
 }
 
 func (*cloudNamespaceProcessor) processLogs(logs plog.Logs) error {
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		addCloudNamespaceAttribute(logs.ResourceLogs().At(i).Resource().Attributes())
 	}
 	return nil
 }
 
 func (*cloudNamespaceProcessor) processMetrics(metrics pmetric.Metrics) error {
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+	for i := range metrics.ResourceMetrics().Len() {
 		addCloudNamespaceAttribute(metrics.ResourceMetrics().At(i).Resource().Attributes())
 	}
 	return nil
 }
 
 func (*cloudNamespaceProcessor) processTraces(traces ptrace.Traces) error {
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		addCloudNamespaceAttribute(traces.ResourceSpans().At(i).Resource().Attributes())
 	}
 	return nil

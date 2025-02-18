@@ -31,12 +31,12 @@ func (l logStatements) Context() ContextID {
 }
 
 func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs, cache *pcommon.Map) error {
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+	for i := range ld.ResourceLogs().Len() {
 		rlogs := ld.ResourceLogs().At(i)
-		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
+		for j := range rlogs.ScopeLogs().Len() {
 			slogs := rlogs.ScopeLogs().At(j)
 			logs := slogs.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
+			for k := range logs.Len() {
 				tCtx := ottllog.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource(), slogs, rlogs, ottllog.WithCache(cache))
 				condition, err := l.BoolExpr.Eval(ctx, tCtx)
 				if err != nil {

@@ -18,7 +18,7 @@ import (
 
 func makesketch(n int) *quantile.Sketch {
 	s, c := &quantile.Sketch{}, quantile.Default()
-	for i := 0; i < n; i++ {
+	for i := range n {
 		s.Insert(c, float64(i))
 	}
 	return s
@@ -38,7 +38,7 @@ func Makeseries(i int) SketchSeries {
 	}
 
 	// We create i+5 Sketch Points to ensure all hosts have at least 5 Sketch Points for tests
-	for j := 0; j < i+5; j++ {
+	for j := range i + 5 {
 		ss.Points = append(ss.Points, SketchPoint{
 			Ts:     10 * int64(j),
 			Sketch: makesketch(j),

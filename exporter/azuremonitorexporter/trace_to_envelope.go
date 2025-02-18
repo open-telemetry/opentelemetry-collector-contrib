@@ -124,7 +124,7 @@ func spanToEnvelopes(
 	envelopes = append(envelopes, envelope)
 
 	// Now add the span events. We always export exception events.
-	for i := 0; i < span.Events().Len(); i++ {
+	for i := range span.Events().Len() {
 		spanEvent := span.Events().At(i)
 
 		// skip non-exception events if configured

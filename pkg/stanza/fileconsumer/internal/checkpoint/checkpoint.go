@@ -73,7 +73,7 @@ func LoadKey(ctx context.Context, persister operator.Persister, key string) ([]*
 	// Decode each of the known files
 	var errs []error
 	rmds := make([]*reader.Metadata, 0, knownFileCount)
-	for i := 0; i < knownFileCount; i++ {
+	for range knownFileCount {
 		rmd := new(reader.Metadata)
 		if err = dec.Decode(rmd); err != nil {
 			return nil, err

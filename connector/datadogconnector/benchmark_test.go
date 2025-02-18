@@ -79,7 +79,7 @@ func benchmarkPeerTags(b *testing.B) {
 
 	b.ResetTimer()
 
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		err = tconn.ConsumeTraces(context.Background(), genTrace())
 		assert.NoError(b, err)
 		for {

@@ -81,7 +81,7 @@ func convertExponentialHistToExplicitHist(distributionFn string, explicitBounds 
 		explicitHist.SetAggregationTemporality(metric.ExponentialHistogram().AggregationTemporality())
 
 		// map over each exponential histogram data point and calculate the bucket counts
-		for i := 0; i < dps.Len(); i++ {
+		for i := range dps.Len() {
 			expDataPoint := dps.At(i)
 			bucketCounts := calculateBucketCounts(expDataPoint, explicitBounds, distFn)
 			explicitHistDp := explicitHist.DataPoints().AppendEmpty()
@@ -116,7 +116,7 @@ func calculateBucketCounts(dp pmetric.ExponentialHistogramDataPoint, boundaries 
 		bucketCounts[0] += zerocount
 	}
 
-	for pos := 0; pos < posB.Len(); pos++ {
+	for pos := range posB.Len() {
 		index := dp.Positive().Offset() + int32(pos)
 		upper := math.Exp(float64(index+1) * factor)
 		lower := math.Exp(float64(index) * factor)
@@ -206,7 +206,7 @@ var uniformAlgorithm distAlgorithm = func(count uint64,
 ) {
 	// Find the boundaries that intersect with the bucket range
 	var start, end int
-	for start = 0; start < len(boundaries); start++ {
+	for start = range boundaries {
 		if lower <= boundaries[start] {
 			break
 		}

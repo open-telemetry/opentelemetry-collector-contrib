@@ -111,7 +111,7 @@ func groupAllLogs(
 	cons consumer.Logs,
 	logs plog.Logs,
 ) {
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		groupLogs(groups, cons, logs.ResourceLogs().At(i))
 	}
 }

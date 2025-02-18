@@ -73,13 +73,13 @@ func (e *adxDataProducer) ingestData(b []string) error {
 func (e *adxDataProducer) logsDataPusher(_ context.Context, logData plog.Logs) error {
 	resourceLogs := logData.ResourceLogs()
 	var logsBuffer []string
-	for i := 0; i < resourceLogs.Len(); i++ {
+	for i := range resourceLogs.Len() {
 		resource := resourceLogs.At(i)
 		scopeLogs := resourceLogs.At(i).ScopeLogs()
-		for j := 0; j < scopeLogs.Len(); j++ {
+		for j := range scopeLogs.Len() {
 			scope := scopeLogs.At(j)
 			logs := scopeLogs.At(j).LogRecords()
-			for k := 0; k < logs.Len(); k++ {
+			for k := range logs.Len() {
 				logData := logs.At(k)
 				transformedADXLog := mapToAdxLog(resource.Resource(), scope.Scope(), logData, e.logger)
 				adxLogJSONBytes, err := jsoniter.MarshalToString(transformedADXLog)
@@ -101,13 +101,13 @@ func (e *adxDataProducer) logsDataPusher(_ context.Context, logData plog.Logs) e
 func (e *adxDataProducer) tracesDataPusher(_ context.Context, traceData ptrace.Traces) error {
 	resourceSpans := traceData.ResourceSpans()
 	var spanBuffer []string
-	for i := 0; i < resourceSpans.Len(); i++ {
+	for i := range resourceSpans.Len() {
 		resource := resourceSpans.At(i)
 		scopeSpans := resourceSpans.At(i).ScopeSpans()
-		for j := 0; j < scopeSpans.Len(); j++ {
+		for j := range scopeSpans.Len() {
 			scope := scopeSpans.At(j)
 			spans := scopeSpans.At(j).Spans()
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				spanData := spans.At(k)
 				transformedADXTrace := mapToAdxTrace(resource.Resource(), scope.Scope(), spanData)
 				adxTraceJSONBytes, err := jsoniter.MarshalToString(transformedADXTrace)

@@ -320,7 +320,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 
 	// Iterate over ResourceLogs
 	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		rl := rls.At(i)
 
 		currentMetadata := newFields(rl.Resource().Attributes())
@@ -344,7 +344,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 			rls := ld.ResourceLogs().AppendEmpty()
 			dropped[i].resource.CopyTo(rls.Resource())
 
-			for j := 0; j < len(dropped[i].records); j++ {
+			for j := range len(dropped[i].records) {
 				dropped[i].records[j].CopyTo(
 					rls.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty(),
 				)

@@ -200,7 +200,7 @@ func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
 }
 
 func (f *factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, statsIn <-chan []byte, statsWriter *writer.DatadogStatsWriter, tracerVersion string, agentVersion string, logger *zap.Logger) {
-	for i := 0; i < runtime.NumCPU(); i++ {
+	for range runtime.NumCPU() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -294,7 +294,7 @@ func (f *factory) createMetricsExporter(
 			})
 
 			// Consume resources for host metadata
-			for i := 0; i < md.ResourceMetrics().Len(); i++ {
+			for i := range md.ResourceMetrics().Len() {
 				res := md.ResourceMetrics().At(i).Resource()
 				consumeResource(metadataReporter, res, set.Logger)
 			}
@@ -402,7 +402,7 @@ func (f *factory) createTracesExporter(
 				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs, metadataReporter)
 			})
 			// Consume resources for host metadata
-			for i := 0; i < td.ResourceSpans().Len(); i++ {
+			for i := range td.ResourceSpans().Len() {
 				res := td.ResourceSpans().At(i).Resource()
 				consumeResource(metadataReporter, res, set.Logger)
 			}
@@ -497,7 +497,7 @@ func (f *factory) createLogsExporter(
 				attrs := pcommon.NewMap()
 				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs, metadataReporter)
 			})
-			for i := 0; i < td.ResourceLogs().Len(); i++ {
+			for i := range td.ResourceLogs().Len() {
 				res := td.ResourceLogs().At(i).Resource()
 				consumeResource(metadataReporter, res, set.Logger)
 			}

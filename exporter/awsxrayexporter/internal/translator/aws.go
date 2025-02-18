@@ -165,7 +165,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 			} else if value.Slice().Len() > 1 {
 				tableName = ""
 				tableNames = []string{}
-				for i := 0; i < value.Slice().Len(); i++ {
+				for i := range value.Slice().Len() {
 					tableNames = append(tableNames, value.Slice().At(i).Str())
 				}
 			}
@@ -314,7 +314,7 @@ func normalizeToSlice(v pcommon.Value) pcommon.Slice {
 // populated, or given an array of just log group names, create the LogGroupMetadata objects with arn omitted
 func getLogGroupMetadata(logGroups pcommon.Slice, isArn bool) []awsxray.LogGroupMetadata {
 	var lgm []awsxray.LogGroupMetadata
-	for i := 0; i < logGroups.Len(); i++ {
+	for i := range logGroups.Len() {
 		if isArn {
 			lgm = append(lgm, awsxray.LogGroupMetadata{
 				Arn:      awsxray.String(logGroups.At(i).Str()),

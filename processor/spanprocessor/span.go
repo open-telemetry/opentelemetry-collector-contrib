@@ -68,15 +68,15 @@ func newSpanProcessor(config Config) (*spanProcessor, error) {
 
 func (sp *spanProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	rss := td.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
+	for i := range rss.Len() {
 		rs := rss.At(i)
 		ilss := rs.ScopeSpans()
 		resource := rs.Resource()
-		for j := 0; j < ilss.Len(); j++ {
+		for j := range ilss.Len() {
 			ils := ilss.At(j)
 			spans := ils.Spans()
 			scope := ils.Scope()
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				span := spans.At(k)
 				if sp.skipExpr != nil {
 					skip, err := sp.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource, ils, rs))

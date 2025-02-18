@@ -156,7 +156,7 @@ func TestScraper_Scrape(t *testing.T) {
 			assert.True(t, ok)
 			assert.Equal(t, "", name.Str())
 			var found pmetric.Metric
-			for i := 0; i < m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len(); i++ {
+			for i := range m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len() {
 				metric := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(i)
 				if metric.Name() == "oracledb.consistent_gets" {
 					found = metric

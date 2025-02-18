@@ -50,7 +50,7 @@ func TestConsumeMetrics(t *testing.T) {
 				}
 			}()
 
-			for i := 0; i < c.limit*2; i++ {
+			for range c.limit * 2 {
 				// send metric to chan c.limit*2 per sec.
 				metric2, err := processor.ConsumeMetrics(context.Background(), metric)
 				assert.NoError(t, err)
@@ -99,7 +99,7 @@ func TestConsumeLogs(t *testing.T) {
 			}()
 
 			// send log to chan c.limit*2 per sec.
-			for i := 0; i < c.limit*2; i++ {
+			for range c.limit * 2 {
 				log2, err := processor.ConsumeLogs(context.Background(), log)
 				assert.NoError(t, err)
 				assert.Equal(t, log, log2)
@@ -147,7 +147,7 @@ func TestConsumeTraces(t *testing.T) {
 				}
 			}()
 
-			for i := 0; i < c.limit*2; i++ {
+			for range c.limit * 2 {
 				// send trace to chan c.limit*2 per sec.
 				trace2, err := processor.ConsumeTraces(context.Background(), trace)
 				assert.NoError(t, err)

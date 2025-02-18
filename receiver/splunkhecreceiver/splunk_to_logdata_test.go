@@ -333,7 +333,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			result, err := splunkHecToLogData(zap.NewNop(), tt.events, func(_ pcommon.Resource) {}, tt.hecConfig)
 			assert.Equal(t, tt.wantErr, err)
 			require.Equal(t, tt.output.Len(), result.ResourceLogs().Len())
-			for i := 0; i < result.ResourceLogs().Len(); i++ {
+			for i := range result.ResourceLogs().Len() {
 				assert.Equal(t, tt.output.At(i), result.ResourceLogs().At(i))
 			}
 		})

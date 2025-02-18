@@ -15,39 +15,39 @@ import (
 // sorts all Resource Metrics attributes and Datapoint Slice metric attributes and all Resource, Scope, and Datapoint Slices
 func sortMetrics(ms pmetric.Metrics) {
 	rms := ms.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		sortAttributeMap(rms.At(i).Resource().Attributes())
 		ilms := rms.At(i).ScopeMetrics()
-		for j := 0; j < ilms.Len(); j++ {
+		for j := range ilms.Len() {
 			sortAttributeMap(ilms.At(j).Scope().Attributes())
 			metricsList := ilms.At(j).Metrics()
-			for k := 0; k < metricsList.Len(); k++ {
+			for k := range metricsList.Len() {
 				metric := metricsList.At(k)
 				//exhaustive:enforce
 				switch metricsList.At(k).Type() {
 				case pmetric.MetricTypeGauge:
 					ds := metric.Gauge().DataPoints()
-					for l := 0; l < ds.Len(); l++ {
+					for l := range ds.Len() {
 						sortAttributeMap(ds.At(l).Attributes())
 					}
 				case pmetric.MetricTypeSum:
 					ds := metric.Sum().DataPoints()
-					for l := 0; l < ds.Len(); l++ {
+					for l := range ds.Len() {
 						sortAttributeMap(ds.At(l).Attributes())
 					}
 				case pmetric.MetricTypeHistogram:
 					ds := metric.Histogram().DataPoints()
-					for l := 0; l < ds.Len(); l++ {
+					for l := range ds.Len() {
 						sortAttributeMap(ds.At(l).Attributes())
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					ds := metric.ExponentialHistogram().DataPoints()
-					for l := 0; l < ds.Len(); l++ {
+					for l := range ds.Len() {
 						sortAttributeMap(ds.At(l).Attributes())
 					}
 				case pmetric.MetricTypeSummary:
 					ds := metric.Summary().DataPoints()
-					for l := 0; l < ds.Len(); l++ {
+					for l := range ds.Len() {
 						sortAttributeMap(ds.At(l).Attributes())
 					}
 				}
@@ -95,9 +95,9 @@ func sortAttributeMap(mp pcommon.Map) {
 
 // sortMetricDataPointSlices sorts the datapoint slice of a pmetric.Metrics according to the alphanumeric ordering of map key
 func sortMetricDataPointSlices(ms pmetric.Metrics) {
-	for i := 0; i < ms.ResourceMetrics().Len(); i++ {
-		for j := 0; j < ms.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
-			for k := 0; k < ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
+	for i := range ms.ResourceMetrics().Len() {
+		for j := range ms.ResourceMetrics().At(i).ScopeMetrics().Len() {
+			for k := range ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len() {
 				m := ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(k)
 				//exhaustive:enforce
 				switch m.Type() {
@@ -124,7 +124,7 @@ func sortResources(ms pmetric.Metrics) {
 }
 
 func sortScopes(ms pmetric.Metrics) {
-	for i := 0; i < ms.ResourceMetrics().Len(); i++ {
+	for i := range ms.ResourceMetrics().Len() {
 		rm := ms.ResourceMetrics().At(i)
 		rm.ScopeMetrics().Sort(func(a, b pmetric.ScopeMetrics) bool {
 			return compareMaps(a.Scope().Attributes(), b.Scope().Attributes()) < 0
@@ -174,7 +174,7 @@ func compareMaps(a, b pcommon.Map) int {
 		return true
 	})
 
-	for i := 0; i < len(aKeys); i++ {
+	for i := range aKeys {
 		if aKeys[i] != bKeys[i] {
 			return strings.Compare(aKeys[i], bKeys[i])
 		}

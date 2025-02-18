@@ -115,7 +115,7 @@ func (b builder) addHistogramDatapointWithMinMaxAndExemplars(start, ts pcommon.T
 	dp.SetMax(maxVal)
 	dp.ExplicitBounds().FromRaw(bounds)
 	dp.BucketCounts().FromRaw(buckets)
-	for ei := 0; ei < len(exemplarValues); ei++ {
+	for ei := range exemplarValues {
 		exemplar := dp.Exemplars().AppendEmpty()
 		exemplar.SetTimestamp(ts)
 		exemplar.SetDoubleValue(exemplarValues[ei])
@@ -156,7 +156,7 @@ func (b builder) addExpHistogramDatapoint(config expHistogramConfig) builder {
 	dp.Positive().BucketCounts().FromRaw(config.positiveCount)
 	dp.Negative().SetOffset(config.negativeOffset)
 	dp.Negative().BucketCounts().FromRaw(config.negativeCount)
-	for ei := 0; ei < len(config.exemplarValues); ei++ {
+	for ei := range len(config.exemplarValues) {
 		exemplar := dp.Exemplars().AppendEmpty()
 		exemplar.SetTimestamp(1)
 		exemplar.SetDoubleValue(config.exemplarValues[ei])

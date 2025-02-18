@@ -11,7 +11,7 @@ import (
 
 func (g *geoIPProcessor) processLogs(ctx context.Context, ls plog.Logs) (plog.Logs, error) {
 	rl := ls.ResourceLogs()
-	for i := 0; i < rl.Len(); i++ {
+	for i := range rl.Len() {
 		switch g.cfg.Context {
 		case resource:
 			err := g.processAttributes(ctx, rl.At(i).Resource().Attributes())
@@ -19,8 +19,8 @@ func (g *geoIPProcessor) processLogs(ctx context.Context, ls plog.Logs) (plog.Lo
 				return ls, err
 			}
 		case record:
-			for j := 0; j < rl.At(i).ScopeLogs().Len(); j++ {
-				for k := 0; k < rl.At(i).ScopeLogs().At(j).LogRecords().Len(); k++ {
+			for j := range rl.At(i).ScopeLogs().Len() {
+				for k := range rl.At(i).ScopeLogs().At(j).LogRecords().Len() {
 					err := g.processAttributes(ctx, rl.At(i).ScopeLogs().At(j).LogRecords().At(k).Attributes())
 					if err != nil {
 						return ls, err

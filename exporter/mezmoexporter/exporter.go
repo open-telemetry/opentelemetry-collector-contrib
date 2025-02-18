@@ -80,15 +80,15 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 
 	// Convert the log resources to mezmo lines...
 	resourceLogs := ld.ResourceLogs()
-	for i := 0; i < resourceLogs.Len(); i++ {
+	for i := range resourceLogs.Len() {
 		resource := resourceLogs.At(i).Resource()
 		resourceHostName, hasResourceHostName := resource.Attributes().Get("host.name")
 		scopeLogs := resourceLogs.At(i).ScopeLogs()
 
-		for j := 0; j < scopeLogs.Len(); j++ {
+		for j := range scopeLogs.Len() {
 			logs := scopeLogs.At(j).LogRecords()
 
-			for k := 0; k < logs.Len(); k++ {
+			for k := range logs.Len() {
 				log := logs.At(k)
 
 				// Convert Attributes to meta fields being mindful of the maxMetaDataSize restriction

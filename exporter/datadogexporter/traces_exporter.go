@@ -125,7 +125,7 @@ func (exp *traceExporter) consumeTraces(
 		})
 
 		// Consume resources for host metadata
-		for i := 0; i < td.ResourceSpans().Len(); i++ {
+		for i := range td.ResourceSpans().Len() {
 			res := td.ResourceSpans().At(i).Resource()
 			consumeResource(exp.metadataReporter, res, exp.params.Logger)
 		}
@@ -137,7 +137,7 @@ func (exp *traceExporter) consumeTraces(
 	if noAPMStatsFeatureGate.IsEnabled() {
 		header[headerComputedStats] = []string{"true"}
 	}
-	for i := 0; i < rspans.Len(); i++ {
+	for i := range rspans.Len() {
 		rspan := rspans.At(i)
 		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, header, exp.gatewayUsage)
 		switch src.Kind {

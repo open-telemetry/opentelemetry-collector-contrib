@@ -32,12 +32,12 @@ func (m metricStatements) Context() ContextID {
 }
 
 func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics, cache *pcommon.Map) error {
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+	for i := range md.ResourceMetrics().Len() {
 		rmetrics := md.ResourceMetrics().At(i)
-		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
+		for j := range rmetrics.ScopeMetrics().Len() {
 			smetrics := rmetrics.ScopeMetrics().At(j)
 			metrics := smetrics.Metrics()
-			for k := 0; k < metrics.Len(); k++ {
+			for k := 0; k < metrics.Len(); k++ { //nolint:intrange  // breaks tests as metrics.Len() changes value during the loop
 				tCtx := ottlmetric.NewTransformContext(metrics.At(k), smetrics.Metrics(), smetrics.Scope(), rmetrics.Resource(), smetrics, rmetrics, ottlmetric.WithCache(cache))
 				condition, err := m.BoolExpr.Eval(ctx, tCtx)
 				if err != nil {
@@ -65,12 +65,12 @@ func (d dataPointStatements) Context() ContextID {
 }
 
 func (d dataPointStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics, cache *pcommon.Map) error {
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+	for i := range md.ResourceMetrics().Len() {
 		rmetrics := md.ResourceMetrics().At(i)
-		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
+		for j := range rmetrics.ScopeMetrics().Len() {
 			smetrics := rmetrics.ScopeMetrics().At(j)
 			metrics := smetrics.Metrics()
-			for k := 0; k < metrics.Len(); k++ {
+			for k := 0; k < metrics.Len(); k++ { //nolint:intrange  // breaks tests as metrics.Len() changes value during the loop
 				metric := metrics.At(k)
 				transformContextOptions := []ottldatapoint.TransformContextOption{ottldatapoint.WithCache(cache)}
 				var err error
@@ -97,7 +97,7 @@ func (d dataPointStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metr
 }
 
 func (d dataPointStatements) handleNumberDataPoints(ctx context.Context, dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics, options []ottldatapoint.TransformContextOption) error {
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, scopeMetrics, resourceMetrics, options...)
 		condition, err := d.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
@@ -114,7 +114,7 @@ func (d dataPointStatements) handleNumberDataPoints(ctx context.Context, dps pme
 }
 
 func (d dataPointStatements) handleHistogramDataPoints(ctx context.Context, dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics, options []ottldatapoint.TransformContextOption) error {
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, scopeMetrics, resourceMetrics, options...)
 		condition, err := d.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
@@ -131,7 +131,7 @@ func (d dataPointStatements) handleHistogramDataPoints(ctx context.Context, dps 
 }
 
 func (d dataPointStatements) handleExponentialHistogramDataPoints(ctx context.Context, dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics, options []ottldatapoint.TransformContextOption) error {
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, scopeMetrics, resourceMetrics, options...)
 		condition, err := d.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
@@ -148,7 +148,7 @@ func (d dataPointStatements) handleExponentialHistogramDataPoints(ctx context.Co
 }
 
 func (d dataPointStatements) handleSummaryDataPoints(ctx context.Context, dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics, options []ottldatapoint.TransformContextOption) error {
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, scopeMetrics, resourceMetrics, options...)
 		condition, err := d.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {

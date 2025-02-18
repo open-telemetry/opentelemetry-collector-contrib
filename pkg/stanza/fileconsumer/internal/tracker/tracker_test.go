@@ -23,7 +23,7 @@ import (
 
 func TestFindFilesOrder(t *testing.T) {
 	fps := make([]*fingerprint.Fingerprint, 0)
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		fps = append(fps, fingerprint.New([]byte(uuid.NewString())))
 	}
 	persister := testutil.NewUnscopedMockPersister()
@@ -34,7 +34,7 @@ func TestFindFilesOrder(t *testing.T) {
 
 	require.Equal(t, len(fps), len(matchables), "return slice should be of same length as input slice")
 
-	for i := 0; i < len(matchables); i++ {
+	for i := range matchables {
 		if fpInStorage[i] {
 			// if current fingerprint is present in storage, the corresponding return type should not be nil
 			require.NotNilf(t, matchables[i], "resulting index %d should be not be nil type", i)
@@ -55,7 +55,7 @@ func TestIndexInBounds(t *testing.T) {
 	require.Equal(t, 0, tracker.archiveIndex)
 
 	// run archiving. Each time, index should be in bound.
-	for i := 0; i < 1099; i++ {
+	for i := range 1099 {
 		require.Equalf(t, i%pollsToArchive, tracker.archiveIndex, "Index should %d, but was %d", i%pollsToArchive, tracker.archiveIndex)
 		tracker.archive(&fileset.Fileset[*reader.Metadata]{})
 		require.Truef(t, tracker.archiveIndex >= 0 && tracker.archiveIndex < pollsToArchive, "Index should be between 0 and %d, but was %d", pollsToArchive, tracker.archiveIndex)
@@ -96,7 +96,7 @@ func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive 
 		persister := testutil.NewUnscopedMockPersister()
 		tracker := NewFileTracker(context.Background(), componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
 		iterations := int(pct * float32(pollsToArchive))
-		for i := 0; i < iterations; i++ {
+		for i := range iterations {
 			fileset := &fileset.Fileset[*reader.Metadata]{}
 			fileset.Add(&reader.Metadata{
 				// for the sake of this test case.
@@ -106,7 +106,7 @@ func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive 
 			tracker.archive(fileset)
 		}
 		// make sure all keys are present in persister
-		for i := 0; i < iterations; i++ {
+		for i := range iterations {
 			archiveIndex := i % pollsToArchive
 			val, err := persister.Get(context.Background(), archiveKey(archiveIndex))
 			require.NoError(t, err)
@@ -114,7 +114,7 @@ func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive 
 		}
 		// also, make sure we have not written "extra" stuff (for partially filled archive)
 		count := 0
-		for i := 0; i < pollsToArchive; i++ {
+		for i := range pollsToArchive {
 			val, err := persister.Get(context.Background(), archiveKey(i))
 			require.NoError(t, err)
 			if val != nil {
@@ -128,7 +128,7 @@ func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive 
 			// start from most recent element
 			startIdx := mod(tracker.archiveIndex-1, newPollsToArchive)
 			mostRecentIteration := iterations - 1
-			for i := 0; i < newPollsToArchive; i++ {
+			for range newPollsToArchive {
 				val, err := tracker.readArchive(startIdx)
 				require.NoError(t, err)
 				if val.Len() > 0 {

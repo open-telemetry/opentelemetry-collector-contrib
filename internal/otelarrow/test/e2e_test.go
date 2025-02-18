@@ -221,7 +221,7 @@ func testIntegrationTraces(ctx context.Context, t *testing.T, tp testParams, cfg
 
 	expect := make([][]ptrace.Traces, tp.threadCount)
 
-	for num := 0; num < tp.threadCount; num++ {
+	for num := range tp.threadCount {
 		clientDoneWG.Add(1)
 		go func(num int) {
 			defer clientDoneWG.Done()

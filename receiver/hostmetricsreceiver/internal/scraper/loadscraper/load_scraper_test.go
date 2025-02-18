@@ -158,7 +158,7 @@ func TestScrape(t *testing.T) {
 
 	// Additional test for average per CPU
 	numCPU := runtime.NumCPU()
-	for i := 0; i < results[testStandard].Len(); i++ {
+	for i := range results[testStandard].Len() {
 		assertCompareAveragePerCPU(t, results[testAverage].At(i), results[testStandard].At(i), numCPU)
 	}
 }

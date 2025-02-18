@@ -1187,7 +1187,7 @@ func TestInvalidNumberOfDimensions(t *testing.T) {
 	m.SetName("valid")
 	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 	dp.SetIntValue(123)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		dp.Attributes().PutStr(fmt.Sprint("dim_key_", i), fmt.Sprint("dim_val_", i))
 	}
 	c, err := NewMetricsConverter(logger, nil, nil, nil, "_-.", false, true)
@@ -1208,7 +1208,7 @@ func TestInvalidNumberOfDimensions(t *testing.T) {
 		MetricType: &gaugeType,
 		Dimensions: make([]*sfxpb.Dimension, 0, 37),
 	}
-	for i := 0; i < 37; i++ {
+	for i := range 37 {
 		dpInvalid.Attributes().PutStr(fmt.Sprint("dim_key_", i), fmt.Sprint("dim_val_", i))
 		dpSFX.Dimensions = append(dpSFX.Dimensions, &sfxpb.Dimension{
 			Key:   fmt.Sprint("dim_key_", i),

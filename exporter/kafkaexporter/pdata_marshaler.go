@@ -25,7 +25,7 @@ func (p pdataLogsMarshaler) Marshal(ld plog.Logs, topic string) ([]*sarama.Produ
 	if p.partitionedByResources {
 		logs := ld.ResourceLogs()
 
-		for i := 0; i < logs.Len(); i++ {
+		for i := range logs.Len() {
 			resourceMetrics := logs.At(i)
 			hash := pdatautil.MapHash(resourceMetrics.Resource().Attributes())
 
@@ -78,7 +78,7 @@ func (p pdataMetricsMarshaler) Marshal(ld pmetric.Metrics, topic string) ([]*sar
 	if p.partitionedByResources {
 		metrics := ld.ResourceMetrics()
 
-		for i := 0; i < metrics.Len(); i++ {
+		for i := range metrics.Len() {
 			resourceMetrics := metrics.At(i)
 			hash := pdatautil.MapHash(resourceMetrics.Resource().Attributes())
 

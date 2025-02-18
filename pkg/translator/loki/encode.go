@@ -189,7 +189,7 @@ func valueToKeyvals(key string, value pcommon.Value) []any {
 			prefix = key + "_"
 		}
 		var keyvals []any
-		for i := 0; i < value.Slice().Len(); i++ {
+		for i := range value.Slice().Len() {
 			v := value.Slice().At(i)
 			keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("%s%d", prefix, i), v)...)
 		}

@@ -97,12 +97,12 @@ func TestUnmarshal(t *testing.T) {
 				require.Equal(t, testCase.wantResourceCount, got.ResourceMetrics().Len())
 				gotMetricCount := 0
 				gotDatapointCount := 0
-				for i := 0; i < got.ResourceMetrics().Len(); i++ {
+				for i := range got.ResourceMetrics().Len() {
 					rm := got.ResourceMetrics().At(i)
 					require.Equal(t, 1, rm.ScopeMetrics().Len())
 					ilm := rm.ScopeMetrics().At(0)
 					gotMetricCount += ilm.Metrics().Len()
-					for j := 0; j < ilm.Metrics().Len(); j++ {
+					for j := range ilm.Metrics().Len() {
 						metric := ilm.Metrics().At(j)
 						gotDatapointCount += metric.Summary().DataPoints().Len()
 					}

@@ -40,13 +40,13 @@ func (dtrp *deltaToRateProcessor) Start(context.Context, component.Host) error {
 func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	resourceMetricsSlice := md.ResourceMetrics()
 
-	for i := 0; i < resourceMetricsSlice.Len(); i++ {
+	for i := range resourceMetricsSlice.Len() {
 		rm := resourceMetricsSlice.At(i)
 		ilms := rm.ScopeMetrics()
-		for i := 0; i < ilms.Len(); i++ {
+		for i := range ilms.Len() {
 			ilm := ilms.At(i)
 			metricSlice := ilm.Metrics()
-			for j := 0; j < metricSlice.Len(); j++ {
+			for j := range metricSlice.Len() {
 				metric := metricSlice.At(j)
 				if _, ok := dtrp.ConfiguredMetrics[metric.Name()]; !ok {
 					continue
@@ -57,7 +57,7 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pmetric.M
 				}
 				dataPointSlice := metric.Sum().DataPoints()
 
-				for i := 0; i < dataPointSlice.Len(); i++ {
+				for i := range dataPointSlice.Len() {
 					dataPoint := dataPointSlice.At(i)
 
 					durationNanos := time.Duration(dataPoint.Timestamp() - dataPoint.StartTimestamp())

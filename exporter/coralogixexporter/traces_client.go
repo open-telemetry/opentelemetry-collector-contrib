@@ -75,7 +75,7 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) (err er
 
 func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	rss := td.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
+	for i := range rss.Len() {
 		resourceSpan := rss.At(i)
 		appName, subsystem := e.config.getMetadataFromResource(resourceSpan.Resource())
 		resourceSpan.Resource().Attributes().PutStr(cxAppNameAttrName, appName)

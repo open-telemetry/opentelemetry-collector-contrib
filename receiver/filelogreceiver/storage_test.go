@@ -185,11 +185,11 @@ func expectLogs(sink *consumertest.LogsSink, expected []string) func() bool {
 
 		for _, logs := range sink.AllLogs() {
 			rl := logs.ResourceLogs()
-			for i := 0; i < rl.Len(); i++ {
+			for i := range rl.Len() {
 				sl := rl.At(i).ScopeLogs()
-				for j := 0; j < sl.Len(); j++ {
+				for j := range sl.Len() {
 					lrs := sl.At(j).LogRecords()
-					for k := 0; k < lrs.Len(); k++ {
+					for k := range lrs.Len() {
 						body := lrs.At(k).Body().Str()
 						found[body] = true
 					}

@@ -73,7 +73,7 @@ func (c *metricsConnector) Capabilities() consumer.Capabilities {
 // ConsumeTraces implements the consumer.Traces interface.
 // It aggregates the trace data to generate metrics.
 func (c *metricsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
 		serviceAttr, ok := resourceAttr.Get(conventions.AttributeServiceName)
@@ -82,12 +82,12 @@ func (c *metricsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Trac
 		}
 		serviceName := serviceAttr.Str()
 		ilsSlice := rspans.ScopeSpans()
-		for j := 0; j < ilsSlice.Len(); j++ {
+		for j := range ilsSlice.Len() {
 			ils := ilsSlice.At(j)
 			spans := ils.Spans()
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				span := spans.At(k)
-				for l := 0; l < span.Events().Len(); l++ {
+				for l := range span.Events().Len() {
 					event := span.Events().At(l)
 					if event.Name() == eventNameExc {
 						eventAttrs := event.Attributes()
@@ -140,7 +140,7 @@ func (c *metricsConnector) collectExceptions(ilm pmetric.ScopeMetrics) error {
 		dp.SetStartTimestamp(c.startTimestamp)
 		dp.SetTimestamp(timestamp)
 		dp.SetIntValue(int64(exc.count))
-		for i := 0; i < exc.exemplars.Len(); i++ {
+		for i := range exc.exemplars.Len() {
 			exc.exemplars.At(i).SetTimestamp(timestamp)
 		}
 		dp.Exemplars().EnsureCapacity(exc.exemplars.Len())

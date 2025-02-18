@@ -111,7 +111,7 @@ func groupAllTraces(
 	cons consumer.Traces,
 	traces ptrace.Traces,
 ) {
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		groupTraces(groups, cons, traces.ResourceSpans().At(i))
 	}
 }

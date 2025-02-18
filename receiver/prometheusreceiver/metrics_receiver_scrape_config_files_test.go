@@ -58,7 +58,7 @@ func verifyScrapeConfigFiles(t *testing.T, _ *testData, result []pmetric.Resourc
 	assert.Equal(t, 6, result[0].ScopeMetrics().At(0).Metrics().Len())
 	metricFound := false
 
-	for i := 0; i < result[0].ScopeMetrics().At(0).Metrics().Len(); i++ {
+	for i := range result[0].ScopeMetrics().At(0).Metrics().Len() {
 		if result[0].ScopeMetrics().At(0).Metrics().At(i).Name() == "foo1" {
 			metricFound = true
 			break

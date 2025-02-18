@@ -63,7 +63,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 	running := &atomic.Bool{}
 	running.Store(true)
 
-	for i := 0; i < c.WorkerCount; i++ {
+	for i := range c.WorkerCount {
 		wg.Add(1)
 		w := worker{
 			numMetrics:     c.NumMetrics,

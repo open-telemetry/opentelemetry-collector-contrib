@@ -250,7 +250,7 @@ func getResourceMetrics(metrics pmetric.Metrics, envelope *loggregator_v2.Envelo
 	}
 
 	attrs := getEnvelopeResourceAttributes(envelope)
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+	for i := range metrics.ResourceMetrics().Len() {
 		if reflect.DeepEqual(metrics.ResourceMetrics().At(i).Resource().Attributes().AsRaw(), attrs.AsRaw()) {
 			return metrics.ResourceMetrics().At(i)
 		}
@@ -273,7 +273,7 @@ func getResourceLogs(logs plog.Logs, envelope *loggregator_v2.Envelope) plog.Res
 	}
 
 	attrs := getEnvelopeResourceAttributes(envelope)
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		if reflect.DeepEqual(logs.ResourceLogs().At(i).Resource().Attributes().AsRaw(), attrs.AsRaw()) {
 			return logs.ResourceLogs().At(i)
 		}

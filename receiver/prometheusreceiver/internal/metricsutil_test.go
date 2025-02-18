@@ -184,7 +184,7 @@ func exponentialHistogramPointSimplified(attributes []*kv, startTimestamp, times
 
 	var sum float64
 	var count uint64
-	for i := 0; i < bucketCount; i++ {
+	for i := range bucketCount {
 		positive.BucketCounts().Append(uint64(i + 1))
 		negative.BucketCounts().Append(uint64(i + 1))
 		count += uint64(i+1) + uint64(i+1)
@@ -268,7 +268,7 @@ func summaryPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp,
 	sdp.SetSum(sum)
 
 	qvL := sdp.QuantileValues()
-	for i := 0; i < len(quantiles); i++ {
+	for i := range quantiles {
 		qvi := qvL.AppendEmpty()
 		qvi.SetQuantile(quantiles[i])
 		qvi.SetValue(values[i])

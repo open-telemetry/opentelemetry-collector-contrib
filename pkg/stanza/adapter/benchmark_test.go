@@ -51,7 +51,7 @@ type benchCase struct {
 }
 
 func (bc benchCase) run(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		f := NewFactory(BenchReceiverType{}, component.StabilityLevelUndefined)
 		cfg := f.CreateDefaultConfig().(*BenchConfig)
 		cfg.BaseConfig.maxBatchSize = bc.maxBatchSize
@@ -184,7 +184,7 @@ func (b *Input) Start(_ operator.Persister) error {
 	b.wg.Add(1)
 	go func() {
 		defer b.wg.Done()
-		for n := 0; n < len(b.entries); n++ {
+		for n := range len(b.entries) {
 			select {
 			case <-ctx.Done():
 				return

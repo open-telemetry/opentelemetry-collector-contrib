@@ -190,7 +190,7 @@ func tagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
 		return err
 	}
 
-	for i := 0; i < len(spans); i++ {
+	for i := range spans {
 		span := spans[i]
 		link := dest.AppendEmpty()
 

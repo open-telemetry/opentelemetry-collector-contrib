@@ -62,28 +62,28 @@ func TestExtensionIntegrity(t *testing.T) {
 		myBytes := []byte(n.Name())
 
 		// Set my values
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			err := c.Set(ctx, keys[i], myBytes)
 			require.NoError(t, err)
 		}
 
 		// Repeatedly thrash client
-		for j := 0; j < 100; j++ {
+		for range 100 {
 			// Make sure my values are still mine
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				v, err := c.Get(ctx, keys[i])
 				require.NoError(t, err)
 				require.Equal(t, myBytes, v)
 			}
 
 			// Delete my values
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				err := c.Delete(ctx, keys[i])
 				require.NoError(t, err)
 			}
 
 			// Reset my values
-			for i := 0; i < len(keys); i++ {
+			for i := range keys {
 				err := c.Set(ctx, keys[i], myBytes)
 				require.NoError(t, err)
 			}
@@ -335,7 +335,6 @@ func TestCompaction(t *testing.T) {
 	require.NoError(t, err)
 
 	var key string
-	var i int
 
 	// magic numbers giving enough data to force bbolt to allocate a new page
 	// see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/9004 for some discussion
@@ -344,7 +343,7 @@ func TestCompaction(t *testing.T) {
 	entry := make([]byte, entrySize)
 
 	// add the data to the db
-	for i = 0; i < numEntries; i++ {
+	for i := range numEntries {
 		key = fmt.Sprintf("key_%d", i)
 		err = client.Set(ctx, key, entry)
 		require.NoError(t, err)
@@ -365,7 +364,7 @@ func TestCompaction(t *testing.T) {
 	require.Less(t, stats.Size(), newStats.Size())
 
 	// remove data from database
-	for i = 0; i < numEntries; i++ {
+	for i := range numEntries {
 		key = fmt.Sprintf("key_%d", i)
 		err = c.Delete(ctx, key)
 		require.NoError(t, err)

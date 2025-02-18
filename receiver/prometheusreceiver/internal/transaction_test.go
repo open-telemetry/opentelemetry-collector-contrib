@@ -218,7 +218,7 @@ func testTransactionAppendMultipleResources(t *testing.T, enableNativeHistograms
 	for _, expectedResource := range expectedResources {
 		foundResource := false
 		expectedServiceName, _ := expectedResource.Attributes().Get(conventions.AttributeServiceName)
-		for i := 0; i < mds[0].ResourceMetrics().Len(); i++ {
+		for i := range mds[0].ResourceMetrics().Len() {
 			res := mds[0].ResourceMetrics().At(i).Resource()
 			if serviceName, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
 				if serviceName.AsString() == expectedServiceName.AsString() {
@@ -1923,31 +1923,31 @@ type startTimeAdjuster struct {
 }
 
 func (s *startTimeAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+	for i := range metrics.ResourceMetrics().Len() {
 		rm := metrics.ResourceMetrics().At(i)
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		for j := range rm.ScopeMetrics().Len() {
 			ilm := rm.ScopeMetrics().At(j)
-			for k := 0; k < ilm.Metrics().Len(); k++ {
+			for k := range ilm.Metrics().Len() {
 				metric := ilm.Metrics().At(k)
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
 					dps := metric.Sum().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
+					for l := range dps.Len() {
 						dps.At(l).SetStartTimestamp(s.startTime)
 					}
 				case pmetric.MetricTypeSummary:
 					dps := metric.Summary().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
+					for l := range dps.Len() {
 						dps.At(l).SetStartTimestamp(s.startTime)
 					}
 				case pmetric.MetricTypeHistogram:
 					dps := metric.Histogram().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
+					for l := range dps.Len() {
 						dps.At(l).SetStartTimestamp(s.startTime)
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					dps := metric.ExponentialHistogram().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
+					for l := range dps.Len() {
 						dps.At(l).SetStartTimestamp(s.startTime)
 					}
 				case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge:
@@ -1998,7 +1998,7 @@ func assertEquivalentMetrics(t *testing.T, want, got pmetric.Metrics) {
 	if want.ResourceMetrics().Len() == 0 {
 		return
 	}
-	for i := 0; i < want.ResourceMetrics().Len(); i++ {
+	for i := range want.ResourceMetrics().Len() {
 		wantSm := want.ResourceMetrics().At(i).ScopeMetrics()
 		gotSm := got.ResourceMetrics().At(i).ScopeMetrics()
 		require.Equal(t, wantSm.Len(), gotSm.Len())
@@ -2006,7 +2006,7 @@ func assertEquivalentMetrics(t *testing.T, want, got pmetric.Metrics) {
 			return
 		}
 
-		for j := 0; j < wantSm.Len(); j++ {
+		for j := range wantSm.Len() {
 			wantMs := wantSm.At(j).Metrics()
 			gotMs := gotSm.At(j).Metrics()
 			require.Equal(t, wantMs.Len(), gotMs.Len())
@@ -2014,7 +2014,7 @@ func assertEquivalentMetrics(t *testing.T, want, got pmetric.Metrics) {
 			wmap := map[string]pmetric.Metric{}
 			gmap := map[string]pmetric.Metric{}
 
-			for k := 0; k < wantMs.Len(); k++ {
+			for k := range wantMs.Len() {
 				wi := wantMs.At(k)
 				wmap[wi.Name()] = wi
 				gi := gotMs.At(k)

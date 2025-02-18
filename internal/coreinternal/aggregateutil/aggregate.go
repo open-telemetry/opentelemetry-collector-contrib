@@ -103,35 +103,35 @@ func RangeDataPointAttributes(metric pmetric.Metric, f func(pcommon.Map) bool) {
 	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
-		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
+		for i := range metric.Gauge().DataPoints().Len() {
 			dp := metric.Gauge().DataPoints().At(i)
 			if !f(dp.Attributes()) {
 				return
 			}
 		}
 	case pmetric.MetricTypeSum:
-		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
+		for i := range metric.Sum().DataPoints().Len() {
 			dp := metric.Sum().DataPoints().At(i)
 			if !f(dp.Attributes()) {
 				return
 			}
 		}
 	case pmetric.MetricTypeHistogram:
-		for i := 0; i < metric.Histogram().DataPoints().Len(); i++ {
+		for i := range metric.Histogram().DataPoints().Len() {
 			dp := metric.Histogram().DataPoints().At(i)
 			if !f(dp.Attributes()) {
 				return
 			}
 		}
 	case pmetric.MetricTypeExponentialHistogram:
-		for i := 0; i < metric.ExponentialHistogram().DataPoints().Len(); i++ {
+		for i := range metric.ExponentialHistogram().DataPoints().Len() {
 			dp := metric.ExponentialHistogram().DataPoints().At(i)
 			if !f(dp.Attributes()) {
 				return
 			}
 		}
 	case pmetric.MetricTypeSummary:
-		for i := 0; i < metric.Summary().DataPoints().Len(); i++ {
+		for i := range metric.Summary().DataPoints().Len() {
 			dp := metric.Summary().DataPoints().At(i)
 			if !f(dp.Attributes()) {
 				return
@@ -271,7 +271,7 @@ func mergeHistogramDataPoints(dpsMap map[string]pmetric.HistogramDataPointSlice,
 			if dp.HasMax() && dp.Max() < dps.At(i).Max() {
 				dp.SetMax(dps.At(i).Max())
 			}
-			for b := 0; b < dps.At(i).BucketCounts().Len(); b++ {
+			for b := range dps.At(i).BucketCounts().Len() {
 				counts.SetAt(b, counts.At(b)+dps.At(i).BucketCounts().At(b))
 			}
 			dps.At(i).Exemplars().MoveAndAppendTo(dp.Exemplars())
@@ -302,10 +302,10 @@ func mergeExponentialHistogramDataPoints(dpsMap map[string]pmetric.ExponentialHi
 			if dp.HasMax() && dp.Max() < dps.At(i).Max() {
 				dp.SetMax(dps.At(i).Max())
 			}
-			for b := 0; b < dps.At(i).Negative().BucketCounts().Len(); b++ {
+			for b := range dps.At(i).Negative().BucketCounts().Len() {
 				negatives.SetAt(b, negatives.At(b)+dps.At(i).Negative().BucketCounts().At(b))
 			}
-			for b := 0; b < dps.At(i).Positive().BucketCounts().Len(); b++ {
+			for b := range dps.At(i).Positive().BucketCounts().Len() {
 				positives.SetAt(b, positives.At(b)+dps.At(i).Positive().BucketCounts().At(b))
 			}
 			dps.At(i).Exemplars().MoveAndAppendTo(dp.Exemplars())
@@ -320,7 +320,7 @@ func groupNumberDataPoints(dps pmetric.NumberDataPointSlice, useStartTime bool,
 	dpsByAttrsAndTs map[string]pmetric.NumberDataPointSlice,
 ) {
 	var keyHashParts []any
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		if useStartTime {
 			keyHashParts = []any{dps.At(i).StartTimestamp().String()}
 		}
@@ -335,10 +335,10 @@ func groupNumberDataPoints(dps pmetric.NumberDataPointSlice, useStartTime bool,
 func groupHistogramDataPoints(dps pmetric.HistogramDataPointSlice, useStartTime bool,
 	dpsByAttrsAndTs map[string]pmetric.HistogramDataPointSlice,
 ) {
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		keyHashParts := make([]any, 0, dp.ExplicitBounds().Len()+4)
-		for b := 0; b < dp.ExplicitBounds().Len(); b++ {
+		for b := range dp.ExplicitBounds().Len() {
 			keyHashParts = append(keyHashParts, dp.ExplicitBounds().At(b))
 		}
 		if useStartTime {
@@ -357,7 +357,7 @@ func groupHistogramDataPoints(dps pmetric.HistogramDataPointSlice, useStartTime 
 func groupExponentialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPointSlice, useStartTime bool,
 	dpsByAttrsAndTs map[string]pmetric.ExponentialHistogramDataPointSlice,
 ) {
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		keyHashParts := make([]any, 0, 5)
 		keyHashParts = append(keyHashParts, dp.Scale(), dp.HasMin(), dp.HasMax(), uint32(dp.Flags()), dp.Negative().Offset(),

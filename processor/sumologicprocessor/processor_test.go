@@ -79,7 +79,7 @@ func TestAddCloudNamespaceForLogs(t *testing.T) {
 				return inputLogs
 			},
 			test: func(outputLogs plog.Logs) {
-				for i := 0; i < outputLogs.ResourceLogs().Len(); i++ {
+				for i := range outputLogs.ResourceLogs().Len() {
 					_, found := outputLogs.ResourceLogs().At(i).Resource().Attributes().Get("cloud.namespace")
 					assert.False(t, found)
 				}
@@ -205,7 +205,7 @@ func TestAddCloudNamespaceForMetrics(t *testing.T) {
 				return inputMetrics
 			},
 			test: func(outputMetrics pmetric.Metrics) {
-				for i := 0; i < outputMetrics.ResourceMetrics().Len(); i++ {
+				for i := range outputMetrics.ResourceMetrics().Len() {
 					_, found := outputMetrics.ResourceMetrics().At(i).Resource().Attributes().Get("cloud.namespace")
 					assert.False(t, found)
 				}
@@ -331,7 +331,7 @@ func TestAddCloudNamespaceForTraces(t *testing.T) {
 				return inputTraces
 			},
 			test: func(outputTraces ptrace.Traces) {
-				for i := 0; i < outputTraces.ResourceSpans().Len(); i++ {
+				for i := range outputTraces.ResourceSpans().Len() {
 					_, found := outputTraces.ResourceSpans().At(i).Resource().Attributes().Get("cloud.namespace")
 					assert.False(t, found)
 				}

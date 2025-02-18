@@ -71,12 +71,12 @@ func requireDp(t *testing.T, dp pmetric.NumberDataPoint, expectedAttrs pcommon.M
 
 func totalHistBucketCounts(hist pmetric.ExponentialHistogramDataPoint) uint64 {
 	var totalCount uint64
-	for i := 0; i < hist.Negative().BucketCounts().Len(); i++ {
+	for i := range hist.Negative().BucketCounts().Len() {
 		totalCount += hist.Negative().BucketCounts().At(i)
 	}
 
 	totalCount += hist.ZeroCount()
-	for i := 0; i < hist.Positive().BucketCounts().Len(); i++ {
+	for i := range hist.Positive().BucketCounts().Len() {
 		totalCount += hist.Positive().BucketCounts().At(i)
 	}
 	return totalCount

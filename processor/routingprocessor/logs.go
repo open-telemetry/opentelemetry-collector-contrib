@@ -106,7 +106,7 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 	groups := map[string]logsGroup{}
 	var errs error
 
-	for i := 0; i < l.ResourceLogs().Len(); i++ {
+	for i := range l.ResourceLogs().Len() {
 		rlogs := l.ResourceLogs().At(i)
 		ltx := ottllog.NewTransformContext(
 			plog.NewLogRecord(),
@@ -166,7 +166,7 @@ func (p *logProcessor) group(
 func (p *logProcessor) recordNonRoutedResourceLogs(ctx context.Context, routingKey string, rlogs plog.ResourceLogs) {
 	logRecordsCount := 0
 	sl := rlogs.ScopeLogs()
-	for j := 0; j < sl.Len(); j++ {
+	for j := range sl.Len() {
 		logRecordsCount += sl.At(j).LogRecords().Len()
 	}
 

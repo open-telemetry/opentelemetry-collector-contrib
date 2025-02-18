@@ -41,7 +41,7 @@ func addToGroupedMetric(
 		return nil
 	}
 
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		// Drop stale or NaN metric values
 		if isStaleNanInf, attrs := dps.IsStaleNaNInf(i); isStaleNanInf {
 			if config != nil && config.logger != nil {

@@ -76,11 +76,11 @@ func createMetricsData(resourcesNum, dataPointsNum int) pmetric.Metrics {
 	doubleVal := 1234.5678
 	metrics := pmetric.NewMetrics()
 
-	for i := 0; i < resourcesNum; i++ {
+	for i := range resourcesNum {
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().PutStr("k0", fmt.Sprintf("v%d", i))
 		rm.Resource().Attributes().PutStr("k1", "v1")
-		for j := 0; j < dataPointsNum; j++ {
+		for j := range dataPointsNum {
 			count := i*dataPointsNum + j
 			tsUnix := time.Unix(int64(count), int64(count)*time.Millisecond.Nanoseconds())
 			ilm := rm.ScopeMetrics().AppendEmpty()
@@ -103,11 +103,11 @@ func createTraceData(resourcesNum int, spansNum int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 
-	for i := 0; i < resourcesNum; i++ {
+	for i := range resourcesNum {
 		rs.Resource().Attributes().PutStr("resource", fmt.Sprintf("R%d", i))
 		ils := rs.ScopeSpans().AppendEmpty()
 		ils.Spans().EnsureCapacity(spansNum)
-		for j := 0; j < spansNum; j++ {
+		for j := range spansNum {
 			span := ils.Spans().AppendEmpty()
 			span.SetName("root")
 			count := i*spansNum + j
@@ -154,14 +154,14 @@ func repeatableString(length int) string {
 func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords []int) plog.Logs {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().EnsureCapacity(numResources)
-	for i := 0; i < numResources; i++ {
+	for i := range numResources {
 		rl := logs.ResourceLogs().AppendEmpty()
 		rl.ScopeLogs().EnsureCapacity(len(libraries))
-		for j := 0; j < len(libraries); j++ {
+		for j := range libraries {
 			sl := rl.ScopeLogs().AppendEmpty()
 			sl.Scope().SetName(libraries[j])
 			sl.LogRecords().EnsureCapacity(numRecords[j])
-			for k := 0; k < numRecords[j]; k++ {
+			for k := range numRecords[j] {
 				ts := pcommon.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
 				logRecord := sl.LogRecords().AppendEmpty()
 				logRecord.Body().SetStr("mylog")
@@ -806,11 +806,11 @@ func TestReceiveLogs(t *testing.T) {
 
 			// ensure all events are sent out
 			droppedCount := test.logs.LogRecordCount()
-			for i := 0; i < test.logs.ResourceLogs().Len(); i++ {
+			for i := range test.logs.ResourceLogs().Len() {
 				rl := test.logs.ResourceLogs().At(i)
-				for j := 0; j < rl.ScopeLogs().Len(); j++ {
+				for j := range rl.ScopeLogs().Len() {
 					sl := rl.ScopeLogs().At(j)
-					for k := 0; k < sl.LogRecords().Len(); k++ {
+					for k := range sl.LogRecords().Len() {
 						lr := sl.LogRecords().At(k)
 						attrVal, ok := lr.Attributes().Get("otel.log.name")
 						require.True(t, ok)
@@ -1764,7 +1764,7 @@ func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize ui
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		err := exp.ConsumeLogs(context.Background(), logs)
 		require.NoError(b, err)
 	}
@@ -1906,7 +1906,7 @@ func benchPushMetricData(b *testing.B, numResources int, numRecords int, bufSize
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		err := exp.ConsumeMetrics(context.Background(), metrics)
 		require.NoError(b, err)
 	}
@@ -1927,7 +1927,7 @@ func BenchmarkConsumeLogsRejected(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		err := exp.ConsumeLogs(context.Background(), logs)
 		require.Error(b, err)
 	}

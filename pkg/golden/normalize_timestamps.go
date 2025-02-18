@@ -15,9 +15,9 @@ import (
 
 func normalizeTimestamps(metrics pmetric.Metrics) {
 	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		for j := 0; j < rms.At(i).ScopeMetrics().Len(); j++ {
-			for k := 0; k < rms.At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
+	for i := range rms.Len() {
+		for j := range rms.At(i).ScopeMetrics().Len() {
+			for k := range rms.At(i).ScopeMetrics().At(j).Metrics().Len() {
 				m := rms.At(i).ScopeMetrics().At(j).Metrics().At(k)
 				//exhaustive:enforce
 				switch m.Type() {
@@ -87,7 +87,7 @@ type dataPoint interface {
 
 func normalizeDataPointSlice[T dataPoint](dps dataPointSlice[T]) {
 	attrCache := make(map[[16]byte]bool)
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		attrHash := pdatautil.MapHash(dps.At(i).Attributes())
 		if attrCache[attrHash] {
 			continue
@@ -103,7 +103,7 @@ func normalizeDataPointSlice[T dataPoint](dps dataPointSlice[T]) {
 		}
 
 		normalizedTs := normalizeTimeSeries(timeSeries)
-		for k := 0; k < dps.Len(); k++ {
+		for k := range dps.Len() {
 			if pdatautil.MapHash(dps.At(k).Attributes()) != attrHash {
 				continue
 			}

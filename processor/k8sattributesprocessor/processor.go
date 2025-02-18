@@ -100,7 +100,7 @@ func (kp *kubernetesprocessor) Shutdown(context.Context) error {
 // processTraces process traces and add k8s metadata using resource IP or incoming IP as pod origin.
 func (kp *kubernetesprocessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	rss := td.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
+	for i := range rss.Len() {
 		kp.processResource(ctx, rss.At(i).Resource())
 	}
 
@@ -110,7 +110,7 @@ func (kp *kubernetesprocessor) processTraces(ctx context.Context, td ptrace.Trac
 // processMetrics process metrics and add k8s metadata using resource IP, hostname or incoming IP as pod origin.
 func (kp *kubernetesprocessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	rm := md.ResourceMetrics()
-	for i := 0; i < rm.Len(); i++ {
+	for i := range rm.Len() {
 		kp.processResource(ctx, rm.At(i).Resource())
 	}
 
@@ -120,7 +120,7 @@ func (kp *kubernetesprocessor) processMetrics(ctx context.Context, md pmetric.Me
 // processLogs process logs and add k8s metadata using resource IP, hostname or incoming IP as pod origin.
 func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	rl := ld.ResourceLogs()
-	for i := 0; i < rl.Len(); i++ {
+	for i := range rl.Len() {
 		kp.processResource(ctx, rl.At(i).Resource())
 	}
 
@@ -130,7 +130,7 @@ func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (p
 // processProfiles process profiles and add k8s metadata using resource IP, hostname or incoming IP as pod origin.
 func (kp *kubernetesprocessor) processProfiles(ctx context.Context, pd pprofile.Profiles) (pprofile.Profiles, error) {
 	rp := pd.ResourceProfiles()
-	for i := 0; i < rp.Len(); i++ {
+	for i := range rp.Len() {
 		kp.processResource(ctx, rp.At(i).Resource())
 	}
 

@@ -86,11 +86,11 @@ func (se *syslogexporter) pushLogsData(ctx context.Context, logs plog.Logs) erro
 
 func (se *syslogexporter) exportBatch(ctx context.Context, logs plog.Logs) error {
 	var payload strings.Builder
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		resourceLogs := logs.ResourceLogs().At(i)
-		for j := 0; j < resourceLogs.ScopeLogs().Len(); j++ {
+		for j := range resourceLogs.ScopeLogs().Len() {
 			scopeLogs := resourceLogs.ScopeLogs().At(j)
-			for k := 0; k < scopeLogs.LogRecords().Len(); k++ {
+			for k := range scopeLogs.LogRecords().Len() {
 				logRecord := scopeLogs.LogRecords().At(k)
 				formatted := se.formatter.format(logRecord)
 				payload.WriteString(formatted)
@@ -121,13 +121,13 @@ func (se *syslogexporter) exportNonBatch(ctx context.Context, logs plog.Logs) er
 
 	errs := []error{}
 	droppedLogs := plog.NewLogs()
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		resourceLogs := logs.ResourceLogs().At(i)
 		droppedResourceLogs := droppedLogs.ResourceLogs().AppendEmpty()
-		for j := 0; j < resourceLogs.ScopeLogs().Len(); j++ {
+		for j := range resourceLogs.ScopeLogs().Len() {
 			scopeLogs := resourceLogs.ScopeLogs().At(j)
 			droppedScopeLogs := droppedResourceLogs.ScopeLogs().AppendEmpty()
-			for k := 0; k < scopeLogs.LogRecords().Len(); k++ {
+			for k := range scopeLogs.LogRecords().Len() {
 				logRecord := scopeLogs.LogRecords().At(k)
 				formatted := se.formatter.format(logRecord)
 				err = sender.Write(ctx, formatted)

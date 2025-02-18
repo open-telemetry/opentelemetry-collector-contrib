@@ -117,7 +117,7 @@ func TestRemote(t *testing.T) {
 			assert.NoError(t, e.Start(context.Background(), componenttest.NewNopHost()))
 
 			// make test case defined number of calls
-			for i := 0; i < tc.performedClientCallCount; i++ {
+			for range tc.performedClientCallCount {
 				resp, err := http.Get("http://127.0.0.1:5778/sampling?service=foo")
 				assert.NoError(t, err)
 				assert.Equal(t, 200, resp.StatusCode)

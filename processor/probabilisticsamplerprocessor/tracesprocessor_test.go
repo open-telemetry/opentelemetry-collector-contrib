@@ -1133,10 +1133,10 @@ func initSpanWithAttribute(key string, value pcommon.Value, dest ptrace.Span) {
 func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, resourceSpanCount int) (tdd []ptrace.Traces) {
 	r := rand.New(rand.NewPCG(123, 456))
 	var traceBatches []ptrace.Traces
-	for i := 0; i < numBatches; i++ {
+	for range numBatches {
 		traces := ptrace.NewTraces()
 		traces.ResourceSpans().EnsureCapacity(resourceSpanCount)
-		for j := 0; j < resourceSpanCount; j++ {
+		for range resourceSpanCount {
 			rs := traces.ResourceSpans().AppendEmpty()
 			rs.Resource().Attributes().PutStr("service.name", serviceName)
 			rs.Resource().Attributes().PutBool("bool", true)
@@ -1145,7 +1145,7 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 			ils := rs.ScopeSpans().AppendEmpty()
 			ils.Spans().EnsureCapacity(numTracesPerBatch)
 
-			for k := 0; k < numTracesPerBatch; k++ {
+			for range numTracesPerBatch {
 				span := ils.Spans().AppendEmpty()
 				span.SetTraceID(idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()))
 				span.SetSpanID(idutils.UInt64ToSpanID(r.Uint64()))
@@ -1195,15 +1195,15 @@ func newAssertTraces(t *testing.T, name string) *assertTraces {
 func (a *assertTraces) onSampledData(sampled []ptrace.Traces) {
 	for _, td := range sampled {
 		rspans := td.ResourceSpans()
-		for i := 0; i < rspans.Len(); i++ {
+		for i := range rspans.Len() {
 			rspan := rspans.At(i)
 			ilss := rspan.ScopeSpans()
-			for j := 0; j < ilss.Len(); j++ {
+			for j := range ilss.Len() {
 				ils := ilss.At(j)
 				if svcNameAttr, _ := rspan.Resource().Attributes().Get("service.name"); svcNameAttr.Str() != a.testName {
 					continue
 				}
-				for k := 0; k < ils.Spans().Len(); k++ {
+				for k := range ils.Spans().Len() {
 					a.spanCount++
 					span := ils.Spans().At(k)
 					key := span.TraceID()

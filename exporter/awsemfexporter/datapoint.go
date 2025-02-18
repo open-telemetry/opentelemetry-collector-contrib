@@ -466,7 +466,7 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 		datapoints = append(datapoints, dataPoint{name: fmt.Sprint(dps.metricName, summarySumSuffix), value: sum, labels: labels, timestampMs: timestampMs})
 		datapoints = append(datapoints, dataPoint{name: fmt.Sprint(dps.metricName, summaryCountSuffix), value: count, labels: labels, timestampMs: timestampMs})
 
-		for i := 0; i < values.Len(); i++ {
+		for i := range values.Len() {
 			cLabels := maps.Clone(labels)
 			quantile := values.At(i)
 			cLabels["quantile"] = strconv.FormatFloat(quantile.Quantile(), 'g', -1, 64)
@@ -494,7 +494,7 @@ func (dps summaryDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 	}
 
 	values := metric.QuantileValues()
-	for i := 0; i < values.Len(); i++ {
+	for i := range values.Len() {
 		quantile := values.At(i)
 		if math.IsNaN(quantile.Value()) || math.IsNaN(quantile.Quantile()) ||
 			math.IsInf(quantile.Value(), 0) || math.IsInf(quantile.Quantile(), 0) {

@@ -81,7 +81,7 @@ func (oce *ocExporter) start(ctx context.Context, host component.Host) error {
 	if oce.tracesClients != nil {
 		oce.traceSvcClient = agenttracepb.NewTraceServiceClient(oce.grpcClientConn)
 		// Try to create rpc clients now.
-		for i := 0; i < oce.cfg.NumWorkers; i++ {
+		for range oce.cfg.NumWorkers {
 			// Populate the channel with NumWorkers nil RPCs to keep the number of workers
 			// constant in the channel.
 			oce.tracesClients <- nil
@@ -91,7 +91,7 @@ func (oce *ocExporter) start(ctx context.Context, host component.Host) error {
 	if oce.metricsClients != nil {
 		oce.metricsSvcClient = agentmetricspb.NewMetricsServiceClient(oce.grpcClientConn)
 		// Try to create rpc clients now.
-		for i := 0; i < oce.cfg.NumWorkers; i++ {
+		for range oce.cfg.NumWorkers {
 			// Populate the channel with NumWorkers nil RPCs to keep the number of workers
 			// constant in the channel.
 			oce.metricsClients <- nil
@@ -106,7 +106,7 @@ func (oce *ocExporter) shutdown(context.Context) error {
 	}
 	if oce.tracesClients != nil {
 		// First remove all the clients from the channel.
-		for i := 0; i < oce.cfg.NumWorkers; i++ {
+		for range oce.cfg.NumWorkers {
 			<-oce.tracesClients
 		}
 		// Now close the channel
@@ -114,7 +114,7 @@ func (oce *ocExporter) shutdown(context.Context) error {
 	}
 	if oce.metricsClients != nil {
 		// First remove all the clients from the channel.
-		for i := 0; i < oce.cfg.NumWorkers; i++ {
+		for range oce.cfg.NumWorkers {
 			<-oce.metricsClients
 		}
 		// Now close the channel
@@ -164,7 +164,7 @@ func (oce *ocExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	}
 
 	rss := td.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
+	for i := range rss.Len() {
 		node, resource, spans := opencensus.ResourceSpansToOC(rss.At(i))
 		// This is a hack because OC protocol expects a Node for the initial message.
 		if node == nil {
@@ -213,7 +213,7 @@ func (oce *ocExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error 
 	}
 
 	rms := md.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		ocReq := agentmetricspb.ExportMetricsServiceRequest{}
 		ocReq.Node, ocReq.Resource, ocReq.Metrics = opencensus.ResourceMetricsToOC(rms.At(i))
 

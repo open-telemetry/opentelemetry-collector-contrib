@@ -275,7 +275,7 @@ func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 	}
 
 	fe.LogRecordSlice.EnsureCapacity(int(entryLen))
-	for i := 0; i < int(entryLen); i++ {
+	for i := range entryLen {
 		lr := fe.LogRecordSlice.AppendEmpty()
 
 		err = parseEntryToLogRecord(dc, lr)

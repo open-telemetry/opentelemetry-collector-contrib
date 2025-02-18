@@ -221,8 +221,8 @@ func Benchmark_regexPathParser_ParsePath(b *testing.B) {
 	res.metricType = got.MetricType
 	res.err = err
 
-	for n := 0; n < b.N; n++ {
-		for i := 0; i < len(tests); i++ {
+	for range b.N {
+		for i := range tests {
 			err = rp.ParsePath(tests[i], &got)
 		}
 	}

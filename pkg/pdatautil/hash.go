@@ -173,7 +173,7 @@ func (hw *hashWriter) writeValueHash(v pcommon.Value) {
 	case pcommon.ValueTypeSlice:
 		sl := v.Slice()
 		hw.byteBuf = append(hw.byteBuf, valSlicePrefix...)
-		for i := 0; i < sl.Len(); i++ {
+		for i := range sl.Len() {
 			hw.writeValueHash(sl.At(i))
 		}
 		hw.byteBuf = append(hw.byteBuf, valSliceSuffix...)

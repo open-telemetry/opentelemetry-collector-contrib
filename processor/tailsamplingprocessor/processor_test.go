@@ -304,12 +304,12 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 	for _, batch := range batches {
 		wg.Add(1)
 		go func(td ptrace.Traces) {
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				assert.NoError(t, tsp.ConsumeTraces(context.Background(), td))
 			}
 			<-evalStarted
 			close(continueEvaluation)
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				assert.NoError(t, tsp.ConsumeTraces(context.Background(), td))
 			}
 			wg.Done()
@@ -347,7 +347,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 
 	// On sequential insertion it is possible to know exactly which traces should be still on the map.
 	tsp := sp.(*tailSamplingSpanProcessor)
-	for i := 0; i < len(traceIDs)-int(cfg.NumTraces); i++ {
+	for i := range len(traceIDs) - int(cfg.NumTraces) {
 		_, ok := tsp.idToTrace.Load(traceIDs[i])
 		require.False(t, ok, "Found unexpected traceId[%d] still on map (id: %v)", i, traceIDs[i])
 	}
@@ -671,13 +671,13 @@ func TestDecisionPolicyMetrics(t *testing.T) {
 func collectSpanIDs(trace ptrace.Traces) []pcommon.SpanID {
 	var spanIDs []pcommon.SpanID
 
-	for i := 0; i < trace.ResourceSpans().Len(); i++ {
+	for i := range trace.ResourceSpans().Len() {
 		ilss := trace.ResourceSpans().At(i).ScopeSpans()
 
-		for j := 0; j < ilss.Len(); j++ {
+		for j := range ilss.Len() {
 			ils := ilss.At(j)
 
-			for k := 0; k < ils.Spans().Len(); k++ {
+			for k := range ils.Spans().Len() {
 				span := ils.Spans().At(k)
 				spanIDs = append(spanIDs, span.SpanID())
 			}
@@ -702,7 +702,7 @@ func generateIDsAndBatches(numIDs int) ([]pcommon.TraceID, []ptrace.Traces) {
 	traceIDs := make([]pcommon.TraceID, numIDs)
 	spanID := 0
 	var tds []ptrace.Traces
-	for i := 0; i < numIDs; i++ {
+	for i := range numIDs {
 		traceIDs[i] = uInt64ToTraceID(uint64(i))
 		// Send each span in a separate batch
 		for j := 0; j <= i; j++ {

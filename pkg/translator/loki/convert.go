@@ -104,7 +104,7 @@ func getAttribute(attr string, attributes pcommon.Map) (pcommon.Value, bool) {
 	// perhaps it's a nested attribute?
 	segments := strings.Split(attr, attrSeparator)
 	segmentsNumber := len(segments)
-	for i := 0; i < segmentsNumber-1; i++ {
+	for i := range segmentsNumber - 1 {
 		left := strings.Join(segments[:segmentsNumber-i-1], attrSeparator)
 		right := strings.Join(segments[segmentsNumber-i-1:], attrSeparator)
 

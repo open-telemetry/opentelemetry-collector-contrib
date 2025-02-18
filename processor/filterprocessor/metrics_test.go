@@ -463,7 +463,7 @@ func benchmarkFilter(b *testing.B, mp *filterconfig.MetricMatchProperties) {
 	pdms := metricSlice(128)
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		for _, pdm := range pdms {
 			_ = proc.ConsumeMetrics(ctx, pdm)
 		}
@@ -472,7 +472,7 @@ func benchmarkFilter(b *testing.B, mp *filterconfig.MetricMatchProperties) {
 
 func metricSlice(numMetrics int) []pmetric.Metrics {
 	var out []pmetric.Metrics
-	for i := 0; i < numMetrics; i++ {
+	for i := range numMetrics {
 		const size = 2
 		out = append(out, pdm(fmt.Sprintf("p%d_", i), size))
 	}

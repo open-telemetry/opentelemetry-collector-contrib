@@ -139,11 +139,11 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 
 	assert.Equal(t, want.SpanCount(), reqs.SpanCount())
 	assert.Equal(t, want.ResourceSpans().Len(), reqs.ResourceSpans().Len())
-	for i := 0; i < want.ResourceSpans().Len(); i++ {
+	for i := range want.ResourceSpans().Len() {
 		wantRS := want.ResourceSpans().At(i)
 		wSvcName, ok := wantRS.Resource().Attributes().Get(conventions.AttributeServiceName)
 		assert.True(t, ok)
-		for j := 0; j < reqs.ResourceSpans().Len(); j++ {
+		for j := range reqs.ResourceSpans().Len() {
 			reqsRS := reqs.ResourceSpans().At(j)
 			rSvcName, ok := reqsRS.Resource().Attributes().Get(conventions.AttributeServiceName)
 			assert.True(t, ok)

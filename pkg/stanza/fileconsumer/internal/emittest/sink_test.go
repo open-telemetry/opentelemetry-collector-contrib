@@ -38,7 +38,7 @@ func TestNextTokenTimeout(t *testing.T) {
 
 func TestNextTokens(t *testing.T) {
 	s, testCalls := sinkTest(t)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		tokens := s.NextTokens(t, 2)
 		assert.Equal(t, testCalls[2*i].Body, tokens[0])
 		assert.Equal(t, testCalls[2*i+1].Body, tokens[1])
@@ -47,7 +47,7 @@ func TestNextTokens(t *testing.T) {
 
 func TestNextTokensTimeout(t *testing.T) {
 	s, testCalls := sinkTest(t, WithTimeout(10*time.Millisecond))
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		tokens := s.NextTokens(t, 2)
 		assert.Equal(t, testCalls[2*i].Body, tokens[0])
 		assert.Equal(t, testCalls[2*i+1].Body, tokens[1])
@@ -103,14 +103,14 @@ func TestExpectTokenTimeout(t *testing.T) {
 
 func TestExpectTokens(t *testing.T) {
 	s, testCalls := sinkTest(t)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		s.ExpectTokens(t, testCalls[2*i].Body, testCalls[2*i+1].Body)
 	}
 }
 
 func TestExpectTokensTimeout(t *testing.T) {
 	s, testCalls := sinkTest(t, WithTimeout(10*time.Millisecond))
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		s.ExpectTokens(t, testCalls[2*i].Body, testCalls[2*i+1].Body)
 	}
 
@@ -186,7 +186,7 @@ func TestExpectNoCallsFailure(t *testing.T) {
 
 func TestWithCallBuffer(t *testing.T) {
 	s, testCalls := sinkTest(t, WithCallBuffer(5))
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		s.ExpectCall(t, testCalls[i].Body, testCalls[i].Attributes)
 	}
 }
@@ -194,7 +194,7 @@ func TestWithCallBuffer(t *testing.T) {
 func sinkTest(t *testing.T, opts ...SinkOpt) (*Sink, []emit.Token) {
 	s := NewSink(opts...)
 	testCalls := make([]emit.Token, 0, 10)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		testCalls = append(testCalls, emit.Token{
 			Body: []byte(fmt.Sprintf("token-%d", i)),
 			Attributes: map[string]any{

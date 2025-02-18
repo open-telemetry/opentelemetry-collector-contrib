@@ -98,7 +98,7 @@ func (e *metricsExporter) shutdown(_ context.Context) error {
 func (e *metricsExporter) pushMetricData(ctx context.Context, md pmetric.Metrics) error {
 	metricMap := initMetricMap(md.DataPointCount())
 
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+	for i := range md.ResourceMetrics().Len() {
 		resourceMetric := md.ResourceMetrics().At(i)
 		resource := resourceMetric.Resource()
 		resourceAttributes := resource.Attributes()
@@ -108,10 +108,10 @@ func (e *metricsExporter) pushMetricData(ctx context.Context, md pmetric.Metrics
 			serviceName = v.AsString()
 		}
 
-		for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
+		for j := range resourceMetric.ScopeMetrics().Len() {
 			scopeMetric := resourceMetric.ScopeMetrics().At(j)
 
-			for k := 0; k < scopeMetric.Metrics().Len(); k++ {
+			for k := range scopeMetric.Metrics().Len() {
 				metric := scopeMetric.Metrics().At(k)
 
 				dm := &dMetric{

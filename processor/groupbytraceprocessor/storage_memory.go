@@ -42,7 +42,7 @@ func (st *memoryStorage) createOrAppend(traceID pcommon.TraceID, td ptrace.Trace
 
 	newRss := ptrace.NewResourceSpansSlice()
 	td.ResourceSpans().CopyTo(newRss)
-	for i := 0; i < newRss.Len(); i++ {
+	for i := range newRss.Len() {
 		content = append(content, newRss.At(i))
 	}
 	st.content[traceID] = content

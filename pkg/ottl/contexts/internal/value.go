@@ -71,7 +71,7 @@ func SetValue(value pcommon.Value, val any) error {
 func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, keys []ottl.Key[K]) (any, error) {
 	val := value
 	var ok bool
-	for index := 0; index < len(keys); index++ {
+	for index := range keys {
 		switch val.Type() {
 		case pcommon.ValueTypeMap:
 			s, err := keys[index].String(ctx, tCtx)
@@ -125,7 +125,7 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 		return err
 	}
 
-	for index := 0; index < len(keys); index++ {
+	for index := range keys {
 		switch currentValue.Type() {
 		case pcommon.ValueTypeMap:
 			s, err := keys[index].String(ctx, tCtx)
@@ -175,7 +175,7 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				currentValue = currentValue.SetEmptyMap().PutEmpty(*s)
 			case i != nil:
 				currentValue.SetEmptySlice()
-				for k := 0; k < int(*i); k++ {
+				for range *i {
 					currentValue.Slice().AppendEmpty()
 				}
 				currentValue = currentValue.Slice().AppendEmpty()
@@ -185,7 +185,7 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				switch {
 				case errInt == nil:
 					currentValue.SetEmptySlice()
-					for k := 0; k < int(*resInt); k++ {
+					for range *resInt {
 						currentValue.Slice().AppendEmpty()
 					}
 					currentValue = currentValue.Slice().AppendEmpty()

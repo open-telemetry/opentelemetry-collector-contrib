@@ -377,7 +377,7 @@ func (t *transaction) getMetrics() (pmetric.Metrics, error) {
 			return true
 		}
 		remove := true
-		for i := 0; i < metrics.ScopeMetrics().Len(); i++ {
+		for i := range metrics.ScopeMetrics().Len() {
 			if metrics.ScopeMetrics().At(i).Metrics().Len() > 0 {
 				remove = false
 				break

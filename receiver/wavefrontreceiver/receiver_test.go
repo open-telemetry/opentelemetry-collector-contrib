@@ -134,11 +134,11 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 		metrics := sink.AllMetrics()
 		var gotMetrics []pmetric.Metric
 		for _, md := range metrics {
-			for i := 0; i < md.ResourceMetrics().Len(); i++ {
+			for i := range md.ResourceMetrics().Len() {
 				rm := md.ResourceMetrics().At(i)
-				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+				for j := range rm.ScopeMetrics().Len() {
 					sm := rm.ScopeMetrics().At(j)
-					for k := 0; k < sm.Metrics().Len(); k++ {
+					for k := range sm.Metrics().Len() {
 						gotMetrics = append(gotMetrics, sm.Metrics().At(k))
 					}
 				}

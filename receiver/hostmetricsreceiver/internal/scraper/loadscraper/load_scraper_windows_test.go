@@ -93,7 +93,7 @@ func TestSampleLoad(t *testing.T) {
 
 	samplerInstance = &sampler{perfCounterScraper: mockPerfCounterScraper}
 
-	for i := 0; i < len(counterReturnValues); i++ {
+	for range counterReturnValues {
 		samplerInstance.sampleLoad()
 	}
 
@@ -106,7 +106,7 @@ func calcExpectedLoad(scrapedValues []int64, loadAvgFactor float64) float64 {
 	// replicate the calculations that should be performed to determine the exponentially
 	// weighted moving averages based on the specified scraped values
 	var expectedLoad float64
-	for i := 0; i < len(scrapedValues); i++ {
+	for i := range scrapedValues {
 		expectedLoad = expectedLoad*loadAvgFactor + float64(scrapedValues[i])*(1-loadAvgFactor)
 	}
 	return expectedLoad
@@ -116,7 +116,7 @@ func Benchmark_SampleLoad(b *testing.B) {
 	s, _ := newSampler(zap.NewNop())
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		s.sampleLoad()
 	}
 }

@@ -13,7 +13,7 @@ import (
 func makeSpanLinks(links ptrace.SpanLinkSlice, skipTimestampValidation bool) ([]awsxray.SpanLinkData, error) {
 	var spanLinkDataArray []awsxray.SpanLinkData
 
-	for i := 0; i < links.Len(); i++ {
+	for i := range links.Len() {
 		var spanLinkData awsxray.SpanLinkData
 		link := links.At(i)
 

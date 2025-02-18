@@ -57,7 +57,7 @@ func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (ottl.ExprF
 
 		sumDps := sumMetric.Sum().DataPoints()
 		dps := metric.Summary().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
+		for i := range dps.Len() {
 			dp := dps.At(i)
 			sumDp := sumDps.AppendEmpty()
 			dp.Attributes().CopyTo(sumDp.Attributes())

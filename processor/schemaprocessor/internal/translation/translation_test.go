@@ -194,11 +194,11 @@ func TestTranslationSpanChanges(t *testing.T) {
 
 			inSchemaURL := joinSchemaFamilyAndVersion("https://example.com/", &tc.income)
 			spans := NewExampleSpans(t, tc.income)
-			for i := 0; i < spans.ResourceSpans().Len(); i++ {
+			for i := range spans.ResourceSpans().Len() {
 				rSpan := spans.ResourceSpans().At(i)
 				err := tn.ApplyAllResourceChanges(rSpan, inSchemaURL)
 				require.NoError(t, err, "Must not error when applying resource changes")
-				for j := 0; j < rSpan.ScopeSpans().Len(); j++ {
+				for j := range rSpan.ScopeSpans().Len() {
 					span := rSpan.ScopeSpans().At(j)
 					err = tn.ApplyScopeSpanChanges(span, inSchemaURL)
 					require.NoError(t, err, "Must not error when applying scope span changes")
@@ -269,11 +269,11 @@ func TestTranslationLogChanges(t *testing.T) {
 
 			inSchemaURL := joinSchemaFamilyAndVersion("https://example.com/", &tc.income)
 			logs := NewExampleLogs(t, tc.income)
-			for i := 0; i < logs.ResourceLogs().Len(); i++ {
+			for i := range logs.ResourceLogs().Len() {
 				rLogs := logs.ResourceLogs().At(i)
 				err = tn.ApplyAllResourceChanges(rLogs, inSchemaURL)
 				require.NoError(t, err, "Must not error when applying resource changes")
-				for j := 0; j < rLogs.ScopeLogs().Len(); j++ {
+				for j := range rLogs.ScopeLogs().Len() {
 					log := rLogs.ScopeLogs().At(j)
 					err = tn.ApplyScopeLogChanges(log, inSchemaURL)
 					require.NoError(t, err, "Must not error when applying scope log changes")
@@ -341,11 +341,11 @@ func TestTranslationMetricChanges(t *testing.T) {
 
 			inSchemaURL := joinSchemaFamilyAndVersion("https://example.com/", &tc.income)
 			metrics := NewExampleMetrics(t, tc.income)
-			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+			for i := range metrics.ResourceMetrics().Len() {
 				rMetrics := metrics.ResourceMetrics().At(i)
 				err = tn.ApplyAllResourceChanges(rMetrics, inSchemaURL)
 				require.NoError(t, err, "Must not error when applying resource changes")
-				for j := 0; j < rMetrics.ScopeMetrics().Len(); j++ {
+				for j := range rMetrics.ScopeMetrics().Len() {
 					metric := rMetrics.ScopeMetrics().At(j)
 					err := tn.ApplyScopeMetricChanges(metric, inSchemaURL)
 					require.NoError(t, err, "Must not error when applying scope metric changes")
@@ -370,11 +370,11 @@ func TestTranslationEquvialance_Logs(t *testing.T) {
 	require.NoError(t, err, "Must not error creating translator")
 
 	for _, logs := range []plog.Logs{a, b} {
-		for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		for i := range logs.ResourceLogs().Len() {
 			rLogs := logs.ResourceLogs().At(i)
 			err = tn.ApplyAllResourceChanges(rLogs, rLogs.SchemaUrl())
 			require.NoError(t, err, "Must not error when applying resource changes")
-			for j := 0; j < rLogs.ScopeLogs().Len(); j++ {
+			for j := range rLogs.ScopeLogs().Len() {
 				log := rLogs.ScopeLogs().At(j)
 				err = tn.ApplyScopeLogChanges(log, log.SchemaUrl())
 				require.NoError(t, err, "Must not error when applying scope log changes")
@@ -399,11 +399,11 @@ func TestTranslationEquvialance_Metrics(t *testing.T) {
 	require.NoError(t, err, "Must not error creating translator")
 
 	for _, metrics := range []pmetric.Metrics{a, b} {
-		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		for i := range metrics.ResourceMetrics().Len() {
 			rMetrics := metrics.ResourceMetrics().At(i)
 			err = tn.ApplyAllResourceChanges(rMetrics, rMetrics.SchemaUrl())
 			require.NoError(t, err, "Must not error when applying resource changes")
-			for j := 0; j < rMetrics.ScopeMetrics().Len(); j++ {
+			for j := range rMetrics.ScopeMetrics().Len() {
 				metric := rMetrics.ScopeMetrics().At(j)
 				err = tn.ApplyScopeMetricChanges(metric, metric.SchemaUrl())
 				require.NoError(t, err, "Must not error when applying scope metric changes")
@@ -428,11 +428,11 @@ func TestTranslationEquvialance_Traces(t *testing.T) {
 	require.NoError(t, err, "Must not error creating translator")
 
 	for _, traces := range []ptrace.Traces{a, b} {
-		for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		for i := range traces.ResourceSpans().Len() {
 			rSpans := traces.ResourceSpans().At(i)
 			err = tn.ApplyAllResourceChanges(rSpans, rSpans.SchemaUrl())
 			require.NoError(t, err, "Must not error when applying resource changes")
-			for j := 0; j < rSpans.ScopeSpans().Len(); j++ {
+			for j := range rSpans.ScopeSpans().Len() {
 				spans := rSpans.ScopeSpans().At(j)
 				err = tn.ApplyScopeSpanChanges(spans, spans.SchemaUrl())
 				require.NoError(t, err, "Must not error when applying scope span changes")
@@ -450,7 +450,7 @@ func BenchmarkCreatingTranslation(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		tn, err := newTranslatorFromReader(
 			log,
 			"https://opentelemetry.io/schemas/1.9.0",
@@ -474,16 +474,16 @@ func BenchmarkUpgradingMetrics(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		b.StopTimer()
 		m := pmetric.NewMetrics()
 		metrics.CopyTo(m)
 		b.StartTimer()
-		for i := 0; i < m.ResourceMetrics().Len(); i++ {
+		for i := range m.ResourceMetrics().Len() {
 			rMetrics := m.ResourceMetrics().At(i)
 			err = tn.ApplyAllResourceChanges(rMetrics, rMetrics.SchemaUrl())
 			require.NoError(b, err, "Must not error when applying resource changes")
-			for j := 0; j < rMetrics.ScopeMetrics().Len(); j++ {
+			for j := range rMetrics.ScopeMetrics().Len() {
 				metric := rMetrics.ScopeMetrics().At(j)
 				err = tn.ApplyScopeMetricChanges(metric, metric.SchemaUrl())
 				require.NoError(b, err, "Must not error when applying scope metric changes")
@@ -505,16 +505,16 @@ func BenchmarkUpgradingTraces(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		b.StopTimer()
 		t := ptrace.NewTraces()
 		traces.CopyTo(t)
 		b.StartTimer()
-		for i := 0; i < t.ResourceSpans().Len(); i++ {
+		for i := range t.ResourceSpans().Len() {
 			rSpans := t.ResourceSpans().At(i)
 			err = tn.ApplyAllResourceChanges(rSpans, rSpans.SchemaUrl())
 			require.NoError(b, err, "Must not error when applying resource changes")
-			for j := 0; j < rSpans.ScopeSpans().Len(); j++ {
+			for j := range rSpans.ScopeSpans().Len() {
 				spans := rSpans.ScopeSpans().At(j)
 				err = tn.ApplyScopeSpanChanges(spans, spans.SchemaUrl())
 				require.NoError(b, err, "Must not error when applying scope span changes")
@@ -536,16 +536,16 @@ func BenchmarkUpgradingLogs(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		b.StopTimer()
 		l := plog.NewLogs()
 		logs.CopyTo(l)
 		b.StartTimer()
-		for i := 0; i < l.ResourceLogs().Len(); i++ {
+		for i := range l.ResourceLogs().Len() {
 			rLogs := l.ResourceLogs().At(i)
 			err = tn.ApplyAllResourceChanges(rLogs, rLogs.SchemaUrl())
 			require.NoError(b, err, "Must not error when applying resource changes")
-			for j := 0; j < rLogs.ScopeLogs().Len(); j++ {
+			for j := range rLogs.ScopeLogs().Len() {
 				log := rLogs.ScopeLogs().At(j)
 				err = tn.ApplyScopeLogChanges(log, log.SchemaUrl())
 				require.NoError(b, err, "Must not error when applying scope log changes")

@@ -86,7 +86,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 	case pmetric.MetricTypeGauge:
 		dataPoints := md.Gauge().DataPoints()
 		adxMetrics := make([]*AdxMetric, dataPoints.Len())
-		for gi := 0; gi < dataPoints.Len(); gi++ {
+		for gi := range dataPoints.Len() {
 			dataPoint := dataPoints.At(gi)
 			adxMetrics[gi] = createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
 				var metricValue float64
@@ -103,7 +103,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 	case pmetric.MetricTypeHistogram:
 		dataPoints := md.Histogram().DataPoints()
 		var adxMetrics []*AdxMetric
-		for gi := 0; gi < dataPoints.Len(); gi++ {
+		for gi := range dataPoints.Len() {
 			dataPoint := dataPoints.At(gi)
 			bounds := dataPoint.ExplicitBounds()
 			counts := dataPoint.BucketCounts()
@@ -132,7 +132,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			}
 			value := uint64(0)
 			// now create buckets for each bound.
-			for bi := 0; bi < bounds.Len(); bi++ {
+			for bi := range bounds.Len() {
 				customMap := copyMap(map[string]any{"le": float64ToDimValue(bounds.At(bi))}, dataPoint.Attributes().AsRaw())
 
 				value += counts.At(bi)
@@ -169,7 +169,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 	case pmetric.MetricTypeSum:
 		dataPoints := md.Sum().DataPoints()
 		adxMetrics := make([]*AdxMetric, dataPoints.Len())
-		for gi := 0; gi < dataPoints.Len(); gi++ {
+		for gi := range dataPoints.Len() {
 			dataPoint := dataPoints.At(gi)
 			adxMetrics[gi] = createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
 				var metricValue float64
@@ -186,7 +186,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 	case pmetric.MetricTypeSummary:
 		dataPoints := md.Summary().DataPoints()
 		var adxMetrics []*AdxMetric
-		for gi := 0; gi < dataPoints.Len(); gi++ {
+		for gi := range dataPoints.Len() {
 			dataPoint := dataPoints.At(gi)
 			// first, add one event for sum, and one for count
 			{
@@ -207,7 +207,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					pmetric.MetricTypeSummary))
 			}
 			// now create values for each quantile.
-			for bi := 0; bi < dataPoint.QuantileValues().Len(); bi++ {
+			for bi := range dataPoint.QuantileValues().Len() {
 				dp := dataPoint.QuantileValues().At(bi)
 				quantileName := fmt.Sprintf("%s_%s", md.Name(), strconv.FormatFloat(dp.Quantile(), 'f', -1, 64))
 				metricQuantile := map[string]any{
@@ -241,15 +241,15 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, logger *zap.Logger) []*AdxMetric {
 	var transformedAdxMetrics []*AdxMetric
 	resourceMetric := metrics.ResourceMetrics()
-	for i := 0; i < resourceMetric.Len(); i++ {
+	for i := range resourceMetric.Len() {
 		res := resourceMetric.At(i).Resource()
 		scopeMetrics := resourceMetric.At(i).ScopeMetrics()
-		for j := 0; j < scopeMetrics.Len(); j++ {
+		for j := range scopeMetrics.Len() {
 			scopeMetric := scopeMetrics.At(j)
 			metrics := scopeMetric.Metrics()
 			// get details of the scope from the scope metric
 			scopeAttr := getScopeMap(scopeMetric.Scope())
-			for k := 0; k < metrics.Len(); k++ {
+			for k := range metrics.Len() {
 				transformedAdxMetrics = append(transformedAdxMetrics, mapToAdxMetric(res, metrics.At(k), scopeAttr, logger)...)
 			}
 		}

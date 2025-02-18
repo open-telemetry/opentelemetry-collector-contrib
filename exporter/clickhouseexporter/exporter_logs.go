@@ -71,21 +71,21 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			_ = statement.Close()
 		}()
 
-		for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		for i := range ld.ResourceLogs().Len() {
 			logs := ld.ResourceLogs().At(i)
 			res := logs.Resource()
 			resURL := logs.SchemaUrl()
 			resAttr := internal.AttributesToMap(res.Attributes())
 			serviceName := internal.GetServiceName(res.Attributes())
 
-			for j := 0; j < logs.ScopeLogs().Len(); j++ {
+			for j := range logs.ScopeLogs().Len() {
 				rs := logs.ScopeLogs().At(j).LogRecords()
 				scopeURL := logs.ScopeLogs().At(j).SchemaUrl()
 				scopeName := logs.ScopeLogs().At(j).Scope().Name()
 				scopeVersion := logs.ScopeLogs().At(j).Scope().Version()
 				scopeAttr := internal.AttributesToMap(logs.ScopeLogs().At(j).Scope().Attributes())
 
-				for k := 0; k < rs.Len(); k++ {
+				for k := range rs.Len() {
 					r := rs.At(k)
 
 					timestamp := r.Timestamp()

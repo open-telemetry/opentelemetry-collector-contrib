@@ -577,7 +577,7 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 		assert.NoError(b, p.Shutdown(ctx))
 	}()
 
-	for n := 0; n < b.N; n++ {
+	for n := range b.N {
 		traceID := pcommon.TraceID([16]byte{byte(1 + n), 2, 3, 4})
 		trace := simpleTracesWithID(traceID)
 		assert.NoError(b, p.ConsumeTraces(context.Background(), trace))

@@ -51,7 +51,7 @@ func (proc *translateAttributesProcessor) processLogs(logs plog.Logs) error {
 		return nil
 	}
 
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		translateAttributes(logs.ResourceLogs().At(i).Resource().Attributes())
 	}
 
@@ -63,7 +63,7 @@ func (proc *translateAttributesProcessor) processMetrics(metrics pmetric.Metrics
 		return nil
 	}
 
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+	for i := range metrics.ResourceMetrics().Len() {
 		translateAttributes(metrics.ResourceMetrics().At(i).Resource().Attributes())
 	}
 

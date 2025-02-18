@@ -89,11 +89,11 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 		var l plog.Logs
 		l, err = logsUnmarshaler.UnmarshalLogs(token.Body)
 		// Appends token.Attributes
-		for i := 0; i < l.ResourceLogs().Len(); i++ {
+		for i := range l.ResourceLogs().Len() {
 			resourceLog := l.ResourceLogs().At(i)
-			for j := 0; j < resourceLog.ScopeLogs().Len(); j++ {
+			for j := range resourceLog.ScopeLogs().Len() {
 				scopeLog := resourceLog.ScopeLogs().At(j)
-				for k := 0; k < scopeLog.LogRecords().Len(); k++ {
+				for k := range scopeLog.LogRecords().Len() {
 					LogRecords := scopeLog.LogRecords().At(k)
 					appendToMap(token, LogRecords.Attributes())
 				}
@@ -137,11 +137,11 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 		var m pmetric.Metrics
 		m, err = metricsUnmarshaler.UnmarshalMetrics(token.Body)
 		// Appends token.Attributes
-		for i := 0; i < m.ResourceMetrics().Len(); i++ {
+		for i := range m.ResourceMetrics().Len() {
 			resourceMetric := m.ResourceMetrics().At(i)
-			for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
+			for j := range resourceMetric.ScopeMetrics().Len() {
 				ScopeMetric := resourceMetric.ScopeMetrics().At(j)
-				for k := 0; k < ScopeMetric.Metrics().Len(); k++ {
+				for k := range ScopeMetric.Metrics().Len() {
 					metric := ScopeMetric.Metrics().At(k)
 					appendToMap(token, metric.Metadata())
 				}
@@ -184,11 +184,11 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 		var t ptrace.Traces
 		t, err = tracesUnmarshaler.UnmarshalTraces(token.Body)
 		// Appends token.Attributes
-		for i := 0; i < t.ResourceSpans().Len(); i++ {
+		for i := range t.ResourceSpans().Len() {
 			resourceSpan := t.ResourceSpans().At(i)
-			for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
+			for j := range resourceSpan.ScopeSpans().Len() {
 				scopeSpan := resourceSpan.ScopeSpans().At(j)
-				for k := 0; k < scopeSpan.Spans().Len(); k++ {
+				for k := range scopeSpan.Spans().Len() {
 					spans := scopeSpan.Spans().At(k)
 					appendToMap(token, spans.Attributes())
 				}

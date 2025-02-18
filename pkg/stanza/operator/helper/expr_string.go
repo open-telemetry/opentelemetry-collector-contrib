@@ -109,7 +109,7 @@ type ExprString struct {
 // Render will render an ExprString as a string
 func (e *ExprString) Render(env map[string]any) (string, error) {
 	var b strings.Builder
-	for i := 0; i < len(e.SubExprs); i++ {
+	for i := range len(e.SubExprs) {
 		b.WriteString(e.SubStrings[i])
 		out, err := vm.Run(e.SubExprs[i], env)
 		if err != nil {

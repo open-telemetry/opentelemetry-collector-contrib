@@ -198,11 +198,11 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) 
 	}
 
 	rs := td.ResourceSpans()
-	for i := 0; i < rs.Len(); i++ {
+	for i := range rs.Len() {
 		ils := rs.At(i).ScopeSpans()
-		for j := 0; j < ils.Len(); j++ {
+		for j := range ils.Len() {
 			spans := ils.At(j).Spans()
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				span := spans.At(k)
 				var spanSeqnum int64
 				var traceSeqnum int64

@@ -304,7 +304,7 @@ func (c *Cluster) SetServices(services []*ecs.Service) {
 // GenTasks returns tasks with TaskArn set to arnPrefix+offset, where offset is [0, count).
 func GenTasks(arnPrefix string, count int, modifier func(i int, task *ecs.Task)) []*ecs.Task {
 	var tasks []*ecs.Task
-	for i := 0; i < count; i++ {
+	for i := range count {
 		t := &ecs.Task{
 			TaskArn: aws.String(arnPrefix + strconv.Itoa(i)),
 		}
@@ -320,7 +320,7 @@ func GenTasks(arnPrefix string, count int, modifier func(i int, task *ecs.Task))
 // e.g. foo0:1, foo1:1 the `:` is following the task family version syntax.
 func GenTaskDefinitions(arnPrefix string, count int, version int, modifier func(i int, def *ecs.TaskDefinition)) []*ecs.TaskDefinition {
 	var defs []*ecs.TaskDefinition
-	for i := 0; i < count; i++ {
+	for i := range count {
 		d := &ecs.TaskDefinition{
 			TaskDefinitionArn: aws.String(fmt.Sprintf("%s%d:%d", arnPrefix, i, version)),
 		}
@@ -334,7 +334,7 @@ func GenTaskDefinitions(arnPrefix string, count int, version int, modifier func(
 
 func GenContainerInstances(arnPrefix string, count int, modifier func(i int, ci *ecs.ContainerInstance)) []*ecs.ContainerInstance {
 	var instances []*ecs.ContainerInstance
-	for i := 0; i < count; i++ {
+	for i := range count {
 		ci := &ecs.ContainerInstance{
 			ContainerInstanceArn: aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
 		}
@@ -348,7 +348,7 @@ func GenContainerInstances(arnPrefix string, count int, modifier func(i int, ci 
 
 func GenEc2Instances(idPrefix string, count int, modifier func(i int, ins *ec2.Instance)) []*ec2.Instance {
 	var instances []*ec2.Instance
-	for i := 0; i < count; i++ {
+	for i := range count {
 		ins := &ec2.Instance{
 			InstanceId: aws.String(fmt.Sprintf("%s%d", idPrefix, i)),
 		}
@@ -362,7 +362,7 @@ func GenEc2Instances(idPrefix string, count int, modifier func(i int, ins *ec2.I
 
 func GenServices(arnPrefix string, count int, modifier func(i int, s *ecs.Service)) []*ecs.Service {
 	var services []*ecs.Service
-	for i := 0; i < count; i++ {
+	for i := range count {
 		svc := &ecs.Service{
 			ServiceArn:  aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
 			ServiceName: aws.String(fmt.Sprintf("%s%d", arnPrefix, i)),
@@ -457,7 +457,7 @@ func getPage(p pageInput) (*pageOutput, error) {
 func getArns(items any, arnGetter func(i int) *string) []*string {
 	rv := reflect.ValueOf(items)
 	var arns []*string
-	for i := 0; i < rv.Len(); i++ {
+	for i := range rv.Len() {
 		arns = append(arns, arnGetter(i))
 	}
 	return arns

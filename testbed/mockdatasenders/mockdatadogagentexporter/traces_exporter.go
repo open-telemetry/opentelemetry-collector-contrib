@@ -45,12 +45,12 @@ func (dd *ddExporter) start(ctx context.Context, host component.Host) (err error
 func (dd *ddExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	var traces pb.Traces
 
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		resSpans := td.ResourceSpans().At(i)
 		var trace pb.Trace
-		for l := 0; l < resSpans.ScopeSpans().Len(); l++ {
+		for range resSpans.ScopeSpans().Len() {
 			ils := resSpans.ScopeSpans().At(i)
-			for s := 0; s < ils.Spans().Len(); s++ {
+			for s := range ils.Spans().Len() {
 				span := ils.Spans().At(s)
 				newSpan := pb.Span{
 					Service:  "test",

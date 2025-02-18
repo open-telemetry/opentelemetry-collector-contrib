@@ -80,7 +80,7 @@ func (e *logsExporter) shutdown(context.Context) error {
 
 func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	rss := ld.ResourceLogs()
-	for i := 0; i < rss.Len(); i++ {
+	for i := range rss.Len() {
 		resourceLog := rss.At(i)
 		appName, subsystem := e.config.getMetadataFromResource(resourceLog.Resource())
 		resourceLog.Resource().Attributes().PutStr(cxAppNameAttrName, appName)

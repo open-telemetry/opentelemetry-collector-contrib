@@ -168,7 +168,7 @@ func (m *encodeModel) encodeTrace(
 
 	if span.Events().Len() > 0 {
 		sso.Events = make([]ssoSpanEvent, span.Events().Len())
-		for i := 0; i < span.Events().Len(); i++ {
+		for i := range span.Events().Len() {
 			e := span.Events().At(i)
 			ssoEvent := &sso.Events[i]
 			ssoEvent.Attributes = e.Attributes().AsRaw()
@@ -206,7 +206,7 @@ func (m *encodeModel) encodeTrace(
 
 	if span.Links().Len() > 0 {
 		sso.Links = make([]ssoSpanLinks, span.Links().Len())
-		for i := 0; i < span.Links().Len(); i++ {
+		for i := range span.Links().Len() {
 			link := span.Links().At(i)
 			ssoLink := &sso.Links[i]
 			ssoLink.Attributes = link.Attributes().AsRaw()

@@ -139,7 +139,7 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 
 	// All logs in a batch have only one type (regular or profiling logs) after perScopeBatcher,
 	// so we can just check the first one.
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+	for i := range ld.ResourceLogs().Len() {
 		sls := ld.ResourceLogs().At(i).ScopeLogs()
 		if sls.Len() > 0 {
 			if isProfilingData(sls.At(0)) {
@@ -385,11 +385,11 @@ func (c *client) pushMultiMetricsDataInBatches(ctx context.Context, md pmetric.M
 
 	var permanentErrors []error
 	var events []*splunk.Event
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+	for i := range md.ResourceMetrics().Len() {
 		rm := md.ResourceMetrics().At(i)
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		for j := range rm.ScopeMetrics().Len() {
 			sm := rm.ScopeMetrics().At(j)
-			for k := 0; k < sm.Metrics().Len(); k++ {
+			for k := range sm.Metrics().Len() {
 				metric := sm.Metrics().At(k)
 
 				// Parsing metric record to Splunk event.
