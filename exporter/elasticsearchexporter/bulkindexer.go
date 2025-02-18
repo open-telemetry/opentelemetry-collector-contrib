@@ -4,11 +4,13 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"bytes"
 	"compress/gzip"
 	"context"
 	"errors"
 	"io"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -77,13 +79,12 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 		compressionLevel = gzip.BestSpeed
 	}
 	return docappender.BulkIndexerConfig{
-		Client:                   client,
-		MaxDocumentRetries:       maxDocRetries,
-		Pipeline:                 config.Pipeline,
-		RetryOnDocumentStatus:    config.Retry.RetryOnStatus,
-		RequireDataStream:        requireDataStream,
-		CompressionLevel:         compressionLevel,
-		PopulateFailedDocsSource: config.LogFailedDocsSource,
+		Client:                client,
+		MaxDocumentRetries:    maxDocRetries,
+		Pipeline:              config.Pipeline,
+		RetryOnDocumentStatus: config.Retry.RetryOnStatus,
+		RequireDataStream:     requireDataStream,
+		CompressionLevel:      compressionLevel,
 	}
 }
 
@@ -95,6 +96,7 @@ func newSyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Conf
 		retryConfig:            config.Retry,
 		logger:                 logger,
 		failedDocsSourceLogger: logger.WithOptions(logging.WithRateLimit(config.LogFailedDocsSourceRateLimit)),
+		logFailedDocsSource:    config.LogFailedDocsSource,
 	}
 }
 
@@ -105,6 +107,7 @@ type syncBulkIndexer struct {
 	retryConfig            RetrySettings
 	logger                 *zap.Logger
 	failedDocsSourceLogger *zap.Logger
+	logFailedDocsSource    bool
 }
 
 // StartSession creates a new docappender.BulkIndexer, and wraps
@@ -126,12 +129,21 @@ func (s *syncBulkIndexer) Close(context.Context) error {
 }
 
 type syncBulkIndexerSession struct {
-	s  *syncBulkIndexer
-	bi *docappender.BulkIndexer
+	s       *syncBulkIndexer
+	bi      *docappender.BulkIndexer
+	reqDocs [][]byte
 }
 
 // Add adds an item to the sync bulk indexer session.
 func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
+	if s.s.logFailedDocsSource {
+		buf := bytes.Buffer{}
+		document.WriteTo(&buf)
+		bufCopy := make([]byte, buf.Len())
+		copy(bufCopy, buf.Bytes())
+		s.reqDocs = append(s.reqDocs, bufCopy)
+		document = &buf
+	}
 	doc := docappender.BulkIndexerItem{
 		Index:            index,
 		Body:             document,
@@ -160,7 +172,7 @@ func (s *syncBulkIndexerSession) End() {
 func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 	var retryBackoff func(int) time.Duration
 	for attempts := 0; ; attempts++ {
-		if _, err := flushBulkIndexer(ctx, s.bi, s.s.flushTimeout, s.s.logger, s.s.failedDocsSourceLogger); err != nil {
+		if _, err := flushBulkIndexer(ctx, s.bi, s.s.flushTimeout, s.s.logger, s.s.failedDocsSourceLogger, s.reqDocs); err != nil {
 			return err
 		}
 		if s.bi.Items() == 0 {
@@ -331,7 +343,7 @@ func (w *asyncBulkIndexerWorker) run() {
 
 func (w *asyncBulkIndexerWorker) flush() {
 	ctx := context.Background()
-	stat, _ := flushBulkIndexer(ctx, w.indexer, w.flushTimeout, w.logger, w.failedDocsSourceLogger)
+	stat, _ := flushBulkIndexer(ctx, w.indexer, w.flushTimeout, w.logger, w.failedDocsSourceLogger, nil)
 	w.stats.docsIndexed.Add(stat.Indexed)
 }
 
@@ -341,6 +353,7 @@ func flushBulkIndexer(
 	timeout time.Duration,
 	logger *zap.Logger,
 	failedDocsSourceLogger *zap.Logger,
+	reqDocs [][]byte,
 ) (docappender.BulkIndexerResponseStat, error) {
 	if timeout > 0 {
 		var cancel context.CancelFunc
@@ -361,8 +374,13 @@ func flushBulkIndexer(
 			fields = append(fields, zap.String("hint", hint))
 		}
 		logger.Error("failed to index document", fields...)
-		if resp.Source != "" {
-			fields = append(fields, zap.String("source", resp.Source))
+		if reqDocs != nil {
+			idx, err := strconv.Atoi(resp.Index)
+			if err != nil || idx < 0 || idx >= len(reqDocs) {
+				logger.Error("invalid bulk index item response index", zap.String("index", resp.Index))
+				continue
+			}
+			fields = append(fields, zap.ByteString("source", reqDocs[idx]))
 		}
 		failedDocsSourceLogger.Debug("failed to index document; source may contain sensitive data", fields...)
 	}
