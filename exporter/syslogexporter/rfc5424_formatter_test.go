@@ -6,6 +6,7 @@ package syslogexporter
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -84,6 +85,47 @@ func TestRFC5424Formatter(t *testing.T) {
 	assert.Contains(t, actual, "UserHostAddress=\"192.168.2.132\"")
 	assert.Contains(t, actual, "UserID=\"Tester2\"")
 	assert.Contains(t, actual, "PEN=\"27389\"")
+
+	// Test structured data (more than one field)
+	expectedRegex = "\\<165\\>1 2003-08-24T12:14:15.000003Z 192\\.0\\.2\\.1 myproc 8710 - " +
+		"\\[\\S+ \\S+ \\S+\\]" +
+		"\\[\\S+ \\S+ \\S+\\]" +
+		" It's time to make the do-nuts\\.\n"
+	logRecord = plog.NewLogRecord()
+	logRecord.Attributes().PutStr("appname", "myproc")
+	logRecord.Attributes().PutStr("hostname", "192.0.2.1")
+	logRecord.Attributes().PutStr("message", "It's time to make the do-nuts.")
+	logRecord.Attributes().PutInt("priority", 165)
+	logRecord.Attributes().PutStr("proc_id", "8710")
+	logRecord.Attributes().PutEmptyMap("structured_data")
+	structuredData, found = logRecord.Attributes().Get("structured_data")
+	require.True(t, found)
+	structuredData.Map().PutEmptyMap("A@123")
+	structuredDataSubmap, found = structuredData.Map().Get("A@123")
+	require.True(t, found)
+	structuredDataSubmap.Map().PutStr("A", "123")
+	structuredDataSubmap.Map().PutStr("UserHostAddress", "192.168.2.132")
+	structuredData.Map().PutEmptyMap("B@321")
+	structuredDataSubmap, found = structuredData.Map().Get("B@321")
+	require.True(t, found)
+	structuredDataSubmap.Map().PutStr("B", "321")
+	structuredDataSubmap.Map().PutStr("UserHostAddress", "192.168.2.132")
+	logRecord.Attributes().PutInt("version", 1)
+
+	timestamp, err = time.Parse(time.RFC3339Nano, "2003-08-24T05:14:15.000003-07:00")
+	require.NoError(t, err)
+	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
+
+	actual = newRFC5424Formatter(false).format(logRecord)
+	assert.NoError(t, err)
+	matched, err = regexp.MatchString(expectedRegex, actual)
+	assert.NoError(t, err)
+	assert.True(t, matched, fmt.Sprintf("unexpected form of formatted message, formatted message: %s, regexp: %s", actual, expectedRegex))
+	assert.True(t, strings.Contains(actual, "[A@123"))
+	assert.True(t, strings.Contains(actual, "A=\"123\""))
+	assert.True(t, strings.Contains(actual, "UserHostAddress=\"192.168.2.132\""))
+	assert.True(t, strings.Contains(actual, "[B@321"))
+	assert.True(t, strings.Contains(actual, "B=\"321\""))
 
 	// Test defaults
 	expected = "<165>1 2003-08-24T12:14:15.000003Z - - - - -\n"
