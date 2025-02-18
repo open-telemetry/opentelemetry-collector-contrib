@@ -15,53 +15,54 @@ import (
 
 type routeTestCase struct {
 	name      string
-	otel      bool
+	mode      MappingMode
 	scopeName string
 	want      elasticsearch.Index
 }
 
-func createRouteTests(dsType string) []routeTestCase {
-	renderWantRoute := func(dsType, dsDataset string, otel bool) elasticsearch.Index {
-		if otel {
-			dsDataset += ".otel"
-		}
-		return elasticsearch.NewDataStreamIndex(dsType, dsDataset, defaultDataStreamNamespace)
+var renderWantRoute = func(dsType, dsDataset string, mode MappingMode) elasticsearch.Index {
+	if mode == MappingOTel {
+		dsDataset += ".otel"
 	}
+	return elasticsearch.NewDataStreamIndex(dsType, dsDataset, defaultDataStreamNamespace)
+}
+
+func createRouteTests(dsType string) []routeTestCase {
 
 	return []routeTestCase{
 		{
 			name: "default",
-			otel: false,
-			want: renderWantRoute(dsType, defaultDataStreamDataset, false),
+			mode: MappingNone,
+			want: renderWantRoute(dsType, defaultDataStreamDataset, MappingNone),
 		},
 		{
 			name: "otel",
-			otel: true,
-			want: renderWantRoute(dsType, defaultDataStreamDataset, true),
+			mode: MappingOTel,
+			want: renderWantRoute(dsType, defaultDataStreamDataset, MappingOTel),
 		},
 		{
 			name:      "default with receiver scope name",
-			otel:      false,
+			mode:      MappingNone,
 			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper",
-			want:      renderWantRoute(dsType, "hostmetricsreceiver", false),
+			want:      renderWantRoute(dsType, "hostmetricsreceiver", MappingNone),
 		},
 		{
 			name:      "otel with receiver scope name",
-			otel:      true,
+			mode:      MappingOTel,
 			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper",
-			want:      renderWantRoute(dsType, "hostmetricsreceiver", true),
+			want:      renderWantRoute(dsType, "hostmetricsreceiver", MappingOTel),
 		},
 		{
 			name:      "default with non-receiver scope name",
-			otel:      false,
+			mode:      MappingNone,
 			scopeName: "some_other_scope_name",
-			want:      renderWantRoute(dsType, defaultDataStreamDataset, false),
+			want:      renderWantRoute(dsType, defaultDataStreamDataset, MappingNone),
 		},
 		{
 			name:      "otel with non-receiver scope name",
-			otel:      true,
+			mode:      MappingOTel,
 			scopeName: "some_other_scope_name",
-			want:      renderWantRoute(dsType, defaultDataStreamDataset, true),
+			want:      renderWantRoute(dsType, defaultDataStreamDataset, MappingOTel),
 		},
 	}
 }
@@ -71,7 +72,7 @@ func TestRouteLogRecord(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			router := dynamicDocumentRouter{otel: tc.otel}
+			router := dynamicDocumentRouter{mode: tc.mode}
 			scope := pcommon.NewInstrumentationScope()
 			scope.SetName(tc.scopeName)
 
@@ -80,6 +81,16 @@ func TestRouteLogRecord(t *testing.T) {
 			assert.Equal(t, tc.want, ds)
 		})
 	}
+
+	t.Run("test data_stream.type for bodymap mode", func(t *testing.T) {
+		var datastreamType = "metrics"
+		router := dynamicDocumentRouter{mode: MappingBodyMap}
+		attrs := pcommon.NewMap()
+		attrs.PutStr("data_stream.type", datastreamType)
+		ds, err := router.routeLogRecord(pcommon.NewResource(), pcommon.NewInstrumentationScope(), attrs)
+		require.NoError(t, err)
+		assert.Equal(t, datastreamType, ds.Type)
+	})
 }
 
 func TestRouteDataPoint(t *testing.T) {
@@ -87,7 +98,7 @@ func TestRouteDataPoint(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			router := dynamicDocumentRouter{otel: tc.otel}
+			router := dynamicDocumentRouter{mode: tc.mode}
 			scope := pcommon.NewInstrumentationScope()
 			scope.SetName(tc.scopeName)
 
@@ -103,7 +114,7 @@ func TestRouteSpan(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			router := dynamicDocumentRouter{otel: tc.otel}
+			router := dynamicDocumentRouter{mode: tc.mode}
 			scope := pcommon.NewInstrumentationScope()
 			scope.SetName(tc.scopeName)
 

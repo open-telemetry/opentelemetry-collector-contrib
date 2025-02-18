@@ -1,7 +1,0 @@
-goos: darwin
-goarch: arm64
-pkg: github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector
-cpu: Apple M3 Pro
-BenchmarkMatch-12    	  205992	      5829 ns/op	    5154 B/op	     160 allocs/op
-PASS
-ok  	github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector	1.634s

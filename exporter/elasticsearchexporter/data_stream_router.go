@@ -56,7 +56,7 @@ func newDocumentRouter(mode MappingMode, dynamicIndex bool, defaultIndex string,
 	if dynamicIndex {
 		router = dynamicDocumentRouter{
 			index: elasticsearch.Index{Index: defaultIndex},
-			otel:  mode == MappingOTel,
+			mode:  mode,
 		}
 	} else {
 		router = staticDocumentRouter{
@@ -95,23 +95,23 @@ func (r staticDocumentRouter) route(_ pcommon.Resource, _ pcommon.Instrumentatio
 
 type dynamicDocumentRouter struct {
 	index elasticsearch.Index
-	otel  bool
+	mode  MappingMode
 }
 
 func (r dynamicDocumentRouter) routeLogRecord(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.otel, defaultDataStreamTypeLogs), nil
+	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeLogs), nil
 }
 
 func (r dynamicDocumentRouter) routeDataPoint(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.otel, defaultDataStreamTypeMetrics), nil
+	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeMetrics), nil
 }
 
 func (r dynamicDocumentRouter) routeSpan(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.otel, defaultDataStreamTypeTraces), nil
+	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeTraces), nil
 }
 
 func (r dynamicDocumentRouter) routeSpanEvent(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.otel, defaultDataStreamTypeLogs), nil
+	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeLogs), nil
 }
 
 type logstashDocumentRouter struct {
@@ -151,7 +151,7 @@ func routeRecord(
 	scope pcommon.InstrumentationScope,
 	recordAttr pcommon.Map,
 	index string,
-	otel bool,
+	mode MappingMode,
 	defaultDSType string,
 ) elasticsearch.Index {
 	resourceAttr := resource.Attributes()
@@ -164,6 +164,13 @@ func routeRecord(
 	// 4. use default hardcoded data_stream.*
 	dataset, datasetExists := getFromAttributes(elasticsearch.DataStreamDataset, defaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)
 	namespace, namespaceExists := getFromAttributes(elasticsearch.DataStreamNamespace, defaultDataStreamNamespace, recordAttr, scopeAttr, resourceAttr)
+
+	datastreamType := defaultDSType
+	// if mapping mode is bodymap, allow overriding data_stream.type
+	if mode == MappingBodyMap {
+		datastreamType, _ = getFromAttributes(elasticsearch.DataStreamType, defaultDSType, recordAttr, scopeAttr, resourceAttr)
+	}
+
 	dataStreamMode := datasetExists || namespaceExists
 	if !dataStreamMode {
 		prefix, prefixExists := getFromAttributes(indexPrefix, "", resourceAttr, scopeAttr, recordAttr)
@@ -185,11 +192,11 @@ func routeRecord(
 	// For dataset, the naming convention for datastream is expected to be "logs-[dataset].otel-[namespace]".
 	// This is in order to match the built-in logs-*.otel-* index template.
 	var datasetSuffix string
-	if otel {
+	if mode == MappingOTel {
 		datasetSuffix += ".otel"
 	}
 
 	dataset = sanitizeDataStreamField(dataset, disallowedDatasetRunes, datasetSuffix)
 	namespace = sanitizeDataStreamField(namespace, disallowedNamespaceRunes, "")
-	return elasticsearch.NewDataStreamIndex(defaultDSType, dataset, namespace)
+	return elasticsearch.NewDataStreamIndex(datastreamType, dataset, namespace)
 }
