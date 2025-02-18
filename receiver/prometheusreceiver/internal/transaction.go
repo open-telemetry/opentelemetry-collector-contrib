@@ -198,13 +198,13 @@ func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn
 		if _, ok := t.mc.GetMetadata(mn); !ok {
 			fn = normalizeMetricName(mn)
 		}
-		if mf, ok := t.families[key][scope][fn]; ok && mf.includesMetric(mn) {
-			curMf = mf
-		} else {
+		mf, ok := t.families[key][scope][fn]
+		if !ok || !mf.includesMetric(mn) {
 			curMf = newMetricFamily(mn, t.mc, t.logger)
 			t.families[key][scope][curMf.name] = curMf
 			return curMf, false
 		}
+		curMf = mf
 	}
 	return curMf, true
 }
@@ -301,6 +301,15 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, _ labels.Labels, _, _ int64) (storage.SeriesRef, error) {
 	// TODO: implement this func
 	return 0, nil
+}
+
+func (t *transaction) AppendHistogramCTZeroSample(_ storage.SeriesRef, _ labels.Labels, _, _ int64, _ *histogram.Histogram, _ *histogram.FloatHistogram) (storage.SeriesRef, error) {
+	// TODO: implement this func
+	return 0, nil
+}
+
+func (t *transaction) SetOptions(_ *storage.AppendOptions) {
+	// TODO: implement this func
 }
 
 func (t *transaction) getSeriesRef(ls labels.Labels, mtype pmetric.MetricType) uint64 {

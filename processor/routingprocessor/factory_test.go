@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -64,7 +65,7 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 
 func TestFailOnEmptyConfiguration(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig()
-	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoTableItems)
+	assert.ErrorIs(t, xconfmap.Validate(cfg), errNoTableItems)
 }
 
 func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
@@ -78,7 +79,7 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 			},
 		},
 	}
-	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoExporters)
+	assert.ErrorIs(t, xconfmap.Validate(cfg), errNoExporters)
 }
 
 func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
@@ -87,7 +88,7 @@ func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 		FromAttribute:    "X-Tenant",
 		Table:            []RoutingTableItem{},
 	}
-	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoTableItems)
+	assert.ErrorIs(t, xconfmap.Validate(cfg), errNoTableItems)
 }
 
 func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
@@ -100,7 +101,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 			},
 		},
 	}
-	assert.ErrorIs(t, component.ValidateConfig(cfg), errNoMissingFromAttribute)
+	assert.ErrorIs(t, xconfmap.Validate(cfg), errNoMissingFromAttribute)
 }
 
 func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {

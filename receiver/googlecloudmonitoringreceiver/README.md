@@ -41,8 +41,10 @@ receivers:
 
 Each single metric can have the following configuration:
 
-- `metric_name` (Required): The specific metric name to collect.
+- `metric_name` (Optional): The specific metric name to collect.
+- `metric_descriptor_filter` (Optional): Filter for [listing metric descriptors](https://cloud.google.com/monitoring/api/v3/filters#metric-descriptor-filter). Only support `project` and `metric.type` as filter objects.
 
+One of `metric_name` and `metric_descriptor_filter` MUST be specified, but MUST not be specified at the same time.
 
 ## Authentication with Google Cloud
 

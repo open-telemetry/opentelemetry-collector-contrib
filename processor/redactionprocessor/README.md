@@ -78,6 +78,10 @@ processors:
     blocked_values:
       - "4[0-9]{12}(?:[0-9]{3})?" ## Visa credit card number
       - "(5[1-5][0-9]{14})"       ## MasterCard number
+    # AllowedValues is a list of regular expressions for allowing values of
+    # blocked span attributes. Values that match are not masked.
+    allowed_values:
+      - ".+@mycompany.com"
     # summary controls the verbosity level of the diagnostic attributes that
     # the processor adds to the spans/logs/datapoints when it redacts or masks other
     # attributes. In some contexts a list of redacted attributes leaks
@@ -101,9 +105,11 @@ If `allowed_keys` is empty, then no attributes are allowed. All
 attributes are removed in that case. To keep all span attributes, you should
 explicitly set `allow_all_keys` to true.
 
-`blocked_values` applies to the values of the allowed keys. If the value of an
-allowed key matches the regular expression for a blocked value, the matching
-part of the value is then masked with a fixed length of asterisks.
+`blocked_values` and `allowed_values` applies to the values of the allowed keys.
+If the value of an allowed key matches the regular expression for an allowed value, the matching
+part of the value is not masked even if it matches the regular expression for a blocked value.
+If the value matches the regular expression for a blocked value only, the matching
+part of the value is masked with a fixed length of asterisks.
 
 For example, if `notes` is on the list of allowed keys, then the `notes`
 attribute is retained. However, if there is a value such as a credit card

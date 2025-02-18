@@ -33,7 +33,7 @@ import (
 
 func TestNewOpampAgent(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettingsWithType(extensiontest.NopType)
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
@@ -49,7 +49,7 @@ func TestNewOpampAgent(t *testing.T) {
 
 func TestNewOpampAgentAttributes(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettingsWithType(extensiontest.NopType)
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
 	set.Resource.Attributes().PutStr(semconv.AttributeServiceName, "otelcol-distro")
 	set.Resource.Attributes().PutStr(semconv.AttributeServiceVersion, "distro.0")
@@ -146,7 +146,7 @@ func TestCreateAgentDescription(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			tc.cfg(cfg)
 
-			set := extensiontest.NewNopSettings()
+			set := extensiontest.NewNopSettingsWithType(extensiontest.NopType)
 			set.Resource.Attributes().PutStr(semconv.AttributeServiceName, serviceName)
 			set.Resource.Attributes().PutStr(semconv.AttributeServiceVersion, serviceVersion)
 			set.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, serviceInstanceUUID)
@@ -165,7 +165,7 @@ func TestCreateAgentDescription(t *testing.T) {
 
 func TestUpdateAgentIdentity(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettingsWithType(extensiontest.NopType)
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 
@@ -182,7 +182,7 @@ func TestUpdateAgentIdentity(t *testing.T) {
 
 func TestComposeEffectiveConfig(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettingsWithType(extensiontest.NopType)
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 	assert.Empty(t, o.effectiveConfig)
@@ -207,7 +207,7 @@ func TestComposeEffectiveConfig(t *testing.T) {
 
 func TestShutdown(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettingsWithType(extensiontest.NopType)
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 
@@ -217,7 +217,7 @@ func TestShutdown(t *testing.T) {
 
 func TestStart(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettingsWithType(extensiontest.NopType)
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 
@@ -227,7 +227,7 @@ func TestStart(t *testing.T) {
 
 func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettingsWithType(extensiontest.NopType)
 
 	statusUpdateChannel := make(chan *status.AggregateStatus)
 
@@ -335,7 +335,7 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 
 func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettingsWithType(extensiontest.NopType)
 
 	mtx := &sync.RWMutex{}
 
@@ -420,7 +420,7 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 
 func TestHealthReportingExitsOnClosedContext(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettingsWithType(extensiontest.NopType)
 
 	statusUpdateChannel := make(chan *status.AggregateStatus)
 	sa := &mockStatusAggregator{
@@ -496,7 +496,7 @@ func TestHealthReportingExitsOnClosedContext(t *testing.T) {
 
 func TestHealthReportingDisabled(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettingsWithType(extensiontest.NopType)
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 

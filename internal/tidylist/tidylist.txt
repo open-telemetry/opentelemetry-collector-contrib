@@ -36,6 +36,7 @@ pkg/translator/prometheus
 pkg/translator/prometheusremotewrite
 exporter/prometheusremotewriteexporter
 receiver/prometheusreceiver
+internal/datadog
 pkg/datadog
 processor/tailsamplingprocessor
 exporter/datadogexporter
@@ -66,6 +67,7 @@ exporter/awskinesisexporter
 exporter/awss3exporter
 internal/aws/xray
 exporter/awsxrayexporter
+exporter/azureblobexporter
 exporter/azuredataexplorerexporter
 exporter/azuremonitorexporter
 exporter/bmchelixexporter
@@ -148,6 +150,7 @@ extension/basicauthextension
 extension/bearertokenauthextension
 extension/cgroupruntimeextension
 extension/encoding/avrologencodingextension
+extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
 pkg/translator/skywalking
@@ -161,6 +164,7 @@ pkg/status
 extension/healthcheckv2extension
 extension/httpforwarderextension
 extension/jaegerremotesampling
+extension/k8sleaderelector
 extension/oauth2clientauthextension
 extension/observer
 extension/observer/cfgardenobserver
@@ -169,6 +173,7 @@ extension/observer/ecsobserver
 extension/observer/ecstaskobserver
 extension/observer/hostobserver
 extension/observer/k8sobserver
+extension/observer/kafkatopicsobserver
 extension/oidcauthextension
 extension/opampcustommessages
 extension/opampextension

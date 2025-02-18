@@ -17,8 +17,7 @@ import (
 	"testing"
 	"time"
 
-	zipkin2 "github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
-	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
+	"github.com/jaegertracing/jaeger-idl/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -30,6 +29,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+
+	zipkin2 "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinthriftconverter"
 )
 
 const (
@@ -165,9 +166,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			endpoint: "/api/v1/spans",
 			content:  "application/x-thrift",
 			encoding: "gzip",
-			bodyFn: func() ([]byte, error) {
-				return thriftExample(), nil
-			},
+			bodyFn:   thriftExample,
 		},
 
 		{
@@ -306,7 +305,7 @@ func TestReceiverConsumerPermanentError(t *testing.T) {
 	require.Equal(t, "\"Bad Request\"", req.Body.String())
 }
 
-func thriftExample() []byte {
+func thriftExample() ([]byte, error) {
 	now := time.Now().Unix()
 	zSpans := []*zipkincore.Span{
 		{

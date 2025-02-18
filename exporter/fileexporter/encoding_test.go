@@ -43,7 +43,7 @@ func TestEncoding(t *testing.T) {
 	ef := otlpencodingextension.NewFactory()
 	efCfg := ef.CreateDefaultConfig().(*otlpencodingextension.Config)
 	efCfg.Protocol = "otlp_json"
-	ext, err := ef.Create(context.Background(), extensiontest.NewNopSettings(), efCfg)
+	ext, err := ef.Create(context.Background(), extensiontest.NewNopSettingsWithType(ef.Type()), efCfg)
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 

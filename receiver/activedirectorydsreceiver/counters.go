@@ -40,7 +40,7 @@ const (
 	dsNotifyQueueSize                      = "DS Notify Queue Size"
 	dsSecurityDescriptorPropagationsEvents = "DS Security Descriptor Propagations Events"
 	dsSearchSubOperations                  = "DS Search sub-operations/sec"
-	dsSecurityDescripterSubOperations      = "DS Security Descriptor sub-operations/sec"
+	dsSecurityDescriptorSubOperations      = "DS Security Descriptor sub-operations/sec"
 	dsThreadsInUse                         = "DS Threads in Use"
 	ldapClientSessions                     = "LDAP Client Sessions"
 	ldapBindTime                           = "LDAP Bind Time"
@@ -81,7 +81,7 @@ func (w *watchers) Close() error {
 	return err
 }
 
-func getWatchers(wc watcherCreater) (*watchers, error) {
+func getWatchers(wc watcherCreator) (*watchers, error) {
 	var err error
 
 	w := &watchers{
@@ -192,7 +192,7 @@ func getWatchers(wc watcherCreater) (*watchers, error) {
 		return nil, err
 	}
 
-	if w.counterNameToWatcher[dsSecurityDescripterSubOperations], err = wc.Create(dsSecurityDescripterSubOperations); err != nil {
+	if w.counterNameToWatcher[dsSecurityDescriptorSubOperations], err = wc.Create(dsSecurityDescriptorSubOperations); err != nil {
 		return nil, err
 	}
 
@@ -219,7 +219,7 @@ func getWatchers(wc watcherCreater) (*watchers, error) {
 	return w, nil
 }
 
-type watcherCreater interface {
+type watcherCreator interface {
 	Create(counterName string) (winperfcounters.PerfCounterWatcher, error)
 }
 
@@ -228,8 +228,8 @@ const (
 	object       = "DirectoryServices"
 )
 
-type defaultWatcherCreater struct{}
+type defaultWatcherCreator struct{}
 
-func (defaultWatcherCreater) Create(counterName string) (winperfcounters.PerfCounterWatcher, error) {
+func (defaultWatcherCreator) Create(counterName string) (winperfcounters.PerfCounterWatcher, error) {
 	return winperfcounters.NewWatcher(object, instanceName, counterName)
 }

@@ -272,10 +272,11 @@ func newJSONVisitor(w io.Writer) *json.Visitor {
 	return v
 }
 
-// Serialize writes the document to the given writer. The serializer will create nested objects if dedot is true.
-//
-// NOTE: The documented MUST be sorted if dedot is true.
+// Serialize writes the document to the given writer. The document fields will be
+// deduplicated and, if dedot is true, turned into nested objects prior to
+// serialization.
 func (doc *Document) Serialize(w io.Writer, dedot bool) error {
+	doc.Dedup()
 	v := newJSONVisitor(w)
 	return doc.iterJSON(v, dedot)
 }

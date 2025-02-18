@@ -37,8 +37,6 @@ type TelemetryBuilder struct {
 	DeltatocumulativeStreamsMaxStale      metric.Int64Gauge
 	DeltatocumulativeStreamsTracked       metric.Int64UpDownCounter
 	DeltatocumulativeStreamsTrackedLinear metric.Int64ObservableUpDownCounter
-	// TODO: Remove in v0.119.0 when remove deprecated funcs.
-	observeDeltatocumulativeStreamsTrackedLinear func(context.Context, metric.Observer) error
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -50,16 +48,6 @@ type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
 
 func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
-}
-
-// Deprecated: [v0.119.0] use RegisterDeltatocumulativeStreamsTrackedLinearCallback.
-func WithDeltatocumulativeStreamsTrackedLinearCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeDeltatocumulativeStreamsTrackedLinear = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.DeltatocumulativeStreamsTrackedLinear, cb(), opts...)
-			return nil
-		}
-	})
 }
 
 // RegisterDeltatocumulativeStreamsTrackedLinearCallback sets callback for observable DeltatocumulativeStreamsTrackedLinear metric.
@@ -159,12 +147,5 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{dps}"),
 	)
 	errs = errors.Join(errs, err)
-	if builder.observeDeltatocumulativeStreamsTrackedLinear != nil {
-		reg, err := builder.meter.RegisterCallback(builder.observeDeltatocumulativeStreamsTrackedLinear, builder.DeltatocumulativeStreamsTrackedLinear)
-		errs = errors.Join(errs, err)
-		if err == nil {
-			builder.registrations = append(builder.registrations, reg)
-		}
-	}
 	return &builder, errs
 }

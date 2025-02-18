@@ -1,9 +1,8 @@
 name: 'Update contrib to the latest core source'
 on:
   workflow_dispatch:
-  # TODO: Enable schedule once it's verified that the action works as expected.
-  #  schedule:
-  #    - cron: "27 21 * * *" # Run at an arbitrary time on weekdays.
+  schedule:
+    - cron: "27 8 * * 1" # Run at 08:27 UTC on Mondays.
 
 jobs:
   update-otel:
