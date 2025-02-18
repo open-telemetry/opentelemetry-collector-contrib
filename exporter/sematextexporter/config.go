@@ -40,7 +40,7 @@ type MetricsConfig struct {
 	MetricsEndpoint string                     `mapstructure:"-"`
 	// MetricsSchema indicates the metrics schema to emit to line protocol.
 	// Default: telegraf-prometheus-v2
-	MetricsSchema string `mapstructure:"metrics_schema"`
+	MetricsSchema string `mapstructure:"-"`
 	// PayloadMaxLines is the maximum number of line protocol lines to POST in a single request.
 	PayloadMaxLines int `mapstructure:"payload_max_lines"`
 	// PayloadMaxBytes is the maximum number of line protocol bytes to POST in a single request.
