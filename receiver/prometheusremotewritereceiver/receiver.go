@@ -154,7 +154,8 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // translate is not feature complete.
-// nolint
+//
+//nolint:unparam
 func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
 	var (
 		badRequestErrors error

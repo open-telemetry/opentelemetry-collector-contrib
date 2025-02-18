@@ -39,6 +39,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -585,7 +588,48 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				}
 
 				require.Len(t, sink.AllTraces(), tt.expectedReceivedBatches)
-				require.NoError(t, testTel.CheckReceiverTraces("grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
+
+				got, err := testTel.GetMetric("otelcol_receiver_accepted_spans")
+				assert.NoError(t, err)
+				metricdatatest.AssertEqual(t,
+					metricdata.Metrics{
+						Name:        "otelcol_receiver_accepted_spans",
+						Description: "Number of spans successfully pushed into the pipeline. [alpha]",
+						Unit:        "{spans}",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Attributes: attribute.NewSet(
+										attribute.String("receiver", exporter.receiverID.String()),
+										attribute.String("transport", "grpc")),
+									Value: int64(tt.expectedReceivedBatches),
+								},
+							},
+						},
+					}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+				got, err = testTel.GetMetric("otelcol_receiver_refused_spans")
+				assert.NoError(t, err)
+				metricdatatest.AssertEqual(t,
+					metricdata.Metrics{
+						Name:        "otelcol_receiver_refused_spans",
+						Description: "Number of spans that could not be pushed into the pipeline. [alpha]",
+						Unit:        "{spans}",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Attributes: attribute.NewSet(
+										attribute.String("receiver", exporter.receiverID.String()),
+										attribute.String("transport", "grpc")),
+									Value: int64(tt.expectedIngestionBlockedRPCs),
+								},
+							},
+						},
+					}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 			})
 		}
 	}
@@ -743,7 +787,48 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				}
 
 				require.Len(t, sink.AllMetrics(), tt.expectedReceivedBatches)
-				require.NoError(t, testTel.CheckReceiverMetrics("grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
+
+				got, err := testTel.GetMetric("otelcol_receiver_accepted_metric_points")
+				assert.NoError(t, err)
+				metricdatatest.AssertEqual(t,
+					metricdata.Metrics{
+						Name:        "otelcol_receiver_accepted_metric_points",
+						Description: "Number of metric points successfully pushed into the pipeline. [alpha]",
+						Unit:        "{datapoints}",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Attributes: attribute.NewSet(
+										attribute.String("receiver", exporter.receiverID.String()),
+										attribute.String("transport", "grpc")),
+									Value: int64(tt.expectedReceivedBatches),
+								},
+							},
+						},
+					}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+				got, err = testTel.GetMetric("otelcol_receiver_refused_metric_points")
+				assert.NoError(t, err)
+				metricdatatest.AssertEqual(t,
+					metricdata.Metrics{
+						Name:        "otelcol_receiver_refused_metric_points",
+						Description: "Number of metric points that could not be pushed into the pipeline. [alpha]",
+						Unit:        "{datapoints}",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Attributes: attribute.NewSet(
+										attribute.String("receiver", exporter.receiverID.String()),
+										attribute.String("transport", "grpc")),
+									Value: int64(tt.expectedIngestionBlockedRPCs),
+								},
+							},
+						},
+					}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 			})
 		}
 	}

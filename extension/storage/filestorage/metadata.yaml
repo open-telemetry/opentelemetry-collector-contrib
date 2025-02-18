@@ -3,8 +3,9 @@ type: file_storage
 status:
   class: extension
   stability:
-    unmaintained: [extension]
+    beta: [extension]
   distributions: [contrib, k8s]
   codeowners:
+    active: [swiatekm, VihasMakwana]
     emeritus: [djaglowski]
     seeking_new: true

@@ -12,6 +12,7 @@ components:
         - roundrobin
         - routing
         - servicegraph
+        - signaltometrics
         - spanmetrics
         - sum
     exporter:
@@ -23,6 +24,7 @@ components:
         - awsxray
         - azuredataexplorer
         - azuremonitor
+        - bmchelix
         - carbon
         - cassandra
         - clickhouse
@@ -76,6 +78,7 @@ components:
         - http_forwarder
         - jaegerremotesampling
         - k8s_observer
+        - kafkatopics_observer
         - oauth2client
         - oidc
         - opamp
@@ -212,3 +215,4 @@ components:
         - process
         - processes
         - system
+        - zookeeper

@@ -32,19 +32,43 @@ type httpcheckScraper struct {
 	mb       *metadata.MetricsBuilder
 }
 
-// start starts the scraper by creating a new HTTP Client on the scraper
+// start initializes the scraper by creating HTTP clients for each endpoint.
 func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err error) {
+	var expandedTargets []*targetConfig
+
 	for _, target := range h.cfg.Targets {
-		client, clentErr := target.ToClient(ctx, host, h.settings)
-		if clentErr != nil {
-			err = multierr.Append(err, clentErr)
+		// Create a unified list of endpoints
+		var allEndpoints []string
+		if len(target.Endpoints) > 0 {
+			allEndpoints = append(allEndpoints, target.Endpoints...) // Add all endpoints
 		}
-		h.clients = append(h.clients, client)
+		if target.ClientConfig.Endpoint != "" {
+			allEndpoints = append(allEndpoints, target.ClientConfig.Endpoint) // Add single endpoint
+		}
+
+		// Process each endpoint in the unified list
+		for _, endpoint := range allEndpoints {
+			client, clientErr := target.ToClient(ctx, host, h.settings)
+			if clientErr != nil {
+				h.settings.Logger.Error("failed to initialize HTTP client", zap.String("endpoint", endpoint), zap.Error(clientErr))
+				err = multierr.Append(err, clientErr)
+				continue
+			}
+
+			// Clone the target and assign the specific endpoint
+			targetClone := *target
+			targetClone.ClientConfig.Endpoint = endpoint
+
+			h.clients = append(h.clients, client)
+			expandedTargets = append(expandedTargets, &targetClone) // Add the cloned target to expanded targets
+		}
 	}
+
+	h.cfg.Targets = expandedTargets // Replace targets with expanded targets
 	return
 }
 
-// scrape connects to the endpoint and produces metrics based on the response
+// scrape performs the HTTP checks and records metrics based on responses.
 func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if len(h.clients) == 0 {
 		return pmetric.NewMetrics(), errClientNotInit
@@ -60,29 +84,64 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 
 			now := pcommon.NewTimestampFromTime(time.Now())
 
-			req, err := http.NewRequestWithContext(ctx, h.cfg.Targets[targetIndex].Method, h.cfg.Targets[targetIndex].Endpoint, http.NoBody)
+			req, err := http.NewRequestWithContext(
+				ctx,
+				h.cfg.Targets[targetIndex].Method,
+				h.cfg.Targets[targetIndex].ClientConfig.Endpoint, // Use the ClientConfig.Endpoint
+				http.NoBody,
+			)
 			if err != nil {
 				h.settings.Logger.Error("failed to create request", zap.Error(err))
 				return
 			}
 
+			// Add headers to the request
+			for key, value := range h.cfg.Targets[targetIndex].Headers {
+				req.Header.Set(key, value.String()) // Convert configopaque.String to string
+			}
+
+			// Send the request and measure response time
 			start := time.Now()
 			resp, err := targetClient.Do(req)
 			mux.Lock()
-			h.mb.RecordHttpcheckDurationDataPoint(now, time.Since(start).Milliseconds(), h.cfg.Targets[targetIndex].Endpoint)
+			h.mb.RecordHttpcheckDurationDataPoint(
+				now,
+				time.Since(start).Milliseconds(),
+				h.cfg.Targets[targetIndex].ClientConfig.Endpoint, // Use the correct endpoint
+			)
 
 			statusCode := 0
 			if err != nil {
-				h.mb.RecordHttpcheckErrorDataPoint(now, int64(1), h.cfg.Targets[targetIndex].Endpoint, err.Error())
+				h.mb.RecordHttpcheckErrorDataPoint(
+					now,
+					int64(1),
+					h.cfg.Targets[targetIndex].ClientConfig.Endpoint,
+					err.Error(),
+				)
 			} else {
 				statusCode = resp.StatusCode
 			}
 
+			// Record HTTP status class metrics
 			for class, intVal := range httpResponseClasses {
 				if statusCode/100 == intVal {
-					h.mb.RecordHttpcheckStatusDataPoint(now, int64(1), h.cfg.Targets[targetIndex].Endpoint, int64(statusCode), req.Method, class)
+					h.mb.RecordHttpcheckStatusDataPoint(
+						now,
+						int64(1),
+						h.cfg.Targets[targetIndex].ClientConfig.Endpoint,
+						int64(statusCode),
+						req.Method,
+						class,
+					)
 				} else {
-					h.mb.RecordHttpcheckStatusDataPoint(now, int64(0), h.cfg.Targets[targetIndex].Endpoint, int64(statusCode), req.Method, class)
+					h.mb.RecordHttpcheckStatusDataPoint(
+						now,
+						int64(0),
+						h.cfg.Targets[targetIndex].ClientConfig.Endpoint,
+						int64(statusCode),
+						req.Method,
+						class,
+					)
 				}
 			}
 			mux.Unlock()
@@ -90,7 +149,6 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	}
 
 	wg.Wait()
-
 	return h.mb.Emit(), nil
 }
 

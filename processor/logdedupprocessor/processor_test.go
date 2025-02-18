@@ -309,6 +309,86 @@ func TestProcessorConsumeMultipleConditions(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestProcessorIncludeFields(t *testing.T) {
+	testCases := []struct {
+		name string
+		cfg  *Config
+	}{
+		{
+			name: "attribute field",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Timezone:          defaultTimezone,
+				Interval:          1 * time.Second,
+				Conditions:        []string{},
+				ExcludeFields:     []string{},
+				IncludeFields:     []string{"attributes.dedup_key"},
+			},
+		},
+		{
+			name: "body field",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Timezone:          defaultTimezone,
+				Interval:          1 * time.Second,
+				Conditions:        []string{},
+				ExcludeFields:     []string{},
+				IncludeFields:     []string{"body.dedup_key"},
+			},
+		},
+		{
+			name: "multiple fields",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Timezone:          defaultTimezone,
+				Interval:          1 * time.Second,
+				Conditions:        []string{},
+				ExcludeFields:     []string{},
+				IncludeFields:     []string{"attributes.dedup_key", "body.dedup_key"},
+			},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			logsSink := &consumertest.LogsSink{}
+			settings := processortest.NewNopSettings()
+
+			// Create a processor
+			p, err := createLogsProcessor(context.Background(), settings, tt.cfg, logsSink)
+			require.NoError(t, err)
+
+			err = p.Start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err)
+
+			logs, err := golden.ReadLogs(filepath.Join("testdata", "input", "includeFieldsLogs.yaml"))
+			require.NoError(t, err)
+
+			// Consume the payload
+			err = p.ConsumeLogs(context.Background(), logs)
+			require.NoError(t, err)
+
+			// Wait for the logs to be emitted
+			require.Eventually(t, func() bool {
+				return logsSink.LogRecordCount() > 0
+			}, 3*time.Second, 200*time.Millisecond)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "includeFieldsLogs.yaml"))
+			require.NoError(t, err)
+
+			allSinkLogs := logsSink.AllLogs()
+			require.Len(t, allSinkLogs, 1)
+
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0], plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp")))
+
+			// Cleanup
+			err = p.Shutdown(context.Background())
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestProcessorConfigValidate(t *testing.T) {
 	t.Parallel()
 	invalidCfg := &Config{
