@@ -246,6 +246,68 @@ func TestTranslateV2(t *testing.T) {
 			}(),
 			expectedStats: remote.WriteResponseStats{},
 		},
+		{
+			name: "target_info handling",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__",
+					"target_info",
+					"job",
+					"myjob",
+					"instance",
+					"myinstance",
+					"region",
+					"us-west",
+					"env",
+					"prod",
+					"zone",
+					"zone1",
+					"__name__",
+					"test_metric",
+					"job",
+					"myjob",
+					"instance",
+					"myinstance",
+					"extra",
+					"value",
+				},
+				Timeseries: []writev2.TimeSeries{
+					// target_info series using indices {1,2,3,4,5,6,7,8,9,10,11,12}
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 100}},
+					},
+					// Normal metric series using indices {13,14,15,16,17,18,19,20}
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{13, 14, 15, 16, 17, 18, 19, 20},
+						Samples:    []writev2.Sample{{Value: 42, Timestamp: 200}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				// We expect one ResourceMetrics entry.
+				rm := expected.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				// parseJobAndInstance should set these based on "job" and "instance".
+				attrs.PutStr("service.instance.id", "myinstance")
+				attrs.PutStr("service.name", "myjob")
+				// The target_info labels are merged into resource attributes.
+				attrs.PutStr("region", "us-west")
+				attrs.PutStr("env", "prod")
+				attrs.PutStr("zone", "zone1")
+				// Normal metric: create scope and metric for the "test_metric" series.
+				sm := rm.ScopeMetrics().AppendEmpty()
+				gauge := sm.Metrics().AppendEmpty().SetEmptyGauge()
+				dpAttrs := gauge.DataPoints().AppendEmpty().Attributes()
+				dpAttrs.PutStr("extra", "value")
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			metrics, stats, err := prwReceiver.translateV2(ctx, tc.request)
