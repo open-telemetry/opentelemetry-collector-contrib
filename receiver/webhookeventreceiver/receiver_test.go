@@ -36,7 +36,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 			desc:     "Default config fails (no endpoint)",
 			cfg:      *defaultConfig,
 			consumer: consumertest.NewNop(),
-			err:      errMissingEndpoint,
+			err:      errMissingEndpointFromConfig,
 		},
 		{
 			desc: "User defined config success",
@@ -44,8 +44,8 @@ func TestCreateNewLogReceiver(t *testing.T) {
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:8080",
 				},
-				ReadTimeout:  "543",
-				WriteTimeout: "210",
+				ReadTimeout:  "5s",
+				WriteTimeout: "5s",
 				Path:         "/event",
 				HealthPath:   "/health",
 				RequiredHeader: RequiredHeader{
@@ -54,6 +54,79 @@ func TestCreateNewLogReceiver(t *testing.T) {
 				},
 			},
 			consumer: consumertest.NewNop(),
+		},
+		{
+			desc: "User defined config success with header_attribute_regex supplied",
+			cfg: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:8080",
+				},
+				ReadTimeout:  "5s",
+				WriteTimeout: "5s",
+				Path:         "/event",
+				HealthPath:   "/health",
+				RequiredHeader: RequiredHeader{
+					Key:   "key-present",
+					Value: "value-present",
+				},
+				HeaderAttributeRegex: ".+",
+			},
+			consumer: consumertest.NewNop(),
+		},
+		{
+			desc: "User defined read timeout exceeds max value",
+			cfg: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:8080",
+				},
+				ReadTimeout:  "11s",
+				WriteTimeout: "5s",
+				Path:         "/event",
+				HealthPath:   "/health",
+				RequiredHeader: RequiredHeader{
+					Key:   "key-present",
+					Value: "value-present",
+				},
+			},
+			consumer: consumertest.NewNop(),
+			err:      errReadTimeoutExceedsMaxValue,
+		},
+		{
+			desc: "User defined write timeout exceeds max value",
+			cfg: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:8080",
+				},
+				ReadTimeout:  "5s",
+				WriteTimeout: "11s",
+				Path:         "/event",
+				HealthPath:   "/health",
+				RequiredHeader: RequiredHeader{
+					Key:   "key-present",
+					Value: "value-present",
+				},
+			},
+			consumer: consumertest.NewNop(),
+			err:      errWriteTimeoutExceedsMaxValue,
+		},
+		{
+			desc: "User defined regex fails to compile",
+			cfg: Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "localhost:8080",
+				},
+				ReadTimeout:  "5s",
+				WriteTimeout: "5s",
+				Path:         "/event",
+				HealthPath:   "/health",
+				RequiredHeader: RequiredHeader{
+					Key:   "key-present",
+					Value: "value-present",
+				},
+				HeaderAttributeRegex: "\\q", // some bogus regex value that will not compile
+			},
+			consumer: consumertest.NewNop(),
+			err:      errHeaderAttributeRegexCompile,
 		},
 	}
 
