@@ -50,8 +50,8 @@ github.com/DataDog/datadog-agent/pkg/config/setup v0.62.3 h1:dtmBwo6vKJPptMvMzQO
 github.com/DataDog/datadog-agent/pkg/config/setup v0.62.3/go.mod h1:LJmx9Zbj46AFHiOqe7HsXzBfj/2M16OvI6mOz3cBZcU=
 github.com/DataDog/datadog-agent/pkg/config/structure v0.62.3 h1:o4dlCc/EiUdSGSAI4bGaeZ20nmpUChc0CSmPdOJsX3A=
 github.com/DataDog/datadog-agent/pkg/config/structure v0.62.3/go.mod h1:EQjDEH5t1lwk8k6P9ARV/m552klFrMPIhmUfyIItbq8=
-github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.64.0-devel h1:r6hBXaNdMKAHDz+W7Q8qTRtFcw44jvr95UAhjwRfhr4=
-github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.64.0-devel/go.mod h1:PXmsKApzRL20VQsoMwb/mPGOkeiyq/s+tdCQRZf5m2E=
+github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.62.3 h1:hT3UL159TdVuDoHFF1mLqt1oQ57gneERYTpgjCFXzoY=
+github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.62.3/go.mod h1:XZ5R1izscFAXwcXPDcXueC/uEvBbkmyHDOq0FNkN42c=
 github.com/DataDog/datadog-agent/pkg/proto v0.64.0-devel h1:tkoy0fLsNkSDDxszdm9EDpzQFGnWUzwjanselsIAC+U=
 github.com/DataDog/datadog-agent/pkg/proto v0.64.0-devel/go.mod h1:QOAaPRsuM4WNXtP3Rbw+gWamge9lGnDH8ZKB6HdzoAs=
 github.com/DataDog/datadog-agent/pkg/trace v0.62.3 h1:ikSQ0m7QWEpHdOOsT+kBF3iOE9zDj6BTZg1X+FZJ4C0=
