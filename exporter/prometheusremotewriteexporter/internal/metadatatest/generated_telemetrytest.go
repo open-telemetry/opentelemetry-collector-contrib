@@ -3,7 +3,6 @@
 package metadatatest
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,36 +14,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
-type Telemetry struct {
-	*componenttest.Telemetry
-}
-
-func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
-	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
-}
-
-func (tt *Telemetry) NewSettings() exporter.Settings {
-	set := exportertest.NewNopSettings()
-	set.ID = component.NewID(component.MustNewType("prometheusremotewrite"))
-	set.TelemetrySettings = tt.NewTelemetrySettings()
-	return set
-}
-
-func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	// ensure all required metrics are present
-	for _, want := range expected {
-		got := getMetricFromResource(want.Name, md)
-		metricdatatest.AssertEqual(t, want, got, opts...)
-	}
-
-	// ensure no additional metrics are emitted
-	require.Equal(t, len(expected), lenMetrics(md))
-}
-
 func NewSettings(tt *componenttest.Telemetry) exporter.Settings {
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettingsWithType(exportertest.NopType)
 	set.ID = component.NewID(component.MustNewType("prometheusremotewrite"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
@@ -80,25 +51,4 @@ func AssertEqualExporterPrometheusremotewriteTranslatedTimeSeries(t *testing.T, 
 	got, err := tt.GetMetric("otelcol_exporter_prometheusremotewrite_translated_time_series")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
-	for _, sm := range got.ScopeMetrics {
-		for _, m := range sm.Metrics {
-			if m.Name == name {
-				return m
-			}
-		}
-	}
-
-	return metricdata.Metrics{}
-}
-
-func lenMetrics(got metricdata.ResourceMetrics) int {
-	metricsCount := 0
-	for _, sm := range got.ScopeMetrics {
-		metricsCount += len(sm.Metrics)
-	}
-
-	return metricsCount
 }

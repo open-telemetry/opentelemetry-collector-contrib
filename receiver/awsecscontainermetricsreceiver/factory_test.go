@@ -65,6 +65,6 @@ func TestCreateMetricsWithNilConsumer(t *testing.T) {
 		nil,
 	)
 
-	require.Error(t, err, "Nil Comsumer")
+	require.Error(t, err, "Nil Consumer")
 	require.Nil(t, metricsReceiver)
 }

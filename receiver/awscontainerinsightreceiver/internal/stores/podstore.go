@@ -206,18 +206,17 @@ func (p *PodStore) Decorate(ctx context.Context, metric CIMetric, kubernetesBlob
 		}
 
 		// If the entry is not a placeholder, decorate the pod
-		if entry.pod.Name != "" {
-			p.decorateCPU(metric, &entry.pod)
-			p.decorateMem(metric, &entry.pod)
-			p.addStatus(metric, &entry.pod)
-			addContainerCount(metric, &entry.pod)
-			addContainerID(&entry.pod, metric, kubernetesBlob, p.logger)
-			p.addPodOwnersAndPodName(metric, &entry.pod, kubernetesBlob)
-			addLabels(&entry.pod, kubernetesBlob)
-		} else {
+		if entry.pod.Name == "" {
 			p.logger.Warn("no pod information is found in podstore for pod " + podKey)
 			return false
 		}
+		p.decorateCPU(metric, &entry.pod)
+		p.decorateMem(metric, &entry.pod)
+		p.addStatus(metric, &entry.pod)
+		addContainerCount(metric, &entry.pod)
+		addContainerID(&entry.pod, metric, kubernetesBlob, p.logger)
+		p.addPodOwnersAndPodName(metric, &entry.pod, kubernetesBlob)
+		addLabels(&entry.pod, kubernetesBlob)
 	}
 	return true
 }

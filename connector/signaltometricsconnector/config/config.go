@@ -152,7 +152,7 @@ type MetricInfo struct {
 	// attribute is included in the list then all attributes are included.
 	IncludeResourceAttributes []Attribute `mapstructure:"include_resource_attributes"`
 	Attributes                []Attribute `mapstructure:"attributes"`
-	// Conditions are a set of OTTL condtions which are ORed. Data is
+	// Conditions are a set of OTTL conditions which are ORed. Data is
 	// processed into metrics only if the sequence evaluates to true.
 	Conditions           []string              `mapstructure:"conditions"`
 	Histogram            *Histogram            `mapstructure:"histogram"`
@@ -266,7 +266,7 @@ func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
 		return fmt.Errorf("exactly one of the metrics must be defined, %d found", metricsDefinedCount)
 	}
 
-	// validate OTTL statements, note that, here we only evalaute if statements
+	// validate OTTL statements, note that, here we only evaluate if statements
 	// are valid. Check for required statements is left to the other validations.
 	if _, err := parser.ParseStatements(statements); err != nil {
 		return fmt.Errorf("failed to parse OTTL statements: %w", err)
