@@ -69,7 +69,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				TLSSetting: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile:   testCAFile,
-						CertFile: "doestexist.cert",
+						CertFile: "nonexistent.cert",
 						KeyFile:  testKeyFile,
 					},
 					Insecure:           false,
