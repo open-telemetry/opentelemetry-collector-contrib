@@ -29,7 +29,6 @@ The following configuration options are supported:
   * `US`
   * `EU`    
 * `metrics.app_token` specifies the token of the Sematext Monitoring App to which metrics data will be sent. It must be a valid UUID string in the format `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`. For example: `2046e37c-4fac-45f6-831d-922d43fde759`.
-* `logs.app_token` specifies the token of the Sematext Logs App to which logs data will be sent. It must be a valid UUID string in the format `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`. For example: `9604e37c-49ac-49f6-831d-922d43fde759`.
 * `metrics.payload_max_lines` (default = 1_000) Maximum number of lines allowed per HTTP POST request
 * `metrics.payload_max_bytes` (default = 300_000) Maximum number of bytes allowed per HTTP POST request
 
