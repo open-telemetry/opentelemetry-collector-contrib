@@ -23,6 +23,8 @@ const (
 type Config struct {
 	confighttp.ClientConfig   `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	QueueSettings   exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+
 	// Region specifies the Sematext region the user is operating in
 	// Options:
 	// - EU
@@ -36,7 +38,6 @@ type MetricsConfig struct {
 	AppToken string `mapstructure:"app_token"`
 	// MetricsEndpoint specifies the endpoint for receiving metrics in Sematext
 	MetricsEndpoint string                     `mapstructure:"metrics_endpoint"`
-	QueueSettings   exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 	// MetricsSchema indicates the metrics schema to emit to line protocol.
 	// Default: telegraf-prometheus-v2
 	MetricsSchema string `mapstructure:"metrics_schema"`

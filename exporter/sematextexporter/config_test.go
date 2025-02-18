@@ -57,13 +57,13 @@ func TestLoadConfig(t *testing.T) {
 					Timeout: 500 * time.Millisecond,
 					Headers: map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Sematext"},
 				},
+				QueueSettings: exporterhelper.QueueConfig{
+					Enabled:      true,
+					NumConsumers: 3,
+					QueueSize:    10,
+				},
 				MetricsConfig: MetricsConfig{
 					MetricsEndpoint: usMetricsEndpoint,
-					QueueSettings: exporterhelper.QueueConfig{
-						Enabled:      true,
-						NumConsumers: 3,
-						QueueSize:    10,
-					},
 					AppToken:        metricsAppToken,
 					MetricsSchema:   "telegraf-prometheus-v2",
 					PayloadMaxLines: 72,

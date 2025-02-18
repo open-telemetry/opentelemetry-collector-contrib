@@ -43,9 +43,9 @@ func createDefaultConfig() component.Config {
 				"User-Agent": "OpenTelemetry -> Sematext",
 			},
 		},
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		MetricsConfig: MetricsConfig{
 			MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
-			QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 			PayloadMaxLines: 1_000,
 			PayloadMaxBytes: 300_000,
 		},
