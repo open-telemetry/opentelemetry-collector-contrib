@@ -43,6 +43,9 @@ type Config struct {
 	// The Coralogix logs ingress endpoint
 	Logs configgrpc.ClientConfig `mapstructure:"logs"`
 
+	// The Coralogix profiles ingress endpoint
+	Profiles configgrpc.ClientConfig `mapstructure:"profiles"`
+
 	// Your Coralogix private key (sensitive) for authentication
 	PrivateKey configopaque.String `mapstructure:"private_key"`
 
@@ -69,8 +72,9 @@ func (c *Config) Validate() error {
 	if isEmpty(c.Domain) &&
 		isEmpty(c.Traces.Endpoint) &&
 		isEmpty(c.Metrics.Endpoint) &&
-		isEmpty(c.Logs.Endpoint) {
-		return fmt.Errorf("`domain` or `traces.endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration")
+		isEmpty(c.Logs.Endpoint) &&
+		isEmpty(c.Profiles.Endpoint) {
+		return fmt.Errorf("`domain` or `traces.endpoint` or `metrics.endpoint` or `logs.endpoint` or `profiles.endpoint` not specified, please fix the configuration")
 	}
 	if c.PrivateKey == "" {
 		return fmt.Errorf("`private_key` not specified, please fix the configuration")
