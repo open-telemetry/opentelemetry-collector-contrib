@@ -17,6 +17,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -211,6 +212,14 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 			config: Config{
 				NumWorkers:   1,
 				ClientConfig: confighttp.ClientConfig{Compression: "gzip"},
+				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
+			},
+		},
+		{
+			name: "compression gzip - level 5",
+			config: Config{
+				NumWorkers:   1,
+				ClientConfig: confighttp.ClientConfig{Compression: "gzip", CompressionParams: configcompression.CompressionParams{Level: 5}},
 				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 		},

@@ -4,7 +4,6 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
-	"compress/gzip"
 	"context"
 	"errors"
 	"io"
@@ -72,7 +71,7 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 	}
 	var compressionLevel int
 	if config.Compression == configcompression.TypeGzip {
-		compressionLevel = gzip.BestSpeed
+		compressionLevel = int(config.CompressionParams.Level)
 	}
 	return docappender.BulkIndexerConfig{
 		Client:                client,

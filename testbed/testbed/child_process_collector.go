@@ -334,12 +334,12 @@ func (cp *childProcessCollector) WatchResourceConsumption() error {
 	for start := time.Now(); time.Since(start) < time.Minute; {
 		cp.fetchRAMUsage()
 		cp.fetchCPUUsage()
-		if err := cp.checkAllowedResourceUsage(); err != nil {
-			log.Printf("Allowed usage of resources is too high before test starts wait for one second : %v", err)
-			time.Sleep(time.Second)
-		} else {
+		err := cp.checkAllowedResourceUsage()
+		if err == nil {
 			break
 		}
+		log.Printf("Allowed usage of resources is too high before test starts wait for one second : %v", err)
+		time.Sleep(time.Second)
 	}
 
 	remainingFailures := cp.resourceSpec.MaxConsecutiveFailures

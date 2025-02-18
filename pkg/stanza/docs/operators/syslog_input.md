@@ -26,7 +26,7 @@ TCP Configuration:
 ```yaml
 - type: syslog_input
   tcp:
-     listen_adress: "0.0.0.0:54526"
+     listen_address: "0.0.0.0:54526"
   syslog:
      protocol: rfc5424
 ```
@@ -36,7 +36,7 @@ UDP Configuration:
 ```yaml
 - type: syslog_input
   udp:
-     listen_adress: "0.0.0.0:54526"
+     listen_address: "0.0.0.0:54526"
   syslog:
      protocol: rfc3164
      location: UTC

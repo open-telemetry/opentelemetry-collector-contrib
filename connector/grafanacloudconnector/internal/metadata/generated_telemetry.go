@@ -31,8 +31,6 @@ type TelemetryBuilder struct {
 	GrafanacloudDatapointCount metric.Int64Counter
 	GrafanacloudFlushCount     metric.Int64Counter
 	GrafanacloudHostCount      metric.Int64ObservableGauge
-	// TODO: Remove in v0.119.0 when remove deprecated funcs.
-	observeGrafanacloudHostCount func(context.Context, metric.Observer) error
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -107,12 +105,5 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	if builder.observeGrafanacloudHostCount != nil {
-		reg, err := builder.meter.RegisterCallback(builder.observeGrafanacloudHostCount, builder.GrafanacloudHostCount)
-		errs = errors.Join(errs, err)
-		if err == nil {
-			builder.registrations = append(builder.registrations, reg)
-		}
-	}
 	return &builder, errs
 }

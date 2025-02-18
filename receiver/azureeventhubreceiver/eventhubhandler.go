@@ -71,68 +71,39 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 			h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
 			return newHubErr
 		}
-		h.hub = &hubWrapperImpl{
-			hub: hub,
-		}
+		h.hub = &hubWrapperImpl{hub: hub}
 	}
 
-	if h.config.Partition == "" {
-		// listen to each partition of the Event Hub
-		runtimeInfo, err := h.hub.GetRuntimeInformation(ctx)
-		if err != nil {
-			h.settings.Logger.Debug("Error getting Runtime Information", zap.Error(err))
-			return err
-		}
-
-		for _, partitionID := range runtimeInfo.PartitionIDs {
-			err = h.setUpOnePartition(ctx, partitionID, false)
-			if err != nil {
-				h.settings.Logger.Debug("Error setting up partition", zap.Error(err))
-				return err
-			}
-		}
-	} else {
+	if h.config.Partition != "" {
 		err := h.setUpOnePartition(ctx, h.config.Partition, true)
 		if err != nil {
 			h.settings.Logger.Debug("Error setting up partition", zap.Error(err))
-			return err
 		}
-	}
-
-	if h.hub != nil {
-		return nil
-	}
-
-	hub, err := eventhub.NewHubFromConnectionString(h.config.Connection)
-	if err != nil {
 		return err
 	}
 
-	h.hub = &hubWrapperImpl{
-		hub: hub,
-	}
-
-	runtimeInfo, err := hub.GetRuntimeInformation(ctx)
+	// listen to each partition of the Event Hub
+	runtimeInfo, err := h.hub.GetRuntimeInformation(ctx)
 	if err != nil {
+		h.settings.Logger.Debug("Error getting Runtime Information", zap.Error(err))
 		return err
 	}
 
+	var errs []error
 	for _, partitionID := range runtimeInfo.PartitionIDs {
-		_, err := hub.Receive(ctx, partitionID, h.newMessageHandler, eventhub.ReceiveWithLatestOffset())
+		err = h.setUpOnePartition(ctx, partitionID, false)
 		if err != nil {
-			return err
+			h.settings.Logger.Debug("Error setting up partition", zap.Error(err), zap.String("partition", partitionID))
+			errs = append(errs, err)
 		}
 	}
-
-	return nil
+	return errors.Join(errs...)
 }
 
 func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID string, applyOffset bool) error {
 	receiverOptions := []eventhub.ReceiveOption{}
 	if applyOffset && h.config.Offset != "" {
 		receiverOptions = append(receiverOptions, eventhub.ReceiveWithStartingOffset(h.config.Offset))
-	} else {
-		receiverOptions = append(receiverOptions, eventhub.ReceiveWithLatestOffset())
 	}
 
 	if h.config.ConsumerGroup != "" {
