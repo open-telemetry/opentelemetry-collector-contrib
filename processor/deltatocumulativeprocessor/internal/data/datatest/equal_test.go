@@ -57,15 +57,13 @@ func (s structFunc) Func() func() {
 
 // iter.Seq is a reflect.Func
 func (s structFunc) Seq() iter.Seq[int] {
-	return func(yield func(v int) bool) {
-		return
+	return func(_ func(v int) bool) {
 	}
 }
 
 // iter.Seq2 is a reflect.Func
 func (s structFunc) Seq2() iter.Seq2[int, string] {
-	return func(yield func(k int, v string) bool) {
-		return
+	return func(_ func(k int, v string) bool) {
 	}
 }
 
