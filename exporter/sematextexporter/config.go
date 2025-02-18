@@ -23,7 +23,7 @@ const (
 type Config struct {
 	confighttp.ClientConfig   `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings   exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 
 	// Region specifies the Sematext region the user is operating in
 	// Options:
@@ -37,7 +37,7 @@ type MetricsConfig struct {
 	// App token is the token of Sematext Monitoring App to which you want to send the metrics.
 	AppToken string `mapstructure:"app_token"`
 	// MetricsEndpoint specifies the endpoint for receiving metrics in Sematext
-	MetricsEndpoint string                     `mapstructure:"-"`
+	MetricsEndpoint string `mapstructure:"-"`
 	// MetricsSchema indicates the metrics schema to emit to line protocol.
 	// Default: telegraf-prometheus-v2
 	MetricsSchema string `mapstructure:"-"`
@@ -49,7 +49,7 @@ type MetricsConfig struct {
 
 // Validate checks for invalid or missing entries in the configuration.
 func (cfg *Config) Validate() error {
-	if strings.ToLower(cfg.Region) != euRegion && strings.ToLower(cfg.Region) != usRegion {
+	if strings.ToLower(cfg.Region) != euRegion && strings.ToLower(cfg.Region) != usRegion && strings.ToLower(cfg.Region) != "" {
 		return fmt.Errorf("invalid region: %s. please use either 'EU' or 'US'", cfg.Region)
 	}
 	if !isValidUUID(cfg.MetricsConfig.AppToken) && cfg.MetricsConfig.AppToken != "" {

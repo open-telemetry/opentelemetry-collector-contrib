@@ -25,7 +25,7 @@ The following configuration options are supported:
     * `initial_interval` (default = 5s) Time to wait after the first failure before retrying
     * `max_interval` (default = 30s) Upper bound on backoff interval
     * `max_elapsed_time` (default = 120s) Maximum amount of time (including retries) spent trying to send a request/batch  
-* `region`(default = US)  Region specifies the Sematext region the user is operating in; must be one of:
+* `region` Region specifies the Sematext region the user is operating in; must be one of:
   * `US`
   * `EU`    
 * `metrics.app_token` specifies the token of the Sematext Monitoring App to which metrics data will be sent. It must be a valid UUID string in the format `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`. For example: `2046e37c-4fac-45f6-831d-922d43fde759`.
