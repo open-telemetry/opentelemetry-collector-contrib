@@ -171,15 +171,15 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 
 	var errs []error
 	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		rl := rls.At(i)
 		resource := rl.Resource()
 		ills := rl.ScopeLogs()
-		for j := 0; j < ills.Len(); j++ {
+		for j := range ills.Len() {
 			ill := ills.At(j)
 			scope := ill.Scope()
 			logs := ill.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
+			for k := range logs.Len() {
 				if err := e.pushLogRecord(ctx, router, resource, rl.SchemaUrl(), logs.At(k), scope, ill.SchemaUrl(), session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
@@ -264,15 +264,15 @@ func (e *elasticsearchExporter) pushMetricsData(
 	var validationErrs []error // log instead of returning these so that upstream does not retry
 	var errs []error
 	resourceMetrics := metrics.ResourceMetrics()
-	for i := 0; i < resourceMetrics.Len(); i++ {
+	for i := range resourceMetrics.Len() {
 		resourceMetric := resourceMetrics.At(i)
 		resource := resourceMetric.Resource()
 		scopeMetrics := resourceMetric.ScopeMetrics()
 
-		for j := 0; j < scopeMetrics.Len(); j++ {
+		for j := range scopeMetrics.Len() {
 			scopeMetrics := scopeMetrics.At(j)
 			scope := scopeMetrics.Scope()
-			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
+			for k := range scopeMetrics.Metrics().Len() {
 				metric := scopeMetrics.Metrics().At(k)
 
 				upsertDataPoint := func(dp datapoints.DataPoint) error {
@@ -302,7 +302,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
 					dps := metric.Sum().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
+					for l := range dps.Len() {
 						dp := dps.At(l)
 						if err := upsertDataPoint(datapoints.NewNumber(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
@@ -311,7 +311,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					}
 				case pmetric.MetricTypeGauge:
 					dps := metric.Gauge().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
+					for l := range dps.Len() {
 						dp := dps.At(l)
 						if err := upsertDataPoint(datapoints.NewNumber(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
@@ -324,7 +324,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 						continue
 					}
 					dps := metric.ExponentialHistogram().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
+					for l := range dps.Len() {
 						dp := dps.At(l)
 						if err := upsertDataPoint(datapoints.NewExponentialHistogram(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
@@ -337,7 +337,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 						continue
 					}
 					dps := metric.Histogram().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
+					for l := range dps.Len() {
 						dp := dps.At(l)
 						if err := upsertDataPoint(datapoints.NewHistogram(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
@@ -346,7 +346,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					}
 				case pmetric.MetricTypeSummary:
 					dps := metric.Summary().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
+					for l := range dps.Len() {
 						dp := dps.At(l)
 						if err := upsertDataPoint(datapoints.NewSummary(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
@@ -411,15 +411,15 @@ func (e *elasticsearchExporter) pushTraceData(
 
 	var errs []error
 	resourceSpans := td.ResourceSpans()
-	for i := 0; i < resourceSpans.Len(); i++ {
+	for i := range resourceSpans.Len() {
 		il := resourceSpans.At(i)
 		resource := il.Resource()
 		scopeSpans := il.ScopeSpans()
-		for j := 0; j < scopeSpans.Len(); j++ {
+		for j := range scopeSpans.Len() {
 			scopeSpan := scopeSpans.At(j)
 			scope := scopeSpan.Scope()
 			spans := scopeSpan.Spans()
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				span := spans.At(k)
 				if err := e.pushTraceRecord(ctx, router, resource, il.SchemaUrl(), span, scope, scopeSpan.SchemaUrl(), session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
@@ -427,7 +427,7 @@ func (e *elasticsearchExporter) pushTraceData(
 					}
 					errs = append(errs, err)
 				}
-				for ii := 0; ii < span.Events().Len(); ii++ {
+				for ii := range span.Events().Len() {
 					spanEvent := span.Events().At(ii)
 					if err := e.pushSpanEvent(ctx, router, resource, il.SchemaUrl(), span, spanEvent, scope, scopeSpan.SchemaUrl(), session); err != nil {
 						errs = append(errs, err)
@@ -540,15 +540,15 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 
 	var errs []error
 	rps := pd.ResourceProfiles()
-	for i := 0; i < rps.Len(); i++ {
+	for i := range rps.Len() {
 		rp := rps.At(i)
 		resource := rp.Resource()
 		sps := rp.ScopeProfiles()
-		for j := 0; j < sps.Len(); j++ {
+		for j := range sps.Len() {
 			sp := sps.At(j)
 			scope := sp.Scope()
 			p := sp.Profiles()
-			for k := 0; k < p.Len(); k++ {
+			for k := range p.Len() {
 				if err := e.pushProfileRecord(ctx, resource, p.At(k), scope, defaultSession, eventsSession, stackTracesSession, stackFramesSession, executablesSession); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr

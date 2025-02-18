@@ -73,11 +73,11 @@ func (stma *startTimeMetricAdjuster) AdjustMetrics(metrics pmetric.Metrics) erro
 	}
 
 	startTimeTs := timestampFromFloat64(startTime)
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+	for i := range metrics.ResourceMetrics().Len() {
 		rm := metrics.ResourceMetrics().At(i)
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		for j := range rm.ScopeMetrics().Len() {
 			ilm := rm.ScopeMetrics().At(j)
-			for k := 0; k < ilm.Metrics().Len(); k++ {
+			for k := range ilm.Metrics().Len() {
 				metric := ilm.Metrics().At(k)
 				switch metric.Type() {
 				case pmetric.MetricTypeGauge:
@@ -85,28 +85,28 @@ func (stma *startTimeMetricAdjuster) AdjustMetrics(metrics pmetric.Metrics) erro
 
 				case pmetric.MetricTypeSum:
 					dataPoints := metric.Sum().DataPoints()
-					for l := 0; l < dataPoints.Len(); l++ {
+					for l := range dataPoints.Len() {
 						dp := dataPoints.At(l)
 						dp.SetStartTimestamp(startTimeTs)
 					}
 
 				case pmetric.MetricTypeSummary:
 					dataPoints := metric.Summary().DataPoints()
-					for l := 0; l < dataPoints.Len(); l++ {
+					for l := range dataPoints.Len() {
 						dp := dataPoints.At(l)
 						dp.SetStartTimestamp(startTimeTs)
 					}
 
 				case pmetric.MetricTypeHistogram:
 					dataPoints := metric.Histogram().DataPoints()
-					for l := 0; l < dataPoints.Len(); l++ {
+					for l := range dataPoints.Len() {
 						dp := dataPoints.At(l)
 						dp.SetStartTimestamp(startTimeTs)
 					}
 
 				case pmetric.MetricTypeExponentialHistogram:
 					dataPoints := metric.ExponentialHistogram().DataPoints()
-					for l := 0; l < dataPoints.Len(); l++ {
+					for l := range dataPoints.Len() {
 						dp := dataPoints.At(l)
 						dp.SetStartTimestamp(startTimeTs)
 					}
@@ -126,11 +126,11 @@ func (stma *startTimeMetricAdjuster) AdjustMetrics(metrics pmetric.Metrics) erro
 }
 
 func (stma *startTimeMetricAdjuster) getStartTime(metrics pmetric.Metrics) (float64, error) {
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+	for i := range metrics.ResourceMetrics().Len() {
 		rm := metrics.ResourceMetrics().At(i)
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		for j := range rm.ScopeMetrics().Len() {
 			ilm := rm.ScopeMetrics().At(j)
-			for k := 0; k < ilm.Metrics().Len(); k++ {
+			for k := range ilm.Metrics().Len() {
 				metric := ilm.Metrics().At(k)
 				if stma.matchStartTimeMetric(metric.Name()) {
 					switch metric.Type() {

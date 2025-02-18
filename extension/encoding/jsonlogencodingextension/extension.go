@@ -31,13 +31,13 @@ func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	logs := make([]map[string]any, 0, ld.LogRecordCount())
 
 	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		rl := rls.At(i)
 		sls := rl.ScopeLogs()
-		for j := 0; j < sls.Len(); j++ {
+		for j := range sls.Len() {
 			sl := sls.At(j)
 			logSlice := sl.LogRecords()
-			for k := 0; k < logSlice.Len(); k++ {
+			for k := range logSlice.Len() {
 				log := logSlice.At(k)
 				switch log.Body().Type() {
 				case pcommon.ValueTypeMap:
@@ -82,15 +82,15 @@ func (e *jsonLogExtension) logProcessor(ld plog.Logs) ([]byte, error) {
 	logs := make([]logBody, 0, ld.LogRecordCount())
 
 	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		rl := rls.At(i)
 		resourceAttrs := rl.Resource().Attributes().AsRaw()
 
 		sls := rl.ScopeLogs()
-		for j := 0; j < sls.Len(); j++ {
+		for j := range sls.Len() {
 			sl := sls.At(j)
 			logSlice := sl.LogRecords()
-			for k := 0; k < logSlice.Len(); k++ {
+			for k := range logSlice.Len() {
 				log := logSlice.At(k)
 				logEvent := logBody{
 					Body:               log.Body().AsRaw(),

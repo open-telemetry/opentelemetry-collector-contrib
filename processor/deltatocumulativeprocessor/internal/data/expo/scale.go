@@ -87,7 +87,7 @@ func Collapse(bs Buckets) {
 	}
 	bs.SetOffset(bs.Offset() / 2)
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		// size is ~half of len. we add two buckets per iteration.
 		// k jumps in steps of 2, shifted if offset makes this necessary.
 		k := i*2 + shift

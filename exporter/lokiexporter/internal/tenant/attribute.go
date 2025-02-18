@@ -16,7 +16,7 @@ type AttributeTenantSource struct {
 }
 
 func (ts *AttributeTenantSource) GetTenant(_ context.Context, logs plog.Logs) (string, error) {
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		rl := logs.ResourceLogs().At(i)
 		if v, found := rl.Resource().Attributes().Get(ts.Value); found {
 			return v.Str(), nil

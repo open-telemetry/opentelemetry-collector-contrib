@@ -135,7 +135,7 @@ func TestMapHash(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			for i := 0; i < len(tt.maps); i++ {
+			for i := range len(tt.maps) {
 				for j := i + 1; j < len(tt.maps); j++ {
 					if tt.equal {
 						assert.Equal(t, MapHash(tt.maps[i]), MapHash(tt.maps[j]),
@@ -285,7 +285,7 @@ func TestValueHash(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			for i := 0; i < len(tt.values); i++ {
+			for i := range len(tt.values) {
 				for j := i + 1; j < len(tt.values); j++ {
 					if tt.equal {
 						assert.Equal(t, ValueHash(tt.values[i]), ValueHash(tt.values[j]),
@@ -342,7 +342,7 @@ func BenchmarkMapHashFourItems(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		MapHash(m)
 	}
 }
@@ -360,7 +360,7 @@ func BenchmarkMapHashEightItems(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		MapHash(m)
 	}
 }
@@ -386,7 +386,7 @@ func BenchmarkMapHashWithEmbeddedSliceAndMap(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		MapHash(m)
 	}
 }

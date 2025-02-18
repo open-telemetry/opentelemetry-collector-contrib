@@ -10,7 +10,7 @@ import (
 func BenchmarkSeedConversion(b *testing.B) {
 	val := uint32(0x3024001) // Just a random 32 bit int
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		i32tob(val)
 	}
 }

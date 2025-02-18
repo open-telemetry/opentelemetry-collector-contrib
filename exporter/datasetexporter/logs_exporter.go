@@ -239,13 +239,13 @@ func (e *DatasetExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	var events []*add_events.EventBundle
 
 	resourceLogs := ld.ResourceLogs()
-	for i := 0; i < resourceLogs.Len(); i++ {
+	for i := range resourceLogs.Len() {
 		resource := resourceLogs.At(i).Resource()
 		scopeLogs := resourceLogs.At(i).ScopeLogs()
-		for j := 0; j < scopeLogs.Len(); j++ {
+		for j := range scopeLogs.Len() {
 			scope := scopeLogs.At(j).Scope()
 			logRecords := scopeLogs.At(j).LogRecords()
-			for k := 0; k < logRecords.Len(); k++ {
+			for k := range logRecords.Len() {
 				logRecord := logRecords.At(k)
 				events = append(
 					events,

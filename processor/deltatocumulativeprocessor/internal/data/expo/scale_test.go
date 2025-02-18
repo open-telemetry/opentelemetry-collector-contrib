@@ -84,7 +84,7 @@ func TestDownscale(t *testing.T) {
 			}
 
 			is := datatest.New(t)
-			for i := 0; i < len(buckets)-1; i++ {
+			for i := range len(buckets) - 1 {
 				expo.Downscale(buckets[i].bkt, buckets[i].scale, buckets[i+1].scale)
 
 				is.Equalf(buckets[i+1].bkt.Offset(), buckets[i].bkt.Offset(), "offset")

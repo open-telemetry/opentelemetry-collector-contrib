@@ -255,7 +255,7 @@ func (ghs *githubScraper) evalCommits(
 			oldest := node[len(node)-1].GetCommittedDate()
 			age = int64(time.Since(oldest).Seconds())
 		}
-		for b := 0; b < len(c.Nodes); b++ {
+		for b := range len(c.Nodes) {
 			additions += c.Nodes[b].Additions
 			deletions += c.Nodes[b].Deletions
 		}

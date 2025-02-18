@@ -34,10 +34,10 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 	n := 1000
 	ms := make([]pmetric.Metrics, n)
 	testIDKey := "test_id"
-	for i := 0; i < n; i++ {
+	for i := range n {
 		m := testdata.GenerateMetricsOneMetric()
 		dps := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints()
-		for j := 0; j < dps.Len(); j++ {
+		for j := range dps.Len() {
 			dp := dps.At(j)
 			dp.Attributes().PutInt(testIDKey, int64(i))
 		}

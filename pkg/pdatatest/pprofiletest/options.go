@@ -44,7 +44,7 @@ func (opt ignoreResourceAttributeValue) applyOnProfiles(expected, actual pprofil
 
 func (opt ignoreResourceAttributeValue) maskProfilesResourceAttributeValue(profiles pprofile.Profiles) {
 	rls := profiles.ResourceProfiles()
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		internal.MaskResourceAttributeValue(rls.At(i).Resource(), opt.attributeName)
 	}
 }
@@ -68,9 +68,9 @@ func (opt ignoreScopeAttributeValue) applyOnProfiles(expected, actual pprofile.P
 
 func (opt ignoreScopeAttributeValue) maskProfilesScopeAttributeValue(profiles pprofile.Profiles) {
 	rls := profiles.ResourceProfiles()
-	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+	for i := range profiles.ResourceProfiles().Len() {
 		sls := rls.At(i).ScopeProfiles()
-		for j := 0; j < sls.Len(); j++ {
+		for j := range sls.Len() {
 			lr := sls.At(j)
 			val, exists := lr.Scope().Attributes().Get(opt.attributeName)
 			if exists {
@@ -99,13 +99,13 @@ func (opt ignoreProfileAttributeValue) applyOnProfiles(expected, actual pprofile
 
 func (opt ignoreProfileAttributeValue) maskProfileAttributeValue(profiles pprofile.Profiles) {
 	rls := profiles.ResourceProfiles()
-	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+	for i := range profiles.ResourceProfiles().Len() {
 		sls := rls.At(i).ScopeProfiles()
-		for j := 0; j < sls.Len(); j++ {
+		for j := range sls.Len() {
 			lrs := sls.At(j).Profiles()
-			for k := 0; k < lrs.Len(); k++ {
+			for k := range lrs.Len() {
 				lr := lrs.At(k)
-				for l := 0; l < lr.AttributeTable().Len(); l++ {
+				for l := range lr.AttributeTable().Len() {
 					a := lr.AttributeTable().At(l)
 					if a.Key() == opt.attributeName {
 						a.Value().SetEmptyBytes()
@@ -131,11 +131,11 @@ func (opt ignoreProfileTimestampValues) applyOnProfiles(expected, actual pprofil
 
 func (opt ignoreProfileTimestampValues) maskProfileTimestampValues(profiles pprofile.Profiles) {
 	rls := profiles.ResourceProfiles()
-	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+	for i := range profiles.ResourceProfiles().Len() {
 		sls := rls.At(i).ScopeProfiles()
-		for j := 0; j < sls.Len(); j++ {
+		for j := range sls.Len() {
 			lrs := sls.At(j).Profiles()
-			for k := 0; k < lrs.Len(); k++ {
+			for k := range lrs.Len() {
 				lr := lrs.At(k)
 				lr.SetStartTime(pcommon.NewTimestampFromTime(time.Time{}))
 				lr.SetDuration(pcommon.NewTimestampFromTime(time.Time{}))
@@ -172,7 +172,7 @@ func IgnoreScopeProfilesOrder() CompareProfilesOption {
 }
 
 func sortScopeProfilesSlices(ls pprofile.Profiles) {
-	for i := 0; i < ls.ResourceProfiles().Len(); i++ {
+	for i := range ls.ResourceProfiles().Len() {
 		ls.ResourceProfiles().At(i).ScopeProfiles().Sort(func(a, b pprofile.ScopeProfiles) bool {
 			if a.SchemaUrl() != b.SchemaUrl() {
 				return a.SchemaUrl() < b.SchemaUrl()
@@ -194,8 +194,8 @@ func IgnoreProfilesOrder() CompareProfilesOption {
 }
 
 func sortProfileSlices(ls pprofile.Profiles) {
-	for i := 0; i < ls.ResourceProfiles().Len(); i++ {
-		for j := 0; j < ls.ResourceProfiles().At(i).ScopeProfiles().Len(); j++ {
+	for i := range ls.ResourceProfiles().Len() {
+		for j := range ls.ResourceProfiles().At(i).ScopeProfiles().Len() {
 			ls.ResourceProfiles().At(i).ScopeProfiles().At(j).Profiles().Sort(func(a, b pprofile.Profile) bool {
 				if a.StartTime() != b.StartTime() {
 					return a.StartTime() < b.StartTime()

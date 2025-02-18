@@ -46,21 +46,21 @@ func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool) []*prompb
 	resourceMetricsSlice := md.ResourceMetrics()
 
 	metadataLength := 0
-	for i := 0; i < resourceMetricsSlice.Len(); i++ {
+	for i := range resourceMetricsSlice.Len() {
 		scopeMetricsSlice := resourceMetricsSlice.At(i).ScopeMetrics()
-		for j := 0; j < scopeMetricsSlice.Len(); j++ {
+		for j := range scopeMetricsSlice.Len() {
 			metadataLength += scopeMetricsSlice.At(j).Metrics().Len()
 		}
 	}
 
 	metadata := make([]*prompb.MetricMetadata, 0, metadataLength)
-	for i := 0; i < resourceMetricsSlice.Len(); i++ {
+	for i := range resourceMetricsSlice.Len() {
 		resourceMetrics := resourceMetricsSlice.At(i)
 		scopeMetricsSlice := resourceMetrics.ScopeMetrics()
 
-		for j := 0; j < scopeMetricsSlice.Len(); j++ {
+		for j := range scopeMetricsSlice.Len() {
 			scopeMetrics := scopeMetricsSlice.At(j)
-			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
+			for k := range scopeMetrics.Metrics().Len() {
 				metric := scopeMetrics.Metrics().At(k)
 				entry := prompb.MetricMetadata{
 					Type:             otelMetricTypeToPromMetricType(metric),

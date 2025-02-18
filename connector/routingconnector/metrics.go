@@ -121,7 +121,7 @@ func groupAllMetrics(
 	cons consumer.Metrics,
 	metrics pmetric.Metrics,
 ) {
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+	for i := range metrics.ResourceMetrics().Len() {
 		groupMetrics(groups, cons, metrics.ResourceMetrics().At(i))
 	}
 }

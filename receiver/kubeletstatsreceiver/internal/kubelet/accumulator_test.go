@@ -212,7 +212,7 @@ func TestMetadataErrorCases(t *testing.T) {
 
 			assert.Len(t, acc.m, tt.numMDs)
 			require.Equal(t, tt.numLogs, logs.Len())
-			for i := 0; i < tt.numLogs; i++ {
+			for i := range tt.numLogs {
 				assert.Equal(t, tt.logMessages[i], logs.All()[i].Message)
 			}
 		})

@@ -103,7 +103,7 @@ func bsearch(pos position, left []ringItem, right []ringItem) ringItem {
 // The slice length of the result matches the numPoints.
 func positionsFor(endpoint string, numPoints int) []position {
 	res := make([]position, 0, numPoints)
-	for i := 0; i < numPoints; i++ {
+	for i := range numPoints {
 		h := crc32.NewIEEE()
 		h.Write([]byte(endpoint))
 		h.Write([]byte{byte(i)})

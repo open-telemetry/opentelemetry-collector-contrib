@@ -85,7 +85,7 @@ func TestAlertManagerExporterExtractEvents(t *testing.T) {
 			traces, span := createTracesAndSpan()
 
 			// add events
-			for i := 0; i < tt.events; i++ {
+			for i := range tt.events {
 				event := span.Events().AppendEmpty()
 				// add event attributes
 				startTime := pcommon.Timestamp(time.Now().UnixNano())

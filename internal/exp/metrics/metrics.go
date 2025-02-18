@@ -25,11 +25,11 @@ import (
 // That said, this will do a large amount of memory copying
 func Merge(mdA pmetric.Metrics, mdB pmetric.Metrics) pmetric.Metrics {
 outer:
-	for i := 0; i < mdB.ResourceMetrics().Len(); i++ {
+	for i := range mdB.ResourceMetrics().Len() {
 		rmB := mdB.ResourceMetrics().At(i)
 		resourceIDB := identity.OfResource(rmB.Resource())
 
-		for j := 0; j < mdA.ResourceMetrics().Len(); j++ {
+		for j := range mdA.ResourceMetrics().Len() {
 			rmA := mdA.ResourceMetrics().At(j)
 			resourceIDA := identity.OfResource(rmA.Resource())
 
@@ -50,11 +50,11 @@ outer:
 
 func mergeResourceMetrics(resourceID identity.Resource, rmA pmetric.ResourceMetrics, rmB pmetric.ResourceMetrics) pmetric.ResourceMetrics {
 outer:
-	for i := 0; i < rmB.ScopeMetrics().Len(); i++ {
+	for i := range rmB.ScopeMetrics().Len() {
 		smB := rmB.ScopeMetrics().At(i)
 		scopeIDB := identity.OfScope(resourceID, smB.Scope())
 
-		for j := 0; j < rmA.ScopeMetrics().Len(); j++ {
+		for j := range rmA.ScopeMetrics().Len() {
 			smA := rmA.ScopeMetrics().At(j)
 			scopeIDA := identity.OfScope(resourceID, smA.Scope())
 
@@ -75,11 +75,11 @@ outer:
 
 func mergeScopeMetrics(scopeID identity.Scope, smA pmetric.ScopeMetrics, smB pmetric.ScopeMetrics) pmetric.ScopeMetrics {
 outer:
-	for i := 0; i < smB.Metrics().Len(); i++ {
+	for i := range smB.Metrics().Len() {
 		mB := smB.Metrics().At(i)
 		metricIDB := identity.OfMetric(scopeID, mB)
 
-		for j := 0; j < smA.Metrics().Len(); j++ {
+		for j := range smA.Metrics().Len() {
 			mA := smA.Metrics().At(j)
 			metricIDA := identity.OfMetric(scopeID, mA)
 
@@ -113,7 +113,7 @@ outer:
 
 func mergeDataPoints[DPS dataPointSlice[DP], DP dataPoint[DP]](dataPointsA DPS, dataPointsB DPS) DPS {
 	// Append all the datapoints from B to A
-	for i := 0; i < dataPointsB.Len(); i++ {
+	for i := range dataPointsB.Len() {
 		dpB := dataPointsB.At(i)
 
 		newDP := dataPointsA.AppendEmpty()

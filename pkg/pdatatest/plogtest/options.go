@@ -44,7 +44,7 @@ func (opt ignoreResourceAttributeValue) applyOnLogs(expected, actual plog.Logs) 
 
 func (opt ignoreResourceAttributeValue) maskLogsResourceAttributeValue(logs plog.Logs) {
 	rls := logs.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		internal.MaskResourceAttributeValue(rls.At(i).Resource(), opt.attributeName)
 	}
 }
@@ -68,11 +68,11 @@ func (opt ignoreLogRecordAttributeValue) applyOnLogs(expected, actual plog.Logs)
 
 func (opt ignoreLogRecordAttributeValue) maskLogRecordAttributeValue(logs plog.Logs) {
 	rls := logs.ResourceLogs()
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		sls := rls.At(i).ScopeLogs()
-		for j := 0; j < sls.Len(); j++ {
+		for j := range sls.Len() {
 			lrs := sls.At(j).LogRecords()
-			for k := 0; k < lrs.Len(); k++ {
+			for k := range lrs.Len() {
 				lr := lrs.At(k)
 				val, exists := lr.Attributes().Get(opt.attributeName)
 				if exists {
@@ -93,11 +93,11 @@ func IgnoreTimestamp() CompareLogsOption {
 
 func maskTimestamp(logs plog.Logs, ts pcommon.Timestamp) {
 	rls := logs.ResourceLogs()
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		sls := rls.At(i).ScopeLogs()
-		for j := 0; j < sls.Len(); j++ {
+		for j := range sls.Len() {
 			lrs := sls.At(j).LogRecords()
-			for k := 0; k < lrs.Len(); k++ {
+			for k := range lrs.Len() {
 				lrs.At(k).SetTimestamp(ts)
 			}
 		}
@@ -114,11 +114,11 @@ func IgnoreObservedTimestamp() CompareLogsOption {
 
 func maskObservedTimestamp(logs plog.Logs, ts pcommon.Timestamp) {
 	rls := logs.ResourceLogs()
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		sls := rls.At(i).ScopeLogs()
-		for j := 0; j < sls.Len(); j++ {
+		for j := range sls.Len() {
 			lrs := sls.At(j).LogRecords()
-			for k := 0; k < lrs.Len(); k++ {
+			for k := range lrs.Len() {
 				lrs.At(k).SetObservedTimestamp(ts)
 			}
 		}
@@ -153,7 +153,7 @@ func IgnoreScopeLogsOrder() CompareLogsOption {
 }
 
 func sortScopeLogsSlices(ls plog.Logs) {
-	for i := 0; i < ls.ResourceLogs().Len(); i++ {
+	for i := range ls.ResourceLogs().Len() {
 		ls.ResourceLogs().At(i).ScopeLogs().Sort(func(a, b plog.ScopeLogs) bool {
 			if a.SchemaUrl() != b.SchemaUrl() {
 				return a.SchemaUrl() < b.SchemaUrl()
@@ -175,8 +175,8 @@ func IgnoreLogRecordsOrder() CompareLogsOption {
 }
 
 func sortLogRecordSlices(ls plog.Logs) {
-	for i := 0; i < ls.ResourceLogs().Len(); i++ {
-		for j := 0; j < ls.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+	for i := range ls.ResourceLogs().Len() {
+		for j := range ls.ResourceLogs().At(i).ScopeLogs().Len() {
 			ls.ResourceLogs().At(i).ScopeLogs().At(j).LogRecords().Sort(func(a, b plog.LogRecord) bool {
 				if a.ObservedTimestamp() != b.ObservedTimestamp() {
 					return a.ObservedTimestamp() < b.ObservedTimestamp()

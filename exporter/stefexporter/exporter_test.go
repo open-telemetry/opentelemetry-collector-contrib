@@ -172,7 +172,7 @@ func TestExport(t *testing.T) {
 			// Send some metrics. Make sure the count of batches exceeds the number of consumers
 			// so that we can hit the case where exporter begins to forcedly flush encoded data.
 			pointCount := int64(0)
-			for i := 0; i < 2*cfg.QueueConfig.NumConsumers; i++ {
+			for range 2 * cfg.QueueConfig.NumConsumers {
 				md := testdata.GenerateMetrics(1)
 				pointCount += int64(md.DataPointCount())
 				err := exp.ConsumeMetrics(context.Background(), md)
@@ -375,7 +375,7 @@ func TestCancelBlockedExport(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
 
 	// Do some attempts send with cancellation to help trigger races if there is any.
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		// Trying sending with server down. The connection attempt will block
 		// because listener does not accept connections. However exportMetrics()
 		// will return almost immediately because connection attempt
@@ -429,7 +429,7 @@ func TestCancelAfterExport(t *testing.T) {
 	require.NoError(t, exp.Start(ctx, host))
 
 	var pointCount int64
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		md := testdata.GenerateMetrics(1)
 		pointCount += int64(md.DataPointCount())
 		ctx, cancel = context.WithCancel(context.Background())

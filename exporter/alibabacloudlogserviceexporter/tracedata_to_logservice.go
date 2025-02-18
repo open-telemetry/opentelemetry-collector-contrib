@@ -38,7 +38,7 @@ const (
 func traceDataToLogServiceData(td ptrace.Traces) []*sls.Log {
 	var slsLogs []*sls.Log
 	resourceSpansSlice := td.ResourceSpans()
-	for i := 0; i < resourceSpansSlice.Len(); i++ {
+	for i := range resourceSpansSlice.Len() {
 		logs := resourceSpansToLogServiceData(resourceSpansSlice.At(i))
 		slsLogs = append(slsLogs, logs...)
 	}
@@ -49,11 +49,11 @@ func resourceSpansToLogServiceData(resourceSpans ptrace.ResourceSpans) []*sls.Lo
 	resourceContents := resourceToLogContents(resourceSpans.Resource())
 	scopeSpansSlice := resourceSpans.ScopeSpans()
 	var slsLogs []*sls.Log
-	for i := 0; i < scopeSpansSlice.Len(); i++ {
+	for i := range scopeSpansSlice.Len() {
 		insLibSpans := scopeSpansSlice.At(i)
 		instrumentationLibraryContents := instrumentationScopeToLogContents(insLibSpans.Scope())
 		spans := insLibSpans.Spans()
-		for j := 0; j < spans.Len(); j++ {
+		for j := range spans.Len() {
 			if slsLog := spanToLogServiceData(spans.At(j), resourceContents, instrumentationLibraryContents); slsLog != nil {
 				slsLogs = append(slsLogs, slsLog)
 			}
@@ -178,7 +178,7 @@ func statusCodeToShortString(code ptrace.StatusCode) string {
 
 func eventsToString(events ptrace.SpanEventSlice) string {
 	eventArray := make([]map[string]any, 0, events.Len())
-	for i := 0; i < events.Len(); i++ {
+	for i := range events.Len() {
 		spanEvent := events.At(i)
 		event := map[string]any{}
 		event[nameField] = spanEvent.Name()
@@ -192,7 +192,7 @@ func eventsToString(events ptrace.SpanEventSlice) string {
 
 func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 	linkArray := make([]map[string]any, 0, spanLinkSlice.Len())
-	for i := 0; i < spanLinkSlice.Len(); i++ {
+	for i := range spanLinkSlice.Len() {
 		spanLink := spanLinkSlice.At(i)
 		link := map[string]any{}
 		link[spanIDField] = traceutil.SpanIDToHexOrEmptyString(spanLink.SpanID())

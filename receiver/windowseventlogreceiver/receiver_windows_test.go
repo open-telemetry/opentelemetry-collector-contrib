@@ -96,7 +96,7 @@ func BenchmarkReadWindowsEventLogger(b *testing.B) {
 	}
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				// Set up the receiver and sink.
 				ctx := context.Background()
 				factory := newFactoryAdapter()
@@ -342,12 +342,12 @@ func assertExpectedLogRecords(t *testing.T, sink *consumertest.LogsSink, expecte
 func filterAllLogRecordsBySource(t *testing.T, sink *consumertest.LogsSink, src string) (filteredLogRecords []plog.LogRecord) {
 	for _, logs := range sink.AllLogs() {
 		resourceLogsSlice := logs.ResourceLogs()
-		for i := 0; i < resourceLogsSlice.Len(); i++ {
+		for i := range resourceLogsSlice.Len() {
 			resourceLogs := resourceLogsSlice.At(i)
 			scopeLogsSlice := resourceLogs.ScopeLogs()
-			for j := 0; j < scopeLogsSlice.Len(); j++ {
+			for j := range scopeLogsSlice.Len() {
 				logRecords := scopeLogsSlice.At(j).LogRecords()
-				for k := 0; k < logRecords.Len(); k++ {
+				for k := range logRecords.Len() {
 					logRecord := logRecords.At(k)
 					if extractEventSourceFromLogRecord(t, logRecord) == src {
 						filteredLogRecords = append(filteredLogRecords, logRecord)

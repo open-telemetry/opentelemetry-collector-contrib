@@ -20,7 +20,7 @@ func toggleScalarDataTypeOp(metric pmetric.Metric, f internalFilter) {
 		return
 	}
 
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		if !f.matchAttrs(dp.Attributes()) {
 			continue

@@ -91,7 +91,7 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 
 	start := time.Now()
 	for _, ss := range foundScopes.Scope {
-		for i := 0; i < ss.ScopeSpans.Len(); i++ {
+		for i := range ss.ScopeSpans.Len() {
 			sp := ss.ScopeSpans.At(i)
 			spID := trc.SpanID(sp.SpanID())
 

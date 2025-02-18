@@ -50,7 +50,7 @@ func (c *logsConnector) Capabilities() consumer.Capabilities {
 // It aggregates the trace data to generate logs.
 func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
 	ld := plog.NewLogs()
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
 		serviceAttr, ok := resourceAttr.Get(conventions.AttributeServiceName)
@@ -59,14 +59,14 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 		}
 		serviceName := serviceAttr.Str()
 		ilsSlice := rspans.ScopeSpans()
-		for j := 0; j < ilsSlice.Len(); j++ {
+		for j := range ilsSlice.Len() {
 			sl := c.newScopeLogs(ld)
 			ils := ilsSlice.At(j)
 			ils.Scope().CopyTo(sl.Scope())
 			spans := ils.Spans()
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				span := spans.At(k)
-				for l := 0; l < span.Events().Len(); l++ {
+				for l := range span.Events().Len() {
 					event := span.Events().At(l)
 					if event.Name() == eventNameExc {
 						c.attrToLogRecord(sl, serviceName, span, event, resourceAttr)

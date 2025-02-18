@@ -209,7 +209,7 @@ func TestNewParentSpanID_Consistency(t *testing.T) {
 	spanID1, err1 := newParentSpanID(runID, runAttempt)
 	require.NoError(t, err1)
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		spanID2, err2 := newParentSpanID(runID, runAttempt)
 		require.NoError(t, err2)
 		require.Equal(t, spanID1, spanID2, "span ID should be consistent across multiple calls")

@@ -49,13 +49,13 @@ func TestMetricAccumulator(t *testing.T) {
 
 func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
 	for _, md := range mds {
-		for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		for i := range md.ResourceMetrics().Len() {
 			rm := md.ResourceMetrics().At(i)
 			requireResourceOk(t, rm.Resource())
-			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			for j := range rm.ScopeMetrics().Len() {
 				ilm := rm.ScopeMetrics().At(j)
 				require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver", ilm.Scope().Name())
-				for k := 0; k < ilm.Metrics().Len(); k++ {
+				for k := range ilm.Metrics().Len() {
 					requireMetricOk(t, ilm.Metrics().At(k))
 				}
 			}
@@ -69,7 +69,7 @@ func requireMetricOk(t *testing.T, m pmetric.Metric) {
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:
 		gauge := m.Gauge()
-		for i := 0; i < gauge.DataPoints().Len(); i++ {
+		for i := range gauge.DataPoints().Len() {
 			dp := gauge.DataPoints().At(i)
 			require.NotZero(t, dp.Timestamp())
 			requirePointOk(t, dp)
@@ -78,7 +78,7 @@ func requireMetricOk(t *testing.T, m pmetric.Metric) {
 		sum := m.Sum()
 		require.True(t, sum.IsMonotonic())
 		require.Equal(t, pmetric.AggregationTemporalityCumulative, sum.AggregationTemporality())
-		for i := 0; i < sum.DataPoints().Len(); i++ {
+		for i := range sum.DataPoints().Len() {
 			dp := sum.DataPoints().At(i)
 			// Start time is required for cumulative metrics. Make assertions
 			// around start time only when dealing with one or when it is set.
@@ -172,7 +172,7 @@ func TestEmitMetrics(t *testing.T) {
 	for _, name := range metricNames {
 		requireContains(t, metrics, name)
 		metric := metrics[name][0]
-		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
+		for i := range metric.Sum().DataPoints().Len() {
 			dp := metric.Sum().DataPoints().At(i)
 			_, found := dp.Attributes().Get("direction")
 			require.True(t, found, "expected direction attribute")
@@ -188,11 +188,11 @@ func requireContains(t *testing.T, metrics map[string][]pmetric.Metric, metricNa
 func indexedFakeMetrics(mds []pmetric.Metrics) map[string][]pmetric.Metric {
 	metrics := make(map[string][]pmetric.Metric)
 	for _, md := range mds {
-		for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		for i := range md.ResourceMetrics().Len() {
 			rm := md.ResourceMetrics().At(i)
-			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			for j := range rm.ScopeMetrics().Len() {
 				ilm := rm.ScopeMetrics().At(j)
-				for k := 0; k < ilm.Metrics().Len(); k++ {
+				for k := range ilm.Metrics().Len() {
 					m := ilm.Metrics().At(k)
 					metricName := m.Name()
 					list := metrics[metricName]

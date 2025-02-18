@@ -120,7 +120,7 @@ func TestTopicScraper_scrapes(t *testing.T) {
 		require.Equal(t, testClusterAlias, val.Str())
 	}
 	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-	for i := 0; i < ms.Len(); i++ {
+	for i := range ms.Len() {
 		m := ms.At(i)
 		switch m.Name() {
 		case "kafka.topic.partitions":

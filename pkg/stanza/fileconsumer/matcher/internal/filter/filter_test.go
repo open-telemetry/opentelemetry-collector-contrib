@@ -93,7 +93,7 @@ func TestFilter(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			opts := make([]Option, 0, tc.numOpts)
-			for i := 0; i < tc.numOpts; i++ {
+			for range tc.numOpts {
 				opts = append(opts, &removeFirst{})
 			}
 			result, err := Filter(tc.values, regexp.MustCompile(tc.regex), opts...)

@@ -45,17 +45,17 @@ func (proc *NestingProcessor) processLogs(logs plog.Logs) error {
 		return nil
 	}
 
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		rl := logs.ResourceLogs().At(i)
 
 		if err := proc.processAttributes(rl.Resource().Attributes()); err != nil {
 			return err
 		}
 
-		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+		for j := range rl.ScopeLogs().Len() {
 			logsRecord := rl.ScopeLogs().At(j).LogRecords()
 
-			for k := 0; k < logsRecord.Len(); k++ {
+			for k := range logsRecord.Len() {
 				if err := proc.processAttributes(logsRecord.At(k).Attributes()); err != nil {
 					return err
 				}
@@ -71,17 +71,17 @@ func (proc *NestingProcessor) processMetrics(metrics pmetric.Metrics) error {
 		return nil
 	}
 
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+	for i := range metrics.ResourceMetrics().Len() {
 		rm := metrics.ResourceMetrics().At(i)
 
 		if err := proc.processAttributes(rm.Resource().Attributes()); err != nil {
 			return err
 		}
 
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		for j := range rm.ScopeMetrics().Len() {
 			metricsSlice := rm.ScopeMetrics().At(j).Metrics()
 
-			for k := 0; k < metricsSlice.Len(); k++ {
+			for k := range metricsSlice.Len() {
 				if err := processMetricLevelAttributes(proc, metricsSlice.At(k)); err != nil {
 					return err
 				}
@@ -97,17 +97,17 @@ func (proc *NestingProcessor) processTraces(traces ptrace.Traces) error {
 		return nil
 	}
 
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		rs := traces.ResourceSpans().At(i)
 
 		if err := proc.processAttributes(rs.Resource().Attributes()); err != nil {
 			return err
 		}
 
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		for j := range rs.ScopeSpans().Len() {
 			spans := rs.ScopeSpans().At(j).Spans()
 
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				if err := proc.processAttributes(spans.At(k).Attributes()); err != nil {
 					return err
 				}
@@ -141,7 +141,7 @@ func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 		nextMap := prevValue.Map()
 		newMap.CopyTo(nextMap)
 
-		for i := 0; i < len(keys); i++ {
+		for i := range keys {
 			if prevValue.Type() != pcommon.ValueTypeMap {
 				// If previous value was not a map, change it into a map.
 				// The former value will be set under the key "".
@@ -199,7 +199,7 @@ func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 func (proc *NestingProcessor) shouldTranslateKey(k string) bool {
 	if len(proc.allowlist) > 0 {
 		isOk := false
-		for i := 0; i < len(proc.allowlist); i++ {
+		for i := range len(proc.allowlist) {
 			if strings.HasPrefix(k, proc.allowlist[i]) {
 				isOk = true
 				break
@@ -211,7 +211,7 @@ func (proc *NestingProcessor) shouldTranslateKey(k string) bool {
 	}
 
 	if len(proc.denylist) > 0 {
-		for i := 0; i < len(proc.denylist); i++ {
+		for i := range len(proc.denylist) {
 			if strings.HasPrefix(k, proc.denylist[i]) {
 				return false
 			}

@@ -743,7 +743,7 @@ func runScript(t *testing.T, ma MetricsAdjuster, job, instance string, tests []*
 			adjusted := pmetric.NewMetrics()
 			test.metrics.CopyTo(adjusted)
 			// Add the instance/job to the input metrics if they aren't already present.
-			for i := 0; i < adjusted.ResourceMetrics().Len(); i++ {
+			for i := range adjusted.ResourceMetrics().Len() {
 				rm := adjusted.ResourceMetrics().At(i)
 				_, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
 				if !found {
@@ -757,7 +757,7 @@ func runScript(t *testing.T, ma MetricsAdjuster, job, instance string, tests []*
 			assert.NoError(t, ma.AdjustMetrics(adjusted))
 
 			// Add the instance/job to the expected metrics as well if they aren't already present.
-			for i := 0; i < test.adjusted.ResourceMetrics().Len(); i++ {
+			for i := range test.adjusted.ResourceMetrics().Len() {
 				rm := test.adjusted.ResourceMetrics().At(i)
 				_, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
 				if !found {
@@ -787,7 +787,7 @@ func BenchmarkGetAttributesSignature(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		getAttributesSignature(attrs)
 	}
 }

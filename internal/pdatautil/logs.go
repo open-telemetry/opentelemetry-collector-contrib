@@ -15,11 +15,11 @@ import (
 func FlattenLogs(rls plog.ResourceLogsSlice) {
 	tmp := plog.NewResourceLogsSlice()
 	rls.MoveAndAppendTo(tmp)
-	for i := 0; i < tmp.Len(); i++ {
+	for i := range tmp.Len() {
 		groupedResource := tmp.At(i)
-		for j := 0; j < groupedResource.ScopeLogs().Len(); j++ {
+		for j := range groupedResource.ScopeLogs().Len() {
 			groupedScope := groupedResource.ScopeLogs().At(j)
-			for k := 0; k < groupedScope.LogRecords().Len(); k++ {
+			for k := range groupedScope.LogRecords().Len() {
 				flatResource := rls.AppendEmpty()
 				groupedResource.Resource().Attributes().CopyTo(flatResource.Resource().Attributes())
 				flatScope := flatResource.ScopeLogs().AppendEmpty()
@@ -37,15 +37,15 @@ func FlattenLogs(rls plog.ResourceLogsSlice) {
 func GroupByResourceLogs(rls plog.ResourceLogsSlice) {
 	// Hash each ResourceLogs based on identifying information.
 	resourceHashes := make([][16]byte, rls.Len())
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		resourceHashes[i] = pdatautil.MapHash(rls.At(i).Resource().Attributes())
 	}
 
 	// Find the first occurrence of each hash and note the index.
 	firstScopeIndex := make([]int, rls.Len())
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		firstScopeIndex[i] = i
-		for j := 0; j < i; j++ {
+		for j := range i {
 			if resourceHashes[i] == resourceHashes[j] {
 				firstScopeIndex[i] = j
 				break
@@ -54,7 +54,7 @@ func GroupByResourceLogs(rls plog.ResourceLogsSlice) {
 	}
 
 	// Merge Resources with the same hash.
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		if i == firstScopeIndex[i] {
 			// This is the first occurrence of this hash.
 			continue
@@ -71,7 +71,7 @@ func GroupByResourceLogs(rls plog.ResourceLogsSlice) {
 	})
 
 	// Merge ScopeLogs within each ResourceLogs.
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		GroupByScopeLogs(rls.At(i).ScopeLogs())
 	}
 }
@@ -80,15 +80,15 @@ func GroupByResourceLogs(rls plog.ResourceLogsSlice) {
 func GroupByScopeLogs(sls plog.ScopeLogsSlice) {
 	// Hash each ScopeLogs based on identifying information.
 	scopeHashes := make([][16]byte, sls.Len())
-	for i := 0; i < sls.Len(); i++ {
+	for i := range sls.Len() {
 		scopeHashes[i] = HashScopeLogs(sls.At(i))
 	}
 
 	// Find the first occurrence of each hash and note the index.
 	firstScopeIndex := make([]int, sls.Len())
-	for i := 0; i < sls.Len(); i++ {
+	for i := range sls.Len() {
 		firstScopeIndex[i] = i
-		for j := 0; j < i; j++ {
+		for j := range i {
 			if scopeHashes[i] == scopeHashes[j] {
 				firstScopeIndex[i] = j
 				break
@@ -97,7 +97,7 @@ func GroupByScopeLogs(sls plog.ScopeLogsSlice) {
 	}
 
 	// Merge ScopeLogs with the same hash.
-	for i := 0; i < sls.Len(); i++ {
+	for i := range sls.Len() {
 		if i == firstScopeIndex[i] {
 			// This is the first occurrence of this hash.
 			continue

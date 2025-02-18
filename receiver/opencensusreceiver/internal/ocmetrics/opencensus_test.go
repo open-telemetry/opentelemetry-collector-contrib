@@ -144,7 +144,7 @@ func TestExportMultiplexing(t *testing.T) {
 	resultsMapping := make(map[string][]*metricspb.Metric)
 	for _, md := range metricSink.AllMetrics() {
 		rms := md.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
+		for i := range rms.Len() {
 			node, _, metrics := opencensus.ResourceMetricsToOC(rms.At(i))
 			resultsMapping[nodeToKey(node)] = append(resultsMapping[nodeToKey(node)], metrics...)
 		}
@@ -230,7 +230,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	// Now the response should return an error and should have been torn down
 	// regardless of the number of times after invocation below, or any attempt
 	// to send the proper/corrective data should be rejected.
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		recv, err := metricsClient.Recv()
 		if recv != nil {
 			t.Errorf("Iteration #%d: Unexpectedly got back a response: %#v", i, recv)
@@ -297,7 +297,7 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 	resultsMapping := make(map[string][]*metricspb.Metric)
 	for _, md := range metricSink.AllMetrics() {
 		rms := md.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
+		for i := range rms.Len() {
 			node, _, metrics := opencensus.ResourceMetricsToOC(rms.At(i))
 			resultsMapping[nodeToKey(node)] = append(resultsMapping[nodeToKey(node)], metrics...)
 		}

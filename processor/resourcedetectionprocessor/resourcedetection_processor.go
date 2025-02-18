@@ -38,7 +38,7 @@ func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component
 // processTraces implements the ProcessTracesFunc type.
 func (rdp *resourceDetectionProcessor) processTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	rs := td.ResourceSpans()
-	for i := 0; i < rs.Len(); i++ {
+	for i := range rs.Len() {
 		rss := rs.At(i)
 		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), rdp.schemaURL))
 		res := rss.Resource()
@@ -50,7 +50,7 @@ func (rdp *resourceDetectionProcessor) processTraces(_ context.Context, td ptrac
 // processMetrics implements the ProcessMetricsFunc type.
 func (rdp *resourceDetectionProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	rm := md.ResourceMetrics()
-	for i := 0; i < rm.Len(); i++ {
+	for i := range rm.Len() {
 		rss := rm.At(i)
 		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), rdp.schemaURL))
 		res := rss.Resource()
@@ -62,7 +62,7 @@ func (rdp *resourceDetectionProcessor) processMetrics(_ context.Context, md pmet
 // processLogs implements the ProcessLogsFunc type.
 func (rdp *resourceDetectionProcessor) processLogs(_ context.Context, ld plog.Logs) (plog.Logs, error) {
 	rl := ld.ResourceLogs()
-	for i := 0; i < rl.Len(); i++ {
+	for i := range rl.Len() {
 		rss := rl.At(i)
 		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), rdp.schemaURL))
 		res := rss.Resource()
@@ -74,7 +74,7 @@ func (rdp *resourceDetectionProcessor) processLogs(_ context.Context, ld plog.Lo
 // processProfiles implements the ProcessProfilesFunc type.
 func (rdp *resourceDetectionProcessor) processProfiles(_ context.Context, ld pprofile.Profiles) (pprofile.Profiles, error) {
 	rl := ld.ResourceProfiles()
-	for i := 0; i < rl.Len(); i++ {
+	for i := range rl.Len() {
 		rss := rl.At(i)
 		rss.SetSchemaUrl(internal.MergeSchemaURL(rss.SchemaUrl(), rdp.schemaURL))
 		res := rss.Resource()

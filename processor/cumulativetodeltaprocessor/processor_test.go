@@ -663,7 +663,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 
 			require.Equal(t, expectedMetrics.Len(), actualMetrics.Len())
 
-			for i := 0; i < expectedMetrics.Len(); i++ {
+			for i := range expectedMetrics.Len() {
 				eM := expectedMetrics.At(i)
 				aM := actualMetrics.At(i)
 
@@ -674,7 +674,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					aDataPoints := aM.Gauge().DataPoints()
 					require.Equal(t, eDataPoints.Len(), aDataPoints.Len())
 
-					for j := 0; j < eDataPoints.Len(); j++ {
+					for j := range eDataPoints.Len() {
 						require.Equal(t, eDataPoints.At(j).DoubleValue(), aDataPoints.At(j).DoubleValue())
 					}
 				}
@@ -686,7 +686,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					require.Equal(t, eDataPoints.Len(), aDataPoints.Len())
 					require.Equal(t, eM.Sum().AggregationTemporality(), aM.Sum().AggregationTemporality())
 
-					for j := 0; j < eDataPoints.Len(); j++ {
+					for j := range eDataPoints.Len() {
 						if math.IsNaN(eDataPoints.At(j).DoubleValue()) {
 							assert.True(t, math.IsNaN(aDataPoints.At(j).DoubleValue()))
 						} else {
@@ -703,7 +703,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					require.Equal(t, eDataPoints.Len(), aDataPoints.Len())
 					require.Equal(t, eM.Histogram().AggregationTemporality(), aM.Histogram().AggregationTemporality())
 
-					for j := 0; j < eDataPoints.Len(); j++ {
+					for j := range eDataPoints.Len() {
 						require.Equal(t, eDataPoints.At(j).Count(), aDataPoints.At(j).Count())
 						require.Equal(t, eDataPoints.At(j).HasSum(), aDataPoints.At(j).HasSum())
 						require.Equal(t, eDataPoints.At(j).HasMin(), aDataPoints.At(j).HasMin())
@@ -793,7 +793,7 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 	assert.NoError(b, p.ConsumeMetrics(context.Background(), metrics))
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		reset()
 		assert.NoError(b, p.ConsumeMetrics(context.Background(), metrics))
 	}

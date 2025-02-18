@@ -29,7 +29,7 @@ func compareTraces(t *testing.T, want ptrace.Traces, got ptrace.Traces) {
 
 func mapperTraces(t *testing.T, td ptrace.Traces) map[string]map[string]ptrace.Span {
 	ret := map[string]map[string]ptrace.Span{}
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		rs := td.ResourceSpans().At(i)
 		service, found := rs.Resource().Attributes().Get(conventions.AttributeServiceName)
 		require.True(t, found)
@@ -39,7 +39,7 @@ func mapperTraces(t *testing.T, td ptrace.Traces) map[string]map[string]ptrace.S
 			ret[service.Str()] = map[string]ptrace.Span{}
 		}
 		spans := rs.ScopeSpans().At(0).Spans()
-		for j := 0; j < spans.Len(); j++ {
+		for j := range spans.Len() {
 			sps[spans.At(j).Name()] = spans.At(j)
 		}
 	}
@@ -109,7 +109,7 @@ func BenchmarkV1ThriftToOCProto(b *testing.B) {
 	err = json.Unmarshal(blob, &ztSpans)
 	require.NoError(b, err, "Failed to unmarshal json into zipkin v1 thrift")
 
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		_, err = thriftBatchToTraces(ztSpans)
 		require.NoError(b, err)
 	}

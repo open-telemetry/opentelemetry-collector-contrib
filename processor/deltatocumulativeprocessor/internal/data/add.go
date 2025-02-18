@@ -38,7 +38,7 @@ func (dp Histogram) Add(in Histogram) Histogram {
 	// given we have limited error handling at this stage (and already verified boundaries are correct),
 	// doing a best-effort add of whatever we have appears reasonable.
 	n := min(dp.BucketCounts().Len(), in.BucketCounts().Len())
-	for i := 0; i < n; i++ {
+	for i := range n {
 		sum := dp.BucketCounts().At(i) + in.BucketCounts().At(i)
 		dp.BucketCounts().SetAt(i, sum)
 	}

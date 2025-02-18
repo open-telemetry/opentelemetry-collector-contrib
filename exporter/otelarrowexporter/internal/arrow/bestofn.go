@@ -52,7 +52,7 @@ func newBestOfNPrioritizer(dc doneCancel, numChoices, numStreams int, lf loadFun
 	// Limit numChoices to the number of streams.
 	numChoices = min(numStreams, numChoices)
 
-	for i := 0; i < numStreams; i++ {
+	for range numStreams {
 		ws := &streamWorkState{
 			maxStreamLifetime: addJitter(maxLifetime),
 			waiters:           map[int64]chan<- error{},
@@ -70,7 +70,7 @@ func newBestOfNPrioritizer(dc doneCancel, numChoices, numStreams int, lf loadFun
 		loadFunc:   lf,
 	}
 
-	for i := 0; i < numStreams; i++ {
+	for range numStreams {
 		// TODO It's not clear if/when the prioritizer can
 		// become a bottleneck.
 		go lp.run()
@@ -142,11 +142,11 @@ func (lp *bestOfNPrioritizer) streamFor(_ writeItem, rnd *rand.Rand, tmp []strea
 	}
 	// Select numChoices at random by shifting the selection into the start
 	// of the temporary slice.
-	for i := 0; i < lp.numChoices; i++ {
+	for i := range lp.numChoices {
 		pick := rnd.IntN(lp.numChoices - i)
 		tmp[i], tmp[i+pick] = tmp[i+pick], tmp[i]
 	}
-	for i := 0; i < lp.numChoices; i++ {
+	for i := range lp.numChoices {
 		// TODO: skip channels w/ a pending item (maybe)
 		tmp[i].load = lp.loadFunc(tmp[i].work)
 	}

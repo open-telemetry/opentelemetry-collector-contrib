@@ -1048,7 +1048,7 @@ func generateLargeDPBatch() pmetric.Metrics {
 	md.ResourceMetrics().EnsureCapacity(6500)
 
 	ts := time.Now()
-	for i := 0; i < 6500; i++ {
+	for i := range 6500 {
 		rm := md.ResourceMetrics().AppendEmpty()
 		ilm := rm.ScopeMetrics().AppendEmpty()
 		m := ilm.Metrics().AppendEmpty()
@@ -1072,7 +1072,7 @@ func generateLargeEventBatch() plog.Logs {
 	batchSize := 65000
 	logs.EnsureCapacity(batchSize)
 	ts := time.Now()
-	for i := 0; i < batchSize; i++ {
+	for range batchSize {
 		lr := logs.AppendEmpty()
 		lr.Attributes().PutStr("k0", "k1")
 		lr.Attributes().PutEmpty("com.splunk.signalfx.event_category")
@@ -1449,7 +1449,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	batchSize := 1000
 	metrics := pmetric.NewMetrics()
 	tmd := testMetricsData(false)
-	for i := 0; i < batchSize; i++ {
+	for range batchSize {
 		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
@@ -1477,7 +1477,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 		converter: c,
 	}
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), metrics)
 		assert.NoError(b, err)
 		assert.Equal(b, 0, numDroppedTimeSeries)
@@ -1665,7 +1665,7 @@ func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 	m.SetName("system.cpu.time")
 	sum := m.SetEmptySum()
 	for _, state := range []string{"idle", "interrupt", "nice", "softirq", "steal", "system", "user", "wait"} {
-		for cpu := 0; cpu < 32; cpu++ {
+		for cpu := range 32 {
 			dp := sum.DataPoints().AppendEmpty()
 			dp.SetDoubleValue(0)
 			dp.Attributes().PutStr("cpu", fmt.Sprintf("%d", cpu))
@@ -1814,7 +1814,7 @@ func BenchmarkExporterConsumeDataWithOTLPHistograms(b *testing.B) {
 	batchSize := 1000
 	metrics := pmetric.NewMetrics()
 	tmd := testMetricsData(true)
-	for i := 0; i < batchSize; i++ {
+	for range batchSize {
 		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
@@ -1842,7 +1842,7 @@ func BenchmarkExporterConsumeDataWithOTLPHistograms(b *testing.B) {
 		converter: c,
 	}
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), metrics)
 		assert.NoError(b, err)
 		assert.Equal(b, 0, numDroppedTimeSeries)
@@ -2104,7 +2104,7 @@ func generateLargeMixedDPBatch() pmetric.Metrics {
 	md.ResourceMetrics().EnsureCapacity(7500)
 
 	ts := pcommon.NewTimestampFromTime(time.Now())
-	for i := 0; i < 7500; i++ {
+	for i := range 7500 {
 		rm := md.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().PutStr("kr0", "vr0")
 		ilm := rm.ScopeMetrics().AppendEmpty()

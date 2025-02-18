@@ -18,7 +18,7 @@ import (
 func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
 	resource pcommon.Resource, settings Settings, name string,
 ) {
-	for x := 0; x < dataPoints.Len(); x++ {
+	for x := range dataPoints.Len() {
 		pt := dataPoints.At(x)
 
 		labels := createAttributes(
@@ -51,7 +51,7 @@ func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.Numb
 func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
 	resource pcommon.Resource, metric pmetric.Metric, settings Settings, name string,
 ) {
-	for x := 0; x < dataPoints.Len(); x++ {
+	for x := range dataPoints.Len() {
 		pt := dataPoints.At(x)
 		lbls := createAttributes(
 			resource,
@@ -102,7 +102,7 @@ func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.Number
 // getPromExemplarsV2 returns a slice of writev2.Exemplar from pdata exemplars.
 func getPromExemplarsV2[T exemplarType](pt T) []writev2.Exemplar {
 	promExemplars := make([]writev2.Exemplar, 0, pt.Exemplars().Len())
-	for i := 0; i < pt.Exemplars().Len(); i++ {
+	for i := range pt.Exemplars().Len() {
 		exemplar := pt.Exemplars().At(i)
 
 		var promExemplar writev2.Exemplar

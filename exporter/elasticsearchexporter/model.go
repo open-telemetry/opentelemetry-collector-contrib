@@ -289,7 +289,7 @@ func (m *encodeModel) encodeEvents(document *objmodel.Document, events ptrace.Sp
 
 func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 	linkArray := make([]map[string]any, 0, spanLinkSlice.Len())
-	for i := 0; i < spanLinkSlice.Len(); i++ {
+	for i := range spanLinkSlice.Len() {
 		spanLink := spanLinkSlice.At(i)
 		link := map[string]any{}
 		link[spanIDField] = traceutil.SpanIDToHexOrEmptyString(spanLink.SpanID())

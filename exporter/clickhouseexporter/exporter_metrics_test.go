@@ -164,7 +164,7 @@ func Benchmark_pushMetricsData(b *testing.B) {
 	exporter := newTestMetricsExporter(&testing.T{}, defaultEndpoint)
 	b.ReportAllocs()
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		err := exporter.pushMetricsData(context.TODO(), pm)
 		require.NoError(b, err)
 	}
@@ -185,7 +185,7 @@ func simpleMetrics(count int) pmetric.Metrics {
 	sm.Scope().SetName("Scope name 1")
 	sm.Scope().SetVersion("Scope version 1")
 	timestamp := time.Unix(1703498029, 0)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		// gauge
 		m := sm.Metrics().AppendEmpty()
 		m.SetName("gauge metrics")
@@ -304,7 +304,7 @@ func simpleMetrics(count int) pmetric.Metrics {
 	sm.Scope().SetDroppedAttributesCount(20)
 	sm.Scope().SetName("Scope name 2")
 	sm.Scope().SetVersion("Scope version 2")
-	for i := 0; i < count; i++ {
+	for i := range count {
 		// gauge
 		m := sm.Metrics().AppendEmpty()
 		m.SetName("gauge metrics")
@@ -411,7 +411,7 @@ func simpleMetrics(count int) pmetric.Metrics {
 	sm.Scope().SetDroppedAttributesCount(20)
 	sm.Scope().SetName("Scope name 3")
 	sm.Scope().SetVersion("Scope version 3")
-	for i := 0; i < count; i++ {
+	for i := range count {
 		// gauge
 		m := sm.Metrics().AppendEmpty()
 		m.SetName("gauge metrics")

@@ -59,7 +59,7 @@ func createNginxContainer(ctx context.Context, t *testing.T) testcontainers.Cont
 
 func hasResourceScopeMetrics(containerID string, metrics []pmetric.Metrics) bool {
 	for _, m := range metrics {
-		for i := 0; i < m.ResourceMetrics().Len(); i++ {
+		for i := range m.ResourceMetrics().Len() {
 			rm := m.ResourceMetrics().At(i)
 
 			id, ok := rm.Resource().Attributes().Get(conventions.AttributeContainerID)

@@ -62,7 +62,7 @@ func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 			trace.WithTimestamp(spanStart),
 		)
 		sp.SetAttributes(telemetryAttributes...)
-		for j := 0; j < w.loadSize; j++ {
+		for j := range w.loadSize {
 			sp.SetAttributes(attribute.String(fmt.Sprintf("load-%v", j), string(make([]byte, charactersPerMB))))
 		}
 
@@ -77,7 +77,7 @@ func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 		}
 		var endTimestamp trace.SpanEventOption
 
-		for j := 0; j < w.numChildSpans; j++ {
+		for j := range w.numChildSpans {
 			if err := limiter.Wait(context.Background()); err != nil {
 				w.logger.Fatal("limiter waited failed, retry", zap.Error(err))
 			}

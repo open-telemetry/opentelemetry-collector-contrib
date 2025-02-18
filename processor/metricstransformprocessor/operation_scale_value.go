@@ -28,7 +28,7 @@ func scaleValueOp(metric pmetric.Metric, op internalOperation, f internalFilter)
 		return
 	}
 
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		if !f.matchAttrs(dp.Attributes()) {
 			continue
@@ -45,7 +45,7 @@ func scaleValueOp(metric pmetric.Metric, op internalOperation, f internalFilter)
 func scaleHistogramOp(metric pmetric.Metric, op internalOperation, f internalFilter) {
 	dps := metric.Histogram().DataPoints()
 
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		if !f.matchAttrs(dp.Attributes()) {
 			continue
@@ -71,7 +71,7 @@ func scaleHistogramOp(metric pmetric.Metric, op internalOperation, f internalFil
 
 func scaleExpHistogramOp(metric pmetric.Metric, op internalOperation, f internalFilter) {
 	dps := metric.ExponentialHistogram().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		if !f.matchAttrs(dp.Attributes()) {
 			continue

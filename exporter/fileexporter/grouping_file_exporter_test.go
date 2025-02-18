@@ -207,7 +207,7 @@ func TestGroupingFileTracesExporter(t *testing.T) {
 					assert.NoError(t, err)
 
 					gotResourceSpans := make([]ptrace.ResourceSpans, 0)
-					for i := 0; i < got.ResourceSpans().Len(); i++ {
+					for i := range got.ResourceSpans().Len() {
 						gotResourceSpans = append(gotResourceSpans, got.ResourceSpans().At(i))
 					}
 
@@ -284,7 +284,7 @@ func TestGroupingFileLogsExporter(t *testing.T) {
 					assert.NoError(t, err)
 
 					gotResourceLogs := make([]plog.ResourceLogs, 0)
-					for i := 0; i < got.ResourceLogs().Len(); i++ {
+					for i := range got.ResourceLogs().Len() {
 						gotResourceLogs = append(gotResourceLogs, got.ResourceLogs().At(i))
 					}
 
@@ -362,7 +362,7 @@ func TestGroupingFileMetricsExporter(t *testing.T) {
 					assert.NoError(t, err)
 
 					gotResourceMetrics := make([]pmetric.ResourceMetrics, 0)
-					for i := 0; i < got.ResourceMetrics().Len(); i++ {
+					for i := range got.ResourceMetrics().Len() {
 						gotResourceMetrics = append(gotResourceMetrics, got.ResourceMetrics().At(i))
 					}
 
@@ -463,7 +463,7 @@ func BenchmarkExporters(b *testing.B) {
 
 	var traces []ptrace.Traces
 	var logs []plog.Logs
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		td := testdata.GenerateTracesTwoSpansSameResource()
 		td.ResourceSpans().At(0).Resource().Attributes().PutStr("fileexporter.path_segment", fmt.Sprintf("file%d", i))
 		traces = append(traces, td)
@@ -499,7 +499,7 @@ func BenchmarkExporters(b *testing.B) {
 			b.ResetTimer()
 
 			ctx := context.Background()
-			for i := 0; i < b.N; i++ {
+			for i := range b.N {
 				require.NoError(b, fe.consumeTraces(ctx, traces[i%len(traces)]))
 				require.NoError(b, fe.consumeLogs(ctx, logs[i%len(logs)]))
 			}

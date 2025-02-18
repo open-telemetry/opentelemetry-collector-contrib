@@ -27,7 +27,7 @@ func (tg *tracesGroup) findOrCreateResourceSpans(originResource pcommon.Resource
 	referenceResourceHash := pdatautil.MapHash(referenceResource.Attributes())
 
 	rss := tg.traces.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
+	for i := range rss.Len() {
 		if tg.resourceHashes[i] == referenceResourceHash {
 			return rss.At(i)
 		}
@@ -54,7 +54,7 @@ func (mg *metricsGroup) findOrCreateResourceMetrics(originResource pcommon.Resou
 	referenceResourceHash := pdatautil.MapHash(referenceResource.Attributes())
 
 	rms := mg.metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		if mg.resourceHashes[i] == referenceResourceHash {
 			return rms.At(i)
 		}
@@ -82,7 +82,7 @@ func (lg *logsGroup) findOrCreateResourceLogs(originResource pcommon.Resource, r
 	referenceResourceHash := pdatautil.MapHash(referenceResource.Attributes())
 
 	rls := lg.logs.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		if lg.resourceHashes[i] == referenceResourceHash {
 			return rls.At(i)
 		}
@@ -102,7 +102,7 @@ func instrumentationLibrariesEqual(il1, il2 pcommon.InstrumentationScope) bool {
 // given InstrumentationScope. If nothing is found, it creates a new one
 func matchingScopeSpans(rl ptrace.ResourceSpans, library pcommon.InstrumentationScope) ptrace.ScopeSpans {
 	ilss := rl.ScopeSpans()
-	for i := 0; i < ilss.Len(); i++ {
+	for i := range ilss.Len() {
 		ils := ilss.At(i)
 		if instrumentationLibrariesEqual(ils.Scope(), library) {
 			return ils
@@ -118,7 +118,7 @@ func matchingScopeSpans(rl ptrace.ResourceSpans, library pcommon.Instrumentation
 // given InstrumentationScope. If nothing is found, it creates a new one
 func matchingScopeLogs(rl plog.ResourceLogs, library pcommon.InstrumentationScope) plog.ScopeLogs {
 	ills := rl.ScopeLogs()
-	for i := 0; i < ills.Len(); i++ {
+	for i := range ills.Len() {
 		sl := ills.At(i)
 		if instrumentationLibrariesEqual(sl.Scope(), library) {
 			return sl
@@ -134,7 +134,7 @@ func matchingScopeLogs(rl plog.ResourceLogs, library pcommon.InstrumentationScop
 // given InstrumentationScope. If nothing is found, it creates a new one
 func matchingScopeMetrics(rm pmetric.ResourceMetrics, library pcommon.InstrumentationScope) pmetric.ScopeMetrics {
 	ilms := rm.ScopeMetrics()
-	for i := 0; i < ilms.Len(); i++ {
+	for i := range ilms.Len() {
 		ilm := ilms.At(i)
 		if instrumentationLibrariesEqual(ilm.Scope(), library) {
 			return ilm

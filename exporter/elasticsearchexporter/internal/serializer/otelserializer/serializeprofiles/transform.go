@@ -82,7 +82,7 @@ func stackPayloads(resource pcommon.Resource, scope pcommon.InstrumentationScope
 
 	hostMetadata := newHostMetadata(resource, scope, profile)
 
-	for i := 0; i < profile.Sample().Len(); i++ {
+	for i := range profile.Sample().Len() {
 		sample := profile.Sample().At(i)
 
 		frames, frameTypes, leafFrame, err := stackFrames(profile, sample)
@@ -112,7 +112,7 @@ func stackPayloads(resource pcommon.Resource, scope pcommon.InstrumentationScope
 		}
 
 		// Add one event per timestamp and its count value.
-		for j := 0; j < sample.TimestampsUnixNano().Len(); j++ {
+		for j := range sample.TimestampsUnixNano().Len() {
 			t := sample.TimestampsUnixNano().At(j)
 			event.TimeStamp = newUnixTime64(t)
 
@@ -168,7 +168,7 @@ func stackTraceEvent(traceID string, profile pprofile.Profile, sample pprofile.S
 	}
 
 	// Store event-specific attributes.
-	for i := 0; i < sample.AttributeIndices().Len(); i++ {
+	for i := range sample.AttributeIndices().Len() {
 		if profile.AttributeTable().Len() < i {
 			continue
 		}
@@ -240,7 +240,7 @@ func stackFrames(profile pprofile.Profile, sample pprofile.Sample) ([]StackFrame
 		fileNames := make([]string, 0, location.Line().Len())
 		lineNumbers := make([]int32, 0, location.Line().Len())
 
-		for i := 0; i < location.Line().Len(); i++ {
+		for i := range location.Line().Len() {
 			line := location.Line().At(i)
 
 			if line.FunctionIndex() < int32(profile.FunctionTable().Len()) {
@@ -301,7 +301,7 @@ type attributable interface {
 func getStringFromAttribute(profile pprofile.Profile, record attributable, attrKey string) (string, error) {
 	lenAttrTable := profile.AttributeTable().Len()
 
-	for i := 0; i < record.AttributeIndices().Len(); i++ {
+	for i := range record.AttributeIndices().Len() {
 		idx := int(record.AttributeIndices().At(i))
 
 		if idx >= lenAttrTable {
@@ -331,7 +331,7 @@ func executables(profile pprofile.Profile, mappings pprofile.MappingSlice) ([]Ex
 	metadata := make([]ExeMetadata, 0, mappings.Len())
 	lastSeen := GetStartOfWeekFromTime(time.Now())
 
-	for i := 0; i < mappings.Len(); i++ {
+	for i := range mappings.Len() {
 		mapping := mappings.At(i)
 
 		filename := profile.StringTable().At(int(mapping.FilenameStrindex()))

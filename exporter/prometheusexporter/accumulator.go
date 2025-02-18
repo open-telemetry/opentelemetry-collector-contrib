@@ -63,11 +63,11 @@ func (a *lastValueAccumulator) Accumulate(rm pmetric.ResourceMetrics) (n int) {
 	ilms := rm.ScopeMetrics()
 	resourceAttrs := rm.Resource().Attributes()
 
-	for i := 0; i < ilms.Len(); i++ {
+	for i := range ilms.Len() {
 		ilm := ilms.At(i)
 
 		metrics := ilm.Metrics()
-		for j := 0; j < metrics.Len(); j++ {
+		for j := range metrics.Len() {
 			n += a.addMetric(metrics.At(j), ilm.Scope(), resourceAttrs, now)
 		}
 	}
@@ -99,7 +99,7 @@ func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, il pcommon.Instr
 
 func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, il pcommon.InstrumentationScope, resourceAttrs pcommon.Map, now time.Time) (n int) {
 	dps := metric.Summary().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
@@ -128,7 +128,7 @@ func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, il pcomm
 
 func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, il pcommon.InstrumentationScope, resourceAttrs pcommon.Map, now time.Time) (n int) {
 	dps := metric.Gauge().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
@@ -174,7 +174,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 	}
 
 	dps := doubleSum.DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
@@ -226,7 +226,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 	a.logger.Debug("Accumulate histogram.....")
 	dps := histogram.DataPoints()
 
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs) // uniquely identify this time series you are accumulating for
@@ -368,7 +368,7 @@ func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 		dest.SetSum(newer.Sum() + older.Sum())
 
 		counts := make([]uint64, newer.BucketCounts().Len())
-		for i := 0; i < newer.BucketCounts().Len(); i++ {
+		for i := range newer.BucketCounts().Len() {
 			counts[i] = newer.BucketCounts().At(i) + older.BucketCounts().At(i)
 		}
 		dest.BucketCounts().FromRaw(counts)

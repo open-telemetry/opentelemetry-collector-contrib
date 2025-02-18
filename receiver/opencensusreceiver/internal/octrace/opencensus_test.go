@@ -140,7 +140,7 @@ func TestExportMultiplexing(t *testing.T) {
 	resultsMapping := make(map[string][]*tracepb.Span)
 	for _, td := range spanSink.AllTraces() {
 		rss := td.ResourceSpans()
-		for i := 0; i < rss.Len(); i++ {
+		for i := range rss.Len() {
 			node, _, spans := opencensus.ResourceSpansToOC(rss.At(i))
 			resultsMapping[nodeToKey(node)] = append(resultsMapping[nodeToKey(node)], spans...)
 		}
@@ -241,7 +241,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	// Now the response should return an error and should have been torn down
 	// regardless of the number of times after invocation below, or any attempt
 	// to send the proper/corrective data should be rejected.
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		recv, err := traceClient.Recv()
 		if recv != nil {
 			t.Errorf("Iteration #%d: Unexpectedly got back a response: %#v", i, recv)
@@ -310,7 +310,7 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 	resultsMapping := make(map[string][]*tracepb.Span)
 	for _, td := range spanSink.AllTraces() {
 		rss := td.ResourceSpans()
-		for i := 0; i < rss.Len(); i++ {
+		for i := range rss.Len() {
 			node, _, spans := opencensus.ResourceSpansToOC(rss.At(i))
 			resultsMapping[nodeToKey(node)] = append(resultsMapping[nodeToKey(node)], spans...)
 		}

@@ -152,7 +152,7 @@ func generateTraces() ptrace.Traces {
 	md := ptrace.NewTraces()
 	ilm := md.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 	ilm.Spans().EnsureCapacity(num)
-	for i := 0; i < num; i++ {
+	for range num {
 		im := ilm.Spans().AppendEmpty()
 		im.SetName("test_name")
 		im.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
@@ -166,7 +166,7 @@ func generateLogs() plog.Logs {
 	md := plog.NewLogs()
 	ilm := md.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 	ilm.LogRecords().EnsureCapacity(num)
-	for i := 0; i < num; i++ {
+	for range num {
 		im := ilm.LogRecords().AppendEmpty()
 		im.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	}
@@ -182,7 +182,7 @@ func generateMetrics() pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Metrics().EnsureCapacity(num)
-	for i := 0; i < num; i++ {
+	for range num {
 		im := ilm.Metrics().AppendEmpty()
 		im.SetName("test_name")
 		idp := im.SetEmptySum().DataPoints().AppendEmpty()
@@ -199,7 +199,7 @@ func generateProfiles() pprofile.Profiles {
 	pd := pprofile.NewProfiles()
 	ilm := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
 	ilm.Profiles().EnsureCapacity(num)
-	for i := 0; i < num; i++ {
+	for range num {
 		im := ilm.Profiles().AppendEmpty()
 		im.SetProfileID([16]byte{0x01, 0x02, 0x03, 0x04})
 		im.SetStartTime(pcommon.NewTimestampFromTime(now))

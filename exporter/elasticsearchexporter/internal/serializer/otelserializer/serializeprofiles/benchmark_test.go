@@ -74,7 +74,7 @@ func BenchmarkTransform(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				_, _ = Transform(rp.Resource(), sp.Scope(), p)
 			}
 		})
