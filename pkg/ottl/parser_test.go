@@ -26,6 +26,97 @@ func booleanp(b boolean) *boolean {
 	return &b
 }
 
+func Test_listComprehension(t *testing.T) {
+	stmt := `[x for x in mylist if true]`
+	parsed, err := parseValueExpression(stmt)
+	assert.NoError(t, err)
+	assert.NotNil(t, parsed.List)
+	assert.NotNil(t, parsed.List.Comprehension)
+	comp := parsed.List.Comprehension
+	assert.Equal(t, "x", parsed.List.Comprehension.Ident)
+	assert.Equal(t, value{
+		Literal: &mathExprLiteral{
+			Path: &path{
+				Pos: lexer.Position{
+					Offset: 1,
+					Line:   1,
+					Column: 2,
+				},
+				Context: "",
+				Fields: []field{
+					{
+						Name: "x",
+					},
+				},
+			},
+		},
+	}, comp.Yield)
+	assert.Equal(t, value{
+		Literal: &mathExprLiteral{
+			Path: &path{
+				Pos: lexer.Position{
+					Offset: 12,
+					Line:   1,
+					Column: 13,
+				},
+				Context: "",
+				Fields: []field{
+					{
+						Name: "mylist",
+					},
+				},
+			},
+		},
+	}, comp.List)
+	assert.NotNil(t, comp.Cond.Left)
+	assert.NotNil(t, comp.Cond.Left.Left)
+	assert.NotNil(t, comp.Cond.Left.Left.ConstExpr)
+	assert.NotNil(t, comp.Cond.Left.Left.ConstExpr.Boolean)
+	assert.True(t, bool(*comp.Cond.Left.Left.ConstExpr.Boolean))
+
+	stmt = `[x for x in mylist]`
+	parsed, err = parseValueExpression(stmt)
+	assert.NoError(t, err)
+	assert.NotNil(t, parsed.List)
+	assert.NotNil(t, parsed.List.Comprehension)
+	comp = parsed.List.Comprehension
+	assert.Equal(t, "x", parsed.List.Comprehension.Ident)
+	assert.Equal(t, value{
+		Literal: &mathExprLiteral{
+			Path: &path{
+				Pos: lexer.Position{
+					Offset: 1,
+					Line:   1,
+					Column: 2,
+				},
+				Context: "",
+				Fields: []field{
+					{
+						Name: "x",
+					},
+				},
+			},
+		},
+	}, comp.Yield)
+	assert.Equal(t, value{
+		Literal: &mathExprLiteral{
+			Path: &path{
+				Pos: lexer.Position{
+					Offset: 12,
+					Line:   1,
+					Column: 13,
+				},
+				Context: "",
+				Fields: []field{
+					{
+						Name: "mylist",
+					},
+				},
+			},
+		},
+	}, comp.List)
+}
+
 func Test_parse(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -228,13 +319,15 @@ func Test_parse(t *testing.T) {
 														{
 															Key: ottltest.Strp("arrayAttr"),
 															Value: &value{
-																List: &list{
-																	Values: []value{
-																		{
-																			String: ottltest.Strp("foo"),
-																		},
-																		{
-																			String: ottltest.Strp("bar"),
+																List: &listOrComprehension{
+																	List: &list{
+																		Values: []value{
+																			{
+																				String: ottltest.Strp("foo"),
+																			},
+																			{
+																				String: ottltest.Strp("bar"),
+																			},
 																		},
 																	},
 																},
@@ -1016,8 +1109,10 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Value: value{
-								List: &list{
-									Values: nil,
+								List: &listOrComprehension{
+									List: &list{
+										Values: nil,
+									},
 								},
 							},
 						},
@@ -1058,10 +1153,12 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Value: value{
-								List: &list{
-									Values: []value{
-										{
-											String: ottltest.Strp("value0"),
+								List: &listOrComprehension{
+									List: &list{
+										Values: []value{
+											{
+												String: ottltest.Strp("value0"),
+											},
 										},
 									},
 								},
@@ -1104,13 +1201,15 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Value: value{
-								List: &list{
-									Values: []value{
-										{
-											String: ottltest.Strp("value1"),
-										},
-										{
-											String: ottltest.Strp("value2"),
+								List: &listOrComprehension{
+									List: &list{
+										Values: []value{
+											{
+												String: ottltest.Strp("value1"),
+											},
+											{
+												String: ottltest.Strp("value2"),
+											},
 										},
 									},
 								},
@@ -1153,72 +1252,78 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Value: value{
-								List: &list{
-									Values: []value{
-										{
-											Literal: &mathExprLiteral{
-												Converter: &converter{
-													Function: "Concat",
-													Arguments: []argument{
-														{
-															Value: value{
-																List: &list{
-																	Values: []value{
-																		{
-																			String: ottltest.Strp("a"),
-																		},
-																		{
-																			String: ottltest.Strp("b"),
+								List: &listOrComprehension{
+									List: &list{
+										Values: []value{
+											{
+												Literal: &mathExprLiteral{
+													Converter: &converter{
+														Function: "Concat",
+														Arguments: []argument{
+															{
+																Value: value{
+																	List: &listOrComprehension{
+																		List: &list{
+																			Values: []value{
+																				{
+																					String: ottltest.Strp("a"),
+																				},
+																				{
+																					String: ottltest.Strp("b"),
+																				},
+																			},
 																		},
 																	},
 																},
 															},
-														},
-														{
-															Value: value{
-																String: ottltest.Strp("+"),
+															{
+																Value: value{
+																	String: ottltest.Strp("+"),
+																},
 															},
 														},
 													},
 												},
 											},
-										},
-										{
-											List: &list{
-												Values: []value{
-													{
-														String: ottltest.Strp("1"),
-													},
-													{
-														Literal: &mathExprLiteral{
-															Int: ottltest.Intp(2),
-														},
-													},
-													{
-														Literal: &mathExprLiteral{
-															Float: ottltest.Floatp(3.0),
+											{
+												List: &listOrComprehension{
+													List: &list{
+														Values: []value{
+															{
+																String: ottltest.Strp("1"),
+															},
+															{
+																Literal: &mathExprLiteral{
+																	Int: ottltest.Intp(2),
+																},
+															},
+															{
+																Literal: &mathExprLiteral{
+																	Float: ottltest.Floatp(3.0),
+																},
+															},
 														},
 													},
 												},
 											},
-										},
-										{
-											IsNil: (*isNil)(ottltest.Boolp(true)),
-										},
-										{
-											Literal: &mathExprLiteral{
-												Path: &path{
-													Pos: lexer.Position{
-														Offset: 70,
-														Line:   1,
-														Column: 71,
-													},
-													Fields: []field{
-														{
-															Name: "attributes",
-															Keys: []key{
-																{
-																	String: ottltest.Strp("test"),
+											{
+												IsNil: (*isNil)(ottltest.Boolp(true)),
+											},
+											{
+												Literal: &mathExprLiteral{
+													Path: &path{
+														Pos: lexer.Position{
+															Offset: 70,
+															Line:   1,
+															Column: 71,
+														},
+														Fields: []field{
+															{
+																Name: "attributes",
+																Keys: []key{
+																	{
+																		String: ottltest.Strp("test"),
+																	},
 																},
 															},
 														},
@@ -2221,6 +2326,15 @@ func Test_parseValueExpression_full(t *testing.T) {
 			valueExpression: `["list", "of", "strings"]`,
 			expected: func() any {
 				return []any{"list", "of", "strings"}
+			},
+		},
+		{
+			name:            "list comprehension",
+			valueExpression: `[x*2 for x in [1, 2, 3, 4] if x > 2]`,
+			expected: func() any {
+				result := pcommon.NewSlice()
+				_ = result.FromRaw([]any{6, 8})
+				return result
 			},
 		},
 	}

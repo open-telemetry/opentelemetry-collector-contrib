@@ -234,15 +234,15 @@ func (a *argument) accept(v grammarVisitor) {
 // value represents a part of a parsed statement which is resolved to a value of some sort. This can be a telemetry path
 // mathExpression, function call, or literal.
 type value struct {
-	IsNil          *isNil           `parser:"( @'nil'"`
-	Literal        *mathExprLiteral `parser:"| @@ (?! OpAddSub | OpMultDiv)"`
-	MathExpression *mathExpression  `parser:"| @@"`
-	Bytes          *byteSlice       `parser:"| @Bytes"`
-	String         *string          `parser:"| @String"`
-	Bool           *boolean         `parser:"| @Boolean"`
-	Enum           *enumSymbol      `parser:"| @Uppercase (?! Lowercase)"`
-	Map            *mapValue        `parser:"| @@"`
-	List           *list            `parser:"| @@)"`
+	IsNil          *isNil               `parser:"( @'nil'"`
+	Literal        *mathExprLiteral     `parser:"| @@ (?! OpAddSub | OpMultDiv)"`
+	MathExpression *mathExpression      `parser:"| @@"`
+	Bytes          *byteSlice           `parser:"| @Bytes"`
+	String         *string              `parser:"| @String"`
+	Bool           *boolean             `parser:"| @Boolean"`
+	Enum           *enumSymbol          `parser:"| @Uppercase (?! Lowercase)"`
+	Map            *mapValue            `parser:"| @@"`
+	List           *listOrComprehension `parser:"| @@)"`
 }
 
 func (v *value) checkForCustomError() error {
@@ -263,8 +263,17 @@ func (v *value) accept(vis grammarVisitor) {
 		v.Map.accept(vis)
 	}
 	if v.List != nil {
-		for _, i := range v.List.Values {
-			i.accept(vis)
+		if v.List.Comprehension != nil {
+			v.List.Comprehension.List.accept(vis)
+			if v.List.Comprehension.Cond != nil {
+				v.List.Comprehension.Cond.accept(vis)
+			}
+			v.List.Comprehension.Yield.accept(vis)
+		}
+		if v.List.List != nil {
+			for _, i := range v.List.List.Values {
+				i.accept(vis)
+			}
 		}
 	}
 }
@@ -307,8 +316,20 @@ func (k *key) accept(v grammarVisitor) {
 	}
 }
 
+type listOrComprehension struct {
+	Comprehension *listComprehension `parser:"(@@ |"`
+	List          *list              `parser:"@@ )"`
+}
+
 type list struct {
 	Values []value `parser:"'[' (@@)* (',' @@)* ']'"`
+}
+
+type listComprehension struct {
+	Yield value              `parser:"'[' @@ 'for'"`
+	Ident string             `parser:"@Lowercase 'in'"`
+	List  value              `parser:"@@"`
+	Cond  *booleanExpression `parser:"( 'if' @@)? ']'"`
 }
 
 type mapValue struct {
