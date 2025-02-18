@@ -81,9 +81,9 @@ func equal(tb testing.TB, want, got any, name string) bool {
 			continue
 		}
 
-		// don't compare methods that return iterators
+		// skip equality check for methods returning functions
 		ret := mw.Type().Out(0)
-		if ret.Kind() == reflect.Func && (ret.CanSeq2() || ret.CanSeq()) {
+		if ret.Kind() == reflect.Func {
 			continue
 		}
 

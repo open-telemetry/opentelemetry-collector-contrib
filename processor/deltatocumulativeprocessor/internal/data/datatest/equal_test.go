@@ -43,29 +43,35 @@ func ExampleT_Equal() {
 	// equal_test.go:36: Scale(): 0 != 1
 }
 
-type testStruct struct {
+type structFunc struct {
 	a int
 }
 
-func (s testStruct) Get() int {
+func (s structFunc) Get() int {
 	return s.a
 }
 
-func (s testStruct) Seq() iter.Seq[int] {
+func (s structFunc) Func() func() {
+	return func() {}
+}
+
+// iter.Seq is a reflect.Func
+func (s structFunc) Seq() iter.Seq[int] {
 	return func(yield func(v int) bool) {
 		return
 	}
 }
 
-func (s testStruct) Seq2() iter.Seq2[int, string] {
+// iter.Seq2 is a reflect.Func
+func (s structFunc) Seq2() iter.Seq2[int, string] {
 	return func(yield func(k int, v string) bool) {
 		return
 	}
 }
 
-func TestEqualIteratorMethod(t *testing.T) {
+func TestEqualMethodReturnFunc(t *testing.T) {
 	is := datatest.New(t)
-	s := testStruct{a: 42}
+	s := structFunc{a: 42}
 	want := any(s)
 	got := any(s)
 	is.Equal(want, got)
