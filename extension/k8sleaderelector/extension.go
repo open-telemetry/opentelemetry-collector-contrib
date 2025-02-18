@@ -5,7 +5,6 @@ package k8sleaderelector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"

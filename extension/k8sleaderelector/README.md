@@ -24,7 +24,6 @@ receivers:
     leader_elector: k8s_leader_elector
 extensions:
   k8s_leader_elector:
-    leas_holder_id:   ${MY_POD_IP}
     auth_type: kubeConfig
     lease_name: foo
     lease_namespace: default
