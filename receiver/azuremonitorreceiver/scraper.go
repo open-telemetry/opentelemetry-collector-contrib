@@ -57,6 +57,7 @@ const (
 	attributeResourceType  = "type"
 	metadataPrefix         = "metadata_"
 	tagPrefix              = "tags_"
+	truncateTimeGrain      = time.Minute
 )
 
 type azureResource struct {
@@ -78,6 +79,16 @@ type azureResourceMetrics struct {
 
 type void struct{}
 
+type timeNowIface interface {
+	Now() time.Time
+}
+
+type timeWrapper struct{}
+
+func (*timeWrapper) Now() time.Time {
+	return time.Now()
+}
+
 func newScraper(conf *Config, settings receiver.Settings) *azureScraper {
 	return &azureScraper{
 		cfg:                             conf,
@@ -91,6 +102,7 @@ func newScraper(conf *Config, settings receiver.Settings) *azureScraper {
 		armMonitorDefinitionsClientFunc: armmonitor.NewMetricDefinitionsClient,
 		armMonitorMetricsClientFunc:     armmonitor.NewMetricsClient,
 		mutex:                           &sync.Mutex{},
+		time:                            &timeWrapper{},
 	}
 }
 
@@ -115,6 +127,7 @@ type azureScraper struct {
 	armMonitorDefinitionsClientFunc func(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
 	armMonitorMetricsClientFunc     func(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error)
 	mutex                           *sync.Mutex
+	time                            timeNowIface
 }
 
 type armClient interface {
@@ -369,12 +382,13 @@ func (s *azureScraper) storeMetricsDefinition(resourceID, name string, composite
 
 func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID string) {
 	res := *s.resources[resourceID]
+	updatedAt := s.time.Now().Truncate(truncateTimeGrain)
 
 	for compositeKey, metricsByGrain := range res.metricsByCompositeKey {
-		if time.Since(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
+		if updatedAt.Sub(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
 			continue
 		}
-		metricsByGrain.metricsValuesUpdated = time.Now()
+		metricsByGrain.metricsValuesUpdated = updatedAt
 
 		start := 0
 
