@@ -106,7 +106,9 @@ The following settings can be optionally configured:
   
   If no `default` is provided, this dimension will be **omitted** from the metric.
 - `exclude_dimensions`: the list of dimensions to be excluded from the default set of dimensions. Use to exclude unneeded data from metrics. 
-- `dimensions_cache_size` (default: `1000`): the size of cache for storing Dimensions to improve collectors memory usage. Must be a positive number. 
+- `dimensions_cache_size` (default: `1000`): the size of cache for storing Dimensions to improve collectors memory usage. Must be a positive number.
+- `instrumentation_scope`: a list of instrumentation scope names to include in the metrics. They are defined using `name` and `default` fields.
+- `exclude_instrumentation_scope`: a list of instrumentation scope names to exclude from the metrics.
 - `resource_metrics_cache_size` (default: `1000`): the size of the cache holding metrics for a service. This is mostly relevant for
    cumulative temporality to avoid memory leaks and correct metric timestamp resets.
 - `aggregation_temporality` (default: `AGGREGATION_TEMPORALITY_CUMULATIVE`): Defines the aggregation temporality of the generated metrics. 
@@ -164,6 +166,11 @@ connectors:
       - service.name
       - telemetry.sdk.language
       - telemetry.sdk.name
+    instrumentation_scope:
+      - name: library.language
+        default: java
+    exclude_instrumentation_scope:
+      - span.instrumentation.scope.versions
 
 service:
   pipelines:
