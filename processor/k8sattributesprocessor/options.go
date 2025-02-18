@@ -289,7 +289,7 @@ func withFilterNamespace(ns string) option {
 // withFilterLabels allows specifying options to control filtering pods by pod labels.
 func withFilterLabels(filters ...FieldFilterConfig) option {
 	return func(p *kubernetesprocessor) error {
-		var labels []kube.FieldFilter
+		var labels []kube.LabelFilter
 		for _, f := range filters {
 			var op selection.Operator
 			switch f.Op {
@@ -302,7 +302,7 @@ func withFilterLabels(filters ...FieldFilterConfig) option {
 			default:
 				op = selection.Equals
 			}
-			labels = append(labels, kube.FieldFilter{
+			labels = append(labels, kube.LabelFilter{
 				Key:   f.Key,
 				Value: f.Value,
 				Op:    op,

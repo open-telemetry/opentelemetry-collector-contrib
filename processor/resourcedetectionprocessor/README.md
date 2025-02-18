@@ -582,10 +582,37 @@ processors:
 
 See: [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 
+### Dynatrace
+
+Loads resource information from the `dt_host_metadata.properties` file which is located in
+the `/var/lib/dynatrace/enrichment` (on *nix systems) or `%ProgramData%\dynatrace\enrichment` (on Windows) directories.
+If present in the file, the following attributes will be added:
+
+- `dt.entity.host`
+- `host.name`
+
+The Dynatrace detector does not require any additional configuration, other than being added to the list of detectors.
+
+Example:
+
+```yaml
+processors:
+  resourcedetection/dynatrace:
+    override: false
+    detectors: [dynatrace]
+```
+
+It is strongly recommended to use the `override: false` configuration option, to prevent the detector from overwriting
+existing resource attributes.
+If the Dynatrace host entity identifier attribute `dt.entity.host` or `host.name` are already present on incoming data as it is sent from
+other sources to the collector, then these describe the monitored entity in the best way.
+Overriding these with the collector's own identifier would instead make the telemetry appear as if it was coming from the collector
+or the collector's host instead, which might be inaccurate.
+
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift", "dynatrace"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>

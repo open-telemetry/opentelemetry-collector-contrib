@@ -61,9 +61,3 @@ func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.Spli
 		return 0, nil, nil
 	}
 }
-
-// Deprecated: [v0.88.0] Use WithFunc instead.
-func WithPeriod(splitFunc bufio.SplitFunc, period time.Duration) bufio.SplitFunc {
-	s := &State{LastDataChange: internaltime.Now()}
-	return s.Func(splitFunc, period)
-}

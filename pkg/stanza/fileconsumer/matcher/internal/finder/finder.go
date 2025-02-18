@@ -6,10 +6,10 @@ package finder // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"golang.org/x/exp/maps"
 )
 
 func Validate(globs []string) error {
@@ -47,7 +47,7 @@ func FindFiles(includes []string, excludes []string) ([]string, error) {
 		}
 	}
 
-	keys := maps.Keys(allSet)
+	keys := slices.Collect(maps.Keys(allSet))
 	slices.Sort(keys)
 	return keys, errs
 }

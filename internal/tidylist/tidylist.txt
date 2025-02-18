@@ -67,6 +67,7 @@ exporter/awskinesisexporter
 exporter/awss3exporter
 internal/aws/xray
 exporter/awsxrayexporter
+exporter/azureblobexporter
 exporter/azuredataexplorerexporter
 exporter/azuremonitorexporter
 exporter/bmchelixexporter
@@ -149,6 +150,7 @@ extension/basicauthextension
 extension/bearertokenauthextension
 extension/cgroupruntimeextension
 extension/encoding/avrologencodingextension
+extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
 pkg/translator/skywalking
@@ -171,6 +173,7 @@ extension/observer/ecsobserver
 extension/observer/ecstaskobserver
 extension/observer/hostobserver
 extension/observer/k8sobserver
+extension/observer/kafkatopicsobserver
 extension/oidcauthextension
 extension/opampcustommessages
 extension/opampextension
