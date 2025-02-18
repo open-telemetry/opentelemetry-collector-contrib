@@ -43,7 +43,6 @@ type Config struct {
 	// Cluster metadata refresh frequency
 	// Configures the refresh frequency to update cached cluster metadata
 	// Defaults to 10 minutes from Sarama library
-
 	RefreshFrequency time.Duration `mapstructure:"refresh_frequency"`
 
 	// Scrapers defines which metric data points to be captured from kafka
