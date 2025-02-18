@@ -42,6 +42,7 @@ func TestDetect(t *testing.T) {
 		detectedResources []map[string]any
 		expectedResource  map[string]any
 		attributes        []string
+		async             bool
 	}{
 		{
 			name: "Detect three resources",
@@ -52,6 +53,7 @@ func TestDetect(t *testing.T) {
 			},
 			expectedResource: map[string]any{"a": "1", "b": "2", "c": "3"},
 			attributes:       nil,
+			async:            false,
 		}, {
 			name: "Detect empty resources",
 			detectedResources: []map[string]any{
@@ -61,6 +63,7 @@ func TestDetect(t *testing.T) {
 			},
 			expectedResource: map[string]any{"a": "1", "b": "2"},
 			attributes:       nil,
+			async:            false,
 		}, {
 			name: "Detect non-string resources",
 			detectedResources: []map[string]any{
@@ -70,6 +73,7 @@ func TestDetect(t *testing.T) {
 			},
 			expectedResource: map[string]any{"a": "11", "bool": true, "int": int64(2), "double": 0.5},
 			attributes:       nil,
+			async:            false,
 		}, {
 			name: "Filter to one attribute",
 			detectedResources: []map[string]any{
@@ -79,6 +83,17 @@ func TestDetect(t *testing.T) {
 			},
 			expectedResource: map[string]any{"a": "1"},
 			attributes:       []string{"a"},
+			async:            false,
+		}, {
+			name: "Detect resources with async",
+			detectedResources: []map[string]any{
+				{"a": "1", "b": "2"},
+				{"c": "3"},
+				{"d": "3"},
+			},
+			expectedResource: map[string]any{"a": "1", "b": "2", "c": "3", "d": "3"},
+			attributes:       nil,
+			async:            true,
 		},
 	}
 
@@ -101,7 +116,7 @@ func TestDetect(t *testing.T) {
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(processortest.NewNopSettings(), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(processortest.NewNopSettings(), time.Second, tt.attributes, &mockDetectorConfig{}, tt.async, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			got, _, err := p.Get(context.Background(), http.DefaultClient)
@@ -115,7 +130,7 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(processortest.NewNopSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(), time.Second, nil, &mockDetectorConfig{}, true, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
@@ -126,22 +141,8 @@ func TestDetectResource_DetectorFactoryError(t *testing.T) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(processortest.NewNopSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(), time.Second, nil, &mockDetectorConfig{}, true, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
-}
-
-func TestDetectResource_Error(t *testing.T) {
-	md1 := &MockDetector{}
-	res := pcommon.NewResource()
-	require.NoError(t, res.Attributes().FromRaw(map[string]any{"a": "1", "b": "2"}))
-	md1.On("Detect").Return(res, nil)
-
-	md2 := &MockDetector{}
-	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err1"))
-
-	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
-	_, _, err := p.Get(context.Background(), http.DefaultClient)
-	require.NoError(t, err)
 }
 
 func TestMergeResource(t *testing.T) {
@@ -207,12 +208,9 @@ func TestDetectResource_Parallel(t *testing.T) {
 	require.NoError(t, res2.Attributes().FromRaw(map[string]any{"a": "11", "c": "3"}))
 	md2.On("Detect").Return(res2, nil)
 
-	md3 := NewMockParallelDetector()
-	md3.On("Detect").Return(pcommon.NewResource(), errors.New("an error"))
-
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2, md3)
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, false, md1, md2)
 
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
@@ -232,13 +230,36 @@ func TestDetectResource_Parallel(t *testing.T) {
 	// detector.Detect should only be called once, so we only need to notify each channel once
 	md1.ch <- struct{}{}
 	md2.ch <- struct{}{}
-	md3.ch <- struct{}{}
 
 	// then wait until all goroutines are finished, and ensure p.Detect was only called once
 	wg.Wait()
 	md1.AssertNumberOfCalls(t, "Detect", 1)
 	md2.AssertNumberOfCalls(t, "Detect", 1)
-	md3.AssertNumberOfCalls(t, "Detect", 1)
+}
+
+func TestDetectResource_Reconnect(t *testing.T) {
+	md1 := &MockDetector{}
+	res1 := pcommon.NewResource()
+	require.NoError(t, res1.Attributes().FromRaw(map[string]any{"a": "1", "b": "2"}))
+	md1.On("Detect").Return(pcommon.NewResource(), errors.New("connection error1")).Twice()
+	md1.On("Detect").Return(res1, nil)
+
+	md2 := &MockDetector{}
+	res2 := pcommon.NewResource()
+	require.NoError(t, res2.Attributes().FromRaw(map[string]any{"c": "3"}))
+	md2.On("Detect").Return(pcommon.NewResource(), errors.New("connection error2")).Once()
+	md2.On("Detect").Return(res2, nil)
+
+	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
+
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, true, md1, md2)
+
+	detected, _, err := p.Get(context.Background(), http.DefaultClient)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
+
+	md1.AssertNumberOfCalls(t, "Detect", 3) // 2 errors + 1 success
+	md2.AssertNumberOfCalls(t, "Detect", 2) // 1 error + 1 success
 }
 
 func TestFilterAttributes_Match(t *testing.T) {

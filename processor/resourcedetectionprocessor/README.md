@@ -657,9 +657,18 @@ resourcedetection:
         enabled: false
 ```
 
-## Ordering
+## Ordering and asynchronous detection
 
-Note that if multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.platform` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
+By default, the detectors are run asynchronously and therefore possibly out of order. If you want to keep the order of detectors, set the `async_detection` to `false`. This will also mean, that the retry mechanism for detectors will be disabled and therefore one pending detector can block the whole processor.
+
+```yaml
+processors:
+  resourcedetection:
+    detectors: [docker]
+    async_detection: false
+```
+
+When the `async_detection` is set to `false` and multiple detectors are inserting the same attribute name, the first detector to insert wins. For example if you had `detectors: [eks, ec2]` then `cloud.platform` will be `aws_eks` instead of `ec2`. The below ordering is recommended.
 
 ### AWS
 
