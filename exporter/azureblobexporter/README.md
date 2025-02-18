@@ -15,7 +15,7 @@
 
 The following settings are required:
 
-- endpoint: Must be specified if auth type is not connection_string. If auth type is connection_string, it's optional or will be override by the auth.connection_string. Azure storage account endpoint. e.g. https://<account-name>.blob.core.windows.net/
+- url: Must be specified if auth type is not connection_string. If auth type is connection_string, it's optional or will be override by the auth.connection_string. Azure storage account endpoint. This setting might be replaced with `endpoint` for future. e.g. https://<account-name>.blob.core.windows.net/
 - auth (no default): Authentication method for exporter to ingest data.
   - type (no default): Authentication type for expoter. supported values are: connection_string, service_principal, system_managed_identity, user_managed_identity and etc.
   - tenand_id: Tenand Id for the client, only needed when type is service_principal.

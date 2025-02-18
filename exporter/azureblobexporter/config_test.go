@@ -30,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "sp"),
 			expected: &Config{
-				Endpoint: "https://<account>.blob.core.windows.net/",
+				URL: "https://<account>.blob.core.windows.net/",
 				Auth: &Authentication{
 					Type:         "service_principal",
 					TenantID:     "<tenand id>",
@@ -55,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "smi"),
 			expected: &Config{
-				Endpoint: "https://<account>.blob.core.windows.net/",
+				URL: "https://<account>.blob.core.windows.net/",
 				Auth: &Authentication{
 					Type: "system_managed_identity",
 				},
@@ -77,7 +77,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "umi"),
 			expected: &Config{
-				Endpoint: "https://<account>.blob.core.windows.net/",
+				URL: "https://<account>.blob.core.windows.net/",
 				Auth: &Authentication{
 					Type:     "user_managed_identity",
 					ClientID: "<user managed identity id>",
@@ -121,7 +121,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "err1"),
-			errorMessage: "endpoint cannot be empty when auth type is not connection_string",
+			errorMessage: "url cannot be empty when auth type is not connection_string",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "err2"),
