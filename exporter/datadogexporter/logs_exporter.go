@@ -13,6 +13,7 @@ import (
 	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline"
 	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl"
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter"
+	logscompressionimpl "github.com/DataDog/datadog-agent/comp/serializer/logscompression/impl"
 	"github.com/DataDog/datadog-agent/pkg/logs/sources"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
@@ -186,9 +187,10 @@ func newLogsAgentExporter(
 	}
 	hostnameComponent := logs.NewHostnameService(sourceProvider)
 	logsAgent := logsagentpipelineimpl.NewLogsAgent(logsagentpipelineimpl.Dependencies{
-		Log:      logComponent,
-		Config:   cfgComponent,
-		Hostname: hostnameComponent,
+		Log:         logComponent,
+		Config:      cfgComponent,
+		Hostname:    hostnameComponent,
+		Compression: logscompressionimpl.NewComponent(),
 	})
 	err := logsAgent.Start(ctx)
 	if err != nil {

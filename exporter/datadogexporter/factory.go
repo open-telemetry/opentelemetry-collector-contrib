@@ -260,19 +260,15 @@ func (f *factory) createMetricsExporter(
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
 	// cancel() runs on shutdown
+	ctx, cancel := context.WithCancel(ctx)
 
 	attrsTranslator, err := f.AttributesTranslator(set.TelemetrySettings)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
 	}
-
-	var (
-		pushMetricsFn consumer.ConsumeMetricsFunc
-		wg            sync.WaitGroup // waits for consumeStatsPayload to exit
-	)
+	var wg sync.WaitGroup // waits for consumeStatsPayload to exit
 
 	acfg, err := newTraceAgentConfig(ctx, set, cfg, hostProvider, attrsTranslator)
 	if err != nil {
@@ -289,6 +285,9 @@ func (f *factory) createMetricsExporter(
 	statsIn := make(chan []byte, 1000)
 	statsv := set.BuildInfo.Command + set.BuildInfo.Version
 	f.consumeStatsPayload(ctx, &wg, statsIn, statsWriter, statsv, acfg.AgentVersion, set.Logger)
+
+	var pushMetricsFn consumer.ConsumeMetricsFunc
+
 	pcfg := newMetadataConfigfromConfig(cfg)
 	// Don't start a `Reporter` if host metadata is disabled.
 	var metadataReporter *inframetadata.Reporter
@@ -300,7 +299,8 @@ func (f *factory) createMetricsExporter(
 		}
 	}
 
-	if cfg.OnlyMetadata {
+	switch {
+	case cfg.OnlyMetadata:
 		pushMetricsFn = func(_ context.Context, md pmetric.Metrics) error {
 			// only sending metadata use only metrics
 			f.onceMetadata.Do(func() {
@@ -318,7 +318,8 @@ func (f *factory) createMetricsExporter(
 			}
 			return nil
 		}
-	} else if isMetricExportSerializerEnabled() {
+	case isMetricExportV2Enabled():
+		set.Logger.Info("Using Datadog serializerexporter for metric export")
 		sf := serializerexporter.NewFactory()
 		ex := &serializerexporter.ExporterConfig{
 			Metrics: serializerexporter.MetricsConfig{
@@ -329,15 +330,26 @@ func (f *factory) createMetricsExporter(
 			},
 			QueueConfig: cfg.QueueSettings,
 			API:         cfg.API,
+			HostProvider: func(ctx context.Context) (string, error) {
+				h, err := hostProvider.Source(ctx)
+				if err != nil {
+					return "", err
+				}
+				return h.Identifier, nil
+			},
+			ShutdownFunc: func(context.Context) error {
+				cancel()  // first cancel context
+				wg.Wait() // then wait for shutdown
+				f.StopReporter()
+				statsWriter.Stop()
+				if statsIn != nil {
+					close(statsIn)
+				}
+				return nil
+			},
 		}
-		c, err := sf.CreateMetrics(ctx, set, ex)
-		if err != nil {
-			cancel()  // first cancel Context
-			wg.Wait() // then wait for ShutdownFunc
-			return nil, err
-		}
-		pushMetricsFn = c.ConsumeMetrics
-	} else {
+		return sf.CreateMetrics(ctx, set, ex)
+	default:
 		exp, metricsErr := newMetricsExporter(ctx, set, cfg, acfg, &f.onceMetadata, attrsTranslator, hostProvider, metadataReporter, statsIn, f.gatewayUsage)
 		if metricsErr != nil {
 			cancel()  // first cancel context
