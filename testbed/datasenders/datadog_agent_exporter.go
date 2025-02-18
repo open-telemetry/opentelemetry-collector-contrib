@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -39,7 +38,7 @@ func (dd *datadogDataSender) Start() error {
 	cfg := factory.CreateDefaultConfig().(*mockdatadogagentexporter.Config)
 	cfg.Endpoint = fmt.Sprintf("http://%s:%v/v0.4/traces", testbed.DefaultHost, 8126)
 
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettingsWithType(factory.Type())
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateTraces(context.Background(), params, cfg)

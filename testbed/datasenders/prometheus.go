@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -39,7 +38,7 @@ func (pds *prometheusDataSender) Start() error {
 	cfg := factory.CreateDefaultConfig().(*prometheusexporter.Config)
 	cfg.Endpoint = pds.GetEndpoint().String()
 	cfg.Namespace = pds.namespace
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettingsWithType(factory.Type())
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateMetrics(context.Background(), params, cfg)

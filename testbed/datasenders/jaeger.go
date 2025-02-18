@@ -48,7 +48,7 @@ func NewJaegerGRPCDataSender(host string, port int) testbed.TraceDataSender {
 }
 
 func (je *jaegerGRPCDataSender) Start() error {
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettingsWithType(exportertest.NopType)
 	params.Logger = zap.L()
 
 	exp, err := je.newTracesExporter(params)
