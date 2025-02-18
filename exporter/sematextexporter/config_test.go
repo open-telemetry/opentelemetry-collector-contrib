@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(metadata.Type, "default-config"),
+			id:       component.NewIDWithName(metadata.Type, "default-config"),
 			expected: createDefaultConfig(),
 		},
 		{
