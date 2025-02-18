@@ -32,7 +32,7 @@ func New(tb testing.TB) T {
 //   - exactly one return value
 //   - does not start with 'Append'
 //   - does not start with 'Clone'
-//   - does not return an iter.Seq or iter.Seq2
+//   - does not return a function
 //
 // If this yields differences, those are reported and the test fails.
 // If the compared values are [pmetric.ExponentialHistogramDataPoint], then
