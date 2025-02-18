@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,6 +43,7 @@ func TestOAuthClientSettings(t *testing.T) {
 				TokenURL:       "https://example.com/v1/token",
 				Scopes:         []string{"resource.read"},
 				Timeout:        2,
+				ExpiryBuffer:   10 * time.Second,
 				TLSSetting: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile:   testCAFile,
@@ -63,10 +65,11 @@ func TestOAuthClientSettings(t *testing.T) {
 				TokenURL:     "https://example.com/v1/token",
 				Scopes:       []string{"resource.read"},
 				Timeout:      2,
+				ExpiryBuffer: 15 * time.Second,
 				TLSSetting: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile:   testCAFile,
-						CertFile: "doestexist.cert",
+						CertFile: "nonexistent.cert",
 						KeyFile:  testKeyFile,
 					},
 					Insecure:           false,
@@ -91,6 +94,7 @@ func TestOAuthClientSettings(t *testing.T) {
 			assert.EqualValues(t, test.settings.ClientSecret, rc.clientCredentials.ClientSecret)
 			assert.Equal(t, test.settings.ClientID, rc.clientCredentials.ClientID)
 			assert.Equal(t, test.settings.Timeout, rc.client.Timeout)
+			assert.Equal(t, test.settings.ExpiryBuffer, rc.clientCredentials.ExpiryBuffer)
 			assert.Equal(t, test.settings.EndpointParams, rc.clientCredentials.EndpointParams)
 
 			// test tls settings

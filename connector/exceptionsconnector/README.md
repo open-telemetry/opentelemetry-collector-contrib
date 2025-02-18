@@ -113,7 +113,7 @@ service:
       exporters: [loki]
 ```
 
-The full list of settings exposed for this connector are documented [here](../../connector/exceptionsconnector/config.go).
+The full list of settings exposed for this connector are documented in [exceptionsconnector/config.go](../../connector/exceptionsconnector/config.go).
 ### More Examples
 
 For more example configuration covering various other use cases, please visit the [testdata directory](../../connector/exceptionsconnector/testdata).
