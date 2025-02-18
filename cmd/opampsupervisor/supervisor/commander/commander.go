@@ -91,7 +91,7 @@ func (c *Commander) Start(ctx context.Context) error {
 func (c *Commander) buildConfigs() error {
 	for _, conf := range c.cfg.ConfigFiles {
 		fileName := filepath.Base(conf)
-		newPath := c.logsDir + "/" + fileName
+		newPath := filepath.Join(c.logsDir, fileName)
 		if err := common.CopyFile(conf, newPath); err != nil {
 			return fmt.Errorf("cannot copy config file '%s' to storage directory: %s", conf, err.Error())
 		}
