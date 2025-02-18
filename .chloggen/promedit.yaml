@@ -1,29 +1,12 @@
-# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
 change_type: enhancement
-
-# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: histogram_metrics
-
-# A brief description of the change. Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Added support for converting histogram metrics from OpenTelemetry to Prometheus format.
-
-# Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
+component: prometheusremotewritereceiver
+note: "Add histogram support and response headers with ingestion statistics"
 issues: [#37277]
-
-# (Optional) One or more lines of additional information to render under the primary note.
-# These lines will be padded with 2 spaces and then inserted directly into the document.
-# Use pipe (|) for multiline entries.
 subtext: |
-  - Implements handling for OpenTelemetry histogram metrics.
-  - histogram datapoints are created or appended properly.
-  - Filters out unnecessary labels (`instance`, `job`, `otel_scope_name`, etc.).
-  - Computes the sum and count of histogram samples.
-
-# If your change doesn't affect end users or the exported elements of any package,
-# you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
-# Optional: The change log or logs in which this entry should be included.
-# e.g. '[user]' or '[user, api]'
-# Include 'user' if the change is relevant to end users.
-# Include 'api' if there is a change to a library API.
-# Default: '[user]'
-change_logs: [user, api]
+  - Implemented histogram metric type handling with proper bucket processing and sorting
+  - Added response headers to track ingested samples and histograms:
+    - X-Prometheus-Remote-Write-Samples: Total number of samples processed
+    - X-Prometheus-Remote-Write-Histograms: Number of histogram samples processed
+  - Implemented proper timestamp handling for histogram data points
+  - Added attributes filtering and resource attributes mapping
+change_logs: [user]
