@@ -9,9 +9,11 @@ Contains tests for logexporter.go and log_to_envelope.go
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -115,7 +117,7 @@ func TestExporterLogDataCallback(t *testing.T) {
 
 	logs := getTestLogs()
 
-	assert.NoError(t, exporter.onLogData(context.Background(), logs))
+	assert.NoError(t, exporter.consumeLogs(context.Background(), logs))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 4)
 }
@@ -178,11 +180,14 @@ func TestLogRecordToEnvelopeCloudTags(t *testing.T) {
 	require.Equal(t, expectedCloudRoleInstance, envelope.Tags[aiCloudRoleInstanceConvention])
 }
 
-func getLogsExporter(config *Config, transportChannel transportChannel) *logExporter {
-	return &logExporter{
+func getLogsExporter(config *Config, transportChannel appinsights.TelemetryChannel) *azureMonitorExporter {
+	return &azureMonitorExporter{
 		config,
 		transportChannel,
 		zap.NewNop(),
+		newMetricPacker(zap.NewNop()),
+		sync.Once{},
+		sync.Once{},
 	}
 }
 
