@@ -6,7 +6,9 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"errors"
 	"regexp"
+	"time"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
@@ -15,17 +17,44 @@ var (
 	errNoStartTimeMetrics             = errors.New("start_time metric is missing")
 	errNoDataPointsStartTimeMetric    = errors.New("start time metric with no data points")
 	errUnsupportedTypeStartTimeMetric = errors.New("unsupported data type for start time metric")
+
+	// approximateCollectorStartTime is the approximate start time of the
+	// collector. Used as a fallback start time for metrics that don't have a
+	// start time set (when the
+	// receiver.prometheusreceiver.UseCollectorStartTimeFallback feature gate is
+	// enabled).  Set when the component is initialized.
+	approximateCollectorStartTime time.Time
 )
+
+var useCollectorStartTimeFallbackGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheusreceiver.UseCollectorStartTimeFallback",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver's"+
+		" start time metric adjuster will fallback to using the collector start time"+
+		" when a start time is not available"),
+)
+
+func init() {
+	approximateCollectorStartTime = time.Now()
+}
 
 type startTimeMetricAdjuster struct {
 	startTimeMetricRegex *regexp.Regexp
+	resetPointAdjuster   *initialPointAdjuster
 	logger               *zap.Logger
 }
 
 // NewStartTimeMetricAdjuster returns a new MetricsAdjuster that adjust metrics' start times based on a start time metric.
-func NewStartTimeMetricAdjuster(logger *zap.Logger, startTimeMetricRegex *regexp.Regexp) MetricsAdjuster {
+func NewStartTimeMetricAdjuster(logger *zap.Logger, startTimeMetricRegex *regexp.Regexp, gcInterval time.Duration) MetricsAdjuster {
+	resetPointAdjuster := &initialPointAdjuster{
+		jobsMap:              NewJobsMap(gcInterval),
+		logger:               logger,
+		useCreatedMetric:     false,
+		usePointTimeForReset: true,
+	}
 	return &startTimeMetricAdjuster{
 		startTimeMetricRegex: startTimeMetricRegex,
+		resetPointAdjuster:   resetPointAdjuster,
 		logger:               logger,
 	}
 }
@@ -33,7 +62,11 @@ func NewStartTimeMetricAdjuster(logger *zap.Logger, startTimeMetricRegex *regexp
 func (stma *startTimeMetricAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 	startTime, err := stma.getStartTime(metrics)
 	if err != nil {
-		return err
+		if !useCollectorStartTimeFallbackGate.IsEnabled() {
+			return err
+		}
+		stma.logger.Info("Couldn't get start time for metrics. Using fallback start time.", zap.Error(err), zap.Time("fallback_start_time", approximateCollectorStartTime))
+		startTime = float64(approximateCollectorStartTime.Unix())
 	}
 
 	startTimeTs := timestampFromFloat64(startTime)
@@ -85,7 +118,8 @@ func (stma *startTimeMetricAdjuster) AdjustMetrics(metrics pmetric.Metrics) erro
 		}
 	}
 
-	return nil
+	// Handle resets.
+	return stma.resetPointAdjuster.AdjustMetrics(metrics)
 }
 
 func (stma *startTimeMetricAdjuster) getStartTime(metrics pmetric.Metrics) (float64, error) {

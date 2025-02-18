@@ -4,6 +4,7 @@ package metadata
 
 import (
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
@@ -23,6 +24,8 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	meter                                               metric.Meter
+	mu                                                  sync.Mutex
+	registrations                                       []metric.Registration
 	ProcessorTailSamplingCountSpansSampled              metric.Int64Counter
 	ProcessorTailSamplingCountTracesSampled             metric.Int64Counter
 	ProcessorTailSamplingEarlyReleasesFromCacheDecision metric.Int64Counter
@@ -46,6 +49,15 @@ type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
 
 func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
+}
+
+// Shutdown unregister all registered callbacks for async instruments.
+func (builder *TelemetryBuilder) Shutdown() {
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	for _, reg := range builder.registrations {
+		reg.Unregister()
+	}
 }
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
@@ -96,8 +108,8 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingSamplingDecisionTimerLatency, err = builder.meter.Int64Histogram(
 		"otelcol_processor_tail_sampling_sampling_decision_timer_latency",
-		metric.WithDescription("Latency (in microseconds) of each run of the sampling decision timer"),
-		metric.WithUnit("µs"),
+		metric.WithDescription("Latency (in milliseconds) of each run of the sampling decision timer"),
+		metric.WithUnit("ms"),
 		metric.WithExplicitBucketBoundaries([]float64{1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000}...),
 	)
 	errs = errors.Join(errs, err)

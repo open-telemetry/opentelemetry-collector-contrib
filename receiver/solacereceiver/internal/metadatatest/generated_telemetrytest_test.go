@@ -11,15 +11,15 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestSetupTelemetry(t *testing.T) {
-	testTel := SetupTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(
-		testTel.NewTelemetrySettings(),
-	)
+	testTel := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
-	require.NotNil(t, tb)
+	defer tb.Shutdown()
 	tb.SolacereceiverDroppedEgressSpans.Add(context.Background(), 1)
 	tb.SolacereceiverDroppedSpanMessages.Add(context.Background(), 1)
 	tb.SolacereceiverFailedReconnections.Add(context.Background(), 1)
@@ -33,156 +33,45 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.SolacereceiverReceiverStatus.Record(context.Background(), 1)
 	tb.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
 	tb.SolacereceiverReportedSpans.Add(context.Background(), 1)
+	AssertEqualSolacereceiverDroppedEgressSpans(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualSolacereceiverDroppedSpanMessages(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualSolacereceiverFailedReconnections(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualSolacereceiverFatalUnmarshallingErrors(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualSolacereceiverNeedUpgrade(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualSolacereceiverReceivedSpanMessages(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualSolacereceiverReceiverFlowControlRecentRetries(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualSolacereceiverReceiverFlowControlStatus(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualSolacereceiverReceiverFlowControlTotal(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualSolacereceiverReceiverFlowControlWithSingleSuccessfulRetry(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualSolacereceiverReceiverStatus(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualSolacereceiverRecoverableUnmarshallingErrors(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualSolacereceiverReportedSpans(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 
-	testTel.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_solacereceiver_dropped_egress_spans",
-			Description: "Number of dropped egress spans",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_solacereceiver_dropped_span_messages",
-			Description: "Number of dropped span messages",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_solacereceiver_failed_reconnections",
-			Description: "Number of failed broker reconnections",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_solacereceiver_fatal_unmarshalling_errors",
-			Description: "Number of fatal message unmarshalling errors",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_solacereceiver_need_upgrade",
-			Description: "Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker",
-			Unit:        "1",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_solacereceiver_received_span_messages",
-			Description: "Number of received span messages",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
-			Description: "Most recent/current retry count when flow controlled",
-			Unit:        "1",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_solacereceiver_receiver_flow_control_status",
-			Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
-			Unit:        "1",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_solacereceiver_receiver_flow_control_total",
-			Description: "Number of times the receiver instance became flow controlled",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_solacereceiver_receiver_flow_control_with_single_successful_retry",
-			Description: "Number of times the receiver instance became flow controlled and resolved situations after the first retry",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_solacereceiver_receiver_status",
-			Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
-			Unit:        "1",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
-			Description: "Number of recoverable message unmarshalling errors",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_solacereceiver_reported_spans",
-			Description: "Number of reported spans",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }
