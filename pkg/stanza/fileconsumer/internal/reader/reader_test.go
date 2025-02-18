@@ -369,7 +369,8 @@ func BenchmarkFileRead(b *testing.B) {
 }
 
 func newTestFactory(tb testing.TB, callback emit.Callback) *Factory {
-	splitFunc, err := split.Config{}.Func(unicode.UTF8, false, defaultMaxLogSize)
+	sCfg := split.Config{}
+	splitFunc, err := sCfg.Func(unicode.UTF8, false, defaultMaxLogSize)
 	require.NoError(tb, err)
 
 	return &Factory{

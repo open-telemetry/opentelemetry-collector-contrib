@@ -14,47 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestValidate(t *testing.T) {
-	cases := []struct {
-		name        string
-		globs       []string
-		expectedErr string
-	}{
-		{
-			name:  "Empty",
-			globs: []string{},
-		},
-		{
-			name:  "Single",
-			globs: []string{"*.log"},
-		},
-		{
-			name:  "Multiple",
-			globs: []string{"*.log", "*.txt"},
-		},
-		{
-			name:        "Invalid",
-			globs:       []string{"[a-z"},
-			expectedErr: "parse glob: syntax error in pattern",
-		},
-		{
-			name:        "ValidAndInvalid",
-			globs:       []string{"*.log", "[a-z"},
-			expectedErr: "parse glob: syntax error in pattern",
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			err := Validate(tc.globs)
-			if tc.expectedErr != "" {
-				assert.EqualError(t, err, tc.expectedErr)
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
-
 func TestFindFiles(t *testing.T) {
 	cases := []struct {
 		name     string

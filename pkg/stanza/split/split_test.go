@@ -5,10 +5,12 @@ package split
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/encoding/unicode"
@@ -16,14 +18,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split/splittest"
 )
 
+func TestConfigValidate(t *testing.T) {
+	cfg := Config{LineStartPattern: regexp.MustCompile("foo"), LineEndPattern: regexp.MustCompile("bar")}
+	assert.EqualError(t, xconfmap.Validate(cfg), "only one of `line_start_pattern` or `line_end_pattern` can be set")
+}
+
 func TestConfigFunc(t *testing.T) {
 	maxLogSize := 100
-
-	t.Run("BothStartAndEnd", func(t *testing.T) {
-		cfg := Config{LineStartPattern: "foo", LineEndPattern: "bar"}
-		_, err := cfg.Func(unicode.UTF8, false, maxLogSize)
-		assert.EqualError(t, err, "only one of line_start_pattern or line_end_pattern can be set")
-	})
 
 	t.Run("NopEncoding", func(t *testing.T) {
 		cfg := Config{}
@@ -38,13 +39,13 @@ func TestConfigFunc(t *testing.T) {
 	})
 
 	t.Run("NopEncodingError", func(t *testing.T) {
-		endCfg := Config{LineEndPattern: "\n"}
+		endCfg := Config{LineEndPattern: regexp.MustCompile("\n")}
 		_, err := endCfg.Func(encoding.Nop, false, 0)
-		require.Equal(t, err, fmt.Errorf("line_end_pattern should not be set when using nop encoding"))
+		require.Equal(t, err, fmt.Errorf("`line_end_pattern` should not be set when using nop encoding"))
 
-		startCfg := Config{LineStartPattern: "\n"}
+		startCfg := Config{LineStartPattern: regexp.MustCompile("\n")}
 		_, err = startCfg.Func(encoding.Nop, false, 0)
-		require.Equal(t, err, fmt.Errorf("line_start_pattern should not be set when using nop encoding"))
+		require.Equal(t, err, fmt.Errorf("`line_start_pattern` should not be set when using nop encoding"))
 	})
 
 	t.Run("Newline", func(t *testing.T) {
@@ -56,18 +57,6 @@ func TestConfigFunc(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, 4, advance)
 		assert.Equal(t, []byte("foo"), token)
-	})
-
-	t.Run("InvalidStartRegex", func(t *testing.T) {
-		cfg := Config{LineStartPattern: "["}
-		_, err := cfg.Func(unicode.UTF8, false, maxLogSize)
-		assert.EqualError(t, err, "compile line start regex: error parsing regexp: missing closing ]: `[`")
-	})
-
-	t.Run("InvalidEndRegex", func(t *testing.T) {
-		cfg := Config{LineEndPattern: "["}
-		_, err := cfg.Func(unicode.UTF8, false, maxLogSize)
-		assert.EqualError(t, err, "compile line end regex: error parsing regexp: missing closing ]: `[`")
 	})
 }
 
@@ -265,7 +254,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 
 	for _, tc := range testCases {
 		cfg := Config{
-			LineStartPattern: tc.pattern,
+			LineStartPattern: regexp.MustCompile(tc.pattern),
 			OmitPattern:      tc.omitPattern,
 		}
 		splitFunc, err := cfg.Func(unicode.UTF8, tc.flushAtEOF, 0)
@@ -433,7 +422,7 @@ func TestLineEndSplitFunc_Detailed(t *testing.T) {
 
 	for _, tc := range testCases {
 		cfg := Config{
-			LineEndPattern: tc.pattern,
+			LineEndPattern: regexp.MustCompile(tc.pattern),
 			OmitPattern:    tc.omitPattern,
 		}
 		splitFunc, err := cfg.Func(unicode.UTF8, tc.flushAtEOF, 0)
@@ -596,7 +585,8 @@ func TestNewlineSplitFunc(t *testing.T) {
 		if tc.encoding == nil {
 			tc.encoding = unicode.UTF8
 		}
-		splitFunc, err := Config{}.Func(tc.encoding, tc.flushAtEOF, 0)
+		cfg := Config{}
+		splitFunc, err := cfg.Func(tc.encoding, tc.flushAtEOF, 0)
 		require.NoError(t, err)
 		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
 	}
@@ -676,7 +666,8 @@ func TestNoSplitFunc(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		splitFunc, err := Config{}.Func(encoding.Nop, false, largeLogSize)
+		cfg := Config{}
+		splitFunc, err := cfg.Func(encoding.Nop, false, largeLogSize)
 		require.NoError(t, err)
 		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
 	}

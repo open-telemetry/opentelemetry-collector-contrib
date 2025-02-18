@@ -25,15 +25,12 @@ type regexSortOption struct {
 	compareFunc
 }
 
-func newRegexSortOption(regexKey string, parseFunc parseFunc, compareFunc compareFunc) (Option, error) {
-	if regexKey == "" {
-		return nil, fmt.Errorf("regex key must be specified")
-	}
+func newRegexSortOption(regexKey string, parseFunc parseFunc, compareFunc compareFunc) Option {
 	return regexSortOption{
 		regexKey:    regexKey,
 		parseFunc:   parseFunc,
 		compareFunc: compareFunc,
-	}, nil
+	}
 }
 
 func (o regexSortOption) apply(items []*item) ([]*item, error) {
@@ -80,7 +77,7 @@ func (o regexSortOption) apply(items []*item) ([]*item, error) {
 	return []*item{}, errs
 }
 
-func SortNumeric(regexKey string, ascending bool) (Option, error) {
+func SortNumeric(regexKey string, ascending bool) Option {
 	return newRegexSortOption(regexKey,
 		func(s string) (any, error) {
 			return strconv.Atoi(s)
@@ -94,7 +91,7 @@ func SortNumeric(regexKey string, ascending bool) (Option, error) {
 	)
 }
 
-func SortAlphabetical(regexKey string, ascending bool) (Option, error) {
+func SortAlphabetical(regexKey string, ascending bool) Option {
 	return newRegexSortOption(regexKey,
 		func(s string) (any, error) {
 			return s, nil
@@ -129,7 +126,7 @@ func SortTemporal(regexKey string, ascending bool, layout string, location strin
 			}
 			return a.(time.Time).After(b.(time.Time))
 		},
-	)
+	), nil
 }
 
 type TopNOption int

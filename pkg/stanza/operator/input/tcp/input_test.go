@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -261,6 +262,35 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 	}
 }
 
+func TestValidate(t *testing.T) {
+	cases := []struct {
+		name      string
+		inputBody Config
+		expectErr bool
+	}{
+		{
+			"buffer-size-negative",
+			Config{
+				BaseConfig: BaseConfig{
+					MaxLogSize:    -1,
+					ListenAddress: "10.0.0.1:9000",
+				},
+			},
+			true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := NewConfigWithID("test_id")
+			cfg.ListenAddress = tc.inputBody.ListenAddress
+			cfg.MaxLogSize = tc.inputBody.MaxLogSize
+			cfg.TLS = tc.inputBody.TLS
+			require.Error(t, xconfmap.Validate(cfg))
+		})
+	}
+}
+
 func TestBuild(t *testing.T) {
 	cases := []struct {
 		name      string
@@ -313,16 +343,6 @@ func TestBuild(t *testing.T) {
 				},
 			},
 			false,
-		},
-		{
-			"buffer-size-negative",
-			Config{
-				BaseConfig: BaseConfig{
-					MaxLogSize:    -1,
-					ListenAddress: "10.0.0.1:9000",
-				},
-			},
-			true,
 		},
 		{
 			"tls-enabled-with-no-such-file-error",
