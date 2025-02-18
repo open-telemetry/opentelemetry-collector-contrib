@@ -5,6 +5,7 @@ package datatest
 
 import (
 	"fmt"
+	"iter"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -40,6 +41,34 @@ func ExampleT_Equal() {
 	// equal_test.go:35: Positive().BucketCounts().AsRaw(): [1 1 2] != [4]
 	// equal_test.go:35: Positive().BucketCounts().Len(): 3 != 1
 	// equal_test.go:35: Scale(): 0 != 1
+}
+
+type testStruct struct {
+	a int
+}
+
+func (s testStruct) Get() int {
+	return s.a
+}
+
+func (s testStruct) Seq() iter.Seq[int] {
+	return func(yield func(v int) bool) {
+		return
+	}
+}
+
+func (s testStruct) Seq2() iter.Seq2[int, string] {
+	return func(yield func(k int, v string) bool) {
+		return
+	}
+}
+
+func TestEqualIteratorMethod(t *testing.T) {
+	is := datatest.New(t)
+	s := testStruct{a: 42}
+	want := any(s)
+	got := any(s)
+	is.Equal(want, got)
 }
 
 func TestNone(*testing.T) {}

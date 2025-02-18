@@ -31,6 +31,8 @@ func New(tb testing.TB) T {
 //   - exactly zero input arguments
 //   - exactly one return value
 //   - does not start with 'Append'
+//   - does not start with 'Clone'
+//   - does not return an iter.Seq or iter.Seq2
 //
 // If this yields differences, those are reported and the test fails.
 // If the compared values are [pmetric.ExponentialHistogramDataPoint], then
@@ -78,6 +80,13 @@ func equal(tb testing.TB, want, got any, name string) bool {
 		if mw.Type().NumIn() != 0 || mw.Type().NumOut() != 1 {
 			continue
 		}
+
+		// don't compare methods that return iterators
+		ret := mw.Type().Out(0)
+		if ret.Kind() == reflect.Func && (ret.CanSeq2() || ret.CanSeq()) {
+			continue
+		}
+
 		// Append(Empty) fails above heuristic, exclude it
 		if strings.HasPrefix(mname, "Append") || strings.HasPrefix(mname, "Clone") {
 			continue
