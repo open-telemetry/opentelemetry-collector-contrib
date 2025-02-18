@@ -8,19 +8,15 @@ import (
 	"context"
 	"errors"
 
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/cmd/configmanager"
-	grpcManager "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/cmd/configmanager/grpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/cmd/reporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/pkg/metrics"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 // ProxyBuilder holds objects communicating with collector
 type ProxyBuilder struct {
 	reporter *reporter.ClientMetricsReporter
-	manager  configmanager.ClientConfigManager
 	conn     *grpc.ClientConn
 }
 
@@ -40,8 +36,7 @@ func NewCollectorProxy(ctx context.Context, builder *ConnBuilder, agentTags map[
 	})
 	return &ProxyBuilder{
 		conn:     conn,
-		reporter: r3,
-		manager:  configmanager.WrapWithMetrics(grpcManager.NewConfigManager(conn), grpcMetrics),
+		reporter: r3,	
 	}, nil
 }
 
@@ -53,11 +48,6 @@ func (b ProxyBuilder) GetConn() *grpc.ClientConn {
 // GetReporter returns Reporter
 func (b ProxyBuilder) GetReporter() reporter.Reporter {
 	return b.reporter
-}
-
-// GetManager returns manager
-func (b ProxyBuilder) GetManager() configmanager.ClientConfigManager {
-	return b.manager
 }
 
 // Close closes connections used by proxy.
