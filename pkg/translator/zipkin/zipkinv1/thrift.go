@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
-	jaegerzipkin "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
+	jaegerzipkin "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinthriftconverter"
 )
 
 type thriftUnmarshaler struct{}

@@ -4,6 +4,7 @@
 package elasticsearchexporter
 
 import (
+	"compress/gzip"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -86,6 +87,7 @@ func TestConfig(t *testing.T) {
 						"myheader": "test",
 					}
 					cfg.Compression = defaultCompression
+					cfg.CompressionParams.Level = gzip.BestSpeed
 				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
@@ -159,6 +161,7 @@ func TestConfig(t *testing.T) {
 						"myheader": "test",
 					}
 					cfg.Compression = defaultCompression
+					cfg.CompressionParams.Level = gzip.BestSpeed
 				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
@@ -232,6 +235,7 @@ func TestConfig(t *testing.T) {
 						"myheader": "test",
 					}
 					cfg.Compression = defaultCompression
+					cfg.CompressionParams.Level = gzip.BestSpeed
 				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",

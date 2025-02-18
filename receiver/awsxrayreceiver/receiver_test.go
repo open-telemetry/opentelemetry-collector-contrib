@@ -102,10 +102,10 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	}()
 
 	content, err := os.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "ddbSample.txt"))
-	assert.NoError(t, err, "can not read raw segment")
+	assert.NoError(t, err, "cannot read raw segment")
 
 	err = writePacket(t, addr, segmentHeader+string(content))
-	assert.NoError(t, err, "can not write packet in the happy case")
+	assert.NoError(t, err, "cannot write packet in the happy case")
 
 	sink := rcvr.(*xrayReceiver).consumer.(*consumertest.TracesSink)
 
@@ -133,7 +133,7 @@ func TestTranslatorErrorsOut(t *testing.T) {
 	}()
 
 	err = writePacket(t, addr, segmentHeader+"invalidSegment")
-	assert.NoError(t, err, "can not write packet in the "+receiverID.String()+" case")
+	assert.NoError(t, err, "cannot write packet in the "+receiverID.String()+" case")
 
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
@@ -160,10 +160,10 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 	}()
 
 	content, err := os.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "serverSample.txt"))
-	assert.NoError(t, err, "can not read raw segment")
+	assert.NoError(t, err, "cannot read raw segment")
 
 	err = writePacket(t, addr, segmentHeader+string(content))
-	assert.NoError(t, err, "can not write packet")
+	assert.NoError(t, err, "cannot write packet")
 
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()

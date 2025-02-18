@@ -132,7 +132,7 @@ func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 }
 
 func TestLoadConfigFailsOnNoPrometheusOrTAConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-non-existent-scrape-config.yaml"))
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-nonexistent-scrape-config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 
@@ -221,7 +221,7 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
 }
 
 func TestNonExistentAuthCredentialsFile(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-non-existent-auth-credentials-file.yaml"))
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-nonexistent-auth-credentials-file.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -236,7 +236,7 @@ func TestNonExistentAuthCredentialsFile(t *testing.T) {
 }
 
 func TestTLSConfigNonExistentCertFile(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-non-existent-cert-file.yaml"))
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-nonexistent-cert-file.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -251,7 +251,7 @@ func TestTLSConfigNonExistentCertFile(t *testing.T) {
 }
 
 func TestTLSConfigNonExistentKeyFile(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-non-existent-key-file.yaml"))
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-nonexistent-key-file.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -344,7 +344,7 @@ func TestTargetAllocatorInvalidHTTPScrape(t *testing.T) {
 }
 
 func TestFileSDConfigWithoutSDFile(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "non-existent-prometheus-sd-file-config.yaml"))
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "nonexistent-prometheus-sd-file-config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
