@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -32,7 +33,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 		{
 			name: "first key not an integer",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("key"),
 					G: getSetter,
 				},
@@ -42,7 +43,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 		{
 			name: "index too large",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					I: ottltest.Intp(1),
 					G: getSetter,
 				},
@@ -52,7 +53,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 		{
 			name: "index too small",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					I: ottltest.Intp(-1),
 					G: getSetter,
 				},
@@ -62,11 +63,11 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 		{
 			name: "invalid type",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					I: ottltest.Intp(0),
 					G: getSetter,
 				},
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("string"),
 					G: getSetter,
 				},
@@ -108,7 +109,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 		{
 			name: "first key not an integer",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("key"),
 					G: getSetter,
 				},
@@ -118,7 +119,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 		{
 			name: "index too large",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					I: ottltest.Intp(1),
 					G: getSetter,
 				},
@@ -128,7 +129,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 		{
 			name: "index too small",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					I: ottltest.Intp(-1),
 					G: getSetter,
 				},
@@ -138,11 +139,11 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 		{
 			name: "invalid type",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					I: ottltest.Intp(0),
 					G: getSetter,
 				},
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("string"),
 					G: getSetter,
 				},
