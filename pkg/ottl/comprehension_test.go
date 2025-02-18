@@ -12,6 +12,20 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
+type testListGetter[K any] struct{}
+
+func (t testListGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
+	return tCtx, nil
+}
+
+type testYieldExpr struct {
+	Yield func(tCtx comprehensionContext[any]) (any, error)
+}
+
+func (t testYieldExpr) Get(ctx context.Context, tCtx comprehensionContext[any]) (any, error) {
+	return t.Yield(tCtx)
+}
+
 func Test_comprehensions(t *testing.T) {
 
 	tests := []struct {
@@ -29,19 +43,15 @@ func Test_comprehensions(t *testing.T) {
 				return r
 			}(),
 			expr: comprehensionExpr[any]{
-				listExpr: Expr[any]{
-					func(ctx context.Context, tCtx any) (any, error) {
-						return tCtx, nil
-					},
-				},
+				currentValueId: "x",
+				listExpr:       testListGetter[any]{},
 				condExpr: BoolExpr[comprehensionContext[any]]{
 					func(ctx context.Context, tCtx comprehensionContext[any]) (bool, error) {
 						return true, nil
 					},
 				},
-				// TODO - this should interact with nested context soemhow.
-				yieldExpr: Expr[comprehensionContext[any]]{
-					func(ctx context.Context, tCtx comprehensionContext[any]) (any, error) {
+				yieldExpr: &testYieldExpr{
+					Yield: func(tCtx comprehensionContext[any]) (any, error) {
 						return tCtx.currentValue, nil
 					},
 				},
@@ -56,18 +66,15 @@ func Test_comprehensions(t *testing.T) {
 				return r
 			}(),
 			expr: comprehensionExpr[any]{
-				listExpr: Expr[any]{
-					func(ctx context.Context, tCtx any) (any, error) {
-						return tCtx, nil
-					},
-				},
+				currentValueId: "x",
+				listExpr:       testListGetter[any]{},
 				condExpr: BoolExpr[comprehensionContext[any]]{
 					func(ctx context.Context, tCtx comprehensionContext[any]) (bool, error) {
 						return tCtx.index == 0, nil
 					},
 				},
-				yieldExpr: Expr[comprehensionContext[any]]{
-					func(ctx context.Context, tCtx comprehensionContext[any]) (any, error) {
+				yieldExpr: &testYieldExpr{
+					Yield: func(tCtx comprehensionContext[any]) (any, error) {
 						return tCtx.currentValue, nil
 					},
 				},
@@ -82,18 +89,15 @@ func Test_comprehensions(t *testing.T) {
 				return r
 			}(),
 			expr: comprehensionExpr[any]{
-				listExpr: Expr[any]{
-					func(ctx context.Context, tCtx any) (any, error) {
-						return tCtx, nil
-					},
-				},
+				currentValueId: "x",
+				listExpr:       testListGetter[any]{},
 				condExpr: BoolExpr[comprehensionContext[any]]{
 					func(ctx context.Context, tCtx comprehensionContext[any]) (bool, error) {
 						return true, nil
 					},
 				},
-				yieldExpr: Expr[comprehensionContext[any]]{
-					func(ctx context.Context, tCtx comprehensionContext[any]) (any, error) {
+				yieldExpr: &testYieldExpr{
+					Yield: func(tCtx comprehensionContext[any]) (any, error) {
 						return fmt.Sprintf("%s-extra", tCtx.currentValue), nil
 					},
 				},

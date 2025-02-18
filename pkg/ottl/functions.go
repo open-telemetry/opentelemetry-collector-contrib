@@ -428,6 +428,9 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 }
 
 func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, error) {
+	if argVal.List != nil && argVal.List.Comprehension != nil {
+		return p.buildComprehensionSliceArg(argVal.List.Comprehension, argType)
+	}
 	name := argType.Elem().Name()
 	switch {
 	case name == reflect.Uint8.String():
@@ -657,7 +660,7 @@ func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc
 		return nil, fmt.Errorf("must be a list of type %v", name)
 	}
 
-	// TODO - handle list comprehension.
+	// We don't allow list comprehensions to get here.
 	vals := []T{}
 	if argVal.List.List != nil {
 		values := argVal.List.List.Values

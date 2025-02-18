@@ -2384,6 +2384,15 @@ func Test_parseValueExpression_full(t *testing.T) {
 				return []any{"list", "of", "strings"}
 			},
 		},
+		{
+			name:            "list comprehension",
+			valueExpression: `[x*2 for x in [1, 2, 3, 4] if x > 2]`,
+			expected: func() any {
+				result := pcommon.NewSlice()
+				result.FromRaw([]any{6, 8})
+				return result
+			},
+		},
 	}
 
 	for _, tt := range tests {
