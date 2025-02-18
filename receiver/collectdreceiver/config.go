@@ -13,10 +13,10 @@ import (
 
 // Config defines configuration for Collectd receiver.
 type Config struct {
-	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	Timeout                 time.Duration            `mapstructure:"timeout"`
-	Encoding                string                   `mapstructure:"encoding"`
-	AttributesPrefix        string                   `mapstructure:"attributes_prefix"`
+	Encoding                string `mapstructure:"encoding"`
+	AttributesPrefix        string `mapstructure:"attributes_prefix"`
+	confighttp.ServerConfig `mapstructure:",squash"`
+	Timeout                 time.Duration `mapstructure:"timeout"`
 }
 
 func (c *Config) Validate() error {
