@@ -69,7 +69,7 @@ func (s structFunc) Seq2() iter.Seq2[int, string] {
 	}
 }
 
-func TestEqualMethodReturnFunc(t *testing.T) {
+func TestEqualMethodIgnoreFuncReturnType(t *testing.T) {
 	is := datatest.New(t)
 	s := structFunc{a: 42}
 	want := any(s)
