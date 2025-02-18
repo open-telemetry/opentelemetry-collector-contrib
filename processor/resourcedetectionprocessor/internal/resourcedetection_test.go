@@ -217,7 +217,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
 	wg.Add(iterations)
-	for i := 0; i < iterations; i++ {
+	for range iterations {
 		go func() {
 			defer wg.Done()
 			detected, _, err := p.Get(context.Background(), http.DefaultClient)

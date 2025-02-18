@@ -77,7 +77,7 @@ func (c *metricsConsumer) Consume(ctx context.Context, nextRecord nextRecordFunc
 		}
 
 		if commonAttributes != nil {
-			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+			for i := range metrics.ResourceMetrics().Len() {
 				rm := metrics.ResourceMetrics().At(i)
 				for k, v := range commonAttributes {
 					if _, found := rm.Resource().Attributes().Get(k); !found {

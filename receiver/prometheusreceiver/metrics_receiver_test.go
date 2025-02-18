@@ -1377,31 +1377,31 @@ func verifyStartTimeMetricPage(t *testing.T, td *testData, result []pmetric.Reso
 	numTimeseries := 0
 	for _, rm := range result {
 		metrics := getMetrics(rm)
-		for i := 0; i < len(metrics); i++ {
+		for i := range metrics {
 			timestamp := startTimeMetricPageStartTimestamp
 			switch metrics[i].Type() {
 			case pmetric.MetricTypeGauge:
 				timestamp = nil
-				for j := 0; j < metrics[i].Gauge().DataPoints().Len(); j++ {
+				for j := range metrics[i].Gauge().DataPoints().Len() {
 					time := metrics[i].Gauge().DataPoints().At(j).StartTimestamp()
 					assert.Equal(t, timestamp.AsTime(), time.AsTime())
 					numTimeseries++
 				}
 
 			case pmetric.MetricTypeSum:
-				for j := 0; j < metrics[i].Sum().DataPoints().Len(); j++ {
+				for j := range metrics[i].Sum().DataPoints().Len() {
 					assert.Equal(t, timestamp.AsTime(), metrics[i].Sum().DataPoints().At(j).StartTimestamp().AsTime())
 					numTimeseries++
 				}
 
 			case pmetric.MetricTypeHistogram:
-				for j := 0; j < metrics[i].Histogram().DataPoints().Len(); j++ {
+				for j := range metrics[i].Histogram().DataPoints().Len() {
 					assert.Equal(t, timestamp.AsTime(), metrics[i].Histogram().DataPoints().At(j).StartTimestamp().AsTime())
 					numTimeseries++
 				}
 
 			case pmetric.MetricTypeSummary:
-				for j := 0; j < metrics[i].Summary().DataPoints().Len(); j++ {
+				for j := range metrics[i].Summary().DataPoints().Len() {
 					assert.Equal(t, timestamp.AsTime(), metrics[i].Summary().DataPoints().At(j).StartTimestamp().AsTime())
 					numTimeseries++
 				}

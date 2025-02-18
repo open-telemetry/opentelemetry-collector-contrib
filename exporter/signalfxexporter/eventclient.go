@@ -39,10 +39,10 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld plog.Logs) (int, e
 	var sfxEvents []*sfxpb.Event
 	numDroppedLogRecords := 0
 
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		rl := rls.At(i)
 		ills := rl.ScopeLogs()
-		for j := 0; j < ills.Len(); j++ {
+		for j := range ills.Len() {
 			sl := ills.At(j)
 			events, dropped := translation.LogRecordSliceToSignalFxV2(s.logger, sl.LogRecords(), rl.Resource().Attributes())
 			sfxEvents = append(sfxEvents, events...)

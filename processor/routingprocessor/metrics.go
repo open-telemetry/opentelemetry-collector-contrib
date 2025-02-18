@@ -102,7 +102,7 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 
 	var errs error
 
-	for i := 0; i < tm.ResourceMetrics().Len(); i++ {
+	for i := range tm.ResourceMetrics().Len() {
 		rmetrics := tm.ResourceMetrics().At(i)
 		mtx := ottldatapoint.NewTransformContext(
 			nil,
@@ -165,7 +165,7 @@ func (p *metricsProcessor) group(
 func (p *metricsProcessor) recordNonRoutedForResourceMetrics(ctx context.Context, routingKey string, rm pmetric.ResourceMetrics) {
 	metricPointsCount := 0
 	sm := rm.ScopeMetrics()
-	for j := 0; j < sm.Len(); j++ {
+	for j := range sm.Len() {
 		metricPointsCount += sm.At(j).Metrics().Len()
 	}
 

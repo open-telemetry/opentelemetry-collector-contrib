@@ -516,9 +516,9 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 	}()
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		wg := sync.WaitGroup{}
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			wg.Add(1)
 			go func() {
 				logs := logRecordsToLogs(exampleNLogs(128))

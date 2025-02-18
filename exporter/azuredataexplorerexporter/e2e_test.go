@@ -96,7 +96,7 @@ func TestCreateTracesE2E(t *testing.T) {
 		assert.Fail(t, err.Error())
 	}
 	// Validate all attributes
-	for i := 0; i < len(recs); i++ {
+	for i := range recs {
 		assert.Equal(t, tID, recs[i].TraceID)
 		spanBytes, err := hex.DecodeString(recs[i].SpanID)
 		assert.Equal(t, tID, recs[i].TraceID)
@@ -158,7 +158,7 @@ func TestCreateLogsE2E(t *testing.T) {
 		assert.Fail(t, err.Error())
 	}
 	// Validate all attributes
-	for i := 0; i < len(recs); i++ {
+	for i := range recs {
 		crec := recs[i]
 		spanBytes, err := hex.DecodeString(crec.SpanID)
 		assert.Equal(t, tID, crec.TraceID)
@@ -220,7 +220,7 @@ func TestCreateMetricsE2E(t *testing.T) {
 		assert.Fail(t, err.Error())
 	}
 	// Validate all attributes
-	for i := 0; i < len(recs); i++ {
+	for i := range recs {
 		crec := recs[i]
 		assert.Equal(t, metricName, crec.MetricName)
 		assert.Equal(t, float64(metricValue), crec.MetricValue)

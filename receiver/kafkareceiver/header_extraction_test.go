@@ -56,7 +56,7 @@ func TestHeaderExtractionTraces(t *testing.T) {
 	go func() {
 		err = c.ConsumeClaim(testSession, groupClaim)
 		for _, trace := range nextConsumer.AllTraces() {
-			for i := 0; i < trace.ResourceSpans().Len(); i++ {
+			for i := range trace.ResourceSpans().Len() {
 				rs := trace.ResourceSpans().At(i)
 				validateHeader(t, rs.Resource(), "kafka.header.headerKey1", "headerValue1")
 				validateHeader(t, rs.Resource(), "kafka.header.headerKey2", "headerValue2")
@@ -122,7 +122,7 @@ func TestHeaderExtractionLogs(t *testing.T) {
 	go func() {
 		err = c.ConsumeClaim(testSession, groupClaim)
 		for _, logs := range nextConsumer.AllLogs() {
-			for i := 0; i < logs.ResourceLogs().Len(); i++ {
+			for i := range logs.ResourceLogs().Len() {
 				rs := logs.ResourceLogs().At(i)
 				validateHeader(t, rs.Resource(), "kafka.header.headerKey1", "headerValueLog1")
 				validateHeader(t, rs.Resource(), "kafka.header.headerKey2", "headerValueLog2")
@@ -181,7 +181,7 @@ func TestHeaderExtractionMetrics(t *testing.T) {
 	go func() {
 		err = c.ConsumeClaim(testSession, groupClaim)
 		for _, metric := range nextConsumer.AllMetrics() {
-			for i := 0; i < metric.ResourceMetrics().Len(); i++ {
+			for i := range metric.ResourceMetrics().Len() {
 				rs := metric.ResourceMetrics().At(i)
 				validateHeader(t, rs.Resource(), "kafka.header.headerKey1", "headerValueMetric1")
 				validateHeader(t, rs.Resource(), "kafka.header.headerKey2", "headerValueMetric2")

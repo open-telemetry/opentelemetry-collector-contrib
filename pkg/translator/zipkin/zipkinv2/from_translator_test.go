@@ -102,11 +102,11 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 		assert.Equal(t, td.SpanCount(), tdFromZS.SpanCount())
 
 		// check that all timestamps converted back and forth without change
-		for i := 0; i < td.ResourceSpans().Len(); i++ {
+		for i := range td.ResourceSpans().Len() {
 			instSpans := td.ResourceSpans().At(i).ScopeSpans()
-			for j := 0; j < instSpans.Len(); j++ {
+			for j := range instSpans.Len() {
 				spans := instSpans.At(j).Spans()
-				for k := 0; k < spans.Len(); k++ {
+				for k := range spans.Len() {
 					span := spans.At(k)
 
 					// search for the span with the same id to compare to
@@ -121,11 +121,11 @@ func TestInternalTracesToZipkinSpansAndBack(t *testing.T) {
 }
 
 func findSpanByID(rs ptrace.ResourceSpansSlice, spanID pcommon.SpanID) ptrace.Span {
-	for i := 0; i < rs.Len(); i++ {
+	for i := range rs.Len() {
 		instSpans := rs.At(i).ScopeSpans()
-		for j := 0; j < instSpans.Len(); j++ {
+		for j := range instSpans.Len() {
 			spans := instSpans.At(j).Spans()
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				span := spans.At(k)
 				if span.SpanID() == spanID {
 					return span

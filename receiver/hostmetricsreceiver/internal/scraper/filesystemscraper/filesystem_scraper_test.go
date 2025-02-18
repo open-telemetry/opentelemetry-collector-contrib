@@ -475,7 +475,7 @@ func TestScrape(t *testing.T) {
 }
 
 func findMetricByName(metrics pmetric.MetricSlice, name string) (pmetric.Metric, error) {
-	for i := 0; i < metrics.Len(); i++ {
+	for i := range metrics.Len() {
 		if metrics.At(i).Name() == name {
 			return metrics.At(i), nil
 		}
@@ -489,7 +489,7 @@ func assertFileSystemUsageMetricValid(
 	expectedDeviceDataPoints int,
 	expectedDeviceAttributes []map[string]pcommon.Value,
 ) {
-	for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
+	for i := range metric.Sum().DataPoints().Len() {
 		for _, label := range []string{"device", "type", "mode", "mountpoint"} {
 			internal.AssertSumMetricHasAttribute(t, metric, i, label)
 		}

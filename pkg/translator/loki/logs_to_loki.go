@@ -51,14 +51,14 @@ func LogsToLokiRequests(ld plog.Logs, defaultLabelsEnabled map[string]bool) map[
 	groups := map[string]pushRequestGroup{}
 
 	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		ills := rls.At(i).ScopeLogs()
 		resource := rls.At(i).Resource()
 
-		for j := 0; j < ills.Len(); j++ {
+		for j := range ills.Len() {
 			logs := ills.At(j).LogRecords()
 			scope := ills.At(j).Scope()
-			for k := 0; k < logs.Len(); k++ {
+			for k := range logs.Len() {
 				log := logs.At(k)
 				tenant := GetTenantFromTenantHint(log.Attributes(), resource.Attributes())
 				group, ok := groups[tenant]

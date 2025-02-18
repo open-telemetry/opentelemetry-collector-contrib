@@ -79,14 +79,14 @@ func (c *MetricsConverter) Start() {
 func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.DataPoint {
 	var sfxDataPoints []*sfxpb.DataPoint
 	rms := md.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		rm := rms.At(i)
 		extraDimensions := resourceToDimensions(rm.Resource())
 
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		for j := range rm.ScopeMetrics().Len() {
 			ilm := rm.ScopeMetrics().At(j)
 			var initialDps []*sfxpb.DataPoint
-			for k := 0; k < ilm.Metrics().Len(); k++ {
+			for k := range ilm.Metrics().Len() {
 				currentMetric := ilm.Metrics().At(k)
 				dps := c.translator.FromMetric(currentMetric, extraDimensions, c.dropHistogramBuckets, c.processHistograms)
 				initialDps = append(initialDps, dps...)

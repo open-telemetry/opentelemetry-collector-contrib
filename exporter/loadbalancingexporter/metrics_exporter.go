@@ -155,7 +155,7 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 func splitMetricsByResourceServiceName(md pmetric.Metrics) (map[string]pmetric.Metrics, error) {
 	results := map[string]pmetric.Metrics{}
 
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+	for i := range md.ResourceMetrics().Len() {
 		rm := md.ResourceMetrics().At(i)
 
 		svc, ok := rm.Resource().Attributes().Get(conventions.AttributeServiceName)
@@ -182,7 +182,7 @@ func splitMetricsByResourceServiceName(md pmetric.Metrics) (map[string]pmetric.M
 func splitMetricsByResourceID(md pmetric.Metrics) map[string]pmetric.Metrics {
 	results := map[string]pmetric.Metrics{}
 
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+	for i := range md.ResourceMetrics().Len() {
 		rm := md.ResourceMetrics().At(i)
 
 		newMD := pmetric.NewMetrics()
@@ -204,13 +204,13 @@ func splitMetricsByResourceID(md pmetric.Metrics) map[string]pmetric.Metrics {
 func splitMetricsByMetricName(md pmetric.Metrics) map[string]pmetric.Metrics {
 	results := map[string]pmetric.Metrics{}
 
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+	for i := range md.ResourceMetrics().Len() {
 		rm := md.ResourceMetrics().At(i)
 
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		for j := range rm.ScopeMetrics().Len() {
 			sm := rm.ScopeMetrics().At(j)
 
-			for k := 0; k < sm.Metrics().Len(); k++ {
+			for k := range sm.Metrics().Len() {
 				m := sm.Metrics().At(k)
 
 				newMD, mClone := cloneMetricWithoutType(rm, sm, m)
@@ -233,15 +233,15 @@ func splitMetricsByMetricName(md pmetric.Metrics) map[string]pmetric.Metrics {
 func splitMetricsByStreamID(md pmetric.Metrics) map[string]pmetric.Metrics {
 	results := map[string]pmetric.Metrics{}
 
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+	for i := range md.ResourceMetrics().Len() {
 		rm := md.ResourceMetrics().At(i)
 		res := rm.Resource()
 
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		for j := range rm.ScopeMetrics().Len() {
 			sm := rm.ScopeMetrics().At(j)
 			scope := sm.Scope()
 
-			for k := 0; k < sm.Metrics().Len(); k++ {
+			for k := range sm.Metrics().Len() {
 				m := sm.Metrics().At(k)
 				metricID := identity.OfResourceMetric(res, scope, m)
 
@@ -249,7 +249,7 @@ func splitMetricsByStreamID(md pmetric.Metrics) map[string]pmetric.Metrics {
 				case pmetric.MetricTypeGauge:
 					gauge := m.Gauge()
 
-					for l := 0; l < gauge.DataPoints().Len(); l++ {
+					for l := range gauge.DataPoints().Len() {
 						dp := gauge.DataPoints().At(l)
 
 						newMD, mClone := cloneMetricWithoutType(rm, sm, m)
@@ -269,7 +269,7 @@ func splitMetricsByStreamID(md pmetric.Metrics) map[string]pmetric.Metrics {
 				case pmetric.MetricTypeSum:
 					sum := m.Sum()
 
-					for l := 0; l < sum.DataPoints().Len(); l++ {
+					for l := range sum.DataPoints().Len() {
 						dp := sum.DataPoints().At(l)
 
 						newMD, mClone := cloneMetricWithoutType(rm, sm, m)
@@ -291,7 +291,7 @@ func splitMetricsByStreamID(md pmetric.Metrics) map[string]pmetric.Metrics {
 				case pmetric.MetricTypeHistogram:
 					histogram := m.Histogram()
 
-					for l := 0; l < histogram.DataPoints().Len(); l++ {
+					for l := range histogram.DataPoints().Len() {
 						dp := histogram.DataPoints().At(l)
 
 						newMD, mClone := cloneMetricWithoutType(rm, sm, m)
@@ -312,7 +312,7 @@ func splitMetricsByStreamID(md pmetric.Metrics) map[string]pmetric.Metrics {
 				case pmetric.MetricTypeExponentialHistogram:
 					expHistogram := m.ExponentialHistogram()
 
-					for l := 0; l < expHistogram.DataPoints().Len(); l++ {
+					for l := range expHistogram.DataPoints().Len() {
 						dp := expHistogram.DataPoints().At(l)
 
 						newMD, mClone := cloneMetricWithoutType(rm, sm, m)
@@ -333,7 +333,7 @@ func splitMetricsByStreamID(md pmetric.Metrics) map[string]pmetric.Metrics {
 				case pmetric.MetricTypeSummary:
 					summary := m.Summary()
 
-					for l := 0; l < summary.DataPoints().Len(); l++ {
+					for l := range summary.DataPoints().Len() {
 						dp := summary.DataPoints().At(l)
 
 						newMD, mClone := cloneMetricWithoutType(rm, sm, m)

@@ -47,12 +47,12 @@ func (m *metricModelHistogram) add(pm pmetric.Metric, dm *dMetric, e *metricsExp
 	}
 
 	dataPoints := pm.Histogram().DataPoints()
-	for i := 0; i < dataPoints.Len(); i++ {
+	for i := range dataPoints.Len() {
 		dp := dataPoints.At(i)
 
 		exemplars := dp.Exemplars()
 		newExemplars := make([]*dExemplar, 0, exemplars.Len())
-		for j := 0; j < exemplars.Len(); j++ {
+		for j := range exemplars.Len() {
 			exemplar := exemplars.At(j)
 
 			newExemplar := &dExemplar{
@@ -68,13 +68,13 @@ func (m *metricModelHistogram) add(pm pmetric.Metric, dm *dMetric, e *metricsExp
 
 		bucketCounts := dp.BucketCounts()
 		newBucketCounts := make([]int64, 0, bucketCounts.Len())
-		for j := 0; j < bucketCounts.Len(); j++ {
+		for j := range bucketCounts.Len() {
 			newBucketCounts = append(newBucketCounts, int64(bucketCounts.At(j)))
 		}
 
 		explicitBounds := dp.ExplicitBounds()
 		newExplicitBounds := make([]float64, 0, explicitBounds.Len())
-		for j := 0; j < explicitBounds.Len(); j++ {
+		for j := range explicitBounds.Len() {
 			newExplicitBounds = append(newExplicitBounds, explicitBounds.At(j))
 		}
 

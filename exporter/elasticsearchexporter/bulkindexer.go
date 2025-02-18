@@ -194,7 +194,7 @@ func newAsyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Con
 	}
 	pool.wg.Add(numWorkers)
 
-	for i := 0; i < numWorkers; i++ {
+	for range numWorkers {
 		bi, err := docappender.NewBulkIndexer(bulkIndexerConfig(client, config, requireDataStream))
 		if err != nil {
 			return nil, err

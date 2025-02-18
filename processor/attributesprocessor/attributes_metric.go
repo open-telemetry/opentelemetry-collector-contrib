@@ -33,15 +33,15 @@ func newMetricAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrP
 
 func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	rms := md.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		rs := rms.At(i)
 		resource := rs.Resource()
 		ilms := rs.ScopeMetrics()
-		for j := 0; j < ilms.Len(); j++ {
+		for j := range ilms.Len() {
 			ils := ilms.At(j)
 			scope := ils.Scope()
 			metrics := ils.Metrics()
-			for k := 0; k < metrics.Len(); k++ {
+			for k := range metrics.Len() {
 				m := metrics.At(k)
 				if a.skipExpr != nil {
 					skip, err := a.skipExpr.Eval(ctx, ottlmetric.NewTransformContext(m, metrics, scope, resource, ils, rs))
@@ -68,27 +68,27 @@ func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context,
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:
 		dps := m.Gauge().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
+		for i := range dps.Len() {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
 	case pmetric.MetricTypeSum:
 		dps := m.Sum().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
+		for i := range dps.Len() {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
 	case pmetric.MetricTypeHistogram:
 		dps := m.Histogram().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
+		for i := range dps.Len() {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
 	case pmetric.MetricTypeExponentialHistogram:
 		dps := m.ExponentialHistogram().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
+		for i := range dps.Len() {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
 	case pmetric.MetricTypeSummary:
 		dps := m.Summary().DataPoints()
-		for i := 0; i < dps.Len(); i++ {
+		for i := range dps.Len() {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
 	case pmetric.MetricTypeEmpty:

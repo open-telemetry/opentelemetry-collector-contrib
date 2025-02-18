@@ -32,11 +32,11 @@ func ResourceSpansToOC(rs ptrace.ResourceSpans) (*occommon.Node, *ocresource.Res
 	// Approximate the number of the spans as the number of the spans in the first
 	// instrumentation library info.
 	ocSpans := make([]*octrace.Span, 0, ilss.At(0).Spans().Len())
-	for i := 0; i < ilss.Len(); i++ {
+	for i := range ilss.Len() {
 		ils := ilss.At(i)
 		// TODO: Handle instrumentation library name and version.
 		spans := ils.Spans()
-		for j := 0; j < spans.Len(); j++ {
+		for j := range spans.Len() {
 			ocSpans = append(ocSpans, spanToOC(spans.At(j)))
 		}
 	}
@@ -247,7 +247,7 @@ func eventsToOC(events ptrace.SpanEventSlice, droppedCount uint32) *octrace.Span
 	}
 
 	ocEvents := make([]*octrace.Span_TimeEvent, 0, events.Len())
-	for i := 0; i < events.Len(); i++ {
+	for i := range events.Len() {
 		ocEvents = append(ocEvents, eventToOC(events.At(i)))
 	}
 
@@ -319,7 +319,7 @@ func linksToOC(links ptrace.SpanLinkSlice, droppedCount uint32) *octrace.Span_Li
 	}
 
 	ocLinks := make([]*octrace.Span_Link, 0, links.Len())
-	for i := 0; i < links.Len(); i++ {
+	for i := range links.Len() {
 		link := links.At(i)
 		ocLink := &octrace.Span_Link{
 			TraceId:    traceIDToOC(link.TraceID()),

@@ -140,7 +140,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 	}
 	mp := newMockPrometheus(endpoints)
 	u, _ := url.Parse(mp.srv.URL)
-	for i := 0; i < len(tds); i++ {
+	for i := range tds {
 		job := make(map[string]any)
 		job["job_name"] = tds[i].name
 		job["metrics_path"] = metricPaths[i]
@@ -218,9 +218,9 @@ func verifyNumTotalScrapeResults(t *testing.T, td *testData, resourceMetrics []p
 func getMetrics(rm pmetric.ResourceMetrics) []pmetric.Metric {
 	var metrics []pmetric.Metric
 	ilms := rm.ScopeMetrics()
-	for j := 0; j < ilms.Len(); j++ {
+	for j := range ilms.Len() {
 		metricSlice := ilms.At(j).Metrics()
-		for i := 0; i < metricSlice.Len(); i++ {
+		for i := range metricSlice.Len() {
 			metrics = append(metrics, metricSlice.At(i))
 		}
 	}
@@ -230,7 +230,7 @@ func getMetrics(rm pmetric.ResourceMetrics) []pmetric.Metric {
 func metricsCount(resourceMetric pmetric.ResourceMetrics) int {
 	metricsCount := 0
 	ilms := resourceMetric.ScopeMetrics()
-	for j := 0; j < ilms.Len(); j++ {
+	for j := range ilms.Len() {
 		ilm := ilms.At(j)
 		metricsCount += ilm.Metrics().Len()
 	}
@@ -243,7 +243,7 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, target *testDa
 	// for metrics retrieved with 'honor_labels: true', there will be a resource metric containing the scrape metrics, based on the scrape job config,
 	// and resources containing only the retrieved metrics, without additional scrape metrics, based on the job/instance label pairs that are detected
 	// during a scrape
-	for i := 0; i < len(rms); i++ {
+	for i := range rms {
 		allMetrics := getMetrics(rms[i])
 		if expectedScrapeMetricCount <= len(allMetrics) && countScrapeMetrics(allMetrics, target.normalizedName) == expectedScrapeMetricCount ||
 			expectedExtraScrapeMetricCount <= len(allMetrics) && countScrapeMetrics(allMetrics, target.normalizedName) == expectedExtraScrapeMetricCount {
@@ -301,31 +301,31 @@ func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 
 		switch m.Type() {
 		case pmetric.MetricTypeGauge:
-			for i := 0; i < m.Gauge().DataPoints().Len(); i++ {
+			for i := range m.Gauge().DataPoints().Len() {
 				if !m.Gauge().DataPoints().At(i).Flags().NoRecordedValue() {
 					return false
 				}
 			}
 		case pmetric.MetricTypeSum:
-			for i := 0; i < m.Sum().DataPoints().Len(); i++ {
+			for i := range m.Sum().DataPoints().Len() {
 				if !m.Sum().DataPoints().At(i).Flags().NoRecordedValue() {
 					return false
 				}
 			}
 		case pmetric.MetricTypeExponentialHistogram:
-			for i := 0; i < m.ExponentialHistogram().DataPoints().Len(); i++ {
+			for i := range m.ExponentialHistogram().DataPoints().Len() {
 				if !m.ExponentialHistogram().DataPoints().At(i).Flags().NoRecordedValue() {
 					return false
 				}
 			}
 		case pmetric.MetricTypeHistogram:
-			for i := 0; i < m.Histogram().DataPoints().Len(); i++ {
+			for i := range m.Histogram().DataPoints().Len() {
 				if !m.Histogram().DataPoints().At(i).Flags().NoRecordedValue() {
 					return false
 				}
 			}
 		case pmetric.MetricTypeSummary:
-			for i := 0; i < m.Summary().DataPoints().Len(); i++ {
+			for i := range m.Summary().DataPoints().Len() {
 				if !m.Summary().DataPoints().At(i).Flags().NoRecordedValue() {
 					return false
 				}
@@ -349,9 +349,9 @@ func assertUp(t *testing.T, expected float64, metrics []pmetric.Metric) {
 func countScrapeMetricsRM(got pmetric.ResourceMetrics, normalizedNames bool) int {
 	n := 0
 	ilms := got.ScopeMetrics()
-	for j := 0; j < ilms.Len(); j++ {
+	for j := range ilms.Len() {
 		ilm := ilms.At(j)
-		for i := 0; i < ilm.Metrics().Len(); i++ {
+		for i := range ilm.Metrics().Len() {
 			if isDefaultMetrics(ilm.Metrics().At(i), normalizedNames) {
 				n++
 			}
@@ -661,7 +661,7 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 		assert.Equal(t, sum, summaryDataPoint.Sum(), "Summary sum value does not match")
 		req := assert.Equal(t, len(quantiles), summaryDataPoint.QuantileValues().Len())
 		if req {
-			for i := 0; i < summaryDataPoint.QuantileValues().Len(); i++ {
+			for i := range summaryDataPoint.QuantileValues().Len() {
 				assert.Equal(t, quantiles[i][0], summaryDataPoint.QuantileValues().At(i).Quantile(),
 					"Summary quantile do not match")
 				if math.IsNaN(quantiles[i][1]) {
@@ -755,7 +755,7 @@ func splitMetricsByTarget(metrics []pmetric.Metrics) map[string][]pmetric.Resour
 	pResults := make(map[string][]pmetric.ResourceMetrics)
 	for _, md := range metrics {
 		rms := md.ResourceMetrics()
-		for i := 0; i < rms.Len(); i++ {
+		for i := range rms.Len() {
 			name, _ := rms.At(i).Resource().Attributes().Get("service.name")
 			pResults[name.AsString()] = append(pResults[name.AsString()], rms.At(i))
 		}

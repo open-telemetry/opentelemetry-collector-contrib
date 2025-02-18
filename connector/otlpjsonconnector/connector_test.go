@@ -218,7 +218,7 @@ func BenchmarkConsumeLogs(b *testing.B) {
 	testTraces, _ := golden.ReadLogs(filepath.Join("testdata", "logsToTraces", inputTraces))
 	testMetrics, _ := golden.ReadLogs(filepath.Join("testdata", "logsToMetrics", inputMetrics))
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		assert.NoError(b, logscon.ConsumeLogs(context.Background(), testLogs))
 		assert.NoError(b, traceconn.ConsumeLogs(context.Background(), testTraces))
 		assert.NoError(b, metricconn.ConsumeLogs(context.Background(), testMetrics))

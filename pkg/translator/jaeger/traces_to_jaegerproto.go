@@ -23,7 +23,7 @@ func ProtoFromTraces(td ptrace.Traces) []*model.Batch {
 	}
 
 	batches := make([]*model.Batch, 0, resourceSpans.Len())
-	for i := 0; i < resourceSpans.Len(); i++ {
+	for i := range resourceSpans.Len() {
 		rs := resourceSpans.At(i)
 		batch := resourceSpansToJaegerProto(rs)
 		if batch != nil {
@@ -54,10 +54,10 @@ func resourceSpansToJaegerProto(rs ptrace.ResourceSpans) *model.Batch {
 	// instrumentation library info.
 	jSpans := make([]*model.Span, 0, ilss.At(0).Spans().Len())
 
-	for i := 0; i < ilss.Len(); i++ {
+	for i := range ilss.Len() {
 		ils := ilss.At(i)
 		spans := ils.Spans()
-		for j := 0; j < spans.Len(); j++ {
+		for j := range spans.Len() {
 			span := spans.At(j)
 			jSpan := spanToJaegerProto(span, ils.Scope())
 			if jSpan != nil {
@@ -256,7 +256,7 @@ func makeJaegerProtoReferences(links ptrace.SpanLinkSlice, parentSpanID model.Sp
 		})
 	}
 
-	for i := 0; i < links.Len(); i++ {
+	for i := range links.Len() {
 		link := links.At(i)
 		linkTraceID := traceIDToJaegerProto(link.TraceID())
 		linkSpanID := spanIDToJaegerProto(link.SpanID())
@@ -282,7 +282,7 @@ func spanEventsToJaegerProtoLogs(events ptrace.SpanEventSlice) []model.Log {
 	}
 
 	logs := make([]model.Log, 0, events.Len())
-	for i := 0; i < events.Len(); i++ {
+	for i := range events.Len() {
 		event := events.At(i)
 		fields := make([]model.KeyValue, 0, event.Attributes().Len()+1)
 		_, eventAttrFound := event.Attributes().Get(eventNameAttr)

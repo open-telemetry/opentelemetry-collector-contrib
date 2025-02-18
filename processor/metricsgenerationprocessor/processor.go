@@ -52,7 +52,7 @@ func (mgp *metricsGenerationProcessor) Start(context.Context, component.Host) er
 func (mgp *metricsGenerationProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	resourceMetricsSlice := md.ResourceMetrics()
 
-	for i := 0; i < resourceMetricsSlice.Len(); i++ {
+	for i := range resourceMetricsSlice.Len() {
 		rm := resourceMetricsSlice.At(i)
 		nameToMetricMap := getNameToMetricMap(rm)
 

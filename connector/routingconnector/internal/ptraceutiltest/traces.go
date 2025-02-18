@@ -24,16 +24,16 @@ import "go.opentelemetry.io/collector/pdata/ptrace"
 // Each byte in the input string is a unique ID for the corresponding element.
 func NewTraces(resourceIDs, scopeIDs, spanIDs, spanEventIDs string) ptrace.Traces {
 	td := ptrace.NewTraces()
-	for resourceN := 0; resourceN < len(resourceIDs); resourceN++ {
+	for resourceN := range len(resourceIDs) {
 		rs := td.ResourceSpans().AppendEmpty()
 		rs.Resource().Attributes().PutStr("resourceName", "resource"+string(resourceIDs[resourceN]))
-		for scopeN := 0; scopeN < len(scopeIDs); scopeN++ {
+		for scopeN := range len(scopeIDs) {
 			ss := rs.ScopeSpans().AppendEmpty()
 			ss.Scope().SetName("scope" + string(scopeIDs[scopeN]))
-			for spanN := 0; spanN < len(spanIDs); spanN++ {
+			for spanN := range len(spanIDs) {
 				s := ss.Spans().AppendEmpty()
 				s.SetName("span" + string(spanIDs[spanN]))
-				for spanEventN := 0; spanEventN < len(spanEventIDs); spanEventN++ {
+				for spanEventN := range len(spanEventIDs) {
 					se := s.Events().AppendEmpty()
 					se.Attributes().PutStr("spanEventName", "spanEvent"+string(spanEventIDs[spanEventN]))
 				}

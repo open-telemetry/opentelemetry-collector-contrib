@@ -188,7 +188,7 @@ func createFilter(filterConfig FilterConfig) (internalFilter, error) {
 // createLabelValueMapping creates the labelValue rename mappings based on the valueActions
 func createLabelValueMapping(valueActions []ValueAction, version string) map[string]string {
 	mapping := make(map[string]string)
-	for i := 0; i < len(valueActions); i++ {
+	for i := range valueActions {
 		valueActions[i].NewValue = strings.ReplaceAll(valueActions[i].NewValue, "{{version}}", version)
 		mapping[valueActions[i].Value] = valueActions[i].NewValue
 	}

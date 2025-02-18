@@ -63,13 +63,13 @@ func filterAttributeMap(attrMap pcommon.Map, selectedKeys []string) pcommon.Map 
 func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) plog.Logs {
 	logs := plog.NewLogs()
 
-	for i := 0; i < rlCount; i++ {
+	for i := range rlCount {
 		rl := logs.ResourceLogs().AppendEmpty()
 		if withResourceAttrIndex {
 			rl.Resource().Attributes().PutInt("resourceAttrIndex", int64(i))
 		}
 
-		for j := 0; j < illCount; j++ {
+		for range illCount {
 			log := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 			log.Attributes().PutStr("commonGroupedAttr", "abc")
 			log.Attributes().PutStr("commonNonGroupedAttr", "xyz")
@@ -82,13 +82,13 @@ func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) plog
 func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 
-	for i := 0; i < rsCount; i++ {
+	for i := range rsCount {
 		rs := traces.ResourceSpans().AppendEmpty()
 		if withResourceAttrIndex {
 			rs.Resource().Attributes().PutInt("resourceAttrIndex", int64(i))
 		}
 
-		for j := 0; j < ilsCount; j++ {
+		for j := range ilsCount {
 			span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			span.SetName(fmt.Sprintf("foo-%d-%d", i, j))
 			span.Attributes().PutStr("commonGroupedAttr", "abc")
@@ -102,18 +102,18 @@ func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) pt
 func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, dataPointCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 
-	for i := 0; i < rmCount; i++ {
+	for i := range rmCount {
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		if withResourceAttrIndex {
 			rm.Resource().Attributes().PutInt("resourceAttrIndex", int64(i))
 		}
 
-		for j := 0; j < ilmCount; j++ {
+		for j := range ilmCount {
 			metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprintf("foo-%d-%d", i, j))
 			dps := metric.SetEmptyGauge().DataPoints()
 
-			for k := 0; k < dataPointCount; k++ {
+			for k := range dataPointCount {
 				dataPoint := dps.AppendEmpty()
 				dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 				dataPoint.SetIntValue(int64(k))
@@ -129,18 +129,18 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, dataPointCount int, histogramSize int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 
-	for i := 0; i < rmCount; i++ {
+	for i := range rmCount {
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		if withResourceAttrIndex {
 			rm.Resource().Attributes().PutInt("resourceAttrIndex", int64(i))
 		}
 
-		for j := 0; j < ilmCount; j++ {
+		for j := range ilmCount {
 			metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprintf("foo-%d-%d", i, j))
 			metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
-			for k := 0; k < dataPointCount; k++ {
+			for range dataPointCount {
 				dataPoint := metric.Histogram().DataPoints().AppendEmpty()
 				dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 				buckets := randUIntArr(histogramSize)
@@ -159,7 +159,7 @@ func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCou
 
 func randUIntArr(size int) []uint64 {
 	arr := make([]uint64, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		arr[i] = rand.Uint64()
 	}
 	return arr
@@ -175,7 +175,7 @@ func sum(arr []uint64) uint64 {
 
 func randFloat64Arr(size int) []float64 {
 	arr := make([]float64, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		arr[i] = rand.Float64()
 	}
 	return arr
@@ -306,15 +306,15 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			rls := processedLogs.ResourceLogs()
 			assert.Equal(t, tt.outputResourceCount, rls.Len())
 			assert.Equal(t, tt.outputTotalRecordsCount, processedLogs.LogRecordCount())
-			for i := 0; i < rls.Len(); i++ {
+			for i := range rls.Len() {
 				rl := rls.At(i)
 				assert.Equal(t, tt.outputInstrumentationLibraryCount, rl.ScopeLogs().Len())
 
 				assertResourceContainsAttributes(t, rl.Resource(), outputResourceAttrs)
 
-				for j := 0; j < rl.ScopeLogs().Len(); j++ {
+				for j := range rl.ScopeLogs().Len() {
 					logs := rl.ScopeLogs().At(j).LogRecords()
-					for k := 0; k < logs.Len(); k++ {
+					for k := range logs.Len() {
 						assert.EqualValues(t, outputRecordAttrs, logs.At(k).Attributes())
 					}
 				}
@@ -323,15 +323,15 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			rss := processedSpans.ResourceSpans()
 			assert.Equal(t, tt.outputResourceCount, rss.Len())
 			assert.Equal(t, tt.outputTotalRecordsCount, processedSpans.SpanCount())
-			for i := 0; i < rss.Len(); i++ {
+			for i := range rss.Len() {
 				rs := rss.At(i)
 				assert.Equal(t, tt.outputInstrumentationLibraryCount, rs.ScopeSpans().Len())
 
 				assertResourceContainsAttributes(t, rs.Resource(), outputResourceAttrs)
 
-				for j := 0; j < rs.ScopeSpans().Len(); j++ {
+				for j := range rs.ScopeSpans().Len() {
 					spans := rs.ScopeSpans().At(j).Spans()
-					for k := 0; k < spans.Len(); k++ {
+					for k := range spans.Len() {
 						assert.EqualValues(t, outputRecordAttrs, spans.At(k).Attributes())
 					}
 				}
@@ -340,17 +340,17 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			rms := processedMetrics.ResourceMetrics()
 			assert.Equal(t, tt.outputResourceCount, rms.Len())
 			assert.Equal(t, tt.outputTotalRecordsCount, processedMetrics.MetricCount())
-			for i := 0; i < rms.Len(); i++ {
+			for i := range rms.Len() {
 				rm := rms.At(i)
 				assert.Equal(t, tt.outputInstrumentationLibraryCount, rm.ScopeMetrics().Len())
 
 				assertResourceContainsAttributes(t, rm.Resource(), outputResourceAttrs)
 
-				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+				for j := range rm.ScopeMetrics().Len() {
 					metrics := rm.ScopeMetrics().At(j).Metrics()
-					for k := 0; k < metrics.Len(); k++ {
+					for k := range metrics.Len() {
 						metric := metrics.At(k)
-						for l := 0; l < metric.Gauge().DataPoints().Len(); l++ {
+						for l := range metric.Gauge().DataPoints().Len() {
 							assert.EqualValues(t, outputRecordAttrs, metric.Gauge().DataPoints().At(l).Attributes())
 						}
 					}
@@ -360,18 +360,18 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			rmhs := processedHistogramMetrics.ResourceMetrics()
 			assert.Equal(t, tt.outputResourceCount, rmhs.Len())
 			assert.Equal(t, tt.outputTotalRecordsCount, processedHistogramMetrics.MetricCount())
-			for i := 0; i < rmhs.Len(); i++ {
+			for i := range rmhs.Len() {
 				rm := rmhs.At(i)
 				assert.Equal(t, tt.outputInstrumentationLibraryCount, rm.ScopeMetrics().Len())
 
 				assertResourceContainsAttributes(t, rm.Resource(), outputResourceAttrs)
 
-				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+				for j := range rm.ScopeMetrics().Len() {
 					metrics := rm.ScopeMetrics().At(j).Metrics()
-					for k := 0; k < metrics.Len(); k++ {
+					for k := range metrics.Len() {
 						metric := metrics.At(k)
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Histogram().AggregationTemporality())
-						for l := 0; l < metric.Histogram().DataPoints().Len(); l++ {
+						for l := range metric.Histogram().DataPoints().Len() {
 							assert.EqualValues(t, outputRecordAttrs, metric.Histogram().DataPoints().At(l).Attributes())
 						}
 					}
@@ -603,7 +603,7 @@ func TestAttributeGrouping(t *testing.T) {
 			assert.Equal(t, tt.count, hms.Len())
 			assert.Equal(t, tt.count, ehms.Len())
 
-			for i := 0; i < ls.Len(); i++ {
+			for i := range ls.Len() {
 				log := ls.At(i)
 				span := ss.At(i)
 				gaugeDataPoint := gms.At(i).Gauge().DataPoints().At(0)
@@ -626,10 +626,10 @@ func TestAttributeGrouping(t *testing.T) {
 
 func someSpans(attrs pcommon.Map, instrumentationLibraryCount int, spanCount int) ptrace.Traces {
 	traces := ptrace.NewTraces()
-	for i := 0; i < instrumentationLibraryCount; i++ {
+	for i := range instrumentationLibraryCount {
 		ilName := fmt.Sprint("ils-", i)
 
-		for j := 0; j < spanCount; j++ {
+		for j := range spanCount {
 			ils := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 			ils.Scope().SetName(ilName)
 			span := ils.Spans().AppendEmpty()
@@ -642,10 +642,10 @@ func someSpans(attrs pcommon.Map, instrumentationLibraryCount int, spanCount int
 
 func someLogs(attrs pcommon.Map, instrumentationLibraryCount int, logCount int) plog.Logs {
 	logs := plog.NewLogs()
-	for i := 0; i < instrumentationLibraryCount; i++ {
+	for i := range instrumentationLibraryCount {
 		ilName := fmt.Sprint("ils-", i)
 
-		for j := 0; j < logCount; j++ {
+		for range logCount {
 			sl := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 			sl.Scope().SetName(ilName)
 			log := sl.LogRecords().AppendEmpty()
@@ -657,10 +657,10 @@ func someLogs(attrs pcommon.Map, instrumentationLibraryCount int, logCount int) 
 
 func someGaugeMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
-	for i := 0; i < instrumentationLibraryCount; i++ {
+	for i := range instrumentationLibraryCount {
 		ilName := fmt.Sprint("ils-", i)
 
-		for j := 0; j < metricCount; j++ {
+		for j := range metricCount {
 			ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
@@ -674,10 +674,10 @@ func someGaugeMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metric
 
 func someSumMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
-	for i := 0; i < instrumentationLibraryCount; i++ {
+	for i := range instrumentationLibraryCount {
 		ilName := fmt.Sprint("ils-", i)
 
-		for j := 0; j < metricCount; j++ {
+		for j := range metricCount {
 			ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
@@ -691,10 +691,10 @@ func someSumMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCo
 
 func someSummaryMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
-	for i := 0; i < instrumentationLibraryCount; i++ {
+	for i := range instrumentationLibraryCount {
 		ilName := fmt.Sprint("ils-", i)
 
-		for j := 0; j < metricCount; j++ {
+		for j := range metricCount {
 			ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
@@ -708,10 +708,10 @@ func someSummaryMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metr
 
 func someHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
-	for i := 0; i < instrumentationLibraryCount; i++ {
+	for i := range instrumentationLibraryCount {
 		ilName := fmt.Sprint("ils-", i)
 
-		for j := 0; j < metricCount; j++ {
+		for j := range metricCount {
 			ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
@@ -725,10 +725,10 @@ func someHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount int, me
 
 func someExponentialHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCount int) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
-	for i := 0; i < instrumentationLibraryCount; i++ {
+	for i := range instrumentationLibraryCount {
 		ilName := fmt.Sprint("ils-", i)
 
-		for j := 0; j < metricCount; j++ {
+		for j := range metricCount {
 			ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
@@ -889,7 +889,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 
 // Test helper function that retrieves the resource with the specified "host.name" attribute
 func retrieveHostResource(resources pmetric.ResourceMetricsSlice, hostname string) (pmetric.ResourceMetrics, bool) {
-	for i := 0; i < resources.Len(); i++ {
+	for i := range resources.Len() {
 		resource := resources.At(i)
 		hostnameValue, foundKey := resource.Resource().Attributes().Get("host.name")
 		if foundKey && hostnameValue.AsString() == hostname {
@@ -901,7 +901,7 @@ func retrieveHostResource(resources pmetric.ResourceMetricsSlice, hostname strin
 
 // Test helper function that retrieves the specified metric
 func retrieveMetric(metrics pmetric.MetricSlice, name string, metricType pmetric.MetricType) (pmetric.Metric, bool) {
-	for i := 0; i < metrics.Len(); i++ {
+	for i := range metrics.Len() {
 		metric := metrics.At(i)
 		if metric.Name() == name && metric.Type() == metricType {
 			return metric, true
@@ -945,7 +945,7 @@ func TestCompacting(t *testing.T) {
 	assert.Equal(t, 10, rls.ScopeLogs().Len())
 	assert.Equal(t, 10, rlm.ScopeMetrics().Len())
 
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		ils := rss.ScopeSpans().At(i)
 		sl := rls.ScopeLogs().At(i)
 		ilm := rlm.ScopeMetrics().At(i)
@@ -1035,7 +1035,7 @@ func BenchmarkCompacting(bb *testing.B) {
 			require.NoError(b, err)
 
 			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
+			for range b.N {
 				_, err := gap.processTraces(context.Background(), spans)
 				if err != nil {
 					return

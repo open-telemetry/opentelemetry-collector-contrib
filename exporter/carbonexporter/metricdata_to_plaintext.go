@@ -88,11 +88,11 @@ func metricDataToPlaintext(md pmetric.Metrics) string {
 	buf.Reset()
 	defer writerPool.Put(buf)
 
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+	for i := range md.ResourceMetrics().Len() {
 		rm := md.ResourceMetrics().At(i)
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		for j := range rm.ScopeMetrics().Len() {
 			sm := rm.ScopeMetrics().At(j)
-			for k := 0; k < sm.Metrics().Len(); k++ {
+			for k := range sm.Metrics().Len() {
 				metric := sm.Metrics().At(k)
 				if metric.Name() == "" {
 					// TODO: log error info
@@ -116,7 +116,7 @@ func metricDataToPlaintext(md pmetric.Metrics) string {
 }
 
 func writeNumberDataPoints(buf *bytes.Buffer, metricName string, dps pmetric.NumberDataPointSlice) {
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		var valueStr string
 		switch dp.ValueType() {
@@ -154,7 +154,7 @@ func formatHistogramDataPoints(
 	metricName string,
 	dps pmetric.HistogramDataPointSlice,
 ) {
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 
 		timestampStr := formatTimestamp(dp.Timestamp())
@@ -165,13 +165,13 @@ func formatHistogramDataPoints(
 
 		bounds := dp.ExplicitBounds().AsRaw()
 		carbonBounds := make([]string, len(bounds)+1)
-		for i := 0; i < len(bounds); i++ {
+		for i := range bounds {
 			carbonBounds[i] = formatFloatForLabel(bounds[i])
 		}
 		carbonBounds[len(carbonBounds)-1] = infinityCarbonValue
 
 		bucketPath := buildPath(metricName+distributionBucketSuffix, dp.Attributes())
-		for j := 0; j < dp.BucketCounts().Len(); j++ {
+		for j := range dp.BucketCounts().Len() {
 			writeLine(
 				buf,
 				bucketPath+distributionUpperBoundTagBeforeValue+carbonBounds[j],
@@ -198,7 +198,7 @@ func formatSummaryDataPoints(
 	metricName string,
 	dps pmetric.SummaryDataPointSlice,
 ) {
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 
 		timestampStr := formatTimestamp(dp.Timestamp())
@@ -209,7 +209,7 @@ func formatSummaryDataPoints(
 		}
 
 		quantilePath := buildPath(metricName+summaryQuantileSuffix, dp.Attributes())
-		for j := 0; j < dp.QuantileValues().Len(); j++ {
+		for j := range dp.QuantileValues().Len() {
 			writeLine(
 				buf,
 				quantilePath+summaryQuantileTagBeforeValue+formatFloatForLabel(dp.QuantileValues().At(j).Quantile()*100),

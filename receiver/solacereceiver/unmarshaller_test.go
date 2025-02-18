@@ -343,7 +343,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				instrumentation := resource.ScopeSpans().At(0)
 				assert.Equal(t, expectedInstrumentation.Scope(), instrumentation.Scope())
 				require.Equal(t, expectedInstrumentation.Spans().Len(), instrumentation.Spans().Len())
-				for i := 0; i < expectedInstrumentation.Spans().Len(); i++ {
+				for i := range expectedInstrumentation.Spans().Len() {
 					expectedSpan := expectedInstrumentation.Spans().At(i)
 					span := instrumentation.Spans().At(i)
 					compareSpans(t, expectedSpan, span)
@@ -366,7 +366,7 @@ func compareSpans(t *testing.T, expected, actual ptrace.Span) {
 	assert.Equal(t, expected.EndTimestamp(), actual.EndTimestamp())
 	assert.Equal(t, expected.Attributes().AsRaw(), actual.Attributes().AsRaw())
 	require.Equal(t, expected.Events().Len(), actual.Events().Len())
-	for i := 0; i < expected.Events().Len(); i++ {
+	for i := range expected.Events().Len() {
 		lessFunc := func(a, b ptrace.SpanEvent) bool {
 			return a.Name() < b.Name() // choose any comparison here
 		}

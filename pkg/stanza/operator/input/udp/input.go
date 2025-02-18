@@ -72,12 +72,12 @@ func (i *Input) goHandleMessages(ctx context.Context) {
 		return
 	}
 
-	for n := 0; n < i.AsyncConfig.Readers; n++ {
+	for range i.AsyncConfig.Readers {
 		i.wgReader.Add(1)
 		go i.readMessagesAsync(ctx)
 	}
 
-	for n := 0; n < i.AsyncConfig.Processors; n++ {
+	for range i.AsyncConfig.Processors {
 		i.wg.Add(1)
 		go i.processMessagesAsync(ctx)
 	}

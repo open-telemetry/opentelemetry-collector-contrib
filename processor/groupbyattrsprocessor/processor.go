@@ -26,13 +26,13 @@ func (gap *groupByAttrsProcessor) processTraces(ctx context.Context, td ptrace.T
 	rss := td.ResourceSpans()
 	tg := newTracesGroup()
 
-	for i := 0; i < rss.Len(); i++ {
+	for i := range rss.Len() {
 		rs := rss.At(i)
 
 		ilss := rs.ScopeSpans()
-		for j := 0; j < ilss.Len(); j++ {
+		for j := range ilss.Len() {
 			ils := ilss.At(j)
-			for k := 0; k < ils.Spans().Len(); k++ {
+			for k := range ils.Spans().Len() {
 				span := ils.Spans().At(k)
 
 				toBeGrouped, requiredAttributes := gap.extractGroupingAttributes(span.Attributes())
@@ -64,13 +64,13 @@ func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld plog.Logs)
 	rl := ld.ResourceLogs()
 	lg := newLogsGroup()
 
-	for i := 0; i < rl.Len(); i++ {
+	for i := range rl.Len() {
 		ls := rl.At(i)
 
 		ills := ls.ScopeLogs()
-		for j := 0; j < ills.Len(); j++ {
+		for j := range ills.Len() {
 			sl := ills.At(j)
-			for k := 0; k < sl.LogRecords().Len(); k++ {
+			for k := range sl.LogRecords().Len() {
 				log := sl.LogRecords().At(k)
 
 				toBeGrouped, requiredAttributes := gap.extractGroupingAttributes(log.Attributes())
@@ -102,47 +102,47 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 	rms := md.ResourceMetrics()
 	mg := newMetricsGroup()
 
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		rm := rms.At(i)
 
 		ilms := rm.ScopeMetrics()
-		for j := 0; j < ilms.Len(); j++ {
+		for j := range ilms.Len() {
 			ilm := ilms.At(j)
-			for k := 0; k < ilm.Metrics().Len(); k++ {
+			for k := range ilm.Metrics().Len() {
 				metric := ilm.Metrics().At(k)
 
 				//exhaustive:enforce
 				switch metric.Type() {
 				case pmetric.MetricTypeGauge:
-					for pointIndex := 0; pointIndex < metric.Gauge().DataPoints().Len(); pointIndex++ {
+					for pointIndex := range metric.Gauge().DataPoints().Len() {
 						dataPoint := metric.Gauge().DataPoints().At(pointIndex)
 						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Gauge().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeSum:
-					for pointIndex := 0; pointIndex < metric.Sum().DataPoints().Len(); pointIndex++ {
+					for pointIndex := range metric.Sum().DataPoints().Len() {
 						dataPoint := metric.Sum().DataPoints().At(pointIndex)
 						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Sum().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeSummary:
-					for pointIndex := 0; pointIndex < metric.Summary().DataPoints().Len(); pointIndex++ {
+					for pointIndex := range metric.Summary().DataPoints().Len() {
 						dataPoint := metric.Summary().DataPoints().At(pointIndex)
 						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Summary().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeHistogram:
-					for pointIndex := 0; pointIndex < metric.Histogram().DataPoints().Len(); pointIndex++ {
+					for pointIndex := range metric.Histogram().DataPoints().Len() {
 						dataPoint := metric.Histogram().DataPoints().At(pointIndex)
 						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.Histogram().DataPoints().AppendEmpty())
 					}
 
 				case pmetric.MetricTypeExponentialHistogram:
-					for pointIndex := 0; pointIndex < metric.ExponentialHistogram().DataPoints().Len(); pointIndex++ {
+					for pointIndex := range metric.ExponentialHistogram().DataPoints().Len() {
 						dataPoint := metric.ExponentialHistogram().DataPoints().At(pointIndex)
 						groupedMetric := gap.getGroupedMetricsFromAttributes(ctx, mg, rm, ilm, metric, dataPoint.Attributes())
 						dataPoint.CopyTo(groupedMetric.ExponentialHistogram().DataPoints().AppendEmpty())
@@ -190,7 +190,7 @@ func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pcommon.Map)
 func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric pmetric.Metric) pmetric.Metric {
 	// Loop through all metrics and try to find the one that matches with the one we search for
 	// (name and type)
-	for i := 0; i < ilm.Metrics().Len(); i++ {
+	for i := range ilm.Metrics().Len() {
 		metric := ilm.Metrics().At(i)
 		if metric.Name() == searchedMetric.Name() && metric.Type() == searchedMetric.Type() {
 			return metric

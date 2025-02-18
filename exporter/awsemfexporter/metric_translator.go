@@ -135,14 +135,14 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 	if receiver, ok := rm.Resource().Attributes().Get(attributeReceiver); ok {
 		metricReceiver = receiver.Str()
 	}
-	for j := 0; j < ilms.Len(); j++ {
+	for j := range ilms.Len() {
 		ilm := ilms.At(j)
 		if ilm.Scope().Name() != "" {
 			instrumentationScopeName = ilm.Scope().Name()
 		}
 
 		metrics := ilm.Metrics()
-		for k := 0; k < metrics.Len(); k++ {
+		for k := range metrics.Len() {
 			metric := metrics.At(k)
 			metadata := cWMetricMetadata{
 				groupedMetricMetadata: groupedMetricMetadata{

@@ -663,7 +663,7 @@ func otlpKeyValueListToMap(kvList pcommon.Map) map[string]any {
 //	@return []interface{}
 func otlpArrayToSlice(arr pcommon.Slice) []any {
 	s := make([]any, 0, arr.Len())
-	for i := 0; i < arr.Len(); i++ {
+	for i := range arr.Len() {
 		v := arr.At(i)
 		switch v.Type() {
 		case pcommon.ValueTypeStr:

@@ -253,7 +253,7 @@ func (f *prometheusFormatter) gauge2Strings(metric pmetric.Metric, attributes pc
 	dps := metric.Gauge().DataPoints()
 	lines := make([]string, 0, dps.Len())
 
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		line := f.numberDataPointValueLine(
 			metric.Name(),
@@ -271,7 +271,7 @@ func (f *prometheusFormatter) sum2Strings(metric pmetric.Metric, attributes pcom
 	dps := metric.Sum().DataPoints()
 	lines := make([]string, 0, dps.Len())
 
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		line := f.numberDataPointValueLine(
 			metric.Name(),
@@ -290,11 +290,11 @@ func (f *prometheusFormatter) summary2Strings(metric pmetric.Metric, attributes 
 	dps := metric.Summary().DataPoints()
 	var lines []string
 
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		qs := dp.QuantileValues()
 		additionalAttributes := pcommon.NewMap()
-		for i := 0; i < qs.Len(); i++ {
+		for i := range qs.Len() {
 			q := qs.At(i)
 			additionalAttributes.PutDouble(prometheusQuantileTag, q.Quantile())
 
@@ -332,7 +332,7 @@ func (f *prometheusFormatter) histogram2Strings(metric pmetric.Metric, attribute
 	dps := metric.Histogram().DataPoints()
 	var lines []string
 
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 
 		explicitBounds := dp.ExplicitBounds()
@@ -340,7 +340,7 @@ func (f *prometheusFormatter) histogram2Strings(metric pmetric.Metric, attribute
 		var cumulative uint64
 		additionalAttributes := pcommon.NewMap()
 
-		for i := 0; i < explicitBounds.Len(); i++ {
+		for i := range explicitBounds.Len() {
 			bound := explicitBounds.At(i)
 			cumulative += dp.BucketCounts().At(i)
 			additionalAttributes.PutDouble(prometheusLeTag, bound)

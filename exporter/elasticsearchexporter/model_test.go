@@ -99,7 +99,7 @@ func TestEncodeMetric(t *testing.T) {
 	sm := rm.ScopeMetrics().At(0)
 	m := sm.Metrics().At(0)
 	dps := m.Sum().DataPoints()
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := datapoints.NewNumber(m, dps.At(i))
 		dpHash := hasher.hashDataPoint(rm.Resource(), sm.Scope(), dp)
 		dataPoints, ok := groupedDataPoints[dpHash]
@@ -253,7 +253,7 @@ func TestEncodeEvents(t *testing.T) {
 
 	events := ptrace.NewSpanEventSlice()
 	events.EnsureCapacity(4)
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		event := events.AppendEmpty()
 		event.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Duration(i) * time.Minute)))
 		event.SetName(fmt.Sprintf("event_%d", i))

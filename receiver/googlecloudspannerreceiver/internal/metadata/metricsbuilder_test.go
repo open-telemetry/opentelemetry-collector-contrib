@@ -93,7 +93,7 @@ func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pmetric.M
 	assert.Equal(t, len(dataForTesting.expectedGroups), metric.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	require.Equal(t, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver", metric.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Name())
 
-	for i := 0; i < len(dataForTesting.expectedGroups); i++ {
+	for i := range len(dataForTesting.expectedGroups) {
 		ilMetric := metric.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(i)
 		expectedGroupingKey := expectedGroupingKeysByMetricName[ilMetric.Name()]
 		expectedDataPoints := dataForTesting.expectedGroups[expectedGroupingKey]

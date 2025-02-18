@@ -36,7 +36,7 @@ func IgnoreResourceAttributeValue(attributeName string) CompareTracesOption {
 
 func maskTracesResourceAttributeValue(traces ptrace.Traces, attributeName string) {
 	rss := traces.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
+	for i := range rss.Len() {
 		internal.MaskResourceAttributeValue(rss.At(i).Resource(), attributeName)
 	}
 }
@@ -69,7 +69,7 @@ func IgnoreScopeSpansOrder() CompareTracesOption {
 }
 
 func sortScopeSpansSlices(ts ptrace.Traces) {
-	for i := 0; i < ts.ResourceSpans().Len(); i++ {
+	for i := range ts.ResourceSpans().Len() {
 		ts.ResourceSpans().At(i).ScopeSpans().Sort(func(a, b ptrace.ScopeSpans) bool {
 			if a.SchemaUrl() != b.SchemaUrl() {
 				return a.SchemaUrl() < b.SchemaUrl()
@@ -91,8 +91,8 @@ func IgnoreSpansOrder() CompareTracesOption {
 }
 
 func sortSpanSlices(ts ptrace.Traces) {
-	for i := 0; i < ts.ResourceSpans().Len(); i++ {
-		for j := 0; j < ts.ResourceSpans().At(i).ScopeSpans().Len(); j++ {
+	for i := range ts.ResourceSpans().Len() {
+		for j := range ts.ResourceSpans().At(i).ScopeSpans().Len() {
 			ts.ResourceSpans().At(i).ScopeSpans().At(j).Spans().Sort(func(a, b ptrace.Span) bool {
 				if a.Kind() != b.Kind() {
 					return a.Kind() < b.Kind()
@@ -139,11 +139,11 @@ func IgnoreSpanID() CompareTracesOption {
 }
 
 func maskSpanID(traces ptrace.Traces, spanID pcommon.SpanID) {
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		rs := traces.ResourceSpans().At(i)
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		for j := range rs.ScopeSpans().Len() {
 			ss := rs.ScopeSpans().At(j)
-			for k := 0; k < ss.Spans().Len(); k++ {
+			for k := range ss.Spans().Len() {
 				span := ss.Spans().At(k)
 				span.SetSpanID(spanID)
 			}
@@ -160,11 +160,11 @@ func IgnoreSpanAttributeValue(attributeName string) CompareTracesOption {
 }
 
 func maskSpanAttributeValue(traces ptrace.Traces, attributeName string) {
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		rs := traces.ResourceSpans().At(i)
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		for j := range rs.ScopeSpans().Len() {
 			ss := rs.ScopeSpans().At(j)
-			for k := 0; k < ss.Spans().Len(); k++ {
+			for k := range ss.Spans().Len() {
 				span := ss.Spans().At(k)
 				if _, ok := span.Attributes().Get(attributeName); ok {
 					span.Attributes().PutStr(attributeName, "*")
@@ -183,9 +183,9 @@ func IgnoreScopeSpanInstrumentationScopeName() CompareTracesOption {
 }
 
 func maskScopeSpanInstrumentationScopeName(traces ptrace.Traces) {
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		rs := traces.ResourceSpans().At(i)
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		for j := range rs.ScopeSpans().Len() {
 			ss := rs.ScopeSpans().At(j)
 			ss.Scope().SetName("")
 		}
@@ -201,9 +201,9 @@ func IgnoreScopeSpanInstrumentationScopeVersion() CompareTracesOption {
 }
 
 func maskScopeSpanInstrumentationScopeVersion(traces ptrace.Traces) {
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		rs := traces.ResourceSpans().At(i)
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		for j := range rs.ScopeSpans().Len() {
 			ss := rs.ScopeSpans().At(j)
 			ss.Scope().SetVersion("")
 		}
@@ -219,9 +219,9 @@ func IgnoreScopeSpanInstrumentationScopeAttributeValue(attributeName string) Com
 }
 
 func maskScopeSpanInstrumentationScopeAttributeValue(traces ptrace.Traces, attributeName string) {
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		rs := traces.ResourceSpans().At(i)
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		for j := range rs.ScopeSpans().Len() {
 			ss := rs.ScopeSpans().At(j)
 			if _, ok := ss.Scope().Attributes().Get(attributeName); ok {
 				ss.Scope().Attributes().PutStr(attributeName, "*")
@@ -240,11 +240,11 @@ func IgnoreStartTimestamp() CompareTracesOption {
 }
 
 func maskStartTimestamp(traces ptrace.Traces, ts pcommon.Timestamp) {
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		rs := traces.ResourceSpans().At(i)
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		for j := range rs.ScopeSpans().Len() {
 			ss := rs.ScopeSpans().At(j)
-			for k := 0; k < ss.Spans().Len(); k++ {
+			for k := range ss.Spans().Len() {
 				span := ss.Spans().At(k)
 				span.SetStartTimestamp(ts)
 			}
@@ -262,11 +262,11 @@ func IgnoreEndTimestamp() CompareTracesOption {
 }
 
 func maskEndTimestamp(traces ptrace.Traces, ts pcommon.Timestamp) {
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		rs := traces.ResourceSpans().At(i)
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		for j := range rs.ScopeSpans().Len() {
 			ss := rs.ScopeSpans().At(j)
-			for k := 0; k < ss.Spans().Len(); k++ {
+			for k := range ss.Spans().Len() {
 				span := ss.Spans().At(k)
 				span.SetEndTimestamp(ts)
 			}
@@ -284,11 +284,11 @@ func IgnoreTraceID() CompareTracesOption {
 }
 
 func maskTraceID(traces ptrace.Traces, traceID pcommon.TraceID) {
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		rs := traces.ResourceSpans().At(i)
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		for j := range rs.ScopeSpans().Len() {
 			ss := rs.ScopeSpans().At(j)
-			for k := 0; k < ss.Spans().Len(); k++ {
+			for k := range ss.Spans().Len() {
 				span := ss.Spans().At(k)
 				span.SetTraceID(traceID)
 			}

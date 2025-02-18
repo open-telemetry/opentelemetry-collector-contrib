@@ -109,14 +109,14 @@ func (e *tracesExporter) Shutdown(_ context.Context) error {
 func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	start := time.Now()
 
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		spans := td.ResourceSpans().At(i)
 		res := spans.Resource()
 		resAttr := attributesToMap(res.Attributes().AsRaw())
 
-		for j := 0; j < spans.ScopeSpans().Len(); j++ {
+		for j := range spans.ScopeSpans().Len() {
 			rs := spans.ScopeSpans().At(j).Spans()
-			for k := 0; k < rs.Len(); k++ {
+			for k := range rs.Len() {
 				r := rs.At(k)
 				spanAttr := attributesToMap(r.Attributes().AsRaw())
 				status := r.Status()

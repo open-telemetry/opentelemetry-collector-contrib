@@ -23,7 +23,7 @@ func processMetricLevelAttributes(proc attributesProcessor, metric pmetric.Metri
 
 	case pmetric.MetricTypeSum:
 		dp := metric.Sum().DataPoints()
-		for i := 0; i < dp.Len(); i++ {
+		for i := range dp.Len() {
 			err := proc.processAttributes(dp.At(i).Attributes())
 			if err != nil {
 				return err
@@ -33,7 +33,7 @@ func processMetricLevelAttributes(proc attributesProcessor, metric pmetric.Metri
 
 	case pmetric.MetricTypeGauge:
 		dp := metric.Gauge().DataPoints()
-		for i := 0; i < dp.Len(); i++ {
+		for i := range dp.Len() {
 			err := proc.processAttributes(dp.At(i).Attributes())
 			if err != nil {
 				return err
@@ -43,7 +43,7 @@ func processMetricLevelAttributes(proc attributesProcessor, metric pmetric.Metri
 
 	case pmetric.MetricTypeHistogram:
 		dp := metric.Histogram().DataPoints()
-		for i := 0; i < dp.Len(); i++ {
+		for i := range dp.Len() {
 			err := proc.processAttributes(dp.At(i).Attributes())
 			if err != nil {
 				return err
@@ -53,7 +53,7 @@ func processMetricLevelAttributes(proc attributesProcessor, metric pmetric.Metri
 
 	case pmetric.MetricTypeExponentialHistogram:
 		dp := metric.ExponentialHistogram().DataPoints()
-		for i := 0; i < dp.Len(); i++ {
+		for i := range dp.Len() {
 			err := proc.processAttributes(dp.At(i).Attributes())
 			if err != nil {
 				return err
@@ -63,7 +63,7 @@ func processMetricLevelAttributes(proc attributesProcessor, metric pmetric.Metri
 
 	case pmetric.MetricTypeSummary:
 		dp := metric.Summary().DataPoints()
-		for i := 0; i < dp.Len(); i++ {
+		for i := range dp.Len() {
 			err := proc.processAttributes(dp.At(i).Attributes())
 			if err != nil {
 				return err

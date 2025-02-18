@@ -157,15 +157,15 @@ func newOpenSearchBulkIndexer(client *opensearch.Client, onIndexerError func(con
 
 func forEachSpan(td ptrace.Traces, visitor func(pcommon.Resource, string, pcommon.InstrumentationScope, string, ptrace.Span)) {
 	resourceSpans := td.ResourceSpans()
-	for i := 0; i < resourceSpans.Len(); i++ {
+	for i := range resourceSpans.Len() {
 		il := resourceSpans.At(i)
 		resource := il.Resource()
 		scopeSpans := il.ScopeSpans()
-		for j := 0; j < scopeSpans.Len(); j++ {
+		for j := range scopeSpans.Len() {
 			scopeSpan := scopeSpans.At(j)
 			spans := scopeSpans.At(j).Spans()
 
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				span := spans.At(k)
 				visitor(resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span)
 			}

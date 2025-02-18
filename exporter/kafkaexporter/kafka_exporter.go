@@ -286,7 +286,7 @@ type resource interface {
 
 func getTopic[T resource](ctx context.Context, cfg *Config, resources resourceSlice[T]) string {
 	if cfg.TopicFromAttribute != "" {
-		for i := 0; i < resources.Len(); i++ {
+		for i := range resources.Len() {
 			rv, ok := resources.At(i).Resource().Attributes().Get(cfg.TopicFromAttribute)
 			if ok && rv.Str() != "" {
 				return rv.Str()

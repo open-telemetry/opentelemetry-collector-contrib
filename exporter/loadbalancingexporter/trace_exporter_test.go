@@ -569,7 +569,7 @@ func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
 	}
 
 	endpoints := []string{}
-	for i := 0; i < endpointsCount; i++ {
+	for i := range endpointsCount {
 		endpoints = append(endpoints, fmt.Sprintf("endpoint-%d", i))
 	}
 
@@ -594,8 +594,8 @@ func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
 
 	trace1 := ptrace.NewTraces()
 	trace2 := ptrace.NewTraces()
-	for i := 0; i < endpointsCount; i++ {
-		for j := 0; j < tracesCount/endpointsCount; j++ {
+	for i := range endpointsCount {
+		for range tracesCount / endpointsCount {
 			appendSimpleTraceWithID(trace2.ResourceSpans().AppendEmpty(), [16]byte{1, 2, 6, byte(i)})
 		}
 	}
@@ -603,7 +603,7 @@ func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		err = p.ConsumeTraces(context.Background(), td)
 		require.NoError(b, err)
 	}

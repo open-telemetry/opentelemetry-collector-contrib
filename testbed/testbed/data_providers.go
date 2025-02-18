@@ -59,7 +59,7 @@ func (dp *perfTestDataProvider) GenerateTraces() (ptrace.Traces, bool) {
 	spans.EnsureCapacity(dp.options.ItemsPerBatch)
 
 	traceID := dp.traceIDSequence.Add(1)
-	for i := 0; i < dp.options.ItemsPerBatch; i++ {
+	for i := range dp.options.ItemsPerBatch {
 		startTime := time.Now().Add(time.Duration(i+int(traceID)*1000) * time.Second)
 		endTime := startTime.Add(time.Millisecond)
 
@@ -101,7 +101,7 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 	metrics := rm.ScopeMetrics().AppendEmpty().Metrics()
 	metrics.EnsureCapacity(dp.options.ItemsPerBatch)
 
-	for i := 0; i < dp.options.ItemsPerBatch; i++ {
+	for i := range dp.options.ItemsPerBatch {
 		metric := metrics.AppendEmpty()
 		metric.SetName("load_generator_" + strconv.Itoa(i))
 		metric.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
@@ -110,7 +110,7 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 		batchIndex := dp.traceIDSequence.Add(1)
 		// Generate data points for the metric.
 		dps.EnsureCapacity(dataPointsPerMetric)
-		for j := 0; j < dataPointsPerMetric; j++ {
+		for j := range dataPointsPerMetric {
 			dataPoint := dps.AppendEmpty()
 			dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 			value := dp.dataItemsGenerated.Add(1)
@@ -139,7 +139,7 @@ func (dp *perfTestDataProvider) GenerateLogs() (plog.Logs, bool) {
 
 	batchIndex := dp.traceIDSequence.Add(1)
 
-	for i := 0; i < dp.options.ItemsPerBatch; i++ {
+	for i := range dp.options.ItemsPerBatch {
 		itemIndex := dp.dataItemsGenerated.Add(1)
 		record := logRecords.AppendEmpty()
 		record.SetSeverityNumber(plog.SeverityNumberInfo3)

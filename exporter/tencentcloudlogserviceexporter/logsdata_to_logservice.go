@@ -39,16 +39,16 @@ func convertLogs(ld plog.Logs) []*cls.Log {
 	clsLogs := make([]*cls.Log, 0, ld.LogRecordCount())
 
 	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		rl := rls.At(i)
 		ills := rl.ScopeLogs()
 		resource := rl.Resource()
 		resourceContents := resourceToLogContents(resource)
-		for j := 0; j < ills.Len(); j++ {
+		for j := range ills.Len() {
 			ils := ills.At(j)
 			instrumentationLibraryContents := instrumentationLibraryToLogContents(ils.Scope())
 			logs := ils.LogRecords()
-			for j := 0; j < logs.Len(); j++ {
+			for j := range logs.Len() {
 				clsLog := mapLogRecordToLogService(logs.At(j), resourceContents, instrumentationLibraryContents)
 				if clsLog != nil {
 					clsLogs = append(clsLogs, clsLog)

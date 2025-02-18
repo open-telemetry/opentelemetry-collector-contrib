@@ -420,11 +420,11 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		require.Equal(t, m1.Sum()+m2.Sum(), v.Sum())
 		require.Equal(t, m1.Count()+m2.Count(), v.Count())
 
-		for i := 0; i < v.BucketCounts().Len(); i++ {
+		for i := range v.BucketCounts().Len() {
 			require.Equal(t, m1.BucketCounts().At(i)+m2.BucketCounts().At(i), v.BucketCounts().At(i))
 		}
 
-		for i := 0; i < v.ExplicitBounds().Len(); i++ {
+		for i := range v.ExplicitBounds().Len() {
 			require.Equal(t, m2.ExplicitBounds().At(i), v.ExplicitBounds().At(i))
 		}
 	})
@@ -454,11 +454,11 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		require.Equal(t, m1.Sum(), v.Sum())
 		require.Equal(t, m1.Count(), v.Count())
 
-		for i := 0; i < v.BucketCounts().Len(); i++ {
+		for i := range v.BucketCounts().Len() {
 			require.Equal(t, m1.BucketCounts().At(i), v.BucketCounts().At(i))
 		}
 
-		for i := 0; i < v.ExplicitBounds().Len(); i++ {
+		for i := range v.ExplicitBounds().Len() {
 			require.Equal(t, m1.ExplicitBounds().At(i), v.ExplicitBounds().At(i))
 		}
 	})
@@ -488,11 +488,11 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		require.Equal(t, m2.Sum(), v.Sum())
 		require.Equal(t, m2.Count(), v.Count())
 
-		for i := 0; i < v.BucketCounts().Len(); i++ {
+		for i := range v.BucketCounts().Len() {
 			require.Equal(t, m2.BucketCounts().At(i), v.BucketCounts().At(i))
 		}
 
-		for i := 0; i < v.ExplicitBounds().Len(); i++ {
+		for i := range v.ExplicitBounds().Len() {
 			require.Equal(t, m2.ExplicitBounds().At(i), v.ExplicitBounds().At(i))
 		}
 	})
@@ -522,11 +522,11 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		require.Equal(t, m1.Sum(), v.Sum())
 		require.Equal(t, m1.Count(), v.Count())
 
-		for i := 0; i < v.BucketCounts().Len(); i++ {
+		for i := range v.BucketCounts().Len() {
 			require.Equal(t, m1.BucketCounts().At(i), v.BucketCounts().At(i))
 		}
 
-		for i := 0; i < v.ExplicitBounds().Len(); i++ {
+		for i := range v.ExplicitBounds().Len() {
 			require.Equal(t, m1.ExplicitBounds().At(i), v.ExplicitBounds().At(i))
 		}
 	})
@@ -556,11 +556,11 @@ func TestAccumulateDeltaToCumulativeHistogram(t *testing.T) {
 		require.Equal(t, m2.Sum(), v.Sum())
 		require.Equal(t, m2.Count(), v.Count())
 
-		for i := 0; i < v.BucketCounts().Len(); i++ {
+		for i := range v.BucketCounts().Len() {
 			require.Equal(t, m2.BucketCounts().At(i), v.BucketCounts().At(i))
 		}
 
-		for i := 0; i < v.ExplicitBounds().Len(); i++ {
+		for i := range v.ExplicitBounds().Len() {
 			require.Equal(t, m2.ExplicitBounds().At(i), v.ExplicitBounds().At(i))
 		}
 	})

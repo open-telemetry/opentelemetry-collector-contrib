@@ -51,7 +51,7 @@ func buildTestTraces(setTokenLabel bool) (traces ptrace.Traces) {
 	rss := traces.ResourceSpans()
 	rss.EnsureCapacity(20)
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		rs := rss.AppendEmpty()
 		resource := rs.Resource()
 		resource.Attributes().PutStr("key1", "value1")
@@ -118,7 +118,7 @@ func hasToken(batches []*model.Batch) bool {
 func buildTestTrace() (ptrace.Traces, error) {
 	trace := ptrace.NewTraces()
 	trace.ResourceSpans().EnsureCapacity(2)
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		rs := trace.ResourceSpans().AppendEmpty()
 		resource := rs.Resource()
 		resource.Attributes().PutStr("com.splunk.signalfx.access_token", fmt.Sprintf("TraceAccessToken%v", i))

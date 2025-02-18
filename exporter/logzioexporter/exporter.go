@@ -125,13 +125,13 @@ func (exporter *logzioExporter) start(ctx context.Context, host component.Host) 
 func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	var dataBuffer bytes.Buffer
 	resourceLogs := ld.ResourceLogs()
-	for i := 0; i < resourceLogs.Len(); i++ {
+	for i := range resourceLogs.Len() {
 		resource := resourceLogs.At(i).Resource()
 		scopeLogs := resourceLogs.At(i).ScopeLogs()
-		for j := 0; j < scopeLogs.Len(); j++ {
+		for j := range scopeLogs.Len() {
 			logRecords := scopeLogs.At(j).LogRecords()
 			scope := scopeLogs.At(j).Scope()
-			for k := 0; k < logRecords.Len(); k++ {
+			for k := range logRecords.Len() {
 				log := logRecords.At(k)
 				details := mergeMapEntries(resource.Attributes(), scope.Attributes(), log.Attributes())
 				details.PutStr(`scopeName`, scope.Name())

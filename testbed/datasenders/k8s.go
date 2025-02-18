@@ -79,10 +79,10 @@ func (f *FileLogK8sWriter) Start() error {
 }
 
 func (f *FileLogK8sWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
-		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+	for i := range logs.ResourceLogs().Len() {
+		for j := range logs.ResourceLogs().At(i).ScopeLogs().Len() {
 			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
-			for k := 0; k < ills.LogRecords().Len(); k++ {
+			for k := range ills.LogRecords().Len() {
 				_, err := f.file.Write(append(f.convertLogToTextLine(ills.LogRecords().At(k)), '\n'))
 				if err != nil {
 					return err

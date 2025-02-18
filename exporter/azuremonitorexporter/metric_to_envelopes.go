@@ -117,7 +117,7 @@ func newScalarMetric(name string, dataPointSlice pmetric.NumberDataPointSlice) *
 
 func (m scalarMetric) getTimedDataPoints() []*timedMetricDataPoint {
 	timedDataPoints := make([]*timedMetricDataPoint, m.dataPointSlice.Len())
-	for i := 0; i < m.dataPointSlice.Len(); i++ {
+	for i := range m.dataPointSlice.Len() {
 		numberDataPoint := m.dataPointSlice.At(i)
 		dataPoint := contracts.NewDataPoint()
 		dataPoint.Name = m.name
@@ -154,7 +154,7 @@ func newHistogramMetric(name string, dataPointSlice pmetric.HistogramDataPointSl
 
 func (m histogramMetric) getTimedDataPoints() []*timedMetricDataPoint {
 	timedDataPoints := make([]*timedMetricDataPoint, m.dataPointSlice.Len())
-	for i := 0; i < m.dataPointSlice.Len(); i++ {
+	for i := range m.dataPointSlice.Len() {
 		histogramDataPoint := m.dataPointSlice.At(i)
 		dataPoint := contracts.NewDataPoint()
 		dataPoint.Name = m.name
@@ -187,7 +187,7 @@ func newExponentialHistogramMetric(name string, dataPointSlice pmetric.Exponenti
 
 func (m exponentialHistogramMetric) getTimedDataPoints() []*timedMetricDataPoint {
 	timedDataPoints := make([]*timedMetricDataPoint, m.dataPointSlice.Len())
-	for i := 0; i < m.dataPointSlice.Len(); i++ {
+	for i := range m.dataPointSlice.Len() {
 		exponentialHistogramDataPoint := m.dataPointSlice.At(i)
 		dataPoint := contracts.NewDataPoint()
 		dataPoint.Name = m.name
@@ -220,7 +220,7 @@ func newSummaryMetric(name string, dataPointSlice pmetric.SummaryDataPointSlice)
 
 func (m summaryMetric) getTimedDataPoints() []*timedMetricDataPoint {
 	timedDataPoints := make([]*timedMetricDataPoint, m.dataPointSlice.Len())
-	for i := 0; i < m.dataPointSlice.Len(); i++ {
+	for i := range m.dataPointSlice.Len() {
 		summaryDataPoint := m.dataPointSlice.At(i)
 		dataPoint := contracts.NewDataPoint()
 		dataPoint.Name = m.name

@@ -78,12 +78,12 @@ func scaleExemplar(ex *pmetric.Exemplar, multiplier float64) {
 }
 
 func scaleSummarySlice(values pmetric.SummaryDataPointSlice, multiplier float64) {
-	for i := 0; i < values.Len(); i++ {
+	for i := range values.Len() {
 		dp := values.At(i)
 
 		dp.SetSum(dp.Sum() * multiplier)
 
-		for i := 0; i < dp.QuantileValues().Len(); i++ {
+		for i := range dp.QuantileValues().Len() {
 			qv := dp.QuantileValues().At(i)
 			qv.SetValue(qv.Value() * multiplier)
 		}
@@ -91,7 +91,7 @@ func scaleSummarySlice(values pmetric.SummaryDataPointSlice, multiplier float64)
 }
 
 func scaleHistogram(datapoints pmetric.HistogramDataPointSlice, multiplier float64) {
-	for i := 0; i < datapoints.Len(); i++ {
+	for i := range datapoints.Len() {
 		dp := datapoints.At(i)
 
 		if dp.HasSum() {
@@ -116,7 +116,7 @@ func scaleHistogram(datapoints pmetric.HistogramDataPointSlice, multiplier float
 }
 
 func scaleMetric(points pmetric.NumberDataPointSlice, multiplier float64) {
-	for i := 0; i < points.Len(); i++ {
+	for i := range points.Len() {
 		dp := points.At(i)
 		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeInt:

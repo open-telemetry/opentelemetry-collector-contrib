@@ -140,13 +140,13 @@ func buildEventsFromTraces(ld ptrace.Traces, serverHost string, settings TracesS
 
 	// convert spans into events
 	resourceSpans := ld.ResourceSpans()
-	for i := 0; i < resourceSpans.Len(); i++ {
+	for i := range resourceSpans.Len() {
 		resource := resourceSpans.At(i).Resource()
 		scopeSpans := resourceSpans.At(i).ScopeSpans()
-		for j := 0; j < scopeSpans.Len(); j++ {
+		for j := range scopeSpans.Len() {
 			scope := scopeSpans.At(j).Scope()
 			spanRecords := scopeSpans.At(j).Spans()
-			for k := 0; k < spanRecords.Len(); k++ {
+			for k := range spanRecords.Len() {
 				spanRecord := spanRecords.At(k)
 				spans = append(spans, spanBundle{spanRecord, resource, scope})
 			}

@@ -90,17 +90,17 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td ptrace.Traces) erro
 	// Maps root span id to a transaction.
 	transactionMap := make(map[sentry.SpanID]*sentry.Event)
 
-	for i := 0; i < resourceSpans.Len(); i++ {
+	for i := range resourceSpans.Len() {
 		rs := resourceSpans.At(i)
 		resourceTags := generateTagsFromResource(rs.Resource())
 
 		ilss := rs.ScopeSpans()
-		for j := 0; j < ilss.Len(); j++ {
+		for j := range ilss.Len() {
 			ils := ilss.At(j)
 			library := ils.Scope()
 
 			spans := ils.Spans()
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				otelSpan := spans.At(k)
 				sentrySpan := convertToSentrySpan(otelSpan, library, resourceTags)
 				convertEventsToSentryExceptions(&exceptionEvents, otelSpan.Events(), sentrySpan)
@@ -161,7 +161,7 @@ func generateTransactions(transactionMap map[sentry.SpanID]*sentry.Event, orphan
 // convertEventsToSentryExceptions creates a set of sentry events from exception events present in spans.
 // These events are stored in a mutated eventList
 func convertEventsToSentryExceptions(eventList *[]*sentry.Event, events ptrace.SpanEventSlice, sentrySpan *sentry.Span) {
-	for i := 0; i < events.Len(); i++ {
+	for i := range events.Len() {
 		event := events.At(i)
 		if event.Name() != "exception" {
 			continue

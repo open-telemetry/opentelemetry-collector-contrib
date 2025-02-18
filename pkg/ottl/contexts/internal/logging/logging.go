@@ -18,7 +18,7 @@ type Slice pcommon.Slice
 func (s Slice) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	ss := pcommon.Slice(s)
 	var err error
-	for i := 0; i < ss.Len(); i++ {
+	for i := range ss.Len() {
 		v := ss.At(i)
 		switch v.Type() {
 		case pcommon.ValueTypeStr:
@@ -118,7 +118,7 @@ type SpanEventSlice ptrace.SpanEventSlice
 func (s SpanEventSlice) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	ses := ptrace.SpanEventSlice(s)
 	var err error
-	for i := 0; i < ses.Len(); i++ {
+	for i := range ses.Len() {
 		err = errors.Join(err, encoder.AppendObject(SpanEvent(ses.At(i))))
 	}
 	return err
@@ -140,7 +140,7 @@ type SpanLinkSlice ptrace.SpanLinkSlice
 func (s SpanLinkSlice) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	sls := ptrace.SpanLinkSlice(s)
 	var err error
-	for i := 0; i < sls.Len(); i++ {
+	for i := range sls.Len() {
 		err = errors.Join(err, encoder.AppendObject(SpanLink(sls.At(i))))
 	}
 	return err
@@ -196,7 +196,7 @@ type NumberDataPointSlice pmetric.NumberDataPointSlice
 func (n NumberDataPointSlice) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	ndps := pmetric.NumberDataPointSlice(n)
 	var err error
-	for i := 0; i < ndps.Len(); i++ {
+	for i := range ndps.Len() {
 		err = errors.Join(err, encoder.AppendObject(NumberDataPoint(ndps.At(i))))
 	}
 	return err
@@ -226,7 +226,7 @@ type HistogramDataPointSlice pmetric.HistogramDataPointSlice
 func (h HistogramDataPointSlice) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	hdps := pmetric.HistogramDataPointSlice(h)
 	var err error
-	for i := 0; i < hdps.Len(); i++ {
+	for i := range hdps.Len() {
 		err = errors.Join(err, encoder.AppendObject(HistogramDataPoint(hdps.At(i))))
 	}
 	return err
@@ -256,7 +256,7 @@ type ExponentialHistogramDataPointSlice pmetric.ExponentialHistogramDataPointSli
 func (e ExponentialHistogramDataPointSlice) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	ehdps := pmetric.ExponentialHistogramDataPointSlice(e)
 	var err error
-	for i := 0; i < ehdps.Len(); i++ {
+	for i := range ehdps.Len() {
 		err = errors.Join(err, encoder.AppendObject(ExponentialHistogramDataPoint(ehdps.At(i))))
 	}
 	return err
@@ -297,7 +297,7 @@ type SummaryDataPointSlice pmetric.SummaryDataPointSlice
 func (s SummaryDataPointSlice) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	sdps := pmetric.SummaryDataPointSlice(s)
 	var err error
-	for i := 0; i < sdps.Len(); i++ {
+	for i := range sdps.Len() {
 		err = errors.Join(err, encoder.AppendObject(SummaryDataPoint(sdps.At(i))))
 	}
 	return err
@@ -323,7 +323,7 @@ type SummaryDataPointValueAtQuantileSlice pmetric.SummaryDataPointValueAtQuantil
 func (s SummaryDataPointValueAtQuantileSlice) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	qs := pmetric.SummaryDataPointValueAtQuantileSlice(s)
 	var err error
-	for i := 0; i < qs.Len(); i++ {
+	for i := range qs.Len() {
 		err = errors.Join(err, encoder.AppendObject(SummaryDataPointValueAtQuantile(qs.At(i))))
 	}
 	return nil
@@ -342,7 +342,7 @@ type UInt64Slice pcommon.UInt64Slice
 
 func (u UInt64Slice) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	uis := pcommon.UInt64Slice(u)
-	for i := 0; i < uis.Len(); i++ {
+	for i := range uis.Len() {
 		encoder.AppendUint64(uis.At(i))
 	}
 	return nil
@@ -352,7 +352,7 @@ type Float64Slice pcommon.Float64Slice
 
 func (f Float64Slice) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	fs := pcommon.Float64Slice(f)
-	for i := 0; i < fs.Len(); i++ {
+	for i := range fs.Len() {
 		encoder.AppendFloat64(fs.At(i))
 	}
 	return nil
@@ -363,7 +363,7 @@ type ExemplarSlice pmetric.ExemplarSlice
 func (e ExemplarSlice) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	es := pmetric.ExemplarSlice(e)
 	var err error
-	for i := 0; i < es.Len(); i++ {
+	for i := range es.Len() {
 		ee := es.At(i)
 		err = errors.Join(err, encoder.AppendObject(Exemplar(ee)))
 	}

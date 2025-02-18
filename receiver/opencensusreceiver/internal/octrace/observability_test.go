@@ -53,7 +53,7 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(addr)
 	require.NoError(t, err, "Failed to create the trace service client: %v", err)
 	spans := []*tracepb.Span{{TraceId: []byte("abcdefghijklmnop"), SpanId: []byte("12345678")}}
-	for i := 0; i < n; i++ {
+	for range n {
 		err = traceSvcClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: spans, Node: &commonpb.Node{}})
 		require.NoError(t, err, "Failed to send requests to the service: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	require.NoError(t, err, "Failed to create the trace service client: %v", err)
 
 	n := 5
-	for i := 0; i < n; i++ {
+	for i := range n {
 		sl := []*tracepb.Span{{TraceId: []byte("abcdefghijklmnop"), SpanId: []byte{byte(i + 1), 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}}}
 		err = traceSvcClient.Send(&agenttracepb.ExportTraceServiceRequest{Spans: sl, Node: &commonpb.Node{}})
 		require.NoError(t, err, "Failed to send requests to the service: %v", err)

@@ -79,7 +79,7 @@ func createTestResourceMetrics() pmetric.ResourceMetrics {
 	q2.SetQuantile(1)
 	q2.SetValue(5)
 
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		m = sm.Metrics().AppendEmpty()
 		m.SetName("spanCounter")
 		m.SetDescription("Counting all the spans")
@@ -134,7 +134,7 @@ func (d dimensionality) Less(i, j int) bool {
 	dim1 := d[i]
 	dim2 := d[j]
 
-	for k := 0; k < min(len(dim1), len(dim2)); k++ {
+	for k := range min(len(dim1), len(dim2)) {
 		if dim1[k] != dim2[k] {
 			return dim1[k] < dim2[k]
 		}
@@ -2006,7 +2006,7 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 	defer require.NoError(b, translator.Shutdown())
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		groupedMetric := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetric, config)
 		assert.NoError(b, err)
@@ -2029,7 +2029,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B
 	defer require.NoError(b, translator.Shutdown())
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.NoError(b, err)
@@ -2052,7 +2052,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing
 	defer require.NoError(b, translator.Shutdown())
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.NoError(b, err)
@@ -2075,7 +2075,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B)
 	defer require.NoError(b, translator.Shutdown())
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.NoError(b, err)
@@ -2093,7 +2093,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutInstrLibrary(b *testing.B) {
 	defer require.NoError(b, translator.Shutdown())
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.NoError(b, err)
@@ -2130,7 +2130,7 @@ func BenchmarkTranslateGroupedMetricToCWMetric(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		translateGroupedMetricToCWMetric(groupedMetric, config)
 	}
 }
@@ -2172,7 +2172,7 @@ func BenchmarkTranslateGroupedMetricToCWMetricWithFiltering(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		translateGroupedMetricToCWMetric(groupedMetric, config)
 	}
 }
@@ -2199,7 +2199,7 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		_, err := translateCWMetricToEMF(met, &Config{})
 		require.NoError(b, err)
 	}

@@ -394,9 +394,9 @@ func (s *sender) sendNonOTLPLogs(ctx context.Context, rl plog.ResourceLogs, flds
 	)
 
 	slgs := rl.ScopeLogs()
-	for i := 0; i < slgs.Len(); i++ {
+	for i := range slgs.Len() {
 		slg := slgs.At(i)
-		for j := 0; j < slg.LogRecords().Len(); j++ {
+		for j := range slg.LogRecords().Len() {
 			lr := slg.LogRecords().At(j)
 			formattedLine, err := s.formatLogLine(lr)
 			if err != nil {
@@ -471,7 +471,7 @@ func (s *sender) sendNonOTLPMetrics(ctx context.Context, md pmetric.Metrics) (pm
 
 	rms := md.ResourceMetrics()
 	droppedMetrics := pmetric.NewMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		rm := rms.At(i)
 		flds = newFields(rm.Resource().Attributes())
 		sms := rm.ScopeMetrics()
@@ -498,10 +498,10 @@ func (s *sender) sendNonOTLPMetrics(ctx context.Context, md pmetric.Metrics) (pm
 		// transform the metrics into formatted lines ready to be sent
 		var formattedLines []string
 		var err error
-		for i := 0; i < sms.Len(); i++ {
+		for i := range sms.Len() {
 			sm := sms.At(i)
 
-			for j := 0; j < sm.Metrics().Len(); j++ {
+			for j := range sm.Metrics().Len() {
 				m := sm.Metrics().At(j)
 
 				var formattedLine string

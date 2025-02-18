@@ -123,7 +123,7 @@ func TestScrape(t *testing.T) {
 			assert.Equal(t, test.expectMetrics, metrics.Len())
 
 			reportedMetricsCount := map[string]int{}
-			for i := 0; i < metrics.Len(); i++ {
+			for i := range metrics.Len() {
 				metric := metrics.At(i)
 				reportedMetricsCount[metric.Name()]++
 				switch metric.Name() {

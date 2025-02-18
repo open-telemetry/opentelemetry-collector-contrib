@@ -70,30 +70,30 @@ func testFilter(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDa
 	for _, metrics := range filtered {
 		filteredMetricCount += metrics.MetricCount()
 		rmsSlice := metrics.ResourceMetrics()
-		for i := 0; i < rmsSlice.Len(); i++ {
+		for i := range rmsSlice.Len() {
 			rms := rmsSlice.At(i)
 			ilms := rms.ScopeMetrics()
-			for j := 0; j < ilms.Len(); j++ {
+			for j := range ilms.Len() {
 				ilm := ilms.At(j)
 				metricSlice := ilm.Metrics()
-				for k := 0; k < metricSlice.Len(); k++ {
+				for k := range metricSlice.Len() {
 					metric := metricSlice.At(k)
 					if metric.Name() == filteredMetric {
 						dt := metric.Type()
 						switch dt {
 						case pmetric.MetricTypeGauge:
 							pts := metric.Gauge().DataPoints()
-							for l := 0; l < pts.Len(); l++ {
+							for l := range pts.Len() {
 								assertFiltered(t, pts.At(l).Attributes())
 							}
 						case pmetric.MetricTypeSum:
 							pts := metric.Sum().DataPoints()
-							for l := 0; l < pts.Len(); l++ {
+							for l := range pts.Len() {
 								assertFiltered(t, pts.At(l).Attributes())
 							}
 						case pmetric.MetricTypeHistogram:
 							pts := metric.Histogram().DataPoints()
-							for l := 0; l < pts.Len(); l++ {
+							for l := range pts.Len() {
 								assertFiltered(t, pts.At(l).Attributes())
 							}
 						}
@@ -160,7 +160,7 @@ func exprConfig(factory processor.Factory, include []string, exclude []string) c
 
 func testDataSlice(size int, mdType pmetric.MetricType, mvType pmetric.NumberDataPointValueType) []pmetric.Metrics {
 	var out []pmetric.Metrics
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		out = append(out, testData(fmt.Sprintf("p%d_", i), size, mdType, mvType))
 	}
 	return out

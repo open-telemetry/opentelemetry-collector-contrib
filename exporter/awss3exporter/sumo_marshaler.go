@@ -76,7 +76,7 @@ const (
 func (sumoMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	buf := bytes.Buffer{}
 	rls := ld.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
+	for i := range rls.Len() {
 		rl := rls.At(i)
 		ra := rl.Resource().Attributes()
 		sourceCategory, exists := ra.Get(SourceCategoryKey)
@@ -119,10 +119,10 @@ func (sumoMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 		}
 
 		ills := rl.ScopeLogs()
-		for j := 0; j < ills.Len(); j++ {
+		for j := range ills.Len() {
 			ils := ills.At(j)
 			logs := ils.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
+			for k := range logs.Len() {
 				lr := logs.At(k)
 				dateVal := lr.ObservedTimestamp()
 

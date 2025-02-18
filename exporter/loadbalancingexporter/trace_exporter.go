@@ -155,7 +155,7 @@ func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]
 	}
 
 	if key == svcRouting {
-		for i := 0; i < rs.Len(); i++ {
+		for i := range rs.Len() {
 			svc, ok := rs.At(i).Resource().Attributes().Get("service.name")
 			if !ok {
 				return nil, errors.New("unable to get service name")

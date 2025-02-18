@@ -176,7 +176,7 @@ func (c *traceToMetricConnector) addToCache(containerID string, key string) {
 }
 
 func (c *traceToMetricConnector) populateContainerTagsCache(traces ptrace.Traces) {
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		rs := traces.ResourceSpans().At(i)
 		attrs := rs.Resource().Attributes()
 

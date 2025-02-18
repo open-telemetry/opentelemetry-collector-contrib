@@ -80,7 +80,7 @@ func writeSpanLinks(v *json.Visitor, span ptrace.Span) {
 	_ = v.OnKey("links")
 	_ = v.OnArrayStart(-1, structform.AnyType)
 	spanLinks := span.Links()
-	for i := 0; i < spanLinks.Len(); i++ {
+	for i := range spanLinks.Len() {
 		spanLink := spanLinks.At(i)
 		_ = v.OnObjectStart(-1, structform.AnyType)
 		writeStringFieldSkipDefault(v, "trace_id", spanLink.TraceID().String())

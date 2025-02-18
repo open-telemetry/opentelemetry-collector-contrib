@@ -328,7 +328,7 @@ func (prweWAL *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
 
 func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wreq *prompb.WriteRequest, err error) {
 	var protoBlob []byte
-	for i := 0; i < 12; i++ {
+	for range 12 {
 		// Firstly check if we've been terminated, then exit if so.
 		select {
 		case <-ctx.Done():

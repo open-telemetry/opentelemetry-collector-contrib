@@ -78,7 +78,7 @@ func (e *metricsExporter) start(ctx context.Context, host component.Host) (err e
 
 func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	rss := md.ResourceMetrics()
-	for i := 0; i < rss.Len(); i++ {
+	for i := range rss.Len() {
 		resourceMetric := rss.At(i)
 		appName, subsystem := e.config.getMetadataFromResource(resourceMetric.Resource())
 		resourceMetric.Resource().Attributes().PutStr(cxAppNameAttrName, appName)

@@ -80,10 +80,10 @@ func (g *metricGenerator) genMetricFromCfg(cfg MetricsCfg) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics()
 	rms.EnsureCapacity(cfg.NumResourceMetrics)
-	for i := 0; i < cfg.NumResourceMetrics; i++ {
+	for range cfg.NumResourceMetrics {
 		rm := rms.AppendEmpty()
 		resource := rm.Resource()
-		for j := 0; j < cfg.NumResourceAttrs; j++ {
+		for j := range cfg.NumResourceAttrs {
 			resource.Attributes().PutStr(
 				fmt.Sprintf("resource-attr-name-%d", j),
 				fmt.Sprintf("resource-attr-val-%d", j),
@@ -97,7 +97,7 @@ func (g *metricGenerator) genMetricFromCfg(cfg MetricsCfg) pmetric.Metrics {
 func (g *metricGenerator) populateIlm(cfg MetricsCfg, rm pmetric.ResourceMetrics) {
 	ilms := rm.ScopeMetrics()
 	ilms.EnsureCapacity(cfg.NumILMPerResource)
-	for i := 0; i < cfg.NumILMPerResource; i++ {
+	for range cfg.NumILMPerResource {
 		ilm := ilms.AppendEmpty()
 		g.populateMetrics(cfg, ilm)
 	}
@@ -106,7 +106,7 @@ func (g *metricGenerator) populateIlm(cfg MetricsCfg, rm pmetric.ResourceMetrics
 func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pmetric.ScopeMetrics) {
 	metrics := ilm.Metrics()
 	metrics.EnsureCapacity(cfg.NumMetricsPerILM)
-	for i := 0; i < cfg.NumMetricsPerILM; i++ {
+	for range cfg.NumMetricsPerILM {
 		metric := metrics.AppendEmpty()
 		g.populateMetricDesc(cfg, metric)
 		//exhaustive:enforce
@@ -141,7 +141,7 @@ func (g *metricGenerator) populateMetricDesc(cfg MetricsCfg, metric pmetric.Metr
 
 func populateNumberPoints(cfg MetricsCfg, pts pmetric.NumberDataPointSlice) {
 	pts.EnsureCapacity(cfg.NumPtsPerMetric)
-	for i := 0; i < cfg.NumPtsPerMetric; i++ {
+	for i := range cfg.NumPtsPerMetric {
 		pt := pts.AppendEmpty()
 		pt.SetStartTimestamp(pcommon.Timestamp(cfg.StartTime))
 		pt.SetTimestamp(getTimestamp(cfg.StartTime, cfg.StepSize, i))
@@ -160,7 +160,7 @@ func populateNumberPoints(cfg MetricsCfg, pts pmetric.NumberDataPointSlice) {
 func populateDoubleHistogram(cfg MetricsCfg, dh pmetric.Histogram) {
 	pts := dh.DataPoints()
 	pts.EnsureCapacity(cfg.NumPtsPerMetric)
-	for i := 0; i < cfg.NumPtsPerMetric; i++ {
+	for i := range cfg.NumPtsPerMetric {
 		pt := pts.AppendEmpty()
 		pt.SetStartTimestamp(pcommon.Timestamp(cfg.StartTime))
 		ts := getTimestamp(cfg.StartTime, cfg.StepSize, i)
@@ -168,7 +168,7 @@ func populateDoubleHistogram(cfg MetricsCfg, dh pmetric.Histogram) {
 		populatePtAttributes(cfg, pt.Attributes())
 		setDoubleHistogramBounds(pt, 1, 2, 3, 4, 5)
 		addDoubleHistogramVal(pt, 1)
-		for i := 0; i < cfg.PtVal; i++ {
+		for range cfg.PtVal {
 			addDoubleHistogramVal(pt, 3)
 		}
 		addDoubleHistogramVal(pt, 5)
@@ -187,7 +187,7 @@ func addDoubleHistogramVal(hdp pmetric.HistogramDataPoint, val float64) {
 	// TODO: HasSum, Min, HasMin, Max, HasMax are not covered in tests.
 	buckets := hdp.BucketCounts()
 	bounds := hdp.ExplicitBounds()
-	for i := 0; i < bounds.Len(); i++ {
+	for i := range bounds.Len() {
 		bound := bounds.At(i)
 		if val <= bound {
 			buckets.SetAt(i, buckets.At(i)+1)
@@ -197,7 +197,7 @@ func addDoubleHistogramVal(hdp pmetric.HistogramDataPoint, val float64) {
 }
 
 func populatePtAttributes(cfg MetricsCfg, lm pcommon.Map) {
-	for i := 0; i < cfg.NumPtLabels; i++ {
+	for i := range cfg.NumPtLabels {
 		k := fmt.Sprintf("pt-label-key-%d", i)
 		v := fmt.Sprintf("pt-label-val-%d", i)
 		lm.PutStr(k, v)
@@ -211,7 +211,7 @@ func getTimestamp(startTime uint64, stepSize uint64, i int) pcommon.Timestamp {
 func populateExpoHistogram(cfg MetricsCfg, dh pmetric.ExponentialHistogram) {
 	pts := dh.DataPoints()
 	pts.EnsureCapacity(cfg.NumPtsPerMetric)
-	for i := 0; i < cfg.NumPtsPerMetric; i++ {
+	for i := range cfg.NumPtsPerMetric {
 		pt := pts.AppendEmpty()
 		pt.SetStartTimestamp(pcommon.Timestamp(cfg.StartTime))
 		ts := getTimestamp(cfg.StartTime, cfg.StepSize, i)

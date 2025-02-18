@@ -37,7 +37,7 @@ func diffRMSlices(sent []pmetric.ResourceMetrics, recd []pmetric.ResourceMetrics
 			Msg:           "Sent vs received ResourceMetrics not equal length",
 		}}
 	}
-	for i := 0; i < len(sent); i++ {
+	for i := range sent {
 		sentRM := sent[i]
 		recdRM := recd[i]
 		diffs = diffRMs(diffs, sentRM, recdRM)
@@ -65,7 +65,7 @@ func diffILMSlice(
 	if mismatch {
 		return diffs
 	}
-	for i := 0; i < expected.Len(); i++ {
+	for i := range expected.Len() {
 		diffs = diffILM(diffs, expected.At(i), actual.At(i))
 	}
 	return diffs
@@ -85,7 +85,7 @@ func diffMetrics(diffs []*MetricDiff, expected pmetric.MetricSlice, actual pmetr
 	if mismatch {
 		return diffs
 	}
-	for i := 0; i < expected.Len(); i++ {
+	for i := range expected.Len() {
 		diffs = DiffMetric(diffs, expected.At(i), actual.At(i))
 	}
 	return diffs
@@ -98,7 +98,7 @@ func diffMetricData(expected, actual pmetric.Metrics) []*MetricDiff {
 }
 
 func toSlice(s pmetric.ResourceMetricsSlice) (out []pmetric.ResourceMetrics) {
-	for i := 0; i < s.Len(); i++ {
+	for i := range s.Len() {
 		out = append(out, s.At(i))
 	}
 	return out
@@ -154,7 +154,7 @@ func diffNumberPts(
 	if mismatch {
 		return diffs
 	}
-	for i := 0; i < expected.Len(); i++ {
+	for i := range expected.Len() {
 		exPt := expected.At(i)
 		acPt := actual.At(i)
 
@@ -184,7 +184,7 @@ func diffHistogramPts(
 	if mismatch {
 		return diffs
 	}
-	for i := 0; i < expected.Len(); i++ {
+	for i := range expected.Len() {
 		diffs = diffHistogramPt(diffs, expected.At(i), actual.At(i))
 	}
 	return diffs
@@ -214,7 +214,7 @@ func diffExponentialHistogramPts(
 	if mismatch {
 		return diffs
 	}
-	for i := 0; i < expected.Len(); i++ {
+	for i := range expected.Len() {
 		diffs = diffExponentialHistogramPt(diffs, expected.At(i), actual.At(i))
 	}
 	return diffs
@@ -254,7 +254,7 @@ func diffExponentialHistogramPtBuckets(
 	if mod {
 		return diffs
 	}
-	for i := 0; i < exC.Len(); i++ {
+	for i := range exC.Len() {
 		diffs = diff(diffs, exC.At(i), acC.At(i), fmt.Sprintf("ExponentialHistogramDataPoint Buckets Count[%d]", i))
 	}
 	return diffs
@@ -270,7 +270,7 @@ func diffExemplars(
 	if mismatch {
 		return diffs
 	}
-	for i := 0; i < expected.Len(); i++ {
+	for i := range expected.Len() {
 		diffs = diff(diffs, expected.At(i).ValueType(), actual.At(i).ValueType(), "Exemplar Value Type")
 		switch expected.At(i).ValueType() {
 		case pmetric.ExemplarValueTypeInt:

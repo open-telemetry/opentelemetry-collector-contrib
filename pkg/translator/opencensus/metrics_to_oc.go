@@ -35,11 +35,11 @@ func ResourceMetricsToOC(rm pmetric.ResourceMetrics) (*occommon.Node, *ocresourc
 	// Approximate the number of the metrics as the number of the metrics in the first
 	// instrumentation library info.
 	ocMetrics := make([]*ocmetrics.Metric, 0, ilms.At(0).Metrics().Len())
-	for i := 0; i < ilms.Len(); i++ {
+	for i := range ilms.Len() {
 		ilm := ilms.At(i)
 		// TODO: Handle instrumentation library name and version.
 		metrics := ilm.Metrics()
-		for j := 0; j < metrics.Len(); j++ {
+		for j := range metrics.Len() {
 			ocMetrics = append(ocMetrics, metricToOC(metrics.At(j)))
 		}
 	}
@@ -127,7 +127,7 @@ func collectLabelKeysAndValueType(metric pmetric.Metric) *labelKeysAndType {
 // collectLabelKeysNumberDataPoints returns true if all values are int.
 func collectLabelKeysNumberDataPoints(dps pmetric.NumberDataPointSlice, keySet map[string]struct{}) bool {
 	allInt := true
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		addLabelKeys(keySet, dps.At(i).Attributes())
 		if dps.At(i).ValueType() != pmetric.NumberDataPointValueTypeInt {
 			allInt = false
@@ -137,13 +137,13 @@ func collectLabelKeysNumberDataPoints(dps pmetric.NumberDataPointSlice, keySet m
 }
 
 func collectLabelKeysHistogramDataPoints(dhdp pmetric.HistogramDataPointSlice, keySet map[string]struct{}) {
-	for i := 0; i < dhdp.Len(); i++ {
+	for i := range dhdp.Len() {
 		addLabelKeys(keySet, dhdp.At(i).Attributes())
 	}
 }
 
 func collectLabelKeysSummaryDataPoints(dhdp pmetric.SummaryDataPointSlice, keySet map[string]struct{}) {
-	for i := 0; i < dhdp.Len(); i++ {
+	for i := range dhdp.Len() {
 		addLabelKeys(keySet, dhdp.At(i).Attributes())
 	}
 }
@@ -211,7 +211,7 @@ func numberDataPointsToOC(dps pmetric.NumberDataPointSlice, labelKeys *labelKeys
 		return nil
 	}
 	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		point := &ocmetrics.Point{
 			Timestamp: timestampAsTimestampPb(dp.Timestamp()),
@@ -241,7 +241,7 @@ func doubleHistogramPointToOC(dps pmetric.HistogramDataPointSlice, labelKeys *la
 		return nil
 	}
 	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		buckets := histogramBucketsToOC(dp.BucketCounts())
 		exemplarsToOC(dp.ExplicitBounds(), buckets, dp.Exemplars())
@@ -289,7 +289,7 @@ func histogramBucketsToOC(bcts pcommon.UInt64Slice) []*ocmetrics.DistributionVal
 	}
 
 	ocBuckets := make([]*ocmetrics.DistributionValue_Bucket, 0, bcts.Len())
-	for i := 0; i < bcts.Len(); i++ {
+	for i := range bcts.Len() {
 		ocBuckets = append(ocBuckets, &ocmetrics.DistributionValue_Bucket{
 			Count: int64(bcts.At(i)),
 		})
@@ -302,7 +302,7 @@ func doubleSummaryPointToOC(dps pmetric.SummaryDataPointSlice, labelKeys *labelK
 		return nil
 	}
 	timeseries := make([]*ocmetrics.TimeSeries, 0, dps.Len())
-	for i := 0; i < dps.Len(); i++ {
+	for i := range dps.Len() {
 		dp := dps.At(i)
 		percentileValues := summaryPercentilesToOC(dp.QuantileValues())
 
@@ -335,7 +335,7 @@ func summaryPercentilesToOC(qtls pmetric.SummaryDataPointValueAtQuantileSlice) [
 	}
 
 	ocPercentiles := make([]*ocmetrics.SummaryValue_Snapshot_ValueAtPercentile, 0, qtls.Len())
-	for i := 0; i < qtls.Len(); i++ {
+	for i := range qtls.Len() {
 		quantile := qtls.At(i)
 		ocPercentiles = append(ocPercentiles, &ocmetrics.SummaryValue_Snapshot_ValueAtPercentile{
 			Percentile: quantile.Quantile() * 100,
@@ -350,7 +350,7 @@ func exemplarsToOC(bounds pcommon.Float64Slice, ocBuckets []*ocmetrics.Distribut
 		return
 	}
 
-	for i := 0; i < exemplars.Len(); i++ {
+	for i := range exemplars.Len() {
 		exemplar := exemplars.At(i)
 		var val float64
 		switch exemplar.ValueType() {
@@ -396,7 +396,7 @@ func attributeValuesToOC(labels pcommon.Map, labelKeys *labelKeysAndType) []*ocm
 	// (The order matches key indices)
 	labelValuesOrig := make([]ocmetrics.LabelValue, len(labelKeys.keys))
 	labelValues := make([]*ocmetrics.LabelValue, len(labelKeys.keys))
-	for i := 0; i < len(labelKeys.keys); i++ {
+	for i := range len(labelKeys.keys) {
 		labelValues[i] = &labelValuesOrig[i]
 	}
 

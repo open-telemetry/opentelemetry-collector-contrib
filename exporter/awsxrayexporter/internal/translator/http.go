@@ -152,7 +152,7 @@ func extractResponseSizeFromEvents(span ptrace.Span) int64 {
 	if size != 0 {
 		return size
 	}
-	for i := 0; i < span.Events().Len(); i++ {
+	for i := range span.Events().Len() {
 		event := span.Events().At(i)
 		size = extractResponseSizeFromAttributes(event.Attributes())
 		if size != 0 {

@@ -75,7 +75,7 @@ func (c *logsConsumer) Consume(ctx context.Context, nextRecord nextRecordFunc, c
 		}
 
 		if commonAttributes != nil {
-			for i := 0; i < logs.ResourceLogs().Len(); i++ {
+			for i := range logs.ResourceLogs().Len() {
 				rm := logs.ResourceLogs().At(i)
 				for k, v := range commonAttributes {
 					if _, found := rm.Resource().Attributes().Get(k); !found {

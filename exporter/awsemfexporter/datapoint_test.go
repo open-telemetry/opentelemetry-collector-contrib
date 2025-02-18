@@ -88,7 +88,7 @@ func generateTestSumMetric(name string, valueType metricValueType) pmetric.Metri
 	otelMetrics := pmetric.NewMetrics()
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
 	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		metric := metrics.AppendEmpty()
 		metric.SetName(name)
 		metric.SetUnit("Count")
@@ -309,7 +309,7 @@ func generateTestSummaryMetric(name string) pmetric.Metrics {
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
 	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
 
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		metric := metrics.AppendEmpty()
 		metric.SetName(name)
 		metric.SetUnit("Seconds")
@@ -334,7 +334,7 @@ func generateTestSummaryMetricWithNaN(name string) pmetric.Metrics {
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
 	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
 
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		metric := metrics.AppendEmpty()
 		metric.SetName(name)
 		metric.SetUnit("Seconds")
@@ -359,7 +359,7 @@ func generateTestSummaryMetricWithInf(name string) pmetric.Metrics {
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
 	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
 
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		metric := metrics.AppendEmpty()
 		metric.SetName(name)
 		metric.SetUnit("Seconds")
@@ -385,7 +385,7 @@ func generateOtelTestMetrics(generatedOtelMetrics ...pmetric.Metrics) pmetric.Me
 	finalMetrics := rs.ScopeMetrics().AppendEmpty().Metrics()
 	for _, generatedOtelMetric := range generatedOtelMetrics {
 		generatedMetrics := generatedOtelMetric.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-		for i := 0; i < generatedMetrics.Len(); i++ {
+		for i := range generatedMetrics.Len() {
 			generatedMetric := generatedMetrics.At(i)
 			finalMetric := finalMetrics.AppendEmpty()
 			generatedMetric.CopyTo(finalMetric)
@@ -2137,12 +2137,12 @@ func benchmarkGetAndCalculateDeltaDataPoints(b *testing.B, bucketLength int) {
 	emfCalcs := setupEmfCalculators()
 	defer require.NoError(b, shutdownEmfCalculators(emfCalcs))
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		for i := 0; i < metrics.Len(); i++ {
+	for range b.N {
+		for i := range metrics.Len() {
 			metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type(), 0)
 			dps := getDataPoints(metrics.At(i), metadata, zap.NewNop())
 
-			for i := 0; i < dps.Len(); i++ {
+			for i := range dps.Len() {
 				dps.CalculateDeltaDatapoints(i, "", false, emfCalcs)
 			}
 		}

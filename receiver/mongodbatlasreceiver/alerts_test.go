@@ -675,11 +675,11 @@ func testAlert() mongodbatlas.Alert {
 }
 
 func validateAttributes(t *testing.T, expectedStringAttributes map[string]string, logs plog.Logs) {
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for range logs.ResourceLogs().Len() {
 		rl := logs.ResourceLogs().At(0)
-		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+		for j := range rl.ScopeLogs().Len() {
 			sl := rl.ScopeLogs().At(j)
-			for k := 0; k < sl.LogRecords().Len(); k++ {
+			for k := range sl.LogRecords().Len() {
 				lr := sl.LogRecords().At(k)
 				for k, v := range expectedStringAttributes {
 					val, ok := lr.Attributes().Get(k)

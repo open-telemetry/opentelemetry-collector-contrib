@@ -25,12 +25,12 @@ func accept(traces ptrace.Traces, v TraceVisitor) {
 	resourceSpans := traces.ResourceSpans()
 
 	// Walk each ResourceSpans instance
-	for i := 0; i < resourceSpans.Len(); i++ {
+	for i := range resourceSpans.Len() {
 		rs := resourceSpans.At(i)
 		resource := rs.Resource()
 		scopeSpansSlice := rs.ScopeSpans()
 
-		for j := 0; j < scopeSpansSlice.Len(); j++ {
+		for j := range scopeSpansSlice.Len() {
 			scopeSpans := scopeSpansSlice.At(j)
 			// instrumentation library is optional
 			scope := scopeSpans.Scope()
@@ -39,7 +39,7 @@ func accept(traces ptrace.Traces, v TraceVisitor) {
 				continue
 			}
 
-			for k := 0; k < spansSlice.Len(); k++ {
+			for k := range spansSlice.Len() {
 				if ok := v.visit(resource, scope, spansSlice.At(k)); !ok {
 					return
 				}

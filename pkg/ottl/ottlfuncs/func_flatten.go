@@ -71,7 +71,7 @@ func flattenMap(m pcommon.Map, result pcommon.Map, prefix string, currentDepth, 
 }
 
 func flattenSlice(s pcommon.Slice, result pcommon.Map, prefix string, currentDepth int64, maxDepth int64) {
-	for i := 0; i < s.Len(); i++ {
+	for i := range s.Len() {
 		flattenValue(fmt.Sprintf("%d", i), s.At(i), currentDepth+1, maxDepth, result, prefix)
 	}
 }
@@ -81,7 +81,7 @@ func flattenValue(k string, v pcommon.Value, currentDepth int64, maxDepth int64,
 	case v.Type() == pcommon.ValueTypeMap && currentDepth < maxDepth:
 		flattenMap(v.Map(), result, prefix+k, currentDepth+1, maxDepth)
 	case v.Type() == pcommon.ValueTypeSlice && currentDepth < maxDepth:
-		for i := 0; i < v.Slice().Len(); i++ {
+		for i := range v.Slice().Len() {
 			switch {
 			case v.Slice().At(i).Type() == pcommon.ValueTypeMap && currentDepth+1 < maxDepth:
 				flattenMap(v.Slice().At(i).Map(), result, fmt.Sprintf("%v.%v", prefix+k, i), currentDepth+2, maxDepth)
