@@ -59,6 +59,14 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 	assert.Nil(t, r)
 }
 
+func TestNewReceiver_refresh_frequency(t *testing.T) {
+	c := createDefaultConfig().(*Config)
+	c.RefreshFrequency = 1
+	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
+}
+
 func TestNewReceiver(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
