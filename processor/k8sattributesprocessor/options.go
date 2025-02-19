@@ -32,7 +32,7 @@ const (
 	clusterUID                = "k8s.cluster.uid"
 	containerImageRepoDigests = "container.image.repo_digests"
 	containerPorts            = "container.ports"
-	containerCpuRequest       = "container.resources.requests.cpu"
+	containerCPURequest       = "container.resources.requests.cpu"
 )
 
 // option represents a configuration option that can be passes.
@@ -79,7 +79,7 @@ func enabledAttributes() (attributes []string) {
 		attributes = append(attributes, containerPorts)
 	}
 	if defaultConfig.ContainerResourcesRequestsCPU.Enabled {
-		attributes = append(attributes, containerCpuRequest)
+		attributes = append(attributes, containerCPURequest)
 	}
 	if defaultConfig.K8sContainerName.Enabled {
 		attributes = append(attributes, conventions.AttributeK8SContainerName)
@@ -202,8 +202,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ClusterUID = true
 			case containerPorts:
 				p.rules.ContainerPorts = true
-			case containerCpuRequest:
-				p.rules.ContainerCpuRequest = true
+			case containerCPURequest:
+				p.rules.ContainerCPURequest = true
 			}
 		}
 		return nil

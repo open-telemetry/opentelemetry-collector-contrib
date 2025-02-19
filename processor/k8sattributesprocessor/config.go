@@ -100,7 +100,7 @@ func (cfg *Config) Validate() error {
 			conventions.AttributeK8SNodeName, conventions.AttributeK8SNodeUID,
 			conventions.AttributeK8SContainerName, conventions.AttributeContainerID,
 			conventions.AttributeContainerImageName, conventions.AttributeContainerImageTag,
-			containerImageRepoDigests, containerPorts, containerCpuRequest, clusterUID:
+			containerImageRepoDigests, containerPorts, containerCPURequest, clusterUID:
 		default:
 			return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 		}

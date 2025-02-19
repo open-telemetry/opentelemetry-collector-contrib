@@ -1039,7 +1039,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 								ImageName:           "test/app",
 								ImageTag:            "1.0.1",
 								ContainerPorts:      []int32{80, 443},
-								ContainerCpuRequest: "500m",
+								ContainerCPURequest: "500m",
 							},
 						},
 					},
@@ -1055,7 +1055,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				conventions.AttributeContainerImageName: "test/app",
 				conventions.AttributeContainerImageTag:  "1.0.1",
 				containerPorts:                          []int32{80, 443},
-				containerCpuRequest:                     "500m",
+				containerCPURequest:                     "500m",
 			},
 		},
 		{

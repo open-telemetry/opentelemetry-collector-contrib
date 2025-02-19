@@ -134,7 +134,7 @@ type Container struct {
 	ImageName           string
 	ImageTag            string
 	ContainerPorts      []int32
-	ContainerCpuRequest string
+	ContainerCPURequest string
 
 	// Statuses is a map of container k8s.container.restart_count attribute to ContainerStatus struct.
 	Statuses map[int]ContainerStatus
@@ -240,7 +240,7 @@ type ExtractionRules struct {
 	ContainerImageRepoDigests bool
 	ContainerImageTag         bool
 	ContainerPorts            bool
-	ContainerCpuRequest       bool
+	ContainerCPURequest       bool
 	ClusterUID                bool
 	Annotations               []FieldExtractionRule
 	Labels                    []FieldExtractionRule
