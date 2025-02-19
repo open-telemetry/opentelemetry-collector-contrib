@@ -26,8 +26,8 @@ var validMatchTypes = []MatchType{Regexp, Strict}
 
 // Config configures the matching behavior of a FilterSet.
 type Config struct {
-	MatchType    MatchType      `mapstructure:"match_type"`
 	RegexpConfig *regexp.Config `mapstructure:"regexp"`
+	MatchType    MatchType      `mapstructure:"match_type"`
 }
 
 func NewUnrecognizedMatchTypeError(matchType MatchType) error {
