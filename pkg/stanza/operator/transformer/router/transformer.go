@@ -38,6 +38,10 @@ func (t *Transformer) CanProcess() bool {
 
 // Process will route incoming entries based on matching expressions
 func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
+	if entry == nil {
+		return fmt.Errorf("got a nil entry, this should not happen and is potentially a bug")
+	}
+
 	env := helper.GetExprEnv(entry)
 	defer helper.PutExprEnv(env)
 

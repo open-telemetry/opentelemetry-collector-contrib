@@ -100,13 +100,16 @@ func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry
 		zap.Any("error", err),
 		zap.Any("action", t.OnError),
 	}
-	if entry != nil {
-		toAddFields := []zap.Field{zap.Any("entry.timestamp", entry.Timestamp)}
-		if logFilePath, ok := entry.Attributes[attrs.LogFilePath]; ok {
-			toAddFields = slices.Insert(toAddFields, 0, zap.Any(attrs.LogFilePath, logFilePath))
-		}
-		logFields = slices.Insert(logFields, 0, toAddFields...)
+
+	if entry == nil {
+		return fmt.Errorf("got a nil entry, this should not happen and is potentially a bug")
 	}
+
+	toAddFields := []zap.Field{zap.Any("entry.timestamp", entry.Timestamp)}
+	if logFilePath, ok := entry.Attributes[attrs.LogFilePath]; ok {
+		toAddFields = slices.Insert(toAddFields, 0, zap.Any(attrs.LogFilePath, logFilePath))
+	}
+	logFields = slices.Insert(logFields, 0, toAddFields...)
 
 	if t.OnError == SendOnErrorQuiet || t.OnError == DropOnErrorQuiet {
 		t.Logger().Debug("Failed to process entry", logFields...)
