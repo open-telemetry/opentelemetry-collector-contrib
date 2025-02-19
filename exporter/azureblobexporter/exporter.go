@@ -207,7 +207,7 @@ func (e *azureBlobExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) e
 	}
 
 	// Generate a unique blob name
-	params := map[string]interface{}{
+	params := map[string]any{
 		"FileExtension": fileExtensionMap[e.config.FormatType],
 		"SerialNum":     randomInRange(1, int(e.config.BlobNameFormat.SerialNumRange)),
 	}
