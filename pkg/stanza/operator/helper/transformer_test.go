@@ -109,10 +109,10 @@ func TestTransformerDropOnError(t *testing.T) {
 		{
 			Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to process entry"},
 			Context: []zapcore.Field{
-				zap.Any(attrs.LogFilePath, "/test/file"),
-				zap.Any("entry.timestamp", now),
 				{Key: "error", Type: zapcore.ErrorType, Interface: fmt.Errorf("Failure")},
 				zap.Any("action", "drop"),
+				zap.Any("entry.timestamp", now),
+				zap.Any(attrs.LogFilePath, "/test/file"),
 			},
 		},
 	}
@@ -159,10 +159,10 @@ func TestTransformerDropOnErrorQuiet(t *testing.T) {
 		{
 			Entry: zapcore.Entry{Level: zap.DebugLevel, Message: "Failed to process entry"},
 			Context: []zapcore.Field{
-				zap.Any(attrs.LogFilePath, "/test/file"),
-				zap.Any("entry.timestamp", now),
 				{Key: "error", Type: 26, Interface: fmt.Errorf("Failure")},
 				zap.Any("action", "drop_quiet"),
+				zap.Any("entry.timestamp", now),
+				zap.Any(attrs.LogFilePath, "/test/file"),
 			},
 		},
 	}
@@ -209,10 +209,10 @@ func TestTransformerSendOnError(t *testing.T) {
 		{
 			Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to process entry"},
 			Context: []zapcore.Field{
-				zap.Any(attrs.LogFilePath, "/test/file"),
-				zap.Any("entry.timestamp", now),
 				{Key: "error", Type: 26, Interface: fmt.Errorf("Failure")},
 				zap.Any("action", "send"),
+				zap.Any("entry.timestamp", now),
+				zap.Any(attrs.LogFilePath, "/test/file"),
 			},
 		},
 	}
@@ -259,10 +259,10 @@ func TestTransformerSendOnErrorQuiet(t *testing.T) {
 		{
 			Entry: zapcore.Entry{Level: zap.DebugLevel, Message: "Failed to process entry"},
 			Context: []zapcore.Field{
-				zap.Any(attrs.LogFilePath, "/test/file"),
-				zap.Any("entry.timestamp", now),
 				{Key: "error", Type: 26, Interface: fmt.Errorf("Failure")},
 				zap.Any("action", "send_quiet"),
+				zap.Any("entry.timestamp", now),
+				zap.Any(attrs.LogFilePath, "/test/file"),
 			},
 		},
 	}
