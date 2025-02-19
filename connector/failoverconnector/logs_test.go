@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
 
 var errLogsConsumer = errors.New("Error from ConsumeLogs")
@@ -40,7 +42,7 @@ func TestLogsRegisterConsumers(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
+		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Logs))
 
 	failoverConnector := conn.(*logsFailover)
 	defer func() {
@@ -80,7 +82,7 @@ func TestLogsWithValidFailover(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
+		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 
@@ -117,7 +119,7 @@ func TestLogsWithFailoverError(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
+		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 

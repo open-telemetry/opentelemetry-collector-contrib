@@ -19,7 +19,7 @@ import (
 
 func TestNewDetector(t *testing.T) {
 	dcfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(), dcfg)
+	d, err := NewDetector(processortest.NewNopSettingsWithType(processortest.NopType), dcfg)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }
