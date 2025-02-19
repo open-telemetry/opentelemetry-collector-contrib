@@ -430,7 +430,7 @@ This implies data is lost.
 This can happen for OTel host and k8s metrics that the [`elasticinframetricsprocessor`](https://github.com/elastic/opentelemetry-collector-components/tree/main/processor/elasticinframetricsprocessor) has translated to the format the host and k8s dashboards in Kibana can consume.
 If these metrics arrive in the `elasticsearchexporter` in different batches, they will not be grouped to the same document.
 This can cause the `version_conflict_engine_exception` error.
-Try to remove the `batchprocessor` from the pipeline (or remove `send_batch_max_size`) to ensure all metrics are sent in the same batch.
+Try to remove the `batchprocessor` from the pipeline (or set `send_batch_max_size: 0`) to ensure metrics are not split into different batches.
 This gives the exporter the opportunity to group all related metrics into the same document.
 
 2. Otherwise, check your metrics pipeline setup for misconfiguration that causes an actual violation of the [single writer principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer).
