@@ -49,6 +49,11 @@ var newMetricsReceiver = func(
 		}
 		sc.Version = version
 	}
+
+	if config.RefreshFrequency != 0 {
+		sc.Metadata.RefreshFrequency = config.RefreshFrequency
+	}
+
 	if err := kafka.ConfigureAuthentication(ctx, config.Authentication, sc); err != nil {
 		return nil, err
 	}

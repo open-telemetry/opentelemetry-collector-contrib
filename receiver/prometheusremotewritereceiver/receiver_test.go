@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadata"
 )
 
 var writeV2RequestFixture = &writev2.Request{
@@ -51,7 +52,7 @@ func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, prwReceiver, "metrics receiver creation failed")
 
