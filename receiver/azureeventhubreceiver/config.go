@@ -61,5 +61,8 @@ func (config *Config) Validate() error {
 	if !isValidFormat(config.Format) {
 		return fmt.Errorf("invalid format; must be one of %#v", validFormats)
 	}
+	if config.Partition == "" && config.Offset != "" {
+		return errors.New("cannot use 'offset' without 'partition'")
+	}
 	return nil
 }

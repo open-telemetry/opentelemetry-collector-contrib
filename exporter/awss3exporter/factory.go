@@ -32,8 +32,9 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		QueueSettings: queueCfg,
 		S3Uploader: S3UploaderConfig{
-			Region:      "us-east-1",
-			S3Partition: "minute",
+			Region:       "us-east-1",
+			S3Partition:  "minute",
+			StorageClass: "STANDARD",
 		},
 		MarshalerName: "otlp_json",
 	}
