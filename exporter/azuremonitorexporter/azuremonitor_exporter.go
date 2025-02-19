@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -151,15 +150,4 @@ func (exporter *azureMonitorExporter) consumeTraces(_ context.Context, traceData
 	visitor := &traceVisitor{exporter: exporter}
 	accept(traceData, visitor)
 	return visitor.err
-}
-
-// Returns a new instance of the log exporter
-func newAzureMonitorExporter(config *Config, set exporter.Settings) AzureMonitorExporter {
-	return &azureMonitorExporter{
-		config:    config,
-		logger:    set.Logger,
-		packer:    newMetricPacker(set.Logger),
-		startOnce: sync.Once{},
-		endOnce:   sync.Once{},
-	}
 }

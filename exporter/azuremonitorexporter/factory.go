@@ -15,9 +15,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
@@ -28,13 +25,6 @@ var (
 	errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Monitor Config")
 	exporters                      = sharedcomponent.NewSharedComponents()
 )
-
-type AzureMonitorExporter interface {
-	component.Component
-	consumeTraces(_ context.Context, td ptrace.Traces) error
-	consumeMetrics(_ context.Context, md pmetric.Metrics) error
-	consumeLogs(_ context.Context, ld plog.Logs) error
-}
 
 // NewFactory returns a factory for Azure Monitor exporter.
 func NewFactory() exporter.Factory {
@@ -65,7 +55,7 @@ func createDefaultConfig() component.Config {
 }
 
 func (f *factory) createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
@@ -77,7 +67,7 @@ func (f *factory) createTracesExporter(
 	ame := getOrCreateAzureMonitorExporter(cfg, set)
 
 	return exporterhelper.NewTraces(
-		context.TODO(),
+		ctx,
 		set,
 		cfg,
 		ame.consumeTraces,
@@ -87,7 +77,7 @@ func (f *factory) createTracesExporter(
 }
 
 func (f *factory) createLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
@@ -99,7 +89,7 @@ func (f *factory) createLogsExporter(
 	ame := getOrCreateAzureMonitorExporter(cfg, set)
 
 	return exporterhelper.NewLogs(
-		context.TODO(),
+		ctx,
 		set,
 		cfg,
 		ame.consumeLogs,
@@ -109,7 +99,7 @@ func (f *factory) createLogsExporter(
 }
 
 func (f *factory) createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
@@ -121,7 +111,7 @@ func (f *factory) createMetricsExporter(
 	ame := getOrCreateAzureMonitorExporter(cfg, set)
 
 	return exporterhelper.NewMetrics(
-		context.TODO(),
+		ctx,
 		set,
 		cfg,
 		ame.consumeMetrics,
@@ -130,14 +120,18 @@ func (f *factory) createMetricsExporter(
 		exporterhelper.WithShutdown(ame.Shutdown))
 }
 
-func getOrCreateAzureMonitorExporter(cfg component.Config, set exporter.Settings) AzureMonitorExporter {
+func getOrCreateAzureMonitorExporter(cfg component.Config, set exporter.Settings) *azureMonitorExporter {
 	conf := cfg.(*Config)
 	ame := exporters.GetOrAdd(set.ID, func() component.Component {
-		return newAzureMonitorExporter(conf, set)
+		return &azureMonitorExporter{
+			config: conf,
+			logger: set.Logger,
+			packer: newMetricPacker(set.Logger),
+		}
 	})
 
 	c := ame.Unwrap()
-	return c.(AzureMonitorExporter)
+	return c.(*azureMonitorExporter)
 }
 
 func (f *factory) initLogger(logger *zap.Logger) {
