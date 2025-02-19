@@ -74,3 +74,10 @@ func TestInvalidFormat(t *testing.T) {
 	err := xconfmap.Validate(cfg)
 	assert.ErrorContains(t, err, "invalid format; must be one of")
 }
+
+func TestOffsetWithoutPartition(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig().(*Config)
+	cfg.Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
+	cfg.Offset = "foo"
+	assert.ErrorContains(t, cfg.Validate(), "cannot use 'offset' without 'partition'")
+}
