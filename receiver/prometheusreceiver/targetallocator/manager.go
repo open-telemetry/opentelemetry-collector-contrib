@@ -170,7 +170,7 @@ func (m *Manager) applyCfg() error {
 	if !m.enableNativeHistograms {
 		// Enforce scraping classic histograms to avoid dropping them.
 		for _, scrapeConfig := range m.promCfg.ScrapeConfigs {
-			scrapeConfig.ScrapeClassicHistograms = true
+			scrapeConfig.AlwaysScrapeClassicHistograms = true
 		}
 	}
 

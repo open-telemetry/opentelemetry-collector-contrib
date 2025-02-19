@@ -4,7 +4,6 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
-	"compress/gzip"
 	"context"
 	"errors"
 	"io"
@@ -31,7 +30,7 @@ type bulkIndexer interface {
 
 type bulkIndexerSession interface {
 	// Add adds a document to the bulk indexing session.
-	Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string) error
+	Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string, action string) error
 
 	// End must be called on the session object once it is no longer
 	// needed, in order to release any associated resources.
@@ -55,14 +54,14 @@ type bulkIndexerSession interface {
 
 const defaultMaxRetries = 2
 
-func newBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config) (bulkIndexer, error) {
+func newBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) (bulkIndexer, error) {
 	if config.Batcher.Enabled != nil {
-		return newSyncBulkIndexer(logger, client, config), nil
+		return newSyncBulkIndexer(logger, client, config, requireDataStream), nil
 	}
-	return newAsyncBulkIndexer(logger, client, config)
+	return newAsyncBulkIndexer(logger, client, config, requireDataStream)
 }
 
-func bulkIndexerConfig(client esapi.Transport, config *Config) docappender.BulkIndexerConfig {
+func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream bool) docappender.BulkIndexerConfig {
 	var maxDocRetries int
 	if config.Retry.Enabled {
 		maxDocRetries = defaultMaxRetries
@@ -72,21 +71,21 @@ func bulkIndexerConfig(client esapi.Transport, config *Config) docappender.BulkI
 	}
 	var compressionLevel int
 	if config.Compression == configcompression.TypeGzip {
-		compressionLevel = gzip.BestSpeed
+		compressionLevel = int(config.CompressionParams.Level)
 	}
 	return docappender.BulkIndexerConfig{
 		Client:                client,
 		MaxDocumentRetries:    maxDocRetries,
 		Pipeline:              config.Pipeline,
 		RetryOnDocumentStatus: config.Retry.RetryOnStatus,
-		RequireDataStream:     config.MappingMode() == MappingOTel,
+		RequireDataStream:     requireDataStream,
 		CompressionLevel:      compressionLevel,
 	}
 }
 
-func newSyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config) *syncBulkIndexer {
+func newSyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) *syncBulkIndexer {
 	return &syncBulkIndexer{
-		config:       bulkIndexerConfig(client, config),
+		config:       bulkIndexerConfig(client, config, requireDataStream),
 		flushTimeout: config.Timeout,
 		flushBytes:   config.Flush.Bytes,
 		retryConfig:  config.Retry,
@@ -126,8 +125,14 @@ type syncBulkIndexerSession struct {
 }
 
 // Add adds an item to the sync bulk indexer session.
-func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string) error {
-	doc := docappender.BulkIndexerItem{Index: index, Body: document, DocumentID: docID, DynamicTemplates: dynamicTemplates}
+func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
+	doc := docappender.BulkIndexerItem{
+		Index:            index,
+		Body:             document,
+		DocumentID:       docID,
+		DynamicTemplates: dynamicTemplates,
+		Action:           action,
+	}
 	err := s.bi.Add(doc)
 	if err != nil {
 		return err
@@ -176,7 +181,7 @@ func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 	}
 }
 
-func newAsyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config) (*asyncBulkIndexer, error) {
+func newAsyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) (*asyncBulkIndexer, error) {
 	numWorkers := config.NumWorkers
 	if numWorkers == 0 {
 		numWorkers = runtime.NumCPU()
@@ -190,7 +195,7 @@ func newAsyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Con
 	pool.wg.Add(numWorkers)
 
 	for i := 0; i < numWorkers; i++ {
-		bi, err := docappender.NewBulkIndexer(bulkIndexerConfig(client, config))
+		bi, err := docappender.NewBulkIndexer(bulkIndexerConfig(client, config, requireDataStream))
 		if err != nil {
 			return nil, err
 		}
@@ -249,12 +254,13 @@ func (a *asyncBulkIndexer) Close(ctx context.Context) error {
 // Add adds an item to the async bulk indexer session.
 //
 // Adding an item after a call to Close() will panic.
-func (s asyncBulkIndexerSession) Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string) error {
+func (s asyncBulkIndexerSession) Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
 	item := docappender.BulkIndexerItem{
 		Index:            index,
 		Body:             document,
 		DocumentID:       docID,
 		DynamicTemplates: dynamicTemplates,
+		Action:           action,
 	}
 	select {
 	case <-ctx.Done():

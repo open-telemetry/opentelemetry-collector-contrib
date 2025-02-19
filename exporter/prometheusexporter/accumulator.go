@@ -261,15 +261,14 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 					zap.String("pp_timestamp", pp.Timestamp().String()),
 					zap.String("ip_timestamp", ip.Timestamp().String()),
 				).Warn("Misaligned starting timestamps")
-				if ip.StartTimestamp().AsTime().After(pp.Timestamp().AsTime()) {
-					a.logger.Debug("treating it like reset")
-					ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
-				} else {
+				if !ip.StartTimestamp().AsTime().After(pp.Timestamp().AsTime()) {
 					a.logger.With(
 						zap.String("metric_name", metric.Name()),
 					).Warn("Dropped misaligned histogram datapoint")
 					continue
 				}
+				a.logger.Debug("treating it like reset")
+				ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
 			} else {
 				a.logger.Debug("Accumulate another histogram datapoint")
 				accumulateHistogramValues(pp, ip, m.Histogram().DataPoints().AppendEmpty())

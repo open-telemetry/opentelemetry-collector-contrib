@@ -17,7 +17,7 @@ import (
 )
 
 // PageLimit defines number of items in a single page for different APIs.
-// Those numbers can be found on the Input and and Output struct comments.
+// Those numbers can be found on the Input and Output struct comments.
 // Call DefaultPageLimit() to config the mock to use numbers same as the actual AWS API.
 type PageLimit struct {
 	ListTaskOutput                 int // default 100, max 100

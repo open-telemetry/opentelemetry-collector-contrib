@@ -46,12 +46,12 @@ func (client *testClient) GetObject(_ context.Context, request *s3.GetObjectInpu
 }
 
 // Create a provider mocking the s3 provider
-func NewTestProvider(configFile string) confmap.Provider {
+func newTestProvider(configFile string) confmap.Provider {
 	return &provider{client: &testClient{configFile: configFile}}
 }
 
 func TestFunctionalityS3URISplit(t *testing.T) {
-	fp := NewTestProvider("./testdata/otel-config.yaml")
+	fp := newTestProvider("./testdata/otel-config.yaml")
 	bucket, region, key, err := s3URISplit("s3://bucket.s3.region.amazonaws.com/key")
 	assert.NoError(t, err)
 	assert.Equal(t, "bucket", bucket)
@@ -82,7 +82,7 @@ func TestURIs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fp := NewTestProvider("./testdata/otel-config.yaml")
+			fp := newTestProvider("./testdata/otel-config.yaml")
 			_, err := fp.Retrieve(context.Background(), tt.uri, nil)
 			if !tt.valid {
 				assert.Error(t, err)
@@ -95,14 +95,14 @@ func TestURIs(t *testing.T) {
 }
 
 func TestUnsupportedScheme(t *testing.T) {
-	fp := NewTestProvider("./testdata/otel-config.yaml")
+	fp := newTestProvider("./testdata/otel-config.yaml")
 	_, err := fp.Retrieve(context.Background(), "https://google.com", nil)
 	assert.Error(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestNonExistent(t *testing.T) {
-	fp := NewTestProvider("./testdata/non-existent.yaml")
+	fp := newTestProvider("./testdata/non-existent.yaml")
 	_, err := fp.Retrieve(context.Background(), "s3://non-exist-bucket.s3.region.amazonaws.com/key", nil)
 	assert.Error(t, err)
 	_, err = fp.Retrieve(context.Background(), "s3://bucket.s3.region.amazonaws.com/non-exist-key.yaml", nil)
@@ -113,14 +113,14 @@ func TestNonExistent(t *testing.T) {
 }
 
 func TestInvalidYAML(t *testing.T) {
-	fp := NewTestProvider("./testdata/invalid-otel-config.yaml")
+	fp := newTestProvider("./testdata/invalid-otel-config.yaml")
 	_, err := fp.Retrieve(context.Background(), "s3://bucket.s3.region.amazonaws.com/key", nil)
 	assert.Error(t, err)
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestScheme(t *testing.T) {
-	fp := NewTestProvider("./testdata/otel-config.yaml")
+	fp := newTestProvider("./testdata/otel-config.yaml")
 	assert.Equal(t, "s3", fp.Scheme())
 	require.NoError(t, fp.Shutdown(context.Background()))
 }

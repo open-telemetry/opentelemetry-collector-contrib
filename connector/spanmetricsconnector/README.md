@@ -130,7 +130,7 @@ The following is a simple example usage of the `spanmetrics` connector.
 
 For configuration examples on other use cases, please refer to [More Examples](#more-examples).
 
-The full list of settings exposed for this connector are documented [here](../../connector/spanmetricsconnector/config.go).
+The full list of settings exposed for this connector are documented in [spanmetricsconnector/config.go](../../connector/spanmetricsconnector/config.go).
 
 ```yaml
 receivers:

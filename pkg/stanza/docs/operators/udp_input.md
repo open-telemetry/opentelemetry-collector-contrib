@@ -66,7 +66,7 @@ Configuration:
 
 ```yaml
 - type: udp_input
-  listen_adress: "0.0.0.0:54526"
+  listen_address: "0.0.0.0:54526"
 ```
 
 Send a log:

@@ -19,7 +19,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
+	zipkin "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinthriftconverter"
 )
 
 // compareTraces compares got to want while ignoring order. Both are modified in place.

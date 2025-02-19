@@ -40,6 +40,7 @@ body:
       - exporter/awskinesis
       - exporter/awss3
       - exporter/awsxray
+      - exporter/azureblob
       - exporter/azuredataexplorer
       - exporter/azuremonitor
       - exporter/bmchelix
@@ -89,6 +90,7 @@ body:
       - extension/cgroupruntime
       - extension/encoding
       - extension/encoding/avrologencoding
+      - extension/encoding/googlecloudlogentryencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
       - extension/encoding/otlpencoding
@@ -110,6 +112,7 @@ body:
       - extension/observer/ecstaskobserver
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
+      - extension/observer/kafkatopicsobserver
       - extension/oidcauth
       - extension/opamp
       - extension/opampcustommessages
@@ -189,6 +192,7 @@ body:
       - processor/remotetap
       - processor/resource
       - processor/resourcedetection
+      - processor/resourcedetection/internal/dynatrace
       - processor/routing
       - processor/schema
       - processor/span

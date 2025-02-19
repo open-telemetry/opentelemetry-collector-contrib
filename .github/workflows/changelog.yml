@@ -15,8 +15,6 @@ env:
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
-  # renovate: datasource=github-releases depName=tcort/markdown-link-check
-  MD_LINK_CHECK_VERSION: "3.12.2"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
@@ -35,7 +33,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.12"
+          go-version: "1.23.6"
           cache: false
       - name: Cache Go
         id: go-cache
