@@ -9,7 +9,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.14.1
 	github.com/iancoleman/strcase v0.3.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.120.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.120.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.120.0
 	go.opentelemetry.io/collector/component/componenttest v0.120.0
