@@ -148,15 +148,14 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 			sleep := 1 * time.Second
 			for {
 				r, schemaURL, err := detector.Detect(ctx)
-				if err != nil {
-					p.logger.Warn("failed to detect resource", zap.Error(err))
-					time.Sleep(sleep)
-					if sleep < MaxRetryInterval {
-						sleep *= 2
-					}
-				} else {
+				if err == nil {
 					resultsChan <- detectResult{r: r, schemaURL: schemaURL, err: nil}
 					return
+				}
+				p.logger.Warn("failed to detect resource", zap.Error(err))
+				time.Sleep(sleep)
+				if sleep < MaxRetryInterval {
+					sleep *= 2
 				}
 			}
 		}(detector)
