@@ -31,7 +31,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	// The default config does not provide scrape_config so we expect that metrics receiver
 	// creation must also fail.
-	creationSet := receivertest.NewNopSettings()
+	creationSet := receivertest.NewNopSettingsWithType(metadata.Type)
 	mReceiver, _ := createMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, mReceiver)
 	assert.NotNil(t, mReceiver.(*pReceiver).cfg.PrometheusConfig.GlobalConfig)
@@ -51,7 +51,7 @@ func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
 func TestMultipleCreate(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettingsWithType(metadata.Type)
 	firstRcvr, err := factory.CreateMetrics(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	host := componenttest.NewNopHost()
@@ -74,7 +74,7 @@ func TestDefaultFallbackScrapeProtocol(t *testing.T) {
 	require.NoError(t, err)
 	assert.NoError(t, sub.Unmarshal(cfg))
 
-	_, err = factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	_, err = factory.CreateMetrics(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
 	// During receiver creation, scrapeconfig without fallback scrape protocol set, should be set to 'PrometheusText1.0.0'.

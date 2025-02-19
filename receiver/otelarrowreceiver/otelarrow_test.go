@@ -51,12 +51,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow/mock"
-	componentMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
+	componentmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
 const otlpReceiverName = "receiver_test"
 
-var testReceiverID = component.NewIDWithName(componentMetadata.Type, otlpReceiverName)
+var testReceiverID = component.NewIDWithName(componentmetadata.Type, otlpReceiverName)
 
 func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
@@ -198,7 +198,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 	r, err := NewFactory().CreateTraces(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettingsWithType(componentmetadata.Type),
 		cfg,
 		consumertest.NewNop())
 
@@ -259,7 +259,7 @@ func newGRPCReceiver(t *testing.T, endpoint string, settings component.Telemetry
 }
 
 func newReceiver(t *testing.T, factory receiver.Factory, settings component.TelemetrySettings, cfg *Config, id component.ID, tc consumer.Traces, mc consumer.Metrics) component.Component {
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettingsWithType(componentmetadata.Type)
 	set.TelemetrySettings = settings
 	set.ID = id
 	var r component.Component
@@ -286,7 +286,7 @@ func TestStandardShutdown(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettingsWithType(componentmetadata.Type)
 	set.ID = testReceiverID
 	r, err := NewFactory().CreateTraces(
 		context.Background(),
@@ -363,7 +363,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 				cfg.GRPC.Keepalive.ServerParameters.MaxConnectionAgeGrace = 5 * time.Second
 			}
 			cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-			set := receivertest.NewNopSettings()
+			set := receivertest.NewNopSettingsWithType(componentmetadata.Type)
 			core, obslogs := observer.New(zapcore.DebugLevel)
 			set.TelemetrySettings.Logger = zap.New(core)
 
@@ -860,7 +860,7 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 	}
 	// No keepalive parameters are set
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettingsWithType(componentmetadata.Type)
 
 	set.ID = testReceiverID
 	r, err := NewFactory().CreateTraces(
