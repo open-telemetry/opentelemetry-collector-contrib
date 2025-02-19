@@ -15,11 +15,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
+//nolint:unused
 var disallowFieldExtractConfigRegex = featuregate.GlobalRegistry().MustRegister(
 	"k8sattr.fieldExtractConfigRegex.disallow",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, usage of the FieldExtractConfig.Regex field is disallowed"),
 	featuregate.WithRegisterFromVersion("v0.106.0"),
+	featuregate.WithRegisterToVersion("v0.122.0"),
 )
 
 // Config defines configuration for k8s attributes processor.
@@ -75,20 +77,6 @@ func (cfg *Config) Validate() error {
 		case "", kube.MetadataFromPod, kube.MetadataFromNamespace, kube.MetadataFromNode:
 		default:
 			return fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace, node", f.From)
-		}
-
-		if f.Regex != "" {
-			if disallowFieldExtractConfigRegex.IsEnabled() {
-				return fmt.Errorf("the extract.annotations.regex and extract.labels.regex fields have been deprecated, please use the `ExtractPatterns` function in the transform processor instead")
-			}
-			r, err := regexp.Compile(f.Regex)
-			if err != nil {
-				return err
-			}
-			names := r.SubexpNames()
-			if len(names) != 2 || names[1] != "value" {
-				return fmt.Errorf("regex must contain exactly one named submatch (value)")
-			}
 		}
 
 		if f.KeyRegex != "" {
@@ -211,29 +199,6 @@ type FieldExtractConfig struct {
 	// KeyRegex is a regular expression used to extract a Key that matches the regex.
 	// Out of Key or KeyRegex, only one option is expected to be configured at a time.
 	KeyRegex string `mapstructure:"key_regex"`
-
-	// Regex is an optional field used to extract a sub-string from a complex field value.
-	// The supplied regular expression must contain one named parameter with the string "value"
-	// as the name. For example, if your pod spec contains the following annotation,
-	//
-	// kubernetes.io/change-cause: 2019-08-28T18:34:33Z APP_NAME=my-app GIT_SHA=58a1e39 CI_BUILD=4120
-	//
-	// and you'd like to extract the GIT_SHA and the CI_BUILD values as tags, then you must
-	// specify the following two extraction rules:
-	//
-	// extract:
-	//   annotations:
-	//     - tag_name: git.sha
-	//       key: kubernetes.io/change-cause
-	//       regex: GIT_SHA=(?P<value>\w+)
-	//     - tag_name: ci.build
-	//       key: kubernetes.io/change-cause
-	//       regex: JENKINS=(?P<value>[\w]+)
-	//
-	// this will add the `git.sha` and `ci.build` resource attributes.
-	// Deprecated: [v0.106.0] Use the `ExtractPatterns` function in the transform processor instead.
-	// More information about how to replace the regex field can be found in the k8sattributes processor readme.
-	Regex string `mapstructure:"regex"`
 
 	// From represents the source of the labels/annotations.
 	// Allowed values are "pod", "namespace", and "node". The default is pod.
