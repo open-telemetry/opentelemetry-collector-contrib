@@ -171,6 +171,13 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 				params.Logger.Error("Failed to create LRU cache, skipping the current scraper", zap.Error(err))
 				continue
 			}
+		} else {
+			// fallback to a single query cache
+			cache, err = lru.New[string, int64](1)
+			if err != nil {
+				params.Logger.Error("Failed to create LRU cache, skipping the current scraper", zap.Error(err))
+				continue
+			}
 		}
 
 		sqlServerScraper := newSQLServerScraper(id, query,
