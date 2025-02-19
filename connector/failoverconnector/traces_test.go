@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
 
@@ -31,8 +32,6 @@ func TestTracesRegisterConsumers(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
 		RetryInterval:    25 * time.Millisecond,
-		RetryGap:         5 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
@@ -52,14 +51,13 @@ func TestTracesRegisterConsumers(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
-	tc, _, ok := failoverConnector.failover.getCurrentConsumer()
-	tc1 := failoverConnector.failover.GetConsumerAtIndex(1)
-	tc2 := failoverConnector.failover.GetConsumerAtIndex(2)
+	tc := failoverConnector.failover.getConsumerAtIndex(0)
+	tc1 := failoverConnector.failover.TestGetConsumerAtIndex(1)
+	tc2 := failoverConnector.failover.TestGetConsumerAtIndex(2)
 
-	assert.True(t, ok)
-	require.Implements(t, (*consumer.Traces)(nil), tc)
-	require.Implements(t, (*consumer.Traces)(nil), tc1)
-	require.Implements(t, (*consumer.Traces)(nil), tc2)
+	require.Implements(t, (*internal.SignalConsumer)(nil), tc)
+	require.Implements(t, (*internal.SignalConsumer)(nil), tc1)
+	require.Implements(t, (*internal.SignalConsumer)(nil), tc2)
 }
 
 func TestTracesWithValidFailover(t *testing.T) {
@@ -73,8 +71,6 @@ func TestTracesWithValidFailover(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
@@ -89,7 +85,7 @@ func TestTracesWithValidFailover(t *testing.T) {
 	require.NoError(t, err)
 
 	failoverConnector := conn.(*tracesFailover)
-	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(0, testWrapTraces, consumertest.NewErr(errTracesConsumer))
 	defer func() {
 		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
 	}()
@@ -111,8 +107,6 @@ func TestTracesWithFailoverError(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
@@ -127,9 +121,9 @@ func TestTracesWithFailoverError(t *testing.T) {
 	require.NoError(t, err)
 
 	failoverConnector := conn.(*tracesFailover)
-	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
-	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
-	failoverConnector.failover.ModifyConsumerAtIndex(2, consumertest.NewErr(errTracesConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(0, testWrapTraces, consumertest.NewErr(errTracesConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(1, testWrapTraces, consumertest.NewErr(errTracesConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(2, testWrapTraces, consumertest.NewErr(errTracesConsumer))
 	defer func() {
 		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
 	}()
@@ -141,14 +135,8 @@ func TestTracesWithFailoverError(t *testing.T) {
 
 func consumeTracesAndCheckStable(conn *tracesFailover, idx int, tr ptrace.Traces) bool {
 	_ = conn.ConsumeTraces(context.Background(), tr)
-	stableIndex := conn.failover.pS.TestStableIndex()
+	stableIndex := conn.failover.pS.CurrentPipeline()
 	return stableIndex == idx
-}
-
-func consumeTracesAndCheckCurrent(conn *tracesFailover, idx int, tr ptrace.Traces) bool {
-	_ = conn.ConsumeTraces(context.Background(), tr)
-	currentIndex := conn.failover.pS.TestCurrentIndex()
-	return currentIndex == idx
 }
 
 func sampleTrace() ptrace.Traces {
@@ -158,4 +146,8 @@ func sampleTrace() ptrace.Traces {
 	span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("SampleSpan")
 	return tr
+}
+
+func testWrapTraces(c consumer.Traces) internal.SignalConsumer {
+	return internal.NewTracesWrapper(c)
 }
