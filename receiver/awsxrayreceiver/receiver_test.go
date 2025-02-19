@@ -32,6 +32,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
 
@@ -59,7 +60,7 @@ func TestProxyCreationFailed(t *testing.T) {
 			},
 		},
 		sink,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettingsWithType(metadata.Type),
 	)
 	assert.Error(t, err, "receiver creation should fail due to failure to create TCP proxy")
 }
@@ -74,7 +75,7 @@ func TestPollerCreationFailed(t *testing.T) {
 			},
 		},
 		sink,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettingsWithType(metadata.Type),
 	)
 	assert.Error(t, err, "receiver creation should fail due to failure to create UCP poller")
 }
