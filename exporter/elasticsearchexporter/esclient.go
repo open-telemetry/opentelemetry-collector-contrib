@@ -5,12 +5,14 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/elastic/go-elasticsearch/v7"
+	elasticsearchv8 "github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -82,14 +84,14 @@ func (cl *clientLogger) ResponseBodyEnabled() bool {
 	return cl.logResponseBody
 }
 
-// newElasticsearchClient returns a new elasticsearch.Client
+// newElasticsearchClient returns a new esapi.Transport.
 func newElasticsearchClient(
 	ctx context.Context,
 	config *Config,
 	host component.Host,
 	telemetry component.TelemetrySettings,
 	userAgent string,
-) (*elasticsearch.Client, error) {
+) (esapi.Transport, error) {
 	httpClient, err := config.ClientConfig.ToClient(ctx, host, telemetry)
 	if err != nil {
 		return nil, err
@@ -105,18 +107,13 @@ func newElasticsearchClient(
 		return nil, err
 	}
 
-	esLogger := clientLogger{
+	esLogger := &clientLogger{
 		Logger:          telemetry.Logger,
 		logRequestBody:  config.LogRequestBody,
 		logResponseBody: config.LogResponseBody,
 	}
 
-	maxRetries := defaultMaxRetries
-	if config.Retry.MaxRetries != 0 {
-		maxRetries = config.Retry.MaxRetries
-	}
-
-	return elasticsearch.NewClient(elasticsearch.Config{
+	return elasticsearchv8.NewClient(elasticsearchv8.Config{
 		Transport: httpClient.Transport,
 
 		// configure connection setup
@@ -127,11 +124,12 @@ func newElasticsearchClient(
 		Header:    headers,
 
 		// configure retry behavior
-		RetryOnStatus:        config.Retry.RetryOnStatus,
-		DisableRetry:         !config.Retry.Enabled,
-		EnableRetryOnTimeout: config.Retry.Enabled,
-		// RetryOnError:  retryOnError, // should be used from esclient version 8 onwards
-		MaxRetries:   maxRetries,
+		RetryOnStatus: config.Retry.RetryOnStatus,
+		DisableRetry:  !config.Retry.Enabled,
+		RetryOnError: func(_ *http.Request, err error) bool {
+			return !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded)
+		},
+		MaxRetries:   min(defaultMaxRetries, config.Retry.MaxRetries),
 		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
 
 		// configure sniffing
@@ -141,7 +139,11 @@ func newElasticsearchClient(
 		// configure internal metrics reporting and logging
 		EnableMetrics:     false, // TODO
 		EnableDebugLogger: false, // TODO
-		Logger:            &esLogger,
+		Instrumentation: elasticsearchv8.NewOpenTelemetryInstrumentation(
+			telemetry.TracerProvider,
+			false, /* captureSearchBody */
+		),
+		Logger: esLogger,
 	})
 }
 

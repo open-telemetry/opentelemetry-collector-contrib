@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -768,8 +769,9 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 }
 
 func TestFilterLogProcessorTelemetry(t *testing.T) {
-	tel := metadatatest.SetupTelemetry()
-	processor, err := newFilterLogsProcessor(tel.NewSettings(), &Config{
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	processor, err := newFilterLogsProcessor(metadatatest.NewSettings(tel), &Config{
 		Logs: LogFilters{LogConditions: []string{`IsMatch(body, "operationA")`}},
 	})
 	assert.NoError(t, err)
@@ -777,26 +779,12 @@ func TestFilterLogProcessorTelemetry(t *testing.T) {
 	_, err = processor.processLogs(context.Background(), constructLogs())
 	assert.NoError(t, err)
 
-	want := []metricdata.Metrics{
+	metadatatest.AssertEqualProcessorFilterLogsFiltered(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_processor_filter_logs.filtered",
-			Description: "Number of logs dropped by the filter processor",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      2,
-						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
-					},
-				},
-			},
+			Value:      2,
+			Attributes: attribute.NewSet(attribute.String("filter", "filter")),
 		},
-	}
-
-	tel.AssertMetrics(t, want, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreTimestamp())
-	require.NoError(t, tel.Shutdown(context.Background()))
+	}, metricdatatest.IgnoreTimestamp())
 }
 
 func constructLogs() plog.Logs {

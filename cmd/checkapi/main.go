@@ -83,6 +83,12 @@ func run(folder string, allowlistFilePath string) error {
 	return nil
 }
 
+func isTestFunction(fnName string) bool {
+	return strings.HasPrefix(fnName, "Test") ||
+		strings.HasPrefix(fnName, "Benchmark") ||
+		strings.HasPrefix(fnName, "Fuzz")
+}
+
 func handleFile(f *ast.File, result *api) {
 	for _, d := range f.Decls {
 		if str, isStr := d.(*ast.GenDecl); isStr {
@@ -107,7 +113,7 @@ func handleFile(f *ast.File, result *api) {
 			}
 			exported := false
 			receiver := ""
-			if fn.Recv.NumFields() == 0 && !strings.HasPrefix(fn.Name.String(), "Test") && !strings.HasPrefix(fn.Name.String(), "Benchmark") {
+			if fn.Recv.NumFields() == 0 && !isTestFunction(fn.Name.String()) {
 				exported = true
 			}
 			if fn.Recv.NumFields() > 0 {
@@ -177,8 +183,14 @@ func walkFolder(folder string, componentType string) error {
 	if len(result.Functions) > 1 {
 		return fmt.Errorf("%s has more than one function: %q", folder, strings.Join(fnNames, ","))
 	}
+	if err := checkFactoryFunction(result.Functions[0], folder, componentType); err != nil {
+		return err
+	}
+	return nil
+}
 
-	newFactoryFn := result.Functions[0]
+// check the only exported function of the module is NewFactory, matching the signature of the factory expected by the collector builder.
+func checkFactoryFunction(newFactoryFn *function, folder string, componentType string) error {
 	if newFactoryFn.Name != "NewFactory" {
 		return fmt.Errorf("%s does not define a NewFactory function", folder)
 	}

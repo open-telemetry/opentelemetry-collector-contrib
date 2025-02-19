@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"github.com/klauspost/compress/zstd"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/signalfx/sapm-proto/sapmprotocol"
@@ -370,12 +370,12 @@ func TestStatusCode(t *testing.T) {
 	}{
 		{
 			name:           "non-permanent error",
-			err:            errors.New("non-permanenet error"),
+			err:            errors.New("non-permanent error"),
 			expectedStatus: http.StatusServiceUnavailable,
 		},
 		{
 			name:           "permanent error",
-			err:            consumererror.NewPermanent(errors.New("non-permanenet error")),
+			err:            consumererror.NewPermanent(errors.New("non-permanent error")),
 			expectedStatus: http.StatusBadRequest,
 		},
 	}

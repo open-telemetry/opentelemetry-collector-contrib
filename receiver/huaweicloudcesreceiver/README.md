@@ -17,7 +17,7 @@ This receiver contains the implementation of the Huawei Cloud [Cloud Eye Service
 
 The following settings are required:
 
-- `region_id`: The ID of the Huawei Cloud region from which metrics are collected. For example, `eu-west-101`. The full list of the available regions can be found [here](https://pkg.go.dev/github.com/huaweicloud/huaweicloud-sdk-go-v3@v0.1.104/services/ces/v1/region).
+- `region_id`: The ID of the [Huawei Cloud region](https://pkg.go.dev/github.com/huaweicloud/huaweicloud-sdk-go-v3@v0.1.104/services/ces/v1/region) from which metrics are collected. For example, `eu-west-101`.
 
 - `project_id`: The ID of the project in Huawei Cloud. This is used to identify which project's metrics are to be collected. See [Obtaining a Project ID](https://support.huaweicloud.com/intl/en-us/devg-apisign/api-sign-provide-proid.html).
 
@@ -38,9 +38,9 @@ The following settings are required:
 
 - `no_verify_ssl`: A boolean flag indicating whether SSL verification should be disabled. Set to True to disable SSL verification.
 
-- `access_key`: The access key needed for CES authentification. Check `Huawei Cloud SDK Authentication Setup` section for more details.
+- `access_key`: The access key needed for CES authentication. Check `Huawei Cloud SDK Authentication Setup` section for more details.
 
-- `secret_key`: The secret key needed for CES authentification. Check `Huawei Cloud SDK Authentication Setup` section for more details.
+- `secret_key`: The secret key needed for CES authentication. Check `Huawei Cloud SDK Authentication Setup` section for more details.
 
 The following settings are optional:
 
@@ -72,7 +72,7 @@ receivers:
     no_verify_ssl: True
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go).
 
 ### Huawei Cloud SDK Authentication Setup
 
@@ -103,7 +103,7 @@ If you encounter any errors, please refer to:
 - [Quota management](https://support.huaweicloud.com/intl/en-us/usermanual-ces/en-us_topic_0154940152.html)
 
 
-## Converting CES metric representation to Open Telementery metric representation
+## Converting CES metric representation to OpenTelemetry metric representation
 
 
 | Source Field             | Target Field                                 | Description                                                                                           |

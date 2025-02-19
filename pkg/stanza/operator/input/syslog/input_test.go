@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog/syslogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split/splittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -29,7 +30,7 @@ var (
 		cfg := syslog.NewConfigWithID("test_syslog_parser")
 		return cfg
 	}
-	OctetCase = syslog.Case{
+	OctetCase = syslogtest.Case{
 		Name: "RFC6587 Octet Counting",
 		Config: func() *syslog.Config {
 			cfg := basicConfig()
@@ -66,7 +67,7 @@ var (
 		},
 		ValidForTCP: true,
 	}
-	WithMetadata = syslog.Case{
+	WithMetadata = syslogtest.Case{
 		Name: "RFC3164",
 		Config: func() *syslog.Config {
 			cfg := basicConfig()
@@ -99,7 +100,7 @@ var (
 )
 
 func TestInput(t *testing.T) {
-	cases, err := syslog.CreateCases(basicConfig)
+	cases, err := syslogtest.CreateCases(basicConfig)
 	require.NoError(t, err)
 	cases = append(cases, OctetCase)
 
@@ -107,7 +108,7 @@ func TestInput(t *testing.T) {
 		cfg := tc.Config.BaseConfig
 		if tc.ValidForTCP {
 			tcpCfg := NewConfigWithTCP(&cfg)
-			if tc.Name == syslog.RFC6587OctetCountingPreserveSpaceTest {
+			if tc.Name == syslogtest.RFC6587OctetCountingPreserveSpaceTest {
 				tcpCfg.TCP.TrimConfig.PreserveLeading = true
 				tcpCfg.TCP.TrimConfig.PreserveTrailing = true
 			}
@@ -117,7 +118,7 @@ func TestInput(t *testing.T) {
 		}
 		if tc.ValidForUDP {
 			udpCfg := NewConfigWithUDP(&cfg)
-			if tc.Name == syslog.RFC6587OctetCountingPreserveSpaceTest {
+			if tc.Name == syslogtest.RFC6587OctetCountingPreserveSpaceTest {
 				udpCfg.UDP.TrimConfig.PreserveLeading = true
 				udpCfg.UDP.TrimConfig.PreserveTrailing = true
 			}
@@ -147,7 +148,7 @@ func TestInput(t *testing.T) {
 	})
 }
 
-func InputTest(t *testing.T, tc syslog.Case, cfg *Config, rsrc map[string]any, attr map[string]any) {
+func InputTest(t *testing.T, tc syslogtest.Case, cfg *Config, rsrc map[string]any, attr map[string]any) {
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
 	require.NoError(t, err)

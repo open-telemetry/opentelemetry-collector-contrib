@@ -961,3 +961,10 @@ func TestGetResourceIDEmptyAndNilAreEqual(t *testing.T) {
 	emptyID := HashResource(map[string]any{})
 	require.Equal(t, nilID, emptyID)
 }
+
+// convert converts one entry.Entry into plog.LogRecord allocating it.
+func convert(ent *entry.Entry) plog.LogRecord {
+	dest := plog.NewLogRecord()
+	convertInto(ent, dest)
+	return dest
+}

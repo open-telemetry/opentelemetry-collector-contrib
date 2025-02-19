@@ -25,8 +25,7 @@ See [Golang database/sql package documentation](https://pkg.go.dev/database/sql)
 
 `datasource`: the url of the database, in the format accepted by the driver.
 
-
-```
+```yaml
 extensions:
   db_storage:
     driver: "sqlite3"
@@ -37,13 +36,10 @@ service:
   pipelines:
     traces:
       receivers: [nop]
-      processors: [nop]
       exporters: [nop]
 
 # Data pipeline is required to load the config.
 receivers:
-  nop:
-processors:
   nop:
 exporters:
   nop:

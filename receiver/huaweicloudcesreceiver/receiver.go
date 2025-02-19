@@ -170,7 +170,7 @@ func (rcvr *cesReceiver) listMetricDefinitions(ctx context.Context) ([]model.Met
 
 // listDataPoints retrieves data points for a list of metric definitions.
 // The function performs the following operations:
-//  1. Generates a unique key for each metric definition (at least one dimenstion is required) and checks for duplicates.
+//  1. Generates a unique key for each metric definition (at least one dimension is required) and checks for duplicates.
 //  2. Determines the time range (from-to) for fetching the metric data points, using the current timestamp
 //     and the last-seen timestamp for each metric.
 //  3. Fetches data points for each metric definition.

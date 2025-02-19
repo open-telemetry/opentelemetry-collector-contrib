@@ -25,7 +25,7 @@ type tracesUnmarshaller interface {
 	unmarshal(message *inboundMessage) (ptrace.Traces, error)
 }
 
-// newUnmarshalleer returns a new unmarshaller ready for message unmarshalling
+// newTracesUnmarshaller returns a new unmarshaller ready for message unmarshalling
 func newTracesUnmarshaller(logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder, metricAttrs attribute.Set) tracesUnmarshaller {
 	return &solaceTracesUnmarshaller{
 		logger:           logger,

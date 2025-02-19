@@ -54,13 +54,6 @@ func ConvertEntries(entries []*entry.Entry) plog.Logs {
 	return pLogs
 }
 
-// convert converts one entry.Entry into plog.LogRecord allocating it.
-func convert(ent *entry.Entry) plog.LogRecord {
-	dest := plog.NewLogRecord()
-	convertInto(ent, dest)
-	return dest
-}
-
 // convertInto converts entry.Entry into provided plog.LogRecord.
 func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 	if !ent.Timestamp.IsZero() {

@@ -48,8 +48,8 @@ receivers:
         enabled: false
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 ### Connecting over SSH
 
@@ -94,7 +94,7 @@ See [./documentation.md](./documentation.md) for full detail.
 
 This receiver uses the official libpod Go bindings for Podman. In order to include
 this receiver in your build, you'll need to make sure all non-Go dependencies are
-satisfied or some features are exluded. You can use the below mentioned build tags to
+satisfied or some features are excluded. You can use the below mentioned build tags to
 exclude the non-Go dependencies. This receiver does not use any features enabled
 by these deps so excluding these does not affect the functionality in any way.
 

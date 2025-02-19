@@ -119,8 +119,8 @@ func getTraceAgentCfg(logger *zap.Logger, cfg TracesConfig, attributesTranslator
 		logger.Info("traces::compute_top_level_by_span_kind needs to be enabled in both the Datadog connector and Datadog exporter configs if both components are being used")
 		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
 	}
-	if datadog.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
-		acfg.Features["enable_receive_resource_spans_v2"] = struct{}{}
+	if !datadog.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
+		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
 	}
 	if datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
 		acfg.Features["enable_operation_and_resource_name_logic_v2"] = struct{}{}

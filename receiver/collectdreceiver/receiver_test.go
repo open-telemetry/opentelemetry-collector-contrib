@@ -193,7 +193,7 @@ func TestCollectDServer(t *testing.T) {
 func createWantedMetrics(wantedRequestBody wantedBody) pmetric.Metrics {
 	var dataPoint pmetric.NumberDataPoint
 	testMetrics := pmetric.NewMetrics()
-	scopeMemtrics := testMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	scopeMetrics := testMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	testMetric := pmetric.NewMetric()
 	testMetric.SetName(wantedRequestBody.Name)
 	sum := testMetric.SetEmptySum()
@@ -206,7 +206,7 @@ func createWantedMetrics(wantedRequestBody wantedBody) pmetric.Metrics {
 	}
 	attributes.CopyTo(dataPoint.Attributes())
 	dataPoint.SetDoubleValue(wantedRequestBody.Value)
-	newMetric := scopeMemtrics.Metrics().AppendEmpty()
+	newMetric := scopeMetrics.Metrics().AppendEmpty()
 	testMetric.MoveTo(newMetric)
 	return testMetrics
 }

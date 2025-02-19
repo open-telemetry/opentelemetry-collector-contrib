@@ -357,7 +357,13 @@ func Test_onMessage(t *testing.T) {
 				},
 			},
 			OwnMetricsConnSettings: &protobufs.TelemetryConnectionSettings{
-				DestinationEndpoint: "http://localhost:4318",
+				DestinationEndpoint: "http://127.0.0.1:4318",
+				Headers: &protobufs.Headers{
+					Headers: []*protobufs.Header{
+						{Key: "testkey", Value: "testval"},
+						{Key: "testkey2", Value: "testval2"},
+					},
+				},
 			},
 		})
 
@@ -1125,7 +1131,13 @@ func TestSupervisor_setupOwnMetrics(t *testing.T) {
 		require.NoError(t, err)
 
 		configChanged := s.setupOwnMetrics(context.Background(), &protobufs.TelemetryConnectionSettings{
-			DestinationEndpoint: "localhost",
+			DestinationEndpoint: "http://127.0.0.1:4318",
+			Headers: &protobufs.Headers{
+				Headers: []*protobufs.Header{
+					{Key: "testkey", Value: "testval"},
+					{Key: "testkey2", Value: "testval2"},
+				},
+			},
 		})
 
 		expectedOwnMetricsSection := `
@@ -1137,7 +1149,10 @@ service:
             exporter:
               otlp:
                 protocol: http/protobuf
-                endpoint: localhost
+                endpoint: http://127.0.0.1:4318
+                headers:
+                  "testkey": "testval"
+                  "testkey2": "testval2"
 `
 
 		assert.True(t, configChanged)

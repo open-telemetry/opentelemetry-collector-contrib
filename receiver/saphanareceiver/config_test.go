@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
@@ -65,8 +66,13 @@ func TestValidate(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			tC.defaultConfigModifier(cfg)
-			actual := component.ValidateConfig(cfg)
-			require.Equal(t, tC.expected, actual)
+			actual := xconfmap.Validate(cfg)
+
+			if tC.expected != nil {
+				require.ErrorContains(t, actual, tC.expected.Error())
+			} else {
+				require.NoError(t, actual)
+			}
 		})
 	}
 }

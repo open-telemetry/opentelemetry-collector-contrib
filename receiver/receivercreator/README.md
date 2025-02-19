@@ -437,8 +437,8 @@ service:
   extensions: [k8s_observer, host_observer]
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 
 ## Generate receiver configurations from provided Hints
@@ -458,7 +458,7 @@ receiver_creator/metrics:
      # ignore_receivers: []
 ```
 
-Find bellow the supported annotations that user can define to automatically enable receivers to start
+See below for the supported annotations that user can define to automatically enable receivers to start
 collecting metrics and logs signals from the target Pods/containers.
 
 ### Supported metrics annotations
@@ -506,7 +506,7 @@ io.opentelemetry.discovery.metrics.80/config: |
 where `80` is the port that the target container exposes.
 
 If a Pod is annotated with both container level hints and pod level hints the container level hints have priority and
-the Pod level hints are used as a fallback (see detailed example bellow).
+the Pod level hints are used as a fallback (see detailed example below).
 
 The current implementation relies on the implementation of `k8sobserver` extension and specifically
 the [pod_endpoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.111.0/extension/observer/k8sobserver/pod_endpoint.go).
@@ -572,7 +572,7 @@ io.opentelemetry.discovery.logs.busybox/config: |
 where `busybox` is the name of the target container.
 
 If a Pod is annotated with both container level hints and pod level hints the container level hints have priority and
-the Pod level hints are used as a fallback (see detailed example bellow).
+the Pod level hints are used as a fallback (see detailed example below).
 
 The current implementation relies on the implementation of `k8sobserver` extension and specifically
 the [pod_endpoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.111.0/extension/observer/k8sobserver/pod_endpoint.go).

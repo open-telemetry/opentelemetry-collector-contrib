@@ -30,7 +30,7 @@ func TestComponentStatus(t *testing.T) {
 	cfg.HTTPConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.GRPCConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.UseV2 = true
-	ext := newExtension(context.Background(), *cfg, extensiontest.NewNopSettings())
+	ext := newExtension(context.Background(), *cfg, extensiontest.NewNopSettingsWithType(extensiontest.NopType))
 
 	// Status before Start will be StatusNone
 	st, ok := ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
@@ -109,7 +109,7 @@ func TestNotifyConfig(t *testing.T) {
 	cfg.HTTPConfig.Config.Enabled = true
 	cfg.HTTPConfig.Config.Path = "/config"
 
-	ext := newExtension(context.Background(), *cfg, extensiontest.NewNopSettings())
+	ext := newExtension(context.Background(), *cfg, extensiontest.NewNopSettingsWithType(extensiontest.NopType))
 
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, ext.Shutdown(context.Background())) })

@@ -8,7 +8,7 @@ package rabbitmqexporter
 import (
 	"context"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"strconv"
 	"testing"
 	"time"
@@ -166,7 +166,5 @@ func setupQueueConsumer(t *testing.T, queueName string, endpoint string) (*amqp.
 }
 
 func randPort() string {
-	rs := rand.NewSource(time.Now().Unix())
-	r := rand.New(rs)
-	return strconv.Itoa(r.Intn(999) + 9000)
+	return strconv.Itoa(rand.IntN(999) + 9000)
 }

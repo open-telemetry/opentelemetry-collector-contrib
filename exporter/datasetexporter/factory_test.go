@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter/internal/metadata"
@@ -148,7 +149,7 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
-			if assert.NoError(t, component.ValidateConfig(cfg)) {
+			if assert.NoError(t, xconfmap.Validate(cfg)) {
 				assert.Equal(t, tt.expected, cfg)
 			}
 		})
@@ -160,8 +161,12 @@ func TestValidateConfigs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(*testing.T) {
-			err := component.ValidateConfig(tt.config)
-			assert.Equal(t, tt.expectedError, err)
+			err := xconfmap.Validate(tt.config)
+			if tt.expectedError != nil {
+				assert.ErrorContains(t, err, tt.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

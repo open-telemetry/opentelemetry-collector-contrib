@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -284,8 +285,9 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 }
 
 func TestFilterTraceProcessorTelemetry(t *testing.T) {
-	tel := metadatatest.SetupTelemetry()
-	processor, err := newFilterSpansProcessor(tel.NewSettings(), &Config{
+	tel := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+	processor, err := newFilterSpansProcessor(metadatatest.NewSettings(tel), &Config{
 		Traces: TraceFilters{
 			SpanConditions: []string{
 				`name == "operationA"`,
@@ -297,26 +299,12 @@ func TestFilterTraceProcessorTelemetry(t *testing.T) {
 	_, err = processor.processTraces(context.Background(), constructTraces())
 	assert.NoError(t, err)
 
-	want := []metricdata.Metrics{
+	metadatatest.AssertEqualProcessorFilterSpansFiltered(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_processor_filter_spans.filtered",
-			Description: "Number of spans dropped by the filter processor",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      2,
-						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
-					},
-				},
-			},
+			Value:      2,
+			Attributes: attribute.NewSet(attribute.String("filter", "filter")),
 		},
-	}
-
-	tel.AssertMetrics(t, want, metricdatatest.IgnoreTimestamp())
-	require.NoError(t, tel.Shutdown(context.Background()))
+	}, metricdatatest.IgnoreTimestamp())
 }
 
 func constructTraces() ptrace.Traces {

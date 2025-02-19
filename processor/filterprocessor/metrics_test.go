@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -370,7 +371,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 }
 
 func TestFilterMetricProcessorTelemetry(t *testing.T) {
-	tel := metadatatest.SetupTelemetry()
+	tel := componenttest.NewTelemetry()
 	cfg := &Config{
 		Metrics: MetricFilters{
 			MetricConditions: []string{
@@ -378,10 +379,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 			},
 		},
 	}
-	fmp, err := newFilterMetricProcessor(
-		tel.NewSettings(),
-		cfg,
-	)
+	fmp, err := newFilterMetricProcessor(metadatatest.NewSettings(tel), cfg)
 	assert.NotNil(t, fmp)
 	assert.NoError(t, err)
 
@@ -395,24 +393,12 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 	}))
 	assert.NoError(t, err)
 
-	want := []metricdata.Metrics{
+	metadatatest.AssertEqualProcessorFilterDatapointsFiltered(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Name:        "otelcol_processor_filter_datapoints.filtered",
-			Description: "Number of metric data points dropped by the filter processor",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      1,
-						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
-					},
-				},
-			},
+			Value:      1,
+			Attributes: attribute.NewSet(attribute.String("filter", "filter")),
 		},
-	}
-	tel.AssertMetrics(t, want, metricdatatest.IgnoreTimestamp())
+	}, metricdatatest.IgnoreTimestamp())
 	require.NoError(t, tel.Shutdown(context.Background()))
 }
 

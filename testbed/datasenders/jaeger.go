@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	jaegerproto "github.com/jaegertracing/jaeger/proto-gen/api_v2"
+	jaegerproto "github.com/jaegertracing/jaeger-idl/proto-gen/api_v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"

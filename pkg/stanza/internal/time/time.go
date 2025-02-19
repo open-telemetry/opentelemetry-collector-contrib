@@ -35,3 +35,7 @@ func (c AlwaysIncreasingClock) Since(t time.Time) time.Duration {
 	c.FakeClock.Advance(time.Nanosecond)
 	return c.FakeClock.Since(t)
 }
+
+func (c AlwaysIncreasingClock) Advance(d time.Duration) {
+	c.FakeClock.Advance(d)
+}
