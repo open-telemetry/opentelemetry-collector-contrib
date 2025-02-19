@@ -12,10 +12,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.203.1
 	github.com/google/go-cmp v0.6.0
 	github.com/hashicorp/consul/api v1.31.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.120.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.120.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.120.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.120.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.120.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.120.1
 	github.com/shirou/gopsutil/v4 v4.25.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.120.0
