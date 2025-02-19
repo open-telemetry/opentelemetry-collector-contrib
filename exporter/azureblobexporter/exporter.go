@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"text/template"
 	"time"
 
@@ -46,7 +46,7 @@ func newAzureBlobExporter(config *Config, logger *zap.Logger, signal pipeline.Si
 }
 
 func randomInRange(low, hi int) int {
-	return low + rand.Intn(hi-low)
+	return low + rand.IntN(hi-low)
 }
 
 func (e *azureBlobExporter) start(_ context.Context, host component.Host) error {
@@ -121,7 +121,7 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 	return nil
 }
 
-func (e *azureBlobExporter) generateBlobName(data map[string]interface{}) (string, error) {
+func (e *azureBlobExporter) generateBlobName(data map[string]any) (string, error) {
 	// Get current time
 	now := time.Now()
 
@@ -147,7 +147,7 @@ func (e *azureBlobExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	}
 
 	// Generate a unique blob name
-	params := map[string]interface{}{
+	params := map[string]any{
 		"FileExtension": fileExtensionMap[e.config.FormatType],
 		"SerialNum":     randomInRange(1, int(e.config.BlobNameFormat.SerialNumRange)),
 	}
@@ -177,7 +177,7 @@ func (e *azureBlobExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error
 	}
 
 	// Generate a unique blob name
-	params := map[string]interface{}{
+	params := map[string]any{
 		"FileExtension": fileExtensionMap[e.config.FormatType],
 		"SerialNum":     randomInRange(1, int(e.config.BlobNameFormat.SerialNumRange)),
 	}
@@ -199,7 +199,7 @@ func (e *azureBlobExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error
 	return nil
 }
 
-func (e *azureBlobExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (e *azureBlobExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	// Marshal the metrics data
 	data, err := e.marshaller.marshalTraces(td)
 	if err != nil {
