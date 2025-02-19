@@ -1,3 +1,4 @@
 status:
+  class: provider
   codeowners:
     active: [driverpt, atoulme]
