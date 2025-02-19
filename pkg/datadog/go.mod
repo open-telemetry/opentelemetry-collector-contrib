@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog
 go 1.23.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/trace v0.62.2
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.62.2
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.25.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.25.0
+	github.com/DataDog/datadog-agent/pkg/trace v0.62.3
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.62.3
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.26.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.26.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.120.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.120.0
@@ -27,26 +27,26 @@ require (
 require (
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.64.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.62.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.62.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.62.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.62.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.62.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.62.3 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.35.0 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.25.0 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.25.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.26.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.26.0 // indirect
 	github.com/DataDog/sketches-go v1.4.6 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.26.0 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.36.1 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.36.2 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.29.6 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.59 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.28 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.32 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.32 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.33 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.33 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.203.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.13 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.203.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.14 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.24.15 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.14 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.14 // indirect

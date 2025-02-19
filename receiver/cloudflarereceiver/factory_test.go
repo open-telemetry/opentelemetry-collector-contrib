@@ -24,7 +24,7 @@ func TestCreateLogs(t *testing.T) {
 
 	_, err := NewFactory().CreateLogs(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		nil,
 	)
