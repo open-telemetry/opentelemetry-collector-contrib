@@ -10,9 +10,9 @@ The following telemetry is emitted by this component.
 
 Number of configured workers to use to fan out the outgoing requests
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {consumer} | Sum | Int | false |
 
 ### otelcol_exporter_prometheusremotewrite_failed_translations
 
@@ -28,7 +28,7 @@ Number of remote write request batches sent to the remote write endpoint regardl
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {batch} | Sum | Int | true |
 
 ### otelcol_exporter_prometheusremotewrite_translated_time_series
 

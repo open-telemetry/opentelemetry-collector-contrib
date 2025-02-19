@@ -20,7 +20,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.ExporterPrometheusremotewriteConsumers.Record(context.Background(), 1)
+	tb.ExporterPrometheusremotewriteConsumers.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteFailedTranslations.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteSentBatch.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(context.Background(), 1)

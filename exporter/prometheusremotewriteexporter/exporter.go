@@ -48,7 +48,7 @@ type prwTelemetryOtel struct {
 }
 
 func (p *prwTelemetryOtel) setNumberConsumer(ctx context.Context, n int64) {
-	p.telemetryBuilder.ExporterPrometheusremotewriteConsumers.Record(ctx, n, metric.WithAttributes(p.otelAttrs...))
+	p.telemetryBuilder.ExporterPrometheusremotewriteConsumers.Add(ctx, n, metric.WithAttributes(p.otelAttrs...))
 }
 
 func (p *prwTelemetryOtel) recordRemoteWriteSentBatch(ctx context.Context) {

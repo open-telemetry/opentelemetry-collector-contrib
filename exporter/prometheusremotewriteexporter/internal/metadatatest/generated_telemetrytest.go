@@ -25,9 +25,11 @@ func AssertEqualExporterPrometheusremotewriteConsumers(t *testing.T, tt *compone
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_consumers",
 		Description: "Number of configured workers to use to fan out the outgoing requests",
-		Unit:        "1",
-		Data: metricdata.Gauge[int64]{
-			DataPoints: dps,
+		Unit:        "{consumer}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: false,
+			DataPoints:  dps,
 		},
 	}
 	got, err := tt.GetMetric("otelcol_exporter_prometheusremotewrite_consumers")
@@ -55,7 +57,7 @@ func AssertEqualExporterPrometheusremotewriteSentBatch(t *testing.T, tt *compone
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_prometheusremotewrite_sent_batch",
 		Description: "Number of remote write request batches sent to the remote write endpoint regardless of success or failure",
-		Unit:        "1",
+		Unit:        "{batch}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

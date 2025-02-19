@@ -30,14 +30,14 @@ telemetry:
     exporter_prometheusremotewrite_consumers:
       enabled: true
       description: Number of configured workers to use to fan out the outgoing requests
-      unit: "1"
-      gauge:
+      unit: "{consumer}"
+      sum:
         value_type: int
         monotonic: false
     exporter_prometheusremotewrite_sent_batch:
       enabled: true
       description: Number of remote write request batches sent to the remote write endpoint regardless of success or failure
-      unit: "1"
+      unit: "{batch}"
       sum:
         value_type: int
         monotonic: true
