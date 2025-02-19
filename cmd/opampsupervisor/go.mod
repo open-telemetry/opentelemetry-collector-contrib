@@ -16,8 +16,8 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.120.0
 	go.opentelemetry.io/collector/config/configtls v1.26.0
 	go.opentelemetry.io/collector/confmap v1.26.0
-	go.opentelemetry.io/collector/confmap/provider/envprovider v1.25.1-0.20250210123122-44b3eeda354c
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.25.1-0.20250210123122-44b3eeda354c
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.26.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.26.0
 	go.opentelemetry.io/collector/semconv v0.120.0
 	go.opentelemetry.io/collector/service v0.120.0
 	go.opentelemetry.io/contrib/config v0.14.0
