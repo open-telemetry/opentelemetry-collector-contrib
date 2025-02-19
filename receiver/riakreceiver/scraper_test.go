@@ -27,9 +27,9 @@ import (
 )
 
 func TestScraperStart(t *testing.T) {
-	clientConfigNonExistandCA := confighttp.NewDefaultClientConfig()
-	clientConfigNonExistandCA.Endpoint = defaultEndpoint
-	clientConfigNonExistandCA.TLSSetting = configtls.ClientConfig{
+	clientConfigNonexistentCA := confighttp.NewDefaultClientConfig()
+	clientConfigNonexistentCA.Endpoint = defaultEndpoint
+	clientConfigNonexistentCA.TLSSetting = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: "/non/existent",
 		},
@@ -47,7 +47,7 @@ func TestScraperStart(t *testing.T) {
 			desc: "Bad Config",
 			scraper: &riakScraper{
 				cfg: &Config{
-					ClientConfig: clientConfigNonExistandCA,
+					ClientConfig: clientConfigNonexistentCA,
 				},
 				settings: componenttest.NewNopTelemetrySettings(),
 			},
