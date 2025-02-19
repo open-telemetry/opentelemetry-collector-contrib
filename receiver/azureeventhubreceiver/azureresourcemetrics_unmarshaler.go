@@ -97,12 +97,11 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 		}
 
 		var startTimestamp pcommon.Timestamp
-		if azureMetric.TimeGrain == "PT1M" {
-			startTimestamp = pcommon.NewTimestampFromTime(nanos.AsTime().Add(-time.Minute))
-		} else {
+		if azureMetric.TimeGrain != "PT1M" {
 			r.logger.Warn("Unhandled Time Grain", zap.String("timegrain", azureMetric.TimeGrain))
 			continue
 		}
+		startTimestamp = pcommon.NewTimestampFromTime(nanos.AsTime().Add(-time.Minute))
 
 		metricTotal := metrics.AppendEmpty()
 		metricTotal.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(azureMetric.MetricName, " ", "_"), "Total")))

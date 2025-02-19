@@ -11,7 +11,7 @@ import (
 )
 
 // Get is a temporary OTTL editor to allow statements to return values. This
-// will be removed after OTTL can parse data retrival expressions:
+// will be removed after OTTL can parse data retrieval expressions:
 // See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35621
 
 type GetArguments[K any] struct {
