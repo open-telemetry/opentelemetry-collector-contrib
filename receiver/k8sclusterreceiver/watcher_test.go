@@ -331,7 +331,8 @@ func TestObjMetadata(t *testing.T) {
 					ResourceIDKey: "container.id",
 					ResourceID:    "container-id",
 					Metadata: map[string]string{
-						"container.status": "running",
+						"container.status":             "running",
+						"container.creation_timestamp": "0001-01-01T01:01:01Z",
 					},
 				},
 			},
@@ -533,6 +534,33 @@ func TestObjMetadata(t *testing.T) {
 						"k8s.workload.kind":                        "ReplicationController",
 						"k8s.workload.name":                        "test-replicationcontroller-1",
 						"replicationcontroller.creation_timestamp": "0001-01-01T00:00:00Z",
+					},
+				},
+			},
+		},
+		{
+			name:          "Namespace metadata",
+			metadataStore: metadata.NewStore(),
+			resource: &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					UID:               types.UID("test-namespace-uid"),
+					Name:              "test-namespace",
+					Namespace:         "default",
+					CreationTimestamp: metav1.Time{Time: time.Now()},
+				},
+				Status: corev1.NamespaceStatus{
+					Phase: corev1.NamespaceActive,
+				},
+			},
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-namespace-uid"): {
+					EntityType:    "k8s.namespace",
+					ResourceIDKey: "k8s.namespace.uid",
+					ResourceID:    "test-namespace-uid",
+					Metadata: map[string]string{
+						"k8s.namespace.name":               "test-namespace",
+						"k8s.namespace.phase":              "active",
+						"k8s.namespace.creation_timestamp": time.Now().Format(time.RFC3339),
 					},
 				},
 			},
