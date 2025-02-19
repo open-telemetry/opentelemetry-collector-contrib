@@ -334,12 +334,12 @@ func (cp *childProcessCollector) WatchResourceConsumption() error {
 	for start := time.Now(); time.Since(start) < time.Minute; {
 		cp.fetchRAMUsage()
 		cp.fetchCPUUsage()
-		if err := cp.checkAllowedResourceUsage(); err != nil {
-			log.Printf("Allowed usage of resources is too high before test starts wait for one second : %v", err)
-			time.Sleep(time.Second)
-		} else {
+		err := cp.checkAllowedResourceUsage()
+		if err == nil {
 			break
 		}
+		log.Printf("Allowed usage of resources is too high before test starts wait for one second : %v", err)
+		time.Sleep(time.Second)
 	}
 
 	remainingFailures := cp.resourceSpec.MaxConsecutiveFailures
@@ -466,7 +466,10 @@ func (cp *childProcessCollector) GetResourceConsumption() string {
 
 // GetTotalConsumption returns total resource consumption since start of process
 func (cp *childProcessCollector) GetTotalConsumption() *ResourceConsumption {
-	rc := &ResourceConsumption{}
+	rc := &ResourceConsumption{
+		CPUPercentLimit: float64(cp.resourceSpec.ExpectedMaxCPU),
+		RAMMiBLimit:     cp.resourceSpec.ExpectedMaxRAM,
+	}
 
 	if cp.processMon != nil {
 		// Get total elapsed time since process start

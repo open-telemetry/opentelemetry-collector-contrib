@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
@@ -35,6 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver/internal/metadata"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -55,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.NoError(t, xconfmap.Validate(cfg))
 	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
@@ -67,7 +69,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 
 	_, err := NewFactory().CreateLogs(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		new(consumertest.LogsSink),
 	)
@@ -83,7 +85,7 @@ func TestReadStaticFile(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	cfg := testdataConfigYaml()
 
-	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -174,7 +176,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	fileName := filepath.Join(tempDir, "test.log")
 	backupFileName := filepath.Join(tempDir, "test-backup.log")
 
-	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
