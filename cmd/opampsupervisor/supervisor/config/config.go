@@ -7,9 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/service/telemetry"
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
 	"net/http"
 	"net/url"
 	"os"
@@ -18,10 +15,13 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/service/telemetry"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 	"go.uber.org/zap/zapcore"
 )
 

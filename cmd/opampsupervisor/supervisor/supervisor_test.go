@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/component"
 	"net"
 	"os"
 	"path/filepath"
@@ -25,6 +24,7 @@ import (
 	serverTypes "github.com/open-telemetry/opamp-go/server/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
