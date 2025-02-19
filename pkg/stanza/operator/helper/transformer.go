@@ -6,7 +6,6 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"github.com/expr-lang/expr/vm"
 	"go.opentelemetry.io/collector/component"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 )
 
 // NewTransformerConfig creates a new transformer config with default values
@@ -96,20 +94,18 @@ func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entr
 
 // HandleEntryError will handle an entry error using the on_error strategy.
 func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry.Entry, err error) error {
-	logFields := []zap.Field{
-		zap.Any("error", err),
-		zap.Any("action", t.OnError),
-	}
-
 	if entry == nil {
 		return fmt.Errorf("got a nil entry, this should not happen and is potentially a bug")
 	}
 
-	toAddFields := []zap.Field{zap.Any("entry.timestamp", entry.Timestamp)}
-	if logFilePath, ok := entry.Attributes[attrs.LogFilePath]; ok {
-		toAddFields = slices.Insert(toAddFields, 0, zap.Any(attrs.LogFilePath, logFilePath))
+	logFields := []zap.Field{
+		zap.Any("error", err),
+		zap.Any("action", t.OnError),
+		zap.Any("entry.timestamp", entry.Timestamp),
 	}
-	logFields = slices.Insert(logFields, 0, toAddFields...)
+	for attrName, attrValue := range entry.Attributes {
+		logFields = append(logFields, zap.Any(attrName, attrValue))
+	}
 
 	if t.OnError == SendOnErrorQuiet || t.OnError == DropOnErrorQuiet {
 		t.Logger().Debug("Failed to process entry", logFields...)
