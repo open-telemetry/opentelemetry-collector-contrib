@@ -406,17 +406,6 @@ func addDataStreamAttributes(document *objmodel.Document, key string, idx elasti
 	}
 }
 
-/*
-func (m *encodeModel) encodeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, record pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
-	switch m.mode {
-	case MappingOTel:
-		return otelserializer.SerializeProfile(resource, scope, record, pushData)
-	default:
-		return errors.New("profiles can only be encoded in OTel mode")
-	}
-}
-*/
-
 // nopSpanEventEncoder is embedded in all non-OTel encoders,
 // since only OTel mapping mode currently encodes span events
 // as separate documents. In all others they are stored within
