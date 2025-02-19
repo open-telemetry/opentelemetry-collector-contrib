@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
 func enableAllScraperMetrics(cfg *Config, enabled bool) {
@@ -62,7 +63,7 @@ func TestEmptyScrape(t *testing.T) {
 	// Disable all metrics manually that are enabled by default
 	enableAllScraperMetrics(cfg, false)
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
 	assert.Empty(t, scrapers)
 }
 
@@ -77,7 +78,7 @@ func TestSuccessfulScrape(t *testing.T) {
 
 	enableAllScraperMetrics(cfg, true)
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
 
 	for _, scraper := range scrapers {
@@ -129,7 +130,7 @@ func TestScrapeInvalidQuery(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 
 	enableAllScraperMetrics(cfg, true)
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	for _, scraper := range scrapers {
@@ -160,7 +161,7 @@ func TestScrapeCacheAndDiff(t *testing.T) {
 
 	enableAllScraperMetrics(cfg, false)
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(), cfg)
+	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
@@ -298,7 +299,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	enableAllScraperMetrics(cfg, false)
 	cfg.EnableTopQueryCollection = true
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(), cfg)
+	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
@@ -356,7 +357,7 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 	enableAllScraperMetrics(cfg, false)
 	cfg.EnableTopQueryCollection = true
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(), cfg)
+	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]

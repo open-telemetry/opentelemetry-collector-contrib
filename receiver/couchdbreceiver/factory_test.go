@@ -43,7 +43,7 @@ func TestCreateMetrics(t *testing.T) {
 
 				_, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopSettings(),
+					receivertest.NewNopSettingsWithType(metadata.Type),
 					createDefaultConfig(),
 					consumertest.NewNop(),
 				)
