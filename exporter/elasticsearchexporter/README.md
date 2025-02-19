@@ -404,12 +404,30 @@ The dimensions are mostly made up of resource attributes, scope attributes, scop
 
 The exporter can only group metrics with the same dimensions into the same document if they arrive in the same batch.
 To ensure metrics are not dropped even if they arrive in different batches in the exporter, the exporter adds a fingerprint of the metric names to the document in the `otel` mapping mode.
+Note that you'll need to be on a minimum version of Elasticsearch in order for this to take effect 8.16.5, 8.17.3, 8.19.0, 9.0.0.
+If you are on an earlier version, either update your Elasticsearch cluster or install this custom component template:
 
-While in most situations, this is just a sign that Elasticsearch's duplicate detection is working as intended, the data may be classified as a duplicate while it was not.
+```shell
+PUT _component_template/metrics-otel@custom
+{
+  "template": {
+    "mappings": {
+      "properties": {
+        "_metric_names_hash": {
+          "type": "keyword",
+          "time_series_dimension": true
+        }
+      }
+    }
+  }
+}
+```
+
+While in most situations, this error is just a sign that Elasticsearch's duplicate detection is working as intended, the data may be classified as a duplicate while it was not.
 This implies data is lost.
 
-1. If the data is not sent to `metrics-*.otel-*` data streams it may be related to data that the `elasticinframetricsprocessor` has derived from the original metrics.
-These are used to light up the host and k8s dashboards in Kibana.
+1. If the data is not sent in `otel` mapping mode to `metrics-*.otel-*` data streams, the metrics name fingerprint is not applied.
+This can happen for OTel host and k8s metrics that the [`elasticinframetricsprocessor`](https://github.com/elastic/opentelemetry-collector-components/tree/main/processor/elasticinframetricsprocessor) has translated to the format the host and k8s dashboards in Kibana can consume.
 If these metrics arrive in the `elasticsearchexporter` in different batches, they will not be grouped to the same document.
 This can cause the `version_conflict_engine_exception` error.
 Try to remove the `batchprocessor` from the pipeline (or remove `send_batch_max_size`) to ensure all metrics are sent in the same batch.
