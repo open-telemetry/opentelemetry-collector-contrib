@@ -16,13 +16,13 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4
 	go.opentelemetry.io/collector/component v0.120.0
 	go.opentelemetry.io/collector/component/componenttest v0.120.0
-	go.opentelemetry.io/collector/confmap v1.26.0
+	go.opentelemetry.io/collector/confmap v1.26.1-0.20250218214003-dae5d199ffc6
 	go.opentelemetry.io/collector/confmap/xconfmap v0.120.0
-	go.opentelemetry.io/collector/consumer v1.26.0
+	go.opentelemetry.io/collector/consumer v1.26.1-0.20250218214003-dae5d199ffc6
 	go.opentelemetry.io/collector/consumer/consumertest v0.120.0
-	go.opentelemetry.io/collector/featuregate v1.26.0
+	go.opentelemetry.io/collector/featuregate v1.26.1-0.20250218214003-dae5d199ffc6
 	go.opentelemetry.io/collector/filter v0.120.0
-	go.opentelemetry.io/collector/pdata v1.26.0
+	go.opentelemetry.io/collector/pdata v1.26.1-0.20250218214003-dae5d199ffc6
 	go.opentelemetry.io/collector/pipeline v0.120.0
 	go.opentelemetry.io/collector/receiver v0.120.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.120.0

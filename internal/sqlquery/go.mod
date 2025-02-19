@@ -12,7 +12,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.120.0
 	go.opentelemetry.io/collector/component/componenttest v0.120.0
-	go.opentelemetry.io/collector/pdata v1.26.0
+	go.opentelemetry.io/collector/pdata v1.26.1-0.20250218214003-dae5d199ffc6
 	go.opentelemetry.io/collector/scraper v0.120.0
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.120.0
 	go.uber.org/multierr v1.11.0
@@ -77,7 +77,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/consumer v1.26.0 // indirect
+	go.opentelemetry.io/collector/consumer v1.26.1-0.20250218214003-dae5d199ffc6 // indirect
 	go.opentelemetry.io/collector/pipeline v0.120.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.120.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
