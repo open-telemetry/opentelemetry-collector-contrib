@@ -44,7 +44,8 @@ func (fs flattenedSettings) OnConnecting(request *http.Request) serverTypes.Conn
 	return serverTypes.ConnectionResponse{
 		Accept: true,
 		ConnectionCallbacks: serverTypes.ConnectionCallbacks{
-			OnMessage: fs.OnMessage,
+			OnMessage:         fs.OnMessage,
+			OnConnectionClose: fs.OnConnectionClose,
 		},
 	}
 }

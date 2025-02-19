@@ -3,10 +3,10 @@ type: zookeeper
 status:
   class: scraper
   stability:
-    alpha: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski]
+    emeritus: [djaglowski]
     seeking_new: true
 
 resource_attributes:

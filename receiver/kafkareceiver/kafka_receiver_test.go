@@ -65,7 +65,7 @@ func TestNewTracesReceiver_err_auth_type(t *testing.T) {
 		Authentication: kafka.Authentication{
 			TLS: &configtls.ClientConfig{
 				Config: configtls.Config{
-					CAFile: "/doesnotexist",
+					CAFile: "/nonexistent",
 				},
 			},
 		},
@@ -390,7 +390,7 @@ func TestNewMetricsExporter_err_auth_type(t *testing.T) {
 		Authentication: kafka.Authentication{
 			TLS: &configtls.ClientConfig{
 				Config: configtls.Config{
-					CAFile: "/doesnotexist",
+					CAFile: "/nonexistent",
 				},
 			},
 		},
@@ -701,7 +701,7 @@ func TestNewLogsExporter_err_auth_type(t *testing.T) {
 		Authentication: kafka.Authentication{
 			TLS: &configtls.ClientConfig{
 				Config: configtls.Config{
-					CAFile: "/doesnotexist",
+					CAFile: "/nonexistent",
 				},
 			},
 		},
@@ -1037,11 +1037,9 @@ func TestLogsConsumerGroupHandler_unmarshal_text(t *testing.T) {
 				assert.NoError(t, err)
 				wg.Done()
 			}()
-			encCfg := textutils.NewEncodingConfig()
-			encCfg.Encoding = test.enc
-			enc, err := encCfg.Build()
+			enc, err := textutils.LookupEncoding(test.enc)
 			require.NoError(t, err)
-			encoder := enc.Encoding.NewEncoder()
+			encoder := enc.NewEncoder()
 			encoded, err := encoder.Bytes([]byte(test.text))
 			require.NoError(t, err)
 			t1 := time.Now()

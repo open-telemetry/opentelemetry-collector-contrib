@@ -190,6 +190,8 @@ func TestExportWithWALEnabled(t *testing.T) {
 
 		assert.Len(t, writeReq.Timeseries, 1)
 	}))
+	defer server.Close()
+
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
 	cfg.ClientConfig = clientConfig
