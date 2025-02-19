@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v69/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"

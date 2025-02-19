@@ -6,6 +6,8 @@ package prometheusreceiver
 import (
 	"testing"
 
+	"github.com/prometheus/common/model"
+	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/require"
@@ -232,6 +234,10 @@ test_counter0{label1="value1",label2="value2"} 1
 `
 
 func TestLabelNameLimitConfig(t *testing.T) {
+	scheme := model.NameValidationScheme
+	model.NameValidationScheme = model.UTF8Validation
+	defer func() { model.NameValidationScheme = scheme }()
+
 	targets := []*testData{
 		{
 			name: "target1",
@@ -252,6 +258,7 @@ func TestLabelNameLimitConfig(t *testing.T) {
 	testComponent(t, targets, nil, func(cfg *PromConfig) {
 		// set label limit in scrape_config
 		for _, scrapeCfg := range cfg.ScrapeConfigs {
+			scrapeCfg.ScrapeFallbackProtocol = promconfig.PrometheusText1_0_0
 			scrapeCfg.LabelNameLengthLimit = 20
 		}
 	})
