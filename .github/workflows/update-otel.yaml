@@ -47,7 +47,7 @@ jobs:
           END
           )
           job_url="$(gh run view ${{ github.run_id }} -R ${{ github.repository }} --json jobs -q '.jobs[] | select(.name == "update-otel") | .url')"
-          body="$(printf "$template" "$job_url" "$(tail -n100 log.out)")"
+          body="$(printf "$template" "$job_url" "$(tail -n100 log.out | tail -c63K)")"
           gh issue create -R ${{ github.repository }} -t 'update-otel workflow failed' -b "$body" -l 'ci-cd'
         env:
           GH_TOKEN: ${{ github.token }}
