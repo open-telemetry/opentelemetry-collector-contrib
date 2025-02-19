@@ -410,7 +410,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "event_index",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "event_index",
 			},
 			orig:              int64(1),
@@ -573,7 +573,7 @@ func Test_setAndGetEventIndex(t *testing.T) {
 			}
 
 			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(&internal.TestPath[TransformContext]{
+			accessor, err := pep.parsePath(&pathtest.Path[TransformContext]{
 				N: "event_index",
 			})
 			assert.NoError(t, err)
