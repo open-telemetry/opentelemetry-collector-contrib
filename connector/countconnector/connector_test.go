@@ -288,7 +288,7 @@ func TestTracesToMetrics(t *testing.T) {
 //   - (no attributes)
 //
 // - The size metrics have the following sets of types:
-//   - int gauge, double gauge, int sum, double sum, historgram, summary
+//   - int gauge, double gauge, int sum, double sum, histogram, summary
 //
 // - The four data points on each metric have the following sets of attributes:
 //   - datapoint.required: foo, datapoint.optional: bar
