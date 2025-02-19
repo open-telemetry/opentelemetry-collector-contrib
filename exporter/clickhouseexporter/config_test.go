@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
@@ -94,7 +95,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -542,7 +543,7 @@ func TestShouldCreateSchema(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("ShouldCreateSchema case %s", tt.name), func(t *testing.T) {
-			assert.NoError(t, component.ValidateConfig(tt))
+			assert.NoError(t, xconfmap.Validate(tt))
 			assert.Equal(t, tt.expected, tt.input.shouldCreateSchema())
 		})
 	}
@@ -584,7 +585,7 @@ func TestTableEngineConfigParsing(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg.(*Config).tableEngineString())
 		})
 	}
@@ -617,7 +618,7 @@ func TestClusterString(t *testing.T) {
 			cfg.(*Config).Endpoint = defaultEndpoint
 			cfg.(*Config).ClusterName = tt.input
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg.(*Config).clusterString())
 		})
 	}

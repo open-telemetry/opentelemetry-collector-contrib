@@ -21,13 +21,14 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
+	k8stest "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 const (
@@ -86,7 +87,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 	defer shutdownSinks()
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(testDir, "collector"))
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(testDir, "collector"), map[string]string{}, "")
 	createTeleOpts := &k8stest.TelemetrygenCreateOpts{
 		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
 		TestID:       testID,
@@ -421,7 +422,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		},
 		{
 			name:     "profiles-job",
-			dataType: pipelineprofiles.SignalProfiles,
+			dataType: xpipeline.SignalProfiles,
 			service:  "test-profiles-job",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-job-[a-z0-9]*"),
@@ -446,7 +447,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		},
 		{
 			name:     "profiles-statefulset",
-			dataType: pipelineprofiles.SignalProfiles,
+			dataType: xpipeline.SignalProfiles,
 			service:  "test-profiles-statefulset",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-statefulset-0"),
@@ -470,7 +471,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		},
 		{
 			name:     "profiles-deployment",
-			dataType: pipelineprofiles.SignalProfiles,
+			dataType: xpipeline.SignalProfiles,
 			service:  "test-profiles-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -497,7 +498,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		},
 		{
 			name:     "profiles-daemonset",
-			dataType: pipelineprofiles.SignalProfiles,
+			dataType: xpipeline.SignalProfiles,
 			service:  "test-profiles-daemonset",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-daemonset-[a-z0-9]*"),
@@ -531,7 +532,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				scanMetricsForAttributes(t, metricsConsumer, tc.service, tc.attrs)
 			case pipeline.SignalLogs:
 				scanLogsForAttributes(t, logsConsumer, tc.service, tc.attrs)
-			case pipelineprofiles.SignalProfiles:
+			case xpipeline.SignalProfiles:
 				scanProfilesForAttributes(t, profilesConsumer, tc.service, tc.attrs)
 			default:
 				t.Fatalf("unknown data type %s", tc.dataType)
@@ -566,7 +567,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 	defer shutdownSinks()
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(testDir, "collector"))
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(testDir, "collector"), map[string]string{}, "")
 	createTeleOpts := &k8stest.TelemetrygenCreateOpts{
 		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
 		TestID:       testID,
@@ -670,7 +671,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 		},
 		{
 			name:     "profiles-deployment",
-			dataType: pipelineprofiles.SignalProfiles,
+			dataType: xpipeline.SignalProfiles,
 			service:  "test-profiles-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -703,7 +704,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				scanMetricsForAttributes(t, metricsConsumer, tc.service, tc.attrs)
 			case pipeline.SignalLogs:
 				scanLogsForAttributes(t, logsConsumer, tc.service, tc.attrs)
-			case pipelineprofiles.SignalProfiles:
+			case xpipeline.SignalProfiles:
 				scanProfilesForAttributes(t, profilesConsumer, tc.service, tc.attrs)
 			default:
 				t.Fatalf("unknown data type %s", tc.dataType)
@@ -742,11 +743,11 @@ func TestE2E_MixRBAC(t *testing.T) {
 		}
 
 		defer func() {
-			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, nsObj), "failed to delete namespace %s", nsObj.GetName())
+			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, nsObj), "failed to delete namespace %s", nsObj.GetName(), "")
 		}()
 	}
 
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(testDir, "collector"))
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(testDir, "collector"), map[string]string{}, "")
 	defer func() {
 		for _, obj := range collectorObjs {
 			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
@@ -866,7 +867,7 @@ func TestE2E_MixRBAC(t *testing.T) {
 		},
 		{
 			name:     "profiles-deployment",
-			dataType: pipelineprofiles.SignalProfiles,
+			dataType: xpipeline.SignalProfiles,
 			service:  "test-profiles-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -902,7 +903,7 @@ func TestE2E_MixRBAC(t *testing.T) {
 				scanMetricsForAttributes(t, metricsConsumer, tc.service, tc.attrs)
 			case pipeline.SignalLogs:
 				scanLogsForAttributes(t, logsConsumer, tc.service, tc.attrs)
-			case pipelineprofiles.SignalProfiles:
+			case xpipeline.SignalProfiles:
 				scanProfilesForAttributes(t, profilesConsumer, tc.service, tc.attrs)
 			default:
 				t.Fatalf("unknown data type %s", tc.dataType)
@@ -941,7 +942,7 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 	defer shutdownSinks()
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(testDir, "collector"))
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(testDir, "collector"), map[string]string{}, "")
 	createTeleOpts := &k8stest.TelemetrygenCreateOpts{
 		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
 		TestID:       testID,
@@ -1045,7 +1046,7 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 		},
 		{
 			name:     "profiles-deployment",
-			dataType: pipelineprofiles.SignalProfiles,
+			dataType: xpipeline.SignalProfiles,
 			service:  "test-profiles-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -1078,7 +1079,7 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 				scanMetricsForAttributes(t, metricsConsumer, tc.service, tc.attrs)
 			case pipeline.SignalLogs:
 				scanLogsForAttributes(t, logsConsumer, tc.service, tc.attrs)
-			case pipelineprofiles.SignalProfiles:
+			case xpipeline.SignalProfiles:
 				scanProfilesForAttributes(t, profilesConsumer, tc.service, tc.attrs)
 			default:
 				t.Fatalf("unknown data type %s", tc.dataType)
@@ -1144,7 +1145,7 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 	}
 
 	// start the collector after the telemetry gen objects
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(testDir, "collector"))
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(testDir, "collector"), map[string]string{}, "")
 	defer func() {
 		for _, obj := range collectorObjs {
 			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
@@ -1465,7 +1466,7 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 		},
 		{
 			name:     "profiles-job",
-			dataType: pipelineprofiles.SignalProfiles,
+			dataType: xpipeline.SignalProfiles,
 			service:  "test-profiles-job",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-job-[a-z0-9]*"),
@@ -1490,7 +1491,7 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 		},
 		{
 			name:     "profiles-statefulset",
-			dataType: pipelineprofiles.SignalProfiles,
+			dataType: xpipeline.SignalProfiles,
 			service:  "test-profiles-statefulset",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-statefulset-0"),
@@ -1514,7 +1515,7 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 		},
 		{
 			name:     "profiles-deployment",
-			dataType: pipelineprofiles.SignalProfiles,
+			dataType: xpipeline.SignalProfiles,
 			service:  "test-profiles-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -1541,7 +1542,7 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 		},
 		{
 			name:     "profiles-daemonset",
-			dataType: pipelineprofiles.SignalProfiles,
+			dataType: xpipeline.SignalProfiles,
 			service:  "test-profiles-daemonset",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-daemonset-[a-z0-9]*"),
@@ -1575,7 +1576,7 @@ func TestE2E_ClusterRBACCollectorStartAfterTelemetryGen(t *testing.T) {
 				scanMetricsForAttributes(t, metricsConsumer, tc.service, tc.attrs)
 			case pipeline.SignalLogs:
 				scanLogsForAttributes(t, logsConsumer, tc.service, tc.attrs)
-			case pipelineprofiles.SignalProfiles:
+			case xpipeline.SignalProfiles:
 				scanProfilesForAttributes(t, profilesConsumer, tc.service, tc.attrs)
 			default:
 				t.Fatalf("unknown data type %s", tc.dataType)
@@ -1731,13 +1732,13 @@ func startUpSinks(t *testing.T, mc *consumertest.MetricsSink, tc *consumertest.T
 	cfg.HTTP = nil
 	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
 
-	_, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, mc)
+	_, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, mc)
 	require.NoError(t, err, "failed creating metrics receiver")
-	_, err = f.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, tc)
+	_, err = f.CreateTraces(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, tc)
 	require.NoError(t, err, "failed creating traces receiver")
-	_, err = f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, lc)
+	_, err = f.CreateLogs(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, lc)
 	require.NoError(t, err, "failed creating logs receiver")
-	rcvr, err := f.(xreceiver.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(), cfg, pc)
+	rcvr, err := f.(xreceiver.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, pc)
 	require.NoError(t, err, "failed creating profiles receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	return func() {

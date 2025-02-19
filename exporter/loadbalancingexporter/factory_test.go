@@ -26,7 +26,7 @@ import (
 func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := exportertest.NewNopSettings()
+	creationParams := exportertest.NewNopSettingsWithType(metadata.Type)
 	cfg := &Config{
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
@@ -44,7 +44,7 @@ func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := exportertest.NewNopSettings()
+	creationParams := exportertest.NewNopSettingsWithType(metadata.Type)
 	cfg := &Config{
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
@@ -77,8 +77,6 @@ func TestBuildExporterConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	factories.Exporters[metadata.Type] = NewFactory()
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
-	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "test-build-exporter-config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -102,7 +100,7 @@ func TestBuildExporterConfig(t *testing.T) {
 
 func TestBuildExporterSettings(t *testing.T) {
 	// prepare
-	creationParams := exportertest.NewNopSettings()
+	creationParams := exportertest.NewNopSettingsWithType(metadata.Type)
 	testEndpoint := "the-endpoint"
 	observedZapCore, observedLogs := observer.New(zap.InfoLevel)
 	creationParams.Logger = zap.New(observedZapCore)
