@@ -16,7 +16,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
       md_files: ${{ steps.changed-files.outputs.md_all_changed_files }}
-      yaml_files: ${{ steps.changed-files.outputs.yaml_all_changed_files }} # used to catch MD_LINK_CHECK_VERSION updates and runs check-links to confirm functionality
+      yaml_files: ${{ steps.changed-files.outputs.yaml_all_changed_files }} # used to catch link checker updates and runs check-links to confirm functionality
     steps:
       - uses: actions/checkout@v4
         with:

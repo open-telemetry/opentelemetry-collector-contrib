@@ -14,7 +14,7 @@ func MoveResourcesIf(from, to plog.Logs, f func(plog.ResourceLogs) bool) {
 		if !f(rl) {
 			return false
 		}
-		rl.CopyTo(to.ResourceLogs().AppendEmpty())
+		rl.MoveTo(to.ResourceLogs().AppendEmpty())
 		return true
 	})
 }
@@ -25,12 +25,10 @@ func MoveResourcesIf(from, to plog.Logs, f func(plog.ResourceLogs) bool) {
 // Resources or Scopes are removed from the original if they become empty. All ordering is preserved.
 func MoveRecordsWithContextIf(from, to plog.Logs, f func(plog.ResourceLogs, plog.ScopeLogs, plog.LogRecord) bool) {
 	rls := from.ResourceLogs()
-	for i := 0; i < rls.Len(); i++ {
-		rl := rls.At(i)
+	rls.RemoveIf(func(rl plog.ResourceLogs) bool {
 		sls := rl.ScopeLogs()
 		var rlCopy *plog.ResourceLogs
-		for j := 0; j < sls.Len(); j++ {
-			sl := sls.At(j)
+		sls.RemoveIf(func(sl plog.ScopeLogs) bool {
 			lrs := sl.LogRecords()
 			var slCopy *plog.ScopeLogs
 			lrs.RemoveIf(func(lr plog.LogRecord) bool {
@@ -49,15 +47,11 @@ func MoveRecordsWithContextIf(from, to plog.Logs, f func(plog.ResourceLogs, plog
 					sl.Scope().CopyTo(slCopy.Scope())
 					slCopy.SetSchemaUrl(sl.SchemaUrl())
 				}
-				lr.CopyTo(slCopy.LogRecords().AppendEmpty())
+				lr.MoveTo(slCopy.LogRecords().AppendEmpty())
 				return true
 			})
-		}
-		sls.RemoveIf(func(sl plog.ScopeLogs) bool {
 			return sl.LogRecords().Len() == 0
 		})
-	}
-	rls.RemoveIf(func(rl plog.ResourceLogs) bool {
 		return rl.ScopeLogs().Len() == 0
 	})
 }

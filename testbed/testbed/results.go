@@ -52,16 +52,18 @@ type PerformanceResults struct {
 
 // PerformanceTestResult reports the results of a single performance test.
 type PerformanceTestResult struct {
-	testName          string
-	result            string
-	duration          time.Duration
-	cpuPercentageAvg  float64
-	cpuPercentageMax  float64
-	ramMibAvg         uint32
-	ramMibMax         uint32
-	sentSpanCount     uint64
-	receivedSpanCount uint64
-	errorCause        string
+	testName           string
+	result             string
+	duration           time.Duration
+	cpuPercentageAvg   float64
+	cpuPercentageMax   float64
+	cpuPercentageLimit float64
+	ramMibAvg          uint32
+	ramMibMax          uint32
+	ramMibLimit        uint32
+	sentSpanCount      uint64
+	receivedSpanCount  uint64
+	errorCause         string
 }
 
 func (r *PerformanceResults) Init(resultsDir string) {
@@ -83,8 +85,8 @@ func (r *PerformanceResults) Init(resultsDir string) {
 	_, _ = io.WriteString(r.resultsFile,
 		"# Test PerformanceResults\n"+
 			fmt.Sprintf("Started: %s\n\n", time.Now().Format(time.RFC1123Z))+
-			"Test                                    |Result|Duration|CPU Avg%|CPU Max%|RAM Avg MiB|RAM Max MiB|Sent Items|Received Items|\n"+
-			"----------------------------------------|------|-------:|-------:|-------:|----------:|----------:|---------:|-------------:|\n")
+			"Test                                    |Result|Duration|CPU Avg%|CPU Max%|CPU Limit|RAM Avg MiB|RAM Max MiB|RAM Limit MiB|Sent Items|Received Items|\n"+
+			"----------------------------------------|------|-------:|-------:|-------:|--------:|----------:|----------:|------------:|---------:|-------------:|\n")
 }
 
 // Save the total results and close the file.
@@ -103,14 +105,16 @@ func (r *PerformanceResults) Add(_ string, result any) {
 	}
 
 	_, _ = io.WriteString(r.resultsFile,
-		fmt.Sprintf("%-40s|%-6s|%7.0fs|%8.1f|%8.1f|%11d|%11d|%10d|%14d|%s\n",
+		fmt.Sprintf("%-40s|%-6s|%7.0fs|%8.1f|%8.1f|%8.1f|%11d|%11d|%11d|%10d|%14d|%s\n",
 			testResult.testName,
 			testResult.result,
 			testResult.duration.Seconds(),
 			testResult.cpuPercentageAvg,
 			testResult.cpuPercentageMax,
+			testResult.cpuPercentageLimit,
 			testResult.ramMibAvg,
 			testResult.ramMibMax,
+			testResult.ramMibLimit,
 			testResult.sentSpanCount,
 			testResult.receivedSpanCount,
 			testResult.errorCause,
@@ -135,6 +139,14 @@ func (r *PerformanceResults) Add(_ string, result any) {
 		Unit:  "%",
 		Extra: cpuChartName,
 	})
+	if testResult.cpuPercentageLimit > 0 {
+		r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
+			Name:  "cpu_percentage_limit",
+			Value: testResult.cpuPercentageLimit,
+			Unit:  "%",
+			Extra: cpuChartName,
+		})
+	}
 	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
 		Name:  "ram_mib_avg",
 		Value: float64(testResult.ramMibAvg),
@@ -147,6 +159,14 @@ func (r *PerformanceResults) Add(_ string, result any) {
 		Unit:  "MiB",
 		Extra: memoryChartName,
 	})
+	if testResult.ramMibLimit > 0 {
+		r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
+			Name:  "ram_mib_limit",
+			Value: float64(testResult.ramMibLimit),
+			Unit:  "MiB",
+			Extra: memoryChartName,
+		})
+	}
 	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
 		Name:  "dropped_span_count",
 		Value: float64(testResult.sentSpanCount - testResult.receivedSpanCount),
