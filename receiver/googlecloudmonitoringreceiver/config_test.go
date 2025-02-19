@@ -41,6 +41,9 @@ func TestLoadConfig(t *testing.T) {
 				{
 					MetricName: "connectors.googleapis.com/flex/instance/cpu/usage_time",
 				},
+				{
+					MetricDescriptorFilter: "metric.type = starts_with(\"compute.googleapis.com\")",
+				},
 			},
 		},
 		cfg,

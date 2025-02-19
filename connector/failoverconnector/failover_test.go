@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
 
 func TestFailoverRecovery(t *testing.T) {
@@ -38,7 +40,7 @@ func TestFailoverRecovery(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
 
@@ -174,7 +176,7 @@ func TestFailoverRecovery_MaxRetries(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
 
@@ -239,7 +241,7 @@ func TestFailoverRecovery_MaxRetriesDisabled(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
 
