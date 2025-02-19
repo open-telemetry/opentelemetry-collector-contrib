@@ -34,7 +34,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: false
-    exporter_prometheusremotewrite_sent_batch:
+    exporter_prometheusremotewrite_sent_batches:
       enabled: true
       description: Number of remote write request batches sent to the remote write endpoint regardless of success or failure
       unit: "{batch}"

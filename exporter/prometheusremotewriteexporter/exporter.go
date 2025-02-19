@@ -52,7 +52,7 @@ func (p *prwTelemetryOtel) setNumberConsumer(ctx context.Context, n int64) {
 }
 
 func (p *prwTelemetryOtel) recordRemoteWriteSentBatch(ctx context.Context) {
-	p.telemetryBuilder.ExporterPrometheusremotewriteSentBatch.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
+	p.telemetryBuilder.ExporterPrometheusremotewriteSentBatches.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
 }
 
 func (p *prwTelemetryOtel) recordTranslationFailure(ctx context.Context) {

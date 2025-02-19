@@ -53,9 +53,9 @@ func AssertEqualExporterPrometheusremotewriteFailedTranslations(t *testing.T, tt
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualExporterPrometheusremotewriteSentBatch(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualExporterPrometheusremotewriteSentBatches(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_exporter_prometheusremotewrite_sent_batch",
+		Name:        "otelcol_exporter_prometheusremotewrite_sent_batches",
 		Description: "Number of remote write request batches sent to the remote write endpoint regardless of success or failure",
 		Unit:        "{batch}",
 		Data: metricdata.Sum[int64]{
@@ -64,7 +64,7 @@ func AssertEqualExporterPrometheusremotewriteSentBatch(t *testing.T, tt *compone
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_exporter_prometheusremotewrite_sent_batch")
+	got, err := tt.GetMetric("otelcol_exporter_prometheusremotewrite_sent_batches")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
