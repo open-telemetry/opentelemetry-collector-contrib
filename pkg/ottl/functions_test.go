@@ -2009,7 +2009,7 @@ func createFactory[A any](name string, args A, fn any) Factory[any] {
 		argsVal := reflect.ValueOf(fArgs).Elem()
 		fnArgs := make([]reflect.Value, argsVal.NumField())
 
-		for i := 0; i < argsVal.NumField(); i++ {
+		for i := range argsVal.NumField() {
 			fnArgs[i] = argsVal.Field(i)
 		}
 

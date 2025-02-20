@@ -71,7 +71,7 @@ func mapToAdxTrace(resource pcommon.Resource, scope pcommon.InstrumentationScope
 func getEventsData(sd ptrace.Span) []*Event {
 	events := make([]*Event, sd.Events().Len())
 
-	for i := 0; i < sd.Events().Len(); i++ {
+	for i := range sd.Events().Len() {
 		event := &Event{
 			Timestamp:       sd.Events().At(i).Timestamp().AsTime().Format(time.RFC3339Nano),
 			EventName:       sd.Events().At(i).Name(),
@@ -84,7 +84,7 @@ func getEventsData(sd ptrace.Span) []*Event {
 
 func getLinksData(sd ptrace.Span) []*Link {
 	links := make([]*Link, sd.Links().Len())
-	for i := 0; i < sd.Links().Len(); i++ {
+	for i := range sd.Links().Len() {
 		link := &Link{
 			TraceID:            traceutil.TraceIDToHexOrEmptyString(sd.Links().At(i).TraceID()),
 			SpanID:             traceutil.SpanIDToHexOrEmptyString(sd.Links().At(i).SpanID()),

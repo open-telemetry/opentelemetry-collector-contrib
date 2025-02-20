@@ -43,11 +43,11 @@ func (c *connectorLogs) Capabilities() consumer.Capabilities {
 func (c *connectorLogs) ConsumeLogs(ctx context.Context, pl plog.Logs) error {
 	// loop through the levels of logs
 	logsUnmarshaler := &plog.JSONUnmarshaler{}
-	for i := 0; i < pl.ResourceLogs().Len(); i++ {
+	for i := range pl.ResourceLogs().Len() {
 		li := pl.ResourceLogs().At(i)
-		for j := 0; j < li.ScopeLogs().Len(); j++ {
+		for j := range li.ScopeLogs().Len() {
 			logRecord := li.ScopeLogs().At(j)
-			for k := 0; k < logRecord.LogRecords().Len(); k++ {
+			for k := range logRecord.LogRecords().Len() {
 				lRecord := logRecord.LogRecords().At(k)
 				token := lRecord.Body()
 

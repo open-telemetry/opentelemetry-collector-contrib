@@ -374,7 +374,7 @@ func BenchmarkInternalTracesToJaegerProto(b *testing.B) {
 	resource.CopyTo(td.ResourceSpans().At(0).Resource())
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		batches := ProtoFromTraces(td)
 		assert.NotEmpty(b, batches)
 	}

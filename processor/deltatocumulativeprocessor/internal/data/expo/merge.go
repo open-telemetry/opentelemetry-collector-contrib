@@ -37,7 +37,7 @@ func Merge(arel, brel Buckets) {
 	counts := pcommon.NewUInt64Slice()
 	counts.Append(make([]uint64, size-counts.Len())...)
 
-	for i := 0; i < counts.Len(); i++ {
+	for i := range counts.Len() {
 		counts.SetAt(i, a.Abs(lo+i)+b.Abs(lo+i))
 	}
 

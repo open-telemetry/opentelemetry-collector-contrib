@@ -44,7 +44,7 @@ func (e *groupingFileExporter) consumeTraces(ctx context.Context, td ptrace.Trac
 
 	groups := make(map[string][]ptrace.ResourceSpans)
 
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		rSpans := td.ResourceSpans().At(i)
 		group(e, groups, rSpans.Resource(), rSpans)
 	}
@@ -82,7 +82,7 @@ func (e *groupingFileExporter) consumeMetrics(ctx context.Context, md pmetric.Me
 
 	groups := make(map[string][]pmetric.ResourceMetrics)
 
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+	for i := range md.ResourceMetrics().Len() {
 		rMetrics := md.ResourceMetrics().At(i)
 		group(e, groups, rMetrics.Resource(), rMetrics)
 	}
@@ -120,7 +120,7 @@ func (e *groupingFileExporter) consumeLogs(ctx context.Context, ld plog.Logs) er
 
 	groups := make(map[string][]plog.ResourceLogs)
 
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+	for i := range ld.ResourceLogs().Len() {
 		rLogs := ld.ResourceLogs().At(i)
 		group(e, groups, rLogs.Resource(), rLogs)
 	}
@@ -158,7 +158,7 @@ func (e *groupingFileExporter) consumeProfiles(ctx context.Context, pd pprofile.
 
 	groups := make(map[string][]pprofile.ResourceProfiles)
 
-	for i := 0; i < pd.ResourceProfiles().Len(); i++ {
+	for i := range pd.ResourceProfiles().Len() {
 		rProfiles := pd.ResourceProfiles().At(i)
 		group(e, groups, rProfiles.Resource(), rProfiles)
 	}

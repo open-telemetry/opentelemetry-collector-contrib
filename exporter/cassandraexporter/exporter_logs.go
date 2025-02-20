@@ -110,14 +110,14 @@ func parseCreateLogTableSQL(cfg *Config) string {
 func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	start := time.Now()
 
-	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+	for i := range ld.ResourceLogs().Len() {
 		logs := ld.ResourceLogs().At(i)
 		res := logs.Resource()
 		resAttr := attributesToMap(res.Attributes().AsRaw())
 
-		for j := 0; j < logs.ScopeLogs().Len(); j++ {
+		for j := range logs.ScopeLogs().Len() {
 			rs := logs.ScopeLogs().At(j).LogRecords()
-			for k := 0; k < rs.Len(); k++ {
+			for k := range rs.Len() {
 				r := rs.At(k)
 				logAttr := attributesToMap(r.Attributes().AsRaw())
 				bodyByte, err := json.Marshal(r.Body().AsRaw())

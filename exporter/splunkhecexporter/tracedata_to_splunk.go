@@ -93,7 +93,7 @@ func toHecSpan(span ptrace.Span) hecSpan {
 	attributes := span.Attributes().AsRaw()
 
 	links := make([]hecLink, span.Links().Len())
-	for i := 0; i < span.Links().Len(); i++ {
+	for i := range span.Links().Len() {
 		link := span.Links().At(i)
 		linkAttributes := link.Attributes().AsRaw()
 		links[i] = hecLink{
@@ -104,7 +104,7 @@ func toHecSpan(span ptrace.Span) hecSpan {
 		}
 	}
 	events := make([]hecEvent, span.Events().Len())
-	for i := 0; i < span.Events().Len(); i++ {
+	for i := range span.Events().Len() {
 		event := span.Events().At(i)
 		eventAttributes := event.Attributes().AsRaw()
 		events[i] = hecEvent{

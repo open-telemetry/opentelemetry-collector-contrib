@@ -70,7 +70,7 @@ func (m *Matcher) MatchMetric(metric pmetric.Metric) (bool, error) {
 
 func (m *Matcher) matchGauge(metricName string, gauge pmetric.Gauge, vm *vm.VM) (bool, error) {
 	pts := gauge.DataPoints()
-	for i := 0; i < pts.Len(); i++ {
+	for i := range pts.Len() {
 		matched, err := m.matchEnv(metricName, pmetric.MetricTypeGauge, pts.At(i).Attributes(), vm)
 		if err != nil {
 			return false, err
@@ -84,7 +84,7 @@ func (m *Matcher) matchGauge(metricName string, gauge pmetric.Gauge, vm *vm.VM) 
 
 func (m *Matcher) matchSum(metricName string, sum pmetric.Sum, vm *vm.VM) (bool, error) {
 	pts := sum.DataPoints()
-	for i := 0; i < pts.Len(); i++ {
+	for i := range pts.Len() {
 		matched, err := m.matchEnv(metricName, pmetric.MetricTypeSum, pts.At(i).Attributes(), vm)
 		if err != nil {
 			return false, err
@@ -98,7 +98,7 @@ func (m *Matcher) matchSum(metricName string, sum pmetric.Sum, vm *vm.VM) (bool,
 
 func (m *Matcher) matchHistogram(metricName string, histogram pmetric.Histogram, vm *vm.VM) (bool, error) {
 	pts := histogram.DataPoints()
-	for i := 0; i < pts.Len(); i++ {
+	for i := range pts.Len() {
 		matched, err := m.matchEnv(metricName, pmetric.MetricTypeHistogram, pts.At(i).Attributes(), vm)
 		if err != nil {
 			return false, err
@@ -112,7 +112,7 @@ func (m *Matcher) matchHistogram(metricName string, histogram pmetric.Histogram,
 
 func (m *Matcher) matchExponentialHistogram(metricName string, eh pmetric.ExponentialHistogram, vm *vm.VM) (bool, error) {
 	pts := eh.DataPoints()
-	for i := 0; i < pts.Len(); i++ {
+	for i := range pts.Len() {
 		matched, err := m.matchEnv(metricName, pmetric.MetricTypeExponentialHistogram, pts.At(i).Attributes(), vm)
 		if err != nil {
 			return false, err
@@ -126,7 +126,7 @@ func (m *Matcher) matchExponentialHistogram(metricName string, eh pmetric.Expone
 
 func (m *Matcher) matchSummary(metricName string, summary pmetric.Summary, vm *vm.VM) (bool, error) {
 	pts := summary.DataPoints()
-	for i := 0; i < pts.Len(); i++ {
+	for i := range pts.Len() {
 		matched, err := m.matchEnv(metricName, pmetric.MetricTypeSummary, pts.At(i).Attributes(), vm)
 		if err != nil {
 			return false, err

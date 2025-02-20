@@ -52,7 +52,7 @@ func ToTDigest(dp pmetric.ExponentialHistogramDataPoint) (counts []int64, values
 
 	offset = int(dp.Positive().Offset())
 	bucketCounts = dp.Positive().BucketCounts()
-	for i := 0; i < bucketCounts.Len(); i++ {
+	for i := range bucketCounts.Len() {
 		count := bucketCounts.At(i)
 		if count == 0 {
 			continue

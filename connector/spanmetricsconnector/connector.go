@@ -369,7 +369,7 @@ func (p *connectorImp) resetState() {
 // dimensions the user has configured.
 func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 	startTimestamp := pcommon.NewTimestampFromTime(p.clock.Now())
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
 		serviceAttr, ok := resourceAttr.Get(conventions.AttributeServiceName)
@@ -385,10 +385,10 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 		unitDivider := unitDivider(p.config.Histogram.Unit)
 		serviceName := serviceAttr.Str()
 		ilsSlice := rspans.ScopeSpans()
-		for j := 0; j < ilsSlice.Len(); j++ {
+		for j := range ilsSlice.Len() {
 			ils := ilsSlice.At(j)
 			spans := ils.Spans()
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				span := spans.At(k)
 				// Protect against end timestamps before start timestamps. Assume 0 duration.
 				duration := float64(0)
@@ -419,7 +419,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 				// aggregate events metrics
 				if p.events.Enabled {
-					for l := 0; l < span.Events().Len(); l++ {
+					for l := range span.Events().Len() {
 						event := span.Events().At(l)
 						eDimensions := p.dimensions
 						eDimensions = append(eDimensions, p.eDimensions...)

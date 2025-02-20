@@ -70,7 +70,7 @@ func simpleTraces(count int) ptrace.Traces {
 	ss.Scope().SetDroppedAttributesCount(20)
 	ss.Scope().Attributes().PutStr("lib", "clickhouse")
 	timestamp := time.Unix(1703498029, 0)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		s := ss.Spans().AppendEmpty()
 		s.SetTraceID([16]byte{1, 2, 3, byte(i)})
 		s.SetSpanID([8]byte{1, 2, 3, byte(i)})

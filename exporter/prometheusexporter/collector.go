@@ -57,7 +57,7 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
 	length := exemplars.Len()
 	result := make([]prometheus.Exemplar, length)
 
-	for i := 0; i < length; i++ {
+	for i := range length {
 		e := exemplars.At(i)
 		exemplarLabels := make(prometheus.Labels, 0)
 
@@ -231,7 +231,7 @@ func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.
 
 	quantiles := make(map[float64]float64)
 	qv := point.QuantileValues()
-	for j := 0; j < qv.Len(); j++ {
+	for j := range qv.Len() {
 		qvj := qv.At(j)
 		// There should be EXACTLY one quantile value lest it is an invalid exposition.
 		quantiles[qvj.Quantile()] = qvj.Value()
@@ -265,7 +265,7 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 
 	indicesMap := make(map[float64]int)
 	buckets := make([]float64, 0, ip.BucketCounts().Len())
-	for index := 0; index < ip.ExplicitBounds().Len(); index++ {
+	for index := range ip.ExplicitBounds().Len() {
 		bucket := ip.ExplicitBounds().At(index)
 		if _, added := indicesMap[bucket]; !added {
 			indicesMap[bucket] = index

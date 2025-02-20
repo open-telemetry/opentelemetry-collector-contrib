@@ -113,9 +113,9 @@ func assertMetricValueEqual(t *testing.T, m pmetric.Metrics, metricName string, 
 	rm := m.ResourceMetrics().At(0)
 	ilms := rm.ScopeMetrics()
 
-	for j := 0; j < ilms.Len(); j++ {
+	for j := range ilms.Len() {
 		metricSlice := ilms.At(j).Metrics()
-		for i := 0; i < metricSlice.Len(); i++ {
+		for i := range metricSlice.Len() {
 			metric := metricSlice.At(i)
 			if metric.Name() == metricName {
 				if metric.Type() == pmetric.MetricTypeGauge {

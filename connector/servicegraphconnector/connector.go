@@ -224,7 +224,7 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 	)
 
 	rss := td.ResourceSpans()
-	for i := 0; i < rss.Len(); i++ {
+	for i := range rss.Len() {
 		rSpans := rss.At(i)
 
 		rAttributes := rSpans.Resource().Attributes()
@@ -236,9 +236,9 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 		}
 
 		scopeSpans := rSpans.ScopeSpans()
-		for j := 0; j < scopeSpans.Len(); j++ {
+		for j := range scopeSpans.Len() {
 			spans := scopeSpans.At(j).Spans()
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				span := spans.At(k)
 
 				connectionType := store.Unknown

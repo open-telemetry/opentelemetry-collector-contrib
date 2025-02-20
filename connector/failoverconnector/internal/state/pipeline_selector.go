@@ -91,7 +91,7 @@ func (p *PipelineSelector) retryHighPriorityPipelines(ctx context.Context, retry
 
 	defer ticker.Stop()
 
-	for i := 0; i < len(p.pipelineRetries); i++ {
+	for i := range len(p.pipelineRetries) {
 		if p.exceededMaxRetries(i) {
 			continue
 		}
@@ -109,7 +109,7 @@ func (p *PipelineSelector) retryHighPriorityPipelines(ctx context.Context, retry
 
 // checkContinueRetry checks if retry should be suspended if all higher priority levels have exceeded their max retries
 func (p *PipelineSelector) checkContinueRetry(index int) bool {
-	for i := 0; i < index; i++ {
+	for i := range index {
 		if p.constants.MaxRetries == 0 || p.loadRetryCount(i) < p.constants.MaxRetries {
 			return true
 		}
@@ -169,7 +169,7 @@ func (p *PipelineSelector) reportStable(idx int) {
 func NewPipelineSelector(lenPriority int, consts PSConstants) *PipelineSelector {
 	chans := make([]chan bool, lenPriority)
 
-	for i := 0; i < lenPriority; i++ {
+	for i := range lenPriority {
 		chans[i] = make(chan bool)
 	}
 

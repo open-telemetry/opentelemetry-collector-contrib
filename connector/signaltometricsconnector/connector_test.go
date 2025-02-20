@@ -147,7 +147,7 @@ func BenchmarkConnectorWithTraces(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		if err := connector.ConsumeTraces(context.Background(), inputTraces); err != nil {
 			b.Fatal(err)
 		}
@@ -173,7 +173,7 @@ func BenchmarkConnectorWithMetrics(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		if err := connector.ConsumeMetrics(context.Background(), inputMetrics); err != nil {
 			b.Fatal(err)
 		}
@@ -199,7 +199,7 @@ func BenchmarkConnectorWithLogs(b *testing.B) {
 
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		if err := connector.ConsumeLogs(context.Background(), inputLogs); err != nil {
 			b.Fatal(err)
 		}

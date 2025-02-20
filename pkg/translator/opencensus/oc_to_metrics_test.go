@@ -164,7 +164,7 @@ func BenchmarkMetricIntOCToMetrics(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		OCToMetrics(nil, ocResource, ocMetrics)
 	}
 }
@@ -178,7 +178,7 @@ func BenchmarkMetricDoubleOCToMetrics(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		OCToMetrics(nil, ocResource, ocMetrics)
 	}
 }
@@ -192,7 +192,7 @@ func BenchmarkMetricHistogramOCToMetrics(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		OCToMetrics(nil, ocResource, ocMetrics)
 	}
 }

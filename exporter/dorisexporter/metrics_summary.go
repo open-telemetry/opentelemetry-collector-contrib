@@ -48,12 +48,12 @@ func (m *metricModelSummary) add(pm pmetric.Metric, dm *dMetric, e *metricsExpor
 	}
 
 	dataPoints := pm.Summary().DataPoints()
-	for i := 0; i < dataPoints.Len(); i++ {
+	for i := range dataPoints.Len() {
 		dp := dataPoints.At(i)
 
 		quantileValues := dp.QuantileValues()
 		newQuantileValues := make([]*dQuantileValue, 0, quantileValues.Len())
-		for j := 0; j < quantileValues.Len(); j++ {
+		for j := range quantileValues.Len() {
 			quantileValue := quantileValues.At(j)
 
 			newQuantileValue := &dQuantileValue{

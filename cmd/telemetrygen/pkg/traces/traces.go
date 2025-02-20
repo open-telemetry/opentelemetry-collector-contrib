@@ -138,7 +138,7 @@ func run(c *Config, logger *zap.Logger) error {
 
 	telemetryAttributes := c.GetTelemetryAttributes()
 
-	for i := 0; i < c.WorkerCount; i++ {
+	for i := range c.WorkerCount {
 		wg.Add(1)
 		w := worker{
 			numTraces:        c.NumTraces,

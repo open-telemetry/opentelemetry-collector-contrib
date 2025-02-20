@@ -459,13 +459,13 @@ func BenchmarkBatchPerResourceTraces(b *testing.B) {
 	inBatch := ptrace.NewTraces()
 	rss := inBatch.ResourceSpans()
 	rss.EnsureCapacity(64)
-	for i := 0; i < 64; i++ {
+	for i := range 64 {
 		fillResourceSpans(rss.AppendEmpty(), "attr_key", strconv.Itoa(i%8))
 	}
 	bpr := NewBatchPerResourceTraces("attr_key", consumertest.NewNop())
 	b.ReportAllocs()
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		if err := bpr.ConsumeTraces(context.Background(), inBatch); err != nil {
 			b.Fail()
 		}
@@ -475,13 +475,13 @@ func BenchmarkBatchPerResourceTraces(b *testing.B) {
 func BenchmarkBatchPerResourceMetrics(b *testing.B) {
 	inBatch := pmetric.NewMetrics()
 	inBatch.ResourceMetrics().EnsureCapacity(64)
-	for i := 0; i < 64; i++ {
+	for i := range 64 {
 		fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", strconv.Itoa(i%8))
 	}
 	bpr := NewBatchPerResourceMetrics("attr_key", consumertest.NewNop())
 	b.ReportAllocs()
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		if err := bpr.ConsumeMetrics(context.Background(), inBatch); err != nil {
 			b.Fail()
 		}
@@ -491,13 +491,13 @@ func BenchmarkBatchPerResourceMetrics(b *testing.B) {
 func BenchmarkBatchPerResourceLogs(b *testing.B) {
 	inBatch := plog.NewLogs()
 	inBatch.ResourceLogs().EnsureCapacity(64)
-	for i := 0; i < 64; i++ {
+	for i := range 64 {
 		fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", strconv.Itoa(i%8))
 	}
 	bpr := NewBatchPerResourceLogs("attr_key", consumertest.NewNop())
 	b.ReportAllocs()
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		if err := bpr.ConsumeLogs(context.Background(), inBatch); err != nil {
 			b.Fail()
 		}

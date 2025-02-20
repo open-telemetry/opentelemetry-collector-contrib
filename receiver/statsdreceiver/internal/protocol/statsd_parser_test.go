@@ -1622,9 +1622,9 @@ func TestStatsDParser_Mappings(t *testing.T) {
 
 			metrics := p.GetMetrics()[0].Metrics
 			ilm := metrics.ResourceMetrics().At(0).ScopeMetrics()
-			for i := 0; i < ilm.Len(); i++ {
+			for i := range ilm.Len() {
 				ilms := ilm.At(i).Metrics()
-				for j := 0; j < ilms.Len(); j++ {
+				for j := range ilms.Len() {
 					m := ilms.At(j)
 					typeNames[m.Type().String()] = m.Name()
 				}
@@ -1664,7 +1664,7 @@ func TestStatsDParser_ScopeIsIncluded(t *testing.T) {
 	require.Equal(t, 5, metrics.MetricCount())
 
 	el := metrics.ResourceMetrics().At(0)
-	for i := 0; i < metrics.MetricCount(); i++ {
+	for i := range metrics.MetricCount() {
 		scope := el.ScopeMetrics().At(i).Scope()
 
 		assert.Equal(t, receiverName, scope.Name())

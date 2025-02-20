@@ -38,9 +38,9 @@ func IgnoreMetricValues(metricNames ...string) CompareMetricsOption {
 
 func maskMetricValues(metrics pmetric.Metrics, metricNames ...string) {
 	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		ilms := rms.At(i).ScopeMetrics()
-		for j := 0; j < ilms.Len(); j++ {
+		for j := range ilms.Len() {
 			maskMetricSliceValues(ilms.At(j).Metrics(), metricNames...)
 		}
 	}
@@ -52,7 +52,7 @@ func maskMetricSliceValues(metrics pmetric.MetricSlice, metricNames ...string) {
 	for _, metricName := range metricNames {
 		metricNameSet[metricName] = true
 	}
-	for i := 0; i < metrics.Len(); i++ {
+	for i := range metrics.Len() {
 		if len(metricNames) == 0 || metricNameSet[metrics.At(i).Name()] {
 			switch metrics.At(i).Type() {
 			case pmetric.MetricTypeEmpty, pmetric.MetricTypeSum, pmetric.MetricTypeGauge:
@@ -86,7 +86,7 @@ func getDataPointSlice(metric pmetric.Metric) pmetric.NumberDataPointSlice {
 
 // maskDataPointSliceValues sets all data point values to zero.
 func maskDataPointSliceValues(dataPoints pmetric.NumberDataPointSlice) {
-	for i := 0; i < dataPoints.Len(); i++ {
+	for i := range dataPoints.Len() {
 		dataPoint := dataPoints.At(i)
 		dataPoint.SetIntValue(0)
 		dataPoint.SetDoubleValue(0)
@@ -95,7 +95,7 @@ func maskDataPointSliceValues(dataPoints pmetric.NumberDataPointSlice) {
 
 // maskHistogramDataPointSliceValues sets all data point values to zero.
 func maskHistogramDataPointSliceValues(dataPoints pmetric.HistogramDataPointSlice) {
-	for i := 0; i < dataPoints.Len(); i++ {
+	for i := range dataPoints.Len() {
 		dataPoint := dataPoints.At(i)
 		dataPoint.SetCount(0)
 		dataPoint.SetSum(0)
@@ -119,9 +119,9 @@ func IgnoreMetricFloatPrecision(precision int, metricNames ...string) CompareMet
 
 func floatMetricValues(precision int, metrics pmetric.Metrics, metricNames ...string) {
 	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		ilms := rms.At(i).ScopeMetrics()
-		for j := 0; j < ilms.Len(); j++ {
+		for j := range ilms.Len() {
 			floatMetricSliceValues(precision, ilms.At(j).Metrics(), metricNames...)
 		}
 	}
@@ -133,7 +133,7 @@ func floatMetricSliceValues(precision int, metrics pmetric.MetricSlice, metricNa
 	for _, metricName := range metricNames {
 		metricNameSet[metricName] = true
 	}
-	for i := 0; i < metrics.Len(); i++ {
+	for i := range metrics.Len() {
 		if len(metricNames) == 0 || metricNameSet[metrics.At(i).Name()] {
 			switch metrics.At(i).Type() {
 			case pmetric.MetricTypeEmpty, pmetric.MetricTypeSum, pmetric.MetricTypeGauge:
@@ -147,7 +147,7 @@ func floatMetricSliceValues(precision int, metrics pmetric.MetricSlice, metricNa
 
 // maskDataPointSliceValues rounds all data point values at a given decimal.
 func roundDataPointSliceValues(dataPoints pmetric.NumberDataPointSlice, precision int) {
-	for i := 0; i < dataPoints.Len(); i++ {
+	for i := range dataPoints.Len() {
 		dataPoint := dataPoints.At(i)
 		factor := math.Pow(10, float64(precision))
 		switch {
@@ -170,30 +170,30 @@ func IgnoreTimestamp() CompareMetricsOption {
 
 func maskTimestamp(metrics pmetric.Metrics, ts pcommon.Timestamp) {
 	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		for j := 0; j < rms.At(i).ScopeMetrics().Len(); j++ {
-			for k := 0; k < rms.At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
+	for i := range rms.Len() {
+		for j := range rms.At(i).ScopeMetrics().Len() {
+			for k := range rms.At(i).ScopeMetrics().At(j).Metrics().Len() {
 				m := rms.At(i).ScopeMetrics().At(j).Metrics().At(k)
 				//exhaustive:enforce
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
-					for l := 0; l < m.Gauge().DataPoints().Len(); l++ {
+					for l := range m.Gauge().DataPoints().Len() {
 						m.Gauge().DataPoints().At(l).SetTimestamp(ts)
 					}
 				case pmetric.MetricTypeSum:
-					for l := 0; l < m.Sum().DataPoints().Len(); l++ {
+					for l := range m.Sum().DataPoints().Len() {
 						m.Sum().DataPoints().At(l).SetTimestamp(ts)
 					}
 				case pmetric.MetricTypeHistogram:
-					for l := 0; l < m.Histogram().DataPoints().Len(); l++ {
+					for l := range m.Histogram().DataPoints().Len() {
 						m.Histogram().DataPoints().At(l).SetTimestamp(ts)
 					}
 				case pmetric.MetricTypeExponentialHistogram:
-					for l := 0; l < m.ExponentialHistogram().DataPoints().Len(); l++ {
+					for l := range m.ExponentialHistogram().DataPoints().Len() {
 						m.ExponentialHistogram().DataPoints().At(l).SetTimestamp(ts)
 					}
 				case pmetric.MetricTypeSummary:
-					for l := 0; l < m.Summary().DataPoints().Len(); l++ {
+					for l := range m.Summary().DataPoints().Len() {
 						m.Summary().DataPoints().At(l).SetTimestamp(ts)
 					}
 				case pmetric.MetricTypeEmpty:
@@ -214,30 +214,30 @@ func IgnoreStartTimestamp() CompareMetricsOption {
 
 func maskStartTimestamp(metrics pmetric.Metrics, ts pcommon.Timestamp) {
 	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		for j := 0; j < rms.At(i).ScopeMetrics().Len(); j++ {
-			for k := 0; k < rms.At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
+	for i := range rms.Len() {
+		for j := range rms.At(i).ScopeMetrics().Len() {
+			for k := range rms.At(i).ScopeMetrics().At(j).Metrics().Len() {
 				m := rms.At(i).ScopeMetrics().At(j).Metrics().At(k)
 				//exhaustive:enforce
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
-					for l := 0; l < m.Gauge().DataPoints().Len(); l++ {
+					for l := range m.Gauge().DataPoints().Len() {
 						m.Gauge().DataPoints().At(l).SetStartTimestamp(ts)
 					}
 				case pmetric.MetricTypeSum:
-					for l := 0; l < m.Sum().DataPoints().Len(); l++ {
+					for l := range m.Sum().DataPoints().Len() {
 						m.Sum().DataPoints().At(l).SetStartTimestamp(ts)
 					}
 				case pmetric.MetricTypeHistogram:
-					for l := 0; l < m.Histogram().DataPoints().Len(); l++ {
+					for l := range m.Histogram().DataPoints().Len() {
 						m.Histogram().DataPoints().At(l).SetStartTimestamp(ts)
 					}
 				case pmetric.MetricTypeExponentialHistogram:
-					for l := 0; l < m.ExponentialHistogram().DataPoints().Len(); l++ {
+					for l := range m.ExponentialHistogram().DataPoints().Len() {
 						m.ExponentialHistogram().DataPoints().At(l).SetStartTimestamp(ts)
 					}
 				case pmetric.MetricTypeSummary:
-					for l := 0; l < m.Summary().DataPoints().Len(); l++ {
+					for l := range m.Summary().DataPoints().Len() {
 						m.Summary().DataPoints().At(l).SetStartTimestamp(ts)
 					}
 				case pmetric.MetricTypeEmpty:
@@ -265,35 +265,35 @@ func IgnoreDatapointAttributesOrder() CompareMetricsOption {
 
 func orderDatapointAttributes(metrics pmetric.Metrics) {
 	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		ilms := rms.At(i).ScopeMetrics()
-		for j := 0; j < ilms.Len(); j++ {
+		for j := range ilms.Len() {
 			msl := ilms.At(j).Metrics()
-			for g := 0; g < msl.Len(); g++ {
+			for g := range msl.Len() {
 				msl.At(g)
 				switch msl.At(g).Type() {
 				case pmetric.MetricTypeGauge:
-					for k := 0; k < msl.At(g).Gauge().DataPoints().Len(); k++ {
+					for k := range msl.At(g).Gauge().DataPoints().Len() {
 						rawOrdered := internal.OrderMapByKey(msl.At(g).Gauge().DataPoints().At(k).Attributes().AsRaw())
 						_ = msl.At(g).Gauge().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
 					}
 				case pmetric.MetricTypeSum:
-					for k := 0; k < msl.At(g).Sum().DataPoints().Len(); k++ {
+					for k := range msl.At(g).Sum().DataPoints().Len() {
 						rawOrdered := internal.OrderMapByKey(msl.At(g).Sum().DataPoints().At(k).Attributes().AsRaw())
 						_ = msl.At(g).Sum().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
 					}
 				case pmetric.MetricTypeHistogram:
-					for k := 0; k < msl.At(g).Histogram().DataPoints().Len(); k++ {
+					for k := range msl.At(g).Histogram().DataPoints().Len() {
 						rawOrdered := internal.OrderMapByKey(msl.At(g).Histogram().DataPoints().At(k).Attributes().AsRaw())
 						_ = msl.At(g).Histogram().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
 					}
 				case pmetric.MetricTypeExponentialHistogram:
-					for k := 0; k < msl.At(g).ExponentialHistogram().DataPoints().Len(); k++ {
+					for k := range msl.At(g).ExponentialHistogram().DataPoints().Len() {
 						rawOrdered := internal.OrderMapByKey(msl.At(g).ExponentialHistogram().DataPoints().At(k).Attributes().AsRaw())
 						_ = msl.At(g).ExponentialHistogram().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
 					}
 				case pmetric.MetricTypeSummary:
-					for k := 0; k < msl.At(g).Summary().DataPoints().Len(); k++ {
+					for k := range msl.At(g).Summary().DataPoints().Len() {
 						rawOrdered := internal.OrderMapByKey(msl.At(g).Summary().DataPoints().At(k).Attributes().AsRaw())
 						_ = msl.At(g).Summary().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
 					}
@@ -306,9 +306,9 @@ func orderDatapointAttributes(metrics pmetric.Metrics) {
 
 func maskMetricAttributeValue(metrics pmetric.Metrics, attributeName string, metricNames []string) {
 	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		ilms := rms.At(i).ScopeMetrics()
-		for j := 0; j < ilms.Len(); j++ {
+		for j := range ilms.Len() {
 			maskMetricSliceAttributeValues(ilms.At(j).Metrics(), attributeName, metricNames)
 		}
 	}
@@ -324,7 +324,7 @@ func maskMetricSliceAttributeValues(metrics pmetric.MetricSlice, attributeName s
 		metricNameSet[metricName] = true
 	}
 
-	for i := 0; i < metrics.Len(); i++ {
+	for i := range metrics.Len() {
 		if len(metricNames) == 0 || metricNameSet[metrics.At(i).Name()] {
 			switch metrics.At(i).Type() {
 			case pmetric.MetricTypeHistogram:
@@ -379,7 +379,7 @@ func maskMetricSliceAttributeValues(metrics pmetric.MetricSlice, attributeName s
 // maskDataPointSliceAttributeValues sets the value of the specified attribute to
 // the zero value associated with the attribute data type.
 func maskDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, attributeName string) {
-	for i := 0; i < dataPoints.Len(); i++ {
+	for i := range dataPoints.Len() {
 		attributes := dataPoints.At(i).Attributes()
 		attribute, ok := attributes.Get(attributeName)
 		if ok {
@@ -402,7 +402,7 @@ func maskDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, 
 // maskHistogramSliceAttributeValues sets the value of the specified attribute to
 // the zero value associated with the attribute data type.
 func maskHistogramSliceAttributeValues(dataPoints pmetric.HistogramDataPointSlice, attributeName string) {
-	for i := 0; i < dataPoints.Len(); i++ {
+	for i := range dataPoints.Len() {
 		attributes := dataPoints.At(i).Attributes()
 		attribute, ok := attributes.Get(attributeName)
 		if ok {
@@ -433,9 +433,9 @@ func MatchMetricAttributeValue(attributeName string, pattern string, metricNames
 
 func matchMetricAttributeValue(metrics pmetric.Metrics, attributeName string, re *regexp.Regexp, metricNames []string) {
 	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		ilms := rms.At(i).ScopeMetrics()
-		for j := 0; j < ilms.Len(); j++ {
+		for j := range ilms.Len() {
 			matchMetricSliceAttributeValues(ilms.At(j).Metrics(), attributeName, re, metricNames)
 		}
 	}
@@ -447,7 +447,7 @@ func matchMetricSliceAttributeValues(metrics pmetric.MetricSlice, attributeName 
 		metricNameSet[metricName] = true
 	}
 
-	for i := 0; i < metrics.Len(); i++ {
+	for i := range metrics.Len() {
 		if len(metricNames) == 0 || metricNameSet[metrics.At(i).Name()] {
 			switch metrics.At(i).Type() {
 			case pmetric.MetricTypeHistogram:
@@ -500,7 +500,7 @@ func matchMetricSliceAttributeValues(metrics pmetric.MetricSlice, attributeName 
 }
 
 func matchDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, attributeName string, re *regexp.Regexp) {
-	for i := 0; i < dataPoints.Len(); i++ {
+	for i := range dataPoints.Len() {
 		attributes := dataPoints.At(i).Attributes()
 		attribute, ok := attributes.Get(attributeName)
 		if ok {
@@ -513,7 +513,7 @@ func matchDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice,
 }
 
 func matchHistogramDataPointSliceAttributeValues(dataPoints pmetric.HistogramDataPointSlice, attributeName string, re *regexp.Regexp) {
-	for i := 0; i < dataPoints.Len(); i++ {
+	for i := range dataPoints.Len() {
 		attributes := dataPoints.At(i).Attributes()
 		attribute, ok := attributes.Get(attributeName)
 		if ok {
@@ -536,7 +536,7 @@ func MatchResourceAttributeValue(attributeName string, pattern string) CompareMe
 
 func matchResourceAttributeValue(metrics pmetric.Metrics, attributeName string, re *regexp.Regexp) {
 	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		internal.MatchResourceAttributeValue(rms.At(i).Resource(), attributeName, re)
 	}
 }
@@ -552,7 +552,7 @@ func IgnoreResourceAttributeValue(attributeName string) CompareMetricsOption {
 
 func maskMetricsResourceAttributeValue(metrics pmetric.Metrics, attributeName string) {
 	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		internal.MaskResourceAttributeValue(rms.At(i).Resource(), attributeName)
 	}
 }
@@ -566,7 +566,7 @@ func ChangeResourceAttributeValue(attributeName string, changeFn func(string) st
 
 func changeMetricsResourceAttributeValue(metrics pmetric.Metrics, attributeName string, changeFn func(string) string) {
 	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		internal.ChangeResourceAttributeValue(rms.At(i).Resource(), attributeName, changeFn)
 	}
 }
@@ -586,11 +586,11 @@ func maskSubsequentDataPoints(metrics pmetric.Metrics, metricNames []string) {
 	}
 
 	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		sms := rms.At(i).ScopeMetrics()
-		for j := 0; j < sms.Len(); j++ {
+		for j := range sms.Len() {
 			ms := sms.At(j).Metrics()
-			for k := 0; k < ms.Len(); k++ {
+			for k := range ms.Len() {
 				if len(metricNames) == 0 || metricNameSet[ms.At(k).Name()] {
 					switch ms.At(k).Type() {
 					case pmetric.MetricTypeHistogram:
@@ -642,9 +642,9 @@ func IgnoreScopeVersion() CompareMetricsOption {
 
 func maskScopeVersion(metrics pmetric.Metrics) {
 	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		rm := rms.At(i)
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		for j := range rm.ScopeMetrics().Len() {
 			sm := rm.ScopeMetrics().At(j)
 			sm.Scope().SetVersion("")
 		}
@@ -660,7 +660,7 @@ func IgnoreScopeMetricsOrder() CompareMetricsOption {
 }
 
 func sortScopeMetricsSlices(ms pmetric.Metrics) {
-	for i := 0; i < ms.ResourceMetrics().Len(); i++ {
+	for i := range ms.ResourceMetrics().Len() {
 		ms.ResourceMetrics().At(i).ScopeMetrics().Sort(func(a, b pmetric.ScopeMetrics) bool {
 			if a.SchemaUrl() != b.SchemaUrl() {
 				return a.SchemaUrl() < b.SchemaUrl()
@@ -682,8 +682,8 @@ func IgnoreMetricsOrder() CompareMetricsOption {
 }
 
 func sortMetricSlices(ms pmetric.Metrics) {
-	for i := 0; i < ms.ResourceMetrics().Len(); i++ {
-		for j := 0; j < ms.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
+	for i := range ms.ResourceMetrics().Len() {
+		for j := range ms.ResourceMetrics().At(i).ScopeMetrics().Len() {
 			ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Sort(func(a, b pmetric.Metric) bool {
 				return a.Name() < b.Name()
 			})
@@ -700,9 +700,9 @@ func IgnoreMetricDataPointsOrder() CompareMetricsOption {
 }
 
 func sortMetricDataPointSlices(ms pmetric.Metrics) {
-	for i := 0; i < ms.ResourceMetrics().Len(); i++ {
-		for j := 0; j < ms.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
-			for k := 0; k < ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
+	for i := range ms.ResourceMetrics().Len() {
+		for j := range ms.ResourceMetrics().At(i).ScopeMetrics().Len() {
+			for k := range ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len() {
 				m := ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(k)
 				//exhaustive:enforce
 				switch m.Type() {
@@ -764,12 +764,12 @@ func IgnoreSummaryDataPointValueAtQuantileSliceOrder() CompareMetricsOption {
 }
 
 func sortSummaryDataPointValueAtQuantileSlices(ms pmetric.Metrics) {
-	for i := 0; i < ms.ResourceMetrics().Len(); i++ {
-		for j := 0; j < ms.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
-			for k := 0; k < ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
+	for i := range ms.ResourceMetrics().Len() {
+		for j := range ms.ResourceMetrics().At(i).ScopeMetrics().Len() {
+			for k := range ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len() {
 				m := ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(k)
 				if m.Type() == pmetric.MetricTypeSummary {
-					for l := 0; l < m.Summary().DataPoints().Len(); l++ {
+					for l := range m.Summary().DataPoints().Len() {
 						m.Summary().DataPoints().At(l).QuantileValues().Sort(func(a, b pmetric.SummaryDataPointValueAtQuantile) bool {
 							return a.Quantile() < b.Quantile()
 						})

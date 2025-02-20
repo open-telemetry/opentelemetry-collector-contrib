@@ -116,7 +116,7 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 			scopeAttr := AttributesToMap(model.metadata.ScopeInstr.Attributes())
 			serviceName := GetServiceName(model.metadata.ResAttr)
 
-			for i := 0; i < model.sum.DataPoints().Len(); i++ {
+			for i := range model.sum.DataPoints().Len() {
 				dp := model.sum.DataPoints().At(i)
 				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
 				_, err = statement.ExecContext(ctx,

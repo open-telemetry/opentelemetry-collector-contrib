@@ -68,7 +68,7 @@ func (h *testHarness) ConsumeMetrics(_ context.Context, pdm pmetric.Metrics) err
 func (h *testHarness) compare(pdm pmetric.Metrics) {
 	pdms := pdm.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	var diffs []*metricstestutil.MetricDiff
-	for i := 0; i < pdms.Len(); i++ {
+	for i := range pdms.Len() {
 		pdmRecd := pdms.At(i)
 		metricName := pdmRecd.Name()
 		metric, found := h.metricIndex.lookup(metricName)

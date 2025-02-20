@@ -40,13 +40,13 @@ func (ft *FromTranslator) FromMetrics(md pmetric.Metrics, dropHistogramBuckets b
 	var sfxDataPoints []*sfxpb.DataPoint
 
 	rms := md.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
+	for i := range rms.Len() {
 		rm := rms.At(i)
 		extraDimensions := attributesToDimensions(rm.Resource().Attributes(), nil)
 
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		for j := range rm.ScopeMetrics().Len() {
 			ilm := rm.ScopeMetrics().At(j)
-			for k := 0; k < ilm.Metrics().Len(); k++ {
+			for k := range ilm.Metrics().Len() {
 				sfxDataPoints = append(sfxDataPoints, ft.FromMetric(ilm.Metrics().At(k), extraDimensions, dropHistogramBuckets, processHistograms)...)
 			}
 		}
@@ -116,7 +116,7 @@ func fromMetricTypeToMetricType(metric pmetric.Metric) *sfxpb.MetricType {
 func convertNumberDataPoints(in pmetric.NumberDataPointSlice, name string, mt *sfxpb.MetricType, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	dps := newDpsBuilder(in.Len())
 
-	for i := 0; i < in.Len(); i++ {
+	for i := range in.Len() {
 		inDp := in.At(i)
 
 		dp := dps.appendPoint(name, mt, fromTimestamp(inDp.Timestamp()), attributesToDimensions(inDp.Attributes(), extraDims))
@@ -135,7 +135,7 @@ func convertNumberDataPoints(in pmetric.NumberDataPointSlice, name string, mt *s
 
 func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb.MetricType, extraDims []*sfxpb.Dimension, dropHistogramBuckets bool) []*sfxpb.DataPoint {
 	var numDPs int
-	for i := 0; i < in.Len(); i++ {
+	for i := range in.Len() {
 		histDP := in.At(i)
 		numDPs += 1 + histDP.BucketCounts().Len()
 		if histDP.HasSum() {
@@ -152,7 +152,7 @@ func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb
 	}
 	dps := newDpsBuilder(numDPs)
 
-	for i := 0; i < in.Len(); i++ {
+	for i := range in.Len() {
 		histDP := in.At(i)
 		ts := fromTimestamp(histDP.Timestamp())
 		dims := attributesToDimensions(histDP.Attributes(), extraDims)
@@ -197,7 +197,7 @@ func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb
 
 		bucketMetricName := name + "_bucket"
 		var val uint64
-		for j := 0; j < counts.Len(); j++ {
+		for j := range counts.Len() {
 			val += counts.At(j)
 			bound := infinityBoundSFxDimValue
 			if j < bounds.Len() {
@@ -220,12 +220,12 @@ func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb
 
 func convertSummaryDataPoints(in pmetric.SummaryDataPointSlice, name string, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	var numDPs int
-	for i := 0; i < in.Len(); i++ {
+	for i := range in.Len() {
 		numDPs += 2 + in.At(i).QuantileValues().Len()
 	}
 	dps := newDpsBuilder(numDPs)
 
-	for i := 0; i < in.Len(); i++ {
+	for i := range in.Len() {
 		inDp := in.At(i)
 
 		dims := attributesToDimensions(inDp.Attributes(), extraDims)
@@ -241,7 +241,7 @@ func convertSummaryDataPoints(in pmetric.SummaryDataPointSlice, name string, ext
 		sumDP.Value.DoubleValue = &sum
 
 		qvs := inDp.QuantileValues()
-		for j := 0; j < qvs.Len(); j++ {
+		for j := range qvs.Len() {
 			qv := qvs.At(j)
 			cloneDim := make([]*sfxpb.Dimension, len(dims)+1)
 			copy(cloneDim, dims)

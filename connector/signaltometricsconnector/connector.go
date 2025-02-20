@@ -48,12 +48,12 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 	processedMetrics.ResourceMetrics().EnsureCapacity(td.ResourceSpans().Len())
 	aggregator := aggregator.NewAggregator[ottlspan.TransformContext](processedMetrics)
 
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		resourceSpan := td.ResourceSpans().At(i)
 		resourceAttrs := resourceSpan.Resource().Attributes()
-		for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
+		for j := range resourceSpan.ScopeSpans().Len() {
 			scopeSpan := resourceSpan.ScopeSpans().At(j)
-			for k := 0; k < scopeSpan.Spans().Len(); k++ {
+			for k := range scopeSpan.Spans().Len() {
 				span := scopeSpan.Spans().At(k)
 				spanAttrs := span.Attributes()
 				for _, md := range sm.spanMetricDefs {
@@ -96,12 +96,12 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 	processedMetrics := pmetric.NewMetrics()
 	processedMetrics.ResourceMetrics().EnsureCapacity(m.ResourceMetrics().Len())
 	aggregator := aggregator.NewAggregator[ottldatapoint.TransformContext](processedMetrics)
-	for i := 0; i < m.ResourceMetrics().Len(); i++ {
+	for i := range m.ResourceMetrics().Len() {
 		resourceMetric := m.ResourceMetrics().At(i)
 		resourceAttrs := resourceMetric.Resource().Attributes()
-		for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
+		for j := range resourceMetric.ScopeMetrics().Len() {
 			scopeMetric := resourceMetric.ScopeMetrics().At(j)
-			for k := 0; k < scopeMetric.Metrics().Len(); k++ {
+			for k := range scopeMetric.Metrics().Len() {
 				metrics := scopeMetric.Metrics()
 				metric := metrics.At(k)
 				for _, md := range sm.dpMetricDefs {
@@ -127,7 +127,7 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 					switch metric.Type() {
 					case pmetric.MetricTypeGauge:
 						dps := metric.Gauge().DataPoints()
-						for l := 0; l < dps.Len(); l++ {
+						for l := range dps.Len() {
 							dp := dps.At(l)
 							filteredDPAttrs, ok := md.FilterAttributes(dp.Attributes())
 							if !ok {
@@ -139,7 +139,7 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 						}
 					case pmetric.MetricTypeSum:
 						dps := metric.Sum().DataPoints()
-						for l := 0; l < dps.Len(); l++ {
+						for l := range dps.Len() {
 							dp := dps.At(l)
 							filteredDPAttrs, ok := md.FilterAttributes(dp.Attributes())
 							if !ok {
@@ -151,7 +151,7 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 						}
 					case pmetric.MetricTypeSummary:
 						dps := metric.Summary().DataPoints()
-						for l := 0; l < dps.Len(); l++ {
+						for l := range dps.Len() {
 							dp := dps.At(l)
 							filteredDPAttrs, ok := md.FilterAttributes(dp.Attributes())
 							if !ok {
@@ -163,7 +163,7 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 						}
 					case pmetric.MetricTypeHistogram:
 						dps := metric.Histogram().DataPoints()
-						for l := 0; l < dps.Len(); l++ {
+						for l := range dps.Len() {
 							dp := dps.At(l)
 							filteredDPAttrs, ok := md.FilterAttributes(dp.Attributes())
 							if !ok {
@@ -175,7 +175,7 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 						}
 					case pmetric.MetricTypeExponentialHistogram:
 						dps := metric.ExponentialHistogram().DataPoints()
-						for l := 0; l < dps.Len(); l++ {
+						for l := range dps.Len() {
 							dp := dps.At(l)
 							filteredDPAttrs, ok := md.FilterAttributes(dp.Attributes())
 							if !ok {
@@ -204,12 +204,12 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 	processedMetrics := pmetric.NewMetrics()
 	processedMetrics.ResourceMetrics().EnsureCapacity(logs.ResourceLogs().Len())
 	aggregator := aggregator.NewAggregator[ottllog.TransformContext](processedMetrics)
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		resourceLog := logs.ResourceLogs().At(i)
 		resourceAttrs := resourceLog.Resource().Attributes()
-		for j := 0; j < resourceLog.ScopeLogs().Len(); j++ {
+		for j := range resourceLog.ScopeLogs().Len() {
 			scopeLog := resourceLog.ScopeLogs().At(j)
-			for k := 0; k < scopeLog.LogRecords().Len(); k++ {
+			for k := range scopeLog.LogRecords().Len() {
 				log := scopeLog.LogRecords().At(k)
 				logAttrs := log.Attributes()
 				for _, md := range sm.logMetricDefs {

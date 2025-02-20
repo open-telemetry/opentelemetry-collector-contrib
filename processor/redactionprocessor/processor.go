@@ -63,7 +63,7 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 // processTraces implements ProcessMetricsFunc. It processes the incoming data
 // and returns the data to be sent to the next component
 func (s *redaction) processTraces(ctx context.Context, batch ptrace.Traces) (ptrace.Traces, error) {
-	for i := 0; i < batch.ResourceSpans().Len(); i++ {
+	for i := range batch.ResourceSpans().Len() {
 		rs := batch.ResourceSpans().At(i)
 		s.processResourceSpan(ctx, rs)
 	}
@@ -71,7 +71,7 @@ func (s *redaction) processTraces(ctx context.Context, batch ptrace.Traces) (ptr
 }
 
 func (s *redaction) processLogs(ctx context.Context, logs plog.Logs) (plog.Logs, error) {
-	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+	for i := range logs.ResourceLogs().Len() {
 		rl := logs.ResourceLogs().At(i)
 		s.processResourceLog(ctx, rl)
 	}
@@ -79,7 +79,7 @@ func (s *redaction) processLogs(ctx context.Context, logs plog.Logs) (plog.Logs,
 }
 
 func (s *redaction) processMetrics(ctx context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+	for i := range metrics.ResourceMetrics().Len() {
 		rm := metrics.ResourceMetrics().At(i)
 		s.processResourceMetric(ctx, rm)
 	}
@@ -94,9 +94,9 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 	// Attributes can be part of a resource span
 	s.processAttrs(ctx, rsAttrs)
 
-	for j := 0; j < rs.ScopeSpans().Len(); j++ {
+	for j := range rs.ScopeSpans().Len() {
 		ils := rs.ScopeSpans().At(j)
-		for k := 0; k < ils.Spans().Len(); k++ {
+		for k := range ils.Spans().Len() {
 			span := ils.Spans().At(k)
 			spanAttrs := span.Attributes()
 
@@ -113,9 +113,9 @@ func (s *redaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs
 
 	s.processAttrs(ctx, rsAttrs)
 
-	for j := 0; j < rl.ScopeLogs().Len(); j++ {
+	for j := range rl.ScopeLogs().Len() {
 		ils := rl.ScopeLogs().At(j)
-		for k := 0; k < ils.LogRecords().Len(); k++ {
+		for k := range ils.LogRecords().Len() {
 			log := ils.LogRecords().At(k)
 			s.processAttrs(ctx, log.Attributes())
 		}
@@ -127,34 +127,34 @@ func (s *redaction) processResourceMetric(ctx context.Context, rm pmetric.Resour
 
 	s.processAttrs(ctx, rsAttrs)
 
-	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+	for j := range rm.ScopeMetrics().Len() {
 		ils := rm.ScopeMetrics().At(j)
-		for k := 0; k < ils.Metrics().Len(); k++ {
+		for k := range ils.Metrics().Len() {
 			metric := ils.Metrics().At(k)
 			switch metric.Type() {
 			case pmetric.MetricTypeGauge:
 				dps := metric.Gauge().DataPoints()
-				for i := 0; i < dps.Len(); i++ {
+				for i := range dps.Len() {
 					s.processAttrs(ctx, dps.At(i).Attributes())
 				}
 			case pmetric.MetricTypeSum:
 				dps := metric.Sum().DataPoints()
-				for i := 0; i < dps.Len(); i++ {
+				for i := range dps.Len() {
 					s.processAttrs(ctx, dps.At(i).Attributes())
 				}
 			case pmetric.MetricTypeHistogram:
 				dps := metric.Histogram().DataPoints()
-				for i := 0; i < dps.Len(); i++ {
+				for i := range dps.Len() {
 					s.processAttrs(ctx, dps.At(i).Attributes())
 				}
 			case pmetric.MetricTypeExponentialHistogram:
 				dps := metric.ExponentialHistogram().DataPoints()
-				for i := 0; i < dps.Len(); i++ {
+				for i := range dps.Len() {
 					s.processAttrs(ctx, dps.At(i).Attributes())
 				}
 			case pmetric.MetricTypeSummary:
 				dps := metric.Summary().DataPoints()
-				for i := 0; i < dps.Len(); i++ {
+				for i := range dps.Len() {
 					s.processAttrs(ctx, dps.At(i).Attributes())
 				}
 			case pmetric.MetricTypeEmpty:

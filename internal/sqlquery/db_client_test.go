@@ -123,7 +123,7 @@ type fakeRows struct {
 
 func (r *fakeRows) ColumnTypes() ([]colType, error) {
 	var out []colType
-	for i := 0; i < len(r.vals[0]); i++ {
+	for i := range len(r.vals[0]) {
 		out = append(out, fakeCol{fmt.Sprintf("col_%d", i)})
 	}
 	return out, nil

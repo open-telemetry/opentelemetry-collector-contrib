@@ -15,10 +15,10 @@ func getNameToMetricMap(rm pmetric.ResourceMetrics) map[string]pmetric.Metric {
 	ilms := rm.ScopeMetrics()
 	metricMap := make(map[string]pmetric.Metric)
 
-	for i := 0; i < ilms.Len(); i++ {
+	for i := range ilms.Len() {
 		ilm := ilms.At(i)
 		metricSlice := ilm.Metrics()
-		for j := 0; j < metricSlice.Len(); j++ {
+		for j := range metricSlice.Len() {
 			metric := metricSlice.At(j)
 			metricMap[metric.Name()] = metric
 		}
@@ -56,10 +56,10 @@ func getMetricValue(metric pmetric.Metric) float64 {
 // Note: This method assumes the matchAttributes feature flag is enabled.
 func generateCalculatedMetrics(rm pmetric.ResourceMetrics, metric2 pmetric.Metric, rule internalRule, logger *zap.Logger) {
 	ilms := rm.ScopeMetrics()
-	for i := 0; i < ilms.Len(); i++ {
+	for i := range ilms.Len() {
 		ilm := ilms.At(i)
 		metricSlice := ilm.Metrics()
-		for j := 0; j < metricSlice.Len(); j++ {
+		for j := range metricSlice.Len() {
 			metric := metricSlice.At(j)
 
 			if metric.Name() == rule.metric1 {
@@ -104,10 +104,10 @@ func generateMetricFromMatchingAttributes(metric1 pmetric.Metric, metric2 pmetri
 		return pmetric.NewMetric()
 	}
 
-	for i := 0; i < metric1DataPoints.Len(); i++ {
+	for i := range metric1DataPoints.Len() {
 		metric1DP := metric1DataPoints.At(i)
 
-		for j := 0; j < metric2DataPoints.Len(); j++ {
+		for j := range metric2DataPoints.Len() {
 			metric2DP := metric2DataPoints.At(j)
 			if dataPointAttributesMatch(metric1DP, metric2DP) {
 				val, err := calculateValue(dataPointValue(metric1DP), dataPointValue(metric2DP), rule.operation, rule.name)
@@ -161,10 +161,10 @@ func dataPointAttributesMatch(dp1, dp2 pmetric.NumberDataPoint) bool {
 // The value for newly calculated metrics is always a floating point number.
 func generateScalarMetrics(rm pmetric.ResourceMetrics, operand2 float64, rule internalRule, logger *zap.Logger) {
 	ilms := rm.ScopeMetrics()
-	for i := 0; i < ilms.Len(); i++ {
+	for i := range ilms.Len() {
 		ilm := ilms.At(i)
 		metricSlice := ilm.Metrics()
-		for j := 0; j < metricSlice.Len(); j++ {
+		for j := range metricSlice.Len() {
 			metric := metricSlice.At(j)
 			if metric.Name() == rule.metric1 {
 				newMetric := generateMetricFromOperand(metric, operand2, rule.operation, logger)
@@ -190,7 +190,7 @@ func generateMetricFromOperand(from pmetric.Metric, operand2 float64, operation 
 		return pmetric.NewMetric()
 	}
 
-	for i := 0; i < dataPoints.Len(); i++ {
+	for i := range dataPoints.Len() {
 		fromDataPoint := dataPoints.At(i)
 		var operand1 float64
 		switch fromDataPoint.ValueType() {

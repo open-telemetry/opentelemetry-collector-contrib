@@ -215,7 +215,7 @@ func (s *processScraper) getProcessMetadata(ctx context.Context) ([]*processMeta
 	}
 
 	data := make([]*processMetadata, 0, handles.Len())
-	for i := 0; i < handles.Len(); i++ {
+	for i := range handles.Len() {
 		pid := handles.Pid(i)
 		handle := handles.At(i)
 

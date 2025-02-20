@@ -57,7 +57,7 @@ func copyBucketRange(
 ) {
 	dest.SetOffset(src.Offset())
 	dest.BucketCounts().EnsureCapacity(int(src.Len()))
-	for i := uint32(0); i < src.Len(); i++ {
+	for i := range src.Len() {
 		dest.BucketCounts().Append(src.At(i))
 	}
 }

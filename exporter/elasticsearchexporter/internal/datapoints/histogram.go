@@ -68,7 +68,7 @@ func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
 
 	values.EnsureCapacity(bucketCounts.Len())
 	counts.EnsureCapacity(bucketCounts.Len())
-	for i := 0; i < bucketCounts.Len(); i++ {
+	for i := range bucketCounts.Len() {
 		count := bucketCounts.At(i)
 		if count == 0 {
 			continue

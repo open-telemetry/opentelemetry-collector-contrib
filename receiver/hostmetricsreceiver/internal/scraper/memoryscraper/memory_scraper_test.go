@@ -121,7 +121,7 @@ func TestScrape(t *testing.T) {
 
 			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 			memUsageIdx := -1
-			for i := 0; i < md.MetricCount(); i++ {
+			for i := range md.MetricCount() {
 				if metrics.At(i).Name() == "system.memory.usage" {
 					memUsageIdx = i
 				}

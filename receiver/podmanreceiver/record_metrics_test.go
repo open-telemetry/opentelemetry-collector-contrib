@@ -40,7 +40,7 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 	metrics := rsm.ScopeMetrics().At(0).Metrics()
 	assert.Equal(t, 11, metrics.Len())
 
-	for i := 0; i < metrics.Len(); i++ {
+	for i := range metrics.Len() {
 		m := metrics.At(i)
 		switch m.Name() {
 		case "container.memory.usage.limit":

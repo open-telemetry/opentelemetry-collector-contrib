@@ -72,17 +72,17 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		defer func() {
 			_ = statement.Close()
 		}()
-		for i := 0; i < td.ResourceSpans().Len(); i++ {
+		for i := range td.ResourceSpans().Len() {
 			spans := td.ResourceSpans().At(i)
 			res := spans.Resource()
 			resAttr := internal.AttributesToMap(res.Attributes())
 			serviceName := internal.GetServiceName(res.Attributes())
 
-			for j := 0; j < spans.ScopeSpans().Len(); j++ {
+			for j := range spans.ScopeSpans().Len() {
 				rs := spans.ScopeSpans().At(j).Spans()
 				scopeName := spans.ScopeSpans().At(j).Scope().Name()
 				scopeVersion := spans.ScopeSpans().At(j).Scope().Version()
-				for k := 0; k < rs.Len(); k++ {
+				for k := range rs.Len() {
 					r := rs.At(k)
 					spanAttr := internal.AttributesToMap(r.Attributes())
 					status := r.Status()
@@ -127,7 +127,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 }
 
 func convertEvents(events ptrace.SpanEventSlice) (times []time.Time, names []string, attrs []column.IterableOrderedMap) {
-	for i := 0; i < events.Len(); i++ {
+	for i := range events.Len() {
 		event := events.At(i)
 		times = append(times, event.Timestamp().AsTime())
 		names = append(names, event.Name())
@@ -137,7 +137,7 @@ func convertEvents(events ptrace.SpanEventSlice) (times []time.Time, names []str
 }
 
 func convertLinks(links ptrace.SpanLinkSlice) (traceIDs []string, spanIDs []string, states []string, attrs []column.IterableOrderedMap) {
-	for i := 0; i < links.Len(); i++ {
+	for i := range links.Len() {
 		link := links.At(i)
 		traceIDs = append(traceIDs, traceutil.TraceIDToHexOrEmptyString(link.TraceID()))
 		spanIDs = append(spanIDs, traceutil.SpanIDToHexOrEmptyString(link.SpanID()))

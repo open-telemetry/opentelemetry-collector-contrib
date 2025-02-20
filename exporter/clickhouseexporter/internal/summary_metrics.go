@@ -106,7 +106,7 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 			scopeAttr := AttributesToMap(model.metadata.ScopeInstr.Attributes())
 			serviceName := GetServiceName(model.metadata.ResAttr)
 
-			for i := 0; i < model.summary.DataPoints().Len(); i++ {
+			for i := range model.summary.DataPoints().Len() {
 				dp := model.summary.DataPoints().At(i)
 				quantiles, values := convertValueAtQuantile(dp.QuantileValues())
 

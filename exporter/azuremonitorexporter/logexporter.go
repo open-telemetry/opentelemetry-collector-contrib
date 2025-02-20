@@ -22,13 +22,13 @@ func (exporter *logExporter) onLogData(_ context.Context, logData plog.Logs) err
 	resourceLogs := logData.ResourceLogs()
 	logPacker := newLogPacker(exporter.logger)
 
-	for i := 0; i < resourceLogs.Len(); i++ {
+	for i := range resourceLogs.Len() {
 		scopeLogs := resourceLogs.At(i).ScopeLogs()
 		resource := resourceLogs.At(i).Resource()
-		for j := 0; j < scopeLogs.Len(); j++ {
+		for j := range scopeLogs.Len() {
 			logs := scopeLogs.At(j).LogRecords()
 			scope := scopeLogs.At(j).Scope()
-			for k := 0; k < logs.Len(); k++ {
+			for k := range logs.Len() {
 				envelope := logPacker.LogRecordToEnvelope(logs.At(k), resource, scope)
 				envelope.IKey = string(exporter.config.InstrumentationKey)
 				exporter.transportChannel.Send(envelope)

@@ -106,7 +106,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			assert.Equal(t, 1, rms.Len())
 			assert.Equal(t, 1, ilms.Len())
 
-			for i := 0; i < metrics.Len(); i++ {
+			for i := range metrics.Len() {
 				err := addToGroupedMetric(metrics.At(i), groupedMetrics,
 					generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type(), 0),
 					true,
@@ -147,7 +147,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		metrics := ilms.At(0).Metrics()
 		assert.Equal(t, 9, metrics.Len())
 
-		for i := 0; i < metrics.Len(); i++ {
+		for i := range metrics.Len() {
 			err := addToGroupedMetric(metrics.At(i),
 				groupedMetrics,
 				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type(), 0),
@@ -219,7 +219,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		metrics := ilms.At(0).Metrics()
 		// Verify if all metrics are generated, including NaN, Inf values
 		require.Equal(t, 19, metrics.Len(), "mock metric creation failed")
-		for i := 0; i < metrics.Len(); i++ {
+		for i := range metrics.Len() {
 			err := addToGroupedMetric(metrics.At(i),
 				groupedMetrics,
 				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type(), 0),
@@ -338,7 +338,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		obs, logs := observer.New(zap.WarnLevel)
 		testCfg.logger = zap.New(obs)
 
-		for i := 0; i < metrics.Len(); i++ {
+		for i := range metrics.Len() {
 			err := addToGroupedMetric(metrics.At(i),
 				groupedMetrics,
 				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type(), 0),
@@ -421,7 +421,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		metrics := ilms.At(0).Metrics()
 		assert.Equal(t, 1, metrics.Len())
 
-		for i := 0; i < metrics.Len(); i++ {
+		for i := range metrics.Len() {
 			err := addToGroupedMetric(metrics.At(i),
 				groupedMetrics,
 				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type(), 0),
@@ -498,9 +498,9 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 	numMetrics := metrics.Len()
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		groupedMetrics := make(map[any]*groupedMetric)
-		for i := 0; i < numMetrics; i++ {
+		for i := range numMetrics {
 			metadata := generateTestMetricMetadata("namespace", int64(1596151098037), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type(), 0)
 			err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, nil, testCfg, emfCalcs)
 			assert.NoError(b, err)

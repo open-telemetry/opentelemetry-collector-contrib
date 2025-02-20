@@ -172,11 +172,11 @@ func (v *CorrectnessTestValidator) assertSentRecdTracingDataEqual(tracesList []p
 
 	for _, td := range tracesList {
 		rss := td.ResourceSpans()
-		for i := 0; i < rss.Len(); i++ {
+		for i := range rss.Len() {
 			ilss := rss.At(i).ScopeSpans()
-			for j := 0; j < ilss.Len(); j++ {
+			for j := range ilss.Len() {
 				spans := ilss.At(j).Spans()
-				for k := 0; k < spans.Len(); k++ {
+				for k := range spans.Len() {
 					recdSpan := spans.At(k)
 					sentSpan := spansMap[traceIDAndSpanIDToString(recdSpan.TraceID(), recdSpan.SpanID())]
 					v.diffSpan(sentSpan, recdSpan)
@@ -398,7 +398,7 @@ func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan ptrace.Span, recdSpan 
 	} else {
 		recdLinksMap := convertLinksSliceToMap(recdSpan.Links())
 		sentSpanLinks := sentSpan.Links()
-		for i := 0; i < sentSpanLinks.Len(); i++ {
+		for i := range sentSpanLinks.Len() {
 			sentLink := sentSpanLinks.At(i)
 			recdLink, ok := recdLinksMap[traceIDAndSpanIDToString(sentLink.TraceID(), sentLink.SpanID())]
 			if ok {
@@ -521,7 +521,7 @@ func (v *CorrectnessTestValidator) compareKeyValueList(
 
 func convertEventsSliceToMap(events ptrace.SpanEventSlice) map[string][]ptrace.SpanEvent {
 	eventMap := make(map[string][]ptrace.SpanEvent)
-	for i := 0; i < events.Len(); i++ {
+	for i := range events.Len() {
 		event := events.At(i)
 		eventMap[event.Name()] = append(eventMap[event.Name()], event)
 	}
@@ -537,7 +537,7 @@ func sortEventsByTimestamp(eventList []ptrace.SpanEvent) {
 
 func convertLinksSliceToMap(links ptrace.SpanLinkSlice) map[string]ptrace.SpanLink {
 	linkMap := make(map[string]ptrace.SpanLink)
-	for i := 0; i < links.Len(); i++ {
+	for i := range links.Len() {
 		link := links.At(i)
 		linkMap[traceIDAndSpanIDToString(link.TraceID(), link.SpanID())] = link
 	}
@@ -557,11 +557,11 @@ func notWithinOneMillisecond(sentNs pcommon.Timestamp, recdNs pcommon.Timestamp)
 func populateSpansMap(spansMap map[string]ptrace.Span, tds []ptrace.Traces) {
 	for _, td := range tds {
 		rss := td.ResourceSpans()
-		for i := 0; i < rss.Len(); i++ {
+		for i := range rss.Len() {
 			ilss := rss.At(i).ScopeSpans()
-			for j := 0; j < ilss.Len(); j++ {
+			for j := range ilss.Len() {
 				spans := ilss.At(j).Spans()
-				for k := 0; k < spans.Len(); k++ {
+				for k := range spans.Len() {
 					span := spans.At(k)
 					key := traceIDAndSpanIDToString(span.TraceID(), span.SpanID())
 					spansMap[key] = span
@@ -592,16 +592,16 @@ func (c *CorrectnessLogTestValidator) Validate(tc *TestCase) {
 		idsSent := make([][2]string, 0)
 		idsReceived := make([][2]string, 0)
 
-		for batch := 0; batch < int(dataProvider.traceIDSequence.Load()); batch++ {
-			for idx := 0; idx < dataProvider.options.ItemsPerBatch; idx++ {
+		for batch := range int(dataProvider.traceIDSequence.Load()) {
+			for idx := range dataProvider.options.ItemsPerBatch {
 				idsSent = append(idsSent, [2]string{"batch_" + strconv.Itoa(batch), "item_" + strconv.Itoa(idx)})
 			}
 		}
 		for _, log := range logsReceived {
-			for i := 0; i < log.ResourceLogs().Len(); i++ {
-				for j := 0; j < log.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+			for i := range log.ResourceLogs().Len() {
+				for j := range log.ResourceLogs().At(i).ScopeLogs().Len() {
 					s := log.ResourceLogs().At(i).ScopeLogs().At(j)
-					for k := 0; k < s.LogRecords().Len(); k++ {
+					for k := range s.LogRecords().Len() {
 						logRecord := s.LogRecords().At(k)
 						batchIndex, ok := logRecord.Attributes().Get("batch_index")
 						require.True(tc.t, ok, "batch_index missing from attributes; use perfDataProvider")

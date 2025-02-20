@@ -303,7 +303,7 @@ func benchmarkConsumeTraces(b *testing.B, cfg *Config) {
 	processor, _ := factory.CreateTraces(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), cfg, sink)
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		// TODO use testbed.PerfTestDataProvider here once that includes resources
 		assert.NoError(b, processor.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 	}
@@ -325,7 +325,7 @@ func benchmarkConsumeMetrics(b *testing.B, cfg *Config) {
 	processor, _ := factory.CreateMetrics(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), cfg, sink)
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		// TODO use testbed.PerfTestDataProvider here once that includes resources
 		assert.NoError(b, processor.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 	}
@@ -347,7 +347,7 @@ func benchmarkConsumeLogs(b *testing.B, cfg *Config) {
 	processor, _ := factory.CreateLogs(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), cfg, sink)
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		// TODO use testbed.PerfTestDataProvider here once that includes resources
 		assert.NoError(b, processor.ConsumeLogs(context.Background(), plog.NewLogs()))
 	}
@@ -369,7 +369,7 @@ func benchmarkConsumeProfiles(b *testing.B, cfg *Config) {
 	processor, _ := factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), cfg, sink)
 
 	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		// TODO use testbed.PerfTestDataProvider here once that includes resources
 		assert.NoError(b, processor.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
 	}

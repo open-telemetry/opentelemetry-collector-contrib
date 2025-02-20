@@ -43,12 +43,12 @@ func (m *metricModelSum) add(pm pmetric.Metric, dm *dMetric, e *metricsExporter)
 	}
 
 	dataPoints := pm.Sum().DataPoints()
-	for i := 0; i < dataPoints.Len(); i++ {
+	for i := range dataPoints.Len() {
 		dp := dataPoints.At(i)
 
 		exemplars := dp.Exemplars()
 		newExemplars := make([]*dExemplar, 0, exemplars.Len())
-		for j := 0; j < exemplars.Len(); j++ {
+		for j := range exemplars.Len() {
 			exemplar := exemplars.At(j)
 
 			newExemplar := &dExemplar{

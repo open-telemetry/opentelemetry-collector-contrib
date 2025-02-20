@@ -99,12 +99,12 @@ func newTracesExporter(
 func extractResourceSpans(config component.Config, logger *zap.Logger, td ptrace.Traces) []*string {
 	documents := make([]*string, 0, td.SpanCount())
 
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		rspans := td.ResourceSpans().At(i)
 		resource := rspans.Resource()
-		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
+		for j := range rspans.ScopeSpans().Len() {
 			spans := rspans.ScopeSpans().At(j).Spans()
-			for k := 0; k < spans.Len(); k++ {
+			for k := range spans.Len() {
 				documentsForSpan, localErr := translator.MakeSegmentDocuments(
 					spans.At(k), resource,
 					config.(*Config).IndexedAttributes,

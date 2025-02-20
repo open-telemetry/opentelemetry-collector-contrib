@@ -139,7 +139,7 @@ func TestSumNoTelemetryAttrs(t *testing.T) {
 	require.Len(t, m.rms, qty)
 
 	rms := m.rms
-	for i := 0; i < qty; i++ {
+	for i := range qty {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
 		assert.Equal(t, "test", ms.Name)
 		// @note update when telemetrygen allow other metric types
@@ -167,7 +167,7 @@ func TestGaugeNoTelemetryAttrs(t *testing.T) {
 	require.Len(t, m.rms, qty)
 
 	rms := m.rms
-	for i := 0; i < qty; i++ {
+	for i := range qty {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
 		assert.Equal(t, "test", ms.Name)
 		// @note update when telemetrygen allow other metric types
@@ -195,7 +195,7 @@ func TestSumSingleTelemetryAttr(t *testing.T) {
 	require.Len(t, m.rms, qty)
 
 	rms := m.rms
-	for i := 0; i < qty; i++ {
+	for i := range qty {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
 		assert.Equal(t, "test", ms.Name)
 		// @note update when telemetrygen allow other metric types
@@ -225,7 +225,7 @@ func TestGaugeSingleTelemetryAttr(t *testing.T) {
 	require.Len(t, m.rms, qty)
 
 	rms := m.rms
-	for i := 0; i < qty; i++ {
+	for i := range qty {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
 		assert.Equal(t, "test", ms.Name)
 		// @note update when telemetrygen allow other metric types
@@ -256,7 +256,7 @@ func TestSumMultipleTelemetryAttr(t *testing.T) {
 
 	rms := m.rms
 	var actualValue attribute.Value
-	for i := 0; i < qty; i++ {
+	for i := range qty {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
 		// @note update when telemetrygen allow other metric types
 		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
@@ -288,7 +288,7 @@ func TestGaugeMultipleTelemetryAttr(t *testing.T) {
 
 	rms := m.rms
 	var actualValue attribute.Value
-	for i := 0; i < qty; i++ {
+	for i := range qty {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
 		// @note update when telemetrygen allow other metric types
 		attr := ms.Data.(metricdata.Gauge[int64]).DataPoints[0].Attributes

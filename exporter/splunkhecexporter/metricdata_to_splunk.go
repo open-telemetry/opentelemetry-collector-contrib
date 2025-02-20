@@ -86,7 +86,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 		pts := m.Gauge().DataPoints()
 		splunkMetrics := make([]*splunk.Event, pts.Len())
 
-		for gi := 0; gi < pts.Len(); gi++ {
+		for gi := range pts.Len() {
 			dataPt := pts.At(gi)
 			fields := cloneMap(commonFields)
 			populateAttributes(fields, dataPt.Attributes())
@@ -103,7 +103,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 	case pmetric.MetricTypeHistogram:
 		pts := m.Histogram().DataPoints()
 		var splunkMetrics []*splunk.Event
-		for gi := 0; gi < pts.Len(); gi++ {
+		for gi := range pts.Len() {
 			dataPt := pts.At(gi)
 			bounds := dataPt.ExplicitBounds()
 			counts := dataPt.BucketCounts()
@@ -129,7 +129,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 			}
 			value := uint64(0)
 			// now create buckets for each bound.
-			for bi := 0; bi < bounds.Len(); bi++ {
+			for bi := range bounds.Len() {
 				fields := cloneMap(commonFields)
 				populateAttributes(fields, dataPt.Attributes())
 				fields["le"] = float64ToDimValue(bounds.At(bi))
@@ -154,7 +154,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 	case pmetric.MetricTypeSum:
 		pts := m.Sum().DataPoints()
 		splunkMetrics := make([]*splunk.Event, pts.Len())
-		for gi := 0; gi < pts.Len(); gi++ {
+		for gi := range pts.Len() {
 			dataPt := pts.At(gi)
 			fields := cloneMap(commonFields)
 			populateAttributes(fields, dataPt.Attributes())
@@ -172,7 +172,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 	case pmetric.MetricTypeSummary:
 		pts := m.Summary().DataPoints()
 		var splunkMetrics []*splunk.Event
-		for gi := 0; gi < pts.Len(); gi++ {
+		for gi := range pts.Len() {
 			dataPt := pts.At(gi)
 			// first, add one event for sum, and one for count
 			if !math.IsNaN(dataPt.Sum()) {
@@ -193,7 +193,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 			}
 
 			// now create values for each quantile.
-			for bi := 0; bi < dataPt.QuantileValues().Len(); bi++ {
+			for bi := range dataPt.QuantileValues().Len() {
 				fields := cloneMap(commonFields)
 				populateAttributes(fields, dataPt.Attributes())
 				dp := dataPt.QuantileValues().At(bi)

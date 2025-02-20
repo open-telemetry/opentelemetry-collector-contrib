@@ -81,7 +81,7 @@ func BenchmarkEmitterToConsumer(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		cl.Reset()
 
 		go func() {
@@ -118,7 +118,7 @@ func BenchmarkEmitterToConsumerScopeGroupping(b *testing.B) {
 
 	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		cl.Reset()
 
 		go func() {

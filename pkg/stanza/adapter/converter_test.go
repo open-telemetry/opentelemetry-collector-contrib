@@ -22,7 +22,7 @@ func BenchmarkConvertSimple(b *testing.B) {
 	ent := entry.New()
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		convert(ent)
 	}
 }
@@ -32,14 +32,14 @@ func BenchmarkConvertComplex(b *testing.B) {
 	ent := complexEntry()
 	b.StartTimer()
 
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		convert(ent)
 	}
 }
 
 func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
 	ret := make([]*entry.Entry, count)
-	for i := 0; i < count; i++ {
+	for i := range count {
 		e := entry.New()
 		e.Severity = entry.Error
 		e.Resource = map[string]any{
@@ -83,8 +83,8 @@ func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
 
 func complexEntriesForNDifferentHostsMDifferentScopes(count int, n int, m int) []*entry.Entry {
 	ret := make([]*entry.Entry, count)
-	for i := 0; i < count; i++ {
-		for j := 0; j < m; j++ {
+	for i := range count {
+		for range m {
 			e := entry.New()
 			e.Severity = entry.Error
 			e.Resource = map[string]any{
@@ -391,7 +391,7 @@ func TestAllConvertedEntriesScopeGrouping(t *testing.T) {
 			ills := rLog.ScopeLogs()
 			require.Equal(t, ills.Len(), tc.numberOFScopes)
 
-			for i := 0; i < tc.numberOFScopes; i++ {
+			for i := range tc.numberOFScopes {
 				sl := ills.At(i)
 				require.Equal(t, sl.Scope().Name(), fmt.Sprintf("scope-%d", i%tc.numberOFScopes))
 				require.Equal(t, sl.LogRecords().Len(), tc.logsPerScope)
@@ -796,7 +796,7 @@ func BenchmarkConverter(b *testing.B) {
 
 	for _, wc := range workerCounts {
 		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				b.ReportAllocs()
 
 				for from := 0; from < entryCount; from += int(batchSize) {
@@ -818,7 +818,7 @@ func BenchmarkGetResourceID(b *testing.B) {
 	res := getResource()
 	b.ReportAllocs()
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		HashResource(res)
 	}
 }
@@ -827,7 +827,7 @@ func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
 	res := map[string]any{}
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		HashResource(res)
 	}
 }
@@ -838,7 +838,7 @@ func BenchmarkGetResourceIDSingleResource(b *testing.B) {
 	}
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		HashResource(res)
 	}
 }
@@ -853,7 +853,7 @@ func BenchmarkGetResourceIDComplexResource(b *testing.B) {
 	}
 	b.ReportAllocs()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		HashResource(res)
 	}
 }

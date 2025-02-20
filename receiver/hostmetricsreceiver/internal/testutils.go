@@ -32,7 +32,7 @@ func AssertSumMetricHasAttribute(t *testing.T, metric pmetric.Metric, index int,
 
 func AssertSumMetricStartTimeEquals(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {
 	ddps := metric.Sum().DataPoints()
-	for i := 0; i < ddps.Len(); i++ {
+	for i := range ddps.Len() {
 		require.Equal(t, startTime, ddps.At(i).StartTimestamp())
 	}
 }
@@ -50,7 +50,7 @@ func AssertGaugeMetricHasAttribute(t *testing.T, metric pmetric.Metric, index in
 
 func AssertGaugeMetricStartTimeEquals(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {
 	ddps := metric.Gauge().DataPoints()
-	for i := 0; i < ddps.Len(); i++ {
+	for i := range ddps.Len() {
 		require.Equal(t, startTime, ddps.At(i).StartTimestamp())
 	}
 }
@@ -65,7 +65,7 @@ func AssertSameTimeStampForMetrics(t *testing.T, metrics pmetric.MetricSlice, st
 		metric := metrics.At(i)
 		if metric.Type() == pmetric.MetricTypeSum {
 			ddps := metric.Sum().DataPoints()
-			for j := 0; j < ddps.Len(); j++ {
+			for j := range ddps.Len() {
 				if ts == 0 {
 					ts = ddps.At(j).Timestamp()
 				}

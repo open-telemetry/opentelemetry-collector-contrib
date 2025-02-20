@@ -609,7 +609,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 
 	// Repeatedly send traces via arrow. Set the expected traces
 	// metadata to receive.
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		td := testdata.GenerateTraces(2)
 		expectTraces = append(expectTraces, td)
 
@@ -730,7 +730,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 	producer := arrowRecord.NewProducer()
 
 	// Repeatedly send traces via arrow. Expect an auth error.
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		td := testdata.GenerateTraces(2)
 
 		batch, err := producer.BatchArrowRecordsFromTraces(td)
@@ -781,7 +781,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(numStreams)
 
-	for j := 0; j < numStreams; j++ {
+	for range numStreams {
 		go func() {
 			defer wg.Done()
 
@@ -795,7 +795,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 
 			// Repeatedly send traces via arrow. Set the expected traces
 			// metadata to receive.
-			for i := 0; i < itemsPerStream; i++ {
+			for i := range itemsPerStream {
 				td := testdata.GenerateTraces(2)
 
 				headerBuf.Reset()
@@ -838,7 +838,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 		counts[val]++
 	}
 
-	for i := 0; i < itemsPerStream; i++ {
+	for i := range itemsPerStream {
 		require.Equal(t, numStreams, counts[i])
 	}
 }

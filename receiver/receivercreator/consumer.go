@@ -86,7 +86,7 @@ func (ec *enhancingConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) erro
 		return errors.New("no log consumer available")
 	}
 	rl := ld.ResourceLogs()
-	for i := 0; i < rl.Len(); i++ {
+	for i := range rl.Len() {
 		ec.putAttrs(rl.At(i).Resource().Attributes())
 	}
 
@@ -98,7 +98,7 @@ func (ec *enhancingConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metr
 		return errors.New("no metric consumer available")
 	}
 	rm := md.ResourceMetrics()
-	for i := 0; i < rm.Len(); i++ {
+	for i := range rm.Len() {
 		ec.putAttrs(rm.At(i).Resource().Attributes())
 	}
 
@@ -110,7 +110,7 @@ func (ec *enhancingConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces
 		return errors.New("no trace consumer available")
 	}
 	rs := td.ResourceSpans()
-	for i := 0; i < rs.Len(); i++ {
+	for i := range rs.Len() {
 		ec.putAttrs(rs.At(i).Resource().Attributes())
 	}
 

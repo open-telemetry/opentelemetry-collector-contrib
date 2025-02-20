@@ -177,7 +177,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 		})
 
 		// Consume resources for host metadata
-		for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		for i := range md.ResourceMetrics().Len() {
 			res := md.ResourceMetrics().At(i).Resource()
 			consumeResource(exp.metadataReporter, res, exp.params.Logger)
 		}

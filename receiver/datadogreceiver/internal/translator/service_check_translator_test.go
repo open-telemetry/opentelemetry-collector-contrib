@@ -311,7 +311,7 @@ func TestTranslateCheckRunStatuses(t *testing.T) {
 			requireScope(t, result, pcommon.NewMap(), component.NewDefaultBuildInfo().Version)
 
 			metrics := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-			for i := 0; i < metrics.Len(); i++ {
+			for i := range metrics.Len() {
 				metric := metrics.At(i)
 				assert.Equal(t, tt.expectedStatus, metric.Gauge().DataPoints().At(0).IntValue())
 			}

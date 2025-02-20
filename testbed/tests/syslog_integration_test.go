@@ -191,7 +191,7 @@ service:
 	attributes := []map[string]any{}
 
 	lrs = backend.ReceivedLogs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	for i := 0; i < lrs.Len(); i++ {
+	for i := range lrs.Len() {
 		lrs.At(i).SetObservedTimestamp(0)
 
 		attributes = append(attributes, lrs.At(i).Attributes().AsRaw())

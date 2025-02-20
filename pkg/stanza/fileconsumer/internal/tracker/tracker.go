@@ -98,7 +98,7 @@ func (t *fileTracker) GetOpenFile(fp *fingerprint.Fingerprint) *reader.Reader {
 }
 
 func (t *fileTracker) GetClosedFile(fp *fingerprint.Fingerprint) *reader.Metadata {
-	for i := 0; i < len(t.knownFiles); i++ {
+	for i := range len(t.knownFiles) {
 		if oldMetadata := t.knownFiles[i].Match(fp, fileset.StartsWith); oldMetadata != nil {
 			return oldMetadata
 		}
@@ -154,7 +154,7 @@ func (t *fileTracker) EndPoll() {
 
 func (t *fileTracker) TotalReaders() int {
 	total := t.previousPollFiles.Len()
-	for i := 0; i < len(t.knownFiles); i++ {
+	for i := range len(t.knownFiles) {
 		total += t.knownFiles[i].Len()
 	}
 	return total
@@ -209,7 +209,7 @@ func (t *fileTracker) rewriteArchive(ctx context.Context, previousPollsToArchive
 
 	// Refer archive.md for the detailed design
 	if mod(t.archiveIndex-1, previousPollsToArchive) > t.pollsToArchive {
-		for i := 0; i < t.pollsToArchive; i++ {
+		for i := range t.pollsToArchive {
 			if err := rewrite(i, leastRecentIndex); err != nil {
 				t.set.Logger.Error("error while swapping archive", zap.Error(err))
 			}
@@ -221,7 +221,7 @@ func (t *fileTracker) rewriteArchive(ctx context.Context, previousPollsToArchive
 			// If the current index points at an unset key, no need to do anything
 			return
 		}
-		for i := 0; i < t.pollsToArchive-t.archiveIndex; i++ {
+		for i := range t.pollsToArchive - t.archiveIndex {
 			if err := rewrite(t.archiveIndex+i, leastRecentIndex); err != nil {
 				t.set.Logger.Warn("error while swapping archive", zap.Error(err))
 			}
@@ -328,7 +328,7 @@ func (t *fileTracker) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metada
 	matchedMetadata := make([]*reader.Metadata, len(fps))
 
 	// continue executing the loop until either all records are matched or all archive sets have been processed.
-	for i := 0; i < t.pollsToArchive; i++ {
+	for range t.pollsToArchive {
 		// Update the mostRecentIndex
 		nextIndex = (nextIndex - 1 + t.pollsToArchive) % t.pollsToArchive
 

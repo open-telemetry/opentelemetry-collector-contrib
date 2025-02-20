@@ -86,11 +86,11 @@ func (p *logDedupProcessor) ConsumeLogs(ctx context.Context, pl plog.Logs) error
 	p.mux.Lock()
 	defer p.mux.Unlock()
 
-	for i := 0; i < pl.ResourceLogs().Len(); i++ {
+	for i := range pl.ResourceLogs().Len() {
 		rl := pl.ResourceLogs().At(i)
 		resource := rl.Resource()
 
-		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+		for j := range rl.ScopeLogs().Len() {
 			sl := rl.ScopeLogs().At(j)
 			scope := sl.Scope()
 			logs := sl.LogRecords()

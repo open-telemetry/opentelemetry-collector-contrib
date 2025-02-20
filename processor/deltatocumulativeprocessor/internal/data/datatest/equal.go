@@ -67,7 +67,7 @@ func equal(tb testing.TB, want, got any, name string) bool {
 
 	ok := true
 	// compare all "getters" of the struct
-	for i := 0; i < vw.NumMethod(); i++ {
+	for i := range vw.NumMethod() {
 		mname := vw.Type().Method(i).Name
 		fname := strings.TrimPrefix(name+"."+mname+"()", ".")
 
@@ -90,7 +90,7 @@ func equal(tb testing.TB, want, got any, name string) bool {
 	}
 
 	// compare all exported fields of the struct
-	for i := 0; i < vw.NumField(); i++ {
+	for i := range vw.NumField() {
 		if !vw.Type().Field(i).IsExported() {
 			continue
 		}

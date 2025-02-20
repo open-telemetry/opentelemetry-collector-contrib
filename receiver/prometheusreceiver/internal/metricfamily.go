@@ -103,7 +103,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	var adjustedCount float64
 
 	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
-	for i := 0; i < bucketCount-1; i++ {
+	for i := range bucketCount - 1 {
 		bounds[i] = mg.complexValue[i].boundary
 		adjustedCount = mg.complexValue[i].value
 
@@ -238,11 +238,11 @@ func convertDeltaBuckets(spans []histogram.Span, deltas []int64, buckets pcommon
 	bucketCount := int64(0)
 	for spanIdx, span := range spans {
 		if spanIdx > 0 {
-			for i := int32(0); i < span.Offset; i++ {
+			for range span.Offset {
 				buckets.Append(uint64(0))
 			}
 		}
-		for i := uint32(0); i < span.Length; i++ {
+		for range span.Length {
 			bucketCount += deltas[bucketIdx]
 			bucketIdx++
 			buckets.Append(uint64(bucketCount))
@@ -255,11 +255,11 @@ func convertAbsoluteBuckets(spans []histogram.Span, counts []float64, buckets pc
 	bucketIdx := 0
 	for spanIdx, span := range spans {
 		if spanIdx > 0 {
-			for i := int32(0); i < span.Offset; i++ {
+			for range span.Offset {
 				buckets.Append(uint64(0))
 			}
 		}
-		for i := uint32(0); i < span.Length; i++ {
+		for range span.Length {
 			buckets.Append(uint64(counts[bucketIdx]))
 			bucketIdx++
 		}

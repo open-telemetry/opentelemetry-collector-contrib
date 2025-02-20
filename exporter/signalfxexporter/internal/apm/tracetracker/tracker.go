@@ -123,7 +123,7 @@ func (a *ActiveServiceTracker) ProcessTraces(_ context.Context, traces ptrace.Tr
 	// Take current time once since this is a system call.
 	now := a.timeNow()
 
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+	for i := range traces.ResourceSpans().Len() {
 		a.processEnvironment(traces.ResourceSpans().At(i).Resource(), now)
 		a.processService(traces.ResourceSpans().At(i).Resource(), now)
 	}

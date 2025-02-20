@@ -15,7 +15,7 @@ func hasResourceOrSpanWithCondition(
 	shouldSampleResource func(resource pcommon.Resource) bool,
 	shouldSampleSpan func(span ptrace.Span) bool,
 ) Decision {
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		rs := td.ResourceSpans().At(i)
 
 		resource := rs.Resource()
@@ -37,7 +37,7 @@ func invertHasResourceOrSpanWithCondition(
 	shouldSampleResource func(resource pcommon.Resource) bool,
 	shouldSampleSpan func(span ptrace.Span) bool,
 ) Decision {
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		rs := td.ResourceSpans().At(i)
 
 		resource := rs.Resource()
@@ -54,7 +54,7 @@ func invertHasResourceOrSpanWithCondition(
 
 // hasSpanWithCondition iterates through all the instrumentation library spans until any callback returns true.
 func hasSpanWithCondition(td ptrace.Traces, shouldSample func(span ptrace.Span) bool) Decision {
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
+	for i := range td.ResourceSpans().Len() {
 		rs := td.ResourceSpans().At(i)
 
 		if hasInstrumentationLibrarySpanWithCondition(rs.ScopeSpans(), shouldSample) {
@@ -65,10 +65,10 @@ func hasSpanWithCondition(td ptrace.Traces, shouldSample func(span ptrace.Span) 
 }
 
 func hasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, check func(span ptrace.Span) bool) bool {
-	for i := 0; i < ilss.Len(); i++ {
+	for i := range ilss.Len() {
 		ils := ilss.At(i)
 
-		for j := 0; j < ils.Spans().Len(); j++ {
+		for j := range ils.Spans().Len() {
 			span := ils.Spans().At(j)
 
 			if check(span) {
@@ -80,10 +80,10 @@ func hasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, che
 }
 
 func invertHasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlice, check func(span ptrace.Span) bool) bool {
-	for i := 0; i < ilss.Len(); i++ {
+	for i := range ilss.Len() {
 		ils := ilss.At(i)
 
-		for j := 0; j < ils.Spans().Len(); j++ {
+		for j := range ils.Spans().Len() {
 			span := ils.Spans().At(j)
 
 			if !check(span) {
@@ -99,9 +99,9 @@ func SetAttrOnScopeSpans(data *TraceData, attrName string, attrKey string) {
 	defer data.Mutex.Unlock()
 
 	rs := data.ReceivedBatches.ResourceSpans()
-	for i := 0; i < rs.Len(); i++ {
+	for i := range rs.Len() {
 		rss := rs.At(i)
-		for j := 0; j < rss.ScopeSpans().Len(); j++ {
+		for j := range rss.ScopeSpans().Len() {
 			ss := rss.ScopeSpans().At(j)
 			ss.Scope().Attributes().PutStr(attrName, attrKey)
 		}

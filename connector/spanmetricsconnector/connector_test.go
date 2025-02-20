@@ -79,13 +79,13 @@ type span struct {
 
 // verifyDisabledHistogram expects that histograms are disabled.
 func verifyDisabledHistogram(tb testing.TB, input pmetric.Metrics) bool {
-	for i := 0; i < input.ResourceMetrics().Len(); i++ {
+	for i := range input.ResourceMetrics().Len() {
 		rm := input.ResourceMetrics().At(i)
 		ism := rm.ScopeMetrics()
 		// Checking all metrics, naming notice: ismC/mC - C here is for Counter.
-		for ismC := 0; ismC < ism.Len(); ismC++ {
+		for ismC := range ism.Len() {
 			m := ism.At(ismC).Metrics()
-			for mC := 0; mC < m.Len(); mC++ {
+			for mC := range m.Len() {
 				metric := m.At(mC)
 				assert.NotEqual(tb, pmetric.MetricTypeExponentialHistogram, metric.Type())
 				assert.NotEqual(tb, pmetric.MetricTypeHistogram, metric.Type())
@@ -96,22 +96,22 @@ func verifyDisabledHistogram(tb testing.TB, input pmetric.Metrics) bool {
 }
 
 func verifyExemplarsExist(tb testing.TB, input pmetric.Metrics) bool {
-	for i := 0; i < input.ResourceMetrics().Len(); i++ {
+	for i := range input.ResourceMetrics().Len() {
 		rm := input.ResourceMetrics().At(i)
 		ism := rm.ScopeMetrics()
 
 		// Checking all metrics, naming notice: ismC/mC - C here is for Counter.
-		for ismC := 0; ismC < ism.Len(); ismC++ {
+		for ismC := range ism.Len() {
 			m := ism.At(ismC).Metrics()
 
-			for mC := 0; mC < m.Len(); mC++ {
+			for mC := range m.Len() {
 				metric := m.At(mC)
 
 				if metric.Type() != pmetric.MetricTypeHistogram {
 					continue
 				}
 				dps := metric.Histogram().DataPoints()
-				for dp := 0; dp < dps.Len(); dp++ {
+				for dp := range dps.Len() {
 					d := dps.At(dp)
 					assert.Positive(tb, d.Exemplars().Len())
 				}
@@ -156,7 +156,7 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 
 	require.Equal(tb, 2, input.ResourceMetrics().Len())
 
-	for i := 0; i < input.ResourceMetrics().Len(); i++ {
+	for i := range input.ResourceMetrics().Len() {
 		rm := input.ResourceMetrics().At(i)
 
 		var numDataPoints int
@@ -185,7 +185,7 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 		seenMetricIDs := make(map[metricID]bool)
 		callsDps := metric.Sum().DataPoints()
 		require.Equal(tb, numDataPoints, callsDps.Len())
-		for dpi := 0; dpi < numDataPoints; dpi++ {
+		for dpi := range numDataPoints {
 			dp := callsDps.At(dpi)
 			assert.Equal(tb,
 				int64(numCumulativeConsumptions),
@@ -218,7 +218,7 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataPointSlice, numDataPoints, numCumulativeConsumptions int) {
 	seenMetricIDs := make(map[metricID]bool)
 	require.Equal(tb, numDataPoints, dps.Len())
-	for dpi := 0; dpi < numDataPoints; dpi++ {
+	for dpi := range numDataPoints {
 		dp := dps.At(dpi)
 		assert.Equal(
 			tb,
@@ -235,7 +235,7 @@ func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataP
 
 		// Find the bucket index where the 11ms duration should belong in.
 		var foundDurationIndex int
-		for foundDurationIndex = 0; foundDurationIndex < dp.ExplicitBounds().Len(); foundDurationIndex++ {
+		for foundDurationIndex = range dp.ExplicitBounds().Len() {
 			if dp.ExplicitBounds().At(foundDurationIndex) > sampleDuration {
 				break
 			}
@@ -243,7 +243,7 @@ func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataP
 
 		// Then verify that all histogram buckets are empty except for the bucket with the 11ms duration.
 		var wantBucketCount uint64
-		for bi := 0; bi < dp.BucketCounts().Len(); bi++ {
+		for bi := range dp.BucketCounts().Len() {
 			wantBucketCount = 0
 			if bi == foundDurationIndex {
 				wantBucketCount = uint64(numCumulativeConsumptions)
@@ -257,7 +257,7 @@ func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataP
 func verifyExponentialHistogramDataPoints(tb testing.TB, dps pmetric.ExponentialHistogramDataPointSlice, numDataPoints, numCumulativeConsumptions int) {
 	seenMetricIDs := make(map[metricID]bool)
 	require.Equal(tb, numDataPoints, dps.Len())
-	for dpi := 0; dpi < numDataPoints; dpi++ {
+	for dpi := range numDataPoints {
 		dp := dps.At(dpi)
 		assert.Equal(
 			tb,
@@ -655,7 +655,7 @@ func TestConcurrentShutdown(t *testing.T) {
 	var wg sync.WaitGroup
 	const concurrency = 1000
 	wg.Add(concurrency)
-	for i := 0; i < concurrency; i++ {
+	for range concurrency {
 		go func() {
 			err := p.Shutdown(ctx)
 			assert.NoError(t, err)
@@ -958,11 +958,11 @@ func TestResourceMetricsCache(t *testing.T) {
 	assert.Equal(t, 2, p.resourceMetrics.Len())
 
 	// consume more batches for new resources. Max size is exceeded causing old resource entries to be discarded
-	for i := 0; i < resourceMetricsCacheSize; i++ {
+	for i := range resourceMetricsCacheSize {
 		traces := buildSampleTrace()
 
 		// add resource attributes to simulate additional resources providing data
-		for j := 0; j < traces.ResourceSpans().Len(); j++ {
+		for j := range traces.ResourceSpans().Len() {
 			traces.ResourceSpans().At(j).Resource().Attributes().PutStr("dummy", fmt.Sprintf("%d", i))
 		}
 
@@ -1020,11 +1020,11 @@ func TestResourceMetricsKeyAttributes(t *testing.T) {
 	assert.Equal(t, 2, p.resourceMetrics.Len())
 
 	// consume more batches for new resources. Max size is exceeded causing old resource entries to be discarded
-	for i := 0; i < resourceMetricsCacheSize; i++ {
+	for i := range resourceMetricsCacheSize {
 		traces := buildSampleTrace()
 
 		// add resource attributes to simulate additional resources providing data
-		for j := 0; j < traces.ResourceSpans().Len(); j++ {
+		for j := range traces.ResourceSpans().Len() {
 			traces.ResourceSpans().At(j).Resource().Attributes().PutStr("not included in resource key attributes", fmt.Sprintf("%d", i))
 		}
 
@@ -1045,7 +1045,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 
 	// Test
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		assert.NoError(b, conn.ConsumeTraces(ctx, traces))
 	}
 }
@@ -1085,13 +1085,13 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 			require.NoError(t, err)
 			metrics := p.buildMetrics()
 
-			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+			for i := range metrics.ResourceMetrics().Len() {
 				rm := metrics.ResourceMetrics().At(i)
 				ism := rm.ScopeMetrics()
 				// Checking all metrics, naming notice: ilmC/mC - C here is for Counter.
-				for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+				for ilmC := range ism.Len() {
 					m := ism.At(ilmC).Metrics()
-					for mC := 0; mC < m.Len(); mC++ {
+					for mC := range m.Len() {
 						metric := m.At(mC)
 						// We check only sum and histogram metrics here, because for now only they are present in this module.
 
@@ -1099,7 +1099,7 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 						case pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeHistogram:
 							{
 								dp := metric.Histogram().DataPoints()
-								for dpi := 0; dpi < dp.Len(); dpi++ {
+								for dpi := range dp.Len() {
 									for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
 										assert.NotContains(t, excludeDimensions, attributeKey)
 									}
@@ -1108,7 +1108,7 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 						case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeSummary:
 							{
 								dp := metric.Sum().DataPoints()
-								for dpi := 0; dpi < dp.Len(); dpi++ {
+								for dpi := range dp.Len() {
 									for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
 										assert.NotContains(t, excludeDimensions, attributeKey)
 									}
@@ -1514,23 +1514,23 @@ func TestSpanMetrics_Events(t *testing.T) {
 			err = c.ConsumeTraces(context.Background(), buildSampleTrace())
 			require.NoError(t, err)
 			metrics := c.buildMetrics()
-			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+			for i := range metrics.ResourceMetrics().Len() {
 				rm := metrics.ResourceMetrics().At(i)
 				ism := rm.ScopeMetrics()
-				for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+				for ilmC := range ism.Len() {
 					m := ism.At(ilmC).Metrics()
 					if !tt.shouldEventsMetricExist {
 						assert.Equal(t, 2, m.Len())
 						continue
 					}
 					assert.Equal(t, 3, m.Len())
-					for mC := 0; mC < m.Len(); mC++ {
+					for mC := range m.Len() {
 						metric := m.At(mC)
 						if metric.Name() != "events" {
 							continue
 						}
 						assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
-						for idp := 0; idp < metric.Sum().DataPoints().Len(); idp++ {
+						for idp := range metric.Sum().DataPoints().Len() {
 							attrs := metric.Sum().DataPoints().At(idp).Attributes()
 							assert.Contains(t, attrs.AsRaw(), exceptionTypeAttrName)
 						}
@@ -1624,19 +1624,19 @@ func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
 }
 
 func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetric.Metrics, traceID pcommon.TraceID) {
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+	for i := range metrics.ResourceMetrics().Len() {
 		rm := metrics.ResourceMetrics().At(i)
 		ism := rm.ScopeMetrics()
 		// Checking all metrics, naming notice: ilmC/mC - C here is for Counter.
-		for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+		for ilmC := range ism.Len() {
 			m := ism.At(ilmC).Metrics()
-			for mC := 0; mC < m.Len(); mC++ {
+			for mC := range m.Len() {
 				metric := m.At(mC)
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
 					dps := metric.Sum().DataPoints()
 					assert.Positive(t, dps.Len())
-					for dpi := 0; dpi < dps.Len(); dpi++ {
+					for dpi := range dps.Len() {
 						dp := dps.At(dpi)
 						assert.Equal(t, 1, dp.Exemplars().Len())
 						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
@@ -1644,7 +1644,7 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 				case pmetric.MetricTypeHistogram:
 					dps := metric.Histogram().DataPoints()
 					assert.Positive(t, dps.Len())
-					for dpi := 0; dpi < dps.Len(); dpi++ {
+					for dpi := range dps.Len() {
 						dp := dps.At(dpi)
 						assert.Equal(t, 1, dp.Exemplars().Len())
 						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
@@ -1652,7 +1652,7 @@ func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetri
 				case pmetric.MetricTypeExponentialHistogram:
 					dps := metric.ExponentialHistogram().DataPoints()
 					assert.Positive(t, dps.Len())
-					for dpi := 0; dpi < dps.Len(); dpi++ {
+					for dpi := range dps.Len() {
 						dp := dps.At(dpi)
 						assert.Equal(t, 1, dp.Exemplars().Len())
 						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
@@ -1740,7 +1740,7 @@ func TestTimestampsForUninterruptedStream(t *testing.T) {
 
 func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start pcommon.Timestamp, timestamp pcommon.Timestamp) {
 	// Go through all data points and collect the start timestamp and timestamp. They should be the same value for each data point
-	for i := 0; i < m.ResourceMetrics().Len(); i++ {
+	for i := range m.ResourceMetrics().Len() {
 		rm := m.ResourceMetrics().At(i)
 
 		serviceName, _ := rm.Resource().Attributes().Get("service.name")
@@ -1749,16 +1749,16 @@ func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start pc
 		}
 
 		ism := rm.ScopeMetrics()
-		for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+		for ilmC := range ism.Len() {
 			m := ism.At(ilmC).Metrics()
-			for mC := 0; mC < m.Len(); mC++ {
+			for mC := range m.Len() {
 				metric := m.At(mC)
 
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
 					{
 						dps := metric.Sum().DataPoints()
-						for dpi := 0; dpi < dps.Len(); dpi++ {
+						for dpi := range dps.Len() {
 							if int64(start) == 0 {
 								start = dps.At(dpi).StartTimestamp()
 								timestamp = dps.At(dpi).Timestamp()
@@ -1770,7 +1770,7 @@ func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start pc
 				case pmetric.MetricTypeHistogram:
 					{
 						dps := metric.Histogram().DataPoints()
-						for dpi := 0; dpi < dps.Len(); dpi++ {
+						for dpi := range dps.Len() {
 							if int64(start) == 0 {
 								start = dps.At(dpi).StartTimestamp()
 								timestamp = dps.At(dpi).Timestamp()

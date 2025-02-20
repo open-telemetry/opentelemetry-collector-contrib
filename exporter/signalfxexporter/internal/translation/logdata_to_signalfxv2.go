@@ -22,7 +22,7 @@ func LogRecordSliceToSignalFxV2(
 	events := make([]*sfxpb.Event, 0, logs.Len())
 	numDroppedLogRecords := 0
 
-	for i := 0; i < logs.Len(); i++ {
+	for i := range logs.Len() {
 		lr := logs.At(i)
 		event, ok := convertLogRecord(lr, resourceAttrs, logger)
 		if !ok {

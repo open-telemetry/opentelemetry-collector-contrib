@@ -155,10 +155,10 @@ func checkMetricsAreExpected(t *testing.T, md pmetric.Metrics, fields map[string
 
 	// check the metrics are expected
 	ilms := rm.ScopeMetrics()
-	for j := 0; j < ilms.Len(); j++ {
+	for j := range ilms.Len() {
 		ilm := ilms.At(j)
 		ms := ilm.Metrics()
-		for k := 0; k < ms.Len(); k++ {
+		for k := range ms.Len() {
 			m := ms.At(k)
 			metricName := m.Name()
 			log.Printf("metric=%v", metricName)

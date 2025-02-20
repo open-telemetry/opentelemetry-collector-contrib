@@ -22,13 +22,13 @@ type metricExporter struct {
 func (exporter *metricExporter) onMetricData(_ context.Context, metricData pmetric.Metrics) error {
 	resourceMetrics := metricData.ResourceMetrics()
 
-	for i := 0; i < resourceMetrics.Len(); i++ {
+	for i := range resourceMetrics.Len() {
 		scopeMetrics := resourceMetrics.At(i).ScopeMetrics()
 		resource := resourceMetrics.At(i).Resource()
-		for j := 0; j < scopeMetrics.Len(); j++ {
+		for j := range scopeMetrics.Len() {
 			metrics := scopeMetrics.At(j).Metrics()
 			scope := scopeMetrics.At(j).Scope()
-			for k := 0; k < metrics.Len(); k++ {
+			for k := range metrics.Len() {
 				for _, envelope := range exporter.packer.MetricToEnvelopes(metrics.At(k), resource, scope) {
 					envelope.IKey = string(exporter.config.InstrumentationKey)
 					exporter.transportChannel.Send(envelope)

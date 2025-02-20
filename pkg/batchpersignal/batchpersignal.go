@@ -16,15 +16,15 @@ func SplitTraces(batch ptrace.Traces) []ptrace.Traces {
 	// if the same traceID exists in different ils, they land in different batches.
 	var result []ptrace.Traces
 
-	for i := 0; i < batch.ResourceSpans().Len(); i++ {
+	for i := range batch.ResourceSpans().Len() {
 		rs := batch.ResourceSpans().At(i)
 
-		for j := 0; j < rs.ScopeSpans().Len(); j++ {
+		for j := range rs.ScopeSpans().Len() {
 			// the batches for this ILS
 			batches := map[pcommon.TraceID]ptrace.ResourceSpans{}
 
 			ils := rs.ScopeSpans().At(j)
-			for k := 0; k < ils.Spans().Len(); k++ {
+			for k := range ils.Spans().Len() {
 				span := ils.Spans().At(k)
 				key := span.TraceID()
 
@@ -63,15 +63,15 @@ func SplitLogs(batch plog.Logs) []plog.Logs {
 	// if the same traceID exists in different sl, they land in different batches.
 	var result []plog.Logs
 
-	for i := 0; i < batch.ResourceLogs().Len(); i++ {
+	for i := range batch.ResourceLogs().Len() {
 		rs := batch.ResourceLogs().At(i)
 
-		for j := 0; j < rs.ScopeLogs().Len(); j++ {
+		for j := range rs.ScopeLogs().Len() {
 			// the batches for this ILL
 			batches := map[pcommon.TraceID]plog.ResourceLogs{}
 
 			sl := rs.ScopeLogs().At(j)
-			for k := 0; k < sl.LogRecords().Len(); k++ {
+			for k := range sl.LogRecords().Len() {
 				log := sl.LogRecords().At(k)
 				key := log.TraceID()
 
@@ -110,15 +110,15 @@ func SplitMetrics(batch pmetric.Metrics) []pmetric.Metrics {
 	// if the same metricName exists in different ils, they land in different batches.
 	var result []pmetric.Metrics
 
-	for i := 0; i < batch.ResourceMetrics().Len(); i++ {
+	for i := range batch.ResourceMetrics().Len() {
 		rs := batch.ResourceMetrics().At(i)
 
-		for j := 0; j < rs.ScopeMetrics().Len(); j++ {
+		for j := range rs.ScopeMetrics().Len() {
 			// the batches for this ILS
 			batches := map[string]pmetric.ResourceMetrics{}
 
 			ils := rs.ScopeMetrics().At(j)
-			for k := 0; k < ils.Metrics().Len(); k++ {
+			for k := range ils.Metrics().Len() {
 				metric := ils.Metrics().At(k)
 
 				// key := pcommon.NewByteSlice()

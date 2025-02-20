@@ -277,7 +277,7 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 	var errs error
 	// Run concurrencyLimit of workers until there
 	// is no more requests to execute in the input channel.
-	for i := 0; i < concurrencyLimit; i++ {
+	for range concurrencyLimit {
 		go func() {
 			defer wg.Done()
 			for {

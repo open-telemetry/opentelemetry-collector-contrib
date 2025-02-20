@@ -184,7 +184,7 @@ func zipkinKindToSpanKind(kind zipkinmodel.Kind, tags map[string]string) ptrace.
 }
 
 func zTagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
-	for i := 0; i < 128; i++ {
+	for i := range 128 {
 		key := fmt.Sprintf("otlp.link.%d", i)
 		val, ok := tags[key]
 		if !ok {

@@ -11,7 +11,7 @@ import (
 
 func (g *geoIPProcessor) processTraces(ctx context.Context, ts ptrace.Traces) (ptrace.Traces, error) {
 	rt := ts.ResourceSpans()
-	for i := 0; i < rt.Len(); i++ {
+	for i := range rt.Len() {
 		switch g.cfg.Context {
 		case resource:
 			err := g.processAttributes(ctx, rt.At(i).Resource().Attributes())
@@ -19,8 +19,8 @@ func (g *geoIPProcessor) processTraces(ctx context.Context, ts ptrace.Traces) (p
 				return ts, err
 			}
 		case record:
-			for j := 0; j < rt.At(i).ScopeSpans().Len(); j++ {
-				for k := 0; k < rt.At(i).ScopeSpans().At(j).Spans().Len(); k++ {
+			for j := range rt.At(i).ScopeSpans().Len() {
+				for k := range rt.At(i).ScopeSpans().At(j).Spans().Len() {
 					err := g.processAttributes(ctx, rt.At(i).ScopeSpans().At(j).Spans().At(k).Attributes())
 					if err != nil {
 						return ts, err

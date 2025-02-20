@@ -395,7 +395,7 @@ func TestHandleInvalidBuckets(t *testing.T) {
 			require.Equal(t, 2, metric.At(0).ExponentialHistogram().DataPoints().Len())
 
 			var lastTimestamp pcommon.Timestamp
-			for i := 0; i < metric.At(0).ExponentialHistogram().DataPoints().Len(); i++ {
+			for i := range metric.At(0).ExponentialHistogram().DataPoints().Len() {
 				m := metric.At(0).ExponentialHistogram().DataPoints().At(i)
 				if i == 0 {
 					require.Equal(t, m.StartTimestamp(), pcommon.Timestamp(0))
@@ -515,7 +515,7 @@ func TestSketchTemporality(t *testing.T) {
 			require.Equal(t, pmetric.MetricTypeExponentialHistogram, metric2.At(0).Type())
 
 			var lastTimestamp pcommon.Timestamp
-			for i := 0; i < metric1.At(0).ExponentialHistogram().DataPoints().Len(); i++ {
+			for i := range metric1.At(0).ExponentialHistogram().DataPoints().Len() {
 				m := metric1.At(0).ExponentialHistogram().DataPoints().At(i)
 				if i == 0 {
 					require.Equal(t, m.StartTimestamp(), pcommon.Timestamp(0))
@@ -524,7 +524,7 @@ func TestSketchTemporality(t *testing.T) {
 				}
 				lastTimestamp = m.Timestamp()
 			}
-			for i := 0; i < metric2.At(0).ExponentialHistogram().DataPoints().Len(); i++ {
+			for i := range metric2.At(0).ExponentialHistogram().DataPoints().Len() {
 				m := metric2.At(0).ExponentialHistogram().DataPoints().At(i)
 				if i == 0 {
 					require.Equal(t, m.StartTimestamp(), pcommon.Timestamp(0))

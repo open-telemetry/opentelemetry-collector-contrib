@@ -33,7 +33,7 @@ func (he *headerExtractor) extractHeadersTraces(traces ptrace.Traces, message *s
 			he.logger.Debug("Header key not found in the trace: ", zap.String("key", header))
 			continue
 		}
-		for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		for i := range traces.ResourceSpans().Len() {
 			rs := traces.ResourceSpans().At(i)
 			rs.Resource().Attributes().PutStr(getAttribute(header), value)
 		}
@@ -47,7 +47,7 @@ func (he *headerExtractor) extractHeadersLogs(logs plog.Logs, message *sarama.Co
 			he.logger.Debug("Header key not found in the log: ", zap.String("key", header))
 			continue
 		}
-		for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		for i := range logs.ResourceLogs().Len() {
 			rl := logs.ResourceLogs().At(i)
 			rl.Resource().Attributes().PutStr(getAttribute(header), value)
 		}
@@ -61,7 +61,7 @@ func (he *headerExtractor) extractHeadersMetrics(metrics pmetric.Metrics, messag
 			he.logger.Debug("Header key not found in the metric: ", zap.String("key", header))
 			continue
 		}
-		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		for i := range metrics.ResourceMetrics().Len() {
 			rm := metrics.ResourceMetrics().At(i)
 			rm.Resource().Attributes().PutStr(getAttribute(header), value)
 		}
