@@ -12,16 +12,16 @@ require (
 	github.com/knadh/koanf/v2 v2.1.2
 	github.com/open-telemetry/opamp-go v0.18.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.120.0
-	go.opentelemetry.io/collector/config/configopaque v1.26.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.120.0
-	go.opentelemetry.io/collector/config/configtls v1.26.0
-	go.opentelemetry.io/collector/confmap v1.26.0
-	go.opentelemetry.io/collector/confmap/provider/envprovider v1.26.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.26.0
-	go.opentelemetry.io/collector/pdata v1.26.0
-	go.opentelemetry.io/collector/semconv v0.120.0
-	go.opentelemetry.io/collector/service v0.120.0
+	go.opentelemetry.io/collector/component v0.120.1-0.20250218214003-dae5d199ffc6
+	go.opentelemetry.io/collector/config/configopaque v1.26.1-0.20250218214003-dae5d199ffc6
+	go.opentelemetry.io/collector/config/configtelemetry v0.120.1-0.20250218214003-dae5d199ffc6
+	go.opentelemetry.io/collector/config/configtls v1.26.1-0.20250218214003-dae5d199ffc6
+	go.opentelemetry.io/collector/confmap v1.26.1-0.20250218214003-dae5d199ffc6
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.26.1-0.20250218214003-dae5d199ffc6
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.26.1-0.20250218214003-dae5d199ffc6
+	go.opentelemetry.io/collector/pdata v1.26.1-0.20250218214003-dae5d199ffc6
+	go.opentelemetry.io/collector/semconv v0.120.1-0.20250218214003-dae5d199ffc6
+	go.opentelemetry.io/collector/service v0.120.1-0.20250218214003-dae5d199ffc6
 	go.opentelemetry.io/contrib/config v0.14.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
