@@ -86,8 +86,10 @@ func benchmarkReadExistingLogs(b *testing.B, lines int) {
 func generateLogFile(tb testing.TB, numLines int) string {
 	f := filetest.OpenTemp(tb, tb.TempDir())
 	for range numLines {
-		f.Write(filetest.TokenWithLength(999))
-		f.WriteString("\n")
+		_, err := f.Write(filetest.TokenWithLength(999))
+		require.NoError(tb, err)
+		_, err = f.WriteString("\n")
+		require.NoError(tb, err)
 	}
 	return f.Name()
 }
