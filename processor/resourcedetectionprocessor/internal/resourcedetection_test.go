@@ -118,10 +118,10 @@ func TestDetect(t *testing.T) {
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(processortest.NewNopSettingsWithType(metadata.Type), time.Second, tt.attributes, &mockDetectorConfig{}, tt.async, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(processortest.NewNopSettingsWithType(metadata.Type), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
-			got, _, err := p.Get(context.Background(), http.DefaultClient)
+			got, _, err := p.Get(context.Background(), &http.Client{Timeout: 10 * time.Second})
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.expectedResource, got.Attributes().AsRaw())
@@ -132,7 +132,7 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(processortest.NewNopSettingsWithType(metadata.Type), time.Second, nil, &mockDetectorConfig{}, true, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettingsWithType(metadata.Type), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
@@ -143,7 +143,7 @@ func TestDetectResource_DetectorFactoryError(t *testing.T) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(processortest.NewNopSettingsWithType(metadata.Type), time.Second, nil, &mockDetectorConfig{}, true, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettingsWithType(metadata.Type), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
@@ -212,7 +212,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, nil, false, md1, md2)
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
 
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
@@ -220,7 +220,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 	for i := 0; i < iterations; i++ {
 		go func() {
 			defer wg.Done()
-			detected, _, err := p.Get(context.Background(), http.DefaultClient)
+			detected, _, err := p.Get(context.Background(), &http.Client{Timeout: 10 * time.Second})
 			assert.NoError(t, err)
 			assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 		}()
@@ -254,9 +254,9 @@ func TestDetectResource_Reconnect(t *testing.T) {
 
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, nil, true, md1, md2)
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
 
-	detected, _, err := p.Get(context.Background(), http.DefaultClient)
+	detected, _, err := p.Get(context.Background(), &http.Client{Timeout: 15 * time.Second})
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 

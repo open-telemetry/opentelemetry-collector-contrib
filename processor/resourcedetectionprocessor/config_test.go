@@ -76,7 +76,6 @@ func TestLoadConfig(t *testing.T) {
 				DetectorConfig: openshiftConfig,
 				ClientConfig:   cfg,
 				Override:       false,
-				AsyncDetection: true,
 			},
 		},
 		{
@@ -86,7 +85,6 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: detectorCreateDefaultConfig(),
-				AsyncDetection: true,
 			},
 		},
 		{
@@ -96,7 +94,6 @@ func TestLoadConfig(t *testing.T) {
 				DetectorConfig: ec2Config,
 				ClientConfig:   cfg,
 				Override:       false,
-				AsyncDetection: true,
 			},
 		},
 		{
@@ -107,7 +104,6 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				Attributes:     []string{"a", "b"},
-				AsyncDetection: true,
 			},
 		},
 		{
@@ -117,7 +113,6 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: detectorCreateDefaultConfig(),
-				AsyncDetection: true,
 			},
 		},
 		{
@@ -127,7 +122,6 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: detectorCreateDefaultConfig(),
-				AsyncDetection: true,
 			},
 		},
 		{
@@ -137,7 +131,6 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig:   cfg,
 				Override:       false,
 				DetectorConfig: resourceAttributesConfig,
-				AsyncDetection: true,
 			},
 		},
 		{

@@ -47,7 +47,6 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 	timeout time.Duration,
 	attributes []string,
 	detectorConfigs ResourceDetectorConfig,
-	asyncDetection bool,
 	detectorTypes ...DetectorType,
 ) (*ResourceProvider, error) {
 	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes)
@@ -62,7 +61,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 		}
 	}
 
-	provider := NewResourceProvider(params.Logger, timeout, attributesToKeep, asyncDetection, detectors...)
+	provider := NewResourceProvider(params.Logger, timeout, attributesToKeep, detectors...)
 	return provider, nil
 }
 
@@ -101,18 +100,20 @@ type resourceResult struct {
 	err       error
 }
 
-func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesToKeep map[string]struct{}, asyncDetection bool, detectors ...Detector) *ResourceProvider {
+func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesToKeep map[string]struct{}, detectors ...Detector) *ResourceProvider {
 	return &ResourceProvider{
 		logger:           logger,
 		timeout:          timeout,
 		detectors:        detectors,
 		attributesToKeep: attributesToKeep,
-		asyncDetection:   asyncDetection,
 	}
 }
 
-func (p *ResourceProvider) Get(ctx context.Context, _ *http.Client) (resource pcommon.Resource, schemaURL string, err error) {
+func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resource pcommon.Resource, schemaURL string, err error) {
 	p.once.Do(func() {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, client.Timeout)
+		defer cancel()
 		p.detectResource(ctx)
 	})
 
@@ -122,16 +123,6 @@ func (p *ResourceProvider) Get(ctx context.Context, _ *http.Client) (resource pc
 type detectResult struct {
 	r         pcommon.Resource
 	schemaURL string
-	err       error
-}
-
-func handleResult(res *pcommon.Resource, resultsChan chan detectResult, mergedSchemaURL string) string {
-	result := <-resultsChan
-	if result.err == nil {
-		mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, result.schemaURL)
-		MergeResource(*res, result.r, false)
-	}
-	return mergedSchemaURL
 }
 
 func (p *ResourceProvider) detectResource(ctx context.Context) {
@@ -142,14 +133,15 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 
 	p.logger.Info("began detecting resource information")
 
-	resultsChan := make(chan detectResult, len(p.detectors))
-	for _, detector := range p.detectors {
+	resultsChan := make([]chan detectResult, len(p.detectors))
+	for i, detector := range p.detectors {
+		resultsChan[i] = make(chan detectResult)
 		go func(detector Detector) {
 			sleep := 1 * time.Second
 			for {
 				r, schemaURL, err := detector.Detect(ctx)
 				if err == nil {
-					resultsChan <- detectResult{r: r, schemaURL: schemaURL, err: nil}
+					resultsChan[i] <- detectResult{r: r, schemaURL: schemaURL}
 					return
 				}
 				p.logger.Warn("failed to detect resource", zap.Error(err))
@@ -159,13 +151,15 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 				}
 			}
 		}(detector)
-		if !p.asyncDetection {
-			mergedSchemaURL = handleResult(&res, resultsChan, mergedSchemaURL)
-		}
 	}
-	if p.asyncDetection {
-		for range p.detectors {
-			mergedSchemaURL = handleResult(&res, resultsChan, mergedSchemaURL)
+
+	for _, ch := range resultsChan {
+		select {
+		case <-ctx.Done():
+			p.logger.Warn("context was cancelled: %w", zap.Error(ctx.Err()))
+		case result := <-ch:
+			mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, result.schemaURL)
+			MergeResource(res, result.r, false)
 		}
 	}
 
