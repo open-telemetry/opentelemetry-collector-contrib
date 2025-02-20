@@ -57,6 +57,7 @@ func TestEmptyScrape(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	// Ensure there aren't any scrapers when all metrics are disabled.
@@ -74,6 +75,8 @@ func TestSuccessfulScrape(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	enableAllScraperMetrics(cfg, true)
@@ -87,8 +90,8 @@ func TestSuccessfulScrape(t *testing.T) {
 		defer assert.NoError(t, scraper.Shutdown(context.Background()))
 
 		scraper.client = mockClient{
-			instanceName:        scraper.instanceName,
-			SQL:                 scraper.sqlQuery,
+			instanceName: scraper.config.InstanceName,
+			SQL:          scraper.sqlQuery,
 			maxQuerySampleCount: 1000,
 			lookbackTime:        20,
 		}
@@ -98,11 +101,11 @@ func TestSuccessfulScrape(t *testing.T) {
 
 		var expectedFile string
 		switch scraper.sqlQuery {
-		case getSQLServerDatabaseIOQuery(scraper.instanceName):
+		case getSQLServerDatabaseIOQuery(scraper.config.InstanceName):
 			expectedFile = filepath.Join("testdata", "expectedDatabaseIO.yaml")
-		case getSQLServerPerformanceCounterQuery(scraper.instanceName):
+		case getSQLServerPerformanceCounterQuery(scraper.config.InstanceName):
 			expectedFile = filepath.Join("testdata", "expectedPerfCounters.yaml")
-		case getSQLServerPropertiesQuery(scraper.instanceName):
+		case getSQLServerPropertiesQuery(scraper.config.InstanceName):
 			expectedFile = filepath.Join("testdata", "expectedProperties.yaml")
 		}
 
@@ -126,6 +129,7 @@ func TestScrapeInvalidQuery(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 
 	assert.NoError(t, cfg.Validate())
 
@@ -139,7 +143,7 @@ func TestScrapeInvalidQuery(t *testing.T) {
 		defer assert.NoError(t, scraper.Shutdown(context.Background()))
 
 		scraper.client = mockClient{
-			instanceName: scraper.instanceName,
+			instanceName: scraper.config.InstanceName,
 			SQL:          "Invalid SQL query",
 		}
 
@@ -326,7 +330,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	scraper.cacheAndDiff(queryHash, queryPlanHash, totalGrant, 1)
 
 	scraper.client = mockClient{
-		instanceName:        scraper.instanceName,
+		instanceName:        scraper.config.InstanceName,
 		SQL:                 scraper.sqlQuery,
 		maxQuerySampleCount: 1000,
 		lookbackTime:        20,
@@ -385,7 +389,7 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 
 	scraper.client = mockInvalidClient{
 		mockClient: mockClient{
-			instanceName:        scraper.instanceName,
+			instanceName:        scraper.config.InstanceName,
 			SQL:                 scraper.sqlQuery,
 			maxQuerySampleCount: 1000,
 			lookbackTime:        20,

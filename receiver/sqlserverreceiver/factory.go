@@ -120,16 +120,9 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 		var cache *lru.Cache[string, int64]
 
 		sqlServerScraper := newSQLServerScraper(id, query,
-			cfg.InstanceName,
-			cfg.ControllerConfig,
-			params.Logger,
 			sqlquery.TelemetryConfig{},
 			dbProviderFunc,
 			sqlquery.NewDbClient,
-			metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
-			cfg.MaxQuerySampleCount,
-			cfg.LookbackTime,
-			cfg.TopQueryCount,
 			cache)
 
 		scrapers = append(scrapers, sqlServerScraper)
@@ -181,16 +174,11 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 		}
 
 		sqlServerScraper := newSQLServerScraper(id, query,
-			cfg.InstanceName,
-			cfg.ControllerConfig,
-			params.Logger,
 			sqlquery.TelemetryConfig{},
 			dbProviderFunc,
 			sqlquery.NewDbClient,
-			nil,
-			cfg.MaxQuerySampleCount,
-			cfg.LookbackTime,
-			cfg.TopQueryCount,
+			params,
+			cfg,
 			cache)
 
 		scrapers = append(scrapers, sqlServerScraper)

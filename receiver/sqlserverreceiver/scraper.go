@@ -18,8 +18,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
-	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
@@ -27,25 +27,23 @@ import (
 )
 
 const (
-	computerNameKey = "computer_name"
-	instanceNameKey = "sql_instance"
+	computerNameKey  = "computer_name"
+	instanceNameKey  = "sql_instance"
+	serverAddressKey = "server.address"
+	serverPortKey    = "server.port"
 )
 
 type sqlServerScraperHelper struct {
-	id                  component.ID
-	sqlQuery            string
-	instanceName        string
-	scrapeCfg           scraperhelper.ControllerConfig
-	clientProviderFunc  sqlquery.ClientProviderFunc
-	dbProviderFunc      sqlquery.DbProviderFunc
-	logger              *zap.Logger
-	telemetry           sqlquery.TelemetryConfig
-	client              sqlquery.DbClient
-	db                  *sql.DB
-	mb                  *metadata.MetricsBuilder
-	maxQuerySampleCount uint
-	lookbackTime        uint
-	topQueryCount       uint
+	id                 component.ID
+	config             *Config
+	sqlQuery           string
+	clientProviderFunc sqlquery.ClientProviderFunc
+	dbProviderFunc     sqlquery.DbProviderFunc
+	logger             *zap.Logger
+	telemetry          sqlquery.TelemetryConfig
+	client             sqlquery.DbClient
+	db                 *sql.DB
+	mb                 *metadata.MetricsBuilder
 	cache               *lru.Cache[string, int64]
 }
 
@@ -56,31 +54,22 @@ var (
 
 func newSQLServerScraper(id component.ID,
 	query string,
-	instanceName string,
-	scrapeCfg scraperhelper.ControllerConfig,
-	logger *zap.Logger,
 	telemetry sqlquery.TelemetryConfig,
 	dbProviderFunc sqlquery.DbProviderFunc,
 	clientProviderFunc sqlquery.ClientProviderFunc,
-	mb *metadata.MetricsBuilder,
-	maxQuerySampleCount uint,
-	lookbackTime uint,
-	topQueryCount uint,
+	params receiver.Settings,
+	cfg *Config,
 	cache *lru.Cache[string, int64],
 ) *sqlServerScraperHelper {
 	return &sqlServerScraperHelper{
-		id:                  id,
-		sqlQuery:            query,
-		instanceName:        instanceName,
-		scrapeCfg:           scrapeCfg,
-		logger:              logger,
-		telemetry:           telemetry,
-		dbProviderFunc:      dbProviderFunc,
-		clientProviderFunc:  clientProviderFunc,
-		mb:                  mb,
-		maxQuerySampleCount: maxQuerySampleCount,
-		lookbackTime:        lookbackTime,
-		topQueryCount:       topQueryCount,
+		id:                 id,
+		config:             cfg,
+		sqlQuery:           query,
+		logger:             params.Logger,
+		telemetry:          telemetry,
+		dbProviderFunc:     dbProviderFunc,
+		clientProviderFunc: clientProviderFunc,
+		mb:                 metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
 		cache:               cache,
 	}
 }
@@ -104,11 +93,11 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 	var err error
 
 	switch s.sqlQuery {
-	case getSQLServerDatabaseIOQuery(s.instanceName):
+	case getSQLServerDatabaseIOQuery(s.config.InstanceName):
 		err = s.recordDatabaseIOMetrics(ctx)
-	case getSQLServerPerformanceCounterQuery(s.instanceName):
+	case getSQLServerPerformanceCounterQuery(s.config.InstanceName):
 		err = s.recordDatabasePerfCounterMetrics(ctx)
-	case getSQLServerPropertiesQuery(s.instanceName):
+	case getSQLServerPropertiesQuery(s.config.InstanceName):
 		err = s.recordDatabaseStatusMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
@@ -123,8 +112,8 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 
 func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, error) {
 	switch s.sqlQuery {
-	case getSQLServerQueryTextAndPlanQuery(s.instanceName, s.maxQuerySampleCount, s.lookbackTime):
-		return s.recordDatabaseQueryTextAndPlan(ctx, s.topQueryCount)
+	case getSQLServerQueryTextAndPlanQuery(s.config.InstanceName, s.config.MaxQuerySampleCount, s.config.LookbackTime):
+		return s.recordDatabaseQueryTextAndPlan(ctx, s.config.TopQueryCount)
 	default:
 		return plog.Logs{}, fmt.Errorf("Attempted to get logs from unsupported query: %s", s.sqlQuery)
 	}
@@ -165,6 +154,8 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
+		rb.SetServerAddress(s.config.Server)
+		rb.SetServerPort(int64(s.config.Port))
 
 		val, err = strconv.ParseFloat(row[readLatencyMsKey], 64)
 		if err != nil {
@@ -226,6 +217,8 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
+		rb.SetServerAddress(s.config.Server)
+		rb.SetServerPort(int64(s.config.Port))
 
 		switch row[counterKey] {
 		case batchRequestRate:
@@ -313,6 +306,8 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
+		rb.SetServerAddress(s.config.Server)
+		rb.SetServerPort(int64(s.config.Port))
 
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring))
@@ -396,6 +391,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 		record.Attributes().PutStr(computerNameKey, row[computerNameKey])
 		record.Attributes().PutStr(instanceNameKey, row[instanceNameKey])
+		record.Attributes().PutStr(serverAddressKey, s.config.Server)
+		record.Attributes().PutInt(serverPortKey, int64(s.config.Port))
 
 		record.Attributes().PutStr(dbPrefix+queryHash, queryHashVal)
 		record.Attributes().PutStr(dbPrefix+queryPlanHash, queryPlanHashVal)
