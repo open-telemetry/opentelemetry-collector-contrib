@@ -123,6 +123,8 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 			sqlquery.TelemetryConfig{},
 			dbProviderFunc,
 			sqlquery.NewDbClient,
+			params,
+			cfg,
 			cache)
 
 		scrapers = append(scrapers, sqlServerScraper)

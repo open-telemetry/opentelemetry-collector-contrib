@@ -90,8 +90,8 @@ func TestSuccessfulScrape(t *testing.T) {
 		defer assert.NoError(t, scraper.Shutdown(context.Background()))
 
 		scraper.client = mockClient{
-			instanceName: scraper.config.InstanceName,
-			SQL:          scraper.sqlQuery,
+			instanceName:        scraper.config.InstanceName,
+			SQL:                 scraper.sqlQuery,
 			maxQuerySampleCount: 1000,
 			lookbackTime:        20,
 		}

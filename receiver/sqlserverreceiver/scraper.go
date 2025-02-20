@@ -44,7 +44,7 @@ type sqlServerScraperHelper struct {
 	client             sqlquery.DbClient
 	db                 *sql.DB
 	mb                 *metadata.MetricsBuilder
-	cache               *lru.Cache[string, int64]
+	cache              *lru.Cache[string, int64]
 }
 
 var (
@@ -70,7 +70,7 @@ func newSQLServerScraper(id component.ID,
 		dbProviderFunc:     dbProviderFunc,
 		clientProviderFunc: clientProviderFunc,
 		mb:                 metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
-		cache:               cache,
+		cache:              cache,
 	}
 }
 
