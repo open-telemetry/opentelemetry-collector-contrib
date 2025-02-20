@@ -1555,3 +1555,73 @@ func TestUpdateMetadataRequestPayload(t *testing.T) {
 	err = se.updateMetadataWithHTTPClient(context.TODO(), httpClient)
 	require.NoError(t, err)
 }
+
+func Test_cleanupBuildVersion(t *testing.T) {
+	type args struct {
+		version string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "already ok",
+			args: args{version: "0.108.0-sumo-2"},
+			want: "v0.108.0-sumo-2",
+		}, {
+			name: "no hash fips",
+			args: args{version: "0.108.0-sumo-2-fips"},
+			want: "v0.108.0-sumo-2-fips",
+		}, {
+			name: "with hash",
+			args: args{version: "0.108.0-sumo-2-4d57200692d5c5c39effad4ae3b29fef79209113"},
+			want: "v0.108.0-sumo-2",
+		}, {
+			name: "hash fips",
+			args: args{version: "0.108.0-sumo-2-4d57200692d5c5c39effad4ae3b29fef79209113-fips"},
+			want: "v0.108.0-sumo-2-fips",
+		}, {
+			name: "v already ok",
+			args: args{version: "v0.108.0-sumo-2"},
+			want: "v0.108.0-sumo-2",
+		}, {
+			name: "v no hash fips",
+			args: args{version: "v0.108.0-sumo-2-fips"},
+			want: "v0.108.0-sumo-2-fips",
+		}, {
+			name: "v with hash",
+			args: args{version: "v0.108.0-sumo-2-4d57200692d5c5c39effad4ae3b29fef79209113"},
+			want: "v0.108.0-sumo-2",
+		}, {
+			name: "v hash fips",
+			args: args{version: "v0.108.0-sumo-2-4d57200692d5c5c39effad4ae3b29fef79209113-fips"},
+			want: "v0.108.0-sumo-2-fips",
+		}, {
+			name: "no patch version",
+			args: args{version: "0.108-sumo-2"},
+			want: "0.108-sumo-2",
+		}, {
+			name: "v no patch version",
+			args: args{version: "v0.108-sumo-2"},
+			want: "v0.108-sumo-2",
+		}, {
+			name: "no sumo version",
+			args: args{version: "0.108-0-sumo"},
+			want: "0.108-0-sumo",
+		}, {
+			name: "v no patch version",
+			args: args{version: "v0.108-0-sumo"},
+			want: "v0.108-0-sumo",
+		}, {
+			name: "nonsense",
+			args: args{version: "hfiwe-23rhc8eg.fhf"},
+			want: "hfiwe-23rhc8eg.fhf",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, cleanupBuildVersion(tt.args.version), "cleanupBuildVersion(%v)", tt.args.version)
+		})
+	}
+}
