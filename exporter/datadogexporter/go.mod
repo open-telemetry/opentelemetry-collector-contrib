@@ -95,6 +95,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.120.0
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250218214003-dae5d199ffc6
 	go.opentelemetry.io/collector/exporter/exportertest v0.120.1-0.20250218214003-dae5d199ffc6
+	golang.org/x/net v0.35.0
 )
 
 require (
@@ -411,7 +412,6 @@ require (
 	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/mod v0.23.0 // indirect
-	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/oauth2 v0.26.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
