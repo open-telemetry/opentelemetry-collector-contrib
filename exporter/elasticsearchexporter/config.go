@@ -282,7 +282,7 @@ func (cfg *Config) Validate() error {
 			MaxSizeConfig: cfg.Batcher.MaxSizeConfig,
 		}
 		if err := batcherConfig.Validate(); err != nil {
-			return err
+			return fmt.Errorf("invalid batcher config: %w", err)
 		}
 	}
 
