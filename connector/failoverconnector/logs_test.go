@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
 
@@ -55,9 +54,9 @@ func TestLogsRegisterConsumers(t *testing.T) {
 	lc1 := failoverConnector.failover.TestGetConsumerAtIndex(1)
 	lc2 := failoverConnector.failover.TestGetConsumerAtIndex(2)
 
-	require.Implements(t, (*internal.SignalConsumer)(nil), lc)
-	require.Implements(t, (*internal.SignalConsumer)(nil), lc1)
-	require.Implements(t, (*internal.SignalConsumer)(nil), lc2)
+	require.Equal(t, lc, &sinkFirst)
+	require.Equal(t, lc1, &sinkSecond)
+	require.Equal(t, lc2, &sinkThird)
 }
 
 func TestLogsWithValidFailover(t *testing.T) {
@@ -83,7 +82,7 @@ func TestLogsWithValidFailover(t *testing.T) {
 	require.NoError(t, err)
 
 	failoverConnector := conn.(*logsFailover)
-	failoverConnector.failover.ModifyConsumerAtIndex(0, testWrapLogs, consumertest.NewErr(errLogsConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
 	defer func() {
 		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
 	}()
@@ -118,9 +117,9 @@ func TestLogsWithFailoverError(t *testing.T) {
 	require.NoError(t, err)
 
 	failoverConnector := conn.(*logsFailover)
-	failoverConnector.failover.ModifyConsumerAtIndex(0, testWrapLogs, consumertest.NewErr(errLogsConsumer))
-	failoverConnector.failover.ModifyConsumerAtIndex(1, testWrapLogs, consumertest.NewErr(errLogsConsumer))
-	failoverConnector.failover.ModifyConsumerAtIndex(2, testWrapLogs, consumertest.NewErr(errLogsConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errLogsConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errLogsConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(2, consumertest.NewErr(errLogsConsumer))
 	defer func() {
 		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
 	}()
@@ -142,8 +141,4 @@ func sampleLog() plog.Logs {
 	rl.Resource().Attributes().PutStr("test", "logs-test")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	return l
-}
-
-func testWrapLogs(c consumer.Logs) internal.SignalConsumer {
-	return internal.NewLogsWrapper(c)
 }

@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
 
@@ -55,9 +54,9 @@ func TestMetricsRegisterConsumers(t *testing.T) {
 	mc1 := failoverConnector.failover.TestGetConsumerAtIndex(1)
 	mc2 := failoverConnector.failover.TestGetConsumerAtIndex(2)
 
-	require.Implements(t, (*internal.SignalConsumer)(nil), mc)
-	require.Implements(t, (*internal.SignalConsumer)(nil), mc1)
-	require.Implements(t, (*internal.SignalConsumer)(nil), mc2)
+	require.Equal(t, mc, &sinkFirst)
+	require.Equal(t, mc1, &sinkSecond)
+	require.Equal(t, mc2, &sinkThird)
 }
 
 func TestMetricsWithValidFailover(t *testing.T) {
@@ -83,7 +82,7 @@ func TestMetricsWithValidFailover(t *testing.T) {
 	require.NoError(t, err)
 
 	failoverConnector := conn.(*metricsFailover)
-	failoverConnector.failover.ModifyConsumerAtIndex(0, testWrapMetrics, consumertest.NewErr(errMetricsConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
 	defer func() {
 		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
 	}()
@@ -118,9 +117,9 @@ func TestMetricsWithFailoverError(t *testing.T) {
 	require.NoError(t, err)
 
 	failoverConnector := conn.(*metricsFailover)
-	failoverConnector.failover.ModifyConsumerAtIndex(0, testWrapMetrics, consumertest.NewErr(errMetricsConsumer))
-	failoverConnector.failover.ModifyConsumerAtIndex(1, testWrapMetrics, consumertest.NewErr(errMetricsConsumer))
-	failoverConnector.failover.ModifyConsumerAtIndex(2, testWrapMetrics, consumertest.NewErr(errMetricsConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errMetricsConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errMetricsConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(2, consumertest.NewErr(errMetricsConsumer))
 	defer func() {
 		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
 	}()
@@ -144,8 +143,4 @@ func sampleMetric() pmetric.Metrics {
 	metric.SetEmptySum()
 	metric.SetName("test")
 	return m
-}
-
-func testWrapMetrics(c consumer.Metrics) internal.SignalConsumer {
-	return internal.NewMetricsWrapper(c)
 }

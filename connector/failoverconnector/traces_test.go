@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
 
@@ -55,9 +54,9 @@ func TestTracesRegisterConsumers(t *testing.T) {
 	tc1 := failoverConnector.failover.TestGetConsumerAtIndex(1)
 	tc2 := failoverConnector.failover.TestGetConsumerAtIndex(2)
 
-	require.Implements(t, (*internal.SignalConsumer)(nil), tc)
-	require.Implements(t, (*internal.SignalConsumer)(nil), tc1)
-	require.Implements(t, (*internal.SignalConsumer)(nil), tc2)
+	require.Equal(t, tc, &sinkFirst)
+	require.Equal(t, tc1, &sinkSecond)
+	require.Equal(t, tc2, &sinkThird)
 }
 
 func TestTracesWithValidFailover(t *testing.T) {
@@ -85,7 +84,7 @@ func TestTracesWithValidFailover(t *testing.T) {
 	require.NoError(t, err)
 
 	failoverConnector := conn.(*tracesFailover)
-	failoverConnector.failover.ModifyConsumerAtIndex(0, testWrapTraces, consumertest.NewErr(errTracesConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
 	defer func() {
 		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
 	}()
@@ -121,9 +120,9 @@ func TestTracesWithFailoverError(t *testing.T) {
 	require.NoError(t, err)
 
 	failoverConnector := conn.(*tracesFailover)
-	failoverConnector.failover.ModifyConsumerAtIndex(0, testWrapTraces, consumertest.NewErr(errTracesConsumer))
-	failoverConnector.failover.ModifyConsumerAtIndex(1, testWrapTraces, consumertest.NewErr(errTracesConsumer))
-	failoverConnector.failover.ModifyConsumerAtIndex(2, testWrapTraces, consumertest.NewErr(errTracesConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(2, consumertest.NewErr(errTracesConsumer))
 	defer func() {
 		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
 	}()
@@ -146,8 +145,4 @@ func sampleTrace() ptrace.Traces {
 	span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("SampleSpan")
 	return tr
-}
-
-func testWrapTraces(c consumer.Traces) internal.SignalConsumer {
-	return internal.NewTracesWrapper(c)
 }

@@ -4,12 +4,10 @@
 package failoverconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector"
 
 import (
-	"context"
 	"errors"
 
 	"go.opentelemetry.io/collector/pipeline"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/state"
 )
 
@@ -20,52 +18,21 @@ var (
 
 type consumerProvider[C any] func(...pipeline.ID) (C, error)
 
-type wrapConsumer[C any] func(consumer C) internal.SignalConsumer
-
-type failoverRouter[C any] struct {
+// baseFailoverRouter provides the common infrastructure for failover routing
+type baseFailoverRouter[C any] struct {
 	consumerProvider consumerProvider[C]
 	cfg              *Config
 	pS               *state.PipelineSelector
-	consumers        []internal.SignalConsumer
+	consumers        []C
 
 	errTryLock  *state.TryLock
 	notifyRetry chan struct{}
 	done        chan struct{}
 }
 
-// Consume is the generic consumption method for all signals
-func (f *failoverRouter[C]) Consume(ctx context.Context, pd any) error {
-	select {
-	case <-f.notifyRetry:
-		if !f.sampleRetryConsumers(ctx, pd) {
-			return f.consumeByHealthyPipeline(ctx, pd)
-		}
-		return nil
-	default:
-		return f.consumeByHealthyPipeline(ctx, pd)
-	}
-}
-
-// consumeByHealthyPipeline will consume the pdata by the current healthy level
-func (f *failoverRouter[C]) consumeByHealthyPipeline(ctx context.Context, pd any) error {
-	for {
-		tc, idx := f.getCurrentConsumer()
-		if idx >= len(f.cfg.PipelinePriority) {
-			return errNoValidPipeline
-		}
-
-		if err := tc.Consume(ctx, pd); err != nil {
-			f.reportConsumerError(idx)
-			continue
-		}
-
-		return nil
-	}
-}
-
 // getCurrentConsumer returns the consumer for the current healthy level
-func (f *failoverRouter[C]) getCurrentConsumer() (internal.SignalConsumer, int) {
-	var nilConsumer internal.SignalConsumer
+func (f *baseFailoverRouter[C]) getCurrentConsumer() (C, int) {
+	var nilConsumer C
 	pl := f.pS.CurrentPipeline()
 	if pl >= len(f.cfg.PipelinePriority) {
 		return nilConsumer, pl
@@ -74,50 +41,20 @@ func (f *failoverRouter[C]) getCurrentConsumer() (internal.SignalConsumer, int) 
 }
 
 // getConsumerAtIndex returns the consumer at a specific index
-func (f *failoverRouter[C]) getConsumerAtIndex(idx int) internal.SignalConsumer {
+func (f *baseFailoverRouter[C]) getConsumerAtIndex(idx int) C {
 	return f.consumers[idx]
 }
 
-// sampleRetryConsumers iterates through all unhealthy consumers to re-establish a healthy connection
-func (f *failoverRouter[C]) sampleRetryConsumers(ctx context.Context, pd any) bool {
-	stableIndex := f.pS.CurrentPipeline()
-	for i := 0; i < stableIndex; i++ {
-		consumer := f.getConsumerAtIndex(i)
-		err := consumer.Consume(ctx, pd)
-		if err == nil {
-			f.pS.ResetHealthyPipeline(i)
-			return true
-		}
-	}
-	return false
-}
-
 // reportConsumerError ensures only one consumer is reporting an error at a time to avoid multiple failovers
-func (f *failoverRouter[C]) reportConsumerError(idx int) {
+func (f *baseFailoverRouter[C]) reportConsumerError(idx int) {
 	f.errTryLock.TryExecute(f.pS.HandleError, idx)
 }
 
-func (f *failoverRouter[C]) Shutdown() {
+func (f *baseFailoverRouter[C]) Shutdown() {
 	close(f.done)
 }
 
-// registersConsumers registers all consumers and converts all to internal.SignalConsumer
-func (f *failoverRouter[C]) registerConsumers(wrap wrapConsumer[C]) error {
-	consumers := make([]internal.SignalConsumer, 0)
-	for _, pipelines := range f.cfg.PipelinePriority {
-		baseConsumer, err := f.consumerProvider(pipelines...)
-		if err != nil {
-			return errConsumer
-		}
-		newConsumer := wrap(baseConsumer)
-
-		consumers = append(consumers, newConsumer)
-	}
-	f.consumers = consumers
-	return nil
-}
-
-func newFailoverRouter[C any](provider consumerProvider[C], cfg *Config) *failoverRouter[C] {
+func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config) (*baseFailoverRouter[C], error) {
 	done := make(chan struct{})
 	notifyRetry := make(chan struct{}, 1)
 	pSConstants := state.PSConstants{
@@ -126,30 +63,40 @@ func newFailoverRouter[C any](provider consumerProvider[C], cfg *Config) *failov
 		MaxRetries:    cfg.MaxRetries,
 	}
 
+	consumers := make([]C, 0)
+	for _, pipelines := range cfg.PipelinePriority {
+		baseConsumer, err := provider(pipelines...)
+		if err != nil {
+			return nil, errConsumer
+		}
+		consumers = append(consumers, baseConsumer)
+	}
+
 	selector := state.NewPipelineSelector(notifyRetry, done, pSConstants)
-	return &failoverRouter[C]{
+	return &baseFailoverRouter[C]{
 		consumerProvider: provider,
+		consumers:        consumers,
 		cfg:              cfg,
 		pS:               selector,
 		errTryLock:       state.NewTryLock(),
 		done:             done,
 		notifyRetry:      notifyRetry,
-	}
+	}, nil
 }
 
 // For Testing
-func (f *failoverRouter[C]) ModifyConsumerAtIndex(idx int, consumerWrapper wrapConsumer[C], c C) {
-	f.consumers[idx] = consumerWrapper(c)
+func (f *baseFailoverRouter[C]) ModifyConsumerAtIndex(idx int, c C) {
+	f.consumers[idx] = c
 }
 
-func (f *failoverRouter[C]) TestGetCurrentConsumerIndex() int {
+func (f *baseFailoverRouter[C]) TestGetCurrentConsumerIndex() int {
 	return f.pS.CurrentPipeline()
 }
 
-func (f *failoverRouter[C]) TestSetStableConsumerIndex(idx int) {
+func (f *baseFailoverRouter[C]) TestSetStableConsumerIndex(idx int) {
 	f.pS.TestSetCurrentPipeline(idx)
 }
 
-func (f *failoverRouter[C]) TestGetConsumerAtIndex(idx int) internal.SignalConsumer {
+func (f *baseFailoverRouter[C]) TestGetConsumerAtIndex(idx int) C {
 	return f.consumers[idx]
 }
