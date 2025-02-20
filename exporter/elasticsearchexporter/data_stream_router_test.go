@@ -21,7 +21,6 @@ type routeTestCase struct {
 }
 
 func createRouteTests(dsType string) []routeTestCase {
-
 	renderWantRoute := func(dsType, dsDataset string, mode MappingMode) elasticsearch.Index {
 		if mode == MappingOTel {
 			dsDataset += ".otel"
