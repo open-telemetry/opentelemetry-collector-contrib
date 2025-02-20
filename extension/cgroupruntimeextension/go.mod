@@ -6,12 +6,12 @@ require (
 	github.com/KimMachineGun/automemlimit v0.7.0
 	github.com/rdforte/gomaxecs v1.1.1
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.120.0
-	go.opentelemetry.io/collector/component/componenttest v0.120.0
-	go.opentelemetry.io/collector/confmap v1.26.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.120.0
-	go.opentelemetry.io/collector/extension v0.120.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.120.0
+	go.opentelemetry.io/collector/component v0.120.1-0.20250219144032-c2af75d88e89
+	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250219144032-c2af75d88e89
+	go.opentelemetry.io/collector/confmap v1.26.1-0.20250219144032-c2af75d88e89
+	go.opentelemetry.io/collector/confmap/xconfmap v0.120.1-0.20250219144032-c2af75d88e89
+	go.opentelemetry.io/collector/extension v0.120.1-0.20250219144032-c2af75d88e89
+	go.opentelemetry.io/collector/extension/extensiontest v0.120.1-0.20250219144032-c2af75d88e89
 	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -32,7 +32,7 @@ require (
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.26.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.26.1-0.20250219144032-c2af75d88e89 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect

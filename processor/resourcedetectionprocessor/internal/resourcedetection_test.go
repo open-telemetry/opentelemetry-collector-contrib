@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -144,6 +145,26 @@ func TestDetectResource_Error(t *testing.T) {
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
 	_, _, err := p.Get(context.Background(), http.DefaultClient)
 	require.NoError(t, err)
+}
+
+func TestDetectResource_Error_PropagationEnabled(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set(allowErrorPropagationFeatureGate.ID(), true)
+	assert.NoError(t, err)
+	defer func() {
+		_ = featuregate.GlobalRegistry().Set(allowErrorPropagationFeatureGate.ID(), false)
+	}()
+
+	md1 := &MockDetector{}
+	res := pcommon.NewResource()
+	require.NoError(t, res.Attributes().FromRaw(map[string]any{"a": "1", "b": "2"}))
+	md1.On("Detect").Return(res, nil)
+
+	md2 := &MockDetector{}
+	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err1"))
+
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
+	_, _, err = p.Get(context.Background(), http.DefaultClient)
+	require.Error(t, err)
 }
 
 func TestMergeResource(t *testing.T) {

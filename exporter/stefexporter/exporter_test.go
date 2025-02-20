@@ -355,7 +355,7 @@ func TestCancelBlockedExport(t *testing.T) {
 		TLSSetting: configtls.ClientConfig{Insecure: true},
 	}
 
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettingsWithType(exportertest.NopType)
 	set.TelemetrySettings.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
@@ -409,7 +409,7 @@ func TestCancelAfterExport(t *testing.T) {
 		TLSSetting: configtls.ClientConfig{Insecure: true},
 	}
 
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettingsWithType(exportertest.NopType)
 	set.TelemetrySettings.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
