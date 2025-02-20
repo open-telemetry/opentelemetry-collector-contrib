@@ -51,10 +51,9 @@ func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, val
 	dynamicTemplates := make(map[string]string, len(dataPoints))
 	var docCount uint64
 	metricNamesSet := make(map[string]bool, len(dataPoints))
-	metricNames := make([]string, len(dataPoints))
-	for i, dp := range dataPoints {
+	metricNames := make([]string, 0, len(dataPoints))
+	for _, dp := range dataPoints {
 		metric := dp.Metric()
-		metricNames[i] = metric.Name()
 		if _, present := metricNamesSet[metric.Name()]; present {
 			*validationErrors = append(
 				*validationErrors,
@@ -67,6 +66,7 @@ func serializeDataPoints(v *json.Visitor, dataPoints []datapoints.DataPoint, val
 			continue
 		}
 		metricNamesSet[metric.Name()] = true
+		metricNames = append(metricNames, metric.Name())
 		// TODO here's potential for more optimization by directly serializing the value instead of allocating a pcommon.Value
 		//  the tradeoff is that this would imply a duplicated logic for the ECS mode
 		value, err := dp.Value()
