@@ -44,7 +44,6 @@ func TestDetect(t *testing.T) {
 		detectedResources []map[string]any
 		expectedResource  map[string]any
 		attributes        []string
-		async             bool
 	}{
 		{
 			name: "Detect three resources",
@@ -55,7 +54,6 @@ func TestDetect(t *testing.T) {
 			},
 			expectedResource: map[string]any{"a": "1", "b": "2", "c": "3"},
 			attributes:       nil,
-			async:            false,
 		}, {
 			name: "Detect empty resources",
 			detectedResources: []map[string]any{
@@ -65,7 +63,6 @@ func TestDetect(t *testing.T) {
 			},
 			expectedResource: map[string]any{"a": "1", "b": "2"},
 			attributes:       nil,
-			async:            false,
 		}, {
 			name: "Detect non-string resources",
 			detectedResources: []map[string]any{
@@ -75,7 +72,6 @@ func TestDetect(t *testing.T) {
 			},
 			expectedResource: map[string]any{"a": "11", "bool": true, "int": int64(2), "double": 0.5},
 			attributes:       nil,
-			async:            false,
 		}, {
 			name: "Filter to one attribute",
 			detectedResources: []map[string]any{
@@ -85,17 +81,6 @@ func TestDetect(t *testing.T) {
 			},
 			expectedResource: map[string]any{"a": "1"},
 			attributes:       []string{"a"},
-			async:            false,
-		}, {
-			name: "Detect resources with async",
-			detectedResources: []map[string]any{
-				{"a": "1", "b": "2"},
-				{"c": "3"},
-				{"d": "3"},
-			},
-			expectedResource: map[string]any{"a": "1", "b": "2", "c": "3", "d": "3"},
-			attributes:       nil,
-			async:            true,
 		},
 	}
 

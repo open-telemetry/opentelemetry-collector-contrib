@@ -91,7 +91,6 @@ type ResourceProvider struct {
 	detectedResource *resourceResult
 	once             sync.Once
 	attributesToKeep map[string]struct{}
-	asyncDetection   bool
 }
 
 type resourceResult struct {
