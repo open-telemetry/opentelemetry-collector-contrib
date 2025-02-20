@@ -449,9 +449,7 @@ func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
 			current: counters,
 			pages:   pages,
 		}
-		metricsValuesClientMock := &metricsValuesClientMock{
-			lists: getMetricsValuesMockData(),
-		}
+		metricsValuesClientMock := &metricsValuesClientMock{}
 
 		return &azureScraper{
 			cfg:                      createDefaultConfig().(*Config),
