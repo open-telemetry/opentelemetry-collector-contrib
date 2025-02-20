@@ -15,18 +15,21 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/metadata"
 )
 
 // NewFactory by Coralogix
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTraceExporter, metadata.TracesStability),
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		xexporter.WithTraces(createTraceExporter, metadata.TracesStability),
+		xexporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		xexporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
 	)
 }
 
@@ -122,6 +125,30 @@ func createLogsExporter(
 		set,
 		cfg,
 		oce.pushLogs,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithRetry(oCfg.BackOffConfig),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithShutdown(oce.shutdown),
+	)
+}
+
+func createProfilesExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (xexporter.Profiles, error) {
+	oce, err := newProfilesExporter(cfg, set)
+	if err != nil {
+		return nil, err
+	}
+	oCfg := cfg.(*Config)
+	return xexporterhelper.NewProfilesExporter(
+		ctx,
+		set,
+		cfg,
+		oce.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.BackOffConfig),
