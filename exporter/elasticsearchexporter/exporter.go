@@ -285,13 +285,15 @@ func (e *elasticsearchExporter) pushMetricsData(
 						groupedDataPoints = make(map[uint32]*dataPointsGroup)
 						groupedDataPointsByIndex[index] = groupedDataPoints
 					}
-					dpHash := hasher.hashDataPoint(dp)
+					dpHash := hasher.hashDataPoint(resource, scope, dp)
 					dpGroup, ok := groupedDataPoints[dpHash]
 					if !ok {
 						groupedDataPoints[dpHash] = &dataPointsGroup{
-							resource:   resource,
-							scope:      scope,
-							dataPoints: []datapoints.DataPoint{dp},
+							resource:          resource,
+							resourceSchemaURL: resourceMetric.SchemaUrl(),
+							scope:             scope,
+							scopeSchemaURL:    scopeMetrics.SchemaUrl(),
+							dataPoints:        []datapoints.DataPoint{dp},
 						}
 					} else {
 						dpGroup.addDataPoint(dp)

@@ -264,3 +264,16 @@ func TestMoveSpansWithContextIf(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkMoveResourcesIfTraces(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		from := ptraceutiltest.NewTraces("AB", "CD", "EF", "GH")
+		to := ptrace.NewTraces()
+		ptraceutil.MoveResourcesIf(from, to, func(ptrace.ResourceSpans) bool {
+			return true
+		})
+		assert.Equal(b, 0, from.SpanCount())
+		assert.Equal(b, 8, to.SpanCount())
+	}
+}
