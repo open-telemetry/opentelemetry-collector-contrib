@@ -4,27 +4,27 @@
 package prometheusremotewritereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver"
 
 import (
-	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
-	"net/http/httptest"
-	"testing"
+	"strings"
+	"time"
 
+	"github.com/cespare/xxhash/v2"
 	"github.com/gogo/protobuf/proto"
-	"github.com/golang/snappy"
 	promconfig "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
-	"github.com/prometheus/prometheus/storage/remote"
-	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/consumertest"
+	promremote "github.com/prometheus/prometheus/storage/remote"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-	"github.com/prometheus/prometheus/model/labels"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap/zapcore"
 )
 
 var writeV2RequestFixture = &writev2.Request{
@@ -54,7 +54,7 @@ func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, prwReceiver, "metrics receiver creation failed")
 
