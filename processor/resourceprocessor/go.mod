@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/component v0.120.1-0.20250218214003-dae5d199ffc6
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250218214003-dae5d199ffc6
 	go.opentelemetry.io/collector/confmap v1.26.1-0.20250218214003-dae5d199ffc6
+	go.opentelemetry.io/collector/confmap/xconfmap v0.120.0
 	go.opentelemetry.io/collector/consumer v1.26.1-0.20250218214003-dae5d199ffc6
 	go.opentelemetry.io/collector/consumer/consumertest v0.120.1-0.20250218214003-dae5d199ffc6
 	go.opentelemetry.io/collector/consumer/xconsumer v0.120.1-0.20250218214003-dae5d199ffc6
@@ -43,11 +44,8 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.26.1-0.20250218214003-dae5d199ffc6 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.120.1-0.20250218214003-dae5d199ffc6 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.120.1-0.20250218214003-dae5d199ffc6 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.120.1-0.20250218214003-dae5d199ffc6 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.120.1-0.20250218214003-dae5d199ffc6 // indirect
 	go.opentelemetry.io/collector/pipeline v0.120.1-0.20250218214003-dae5d199ffc6 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.120.1-0.20250218214003-dae5d199ffc6 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
