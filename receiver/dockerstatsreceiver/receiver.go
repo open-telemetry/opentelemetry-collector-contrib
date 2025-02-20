@@ -83,7 +83,6 @@ func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 	if err = r.client.LoadContainerList(ctx); err != nil {
 		return err
 	}
-
 	cctx, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
 
