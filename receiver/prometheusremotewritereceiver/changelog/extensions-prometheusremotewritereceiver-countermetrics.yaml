@@ -1,3 +1,0 @@
-change_type: enhancement
-component: receiver/prometheusremotewritereceiver
-note: Add proper counter metric handling with monotonic and cumulative settings
