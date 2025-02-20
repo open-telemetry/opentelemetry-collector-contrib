@@ -264,11 +264,7 @@ func (v *value) accept(vis grammarVisitor) {
 	}
 	if v.List != nil {
 		if v.List.Comprehension != nil {
-			v.List.Comprehension.List.accept(vis)
-			if v.List.Comprehension.Cond != nil {
-				v.List.Comprehension.Cond.accept(vis)
-			}
-			v.List.Comprehension.Yield.accept(vis)
+			vis.visitListComprehension(v.List.Comprehension)
 		}
 		if v.List.List != nil {
 			for _, i := range v.List.List.Values {
@@ -576,6 +572,7 @@ type grammarVisitor interface {
 	visitConverter(v *converter)
 	visitValue(v *value)
 	visitMathExprLiteral(v *mathExprLiteral)
+	visitListComprehension(v *listComprehension)
 }
 
 // grammarCustomErrorsVisitor is used to execute custom validations on the grammar AST.
@@ -604,6 +601,14 @@ func (g *grammarCustomErrorsVisitor) visitEditor(v *editor) {
 	if v.Keys != nil {
 		g.add(fmt.Errorf("only paths and converters may be indexed, not editors, but got %s%s", v.Function, buildOriginalKeysText(v.Keys)))
 	}
+}
+
+func (g *grammarCustomErrorsVisitor) visitListComprehension(v *listComprehension) {
+	if v.Cond != nil {
+		v.Cond.accept(g)
+	}
+	v.List.accept(g)
+	v.Yield.accept(g)
 }
 
 func (g *grammarCustomErrorsVisitor) visitMathExprLiteral(v *mathExprLiteral) {

@@ -110,7 +110,101 @@ func newListComprehensionGetter[K any](p *Parser[K], c *listComprehension) (Gett
 func (p *Parser[K]) buildComprehensionSliceArg(c *listComprehension, _ reflect.Type) (any, error) {
 	getter, err := newListComprehensionGetter(p, c)
 	// TODO - deal with argType reflection.
+	if err != nil {
+		panic(err)
+	}
 	return getter, err
+}
+
+type wrappedGetter[K any] struct {
+	g Getter[comprehensionContext[any]]
+}
+
+// Get implements Getter.
+func (w *wrappedGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
+	// HACK - we know this cannot be called from the comprehensions context, so it HAS
+	// to be an underlying one.  We cannot force-cast because go reflection/generic will kill us.
+	// We can only construct a broken context that we know won't be abused because
+	// the getter had to be wrapped by the nested parser.
+	return w.g.Get(ctx, comprehensionContext[any]{underlying: tCtx})
+}
+
+type wrappedKey[K any] struct {
+	k Key[comprehensionContext[any]]
+}
+
+// ExpressionGetter implements Key.
+func (w *wrappedKey[K]) ExpressionGetter(ctx context.Context, kCtx K) (Getter[K], error) {
+	// HACK - we know this cannot be called from the comprehensions context, so it HAS
+	// to be an underlying one.  We cannot force-cast because go reflection/generic will kill us.
+	// We can only construct a broken context that we know won't be abused because
+	// the getter had to be wrapped by the nested parser.
+	hackCtx := comprehensionContext[any]{
+		underlying: kCtx,
+	}
+	underlying, err := w.k.ExpressionGetter(ctx, hackCtx)
+	if err != nil {
+		return nil, err
+	}
+	return &wrappedGetter[K]{underlying}, err
+}
+
+// Int implements Key.
+func (w *wrappedKey[K]) Int(ctx context.Context, kCtx K) (*int64, error) {
+	// HACK - we know this cannot be called from the comprehensions context, so it HAS
+	// to be an underlying one.  We cannot force-cast because go reflection/generic will kill us.
+	// We can only construct a broken context that we know won't be abused because
+	// the getter had to be wrapped by the nested parser.
+	hackCtx := comprehensionContext[any]{
+		underlying: kCtx,
+	}
+	return w.k.Int(ctx, hackCtx)
+}
+
+// String implements Key.
+func (w *wrappedKey[K]) String(ctx context.Context, kCtx K) (*string, error) {
+	// HACK - we know this cannot be called from the comprehensions context, so it HAS
+	// to be an underlying one.  We cannot force-cast because go reflection/generic will kill us.
+	// We can only construct a broken context that we know won't be abused because
+	// the getter had to be wrapped by the nested parser.
+	hackCtx := comprehensionContext[any]{
+		underlying: kCtx,
+	}
+	return w.k.String(ctx, hackCtx)
+}
+
+type wrapedPath[K any] struct {
+	p Path[comprehensionContext[any]]
+}
+
+// Context implements Path.
+func (w *wrapedPath[K]) Context() string {
+	return w.p.Context()
+}
+
+// Keys implements Path.
+func (w *wrapedPath[K]) Keys() []Key[K] {
+	keys := w.p.Keys()
+	result := make([]Key[K], len(keys))
+	for i, key := range keys {
+		result[i] = &wrappedKey[K]{key}
+	}
+	return result
+}
+
+// Name implements Path.
+func (w *wrapedPath[K]) Name() string {
+	return w.p.Name()
+}
+
+// Next implements Path.
+func (w *wrapedPath[K]) Next() Path[K] {
+	return &wrapedPath[K]{w.p.Next()}
+}
+
+// String implements Path.
+func (w *wrapedPath[K]) String() string {
+	return w.p.String()
 }
 
 // Hackily construct a new parser that uses our loop-comprehension context instead of the original.
@@ -147,8 +241,8 @@ func newComprehensionParser[K any](p *Parser[K], ident string) (Parser[comprehen
 				},
 			}, nil
 		}
-		var forcedPath any = path
-		res, err := p.pathParser(forcedPath.(Path[K]))
+		var forcedPath Path[K] = &wrapedPath[K]{path}
+		res, err := p.pathParser(forcedPath)
 		if err != nil {
 			return nil, err
 		}
