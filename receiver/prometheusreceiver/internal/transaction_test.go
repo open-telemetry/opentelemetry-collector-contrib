@@ -599,7 +599,7 @@ func testAppendExemplarWithEmptyLabelArray(t *testing.T, enableNativeHistograms 
 
 func TestAppendCTZeroSampleNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettingsWithType(receivertest.NopType), nopObsRecv(t), false, false)
 
 	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(), 0, 100)
 	assert.ErrorContains(t, err, "job or instance cannot be found from labels")
@@ -607,7 +607,7 @@ func TestAppendCTZeroSampleNoLabels(t *testing.T) {
 
 func TestAppendHistogramCTZeroSampleNoLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettingsWithType(receivertest.NopType), nopObsRecv(t), false, false)
 
 	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(), 0, 100, nil, nil)
 	assert.ErrorContains(t, err, "job or instance cannot be found from labels")
@@ -615,7 +615,7 @@ func TestAppendHistogramCTZeroSampleNoLabels(t *testing.T) {
 
 func TestAppendCTZeroSampleDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettingsWithType(receivertest.NopType), nopObsRecv(t), false, false)
 
 	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -629,7 +629,7 @@ func TestAppendCTZeroSampleDuplicateLabels(t *testing.T) {
 
 func TestAppendHistogramCTZeroSampleDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettingsWithType(receivertest.NopType), nopObsRecv(t), false, false)
 
 	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -643,7 +643,7 @@ func TestAppendHistogramCTZeroSampleDuplicateLabels(t *testing.T) {
 
 func TestAppendCTZeroSampleEmptyMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettingsWithType(receivertest.NopType), nopObsRecv(t), false, false)
 
 	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -655,7 +655,7 @@ func TestAppendCTZeroSampleEmptyMetricName(t *testing.T) {
 
 func TestAppendHistogramCTZeroSampleEmptyMetricName(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettingsWithType(receivertest.NopType), nopObsRecv(t), false, false)
 
 	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -667,7 +667,7 @@ func TestAppendHistogramCTZeroSampleEmptyMetricName(t *testing.T) {
 
 func TestAppendCTZeroSample(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &nopAdjuster{}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+	tr := newTransaction(scrapeCtx, &nopAdjuster{}, sink, labels.EmptyLabels(), receivertest.NewNopSettingsWithType(receivertest.NopType), nopObsRecv(t), false, false)
 
 	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -699,7 +699,7 @@ func TestAppendCTZeroSample(t *testing.T) {
 
 func TestAppendHistogramCTZeroSample(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &nopAdjuster{}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, true)
+	tr := newTransaction(scrapeCtx, &nopAdjuster{}, sink, labels.EmptyLabels(), receivertest.NewNopSettingsWithType(receivertest.NopType), nopObsRecv(t), false, true)
 
 	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
