@@ -10,13 +10,13 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.120.1-0.20250218214003-dae5d199ffc6
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250218214003-dae5d199ffc6
-	go.opentelemetry.io/collector/confmap v1.26.1-0.20250218214003-dae5d199ffc6
+	go.opentelemetry.io/collector/confmap v1.26.1-0.20250219144032-c2af75d88e89
 	go.opentelemetry.io/collector/confmap/xconfmap v0.120.1-0.20250218214003-dae5d199ffc6
 	go.opentelemetry.io/collector/connector v0.120.1-0.20250218214003-dae5d199ffc6
 	go.opentelemetry.io/collector/connector/connectortest v0.120.1-0.20250218214003-dae5d199ffc6
-	go.opentelemetry.io/collector/consumer v1.26.1-0.20250218214003-dae5d199ffc6
+	go.opentelemetry.io/collector/consumer v1.26.1-0.20250219144032-c2af75d88e89
 	go.opentelemetry.io/collector/consumer/consumertest v0.120.1-0.20250218214003-dae5d199ffc6
-	go.opentelemetry.io/collector/pdata v1.26.1-0.20250218214003-dae5d199ffc6
+	go.opentelemetry.io/collector/pdata v1.26.1-0.20250219144032-c2af75d88e89
 	go.opentelemetry.io/collector/pipeline v0.120.1-0.20250218214003-dae5d199ffc6
 	go.opentelemetry.io/collector/semconv v0.120.1-0.20250218214003-dae5d199ffc6
 	go.uber.org/goleak v1.3.0
