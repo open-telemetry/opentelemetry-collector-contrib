@@ -44,6 +44,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		RefreshFrequency:     1,
 		ClientID:             defaultClientID,
 		Scrapers:             []string{"brokers", "topics", "consumers"},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),

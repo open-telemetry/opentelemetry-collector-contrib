@@ -51,11 +51,14 @@ var (
 )
 
 func mustMakeFactories(factories ...scraper.Factory) map[component.Type]scraper.Factory {
-	factoriesMap, err := scraper.MakeFactoryMap(factories...)
-	if err != nil {
-		panic(err)
+	fMap := map[component.Type]scraper.Factory{}
+	for _, f := range factories {
+		if _, ok := fMap[f.Type()]; ok {
+			panic(fmt.Errorf("duplicate scraper factory %q", f.Type()))
+		}
+		fMap[f.Type()] = f
 	}
-	return factoriesMap
+	return fMap
 }
 
 // NewFactory creates a new factory for host metrics receiver.

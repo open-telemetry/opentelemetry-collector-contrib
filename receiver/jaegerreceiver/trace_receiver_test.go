@@ -17,9 +17,9 @@ import (
 	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/jaegertracing/jaeger/model"
-	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
-	jaegerthrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
+	"github.com/jaegertracing/jaeger-idl/proto-gen/api_v2"
+	jaegerthrift "github.com/jaegertracing/jaeger-idl/thrift-gen/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -39,12 +39,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/metadata"
 )
 
 var jaegerReceiver = component.MustNewIDWithName("jaeger", "receiver_test")
 
 func TestTraceSource(t *testing.T) {
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettingsWithType(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerReceiver, Protocols{}, nil, set)
 	require.NoError(t, err)
 	require.NotNil(t, jr)
@@ -84,7 +85,7 @@ func TestReception(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettingsWithType(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	require.NoError(t, err)
 
@@ -114,7 +115,7 @@ func TestPortsNotOpen(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettingsWithType(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	require.NoError(t, err)
 
@@ -149,7 +150,7 @@ func TestGRPCReception(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettingsWithType(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	require.NoError(t, err)
 
@@ -207,7 +208,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettingsWithType(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	require.NoError(t, err)
 
@@ -343,7 +344,7 @@ func TestSampling(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettingsWithType(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerReceiver, config, sink, set)
 	require.NoError(t, err)
 

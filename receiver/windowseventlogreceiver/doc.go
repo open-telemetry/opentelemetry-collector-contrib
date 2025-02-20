@@ -4,5 +4,5 @@
 //go:generate mdatagen metadata.yaml
 
 // Package stanzareceiver implements a receiver that can be used by the
-// Opentelemetry collector to receive logs using the stanza log agent
+// OpenTelemetry collector to receive logs using the stanza log agent
 package windowseventlogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"

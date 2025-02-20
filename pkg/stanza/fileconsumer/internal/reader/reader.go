@@ -13,8 +13,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -30,8 +31,8 @@ type Metadata struct {
 	RecordNum       int64
 	FileAttributes  map[string]any
 	HeaderFinalized bool
-	FlushState      *flush.State
-	TokenLenState   *tokenlen.State
+	FlushState      flush.State
+	TokenLenState   tokenlen.State
 }
 
 // Reader manages a single file
@@ -46,7 +47,7 @@ type Reader struct {
 	maxLogSize             int
 	headerSplitFunc        bufio.SplitFunc
 	contentSplitFunc       bufio.SplitFunc
-	decoder                *decode.Decoder
+	decoder                *encoding.Decoder
 	headerReader           *header.Reader
 	emitFunc               emit.Callback
 	deleteAtEOF            bool
@@ -142,7 +143,7 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 			return true
 		}
 
-		token, err := r.decoder.Decode(s.Bytes())
+		token, err := textutils.DecodeAsString(r.decoder, s.Bytes())
 		if err != nil {
 			r.set.Logger.Error("failed to decode header token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
@@ -167,7 +168,6 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 	}
 	r.headerReader = nil
 	r.HeaderFinalized = true
-	r.initialBufferSize = scanner.DefaultBufferSize
 
 	// Reset position in file to r.Offest after the header scanner might have moved it past a content token.
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
@@ -190,12 +190,6 @@ func (r *Reader) readContents(ctx context.Context) {
 	s := scanner.New(r, r.maxLogSize, bufferSize, r.Offset, r.contentSplitFunc)
 
 	tokens := make([]emit.Token, 0, r.maxBatchSize)
-
-	// Pre-allocate space in memory for r.maxBatchSize token buffers, to avoid allocations inside the loop.
-	tokenBodies := make([][]byte, r.maxBatchSize)
-	for i := range tokenBodies {
-		tokenBodies[i] = make([]byte, 1<<12)
-	}
 
 	// Pre-allocate space in memory for r.maxBatchSize attribute maps, to avoid allocations inside the loop.
 	tokenAttributes := make([]map[string]any, r.maxBatchSize)
@@ -229,8 +223,7 @@ func (r *Reader) readContents(ctx context.Context) {
 			return
 		}
 
-		var err error
-		tokenBodies[len(tokens)], err = r.decoder.DecodeTo(tokenBodies[len(tokens)], s.Bytes())
+		token, err := r.decoder.Bytes(s.Bytes())
 		if err != nil {
 			r.set.Logger.Error("failed to decode token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
@@ -242,7 +235,7 @@ func (r *Reader) readContents(ctx context.Context) {
 			tokenAttributes[len(tokens)][attrs.LogFileRecordNumber] = r.RecordNum
 		}
 
-		tokens = append(tokens, emit.NewToken(tokenBodies[len(tokens)], tokenAttributes[len(tokens)]))
+		tokens = append(tokens, emit.NewToken(token, tokenAttributes[len(tokens)]))
 
 		if r.maxBatchSize > 0 && len(tokens) >= r.maxBatchSize {
 			err := r.emitFunc(ctx, tokens)

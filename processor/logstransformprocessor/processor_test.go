@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logstransformprocessor/internal/metadata"
 )
 
 var cfg = &Config{
@@ -142,7 +143,7 @@ func TestLogsTransformProcessor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tln := new(consumertest.LogsSink)
 			factory := NewFactory()
-			ltp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), tt.config, tln)
+			ltp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), tt.config, tln)
 			require.NoError(t, err)
 			assert.True(t, ltp.Capabilities().MutatesData)
 
@@ -260,7 +261,7 @@ func TestProcessorShutdownWithSlowOperator(t *testing.T) {
 
 	tln := new(consumertest.LogsSink)
 	factory := NewFactory()
-	ltp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), config, tln)
+	ltp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), config, tln)
 	require.NoError(t, err)
 	assert.True(t, ltp.Capabilities().MutatesData)
 

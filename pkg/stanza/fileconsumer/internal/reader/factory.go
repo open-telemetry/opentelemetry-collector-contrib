@@ -14,7 +14,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -61,20 +60,15 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 	m := &Metadata{
 		Fingerprint:    fp,
 		FileAttributes: attributes,
-		TokenLenState:  &tokenlen.State{},
-	}
-	if f.FlushTimeout > 0 {
-		m.FlushState = &flush.State{LastDataChange: time.Now()}
+		TokenLenState:  tokenlen.State{},
+		FlushState: flush.State{
+			LastDataChange: time.Now(),
+		},
 	}
 	return f.NewReaderFromMetadata(file, m)
 }
 
 func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
-	// Ensure TokenLenState is initialized
-	if m.TokenLenState == nil {
-		m.TokenLenState = &tokenlen.State{}
-	}
-
 	r = &Reader{
 		Metadata:             m,
 		set:                  f.TelemetrySettings,
@@ -83,7 +77,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		fingerprintSize:      f.FingerprintSize,
 		initialBufferSize:    f.InitialBufferSize,
 		maxLogSize:           f.MaxLogSize,
-		decoder:              decode.New(f.Encoding),
+		decoder:              f.Encoding.NewDecoder(),
 		deleteAtEOF:          f.DeleteAtEOF,
 		includeFileRecordNum: f.IncludeFileRecordNumber,
 		compression:          f.Compression,
