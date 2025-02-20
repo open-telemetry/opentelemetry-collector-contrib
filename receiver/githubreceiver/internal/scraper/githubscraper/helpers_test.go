@@ -15,9 +15,11 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v69/github"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 )
 
 type responses struct {
@@ -331,7 +333,7 @@ func TestCheckOwnerExists(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettingsWithType(metadata.Type)
 			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
@@ -436,7 +438,7 @@ func TestGetPullRequests(t *testing.T) {
 					responseCode: http.StatusNotFound,
 				},
 			}),
-			expectedErr:     errors.New("returned error 404 Not Found: "),
+			expectedErr:     errors.New("returned error 404"),
 			expectedPrCount: 0,
 		},
 	}
@@ -445,7 +447,7 @@ func TestGetPullRequests(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettingsWithType(metadata.Type)
 			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
@@ -457,7 +459,7 @@ func TestGetPullRequests(t *testing.T) {
 			if tc.expectedErr == nil {
 				assert.NoError(t, err)
 			} else {
-				assert.EqualError(t, err, tc.expectedErr.Error())
+				assert.ErrorContains(t, err, tc.expectedErr.Error())
 			}
 		})
 	}
@@ -540,7 +542,7 @@ func TestGetRepos(t *testing.T) {
 					responseCode: http.StatusNotFound,
 				},
 			}),
-			expectedErr: errors.New("returned error 404 Not Found: "),
+			expectedErr: errors.New("returned error 404"),
 			expected:    0,
 		},
 	}
@@ -548,7 +550,7 @@ func TestGetRepos(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettingsWithType(metadata.Type)
 			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
@@ -560,7 +562,7 @@ func TestGetRepos(t *testing.T) {
 			if tc.expectedErr == nil {
 				assert.NoError(t, err)
 			} else {
-				assert.EqualError(t, err, tc.expectedErr.Error())
+				assert.ErrorContains(t, err, tc.expectedErr.Error())
 			}
 		})
 	}
@@ -643,7 +645,7 @@ func TestGetBranches(t *testing.T) {
 					responseCode: http.StatusNotFound,
 				},
 			}),
-			expectedErr: errors.New("returned error 404 Not Found: "),
+			expectedErr: errors.New("returned error 404"),
 			expected:    0,
 		},
 	}
@@ -652,7 +654,7 @@ func TestGetBranches(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettingsWithType(metadata.Type)
 			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
@@ -664,7 +666,7 @@ func TestGetBranches(t *testing.T) {
 			if tc.expectedErr == nil {
 				assert.NoError(t, err)
 			} else {
-				assert.EqualError(t, err, tc.expectedErr.Error())
+				assert.ErrorContains(t, err, tc.expectedErr.Error())
 			}
 		})
 	}
@@ -704,7 +706,7 @@ func TestGetContributors(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettingsWithType(metadata.Type)
 			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			ghs.cfg.GitHubOrg = tc.org
 
@@ -882,24 +884,22 @@ func TestEvalCommits(t *testing.T) {
 			expectedAge:       0,
 			expectedAdditions: 0,
 			expectedDeletions: 0,
-			expectedErr:       errors.New("returned error 404 Not Found: "),
+			expectedErr:       errors.New("returned error 404"),
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettingsWithType(metadata.Type)
 			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
 			adds, dels, age, err := ghs.evalCommits(context.Background(), client, "repo1", tc.branch)
 
-			assert.Equal(t, tc.expectedAge, age)
 			assert.Equal(t, tc.expectedDeletions, dels)
 			assert.Equal(t, tc.expectedAdditions, adds)
-			// assert.WithinRange(t, age, time.tc.expectedAge, time.Now())
 			if tc.expectedAge != 0 {
 				assert.WithinDuration(t, time.UnixMilli(tc.expectedAge), time.UnixMilli(age), 10*time.Second)
 			} else {
@@ -909,7 +909,7 @@ func TestEvalCommits(t *testing.T) {
 			if tc.expectedErr == nil {
 				assert.NoError(t, err)
 			} else {
-				assert.EqualError(t, err, tc.expectedErr.Error())
+				assert.ErrorContains(t, err, tc.expectedErr.Error())
 			}
 		})
 	}

@@ -68,6 +68,17 @@ func createDefaultConfig() component.Config {
 				ReadTimeout:  defaultReadTimeout,
 				WriteTimeout: defaultWriteTimeout,
 			},
+			GitHubHeaders: GitHubHeaders{
+				Customizable: map[string]string{
+					defaultUserAgentHeader: "",
+				},
+				Fixed: map[string]string{
+					defaultGitHubEventHeader:        "",
+					defaultGitHubDeliveryHeader:     "",
+					defaultGitHubHookIDHeader:       "",
+					defaultGitHubSignature256Header: "",
+				},
+			},
 			Path:       defaultPath,
 			HealthPath: defaultHealthPath,
 		},

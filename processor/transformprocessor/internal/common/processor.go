@@ -200,11 +200,19 @@ func parseResourceContextStatements[R any](
 	if err != nil {
 		return *new(R), err
 	}
-	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForResource, contextStatements.Conditions, pc.ErrorMode, pc.Settings, filterottl.StandardResourceFuncs())
+	errorMode := pc.ErrorMode
+	if contextStatements.ErrorMode != "" {
+		errorMode = contextStatements.ErrorMode
+	}
+	var parserOptions []ottlresource.Option
+	if contextStatements.Context == "" {
+		parserOptions = append(parserOptions, ottlresource.EnablePathContextNames())
+	}
+	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForResourceWithOptions, contextStatements.Conditions, errorMode, pc.Settings, filterottl.StandardResourceFuncs(), parserOptions)
 	if errGlobalBoolExpr != nil {
 		return *new(R), errGlobalBoolExpr
 	}
-	rStatements := ottlresource.NewStatementSequence(parsedStatements, pc.Settings, ottlresource.WithStatementSequenceErrorMode(pc.ErrorMode))
+	rStatements := ottlresource.NewStatementSequence(parsedStatements, pc.Settings, ottlresource.WithStatementSequenceErrorMode(errorMode))
 	result := (baseContext)(resourceStatements{rStatements, globalExpr})
 	return result.(R), nil
 }
@@ -220,24 +228,33 @@ func parseScopeContextStatements[R any](
 	if err != nil {
 		return *new(R), err
 	}
-	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForScope, contextStatements.Conditions, pc.ErrorMode, pc.Settings, filterottl.StandardScopeFuncs())
+	errorMode := pc.ErrorMode
+	if contextStatements.ErrorMode != "" {
+		errorMode = contextStatements.ErrorMode
+	}
+	var parserOptions []ottlscope.Option
+	if contextStatements.Context == "" {
+		parserOptions = append(parserOptions, ottlscope.EnablePathContextNames())
+	}
+	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForScopeWithOptions, contextStatements.Conditions, errorMode, pc.Settings, filterottl.StandardScopeFuncs(), parserOptions)
 	if errGlobalBoolExpr != nil {
 		return *new(R), errGlobalBoolExpr
 	}
-	sStatements := ottlscope.NewStatementSequence(parsedStatements, pc.Settings, ottlscope.WithStatementSequenceErrorMode(pc.ErrorMode))
+	sStatements := ottlscope.NewStatementSequence(parsedStatements, pc.Settings, ottlscope.WithStatementSequenceErrorMode(errorMode))
 	result := (baseContext)(scopeStatements{sStatements, globalExpr})
 	return result.(R), nil
 }
 
-func parseGlobalExpr[K any](
-	boolExprFunc func([]string, map[string]ottl.Factory[K], ottl.ErrorMode, component.TelemetrySettings) (*ottl.ConditionSequence[K], error),
+func parseGlobalExpr[K any, O any](
+	boolExprFunc func([]string, map[string]ottl.Factory[K], ottl.ErrorMode, component.TelemetrySettings, []O) (*ottl.ConditionSequence[K], error),
 	conditions []string,
 	errorMode ottl.ErrorMode,
 	settings component.TelemetrySettings,
 	standardFuncs map[string]ottl.Factory[K],
+	parserOptions []O,
 ) (expr.BoolExpr[K], error) {
 	if len(conditions) > 0 {
-		return boolExprFunc(conditions, standardFuncs, errorMode, settings)
+		return boolExprFunc(conditions, standardFuncs, errorMode, settings, parserOptions)
 	}
 	// By default, set the global expression to always true unless conditions are specified.
 	return expr.AlwaysTrue[K](), nil
