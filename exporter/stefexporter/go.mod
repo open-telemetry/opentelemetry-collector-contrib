@@ -11,6 +11,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.120.1-0.20250219144032-c2af75d88e89
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250219144032-c2af75d88e89
+	go.opentelemetry.io/collector/config/configcompression v1.26.1-0.20250219144032-c2af75d88e89
 	go.opentelemetry.io/collector/config/configgrpc v0.120.1-0.20250219144032-c2af75d88e89
 	go.opentelemetry.io/collector/config/configretry v1.26.1-0.20250219144032-c2af75d88e89
 	go.opentelemetry.io/collector/config/configtls v1.26.1-0.20250219144032-c2af75d88e89
@@ -50,7 +51,6 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.26.1-0.20250219144032-c2af75d88e89 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.120.1-0.20250219144032-c2af75d88e89 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.26.1-0.20250219144032-c2af75d88e89 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.26.1-0.20250219144032-c2af75d88e89 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.26.1-0.20250219144032-c2af75d88e89 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.120.1-0.20250219144032-c2af75d88e89 // indirect
