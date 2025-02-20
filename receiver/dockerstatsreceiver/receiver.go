@@ -74,7 +74,6 @@ func (c *Config) resolveDockerEndpoint() string {
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
-
 	var err error
 	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger)
 	if err != nil {
