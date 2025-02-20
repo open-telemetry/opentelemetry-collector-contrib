@@ -165,10 +165,10 @@ func routeRecord(
 	dataset, datasetExists := getFromAttributes(elasticsearch.DataStreamDataset, defaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)
 	namespace, namespaceExists := getFromAttributes(elasticsearch.DataStreamNamespace, defaultDataStreamNamespace, recordAttr, scopeAttr, resourceAttr)
 
-	datastreamType := defaultDSType
+	dsType := defaultDSType
 	// if mapping mode is bodymap, allow overriding data_stream.type
 	if mode == MappingBodyMap {
-		datastreamType, _ = getFromAttributes(elasticsearch.DataStreamType, defaultDSType, recordAttr, scopeAttr, resourceAttr)
+		dsType, _ = getFromAttributes(elasticsearch.DataStreamType, defaultDSType, recordAttr, scopeAttr, resourceAttr)
 	}
 
 	dataStreamMode := datasetExists || namespaceExists
@@ -198,5 +198,5 @@ func routeRecord(
 
 	dataset = sanitizeDataStreamField(dataset, disallowedDatasetRunes, datasetSuffix)
 	namespace = sanitizeDataStreamField(namespace, disallowedNamespaceRunes, "")
-	return elasticsearch.NewDataStreamIndex(datastreamType, dataset, namespace)
+	return elasticsearch.NewDataStreamIndex(dsType, dataset, namespace)
 }

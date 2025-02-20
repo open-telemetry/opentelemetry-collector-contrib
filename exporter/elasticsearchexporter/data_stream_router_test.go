@@ -20,14 +20,15 @@ type routeTestCase struct {
 	want      elasticsearch.Index
 }
 
-var renderWantRoute = func(dsType, dsDataset string, mode MappingMode) elasticsearch.Index {
-	if mode == MappingOTel {
-		dsDataset += ".otel"
-	}
-	return elasticsearch.NewDataStreamIndex(dsType, dsDataset, defaultDataStreamNamespace)
-}
-
 func createRouteTests(dsType string) []routeTestCase {
+
+	renderWantRoute := func(dsType, dsDataset string, mode MappingMode) elasticsearch.Index {
+		if mode == MappingOTel {
+			dsDataset += ".otel"
+		}
+		return elasticsearch.NewDataStreamIndex(dsType, dsDataset, defaultDataStreamNamespace)
+	}
+
 	return []routeTestCase{
 		{
 			name: "default",
@@ -82,13 +83,22 @@ func TestRouteLogRecord(t *testing.T) {
 	}
 
 	t.Run("test data_stream.type for bodymap mode", func(t *testing.T) {
-		datastreamType := "metrics"
+		dsType := "metrics"
 		router := dynamicDocumentRouter{mode: MappingBodyMap}
 		attrs := pcommon.NewMap()
-		attrs.PutStr("data_stream.type", datastreamType)
+		attrs.PutStr("data_stream.type", dsType)
 		ds, err := router.routeLogRecord(pcommon.NewResource(), pcommon.NewInstrumentationScope(), attrs)
 		require.NoError(t, err)
-		assert.Equal(t, datastreamType, ds.Type)
+		assert.Equal(t, dsType, ds.Type)
+	})
+	t.Run("test data_stream.type is not honoured for other modes (except bodymap)", func(t *testing.T) {
+		dsType := "metrics"
+		router := dynamicDocumentRouter{mode: MappingOTel}
+		attrs := pcommon.NewMap()
+		attrs.PutStr("data_stream.type", dsType)
+		ds, err := router.routeLogRecord(pcommon.NewResource(), pcommon.NewInstrumentationScope(), attrs)
+		require.NoError(t, err)
+		assert.Equal(t, "logs", ds.Type) // should equal to logs
 	})
 }
 
