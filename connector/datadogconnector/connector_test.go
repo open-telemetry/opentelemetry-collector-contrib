@@ -24,6 +24,9 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector/internal/metadata"
+	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 
 var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
@@ -38,7 +41,7 @@ func TestNewConnector(t *testing.T) {
 
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopSettings()
+	creationParams := connectortest.NewNopSettingsWithType(metadata.Type)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	traceToMetricsConnector, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -57,7 +60,7 @@ func TestTraceToTraceConnector(t *testing.T) {
 
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopSettings()
+	creationParams := connectortest.NewNopSettingsWithType(metadata.Type)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	traceToTracesConnector, err := factory.CreateTracesToTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -122,7 +125,7 @@ func creteConnector(t *testing.T) (*traceToMetricConnector, *consumertest.Metric
 
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopSettings()
+	creationParams := connectortest.NewNopSettingsWithType(metadata.Type)
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Traces.ResourceAttributesAsContainerTags = []string{semconv.AttributeCloudAvailabilityZone, semconv.AttributeCloudRegion, "az"}
 	cfg.Traces.BucketInterval = 1 * time.Second
@@ -179,7 +182,7 @@ func TestContainerTags(t *testing.T) {
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
-	_, err = tr.MapMetrics(context.Background(), metrics[0], nil)
+	_, err = tr.MapMetrics(context.Background(), metrics[0], nil, nil)
 	require.NoError(t, err)
 	msg := <-ch
 	sp := &pb.StatsPayload{}
@@ -202,11 +205,11 @@ func TestReceiveResourceSpansV2(t *testing.T) {
 }
 
 func testReceiveResourceSpansV2(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-			t.Fatal(err)
-		}
-	}
+	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
+	}()
 	connector, metricsSink := creteConnector(t)
 	err := connector.Start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
@@ -238,7 +241,7 @@ func testReceiveResourceSpansV2(t *testing.T, enableReceiveResourceSpansV2 bool)
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
-	_, err = tr.MapMetrics(context.Background(), metrics[0], nil)
+	_, err = tr.MapMetrics(context.Background(), metrics[0], nil, nil)
 	require.NoError(t, err)
 	msg := <-ch
 	sp := &pb.StatsPayload{}
@@ -297,7 +300,7 @@ func testOperationAndResourceNameV2(t *testing.T, enableOperationAndResourceName
 
 	ch := make(chan []byte, 100)
 	tr := newTranslatorWithStatsChannel(t, zap.NewNop(), ch)
-	_, err = tr.MapMetrics(context.Background(), metrics[0], nil)
+	_, err = tr.MapMetrics(context.Background(), metrics[0], nil, nil)
 	require.NoError(t, err)
 	msg := <-ch
 	sp := &pb.StatsPayload{}

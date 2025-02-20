@@ -67,7 +67,17 @@ prometheus --config.file=prom.yaml
 ```shell
 "--feature-gates=receiver.prometheusreceiver.UseCreatedMetric"
 ```
+- `receiver.prometheusreceiver.UseCollectorStartTimeFallback`:  enables using
+  the collector start time as the metric start time if the
+  process_start_time_seconds metric yields no result (for example if targets
+  expose no process_start_time_seconds metric). This is useful when the collector
+  start time is a good approximation of the process start time - for example in
+  serverless workloads when the collector is deployed as a sidecar. To enable it,
+  use the following feature gate option:
 
+```shell
+"--feature-gates=receiver.prometheusreceiver.UseCollectorStartTimeFallback"
+```
 - `receiver.prometheusreceiver.EnableNativeHistograms`: process and turn native histogram metrics into OpenTelemetry exponential histograms. For more details consult the [Prometheus native histograms](#prometheus-native-histograms) section.
 
 ```shell
@@ -78,6 +88,12 @@ prometheus --config.file=prom.yaml
 
 ```shell
 "--feature-gates=receiver.prometheusreceiver.RemoveLegacyResourceAttributes"
+```
+
+- `receiver.prometheusreceiver.RemoveStartTimeAdjustment`: If enabled, the prometheus receiver no longer sets the start timestamp of metrics if it is not known. Use the `metricstarttime` processor instead if you need this functionality.
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.RemoveStartTimeAdjustment"
 ```
 
 - `report_extra_scrape_metrics`: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`

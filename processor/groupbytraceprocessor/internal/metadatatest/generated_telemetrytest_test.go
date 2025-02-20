@@ -11,15 +11,15 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/metadata"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestSetupTelemetry(t *testing.T) {
-	testTel := SetupTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(
-		testTel.NewTelemetrySettings(),
-	)
+	testTel := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
-	require.NotNil(t, tb)
+	defer tb.Shutdown()
 	tb.ProcessorGroupbytraceConfNumTraces.Record(context.Background(), 1)
 	tb.ProcessorGroupbytraceEventLatency.Record(context.Background(), 1)
 	tb.ProcessorGroupbytraceIncompleteReleases.Add(context.Background(), 1)
@@ -28,97 +28,30 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ProcessorGroupbytraceSpansReleased.Add(context.Background(), 1)
 	tb.ProcessorGroupbytraceTracesEvicted.Add(context.Background(), 1)
 	tb.ProcessorGroupbytraceTracesReleased.Add(context.Background(), 1)
+	AssertEqualProcessorGroupbytraceConfNumTraces(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorGroupbytraceEventLatency(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorGroupbytraceIncompleteReleases(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorGroupbytraceNumEventsInQueue(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorGroupbytraceNumTracesInMemory(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorGroupbytraceSpansReleased(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorGroupbytraceTracesEvicted(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorGroupbytraceTracesReleased(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 
-	testTel.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_processor_groupbytrace_conf_num_traces",
-			Description: "Maximum number of traces to hold in the internal storage",
-			Unit:        "1",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_groupbytrace_event_latency",
-			Description: "How long the queue events are taking to be processed",
-			Unit:        "ms",
-			Data: metricdata.Histogram[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				DataPoints: []metricdata.HistogramDataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_groupbytrace_incomplete_releases",
-			Description: "Releases that are suspected to have been incomplete",
-			Unit:        "{releases}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_groupbytrace_num_events_in_queue",
-			Description: "Number of events currently in the queue",
-			Unit:        "1",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_groupbytrace_num_traces_in_memory",
-			Description: "Number of traces currently in the in-memory storage",
-			Unit:        "1",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_groupbytrace_spans_released",
-			Description: "Spans released to the next consumer",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_groupbytrace_traces_evicted",
-			Description: "Traces evicted from the internal buffer",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_groupbytrace_traces_released",
-			Description: "Traces released to the next consumer",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }

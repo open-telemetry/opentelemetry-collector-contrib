@@ -13,11 +13,13 @@ import (
 	pkgconfigsetup "github.com/DataDog/datadog-agent/pkg/config/setup"
 	"go.opentelemetry.io/collector/component"
 	"golang.org/x/net/http/httpproxy"
+
+	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 
 func newLogComponent(set component.TelemetrySettings) corelog.Component {
-	zlog := &zaplogger{
-		logger: set.Logger,
+	zlog := &pkgdatadog.Zaplogger{
+		Logger: set.Logger,
 	}
 	return zlog
 }

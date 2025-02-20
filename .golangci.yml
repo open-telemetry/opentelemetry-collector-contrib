@@ -88,6 +88,9 @@ linters-settings:
       - name: context-keys-type
       # Importing with `.` makes the programs much harder to understand
       - name: dot-imports
+      - name: early-return
+        arguments:
+          - "preserveScope"
       # Empty blocks make code less readable and could be a symptom of a bug or unfinished refactoring.
       - name: empty-block
       # for better readability, variables of type `error` must be named with the prefix `err`.
@@ -110,6 +113,8 @@ linters-settings:
       - name: redefines-builtin-id
       # redundant else-blocks that can be eliminated from the code.
       - name: superfluous-else
+        arguments:
+          - "preserveScope"
       # prevent confusing name for variables when using `time` package
       - name: time-naming
       # warns when an exported function or method returns a value of an un-exported type.
@@ -153,6 +158,8 @@ linters-settings:
             desc: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
           - pkg: github.com/hashicorp/go-multierror
             desc: "Use go.uber.org/multierr instead of github.com/hashicorp/go-multierror"
+          - pkg: "math/rand$"
+            desc: "Use math/rand/v2 instead of math/rand"
         # Add a different guard rule so that we can ignore tests.
       ignore-in-test:
           deny:
@@ -165,6 +172,9 @@ linters-settings:
   exhaustive:
     explicit-exhaustive-switch: true
     ignore-enum-members: "pmetric.MetricTypeEmpty"
+
+  nolintlint:
+    require-specific: true
 
   predeclared:
     ignore: copy
@@ -201,6 +211,7 @@ linters:
     - gosec
     - govet
     - misspell
+    - nolintlint
     - predeclared
     - reassign
     - revive
@@ -227,3 +238,7 @@ issues:
     - text: "G115:"
       linters:
         - gosec
+    - path: "pagefile.go" # This exclusion is required for Windows only
+      text: "cachedBytes"
+      linters:
+        - unused

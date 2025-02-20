@@ -15,7 +15,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -25,6 +24,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"gopkg.in/yaml.v3"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/compare"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/sdktest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/testar"
@@ -184,9 +184,8 @@ func setupTestTelemetry() testTelemetry {
 }
 
 func (tt *testTelemetry) newSettings() processor.Settings {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettingsWithType(metadata.Type)
 	set.TelemetrySettings.MeterProvider = tt.meterProvider
-	set.TelemetrySettings.MetricsLevel = configtelemetry.LevelDetailed
 	return set
 }
 

@@ -7,6 +7,53 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.120.0
+
+### 🛑 Breaking changes 🛑
+
+- `s3provider`: Delete deprecated `New` factory function. Use `NewFactory` instead. (#37921)
+- `secretsmanagerprovider`: Delete deprecated `New` function, use `NewFactory` instead (#37923)
+- `pkg/stanza`: Remove deprecated `flush.WithPeriod`. (#37784)
+- `pkg/stanza`: Remove deprecated func BuildWithSplitFunc from stanza/fileconsumer (#37723)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate all functions in stanza/decode (#37734)
+
+### 💡 Enhancements 💡
+
+- `pkg/translator/prometheusremotewrite`: add support for metric type sum in FromMetricsV2 (#33661)
+  The public function is partially implemented and not ready for use
+- `pkg/datadog`: Expose the internal Zaplogger implementation (#37939)
+- `dbstorageextension`: Add DB Transactions to dbstorage.Batch() method as it is expected by Storage API (#37805)
+- `internal/datadog`: create new package `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/hostmetadata` which exposes `GetSourceProvider` from `github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata` (#37668)
+- `textutil`: Remove unnecessary copy while decoding and constructing string (#37734)
+  This PR affects all log receivers, text extension and kafkareceiver.
+- `telemetrygen`: Exported the API for telemetrygen for test uses. Additionally added new E2E tests and fixed race condition (#36984)
+- `tailsamplingprocessor`: Add support for external caches when using the Tailsampling Processor in code. (#37035)
+
+## v0.119.0
+
+### 🚀 New components 🚀
+
+- `metricstarttimeprocessor`: Add the initial skeleton for the metricsstarttimeprocessor (#37186)
+  The component is still in development and is not ready for use.
+
+## v0.118.0
+
+### 🛑 Breaking changes 🛑
+
+- `routingconnector`: Change `match_once` parameter from `bool` to `*bool`. (#29882)
+  Boolean values should still unmarshal successfully, but direct instantiation in code will fail.
+  The change allows us to check for usage and warn of the upcoming removal in v0.120.0.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Enhanced error messages for invalid cache access and introduced options to configure their values within the OTTL contexts. (#29017)
+- `pkg/ottl`: Add value expression parser that enables components using ottl to retrieve values from the output of an expression (#35621)
+  the expression can be either a literal value, a path value within the context, or the result of a converter and/or a mathematical expression.
+
 ## v0.117.0
 
 ### 💡 Enhancements 💡
@@ -492,9 +539,9 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 ### 🚩 Deprecations 🚩
 
 - `pkg/stanza`: Deprecate 'helper.EncodingConfig' and 'helper.NewEncodingConfig' (#25846)
-- `pkg/stanza`: Deprecate encoding related elements of helper pacakge, in favor of new decoder package (#26019)
+- `pkg/stanza`: Deprecate encoding related elements of helper package, in favor of new decoder package (#26019)
   Includes the following deprecations | - Decoder - NewDecoder - LookupEncoding - IsNop
-- `pkg/stanza`: Deprecate tokenization related elements of helper pacakge, in favor of new tokenize package (#25914)
+- `pkg/stanza`: Deprecate tokenization related elements of helper package, in favor of new tokenize package (#25914)
   Includes the following deprecations | - Flusher - FlusherConfig - NewFlusherConfig - Multiline - MultilineConfig - NewMultilineConfig - NewLineStartSplitFunc - NewLineEndSplitFunc - NewNewlineSplitFunc - Splitter - SplitterConfig - NewSplitterConfig - SplitNone
 
 ### 💡 Enhancements 💡

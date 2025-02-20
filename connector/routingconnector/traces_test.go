@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/ptraceutiltest"
 )
 
@@ -50,11 +51,11 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 
 	rtConn := conn.(*tracesConnector)
 	require.NoError(t, err)
@@ -117,7 +118,7 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
 	)
@@ -222,7 +223,7 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
 	)
@@ -334,7 +335,7 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
 	)
@@ -387,13 +388,13 @@ func TestTraceConnectorCapabilities(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
 	)
 
 	require.NoError(t, err)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 }
 
 func TestTracesConnectorDetailed(t *testing.T) {
@@ -419,13 +420,13 @@ func TestTracesConnectorDetailed(t *testing.T) {
 	isResourceBFromLowerContext := `resource.attributes["resourceName"] == "resourceB"`
 
 	testCases := []struct {
-		name        string
-		cfg         *Config
 		ctx         context.Context
 		input       ptrace.Traces
 		expectSink0 ptrace.Traces
 		expectSink1 ptrace.Traces
 		expectSinkD ptrace.Traces
+		cfg         *Config
+		name        string
 	}{
 		{
 			name: "request/no_request_values",
@@ -848,7 +849,7 @@ func TestTracesConnectorDetailed(t *testing.T) {
 
 			conn, err := NewFactory().CreateTracesToTraces(
 				context.Background(),
-				connectortest.NewNopSettings(),
+				connectortest.NewNopSettingsWithType(metadata.Type),
 				tt.cfg,
 				router.(consumer.Traces),
 			)

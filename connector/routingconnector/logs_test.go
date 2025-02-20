@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutiltest"
 )
 
@@ -50,11 +51,11 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
+		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 
 	rtConn := conn.(*logsConnector)
 	require.NoError(t, err)
@@ -117,7 +118,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -221,7 +222,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -356,7 +357,7 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -407,13 +408,13 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
 
 	require.NoError(t, err)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 }
 
 func TestLogsConnectorDetailed(t *testing.T) {
@@ -439,13 +440,13 @@ func TestLogsConnectorDetailed(t *testing.T) {
 	isResourceBFromLowerContext := `resource.attributes["resourceName"] == "resourceB"`
 
 	testCases := []struct {
-		name        string
-		cfg         *Config
 		ctx         context.Context
 		input       plog.Logs
 		expectSink0 plog.Logs
 		expectSink1 plog.Logs
 		expectSinkD plog.Logs
+		cfg         *Config
+		name        string
 	}{
 		{
 			name: "request/no_request_values",
@@ -858,7 +859,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 
 			conn, err := NewFactory().CreateLogsToLogs(
 				context.Background(),
-				connectortest.NewNopSettings(),
+				connectortest.NewNopSettingsWithType(metadata.Type),
 				tt.cfg,
 				router.(consumer.Logs),
 			)

@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pmetricutiltest"
 )
 
@@ -50,11 +51,11 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Metrics))
+		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Metrics))
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 
 	rtConn := conn.(*metricsConnector)
 	require.NoError(t, err)
@@ -117,7 +118,7 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Metrics),
 	)
@@ -228,7 +229,7 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Metrics),
 	)
@@ -378,7 +379,7 @@ func TestMetricsResourceAttributeDroppedByOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Metrics),
 	)
@@ -429,13 +430,13 @@ func TestMetricsConnectorCapabilities(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Metrics),
 	)
 
 	require.NoError(t, err)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 }
 
 func TestMetricsConnectorDetailed(t *testing.T) {
@@ -465,13 +466,13 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 	isResourceBFromLowerContext := `resource.attributes["resourceName"] == "resourceB"`
 
 	testCases := []struct {
-		name        string
-		cfg         *Config
 		ctx         context.Context
 		input       pmetric.Metrics
 		expectSink0 pmetric.Metrics
 		expectSink1 pmetric.Metrics
 		expectSinkD pmetric.Metrics
+		cfg         *Config
+		name        string
 	}{
 		{
 			name: "request/no_request_values",
@@ -1097,7 +1098,7 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 
 			conn, err := NewFactory().CreateMetricsToMetrics(
 				context.Background(),
-				connectortest.NewNopSettings(),
+				connectortest.NewNopSettingsWithType(metadata.Type),
 				tt.cfg,
 				router.(consumer.Metrics),
 			)
