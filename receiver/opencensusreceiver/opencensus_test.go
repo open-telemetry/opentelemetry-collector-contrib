@@ -543,8 +543,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
-				testTel, err := componenttest.SetupTelemetry(exporter.receiverID)
-				require.NoError(t, err)
+				testTel := componenttest.NewTelemetry()
 				defer func() {
 					require.NoError(t, testTel.Shutdown(context.Background()))
 				}()
@@ -560,7 +559,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 						},
 					},
 				}
-				ocr := newOpenCensusReceiver(cfg, nil, nil, receiver.Settings{ID: exporter.receiverID, TelemetrySettings: testTel.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, opts...)
+				ocr := newOpenCensusReceiver(cfg, nil, nil, receiver.Settings{ID: exporter.receiverID, TelemetrySettings: testTel.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, opts...)
 				require.NotNil(t, ocr)
 
 				ocr.traceConsumer = sink
@@ -742,8 +741,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 	for _, exporter := range exporters {
 		for _, tt := range tests {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
-				testTel, err := componenttest.SetupTelemetry(exporter.receiverID)
-				require.NoError(t, err)
+				testTel := componenttest.NewTelemetry()
 				defer func() {
 					require.NoError(t, testTel.Shutdown(context.Background()))
 				}()
@@ -759,7 +757,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 						},
 					},
 				}
-				ocr := newOpenCensusReceiver(cfg, nil, nil, receiver.Settings{ID: exporter.receiverID, TelemetrySettings: testTel.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, opts...)
+				ocr := newOpenCensusReceiver(cfg, nil, nil, receiver.Settings{ID: exporter.receiverID, TelemetrySettings: testTel.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, opts...)
 				require.NotNil(t, ocr)
 
 				ocr.metricsConsumer = sink
