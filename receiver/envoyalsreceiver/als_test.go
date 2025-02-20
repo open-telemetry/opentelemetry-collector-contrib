@@ -26,6 +26,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/envoyalsreceiver/internal/metadata"
 )
 
 func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
@@ -39,7 +40,7 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 	}
 	sink := new(consumertest.LogsSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettingsWithType(metadata.Type)
 	lr, err := newALSReceiver(config, sink, set)
 	require.NoError(t, err)
 

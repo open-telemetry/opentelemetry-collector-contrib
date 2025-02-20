@@ -4,9 +4,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
 go 1.23.0
 
 require (
-	github.com/google/go-github/v69 v69.0.0
-	go.opentelemetry.io/collector/confmap v1.26.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.26.0
+	github.com/google/go-github/v69 v69.2.0
+	go.opentelemetry.io/collector/confmap v1.26.1-0.20250218214003-dae5d199ffc6
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.26.1-0.20250218214003-dae5d199ffc6
 	gopkg.in/yaml.v3 v3.0.1
 )
 
