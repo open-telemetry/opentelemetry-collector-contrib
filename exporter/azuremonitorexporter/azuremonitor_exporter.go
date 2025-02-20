@@ -6,7 +6,6 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"sync"
-	"time"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"
@@ -52,11 +51,7 @@ func (exporter *azureMonitorExporter) Start(_ context.Context, _ component.Host)
 func (exporter *azureMonitorExporter) Shutdown(_ context.Context) (err error) {
 	exporter.endOnce.Do(func() {
 		if exporter.transportChannel != nil {
-			select {
-			case <-exporter.transportChannel.Close(exporter.config.ShutdownTimeout):
-			case <-time.After(exporter.config.ShutdownTimeout):
-				exporter.transportChannel.Stop()
-			}
+			exporter.transportChannel.Close(exporter.config.ShutdownTimeout)
 		}
 	})
 
