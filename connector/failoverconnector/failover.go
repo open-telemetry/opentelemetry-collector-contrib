@@ -20,10 +20,9 @@ type consumerProvider[C any] func(...pipeline.ID) (C, error)
 
 // baseFailoverRouter provides the common infrastructure for failover routing
 type baseFailoverRouter[C any] struct {
-	consumerProvider consumerProvider[C]
-	cfg              *Config
-	pS               *state.PipelineSelector
-	consumers        []C
+	cfg       *Config
+	pS        *state.PipelineSelector
+	consumers []C
 
 	errTryLock  *state.TryLock
 	notifyRetry chan struct{}
@@ -74,13 +73,12 @@ func newBaseFailoverRouter[C any](provider consumerProvider[C], cfg *Config) (*b
 
 	selector := state.NewPipelineSelector(notifyRetry, done, pSConstants)
 	return &baseFailoverRouter[C]{
-		consumerProvider: provider,
-		consumers:        consumers,
-		cfg:              cfg,
-		pS:               selector,
-		errTryLock:       state.NewTryLock(),
-		done:             done,
-		notifyRetry:      notifyRetry,
+		consumers:   consumers,
+		cfg:         cfg,
+		pS:          selector,
+		errTryLock:  state.NewTryLock(),
+		done:        done,
+		notifyRetry: notifyRetry,
 	}, nil
 }
 
