@@ -173,14 +173,77 @@ behaviours, which may be configured through the following settings:
             body is serialized to JSON as-is and becomes a separate document for ingestion.
             If the log record body is not a map, the exporter will log a warning and drop the log record.
 
+#### OTel mapping mode
+
+In `otel` mapping mode, the Elasticsearch Exporter stores documents in an OTel-native schema.
+
+| Signal    | Supported          |
+| --------- | ------------------ |
+| Logs      | :white_check_mark: |
+| Traces    | :white_check_mark: |
+| Metrics   | :white_check_mark: |
+| Profiles  | :white_check_mark: |
+
 #### ECS mapping mode
 
 > [!WARNING]
 > The ECS mode mapping mode is currently undergoing changes, and its behaviour is unstable.
 
-In ECS mapping mode, the Elasticsearch Exporter attempts to map fields from
-[OpenTelemetry Semantic Conventions][SemConv] (version 1.22.0) to [Elastic Common Schema][ECS].
+In `ecs` mapping mode, the Elasticsearch Exporter maps fields from
+[OpenTelemetry Semantic Conventions][SemConv] (version 1.22.0) to [Elastic Common Schema][ECS] where possible.
 This mode may be used for compatibility with existing dashboards that work with ECS.
+
+| Signal    | `ecs`              |
+| --------- | ------------------ |
+| Logs      | :white_check_mark: |
+| Traces    | :white_check_mark: |
+| Metrics   | :white_check_mark: |
+| Profiles  | :no_entry_sign:    |
+
+#### Bodymap mapping mode
+
+> [!WARNING]
+> The Bodymap mode mapping mode is currently undergoing changes, and its behaviour is unstable.
+
+In `bodymap` mapping mode, the Elasticsearch Exporter supports only logs and will take the "body"
+of a log record as the exact content of the Elasticsearch document without any transformation.
+This mapping mode is intended for use cases where the client wishes to have complete control over
+the Elasticsearch document structure.
+
+| Signal    | `bodymap`          |
+| --------- | ------------------ |
+| Logs      | :white_check_mark: |
+| Traces    | :no_entry_sign:    |
+| Metrics   | :no_entry_sign:    |
+| Profiles  | :no_entry_sign:    |
+
+#### Default (none) mapping mode
+
+In the `none` mapping mode the Elasticsearhc Exporter produces documents with the original
+field names of from the OTLP data structures.
+
+| Signal    | `none`             |
+| --------- | ------------------ |
+| Logs      | :white_check_mark: |
+| Traces    | :white_check_mark: |
+| Metrics   | :no_entry_sign:    |
+| Profiles  | :no_entry_sign:    |
+
+#### Raw mapping mode
+
+The `raw` mapping mode is identical to `none`, except for two differences:
+
+ - In `none` mode attributes are mapped with an `Attributes.` prefix,
+   while in `raw` mode they are not.
+ - In `none` mode span events are mapped with an `Events.` prefix,
+   while in `raw` mode they are not.
+
+| Signal    | `raw `             |
+| --------- | ------------------ |
+| Logs      | :white_check_mark: |
+| Traces    | :white_check_mark: |
+| Metrics   | :no_entry_sign:    |
+| Profiles  | :no_entry_sign:    |
 
 ### Elasticsearch ingest pipeline
 
