@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -46,16 +47,18 @@ func BenchmarkReadExistingLogs(b *testing.B) {
 	}
 
 	for _, tc := range testCases {
-		b.Run(fmt.Sprintf("logs-%d-lines", tc.numLines), func(b *testing.B) {
+		b.Run(fmt.Sprintf("%d-lines", tc.numLines), func(b *testing.B) {
 			benchmarkReadExistingLogs(b, tc.numLines)
 		})
 	}
 }
 
 func benchmarkReadExistingLogs(b *testing.B, lines int) {
+	logFilePath := generateLogFile(b, lines)
+
 	config := NewConfig()
 	config.Include = []string{
-		fmt.Sprintf("testdata/logs-%d-lines.log", lines),
+		logFilePath,
 	}
 	// Use aggressive poll interval so we're not measuring excess sleep time
 	config.PollInterval = time.Microsecond
@@ -78,6 +81,15 @@ func benchmarkReadExistingLogs(b *testing.B, lines int) {
 		}
 		require.NoError(b, op.Stop())
 	}
+}
+
+func generateLogFile(tb testing.TB, numLines int) string {
+	f := filetest.OpenTemp(tb, tb.TempDir())
+	for range numLines {
+		f.Write(filetest.TokenWithLength(999))
+		f.WriteString("\n")
+	}
+	return f.Name()
 }
 
 type benchmarkOutput struct {
