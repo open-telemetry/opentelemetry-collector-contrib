@@ -6,6 +6,7 @@ package system // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"fmt"
+	"github.com/shirou/gopsutil/v4/host"
 	"net"
 	"os"
 	"runtime"
@@ -53,6 +54,9 @@ type Provider interface {
 	// OSType returns the host operating system
 	OSType() (string, error)
 
+	// OSVersion returns the version of the operating system
+	OSVersion() (string, error)
+
 	// LookupCNAME returns the canonical name for the current host
 	LookupCNAME() (string, error)
 
@@ -86,6 +90,14 @@ func NewProvider() Provider {
 
 func (systemMetadataProvider) OSType() (string, error) {
 	return internal.GOOSToOSType(runtime.GOOS), nil
+}
+
+func (systemMetadataProvider) OSVersion() (string, error) {
+	info, err := host.Info()
+	if err != nil {
+		return "", fmt.Errorf("OSVersion failed to get os version: %w", err)
+	}
+	return info.PlatformVersion, nil
 }
 
 func (systemMetadataProvider) FQDN() (string, error) {
