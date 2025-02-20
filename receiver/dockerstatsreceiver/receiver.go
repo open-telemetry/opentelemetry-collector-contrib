@@ -46,6 +46,9 @@ type metricsReceiver struct {
 }
 
 func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver {
+	// Resolve the Docker endpoint during receiver initialization
+	config.Endpoint = config.resolveDockerEndpoint()
+
 	return &metricsReceiver{
 		config:   config,
 		settings: set,
@@ -71,8 +74,6 @@ func (c *Config) resolveDockerEndpoint() string {
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
-	// Resolve the Docker endpoint before creating the client
-	r.config.Endpoint = r.config.resolveDockerEndpoint()
 
 	var err error
 	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger)
