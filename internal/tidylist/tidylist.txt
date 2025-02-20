@@ -1,3 +1,5 @@
+cmd/checkapi
+cmd/githubgen
 cmd/opampsupervisor
 cmd/telemetrygen
 internal/common
