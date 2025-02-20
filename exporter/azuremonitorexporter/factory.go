@@ -65,12 +65,13 @@ func (f *factory) createTracesExporter(
 		return nil, errUnexpectedConfigurationType
 	}
 	ame := getOrCreateAzureMonitorExporter(cfg, set)
+	origComp := ame.Unwrap().(*azureMonitorExporter)
 
 	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
-		ame.consumeTraces,
+		origComp.consumeTraces,
 		exporterhelper.WithQueue(config.QueueSettings),
 		exporterhelper.WithStart(ame.Start),
 		exporterhelper.WithShutdown(ame.Shutdown))
@@ -87,12 +88,13 @@ func (f *factory) createLogsExporter(
 		return nil, errUnexpectedConfigurationType
 	}
 	ame := getOrCreateAzureMonitorExporter(cfg, set)
+	origComp := ame.Unwrap().(*azureMonitorExporter)
 
 	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
-		ame.consumeLogs,
+		origComp.consumeLogs,
 		exporterhelper.WithQueue(config.QueueSettings),
 		exporterhelper.WithStart(ame.Start),
 		exporterhelper.WithShutdown(ame.Shutdown))
@@ -109,18 +111,19 @@ func (f *factory) createMetricsExporter(
 		return nil, errUnexpectedConfigurationType
 	}
 	ame := getOrCreateAzureMonitorExporter(cfg, set)
+	origComp := ame.Unwrap().(*azureMonitorExporter)
 
 	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
-		ame.consumeMetrics,
+		origComp.consumeMetrics,
 		exporterhelper.WithQueue(config.QueueSettings),
 		exporterhelper.WithStart(ame.Start),
 		exporterhelper.WithShutdown(ame.Shutdown))
 }
 
-func getOrCreateAzureMonitorExporter(cfg component.Config, set exporter.Settings) *azureMonitorExporter {
+func getOrCreateAzureMonitorExporter(cfg component.Config, set exporter.Settings) *sharedcomponent.SharedComponent {
 	conf := cfg.(*Config)
 	ame := exporters.GetOrAdd(set.ID, func() component.Component {
 		return &azureMonitorExporter{
@@ -130,8 +133,7 @@ func getOrCreateAzureMonitorExporter(cfg component.Config, set exporter.Settings
 		}
 	})
 
-	c := ame.Unwrap()
-	return c.(*azureMonitorExporter)
+	return ame
 }
 
 func (f *factory) initLogger(logger *zap.Logger) {

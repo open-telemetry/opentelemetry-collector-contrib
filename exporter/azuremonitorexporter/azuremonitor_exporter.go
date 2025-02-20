@@ -5,7 +5,6 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
-	"sync"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"
@@ -23,37 +22,31 @@ type azureMonitorExporter struct {
 	transportChannel appinsights.TelemetryChannel
 	logger           *zap.Logger
 	packer           *metricPacker
-	startOnce        sync.Once
-	endOnce          sync.Once
 }
 
 func (exporter *azureMonitorExporter) Start(_ context.Context, _ component.Host) (err error) {
-	exporter.startOnce.Do(func() {
-		connectionVars, err := parseConnectionString(exporter.config)
-		if err != nil {
-			return
-		}
+	connectionVars, err := parseConnectionString(exporter.config)
+	if err != nil {
+		return
+	}
 
-		exporter.config.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)
-		exporter.config.Endpoint = connectionVars.IngestionURL
-		telemetryConfiguration := appinsights.NewTelemetryConfiguration(connectionVars.InstrumentationKey)
-		telemetryConfiguration.EndpointUrl = connectionVars.IngestionURL
-		telemetryConfiguration.MaxBatchSize = exporter.config.MaxBatchSize
-		telemetryConfiguration.MaxBatchInterval = exporter.config.MaxBatchInterval
+	exporter.config.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)
+	exporter.config.Endpoint = connectionVars.IngestionURL
+	telemetryConfiguration := appinsights.NewTelemetryConfiguration(connectionVars.InstrumentationKey)
+	telemetryConfiguration.EndpointUrl = connectionVars.IngestionURL
+	telemetryConfiguration.MaxBatchSize = exporter.config.MaxBatchSize
+	telemetryConfiguration.MaxBatchInterval = exporter.config.MaxBatchInterval
 
-		telemetryClient := appinsights.NewTelemetryClientFromConfig(telemetryConfiguration)
-		exporter.transportChannel = telemetryClient.Channel()
-	})
+	telemetryClient := appinsights.NewTelemetryClientFromConfig(telemetryConfiguration)
+	exporter.transportChannel = telemetryClient.Channel()
 
 	return nil
 }
 
 func (exporter *azureMonitorExporter) Shutdown(_ context.Context) (err error) {
-	exporter.endOnce.Do(func() {
-		if exporter.transportChannel != nil {
-			exporter.transportChannel.Close(exporter.config.ShutdownTimeout)
-		}
-	})
+	if exporter.transportChannel != nil {
+		exporter.transportChannel.Close(exporter.config.ShutdownTimeout)
+	}
 
 	return nil
 }
