@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,7 +19,6 @@ import (
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
-	promremote "github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
@@ -36,6 +37,11 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 			ReadTimeout: 60 * time.Second,
 		},
 	}, nil
+}
+
+type WriteResponseStats struct {
+	NumSamples    int
+	NumHistograms int
 }
 
 type prometheusRemoteWriteReceiver struct {
@@ -152,20 +158,21 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 	return promconfig.RemoteWriteProtoMsgV1, nil
 }
 
+func (s *WriteResponseStats) SetHeaders(w http.ResponseWriter) {
+	w.Header().Set("X-Prometheus-Remote-Write-Samples", strconv.Itoa(s.NumSamples))
+	w.Header().Set("X-Prometheus-Remote-Write-Histograms", strconv.Itoa(s.NumHistograms))
+}
+
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // translate is not feature complete.
 //
 //nolint:unparam
-func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
+func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, WriteResponseStats, error) {
 	var (
-		badRequestErrors error
-		otelMetrics      = pmetric.NewMetrics()
-		labelsBuilder    = labels.NewScratchBuilder(0)
-		stats            = promremote.WriteResponseStats{}
-		// Prometheus Remote-Write can send multiple time series with the same labels in the same request.
-		// Instead of creating a whole new OTLP metric, we just append the new sample to the existing OTLP metric.
-		// This cache is called "intra" because in the future we'll have a "interRequestCache" to cache resourceAttributes
-		// between requests based on the metric "target_info".
+		badRequestErrors  error
+		otelMetrics       = pmetric.NewMetrics()
+		labelsBuilder     = labels.NewScratchBuilder(len(req.Timeseries)) // Preallocate
+		stats             = WriteResponseStats{}
 		intraRequestCache = make(map[uint64]pmetric.ResourceMetrics)
 	)
 
@@ -180,11 +187,18 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			continue
 		}
 
+		// Count samples
+		stats.NumSamples += len(ts.Samples)
+
+		// Track histograms
+		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_HISTOGRAM {
+			stats.NumHistograms += len(ts.Samples)
+		}
+
 		var rm pmetric.ResourceMetrics
 		hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 		intraCacheEntry, ok := intraRequestCache[hashedLabels]
 		if ok {
-			// We found the same time series in the same request, so we should append to the same OTLP metric.
 			rm = intraCacheEntry
 		} else {
 			rm = otelMetrics.ResourceMetrics().AppendEmpty()
@@ -262,8 +276,126 @@ func addSummaryDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.
 	// TODO: Implement this function
 }
 
-func addHistogramDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
+func addHistogramDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
+	scopeName := ls.Get("otel_scope_name")
+	scopeVersion := ls.Get("otel_scope_version")
+
+	// Checks if the scope already exists
+	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		scope := rm.ScopeMetrics().At(j)
+		if scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
+			metric := scope.Metrics().AppendEmpty()
+			metric.SetName(ls.Get(labels.MetricName)) // Set name before setting as histogram
+			appendHistogramDatapoints(metric.SetEmptyHistogram().DataPoints(), ls, ts)
+			return
+		}
+	}
+
+	// If no existing scope, create a new one
+	scope := rm.ScopeMetrics().AppendEmpty()
+	scope.Scope().SetName(scopeName)
+	scope.Scope().SetVersion(scopeVersion)
+
+	metric := scope.Metrics().AppendEmpty()
+	metric.SetName(ls.Get(labels.MetricName)) // Set name before setting as histogram
+	appendHistogramDatapoints(metric.SetEmptyHistogram().DataPoints(), ls, ts)
+}
+
+func appendHistogramDatapoints(datapoints pmetric.HistogramDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
+	if len(ts.Samples) == 0 {
+		return
+	}
+
+	dp := datapoints.AppendEmpty()
+
+	// Set attributes (excluding special labels)
+	attributes := dp.Attributes()
+	for _, l := range ls {
+		if l.Name == "instance" || l.Name == "job" ||
+			l.Name == labels.MetricName ||
+			l.Name == "otel_scope_name" || l.Name == "otel_scope_version" ||
+			strings.HasSuffix(l.Name, "_bucket") ||
+			l.Name == "_sum" || l.Name == "_count" {
+			continue
+		}
+		attributes.PutStr(l.Name, l.Value)
+	}
+
+	var (
+		bucketBounds []float64
+		bucketCounts []uint64
+		firstTs      int64 = ts.Samples[0].Timestamp
+		lastTs       int64 = ts.Samples[0].Timestamp
+	)
+
+	metricName := ls.Get(labels.MetricName)
+
+	// Process all samples first to collect timestamps
+	for _, sample := range ts.Samples {
+		if sample.Timestamp < firstTs {
+			firstTs = sample.Timestamp
+		}
+		if sample.Timestamp > lastTs {
+			lastTs = sample.Timestamp
+		}
+	}
+
+	// Set timestamps early to ensure they're always set
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(
+		time.Unix(0, firstTs*int64(time.Millisecond)),
+	))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(
+		time.Unix(0, lastTs*int64(time.Millisecond)),
+	))
+
+	// Process different types of histogram samples
+	switch {
+	case strings.HasSuffix(metricName, "_sum"):
+		for _, sample := range ts.Samples {
+			dp.SetSum(sample.Value)
+		}
+	case strings.HasSuffix(metricName, "_count"):
+		for _, sample := range ts.Samples {
+			dp.SetCount(uint64(sample.Value))
+		}
+	case strings.HasSuffix(metricName, "_bucket"):
+		if le := ls.Get("le"); le != "" {
+			bound, err := strconv.ParseFloat(le, 64)
+			if err == nil {
+				bucketBounds = append(bucketBounds, bound)
+				for _, sample := range ts.Samples {
+					bucketCounts = append(bucketCounts, uint64(sample.Value))
+				}
+			}
+		}
+	}
+
+	// Process buckets if present
+	if len(bucketBounds) > 0 {
+		pairs := make([]struct {
+			bound float64
+			count uint64
+		}, len(bucketBounds))
+
+		for i := range bucketBounds {
+			pairs[i] = struct {
+				bound float64
+				count uint64
+			}{bucketBounds[i], bucketCounts[i]}
+		}
+
+		sort.Slice(pairs, func(i, j int) bool {
+			return pairs[i].bound < pairs[j].bound
+		})
+
+		for i := range pairs {
+			bucketBounds[i] = pairs[i].bound
+			bucketCounts[i] = pairs[i].count
+		}
+
+		dp.ExplicitBounds().FromRaw(bucketBounds)
+		dp.BucketCounts().FromRaw(bucketCounts)
+	}
 }
 
 // addDatapoints adds the labels to the datapoints attributes.

@@ -1,0 +1,12 @@
+change_type: enhancement
+component: prometheusremotewritereceiver
+note: "Add histogram support and response headers with ingestion statistics"
+issues: [#37277]
+subtext: |
+  - Implemented histogram metric type handling with proper bucket processing and sorting
+  - Added response headers to track ingested samples and histograms:
+    - X-Prometheus-Remote-Write-Samples: Total number of samples processed
+    - X-Prometheus-Remote-Write-Histograms: Number of histogram samples processed
+  - Implemented proper timestamp handling for histogram data points
+  - Added attributes filtering and resource attributes mapping
+change_logs: [user]
