@@ -50,7 +50,7 @@ func (exporter *azureMonitorExporter) Start(_ context.Context, _ component.Host)
 }
 
 func (exporter *azureMonitorExporter) Shutdown(_ context.Context) (err error) {
-	exporter.startOnce.Do(func() {
+	exporter.endOnce.Do(func() {
 		if exporter.transportChannel != nil {
 			select {
 			case <-exporter.transportChannel.Close(exporter.config.ShutdownTimeout):
