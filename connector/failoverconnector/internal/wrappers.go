@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/state"
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal"
 
 import (
 	"context"
