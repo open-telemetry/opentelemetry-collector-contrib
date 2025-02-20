@@ -11,8 +11,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal"
 )
 
 type logsFailover struct {
@@ -20,7 +18,7 @@ type logsFailover struct {
 	component.ShutdownFunc
 
 	config   *Config
-	failover *failoverRouter[consumer.Logs]
+	failover *failoverRouter[plog.Logs, consumer.Logs]
 	logger   *zap.Logger
 }
 
@@ -28,7 +26,7 @@ func (f *logsFailover) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-// ConsumeMetrics will try to export to the current set priority level and handle failover in the case of an error
+// ConsumeLogs will try to export to the current set priority level and handle failover in the case of an error
 func (f *logsFailover) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return f.failover.Consume(ctx, ld)
 }
@@ -47,9 +45,9 @@ func newLogsToLogs(set connector.Settings, cfg component.Config, logs consumer.L
 		return nil, errors.New("consumer is not of type MetricsRouter")
 	}
 
-	failover := newFailoverRouter[consumer.Logs](lr.Consumer, config)
-	err := failover.registerConsumers(wrapLogs)
-	if err != nil {
+	failover := newFailoverRouter[plog.Logs, consumer.Logs](lr.Consumer, config)
+
+	if err := failover.registerConsumers(); err != nil {
 		return nil, err
 	}
 
@@ -58,8 +56,4 @@ func newLogsToLogs(set connector.Settings, cfg component.Config, logs consumer.L
 		failover: failover,
 		logger:   set.TelemetrySettings.Logger,
 	}, nil
-}
-
-func wrapLogs(c consumer.Logs) internal.SignalConsumer {
-	return internal.NewLogsWrapper(c)
 }

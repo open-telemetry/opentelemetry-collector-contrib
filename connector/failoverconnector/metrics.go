@@ -11,8 +11,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal"
 )
 
 type metricsFailover struct {
@@ -20,7 +18,7 @@ type metricsFailover struct {
 	component.ShutdownFunc
 
 	config   *Config
-	failover *failoverRouter[consumer.Metrics]
+	failover *failoverRouter[pmetric.Metrics, consumer.Metrics]
 	logger   *zap.Logger
 }
 
@@ -47,8 +45,8 @@ func newMetricsToMetrics(set connector.Settings, cfg component.Config, metrics c
 		return nil, errors.New("consumer is not of type MetricsRouter")
 	}
 
-	failover := newFailoverRouter[consumer.Metrics](mr.Consumer, config)
-	err := failover.registerConsumers(wrapMetrics)
+	failover := newFailoverRouter[pmetric.Metrics, consumer.Metrics](mr.Consumer, config)
+	err := failover.registerConsumers()
 	if err != nil {
 		return nil, err
 	}
@@ -58,8 +56,4 @@ func newMetricsToMetrics(set connector.Settings, cfg component.Config, metrics c
 		failover: failover,
 		logger:   set.TelemetrySettings.Logger,
 	}, nil
-}
-
-func wrapMetrics(c consumer.Metrics) internal.SignalConsumer {
-	return internal.NewMetricsWrapper(c)
 }

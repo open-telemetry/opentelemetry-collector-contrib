@@ -12,8 +12,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal"
 )
 
 type tracesFailover struct {
@@ -21,7 +19,7 @@ type tracesFailover struct {
 	component.ShutdownFunc
 
 	config   *Config
-	failover *failoverRouter[consumer.Traces]
+	failover *failoverRouter[ptrace.Traces, consumer.Traces]
 	logger   *zap.Logger
 }
 
@@ -47,8 +45,8 @@ func newTracesToTraces(set connector.Settings, cfg component.Config, traces cons
 		return nil, errors.New("consumer is not of type TracesRouter")
 	}
 
-	failover := newFailoverRouter[consumer.Traces](tr.Consumer, config)
-	err := failover.registerConsumers(wrapTraces)
+	failover := newFailoverRouter[ptrace.Traces, consumer.Traces](tr.Consumer, config)
+	err := failover.registerConsumers()
 	if err != nil {
 		return nil, err
 	}
@@ -58,8 +56,4 @@ func newTracesToTraces(set connector.Settings, cfg component.Config, traces cons
 		failover: failover,
 		logger:   set.TelemetrySettings.Logger,
 	}, nil
-}
-
-func wrapTraces(c consumer.Traces) internal.SignalConsumer {
-	return internal.NewTracesWrapper(c)
 }
