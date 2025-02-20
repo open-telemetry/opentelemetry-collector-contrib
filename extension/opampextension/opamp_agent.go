@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"golang.org/x/text/cases"
@@ -90,6 +91,15 @@ var (
 	_ componentstatus.Watcher                      = (*opampAgent)(nil)
 )
 
+// moduleInfo exposes the internal collector moduleInfo interface
+// This functionality will be exposed in the collector by https://github.com/open-telemetry/opentelemetry-collector/pull/12375,
+// and once it is merged, this interface should be replaced by the new non-internal interface
+type moduleInfo interface {
+	// GetModuleInfos returns the module information for the host
+	// i.e. Receivers, Processors, Exporters, Extensions, and Connectors
+	GetModuleInfos() service.ModuleInfos
+}
+
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 	o.reportFunc = func(event *componentstatus.Event) {
 		componentstatus.ReportStatus(host, event)
@@ -145,6 +155,11 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 	if err := o.opampClient.SetAgentDescription(o.agentDescription); err != nil {
 		return err
 	}
+
+	if mi, ok := host.(moduleInfo); ok {
+		o.initAvailableComponents(mi.GetModuleInfos())
+	}
+
 	if o.availableComponents != nil {
 		if err := o.opampClient.SetAvailableComponents(o.availableComponents); err != nil {
 			return err
@@ -309,8 +324,6 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 	if agent.capabilities.ReportsHealth {
 		agent.initHealthReporting()
 	}
-
-	agent.initAvailableComponents(set.ModuleInfo)
 
 	return agent, nil
 }
@@ -481,48 +494,48 @@ func (o *opampAgent) initHealthReporting() {
 	go o.componentHealthEventLoop()
 }
 
-func (o *opampAgent) initAvailableComponents(set extension.ModuleInfo) {
+func (o *opampAgent) initAvailableComponents(moduleInfos service.ModuleInfos) {
 	if !o.capabilities.ReportsAvailableComponents {
 		return
 	}
 
 	o.availableComponents = &protobufs.AvailableComponents{
-		Hash: generateAvailableComponentsHash(set),
+		Hash: generateAvailableComponentsHash(moduleInfos),
 		Components: map[string]*protobufs.ComponentDetails{
 			"receivers": {
-				SubComponentMap: createComponentTypeAvailableComponentDetails(set.Receiver),
+				SubComponentMap: createComponentTypeAvailableComponentDetails(moduleInfos.Receiver),
 			},
 			"processors": {
-				SubComponentMap: createComponentTypeAvailableComponentDetails(set.Processor),
+				SubComponentMap: createComponentTypeAvailableComponentDetails(moduleInfos.Processor),
 			},
 			"exporters": {
-				SubComponentMap: createComponentTypeAvailableComponentDetails(set.Exporter),
+				SubComponentMap: createComponentTypeAvailableComponentDetails(moduleInfos.Exporter),
 			},
 			"extensions": {
-				SubComponentMap: createComponentTypeAvailableComponentDetails(set.Extension),
+				SubComponentMap: createComponentTypeAvailableComponentDetails(moduleInfos.Extension),
 			},
 			"connectors": {
-				SubComponentMap: createComponentTypeAvailableComponentDetails(set.Connector),
+				SubComponentMap: createComponentTypeAvailableComponentDetails(moduleInfos.Connector),
 			},
 		},
 	}
 }
 
-func generateAvailableComponentsHash(set extension.ModuleInfo) []byte {
+func generateAvailableComponentsHash(moduleInfos service.ModuleInfos) []byte {
 	var builder strings.Builder
 
-	addComponentTypeComponentsToStringBuilder(&builder, set.Receiver, "receiver")
-	addComponentTypeComponentsToStringBuilder(&builder, set.Processor, "processor")
-	addComponentTypeComponentsToStringBuilder(&builder, set.Exporter, "exporter")
-	addComponentTypeComponentsToStringBuilder(&builder, set.Extension, "extension")
-	addComponentTypeComponentsToStringBuilder(&builder, set.Connector, "connector")
+	addComponentTypeComponentsToStringBuilder(&builder, moduleInfos.Receiver, "receiver")
+	addComponentTypeComponentsToStringBuilder(&builder, moduleInfos.Processor, "processor")
+	addComponentTypeComponentsToStringBuilder(&builder, moduleInfos.Exporter, "exporter")
+	addComponentTypeComponentsToStringBuilder(&builder, moduleInfos.Extension, "extension")
+	addComponentTypeComponentsToStringBuilder(&builder, moduleInfos.Connector, "connector")
 
 	// Compute the SHA-256 hash of the serialized representation.
 	hash := sha256.Sum256([]byte(builder.String()))
 	return hash[:]
 }
 
-func addComponentTypeComponentsToStringBuilder(builder *strings.Builder, componentTypeComponents map[component.Type]string, componentType string) {
+func addComponentTypeComponentsToStringBuilder(builder *strings.Builder, componentTypeComponents map[component.Type]service.ModuleInfo, componentType string) {
 	// Collect components and sort them to ensure deterministic ordering.
 	components := make([]component.Type, 0, len(componentTypeComponents))
 	for k := range componentTypeComponents {
@@ -535,11 +548,11 @@ func addComponentTypeComponentsToStringBuilder(builder *strings.Builder, compone
 	// Append the component type and its sorted key-value pairs.
 	builder.WriteString(componentType + ":")
 	for _, k := range components {
-		builder.WriteString(k.String() + "=" + componentTypeComponents[k] + ";")
+		builder.WriteString(k.String() + "=" + componentTypeComponents[k].BuilderRef + ";")
 	}
 }
 
-func createComponentTypeAvailableComponentDetails(componentTypeComponents map[component.Type]string) map[string]*protobufs.ComponentDetails {
+func createComponentTypeAvailableComponentDetails(componentTypeComponents map[component.Type]service.ModuleInfo) map[string]*protobufs.ComponentDetails {
 	availableComponentDetails := map[string]*protobufs.ComponentDetails{}
 	for componentType, r := range componentTypeComponents {
 		availableComponentDetails[componentType.String()] = &protobufs.ComponentDetails{
@@ -548,7 +561,7 @@ func createComponentTypeAvailableComponentDetails(componentTypeComponents map[co
 					Key: "code.namespace",
 					Value: &protobufs.AnyValue{
 						Value: &protobufs.AnyValue_StringValue{
-							StringValue: r,
+							StringValue: r.BuilderRef,
 						},
 					},
 				},
