@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package filetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
+package filetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 
 import (
 	"math/rand/v2"
