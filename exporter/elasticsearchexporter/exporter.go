@@ -289,9 +289,11 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dpGroup, ok := groupedDataPoints[dpHash]
 					if !ok {
 						groupedDataPoints[dpHash] = &dataPointsGroup{
-							resource:   resource,
-							scope:      scope,
-							dataPoints: []datapoints.DataPoint{dp},
+							resource:          resource,
+							resourceSchemaURL: resourceMetric.SchemaUrl(),
+							scope:             scope,
+							scopeSchemaURL:    scopeMetrics.SchemaUrl(),
+							dataPoints:        []datapoints.DataPoint{dp},
 						}
 					} else {
 						dpGroup.addDataPoint(dp)
