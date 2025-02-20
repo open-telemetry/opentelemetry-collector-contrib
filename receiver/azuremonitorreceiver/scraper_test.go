@@ -372,7 +372,7 @@ func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
 			clientMetricsValues:      metricsValuesClientMock,
 			mb: metadata.NewMetricsBuilder(
 				metadata.DefaultMetricsBuilderConfig(),
-				receivertest.NewNopSettings(),
+				receivertest.NewNopSettingsWithType(receivertest.NopType),
 			),
 			mutex:     &sync.Mutex{},
 			resources: map[string]*azureResource{},
