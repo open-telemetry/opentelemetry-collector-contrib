@@ -40,14 +40,13 @@ func (add Adder) Numbers(state, dp pmetric.NumberDataPoint) error {
 		v := state.IntValue() + dp.IntValue()
 		state.SetIntValue(v)
 	}
-	state.SetTimestamp(dp.Timestamp())
 	return nil
 }
 
 func (add Adder) Histograms(state, dp pmetric.HistogramDataPoint) error {
 	// bounds different: no way to merge, so reset observation to new boundaries
 	if !pslice.Equal(state.ExplicitBounds(), dp.ExplicitBounds()) {
-		dp.MoveTo(state)
+		dp.CopyTo(state)
 		return nil
 	}
 
@@ -60,7 +59,6 @@ func (add Adder) Histograms(state, dp pmetric.HistogramDataPoint) error {
 		state.BucketCounts().SetAt(i, sum)
 	}
 
-	state.SetTimestamp(dp.Timestamp())
 	state.SetCount(state.Count() + dp.Count())
 
 	if state.HasSum() && dp.HasSum() {
@@ -118,7 +116,6 @@ func (add Adder) Exponential(state, dp pmetric.ExponentialHistogramDataPoint) er
 	expo.Merge(state.Positive(), dp.Positive())
 	expo.Merge(state.Negative(), dp.Negative())
 
-	state.SetTimestamp(dp.Timestamp())
 	state.SetCount(state.Count() + dp.Count())
 	state.SetZeroCount(state.ZeroCount() + dp.ZeroCount())
 

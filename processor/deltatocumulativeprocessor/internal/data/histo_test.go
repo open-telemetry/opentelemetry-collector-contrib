@@ -60,10 +60,6 @@ func TestHistoAdd(t *testing.T) {
 				want = cs.want.Into()
 			)
 
-			dp.SetTimestamp(0)
-			in.SetTimestamp(1)
-			want.SetTimestamp(1)
-
 			err := add.Histograms(dp, in)
 			is.Equal(nil, err)
 			is.Equal(want, dp)

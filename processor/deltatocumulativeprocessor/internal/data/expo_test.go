@@ -196,10 +196,6 @@ func TestExpoAdd(t *testing.T) {
 					want = want.Into()
 				)
 
-				dp.SetTimestamp(0)
-				in.SetTimestamp(1)
-				want.SetTimestamp(1)
-
 				err := add.Exponential(dp, in)
 				is.Equal(nil, err)
 				is.Equal(want, dp)

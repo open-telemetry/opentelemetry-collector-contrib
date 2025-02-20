@@ -35,6 +35,7 @@ type Type[Self any] interface {
 
 	StartTimestamp() pcommon.Timestamp
 	Timestamp() pcommon.Timestamp
+	SetTimestamp(pcommon.Timestamp)
 	CopyTo(Self)
 }
 
@@ -52,7 +53,12 @@ func Aggregate[T Type[T]](state, dp T, aggregate func(state, dp T) error) error 
 		return ErrOutOfOrder{Last: state.Timestamp(), Sample: dp.Timestamp()}
 	}
 
-	return aggregate(state, dp)
+	if err := aggregate(state, dp); err != nil {
+		return err
+	}
+
+	state.SetTimestamp(dp.Timestamp())
+	return nil
 }
 
 func (aggr Aggregator) Numbers(state, dp pmetric.NumberDataPoint) error {
