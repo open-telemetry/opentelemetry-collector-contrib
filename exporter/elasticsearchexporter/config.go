@@ -274,6 +274,17 @@ func (cfg *Config) Validate() error {
 	if cfg.Retry.MaxRetries < 0 {
 		return errors.New("retry::max_retries should be non-negative")
 	}
+	if cfg.Batcher.Enabled != nil {
+		batcherConfig := exporterbatcher.Config{
+			Enabled:       *cfg.Batcher.Enabled,
+			FlushTimeout:  cfg.Batcher.FlushTimeout,
+			MinSizeConfig: cfg.Batcher.MinSizeConfig,
+			MaxSizeConfig: cfg.Batcher.MaxSizeConfig,
+		}
+		if err := batcherConfig.Validate(); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
