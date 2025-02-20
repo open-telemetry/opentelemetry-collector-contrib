@@ -309,3 +309,7 @@ func addDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts
 		dp.SetDoubleValue(sample.Value)
 	}
 }
+
+// TODO: Cache metric name+type+unit and look up cache before creating new empty metric.
+// In OTel name+type+unit is the unique identifier of a metric and we should not create
+// a new metric if it already exists.
