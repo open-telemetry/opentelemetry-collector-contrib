@@ -27,7 +27,7 @@ func TestWithValidConfig(t *testing.T) {
 	cfg.(*Config).JARPath = "testdata/fake_jmx.jar"
 	cfg.(*Config).TargetSystem = "jvm"
 
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettingsWithType(metadata.Type)
 	r, err := f.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
