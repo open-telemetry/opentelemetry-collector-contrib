@@ -18,7 +18,7 @@ type ServiceConfig struct {
 	// NamePattern is mandatory.
 	NamePattern string `mapstructure:"name_pattern" yaml:"name_pattern"`
 	// ContainerNamePattern is optional, empty string means all containers in that service would be exported.
-	// Otherwise both service and container name petterns need to metch.
+	// Otherwise both service and container name patterns need to match.
 	ContainerNamePattern string `mapstructure:"container_name_pattern" yaml:"container_name_pattern"`
 }
 
