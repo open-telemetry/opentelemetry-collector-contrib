@@ -37,6 +37,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.120.1-0.20250221111745-6de29ce16921
 	go.opentelemetry.io/collector/receiver/receivertest v0.120.1-0.20250221111745-6de29ce16921
 	go.opentelemetry.io/collector/semconv v0.120.1-0.20250221111745-6de29ce16921
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	go.uber.org/zap/exp v0.3.0

@@ -177,6 +177,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.120.1-0.20250221111745-6de29ce16921 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.120.1-0.20250221111745-6de29ce16921 // indirect
 	go.opentelemetry.io/collector/semconv v0.120.1-0.20250221111745-6de29ce16921 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.56.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
