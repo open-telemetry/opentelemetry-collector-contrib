@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 )
 
 func Test_MetricPathGetSetter(t *testing.T) {
@@ -32,7 +33,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 	}{
 		{
 			name: "metric name",
-			path: &TestPath[*metricContext]{
+			path: &pathtest.Path[*metricContext]{
 				N: "name",
 			},
 			orig:   "name",
@@ -43,7 +44,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric description",
-			path: &TestPath[*metricContext]{
+			path: &pathtest.Path[*metricContext]{
 				N: "description",
 			},
 			orig:   "description",
@@ -54,7 +55,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric unit",
-			path: &TestPath[*metricContext]{
+			path: &pathtest.Path[*metricContext]{
 				N: "unit",
 			},
 			orig:   "unit",
@@ -65,7 +66,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric type",
-			path: &TestPath[*metricContext]{
+			path: &pathtest.Path[*metricContext]{
 				N: "type",
 			},
 			orig:   int64(pmetric.MetricTypeSum),
@@ -75,7 +76,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric aggregation_temporality",
-			path: &TestPath[*metricContext]{
+			path: &pathtest.Path[*metricContext]{
 				N: "aggregation_temporality",
 			},
 			orig:   int64(2),
@@ -86,7 +87,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric is_monotonic",
-			path: &TestPath[*metricContext]{
+			path: &pathtest.Path[*metricContext]{
 				N: "is_monotonic",
 			},
 			orig:   true,
@@ -97,7 +98,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric data points",
-			path: &TestPath[*metricContext]{
+			path: &pathtest.Path[*metricContext]{
 				N: "data_points",
 			},
 			orig:   refMetric.Sum().DataPoints(),

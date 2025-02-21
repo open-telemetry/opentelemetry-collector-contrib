@@ -24,6 +24,7 @@ components:
         - awsxray
         - azuredataexplorer
         - azuremonitor
+        - bmchelix
         - carbon
         - cassandra
         - clickhouse
@@ -55,6 +56,7 @@ components:
         - sentry
         - signalfx
         - splunk_hec
+        - stef
         - sumologic
         - syslog
         - tencentcloud_logservice
@@ -77,6 +79,7 @@ components:
         - http_forwarder
         - jaegerremotesampling
         - k8s_observer
+        - kafkatopics_observer
         - oauth2client
         - oidc
         - opamp

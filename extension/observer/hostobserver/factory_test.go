@@ -20,7 +20,7 @@ func TestValidConfig(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	hostObserver, err := createExtension(
 		context.Background(),
-		extensiontest.NewNopSettings(),
+		extensiontest.NewNopSettingsWithType(extensiontest.NopType),
 		&Config{},
 	)
 	require.NoError(t, err)

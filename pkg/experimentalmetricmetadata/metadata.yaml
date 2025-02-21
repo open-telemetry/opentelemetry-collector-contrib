@@ -1,4 +1,5 @@
 status:
+  class: pkg
   codeowners:
     active: [dmitryax]
     emeritus: [rmfitzpatrick]
