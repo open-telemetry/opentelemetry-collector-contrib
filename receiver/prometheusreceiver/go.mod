@@ -6,6 +6,8 @@ require (
 	github.com/go-kit/log v0.2.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
+	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc
+	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.120.1
@@ -35,10 +37,11 @@ require (
 	go.opentelemetry.io/collector/receiver v0.120.1-0.20250219144032-c2af75d88e89
 	go.opentelemetry.io/collector/receiver/receivertest v0.120.1-0.20250219144032-c2af75d88e89
 	go.opentelemetry.io/collector/semconv v0.120.1-0.20250219144032-c2af75d88e89
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	go.uber.org/zap/exp v0.3.0
-	golang.org/x/net v0.34.0
+	golang.org/x/net v0.35.0
 	google.golang.org/protobuf v1.36.5
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -157,7 +160,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
+	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.120.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.120.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
@@ -177,6 +180,7 @@ require (
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.30 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.1 // indirect
+	github.com/shurcooL/httpfs v0.0.0-20230704072500-f1e31cf0ba5c // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/tidwall/gjson v1.10.2 // indirect
@@ -247,7 +251,6 @@ require (
 	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/mod v0.21.0 // indirect
-	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
