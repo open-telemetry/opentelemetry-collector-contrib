@@ -44,17 +44,17 @@ func TestEncoding(t *testing.T) {
 	ef := otlpencodingextension.NewFactory()
 	efCfg := ef.CreateDefaultConfig().(*otlpencodingextension.Config)
 	efCfg.Protocol = "otlp_json"
-	ext, err := ef.Create(context.Background(), extensiontest.NewNopSettingsWithType(ef.Type()), efCfg)
+	ext, err := ef.Create(context.Background(), extensiontest.NewNopSettings(ef.Type()), efCfg)
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
-	me, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+	me, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
-	te, err := f.CreateTraces(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+	te, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
-	le, err := f.CreateLogs(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+	le, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
-	pe, err := f.(xexporter.Factory).CreateProfiles(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+	pe, err := f.(xexporter.Factory).CreateProfiles(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	host := hostWithEncoding{
 		map[component.ID]component.Component{id: ext},

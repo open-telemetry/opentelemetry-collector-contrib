@@ -33,7 +33,7 @@ func TestCreateMetrics(t *testing.T) {
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	cfg.Scrapers = []string{"topics"}
-	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, nil)
+	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	newMetricsReceiver = prev
 	assert.NoError(t, err)
 }
