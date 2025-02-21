@@ -9,12 +9,12 @@ status:
     active: [atoulme, michael-burt]
 
 resource_attributes:
-
-attributes:
   tlscheck.endpoint:
     enabled: true
     description: Endpoint at which the certificate was accessed.
     type: string
+
+attributes:
   tlscheck.x509.issuer:
     enabled: true
     description: The entity that issued the certificate.
@@ -31,4 +31,4 @@ metrics:
     gauge:
       value_type: int
     unit: "s"
-    attributes: [tlscheck.x509.issuer, tlscheck.x509.cn, tlscheck.endpoint]
+    attributes: [tlscheck.x509.issuer, tlscheck.x509.cn]

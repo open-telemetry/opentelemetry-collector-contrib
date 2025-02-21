@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 	"time"
-	
+
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 

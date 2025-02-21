@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -26,7 +27,7 @@ func (m *metricTlscheckTimeLeft) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricTlscheckTimeLeft) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string, tlscheckEndpointAttributeValue string) {
+func (m *metricTlscheckTimeLeft) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -36,7 +37,6 @@ func (m *metricTlscheckTimeLeft) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("tlscheck.x509.issuer", tlscheckX509IssuerAttributeValue)
 	dp.Attributes().PutStr("tlscheck.x509.cn", tlscheckX509CnAttributeValue)
-	dp.Attributes().PutStr("tlscheck.endpoint", tlscheckEndpointAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -67,12 +67,14 @@ func newMetricTlscheckTimeLeft(cfg MetricConfig) metricTlscheckTimeLeft {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                 MetricsBuilderConfig // config of the metrics builder.
-	startTime              pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity        int                  // maximum observed number of metrics per resource.
-	metricsBuffer          pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo              component.BuildInfo  // contains version information.
-	metricTlscheckTimeLeft metricTlscheckTimeLeft
+	config                         MetricsBuilderConfig // config of the metrics builder.
+	startTime                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                int                  // maximum observed number of metrics per resource.
+	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                      component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter map[string]filter.Filter
+	resourceAttributeExcludeFilter map[string]filter.Filter
+	metricTlscheckTimeLeft         metricTlscheckTimeLeft
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -94,17 +96,30 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                 mbc,
-		startTime:              pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:          pmetric.NewMetrics(),
-		buildInfo:              settings.BuildInfo,
-		metricTlscheckTimeLeft: newMetricTlscheckTimeLeft(mbc.Metrics.TlscheckTimeLeft),
+		config:                         mbc,
+		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                  pmetric.NewMetrics(),
+		buildInfo:                      settings.BuildInfo,
+		metricTlscheckTimeLeft:         newMetricTlscheckTimeLeft(mbc.Metrics.TlscheckTimeLeft),
+		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
+	}
+	if mbc.ResourceAttributes.TlscheckEndpoint.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["tlscheck.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckEndpoint.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.TlscheckEndpoint.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["tlscheck.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckEndpoint.MetricsExclude)
 	}
 
 	for _, op := range options {
 		op.apply(mb)
 	}
 	return mb
+}
+
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
@@ -169,6 +184,16 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	for _, op := range options {
 		op.apply(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
 
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -187,8 +212,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordTlscheckTimeLeftDataPoint adds a data point to tlscheck.time_left metric.
-func (mb *MetricsBuilder) RecordTlscheckTimeLeftDataPoint(ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string, tlscheckEndpointAttributeValue string) {
-	mb.metricTlscheckTimeLeft.recordDataPoint(mb.startTime, ts, val, tlscheckX509IssuerAttributeValue, tlscheckX509CnAttributeValue, tlscheckEndpointAttributeValue)
+func (mb *MetricsBuilder) RecordTlscheckTimeLeftDataPoint(ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string) {
+	mb.metricTlscheckTimeLeft.recordDataPoint(mb.startTime, ts, val, tlscheckX509IssuerAttributeValue, tlscheckX509CnAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

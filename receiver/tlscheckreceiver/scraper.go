@@ -79,7 +79,9 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	}
 
 	wg.Wait()
-	return s.mb.Emit(), nil
+	rb := s.mb.NewResourceBuilder()
+	rb.SetTlscheckEndpoint(target.Endpoint)
+	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
 }
 
 func newScraper(cfg *Config, settings receiver.Settings, getConnectionState func(endpoint string) (tls.ConnectionState, error)) *scraper {
