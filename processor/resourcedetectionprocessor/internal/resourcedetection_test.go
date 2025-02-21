@@ -149,7 +149,7 @@ func TestDetectResource_Error_PropagationEnabled(t *testing.T) {
 	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err1"))
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
-	_, _, err = p.Get(context.Background(), http.DefaultClient)
+	_, _, err = p.Get(context.Background(), &http.Client{Timeout: 10 * time.Second})
 	require.Error(t, err)
 }
 

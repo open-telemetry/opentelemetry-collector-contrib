@@ -18,7 +18,6 @@ import (
 	"go.uber.org/zap"
 )
 
-
 const MaxRetryInterval = 32 * time.Second
 
 var allowErrorPropagationFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -129,11 +128,6 @@ func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resour
 	return p.detectedResource.resource, p.detectedResource.schemaURL, p.detectedResource.err
 }
 
-type detectResult struct {
-	r         pcommon.Resource
-	schemaURL string
-}
-
 func (p *ResourceProvider) detectResource(ctx context.Context) {
 	p.detectedResource = &resourceResult{}
 
@@ -142,22 +136,22 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 
 	p.logger.Info("began detecting resource information")
 
-	resultsChan := make([]chan detectResult, len(p.detectors))
+	resultsChan := make([]chan resourceResult, len(p.detectors))
 	for i, detector := range p.detectors {
-		resultsChan[i] = make(chan detectResult)
+		resultsChan[i] = make(chan resourceResult)
 		go func(detector Detector) {
 			sleep := 1 * time.Second
 			for {
 				r, schemaURL, err := detector.Detect(ctx)
 				if err == nil {
-					resultsChan[i] <- detectResult{r: r, schemaURL: schemaURL}
+					resultsChan[i] <- resourceResult{resource: r, schemaURL: schemaURL, err: nil}
 					return
 				}
 				p.logger.Warn("failed to detect resource", zap.Error(err))
-        if allowErrorPropagationFeatureGate.IsEnabled() {
-				  p.detectedResource.err = err
-				  return
-			  }
+				if allowErrorPropagationFeatureGate.IsEnabled() {
+					resultsChan[i] <- resourceResult{err: err}
+					return
+				}
 				time.Sleep(sleep)
 				if sleep < MaxRetryInterval {
 					sleep *= 2
@@ -171,8 +165,12 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 		case <-ctx.Done():
 			p.logger.Warn("context was cancelled: %w", zap.Error(ctx.Err()))
 		case result := <-ch:
+			if result.err != nil {
+				p.detectedResource.err = result.err
+				return
+			}
 			mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, result.schemaURL)
-			MergeResource(res, result.r, false)
+			MergeResource(res, result.resource, false)
 		}
 	}
 
