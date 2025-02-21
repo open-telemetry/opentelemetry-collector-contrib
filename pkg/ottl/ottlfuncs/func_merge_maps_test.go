@@ -187,6 +187,31 @@ func Test_MergeMaps(t *testing.T) {
 				expectedValue.PutStr("attr1", "value3")
 			},
 		},
+		{
+			name: "Insert conflicting key sources and source",
+			source: ottl.StandardPMapGetter[pcommon.Map]{
+				Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
+					m := pcommon.NewMap()
+					m.PutStr("attr2", "value2")
+					return m, nil
+				},
+			},
+			sources: ottl.StandardPMapSliceGetter[pcommon.Map]{
+				Getter: func(_ context.Context, _ pcommon.Map) (any, error) {
+					m := pcommon.NewMap()
+					m.PutStr("attr1", "value3")
+					m.PutStr("attr2", "value4")
+					m.PutStr("attr3", "value5")
+					return []pcommon.Map{m}, nil
+				},
+			},
+			strategy: INSERT,
+			want: func(expectedValue pcommon.Map) {
+				expectedValue.PutStr("attr1", "value1")
+				expectedValue.PutStr("attr2", "value2")
+				expectedValue.PutStr("attr3", "value5")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
