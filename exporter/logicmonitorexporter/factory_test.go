@@ -51,7 +51,7 @@ func TestCreateLogs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			set := exportertest.NewNopSettingsWithType(metadata.Type)
+			set := exportertest.NewNopSettings(metadata.Type)
 			oexp, err := factory.CreateLogs(context.Background(), set, cfg)
 			if (err != nil) != tt.shouldError {
 				t.Errorf("CreateLogs() error = %v, shouldError %v", err, tt.shouldError)
@@ -91,7 +91,7 @@ func TestCreateTraces(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			set := exportertest.NewNopSettingsWithType(metadata.Type)
+			set := exportertest.NewNopSettings(metadata.Type)
 			oexp, err := factory.CreateTraces(context.Background(), set, cfg)
 			if (err != nil) != tt.shouldError {
 				t.Errorf("CreateTraces() error = %v, shouldError %v", err, tt.shouldError)

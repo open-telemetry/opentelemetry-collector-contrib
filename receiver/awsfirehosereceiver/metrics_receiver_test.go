@@ -67,7 +67,7 @@ func TestMetricsReceiver_Start(t *testing.T) {
 			cfg.RecordType = testCase.recordType
 			got, err := newMetricsReceiver(
 				cfg,
-				receivertest.NewNopSettingsWithType(metadata.Type),
+				receivertest.NewNopSettings(metadata.Type),
 				unmarshalers,
 				consumertest.NewNop(),
 			)

@@ -54,7 +54,7 @@ func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, consumertest.NewNop())
+	prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, prwReceiver, "metrics receiver creation failed")
 
