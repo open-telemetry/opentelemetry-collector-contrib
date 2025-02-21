@@ -408,7 +408,7 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 			},
 		},
 		{
-			statement: `merge_maps(attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where body == "operationA"`,
+			statement: `merge_maps(attributes, "insert", ParseJSON("{\"json_test\":\"pass\"}")) where body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("json_test", "pass")
 			},
@@ -662,7 +662,7 @@ func Test_ProcessLogs_InferredLogContext(t *testing.T) {
 			},
 		},
 		{
-			statement: `merge_maps(log.attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where log.body == "operationA"`,
+			statement: `merge_maps(log.attributes, "insert", ParseJSON("{\"json_test\":\"pass\"}")) where log.body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("json_test", "pass")
 			},
