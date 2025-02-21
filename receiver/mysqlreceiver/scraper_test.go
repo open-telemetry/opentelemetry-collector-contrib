@@ -58,7 +58,7 @@ func TestScrape(t *testing.T) {
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlConnectionCount.Enabled = true
 
-		scraper := newMySQLScraper(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats",
 			innodbStatsFile:             "innodb_stats",
@@ -96,7 +96,7 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteCount.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
 
-		scraper := newMySQLScraper(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats_partial",
 			innodbStatsFile:             "innodb_stats_empty",
@@ -136,7 +136,7 @@ func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
 	cfg.Password = "otel"
 	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
 
-	scraper := newMySQLScraper(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	scraper.sqlclient = &mockClient{
 		globalStatsFile:             "global_stats_oob",
 		innodbStatsFile:             "innodb_stats_empty",

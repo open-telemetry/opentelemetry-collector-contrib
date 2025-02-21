@@ -197,7 +197,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) (net.Addr, *tracet
 	telset := componenttest.NewNopTelemetrySettings()
 	telset.TracerProvider = tp
 
-	set := receivertest.NewNopSettingsWithType(metadata.Type)
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.TelemetrySettings = telset
 
 	set.ID = component.NewIDWithName(component.MustNewType("otlp"), "logs")

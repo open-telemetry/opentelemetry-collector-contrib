@@ -131,7 +131,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (processor.
 	next := &consumertest.MetricsSink{}
 	proc, err := factory.CreateMetrics(
 		ctx,
-		processortest.NewNopSettingsWithType(metadata.Type),
+		processortest.NewNopSettings(metadata.Type),
 		cfg,
 		next,
 	)

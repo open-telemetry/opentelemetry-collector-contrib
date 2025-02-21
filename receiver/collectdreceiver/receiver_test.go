@@ -59,7 +59,7 @@ func TestNewReceiver(t *testing.T) {
 	logger := zap.NewNop()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := newCollectdReceiver(logger, tt.args.config, "", tt.args.nextConsumer, receivertest.NewNopSettingsWithType(metadata.Type))
+			_, err := newCollectdReceiver(logger, tt.args.config, "", tt.args.nextConsumer, receivertest.NewNopSettings(metadata.Type))
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -146,7 +146,7 @@ func TestCollectDServer(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 
 	logger := zap.NewNop()
-	cdr, err := newCollectdReceiver(logger, config, defaultAttrsPrefix, sink, receivertest.NewNopSettingsWithType(metadata.Type))
+	cdr, err := newCollectdReceiver(logger, config, defaultAttrsPrefix, sink, receivertest.NewNopSettings(metadata.Type))
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
