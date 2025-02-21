@@ -31,8 +31,6 @@ func TestLogsRegisterConsumers(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{logsFirst}, {logsSecond}, {logsThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
 	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
@@ -52,14 +50,13 @@ func TestLogsRegisterConsumers(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
-	lc, _, ok := failoverConnector.failover.getCurrentConsumer()
-	lc1 := failoverConnector.failover.GetConsumerAtIndex(1)
-	lc2 := failoverConnector.failover.GetConsumerAtIndex(2)
+	lc := failoverConnector.failover.TestGetConsumerAtIndex(0)
+	lc1 := failoverConnector.failover.TestGetConsumerAtIndex(1)
+	lc2 := failoverConnector.failover.TestGetConsumerAtIndex(2)
 
-	assert.True(t, ok)
-	require.Implements(t, (*consumer.Logs)(nil), lc)
-	require.Implements(t, (*consumer.Logs)(nil), lc1)
-	require.Implements(t, (*consumer.Logs)(nil), lc2)
+	require.Equal(t, lc, &sinkFirst)
+	require.Equal(t, lc1, &sinkSecond)
+	require.Equal(t, lc2, &sinkThird)
 }
 
 func TestLogsWithValidFailover(t *testing.T) {
@@ -71,8 +68,6 @@ func TestLogsWithValidFailover(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{logsFirst}, {logsSecond}, {logsThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
 	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
@@ -108,8 +103,6 @@ func TestLogsWithFailoverError(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{logsFirst}, {logsSecond}, {logsThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
 	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
@@ -138,7 +131,7 @@ func TestLogsWithFailoverError(t *testing.T) {
 
 func consumeLogsAndCheckStable(conn *logsFailover, idx int, lr plog.Logs) bool {
 	_ = conn.ConsumeLogs(context.Background(), lr)
-	stableIndex := conn.failover.pS.TestStableIndex()
+	stableIndex := conn.failover.pS.CurrentPipeline()
 	return stableIndex == idx
 }
 
