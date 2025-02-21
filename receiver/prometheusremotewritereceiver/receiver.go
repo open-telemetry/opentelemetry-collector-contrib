@@ -193,7 +193,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
-			addCounterDatapoints(rm, ls, ts)
+			prw.addCounterDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
 			addGaugeDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
@@ -225,8 +225,44 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 	}
 }
 
-func addCounterDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
+func (prw *prometheusRemoteWriteReceiver) addCounterDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
+	scopeName := prw.settings.BuildInfo.Description
+	scopeVersion := prw.settings.BuildInfo.Version
+	metricName := ls.Get(labels.MetricName)
+
+	if v := ls.Get("otel_scope_name"); v != "" {
+		scopeName = v
+	}
+	if v := ls.Get("otel_scope_version"); v != "" {
+		scopeVersion = v
+	}
+
+	var scope pmetric.ScopeMetrics
+	scopeFound := false
+	for i := 0; i < rm.ScopeMetrics().Len(); i++ {
+		sm := rm.ScopeMetrics().At(i)
+		if sm.Scope().Name() == scopeName && sm.Scope().Version() == scopeVersion {
+			scope = sm
+			scopeFound = true
+			break
+		}
+	}
+
+	if !scopeFound {
+		scope = rm.ScopeMetrics().AppendEmpty()
+		scope.Scope().SetName(scopeName)
+		scope.Scope().SetVersion(scopeVersion)
+	}
+
+	metric := scope.Metrics().AppendEmpty()
+	metric.SetName(metricName)
+	sum := metric.SetEmptySum()
+	sum.SetIsMonotonic(true)
+	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+	// Add datapoints
+	datapoints := sum.DataPoints()
+	addDatapoints(datapoints, ls, ts)
 }
 
 func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
