@@ -120,7 +120,7 @@ func TestNewExporter_Serializer(t *testing.T) {
 	}
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	var err error
 	params.Logger, err = zap.NewDevelopment()
 	require.NoError(t, err)
