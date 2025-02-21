@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 )
 
 func TestMetricsAfterOneEvaluation(t *testing.T) {
@@ -137,8 +138,8 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue()},
 			m: metricdata.Metrics{
 				Name:        "otelcol_processor_tail_sampling_sampling_decision_timer_latency",
-				Description: "Latency (in microseconds) of each run of the sampling decision timer",
-				Unit:        "µs",
+				Description: "Latency (in milliseconds) of each run of the sampling decision timer",
+				Unit:        "ms",
 				Data: metricdata.Histogram[int64]{
 					Temporality: metricdata.CumulativeTemporality,
 					DataPoints:  []metricdata.HistogramDataPoint[int64]{{}},
@@ -691,7 +692,7 @@ func setupTestTelemetry() testTelemetry {
 }
 
 func (tt *testTelemetry) newSettings() processor.Settings {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettingsWithType(metadata.Type)
 	set.ID = component.NewID(component.MustNewType("tail_sampling"))
 	set.TelemetrySettings.MeterProvider = tt.meterProvider
 	return set

@@ -40,7 +40,7 @@ func TestCreateLogs(t *testing.T) {
 
 				_, err := createLogsReceiver(
 					context.Background(),
-					receivertest.NewNopSettings(),
+					receivertest.NewNopSettingsWithType(metadata.Type),
 					cfg,
 					consumertest.NewNop(),
 				)
