@@ -19,8 +19,9 @@ const (
 
 type MergeMapsArguments[K any] struct {
 	Target   ottl.PMapGetter[K]
-	Source   ottl.PMapSliceLikeGetter[K]
+	Source   ottl.PMapGetter[K]
 	Strategy string
+	mapSlice ottl.Optional[ottl.PMapSliceGetter[K]]
 }
 
 func NewMergeMapsFactory[K any]() ottl.Factory[K] {
@@ -34,7 +35,7 @@ func createMergeMapsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 		return nil, errors.New("MergeMapsFactory args must be of type *MergeMapsArguments[K]")
 	}
 
-	return mergeMaps(args.Target, args.Source, args.Strategy)
+	return mergeMaps(args.Target, args.Source, args.Strategy, args.mapSlice)
 }
 
 // mergeMaps function merges the source map into the target map using the supplied strategy to handle conflicts.
@@ -43,7 +44,7 @@ func createMergeMapsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 //	insert: Insert the value from `source` into `target` where the key does not already exist.
 //	update: Update the entry in `target` with the value from `source` where the key does exist
 //	upsert: Performs insert or update. Insert the value from `source` into `target` where the key does not already exist and update the entry in `target` with the value from `source` where the key does exist.
-func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.PMapSliceLikeGetter[K], strategy string) (ottl.ExprFunc[K], error) {
+func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.PMapGetter[K], strategy string, mapSlice ottl.Optional[ottl.PMapSliceGetter[K]]) (ottl.ExprFunc[K], error) {
 	if strategy != INSERT && strategy != UPDATE && strategy != UPSERT {
 		return nil, fmt.Errorf("invalid value for strategy, %v, must be 'insert', 'update' or 'upsert'", strategy)
 	}
@@ -53,10 +54,11 @@ func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.PMapSliceLikeGetter
 		if err != nil {
 			return nil, err
 		}
-		valueMapSlice, err := source.Get(ctx, tCtx)
+		valueMap, err := source.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
+<<<<<<< HEAD
 <<<<<<< HEAD
 		switch strategy {
 		case INSERT:
@@ -105,10 +107,57 @@ func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.PMapSliceLikeGetter
 				})
 			default:
 				return nil, fmt.Errorf("unknown strategy, %v", strategy)
+=======
+
+		if err := merge(strategy, &valueMap, &targetMap); err != nil {
+			return nil, err
+		}
+
+		if !mapSlice.IsEmpty() {
+			valueMapSlice, err := mapSlice.Get().Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, val := range valueMapSlice {
+				if err := merge(strategy, &val, &targetMap); err != nil {
+					return nil, err
+				}
+>>>>>>> 78269a3ddd (support mapSlice in separate optional parameter)
 			}
 >>>>>>> bf4f61282b ([pkg/ottl] support merging multiple maps via merge_maps() function)
 		}
 
 		return nil, nil
 	}, nil
+}
+
+func merge(strategy string, source *pcommon.Map, target *pcommon.Map) error {
+	switch strategy {
+	case INSERT:
+		source.Range(func(k string, v pcommon.Value) bool {
+			if _, ok := target.Get(k); !ok {
+				tv := target.PutEmpty(k)
+				v.CopyTo(tv)
+			}
+			return true
+		})
+	case UPDATE:
+		source.Range(func(k string, v pcommon.Value) bool {
+			if tv, ok := target.Get(k); ok {
+				v.CopyTo(tv)
+			}
+			return true
+		})
+	case UPSERT:
+		source.Range(func(k string, v pcommon.Value) bool {
+			tv := target.PutEmpty(k)
+			v.CopyTo(tv)
+			return true
+		})
+	default:
+		return fmt.Errorf("unknown strategy, %v", strategy)
+	}
+
+	return nil
 }
