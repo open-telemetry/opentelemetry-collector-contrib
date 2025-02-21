@@ -239,9 +239,9 @@ func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
 		return fmt.Errorf("sum validation failed: %w", err)
 	}
 
-	// Exactly one metric should be defined. Also, validate OOTL statement, note
-	// that, here we only evaluate if statements are valid. Check for required
-	// statements are left to the other validations.
+	// Exactly one metric should be defined. Also, validate OTTL expressions,
+	// note that, here we only evaluate if statements are valid. Check for
+	// required statements are left to the other validations.
 	var metricsDefinedCount int
 	if mi.Histogram != nil {
 		metricsDefinedCount++
