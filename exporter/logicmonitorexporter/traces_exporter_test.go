@@ -28,7 +28,7 @@ func Test_NewTracesExporter(t *testing.T) {
 			},
 			APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
 		}
-		set := exportertest.NewNopSettingsWithType(metadata.Type)
+		set := exportertest.NewNopSettings(metadata.Type)
 		exp := newTracesExporter(context.Background(), config, set)
 		assert.NotNil(t, exp)
 	})
@@ -44,7 +44,7 @@ func TestPushTraceData(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	config := &Config{
 		ClientConfig: confighttp.ClientConfig{

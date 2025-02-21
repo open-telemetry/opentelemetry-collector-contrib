@@ -40,7 +40,7 @@ func TestMetricsRegisterConsumers(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Metrics))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 
 	failoverConnector := conn.(*metricsFailover)
 	defer func() {
@@ -77,7 +77,7 @@ func TestMetricsWithValidFailover(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Metrics))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 
 	require.NoError(t, err)
 
@@ -112,7 +112,7 @@ func TestMetricsWithFailoverError(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Metrics))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 
 	require.NoError(t, err)
 
