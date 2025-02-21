@@ -7,6 +7,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -19,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -89,6 +91,13 @@ func TestLoadConfig(t *testing.T) {
 					},
 					BalancerName: "",
 				},
+				BatcherConfig: exporterbatcher.Config{
+					Enabled:      false,
+					FlushTimeout: 200 * time.Millisecond,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{
+						MinSizeItems: 8192,
+					},
+				},
 			},
 		},
 		{
@@ -145,6 +154,13 @@ func TestLoadConfig(t *testing.T) {
 						"appName":      "APP_NAME",
 					},
 					BalancerName: "",
+				},
+				BatcherConfig: exporterbatcher.Config{
+					Enabled:      true,
+					FlushTimeout: 3 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{
+						MinSizeItems: 8888,
+					},
 				},
 			},
 		},
@@ -314,4 +330,39 @@ func TestGetMetadataFromResource(t *testing.T) {
 	appName, subSystemName = c.getMetadataFromResource(r3)
 	assert.Equal(t, "application", appName)
 	assert.Equal(t, "subsystem", subSystemName)
+}
+
+func TestCreateExportersWithBatcher(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Domain = "localhost"
+	cfg.PrivateKey = "test-key"
+	cfg.AppName = "test-app"
+	cfg.BatcherConfig.Enabled = true
+	cfg.BatcherConfig.FlushTimeout = 1 * time.Second
+	cfg.BatcherConfig.MinSizeItems = 100
+
+	// Test traces exporter
+	t.Run("traces_with_batcher", func(t *testing.T) {
+		set := exportertest.NewNopSettingsWithType(metadata.Type)
+		exp, err := factory.CreateTraces(context.Background(), set, cfg)
+		require.NoError(t, err)
+		require.NotNil(t, exp)
+	})
+
+	// Test metrics exporter
+	t.Run("metrics_with_batcher", func(t *testing.T) {
+		set := exportertest.NewNopSettingsWithType(metadata.Type)
+		exp, err := factory.CreateMetrics(context.Background(), set, cfg)
+		require.NoError(t, err)
+		require.NotNil(t, exp)
+	})
+
+	// Test logs exporter
+	t.Run("logs_with_batcher", func(t *testing.T) {
+		set := exportertest.NewNopSettingsWithType(metadata.Type)
+		exp, err := factory.CreateLogs(context.Background(), set, cfg)
+		require.NoError(t, err)
+		require.NotNil(t, exp)
+	})
 }
