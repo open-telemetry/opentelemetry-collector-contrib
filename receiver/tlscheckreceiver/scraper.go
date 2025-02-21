@@ -62,7 +62,7 @@ func (s *scraper) scrapeEndpoint(endpoint string, wg *sync.WaitGroup, mux *sync.
 
 	mux.Lock()
 	defer mux.Unlock()
-	s.mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, endpoint)
+	s.mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName)
 }
 
 func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
