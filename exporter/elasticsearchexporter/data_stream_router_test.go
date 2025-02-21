@@ -90,7 +90,7 @@ func TestRouteLogRecord(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, dsType, ds.Type)
 	})
-	t.Run("test data_stream.type is not honoured for other modes (except bodymap)", func(t *testing.T) {
+	t.Run("test data_stream.type is not honored for other modes (except bodymap)", func(t *testing.T) {
 		dsType := "metrics"
 		router := dynamicDocumentRouter{mode: MappingOTel}
 		attrs := pcommon.NewMap()
