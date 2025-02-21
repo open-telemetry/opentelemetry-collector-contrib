@@ -2247,6 +2247,85 @@ func Test_StandardPMapGetter_WrappedError(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func Test_StandardPMapSliceGetter(t *testing.T) {
+	var data []map[string]any
+	data = append(data, map[string]any{})
+	tests := []struct {
+		name             string
+		getter           StandardPMapSliceGetter[any]
+		want             any
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "[]pcommon.map type",
+			getter: StandardPMapSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []pcommon.Map{pcommon.NewMap()}, nil
+				},
+			},
+			want:  []pcommon.Map{pcommon.NewMap()},
+			valid: true,
+		},
+		{
+			name: "[]map[string]any type",
+			getter: StandardPMapSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return data, nil
+				},
+			},
+			want:  []pcommon.Map{pcommon.NewMap()},
+			valid: true,
+		},
+		{
+			name: "Incorrect type",
+			getter: StandardPMapSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return true, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected []pcommon.Map but got bool",
+		},
+		{
+			name: "nil",
+			getter: StandardPMapSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected []pcommon.Map but got nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+//nolint:errorlint
+func Test_StandardPMapSliceGetter_WrappedError(t *testing.T) {
+	getter := StandardPMapSliceGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
+
 func Test_StandardDurationGetter(t *testing.T) {
 	oneHourOneMinuteOneSecond, err := time.ParseDuration("1h1m1s")
 	require.NoError(t, err)
