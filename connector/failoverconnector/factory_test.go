@@ -25,8 +25,6 @@ func TestNewFactory(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{traces0, traces1}, {traces2}},
 		RetryInterval:    5 * time.Minute,
-		RetryGap:         10 * time.Second,
-		MaxRetries:       5,
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{

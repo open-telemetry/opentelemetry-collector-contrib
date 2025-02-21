@@ -63,7 +63,7 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 func TestNewReceiver_refresh_frequency(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.RefreshFrequency = 1
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), nil)
+	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettingsWithType(receivertest.NopType), nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 }
