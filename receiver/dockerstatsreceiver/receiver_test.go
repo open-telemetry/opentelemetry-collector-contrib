@@ -153,7 +153,7 @@ func TestResolveTLSConfig(t *testing.T) {
 			tlsConfig: &configtls.ClientConfig{
 				Insecure: true,
 			},
-			expectedNil:   false,
+			expectedNil:   true,
 			expectedError: false,
 		},
 	}

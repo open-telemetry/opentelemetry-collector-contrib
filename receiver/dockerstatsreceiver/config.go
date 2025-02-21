@@ -38,7 +38,7 @@ type Config struct {
 	// MetricsBuilderConfig config. Enable or disable stats by name.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// TLS configuration
-	TLSConfig *configtls.ClientConfig `mapstructure:"tls"`
+	TLSConfig *configtls.ClientConfig `mapstructure:"tls,omitempty"`
 }
 
 func (config Config) Validate() error {

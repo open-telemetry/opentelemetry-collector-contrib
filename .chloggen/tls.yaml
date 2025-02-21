@@ -1,5 +1,5 @@
-change_type: "bug_fix"
-component: "metricsReceiver"
+change_type: "enhancement"
+component: "dockerstatsreceiver"
 note: "Fixed TLS configuration resolution in metricsReceiver to properly handle enabled/disabled TLS states."
 issues: [33557]
 subtext: |
