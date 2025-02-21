@@ -66,7 +66,7 @@ func setProxyFromEnv(config pkgconfigmodel.Config) {
 	// If this is set to an empty []string, viper will have a type conflict when merging
 	// this config during secrets resolution. It unmarshals empty yaml lists to type
 	// []interface{}, which will then conflict with type []string and fail to merge.
-	var noProxy []interface{}
+	var noProxy []any
 	for _, v := range strings.Split(proxyConfig.NoProxy, ",") {
 		noProxy = append(noProxy, v)
 	}
