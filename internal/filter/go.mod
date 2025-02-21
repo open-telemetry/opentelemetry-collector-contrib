@@ -5,9 +5,9 @@ go 1.23.0
 require (
 	github.com/expr-lang/expr v1.16.9
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.120.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.120.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.120.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.120.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.120.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.120.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.120.1-0.20250219144032-c2af75d88e89
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250219144032-c2af75d88e89
