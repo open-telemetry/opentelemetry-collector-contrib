@@ -19,8 +19,8 @@ const (
 
 type MergeMapsArguments[K any] struct {
 	Target   ottl.PMapGetter[K]
-	Source   ottl.Optional[ottl.PMapGetter[K]]
 	Strategy string
+	Source   ottl.Optional[ottl.PMapGetter[K]]
 	Sources  ottl.Optional[ottl.PMapSliceGetter[K]]
 }
 
