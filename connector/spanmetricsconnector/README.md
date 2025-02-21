@@ -224,6 +224,39 @@ target_info{job="shippingservice", instance="...", ...} 1
 calls_total{span_name="/Address", service_name="shippingservice", span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_UNSET", ...} 142
 ```
 
+### Output Metrics
+
+#### Viewing Span Metrics in Prometheus
+
+You can observe the output from the `spanmetrics` connector in Prometheus by visiting [http://localhost:9090/graph](http://localhost:9090/graph).  
+Navigate to the **Graph** or **Explore** section and enter a metric name to visualize the data.
+
+#### Available Metrics
+
+### `traces_span_metrics_calls_total`
+This metric provides the total number of span calls, categorized by various attributes.
+
+#### Example Data:
+```plaintext
+{
+  http_method="GET",
+  http_status_code="200",
+  job="go-trace-demo",
+  service_name="go-trace-demo",
+  span_kind="SPAN_KIND_INTERNAL",
+  span_name="handle_request"
+}
+```
+
+### `traces_span_metrics_duration_milliseconds_bucket`
+Histogram-based metric representing the distribution of span durations across predefined buckets.
+
+### `traces_span_metrics_duration_milliseconds_count`
+The total number of spans recorded.
+
+### `traces_span_metrics_duration_milliseconds_sum`
+The cumulative duration of all spans in milliseconds.
+
 ### More Examples
 
 For more example configuration covering various other use cases, please visit the [testdata directory](../../connector/spanmetricsconnector/testdata).
