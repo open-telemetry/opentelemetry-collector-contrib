@@ -15,10 +15,12 @@ type StartParams struct {
 }
 
 type ResourceConsumption struct {
-	CPUPercentAvg float64
-	CPUPercentMax float64
-	RAMMiBAvg     uint32
-	RAMMiBMax     uint32
+	CPUPercentAvg   float64
+	CPUPercentMax   float64
+	CPUPercentLimit float64
+	RAMMiBAvg       uint32
+	RAMMiBMax       uint32
+	RAMMiBLimit     uint32
 }
 
 // OtelcolRunner defines the interface for configuring, starting and stopping one or more instances of

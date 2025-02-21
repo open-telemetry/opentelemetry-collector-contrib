@@ -3,8 +3,8 @@ type: stef
 status:
   class: exporter
   stability:
-    development: [metrics]
-  distributions: []
+    alpha: [metrics]
+  distributions: [contrib]
   codeowners:
     active: [tigrannajaryan, dmitryax]
 tests:

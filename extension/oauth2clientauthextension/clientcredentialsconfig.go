@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"go.uber.org/multierr"
 	"golang.org/x/oauth2"
@@ -36,6 +37,7 @@ type clientCredentialsConfig struct {
 
 	ClientIDFile     string
 	ClientSecretFile string
+	ExpiryBuffer     time.Duration
 }
 
 type clientCredentialsTokenSource struct {
@@ -90,7 +92,7 @@ func (c *clientCredentialsConfig) createConfig() (*clientcredentials.Config, err
 }
 
 func (c *clientCredentialsConfig) TokenSource(ctx context.Context) oauth2.TokenSource {
-	return oauth2.ReuseTokenSource(nil, clientCredentialsTokenSource{ctx: ctx, config: c})
+	return oauth2.ReuseTokenSourceWithExpiry(nil, clientCredentialsTokenSource{ctx: ctx, config: c}, c.ExpiryBuffer)
 }
 
 func (ts clientCredentialsTokenSource) Token() (*oauth2.Token, error) {
