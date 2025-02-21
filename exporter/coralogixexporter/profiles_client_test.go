@@ -51,7 +51,7 @@ func TestNewProfilesExporter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exp, err := newProfilesExporter(tt.cfg, exportertest.NewNopSettings())
+			exp, err := newProfilesExporter(tt.cfg, exportertest.NewNopSettings(exportertest.NopType))
 			if tt.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, exp)
@@ -72,7 +72,7 @@ func TestProfilesExporter_Start(t *testing.T) {
 		},
 	}
 
-	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings())
+	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
 	err = exp.start(context.Background(), componenttest.NewNopHost())
@@ -97,7 +97,7 @@ func TestProfilesExporter_EnhanceContext(t *testing.T) {
 		},
 	}
 
-	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings())
+	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -114,7 +114,7 @@ func TestProfilesExporter_PushProfiles(t *testing.T) {
 		},
 	}
 
-	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings())
+	exp, err := newProfilesExporter(cfg, exportertest.NewNopSettings(exportertest.NopType))
 	require.NoError(t, err)
 
 	// Initialize the exporter by calling start

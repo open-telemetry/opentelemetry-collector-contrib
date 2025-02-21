@@ -53,7 +53,7 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(receivertest.NewNopSettingsWithType(metadata.Type), &Config{
+	receiver := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
 		PrometheusConfig:         cfg,
 		UseStartTimeMetric:       false,
 		StartTimeMetricRegex:     "",

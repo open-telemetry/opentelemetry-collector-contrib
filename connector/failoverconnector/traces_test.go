@@ -40,7 +40,7 @@ func TestTracesRegisterConsumers(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	failoverConnector := conn.(*tracesFailover)
 	defer func() {
@@ -79,7 +79,7 @@ func TestTracesWithValidFailover(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
 
@@ -115,7 +115,7 @@ func TestTracesWithFailoverError(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
 
