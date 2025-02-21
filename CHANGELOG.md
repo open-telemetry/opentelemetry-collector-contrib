@@ -7,6 +7,12 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.120.1
+
+### 🧰 Bug fixes 🧰
+
+- `receiver/prometheus`: Fix Collector failing to start up if Prometheus receiver is present in config without 'fallback_scrape_protocol'. (#38018)
+
 ## v0.120.0
 
 ### 🛑 Breaking changes 🛑

@@ -10,6 +10,7 @@ require (
 	github.com/sijms/go-ora/v2 v2.8.23
 	github.com/snowflakedb/gosnowflake v1.12.0
 	github.com/stretchr/testify v1.10.0
+	github.com/thda/tds v0.1.7
 	go.opentelemetry.io/collector/component v0.120.1-0.20250219144032-c2af75d88e89
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250219144032-c2af75d88e89
 	go.opentelemetry.io/collector/pdata v1.26.1-0.20250219144032-c2af75d88e89
