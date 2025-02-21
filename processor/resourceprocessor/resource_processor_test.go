@@ -91,7 +91,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			ttn := new(consumertest.TracesSink)
 
 			factory := NewFactory()
-			rtp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), tt.config, ttn)
+			rtp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), tt.config, ttn)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
@@ -105,7 +105,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test metrics consumer
 			tmn := new(consumertest.MetricsSink)
-			rmp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), tt.config, tmn)
+			rmp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), tt.config, tmn)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
@@ -119,7 +119,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test logs consumer
 			tln := new(consumertest.LogsSink)
-			rlp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), tt.config, tln)
+			rlp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), tt.config, tln)
 			require.NoError(t, err)
 			assert.True(t, rtp.Capabilities().MutatesData)
 
