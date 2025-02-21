@@ -319,6 +319,14 @@ func (f *factory) createMetricsExporter(
 			return nil
 		}
 	case isMetricExportSerializerEnabled():
+		// Start the hostmetadata pusher once.
+		// It sends the hostmetadata for the host where the collector is running.
+		if cfg.HostMetadata.Enabled {
+			f.onceMetadata.Do(func() {
+				attrs := pcommon.NewMap()
+				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs, metadataReporter)
+			})
+		}
 		set.Logger.Info("Using Datadog serializerexporter for metric export")
 		sf := serializerexporter.NewFactory()
 		ex := &serializerexporter.ExporterConfig{
@@ -347,6 +355,7 @@ func (f *factory) createMetricsExporter(
 				}
 				return nil
 			},
+			HostMetadata: cfg.HostMetadata,
 		}
 		return sf.CreateMetrics(ctx, set, ex)
 	default:

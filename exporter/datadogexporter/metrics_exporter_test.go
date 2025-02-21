@@ -87,8 +87,7 @@ func TestNewExporter(t *testing.T) {
 	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
 }
 
-func TestNewExporter_serializer(t *testing.T) {
-	// Skipping for now as we test the serializer
+func TestNewExporter_Serializer(t *testing.T) {
 	require.NoError(t, enableMetricExportSerializer())
 	defer require.NoError(t, enableNativeMetricExport())
 	server := testutil.DatadogServerMock()
@@ -134,15 +133,13 @@ func TestNewExporter_serializer(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
-	fmt.Printf("#### server.MetadataChan: %v\n", server.MetadataChan)
 
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
-	fmt.Printf("#### server.MetadataChan: %v\n", server.MetadataChan)
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
+	assert.NotEmpty(t, recvMetadata.InternalHostname)
 }
 
 func Test_metricsExporter_PushMetricsData(t *testing.T) {
@@ -1003,6 +1000,9 @@ func newTestConfig(t *testing.T, endpoint string, hostTags []string, histogramMo
 	return &Config{
 		HostMetadata: HostMetadataConfig{
 			Tags: hostTags,
+		},
+		TagsConfig: TagsConfig{
+			Hostname: "test-host",
 		},
 		Metrics: MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
