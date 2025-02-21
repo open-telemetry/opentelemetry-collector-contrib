@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"testing"
 	"time"
+	
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func TestValidate(t *testing.T) {

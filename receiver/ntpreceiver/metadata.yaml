@@ -4,9 +4,10 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: []
+  distributions: [contrib]
   codeowners:
     active: [atoulme]
+    seeking_new: true
 
 resource_attributes:
   ntp.host:

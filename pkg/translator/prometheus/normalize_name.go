@@ -15,7 +15,7 @@ import (
 // OTLP metrics use the c/s notation as specified at https://ucum.org/ucum.html
 // (See also https://github.com/open-telemetry/semantic-conventions/blob/main/docs/general/metrics.md#instrument-units)
 // Prometheus best practices for units: https://prometheus.io/docs/practices/naming/#base-units
-// OpenMetrics specification for units: https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#units-and-base-units
+// OpenMetrics specification for units: https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#units-and-base-units
 var unitMap = map[string]string{
 	// Time
 	"d":   "days",

@@ -12,11 +12,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/processor/processorhelper/processorhelperprofiles"
-	"go.opentelemetry.io/collector/processor/processorprofiles"
+	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
@@ -28,10 +28,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/dynatrace"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/kubeadm"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
@@ -66,6 +68,8 @@ func NewFactory() processor.Factory {
 		system.TypeStr:           system.NewDetector,
 		openshift.TypeStr:        openshift.NewDetector,
 		k8snode.TypeStr:          k8snode.NewDetector,
+		kubeadm.TypeStr:          kubeadm.NewDetector,
+		dynatrace.TypeStr:        dynatrace.NewDetector,
 	})
 
 	f := &factory{
@@ -73,13 +77,13 @@ func NewFactory() processor.Factory {
 		providers:               map[component.ID]*internal.ResourceProvider{},
 	}
 
-	return processorprofiles.NewFactory(
+	return xprocessor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processorprofiles.WithTraces(f.createTracesProcessor, metadata.TracesStability),
-		processorprofiles.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
-		processorprofiles.WithLogs(f.createLogsProcessor, metadata.LogsStability),
-		processorprofiles.WithProfiles(f.createProfilesProcessor, metadata.ProfilesStability))
+		xprocessor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
+		xprocessor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
+		xprocessor.WithLogs(f.createLogsProcessor, metadata.LogsStability),
+		xprocessor.WithProfiles(f.createProfilesProcessor, metadata.ProfilesStability))
 }
 
 // Type gets the type of the Option config created by this factory.
@@ -172,21 +176,21 @@ func (f *factory) createProfilesProcessor(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
-	nextConsumer consumerprofiles.Profiles,
-) (processorprofiles.Profiles, error) {
+	nextConsumer xconsumer.Profiles,
+) (xprocessor.Profiles, error) {
 	rdp, err := f.getResourceDetectionProcessor(set, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return processorhelperprofiles.NewProfiles(
+	return xprocessorhelper.NewProfiles(
 		ctx,
 		set,
 		cfg,
 		nextConsumer,
 		rdp.processProfiles,
-		processorhelperprofiles.WithCapabilities(consumerCapabilities),
-		processorhelperprofiles.WithStart(rdp.Start))
+		xprocessorhelper.WithCapabilities(consumerCapabilities),
+		xprocessorhelper.WithStart(rdp.Start))
 }
 
 func (f *factory) getResourceDetectionProcessor(

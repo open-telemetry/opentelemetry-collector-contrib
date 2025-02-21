@@ -20,9 +20,10 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	k8stest "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
@@ -41,7 +42,7 @@ func TestE2E(t *testing.T) {
 	defer shutdownSink()
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, "")
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, "", map[string]string{}, "")
 
 	defer func() {
 		for _, obj := range append(collectorObjs) {
@@ -71,7 +72,7 @@ func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
 	cfg.HTTP = nil
 	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
 
-	rcvr, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, mc)
+	rcvr, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, mc)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, err, "failed creating metrics receiver")
 	return func() {

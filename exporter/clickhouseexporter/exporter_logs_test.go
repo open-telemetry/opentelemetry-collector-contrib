@@ -32,10 +32,7 @@ func TestLogsExporter_New(t *testing.T) {
 	_ = func(want error) validate {
 		return func(t *testing.T, exporter *logsExporter, err error) {
 			require.Nil(t, exporter)
-			require.Error(t, err)
-			if !errors.Is(err, want) {
-				t.Fatalf("Expected error '%v', but got '%v'", want, err)
-			}
+			require.ErrorIs(t, err, want, "Expected error '%v', but got '%v'", want, err)
 		}
 	}
 

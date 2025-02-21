@@ -1,0 +1,15 @@
+signaltometrics:
+  datapoints:
+    - name: gauge.to.histogram
+      description: A histogram created from gauge values
+      include_resource_attributes:
+        - key: resource.foo
+      attributes:
+        - key: datapoint.foo
+      conditions:
+        - metric.type == 1 # select all gauges
+      histogram:
+        buckets: [1, 4, 5, 8, 200, 500, 1000]
+        count: "1" # 1 count for each datapoint
+        value: Double(value_int) + value_double # handle both int and double
+

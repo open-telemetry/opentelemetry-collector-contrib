@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions:
+  distributions: [contrib]
   codeowners:
     active: [shalper2, MovieStoreGuy, greatestusername]
 
@@ -38,6 +38,12 @@ attributes:
     type: string
   splunk.searchartifacts.cache.type:
     description: The search artifacts cache type
+    type: string
+  splunk.feature:
+    description: The Feature name from the Splunk Health Introspection Endpoint
+    type: string
+  splunk.feature.health:
+    description: The Health (in color form) of a Splunk Feature from the Splunk Health Introspection Endpoint
     type: string
 
 metrics:
@@ -345,6 +351,14 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     attributes: [splunk.host]
+  #`services/server/health/splunkd/details`
+  splunk.health:
+    enabled: false
+    description: The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.
+    unit: "{status}"
+    gauge:
+      value_type: int
+    attributes: [splunk.feature, splunk.feature.health]
 
 tests:
   config:

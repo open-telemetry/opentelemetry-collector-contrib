@@ -25,7 +25,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for hostmetricsreceiver/memory metrics.
+// MetricsConfig provides config for memory metrics.
 type MetricsConfig struct {
 	SystemLinuxMemoryAvailable MetricConfig `mapstructure:"system.linux.memory.available"`
 	SystemMemoryLimit          MetricConfig `mapstructure:"system.memory.limit"`
@@ -50,7 +50,7 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for hostmetricsreceiver/memory metrics builder.
+// MetricsBuilderConfig is a configuration for memory metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }

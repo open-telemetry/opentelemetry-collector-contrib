@@ -139,13 +139,6 @@ func newMetricLogFromRaw(
 	}
 }
 
-func min(l, r int) int {
-	if l < r {
-		return l
-	}
-	return r
-}
-
 func resourceToMetricLabels(labels *KeyValues, resource pcommon.Resource) {
 	attrs := resource.Attributes()
 	attrs.Range(func(k string, v pcommon.Value) bool {

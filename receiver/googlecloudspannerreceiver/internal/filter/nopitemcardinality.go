@@ -21,8 +21,8 @@ func NewNopItemFilterResolver() ItemFilterResolver {
 	}
 }
 
-func (f *nopItemCardinalityFilter) Filter(sourceItems []*Item) ([]*Item, error) {
-	return sourceItems, nil
+func (f *nopItemCardinalityFilter) Filter(sourceItems []*Item) []*Item {
+	return sourceItems
 }
 
 func (f *nopItemCardinalityFilter) Shutdown() error {

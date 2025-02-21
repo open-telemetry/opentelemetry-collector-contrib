@@ -6,7 +6,11 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"fmt"
 	"strings"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
+
+var _ ottl.StatementsGetter = (*ContextStatements)(nil)
 
 type ContextID string
 
@@ -35,4 +39,23 @@ type ContextStatements struct {
 	Context    ContextID `mapstructure:"context"`
 	Conditions []string  `mapstructure:"conditions"`
 	Statements []string  `mapstructure:"statements"`
+	// ErrorMode determines how the processor reacts to errors that occur while processing
+	// this group of statements. When provided, it overrides the default Config ErrorMode.
+	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
+	// `SharedCache` is an experimental feature that may change or be removed in the future.
+	// When enabled, it allows the statements cache to be shared across all other groups that share the cache.
+	// This feature is not configurable via `mapstructure` and cannot be set in configuration files.
+	SharedCache bool `mapstructure:"-"`
+}
+
+func (c ContextStatements) GetStatements() []string {
+	return c.Statements
+}
+
+func toContextStatements(statements any) (*ContextStatements, error) {
+	contextStatements, ok := statements.(ContextStatements)
+	if !ok {
+		return nil, fmt.Errorf("invalid context statements type, expected: common.ContextStatements, got: %T", statements)
+	}
+	return &contextStatements, nil
 }

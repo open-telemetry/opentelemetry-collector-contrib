@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutiltest"
 )
 
@@ -50,11 +51,11 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
+		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 
 	rtConn := conn.(*logsConnector)
 	require.NoError(t, err)
@@ -117,7 +118,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -158,57 +159,6 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		assert.Empty(t, defaultSink.AllLogs())
 		assert.Len(t, sink0.AllLogs(), 1)
 		assert.Empty(t, sink1.AllLogs())
-	})
-
-	t.Run("logs matched by two expressions", func(t *testing.T) {
-		resetSinks()
-
-		l := plog.NewLogs()
-
-		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutStr("X-Tenant", "x_acme")
-		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-
-		rl = l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutStr("X-Tenant", "_acme")
-		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-
-		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
-
-		assert.Empty(t, defaultSink.AllLogs())
-		assert.Len(t, sink0.AllLogs(), 1)
-		assert.Len(t, sink1.AllLogs(), 1)
-
-		assert.Equal(t, 2, sink0.AllLogs()[0].LogRecordCount())
-		assert.Equal(t, 2, sink1.AllLogs()[0].LogRecordCount())
-		assert.Equal(t, sink0.AllLogs(), sink1.AllLogs())
-	})
-
-	t.Run("one log matched by multiple expressions, other matched none", func(t *testing.T) {
-		resetSinks()
-
-		l := plog.NewLogs()
-
-		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutStr("X-Tenant", "_acme")
-		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-
-		rl = l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutStr("X-Tenant", "something-else")
-		rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-
-		require.NoError(t, conn.ConsumeLogs(context.Background(), l))
-
-		assert.Len(t, defaultSink.AllLogs(), 1)
-		assert.Len(t, sink0.AllLogs(), 1)
-		assert.Len(t, sink1.AllLogs(), 1)
-
-		assert.Equal(t, sink0.AllLogs(), sink1.AllLogs())
-
-		rlog := defaultSink.AllLogs()[0].ResourceLogs().At(0)
-		attr, ok := rlog.Resource().Attributes().Get("X-Tenant")
-		assert.True(t, ok, "routing attribute must exists")
-		assert.Equal(t, "something-else", attr.AsString())
 	})
 
 	t.Run("logs matched by one expression, multiple pipelines", func(t *testing.T) {
@@ -253,7 +203,6 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 				Pipelines: []pipeline.ID{logsDefault, logs0},
 			},
 		},
-		MatchOnce: true,
 	}
 
 	var defaultSink, sink0, sink1 consumertest.LogsSink
@@ -273,7 +222,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -408,7 +357,7 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -459,13 +408,13 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettingsWithType(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
 
 	require.NoError(t, err)
-	assert.False(t, conn.Capabilities().MutatesData)
+	assert.True(t, conn.Capabilities().MutatesData)
 }
 
 func TestLogsConnectorDetailed(t *testing.T) {
@@ -491,13 +440,13 @@ func TestLogsConnectorDetailed(t *testing.T) {
 	isResourceBFromLowerContext := `resource.attributes["resourceName"] == "resourceB"`
 
 	testCases := []struct {
-		name        string
-		cfg         *Config
 		ctx         context.Context
 		input       plog.Logs
 		expectSink0 plog.Logs
 		expectSink1 plog.Logs
 		expectSinkD plog.Logs
+		cfg         *Config
+		name        string
 	}{
 		{
 			name: "request/no_request_values",
@@ -910,7 +859,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 
 			conn, err := NewFactory().CreateLogsToLogs(
 				context.Background(),
-				connectortest.NewNopSettings(),
+				connectortest.NewNopSettingsWithType(metadata.Type),
 				tt.cfg,
 				router.(consumer.Logs),
 			)

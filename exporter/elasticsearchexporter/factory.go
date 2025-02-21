@@ -6,6 +6,7 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"compress/gzip"
 	"context"
 	"net/http"
 	"time"
@@ -17,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
@@ -30,12 +33,13 @@ const (
 
 // NewFactory creates a factory for Elastic exporter.
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		xexporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		xexporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
 	)
 }
 
@@ -46,11 +50,11 @@ func createDefaultConfig() component.Config {
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	httpClientConfig.Timeout = 90 * time.Second
 	httpClientConfig.Compression = configcompression.TypeGzip
+	httpClientConfig.CompressionParams.Level = gzip.BestSpeed
 
 	return &Config{
 		QueueSettings: qs,
 		ClientConfig:  httpClientConfig,
-		Index:         "",
 		LogsIndex:     defaultLogsIndex,
 		LogsDynamicIndex: DynamicIndexSetting{
 			Enabled: false,
@@ -63,6 +67,9 @@ func createDefaultConfig() component.Config {
 		TracesDynamicIndex: DynamicIndexSetting{
 			Enabled: false,
 		},
+		LogsDynamicID: DynamicIDSettings{
+			Enabled: false,
+		},
 		Retry: RetrySettings{
 			Enabled:         true,
 			MaxRetries:      0, // default is set in exporter code
@@ -73,8 +80,7 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Mapping: MappingsSettings{
-			Mode:  "none",
-			Dedot: true,
+			Mode: "none",
 		},
 		LogstashFormat: LogstashFormatSettings{
 			Enabled:         false,
@@ -111,14 +117,9 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	cf := cfg.(*Config)
 
-	index := cf.LogsIndex
-	if cf.Index != "" {
-		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
-		index = cf.Index
-	}
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, index, cf.LogsDynamicIndex.Enabled)
+	exporter := newExporter(cf, set, cf.LogsIndex, cf.LogsDynamicIndex.Enabled)
 
 	return exporterhelper.NewLogs(
 		ctx,
@@ -166,13 +167,36 @@ func createTracesExporter(ctx context.Context,
 	)
 }
 
+// createProfilesExporter creates a new exporter for profiles.
+//
+// Profiles are directly indexed into Elasticsearch.
+func createProfilesExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (xexporter.Profiles, error) {
+	cf := cfg.(*Config)
+
+	handleDeprecatedConfig(cf, set.Logger)
+
+	exporter := newExporter(cf, set, "", false)
+
+	return xexporterhelper.NewProfilesExporter(
+		ctx,
+		set,
+		cfg,
+		exporter.pushProfilesData,
+		exporterhelperOptions(cf, exporter.Start, exporter.Shutdown)...,
+	)
+}
+
 func exporterhelperOptions(
 	cfg *Config,
 	start component.StartFunc,
 	shutdown component.ShutdownFunc,
 ) []exporterhelper.Option {
 	opts := []exporterhelper.Option{
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(start),
 		exporterhelper.WithShutdown(shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),

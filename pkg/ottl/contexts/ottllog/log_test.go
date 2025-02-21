@@ -7,15 +7,17 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -27,7 +29,7 @@ var (
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-	refLog, refIS, refResource := createTelemetry("string")
+	refLog, _, _ := createTelemetry("string")
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
@@ -60,7 +62,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	}{
 		{
 			name: "time",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "time",
 			},
 			orig:   time.Date(1970, 1, 1, 0, 0, 0, 100000000, time.UTC),
@@ -71,7 +73,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "time_unix_nano",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "time_unix_nano",
 			},
 			orig:   int64(100_000_000),
@@ -82,7 +84,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "observed_time_unix_nano",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "observed_time_unix_nano",
 			},
 			orig:   int64(500_000_000),
@@ -93,7 +95,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "observed time",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "observed_time",
 			},
 			orig:   time.Date(1970, 1, 1, 0, 0, 0, 500000000, time.UTC),
@@ -104,7 +106,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "severity_number",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "severity_number",
 			},
 			orig:   int64(plog.SeverityNumberFatal),
@@ -115,7 +117,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "severity_text",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "severity_text",
 			},
 			orig:   "blue screen of death",
@@ -126,7 +128,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "body",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "body",
 			},
 			orig:   "body",
@@ -137,7 +139,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "map body",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "body",
 			},
 			orig: func() pcommon.Map {
@@ -152,10 +154,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "map body index",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "body",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("key"),
 					},
 				},
@@ -169,7 +171,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "slice body",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "body",
 			},
 			orig: func() pcommon.Slice {
@@ -186,10 +188,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "slice body index",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "body",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						I: ottltest.Intp(0),
 					},
 				},
@@ -203,9 +205,9 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "body string",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "body",
-				NextPath: &internal.TestPath[TransformContext]{
+				NextPath: &pathtest.Path[TransformContext]{
 					N: "string",
 				},
 			},
@@ -218,7 +220,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "flags",
 			},
 			orig:   int64(4),
@@ -229,7 +231,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "trace_id",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "trace_id",
 			},
 			orig:   pcommon.TraceID(traceID),
@@ -240,7 +242,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "span_id",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "span_id",
 			},
 			orig:   pcommon.SpanID(spanID),
@@ -251,9 +253,9 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "trace_id string",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "trace_id",
-				NextPath: &internal.TestPath[TransformContext]{
+				NextPath: &pathtest.Path[TransformContext]{
 					N: "string",
 				},
 			},
@@ -265,9 +267,9 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "span_id string",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "span_id",
-				NextPath: &internal.TestPath[TransformContext]{
+				NextPath: &pathtest.Path[TransformContext]{
 					N: "string",
 				},
 			},
@@ -279,7 +281,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "cache",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "cache",
 			},
 			orig:   pcommon.NewMap(),
@@ -290,10 +292,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "cache access",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "cache",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("temp"),
 					},
 				},
@@ -306,7 +308,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "attributes",
 			},
 			orig:   refLog.Attributes(),
@@ -317,10 +319,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("str"),
 					},
 				},
@@ -333,10 +335,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("bool"),
 					},
 				},
@@ -349,10 +351,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("int"),
 					},
 				},
@@ -365,10 +367,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("double"),
 					},
 				},
@@ -381,10 +383,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("bytes"),
 					},
 				},
@@ -397,10 +399,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("arr_str"),
 					},
 				},
@@ -416,10 +418,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("arr_bool"),
 					},
 				},
@@ -435,10 +437,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("arr_int"),
 					},
 				},
@@ -454,10 +456,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("arr_float"),
 					},
 				},
@@ -473,10 +475,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("arr_bytes"),
 					},
 				},
@@ -492,10 +494,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes pcommon.Map",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("pMap"),
 					},
 				},
@@ -513,10 +515,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes map[string]any",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("map"),
 					},
 				},
@@ -534,16 +536,16 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes nested",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("slice"),
 					},
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						I: ottltest.Intp(0),
 					},
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("map"),
 					},
 				},
@@ -560,16 +562,16 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes nested new values",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("new"),
 					},
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						I: ottltest.Intp(2),
 					},
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						I: ottltest.Intp(0),
 					},
 				},
@@ -587,7 +589,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "dropped_attributes_count",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "dropped_attributes_count",
 			},
 			orig:   int64(10),
@@ -596,29 +598,18 @@ func Test_newPathGetSetter(t *testing.T) {
 				log.SetDroppedAttributesCount(20)
 			},
 		},
-		{
-			name: "instrumentation_scope",
-			path: &internal.TestPath[TransformContext]{
-				N: "instrumentation_scope",
-			},
-			orig:   refIS,
-			newVal: pcommon.NewInstrumentationScope(),
-			modified: func(_ plog.LogRecord, il pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
-				pcommon.NewInstrumentationScope().CopyTo(il)
-			},
-		},
-		{
-			name: "resource",
-			path: &internal.TestPath[TransformContext]{
-				N: "resource",
-			},
-			orig:   refResource,
-			newVal: pcommon.NewResource(),
-			modified: func(_ plog.LogRecord, _ pcommon.InstrumentationScope, resource pcommon.Resource, _ pcommon.Map) {
-				pcommon.NewResource().CopyTo(resource)
-			},
-		},
 	}
+	// Copy all tests cases and sets the path.Context value to the generated ones.
+	// It ensures all exiting field access also work when the path context is set.
+	for _, tt := range slices.Clone(tests) {
+		testWithContext := tt
+		testWithContext.name = "with_path_context:" + tt.name
+		pathWithContext := *tt.path.(*pathtest.Path[TransformContext])
+		pathWithContext.C = ContextName
+		testWithContext.path = &pathWithContext
+		tests = append(tests, testWithContext)
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pep := pathExpressionParser{}
@@ -646,6 +637,77 @@ func Test_newPathGetSetter(t *testing.T) {
 			assert.Equal(t, exCache, tCtx.getCache())
 		})
 	}
+}
+
+func Test_newPathGetSetter_higherContextPath(t *testing.T) {
+	logRec, instrumentationScope, resource := createTelemetry("string")
+	ctx := NewTransformContext(logRec, instrumentationScope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
+
+	tests := []struct {
+		name     string
+		path     ottl.Path[TransformContext]
+		expected any
+	}{
+		{
+			name: "resource",
+			path: &pathtest.Path[TransformContext]{C: "", N: "resource", NextPath: &pathtest.Path[TransformContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[TransformContext]{
+					&pathtest.Key[TransformContext]{
+						S: ottltest.Strp("str"),
+					},
+				},
+			}},
+			expected: "val",
+		},
+		{
+			name: "resource with context",
+			path: &pathtest.Path[TransformContext]{C: "resource", N: "attributes", KeySlice: []ottl.Key[TransformContext]{
+				&pathtest.Key[TransformContext]{
+					S: ottltest.Strp("str"),
+				},
+			}},
+			expected: "val",
+		},
+		{
+			name:     "instrumentation_scope",
+			path:     &pathtest.Path[TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
+			expected: instrumentationScope.Name(),
+		},
+		{
+			name:     "instrumentation_scope with context",
+			path:     &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
+			expected: instrumentationScope.Name(),
+		},
+	}
+
+	pep := pathExpressionParser{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			accessor, err := pep.parsePath(tt.path)
+			require.NoError(t, err)
+
+			got, err := accessor.Get(context.Background(), ctx)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func Test_newPathGetSetter_WithCache(t *testing.T) {
+	cacheValue := pcommon.NewMap()
+	cacheValue.PutStr("test", "pass")
+
+	ctx := NewTransformContext(
+		plog.NewLogRecord(),
+		pcommon.NewInstrumentationScope(),
+		pcommon.NewResource(),
+		plog.NewScopeLogs(),
+		plog.NewResourceLogs(),
+		WithCache(&cacheValue),
+	)
+
+	assert.Equal(t, cacheValue, ctx.getCache())
 }
 
 func createTelemetry(bodyType string) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
@@ -720,10 +782,10 @@ func createTelemetry(bodyType string) (plog.LogRecord, pcommon.InstrumentationSc
 }
 
 func Test_InvalidBodyIndexing(t *testing.T) {
-	path := internal.TestPath[TransformContext]{
+	path := pathtest.Path[TransformContext]{
 		N: "body",
 		KeySlice: []ottl.Key[TransformContext]{
-			&internal.TestKey[TransformContext]{
+			&pathtest.Key[TransformContext]{
 				S: ottltest.Strp("key"),
 			},
 		},

@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/common"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -29,11 +28,10 @@ var allTCPStates = []string{
 	"TIME_WAIT",
 }
 
-func (s *networkScraper) recordNetworkConntrackMetrics() error {
+func (s *networkScraper) recordNetworkConntrackMetrics(ctx context.Context) error {
 	if !s.config.MetricsBuilderConfig.Metrics.SystemNetworkConntrackCount.Enabled && !s.config.MetricsBuilderConfig.Metrics.SystemNetworkConntrackMax.Enabled {
 		return nil
 	}
-	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 	conntrack, err := s.conntrack(ctx)
 	if err != nil {

@@ -8,15 +8,17 @@ import (
 	"strings"
 
 	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
-	"github.com/DataDog/datadog-agent/comp/core/log"
+	corelog "github.com/DataDog/datadog-agent/comp/core/log/def"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	pkgconfigsetup "github.com/DataDog/datadog-agent/pkg/config/setup"
 	"go.opentelemetry.io/collector/component"
+
+	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 
-func newLogComponent(set component.TelemetrySettings) log.Component {
-	zlog := &zaplogger{
-		logger: set.Logger,
+func newLogComponent(set component.TelemetrySettings) corelog.Component {
+	zlog := &pkgdatadog.Zaplogger{
+		Logger: set.Logger,
 	}
 	return zlog
 }

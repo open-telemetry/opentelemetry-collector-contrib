@@ -31,6 +31,8 @@ import (
 	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 )
 
 func TestNewExporter(t *testing.T) {
@@ -66,7 +68,7 @@ func TestNewExporter(t *testing.T) {
 	}
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettingsWithType(metadata.Type)
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -161,6 +163,13 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":      []any{"env:dev"},
 					},
 					map[string]any{
+						"metric":    "datadog.otel.gateway",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(0)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"version:latest", "command:otelcol"},
+					},
+					map[string]any{
 						"metric":    "otel.datadog_exporter.metrics.running",
 						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(1)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
@@ -219,6 +228,13 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":      []any{"env:new_env"},
 					},
 					map[string]any{
+						"metric":    "datadog.otel.gateway",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(0)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"version:latest", "command:otelcol"},
+					},
+					map[string]any{
 						"metric":    "otel.datadog_exporter.metrics.running",
 						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(1)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
@@ -258,6 +274,13 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"env:dev"},
+					},
+					map[string]any{
+						"metric":    "datadog.otel.gateway",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(0)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"version:latest", "command:otelcol"},
 					},
 					map[string]any{
 						"metric":    "otel.datadog_exporter.metrics.running",
@@ -333,6 +356,13 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":      []any{"env:dev", "key1:value1", "key2:value2"},
 					},
 					map[string]any{
+						"metric":    "datadog.otel.gateway",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(0)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"version:latest", "command:otelcol", "key1:value1", "key2:value2"},
+					},
+					map[string]any{
 						"metric":    "otel.datadog_exporter.metrics.running",
 						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(1)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
@@ -343,8 +373,9 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			},
 		},
 	}
+	gatewayUsage := attributes.NewGatewayUsage()
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("kind=%s,histgramMode=%s", tt.source.Kind, tt.histogramMode), func(t *testing.T) {
+		t.Run(fmt.Sprintf("kind=%s,histogramMode=%s", tt.source.Kind, tt.histogramMode), func(t *testing.T) {
 			seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.MetricV2Endpoint}
 			sketchRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.SketchesMetricEndpoint}
 			server := testutil.DatadogServerMock(
@@ -362,7 +393,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
-				exportertest.NewNopSettings(),
+				exportertest.NewNopSettingsWithType(metadata.Type),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,
@@ -370,21 +401,20 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				&testutil.MockSourceProvider{Src: tt.source},
 				reporter,
 				nil,
+				gatewayUsage,
 			)
-			if tt.expectedErr == nil {
-				assert.NoError(t, err, "unexpected error")
-			} else {
+			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
 			}
+			assert.NoError(t, err, "unexpected error")
 			exp.getPushTime = func() uint64 { return 0 }
 			err = exp.PushMetricsData(context.Background(), tt.metrics)
-			if tt.expectedErr == nil {
-				assert.NoError(t, err, "unexpected error")
-			} else {
+			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
 			}
+			assert.NoError(t, err, "unexpected error")
 			if len(tt.expectedSeries) == 0 {
 				assert.Nil(t, seriesRecorder.ByteBody)
 			} else {
@@ -446,7 +476,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 			HostnameSource: HostnameSourceFirstResource,
 		},
 	}
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettingsWithType(metadata.Type)
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -787,8 +817,9 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			},
 		},
 	}
+	gatewayUsage := attributes.NewGatewayUsage()
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("kind=%s,histgramMode=%s", tt.source.Kind, tt.histogramMode), func(t *testing.T) {
+		t.Run(fmt.Sprintf("kind=%s,histogramMode=%s", tt.source.Kind, tt.histogramMode), func(t *testing.T) {
 			seriesRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.MetricV1Endpoint}
 			sketchRecorder := &testutil.HTTPRequestRecorder{Pattern: testutil.SketchesMetricEndpoint}
 			server := testutil.DatadogServerMock(
@@ -806,7 +837,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
-				exportertest.NewNopSettings(),
+				exportertest.NewNopSettingsWithType(metadata.Type),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,
@@ -814,21 +845,20 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				&testutil.MockSourceProvider{Src: tt.source},
 				reporter,
 				nil,
+				gatewayUsage,
 			)
-			if tt.expectedErr == nil {
-				assert.NoError(t, err, "unexpected error")
-			} else {
+			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
 			}
+			assert.NoError(t, err, "unexpected error")
 			exp.getPushTime = func() uint64 { return 0 }
 			err = exp.PushMetricsData(context.Background(), tt.metrics)
-			if tt.expectedErr == nil {
-				assert.NoError(t, err, "unexpected error")
-			} else {
+			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
 			}
+			assert.NoError(t, err, "unexpected error")
 			if len(tt.expectedSeries) == 0 {
 				assert.Nil(t, seriesRecorder.ByteBody)
 			} else {

@@ -4,6 +4,7 @@
 package elasticsearchexporter
 
 import (
+	"compress/gzip"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -61,7 +63,6 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"https://elastic.example.com:9200"},
-				Index:     "",
 				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -74,15 +75,19 @@ func TestConfig(t *testing.T) {
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
+				LogsDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = &defaultMaxIdleConns
-					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.MaxIdleConns = defaultMaxIdleConns
+					cfg.IdleConnTimeout = defaultIdleConnTimeout
 					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
 					cfg.Compression = defaultCompression
+					cfg.CompressionParams.Level = gzip.BestSpeed
 				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
@@ -104,8 +109,7 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "none",
-					Dedot: true,
+					Mode: "none",
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -133,7 +137,6 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
-				Index:     "",
 				LogsIndex: "my_log_index",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -146,15 +149,19 @@ func TestConfig(t *testing.T) {
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
+				LogsDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = &defaultMaxIdleConns
-					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.MaxIdleConns = defaultMaxIdleConns
+					cfg.IdleConnTimeout = defaultIdleConnTimeout
 					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
 					cfg.Compression = defaultCompression
+					cfg.CompressionParams.Level = gzip.BestSpeed
 				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
@@ -176,8 +183,7 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "none",
-					Dedot: true,
+					Mode: "none",
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -205,7 +211,6 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
-				Index:     "",
 				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
@@ -218,15 +223,19 @@ func TestConfig(t *testing.T) {
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
+				LogsDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = &defaultMaxIdleConns
-					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.MaxIdleConns = defaultMaxIdleConns
+					cfg.IdleConnTimeout = defaultIdleConnTimeout
 					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
 					cfg.Compression = defaultCompression
+					cfg.CompressionParams.Level = gzip.BestSpeed
 				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
@@ -248,8 +257,7 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "none",
-					Dedot: true,
+					Mode: "none",
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -282,14 +290,6 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.CloudID = "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY="
-			}),
-		},
-		{
-			id:         component.NewIDWithName(metadata.Type, "deprecated_index"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoints = []string{"https://elastic.example.com:9200"}
-				cfg.Index = "my_log_index"
 			}),
 		},
 		{
@@ -330,7 +330,6 @@ func TestConfig(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(strings.ReplaceAll(tt.id.String(), "/", "_"), func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
@@ -342,7 +341,7 @@ func TestConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -430,7 +429,7 @@ func TestConfig_Validate(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			assert.EqualError(t, component.ValidateConfig(tt.config), tt.err)
+			assert.ErrorContains(t, xconfmap.Validate(tt.config), tt.err)
 		})
 	}
 }
@@ -439,14 +438,14 @@ func TestConfig_Validate_Environment(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
 		t.Setenv("ELASTICSEARCH_URL", "http://test:9200")
 		config := withDefaultConfig()
-		err := component.ValidateConfig(config)
+		err := xconfmap.Validate(config)
 		require.NoError(t, err)
 	})
 	t.Run("invalid", func(t *testing.T) {
 		t.Setenv("ELASTICSEARCH_URL", "http://valid:9200, *:!")
 		config := withDefaultConfig()
-		err := component.ValidateConfig(config)
-		assert.EqualError(t, err, `invalid endpoint "*:!": parse "*:!": first path segment in URL cannot contain colon`)
+		err := xconfmap.Validate(config)
+		assert.ErrorContains(t, err, `invalid endpoint "*:!": parse "*:!": first path segment in URL cannot contain colon`)
 	})
 }
 
