@@ -12,12 +12,22 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 )
 
+
 const MaxRetryInterval = 32 * time.Second
+
+var allowErrorPropagationFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.resourcedetection.propagateerrors",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, allows errors returned from resource detectors to propagate in the Start() method and stop the collector."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37961"),
+	featuregate.WithRegisterFromVersion("v0.121.0"),
+)
 
 type DetectorType string
 
@@ -144,6 +154,10 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 					return
 				}
 				p.logger.Warn("failed to detect resource", zap.Error(err))
+        if allowErrorPropagationFeatureGate.IsEnabled() {
+				  p.detectedResource.err = err
+				  return
+			  }
 				time.Sleep(sleep)
 				if sleep < MaxRetryInterval {
 					sleep *= 2
