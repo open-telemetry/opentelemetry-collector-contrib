@@ -31,6 +31,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func newPodIdentifier(from string, name string, value string) kube.PodIdentifier {
@@ -48,7 +49,7 @@ func newPodIdentifier(from string, name string, value string) kube.PodIdentifier
 func newTracesProcessor(cfg component.Config, next consumer.Traces, options ...option) (processor.Traces, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	return createTracesProcessorWithOptions(
 		context.Background(),
 		set,
@@ -61,7 +62,7 @@ func newTracesProcessor(cfg component.Config, next consumer.Traces, options ...o
 func newMetricsProcessor(cfg component.Config, nextMetricsConsumer consumer.Metrics, options ...option) (processor.Metrics, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	return createMetricsProcessorWithOptions(
 		context.Background(),
 		set,
@@ -74,7 +75,7 @@ func newMetricsProcessor(cfg component.Config, nextMetricsConsumer consumer.Metr
 func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, options ...option) (processor.Logs, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	return createLogsProcessorWithOptions(
 		context.Background(),
 		set,
@@ -87,7 +88,7 @@ func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, opti
 func newProfilesProcessor(cfg component.Config, nextProfilesConsumer xconsumer.Profiles, options ...option) (xprocessor.Profiles, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	return createProfilesProcessorWithOptions(
 		context.Background(),
 		set,

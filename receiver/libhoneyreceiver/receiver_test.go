@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/metadata"
 )
 
 func TestNewLibhoneyReceiver(t *testing.T) {
@@ -46,7 +47,7 @@ func TestNewLibhoneyReceiver(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			set := receivertest.NewNopSettings()
+			set := receivertest.NewNopSettings(metadata.Type)
 			r, err := newLibhoneyReceiver(tt.config, &set)
 			if tt.wantError {
 				assert.Error(t, err)
@@ -62,7 +63,7 @@ func TestNewLibhoneyReceiver(t *testing.T) {
 func TestLibhoneyReceiver_Start(t *testing.T) {
 	cfg := createDefaultConfig()
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	r, err := newLibhoneyReceiver(cfg.(*Config), &set)
 	require.NoError(t, err)
 
@@ -127,7 +128,7 @@ func TestLibhoneyReceiver_HandleEvent(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig()
-			set := receivertest.NewNopSettings()
+			set := receivertest.NewNopSettings(metadata.Type)
 			r, err := newLibhoneyReceiver(cfg.(*Config), &set)
 			require.NoError(t, err)
 
@@ -190,7 +191,7 @@ func TestLibhoneyReceiver_AuthEndpoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.AuthAPI = tt.authAPI
-			set := receivertest.NewNopSettings()
+			set := receivertest.NewNopSettings(metadata.Type)
 			r, err := newLibhoneyReceiver(cfg, &set)
 			require.NoError(t, err)
 

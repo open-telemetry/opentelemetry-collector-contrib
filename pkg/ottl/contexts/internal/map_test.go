@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -32,7 +33,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		{
 			name: "first key not a string",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					I: ottltest.Intp(0),
 					G: getSetter,
 				},
@@ -42,11 +43,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		{
 			name: "index map with int",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("map"),
 					G: getSetter,
 				},
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					I: ottltest.Intp(0),
 					G: getSetter,
 				},
@@ -56,11 +57,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		{
 			name: "index slice with string",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("slice"),
 					G: getSetter,
 				},
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("invalid"),
 					G: getSetter,
 				},
@@ -70,11 +71,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		{
 			name: "index too large",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("slice"),
 					G: getSetter,
 				},
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					I: ottltest.Intp(1),
 					G: getSetter,
 				},
@@ -84,11 +85,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		{
 			name: "index too small",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("slice"),
 					G: getSetter,
 				},
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					I: ottltest.Intp(-1),
 					G: getSetter,
 				},
@@ -98,11 +99,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 		{
 			name: "invalid type",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("string"),
 					G: getSetter,
 				},
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("string"),
 					G: getSetter,
 				},
@@ -130,10 +131,10 @@ func Test_GetMapValue_MissingKey(t *testing.T) {
 	m := pcommon.NewMap()
 	m.PutEmptyMap("map1").PutEmptyMap("map2")
 	keys := []ottl.Key[any]{
-		&TestKey[any]{
+		&pathtest.Key[any]{
 			S: ottltest.Strp("map1"),
 		},
-		&TestKey[any]{
+		&pathtest.Key[any]{
 			S: ottltest.Strp("unknown key"),
 		},
 	}
@@ -164,7 +165,7 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 		{
 			name: "first key not a string",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					I: ottltest.Intp(0),
 					G: getSetter,
 				},
@@ -174,11 +175,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 		{
 			name: "index map with int",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("map"),
 					G: getSetter,
 				},
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					I: ottltest.Intp(0),
 					G: getSetter,
 				},
@@ -188,11 +189,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 		{
 			name: "index slice with string",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("slice"),
 					G: getSetter,
 				},
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("map"),
 					G: getSetter,
 				},
@@ -202,11 +203,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 		{
 			name: "slice index too large",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("slice"),
 					G: getSetter,
 				},
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					I: ottltest.Intp(1),
 					G: getSetter,
 				},
@@ -216,11 +217,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 		{
 			name: "slice index too small",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("slice"),
 					G: getSetter,
 				},
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					I: ottltest.Intp(-1),
 					G: getSetter,
 				},
@@ -230,11 +231,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 		{
 			name: "slice index too small",
 			keys: []ottl.Key[any]{
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("string"),
 					G: getSetter,
 				},
-				&TestKey[any]{
+				&pathtest.Key[any]{
 					S: ottltest.Strp("string"),
 					G: getSetter,
 				},
@@ -262,13 +263,13 @@ func Test_SetMapValue_AddingNewSubMap(t *testing.T) {
 	m := pcommon.NewMap()
 	m.PutEmptyMap("map1").PutStr("test", "test")
 	keys := []ottl.Key[any]{
-		&TestKey[any]{
+		&pathtest.Key[any]{
 			S: ottltest.Strp("map1"),
 		},
-		&TestKey[any]{
+		&pathtest.Key[any]{
 			S: ottltest.Strp("map2"),
 		},
-		&TestKey[any]{
+		&pathtest.Key[any]{
 			S: ottltest.Strp("foo"),
 		},
 	}
@@ -286,13 +287,13 @@ func Test_SetMapValue_AddingNewSubMap(t *testing.T) {
 func Test_SetMapValue_EmptyMap(t *testing.T) {
 	m := pcommon.NewMap()
 	keys := []ottl.Key[any]{
-		&TestKey[any]{
+		&pathtest.Key[any]{
 			S: ottltest.Strp("map1"),
 		},
-		&TestKey[any]{
+		&pathtest.Key[any]{
 			S: ottltest.Strp("map2"),
 		},
-		&TestKey[any]{
+		&pathtest.Key[any]{
 			S: ottltest.Strp("foo"),
 		},
 	}
