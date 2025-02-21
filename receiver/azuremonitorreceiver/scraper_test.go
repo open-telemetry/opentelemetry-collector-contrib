@@ -32,7 +32,7 @@ func TestNewScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	scraper := newScraper(cfg, receivertest.NewNopSettings())
+	scraper := newScraper(cfg, receivertest.NewNopSettingsWithType(metadata.Type))
 	require.Empty(t, scraper.resources)
 }
 
@@ -301,7 +301,7 @@ func TestAzureScraperScrape(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettingsWithType(metadata.Type)
 
 			armClientMock := &armClientMock{
 				current: 0,
@@ -372,7 +372,7 @@ func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
 			clientMetricsValues:      metricsValuesClientMock,
 			mb: metadata.NewMetricsBuilder(
 				metadata.DefaultMetricsBuilderConfig(),
-				receivertest.NewNopSettings(),
+				receivertest.NewNopSettingsWithType(receivertest.NopType),
 			),
 			mutex:     &sync.Mutex{},
 			resources: map[string]*azureResource{},
