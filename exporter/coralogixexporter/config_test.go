@@ -344,7 +344,7 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 
 	// Test traces exporter
 	t.Run("traces_with_batcher", func(t *testing.T) {
-		set := exportertest.NewNopSettingsWithType(metadata.Type)
+		set := exportertest.NewNopSettings(metadata.Type)
 		exp, err := factory.CreateTraces(context.Background(), set, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exp)
@@ -352,7 +352,7 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 
 	// Test metrics exporter
 	t.Run("metrics_with_batcher", func(t *testing.T) {
-		set := exportertest.NewNopSettingsWithType(metadata.Type)
+		set := exportertest.NewNopSettings(metadata.Type)
 		exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exp)
@@ -360,7 +360,7 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 
 	// Test logs exporter
 	t.Run("logs_with_batcher", func(t *testing.T) {
-		set := exportertest.NewNopSettingsWithType(metadata.Type)
+		set := exportertest.NewNopSettings(metadata.Type)
 		exp, err := factory.CreateLogs(context.Background(), set, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exp)
