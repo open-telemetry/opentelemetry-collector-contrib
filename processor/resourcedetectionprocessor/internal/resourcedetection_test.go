@@ -104,7 +104,7 @@ func TestDetect(t *testing.T) {
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(processortest.NewNopSettingsWithType(metadata.Type), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			got, _, err := p.Get(context.Background(), http.DefaultClient)
@@ -118,7 +118,7 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(processortest.NewNopSettingsWithType(metadata.Type), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
@@ -129,7 +129,7 @@ func TestDetectResource_DetectorFactoryError(t *testing.T) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(processortest.NewNopSettingsWithType(metadata.Type), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 

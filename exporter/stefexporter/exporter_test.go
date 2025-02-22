@@ -147,7 +147,7 @@ func runTest(
 	// Make retries quick. We will be testing failure modes and don't want test to take too long.
 	cfg.RetryConfig.InitialInterval = 10 * time.Millisecond
 
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.TelemetrySettings.Logger = logger
 
 	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
@@ -314,7 +314,7 @@ func TestStartServerAfterClient(t *testing.T) {
 		TLSSetting: configtls.ClientConfig{Insecure: true},
 	}
 
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.TelemetrySettings.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
@@ -370,7 +370,7 @@ func TestCancelBlockedExport(t *testing.T) {
 		TLSSetting: configtls.ClientConfig{Insecure: true},
 	}
 
-	set := exportertest.NewNopSettingsWithType(exportertest.NopType)
+	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.TelemetrySettings.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
@@ -424,7 +424,7 @@ func TestCancelAfterExport(t *testing.T) {
 		TLSSetting: configtls.ClientConfig{Insecure: true},
 	}
 
-	set := exportertest.NewNopSettingsWithType(exportertest.NopType)
+	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.TelemetrySettings.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)

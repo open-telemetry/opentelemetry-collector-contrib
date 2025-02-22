@@ -317,7 +317,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine DbEngineUnderTest, co
 	trackingColumn := engine.ConvertColumnName("id")
 	trackingStartValue := "0"
 
-	receiverCreateSettings := receivertest.NewNopSettingsWithType(metadata.Type)
+	receiverCreateSettings := receivertest.NewNopSettings(metadata.Type)
 	receiver, config, consumer := createTestLogsReceiver(t, engine.Driver, engine.ConnectionString(dbHost, dbPort), receiverCreateSettings)
 	config.CollectionInterval = time.Second
 	config.Telemetry.Logs.Query = true
@@ -425,7 +425,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine DbEngineUnderTest, co
 }
 
 func runTestForLogTrackingWithoutStorage(t *testing.T, engine DbEngineUnderTest, container testcontainers.Container, trackingColumn, trackingStartValue, sqlQuery string) {
-	receiverCreateSettings := receivertest.NewNopSettingsWithType(metadata.Type)
+	receiverCreateSettings := receivertest.NewNopSettings(metadata.Type)
 	dbHost, dbPort := getContainerHostAndPort(t, container, engine.Port)
 	receiver, config, consumer := createTestLogsReceiver(t, engine.Driver, engine.ConnectionString(dbHost, dbPort), receiverCreateSettings)
 	config.CollectionInterval = 100 * time.Millisecond

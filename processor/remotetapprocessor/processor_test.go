@@ -38,7 +38,7 @@ func TestConsumeMetrics(t *testing.T) {
 				Limit: rate.Limit(c.limit),
 			}
 
-			processor := newProcessor(processortest.NewNopSettingsWithType(metadata.Type), conf)
+			processor := newProcessor(processortest.NewNopSettings(metadata.Type), conf)
 
 			ch := make(chan []byte)
 			idx := processor.cs.add(ch)
@@ -86,7 +86,7 @@ func TestConsumeLogs(t *testing.T) {
 				Limit: rate.Limit(c.limit),
 			}
 
-			processor := newProcessor(processortest.NewNopSettingsWithType(metadata.Type), conf)
+			processor := newProcessor(processortest.NewNopSettings(metadata.Type), conf)
 
 			ch := make(chan []byte)
 			idx := processor.cs.add(ch)
@@ -135,7 +135,7 @@ func TestConsumeTraces(t *testing.T) {
 				Limit: rate.Limit(c.limit),
 			}
 
-			processor := newProcessor(processortest.NewNopSettingsWithType(metadata.Type), conf)
+			processor := newProcessor(processortest.NewNopSettings(metadata.Type), conf)
 
 			ch := make(chan []byte)
 			idx := processor.cs.add(ch)

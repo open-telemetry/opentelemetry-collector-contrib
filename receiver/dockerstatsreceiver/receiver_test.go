@@ -131,7 +131,7 @@ func TestNewReceiver(t *testing.T) {
 			DockerAPIVersion: defaultDockerAPIVersion,
 		},
 	}
-	mr := newMetricsReceiver(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	mr := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, mr)
 }
 
@@ -203,7 +203,7 @@ func TestErrorsInStart(t *testing.T) {
 			DockerAPIVersion: defaultDockerAPIVersion,
 		},
 	}
-	recv := newMetricsReceiver(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	recv := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, recv)
 
 	cfg.Endpoint = "..not/a/valid/endpoint"
@@ -360,7 +360,7 @@ func TestScrapeV2(t *testing.T) {
 			defer mockDockerEngine.Close()
 
 			receiver := newMetricsReceiver(
-				receivertest.NewNopSettingsWithType(metadata.Type), tc.cfgBuilder.withEndpoint(mockDockerEngine.URL).build())
+				receivertest.NewNopSettings(metadata.Type), tc.cfgBuilder.withEndpoint(mockDockerEngine.URL).build())
 			err := receiver.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 			defer func() { require.NoError(t, receiver.shutdown(context.Background())) }()
@@ -392,7 +392,7 @@ func TestRecordBaseMetrics(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics = metadata.MetricsConfig{
 		ContainerUptime: metricEnabled,
 	}
-	r := newMetricsReceiver(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	r := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), cfg)
 	now := time.Now()
 	started := now.Add(-2 * time.Second).Format(time.RFC3339)
 
