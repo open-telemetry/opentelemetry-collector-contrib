@@ -41,7 +41,7 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 }
 
 func TestNewLogsExporter(t *testing.T) {
-	got, err := newLogsExporter(exportertest.NewNopSettingsWithType(metadata.Type), &Config{
+	got, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), &Config{
 		Region: "ap-beijing",
 		LogSet: "demo-logset",
 		Topic:  "demo-topic",
@@ -55,7 +55,7 @@ func TestNewLogsExporter(t *testing.T) {
 }
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {
-	got, err := newLogsExporter(exportertest.NewNopSettingsWithType(metadata.Type), &Config{})
+	got, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), &Config{})
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 }

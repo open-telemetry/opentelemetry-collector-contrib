@@ -15,7 +15,7 @@ import (
 )
 
 func NewSettings(tt *componenttest.Telemetry) processor.Settings {
-	set := processortest.NewNopSettingsWithType(processortest.NopType)
+	set := processortest.NewNopSettings(processortest.NopType)
 	set.ID = component.NewID(component.MustNewType("k8sattributes"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set

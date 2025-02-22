@@ -31,7 +31,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	rCfg.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
-	params := receivertest.NewNopSettingsWithType(metadata.Type)
+	params := receivertest.NewNopSettings(metadata.Type)
 	rcvr, err := createMetricsReceiver(context.Background(), params, rCfg, sink)
 	require.NoError(t, err)
 

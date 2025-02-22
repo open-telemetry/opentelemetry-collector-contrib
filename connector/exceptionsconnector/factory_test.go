@@ -44,7 +44,7 @@ func TestNewConnector(t *testing.T) {
 			// Prepare
 			factory := NewFactory()
 
-			creationParams := connectortest.NewNopSettingsWithType(metadata.Type)
+			creationParams := connectortest.NewNopSettings(metadata.Type)
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Dimensions = tc.dimensions
 

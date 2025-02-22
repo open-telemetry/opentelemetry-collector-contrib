@@ -31,7 +31,7 @@ import (
 
 func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 	const maxDelay = 200 * time.Millisecond
-	createSettings := exportertest.NewNopSettingsWithType(metadata.Type)
+	createSettings := exportertest.NewNopSettings(metadata.Type)
 
 	const maxBatchCount = 20
 	const logsPerBatch = 10000

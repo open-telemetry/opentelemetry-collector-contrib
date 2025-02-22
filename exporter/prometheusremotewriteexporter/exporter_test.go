@@ -64,7 +64,7 @@ func Test_NewPRWExporter(t *testing.T) {
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo = buildInfo
 
 	tests := []struct {
@@ -160,7 +160,7 @@ func Test_Start(t *testing.T) {
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo = buildInfo
 
 	clientConfig := confighttp.NewDefaultClientConfig()
@@ -373,7 +373,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo = buildInfo
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
 	prwe, err := newPRWExporter(cfg, set)
@@ -953,7 +953,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		},
 	}
 
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo = component.BuildInfo{
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
@@ -1284,7 +1284,7 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 	endpointURL, err := url.Parse(mockServer.URL)
 	require.NoError(b, err)
 
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	// Adjusted retry settings for faster testing
 	retrySettings := configretry.BackOffConfig{
 		Enabled:         true,

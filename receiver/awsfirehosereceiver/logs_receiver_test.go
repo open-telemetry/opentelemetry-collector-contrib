@@ -68,7 +68,7 @@ func TestLogsReceiver_Start(t *testing.T) {
 			cfg.RecordType = testCase.recordType
 			got, err := newLogsReceiver(
 				cfg,
-				receivertest.NewNopSettingsWithType(metadata.Type),
+				receivertest.NewNopSettings(metadata.Type),
 				unmarshalers,
 				consumertest.NewNop(),
 			)

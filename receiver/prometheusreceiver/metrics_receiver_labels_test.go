@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/prometheus/common/model"
-	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/require"
@@ -258,7 +257,6 @@ func TestLabelNameLimitConfig(t *testing.T) {
 	testComponent(t, targets, nil, func(cfg *PromConfig) {
 		// set label limit in scrape_config
 		for _, scrapeCfg := range cfg.ScrapeConfigs {
-			scrapeCfg.ScrapeFallbackProtocol = promconfig.PrometheusText1_0_0
 			scrapeCfg.LabelNameLengthLimit = 20
 		}
 	})

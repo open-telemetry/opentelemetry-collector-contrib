@@ -251,7 +251,7 @@ func TestTracesToMetrics(t *testing.T) {
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
 			conn, err := factory.CreateTracesToMetrics(context.Background(),
-				connectortest.NewNopSettingsWithType(metadata.Type), tc.cfg, sink)
+				connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
@@ -493,7 +493,7 @@ func TestMetricsToMetrics(t *testing.T) {
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
 			conn, err := factory.CreateMetricsToMetrics(context.Background(),
-				connectortest.NewNopSettingsWithType(metadata.Type), tc.cfg, sink)
+				connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
@@ -665,7 +665,7 @@ func TestLogsToMetrics(t *testing.T) {
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
 			conn, err := factory.CreateLogsToMetrics(context.Background(),
-				connectortest.NewNopSettingsWithType(metadata.Type), tc.cfg, sink)
+				connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)

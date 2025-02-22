@@ -166,7 +166,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	}
 
 	assert := assert.New(t)
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exporter, err := f.CreateTraces(context.Background(), params, &cfg)
 	assert.NoError(err)
@@ -303,7 +303,7 @@ func testTraceExporter(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	}
 	cfg.Traces.SetFlushInterval(0.1)
 
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exporter, err := f.CreateTraces(context.Background(), params, &cfg)
 	assert.NoError(t, err)
@@ -328,7 +328,7 @@ func TestNewTracesExporter(t *testing.T) {
 	cfg := &Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	cfg.Metrics.TCPAddrConfig.Endpoint = metricsServer.URL
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 
 	// The client should have been created correctly
 	f := NewFactory()
@@ -375,7 +375,7 @@ func testPushTraceData(t *testing.T, enableReceiveResourceSpansV2 bool) {
 		},
 	}
 
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
@@ -425,7 +425,7 @@ func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV
 	}
 	cfg.Traces.SetFlushInterval(0.1)
 
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
@@ -469,7 +469,7 @@ func TestPushTraceData_OperationAndResourceNameV2(t *testing.T) {
 	}
 	cfg.Traces.SetFlushInterval(0.1)
 
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
@@ -516,7 +516,7 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 	}
 	cfg.Traces.SetFlushInterval(0.1)
 
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)

@@ -30,12 +30,12 @@ func TestNewReceiver(t *testing.T) {
 			InitialDelay:       time.Second,
 		},
 	}
-	mr := newMetricsReceiver(receivertest.NewNopSettingsWithType(metadata.Type), config, nil)
+	mr := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), config, nil)
 	assert.NotNil(t, mr)
 }
 
 func TestErrorsInStart(t *testing.T) {
-	recv := newMetricsReceiver(receivertest.NewNopSettingsWithType(metadata.Type), &Config{}, nil)
+	recv := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), &Config{}, nil)
 	assert.NotNil(t, recv)
 	err := recv.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -51,7 +51,7 @@ func TestScraperLoop(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	r := newMetricsReceiver(receivertest.NewNopSettingsWithType(metadata.Type), cfg, client.factory)
+	r := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, client.factory)
 	assert.NotNil(t, r)
 
 	go func() {

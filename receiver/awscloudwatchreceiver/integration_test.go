@@ -42,7 +42,7 @@ func TestLoggingIntegration(t *testing.T) {
 	}
 	recv, err := NewFactory().CreateLogs(
 		context.Background(),
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		sink,
 	)

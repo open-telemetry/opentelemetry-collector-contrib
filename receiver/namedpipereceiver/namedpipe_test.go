@@ -57,7 +57,7 @@ func TestReadPipe(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	cfg := testdataConfigYaml()
 
-	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, sink)
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() { require.NoError(t, rcvr.Shutdown(context.Background())) }()

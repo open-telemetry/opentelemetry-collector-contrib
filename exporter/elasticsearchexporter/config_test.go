@@ -81,8 +81,8 @@ func TestConfig(t *testing.T) {
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = &defaultMaxIdleConns
-					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.MaxIdleConns = defaultMaxIdleConns
+					cfg.IdleConnTimeout = defaultIdleConnTimeout
 					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
@@ -155,8 +155,8 @@ func TestConfig(t *testing.T) {
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = &defaultMaxIdleConns
-					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.MaxIdleConns = defaultMaxIdleConns
+					cfg.IdleConnTimeout = defaultIdleConnTimeout
 					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
@@ -229,8 +229,8 @@ func TestConfig(t *testing.T) {
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = &defaultMaxIdleConns
-					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.MaxIdleConns = defaultMaxIdleConns
+					cfg.IdleConnTimeout = defaultIdleConnTimeout
 					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}

@@ -132,7 +132,7 @@ func TestOpenSearchTraceExporter(t *testing.T) {
 
 		// Create exporter
 		f := NewFactory()
-		exporter, err := f.CreateTraces(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+		exporter, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 		require.NoError(t, err)
 
 		// Initialize the exporter
@@ -262,7 +262,7 @@ func TestOpenSearchLogExporter(t *testing.T) {
 
 		// Create exporter
 		f := NewFactory()
-		exporter, err := f.CreateLogs(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+		exporter, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 		require.NoError(t, err)
 
 		// Initialize the exporter

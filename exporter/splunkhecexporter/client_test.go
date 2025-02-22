@@ -234,7 +234,7 @@ func runMetricsExport(t *testing.T, cfg *Config, metrics pmetric.Metrics, expect
 		}
 	}()
 
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -287,7 +287,7 @@ func runTraceExport(t *testing.T, testConfig *Config, traces ptrace.Traces, expe
 		}
 	}()
 
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -347,7 +347,7 @@ func runLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatchesNum in
 		}
 	}()
 
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := NewFactory().CreateLogs(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -1222,7 +1222,7 @@ func Test_PushMetricsData_Histogram_NaN_Sum(t *testing.T) {
 	dp := histogram.SetEmptyHistogram().DataPoints().AppendEmpty()
 	dp.SetSum(math.NaN())
 
-	c := newMetricsClient(exportertest.NewNopSettingsWithType(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	c := newMetricsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
 	c.hecWorker = &mockHecWorker{}
 
 	permanentErrors := c.pushMetricsDataInBatches(context.Background(), metrics, map[string]string{})
@@ -1239,7 +1239,7 @@ func Test_PushMetricsData_Histogram_NaN_Sum_MultiMetric(t *testing.T) {
 	dp.SetSum(math.NaN())
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.UseMultiMetricFormat = true
-	c := newMetricsClient(exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+	c := newMetricsClient(exportertest.NewNopSettings(metadata.Type), cfg)
 	c.hecWorker = &mockHecWorker{}
 
 	permanentErrors := c.pushMetricsDataInBatches(context.Background(), metrics, map[string]string{})
@@ -1255,7 +1255,7 @@ func Test_PushMetricsData_Summary_NaN_Sum(t *testing.T) {
 	dp := summary.SetEmptySummary().DataPoints().AppendEmpty()
 	dp.SetSum(math.NaN())
 
-	c := newMetricsClient(exportertest.NewNopSettingsWithType(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	c := newMetricsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
 	c.hecWorker = &mockHecWorker{}
 
 	permanentErrors := c.pushMetricsDataInBatches(context.Background(), metrics, map[string]string{})
@@ -1300,7 +1300,7 @@ func TestErrorReceived(t *testing.T) {
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -1348,7 +1348,7 @@ func TestInvalidURL(t *testing.T) {
 	cfg.BackOffConfig.Enabled = false
 	cfg.ClientConfig.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -1389,7 +1389,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = true
 
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.EqualError(t,
@@ -1428,7 +1428,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = false
 
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -1463,7 +1463,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = true
 
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
@@ -1528,7 +1528,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 		},
 	}
 
-	c := newLogsClient(exportertest.NewNopSettingsWithType(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
 
 	for _, test := range tests {
 		for _, disabled := range []bool{true, false} {
@@ -1542,7 +1542,7 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 }
 
 func Test_pushLogData_InvalidLog(t *testing.T) {
-	c := newLogsClient(exportertest.NewNopSettingsWithType(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
 
 	logs := plog.NewLogs()
 	log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -1555,7 +1555,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 }
 
 func Test_pushLogData_PostError(t *testing.T) {
-	c := newLogsClient(exportertest.NewNopSettingsWithType(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
 	c.hecWorker = &defaultHecWorker{url: &url.URL{Host: "in va lid"}, logger: zap.NewNop()}
 
 	// 2000 log records -> ~371888 bytes when JSON encoded.
@@ -1594,7 +1594,7 @@ func Test_pushLogData_PostError(t *testing.T) {
 func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	splunkClient := newLogsClient(exportertest.NewNopSettingsWithType(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	splunkClient := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
 	logs := createLogData(1, 1, 1)
 
 	responseBody := `some error occurred`
@@ -1627,7 +1627,7 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	config.MaxContentLengthLogs, config.DisableCompression = 250, true
 
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c := newLogsClient(exportertest.NewNopSettingsWithType(metadata.Type), config)
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
 
 	// Just two records
 	logs := createLogData(2, 1, 1)
@@ -1653,7 +1653,7 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 	// A 300-byte buffer only fits one record (around 200 bytes), so each record will be sent separately
 	config.MaxContentLengthLogs, config.DisableCompression = 300, true
 
-	c := newLogsClient(exportertest.NewNopSettingsWithType(metadata.Type), config)
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
 
 	logs := createLogDataWithCustomLibraries(1, []string{"otel.logs"}, []int{10})
 	profilingData := createLogDataWithCustomLibraries(1, []string{"otel.profiling"}, []int{20})
@@ -1746,9 +1746,9 @@ func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize ui
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.MaxContentLengthLogs = bufSize
 	config.DisableCompression = !compressionEnabled
-	c := newLogsClient(exportertest.NewNopSettingsWithType(metadata.Type), config)
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
 	c.hecWorker = &mockHecWorker{}
-	exp, err := exporterhelper.NewLogs(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), config,
+	exp, err := exporterhelper.NewLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), config,
 		c.pushLogData)
 	require.NoError(b, err)
 	exp = &baseLogsExporter{
@@ -1896,9 +1896,9 @@ func benchPushMetricData(b *testing.B, numResources int, numRecords int, bufSize
 	config.MaxContentLengthMetrics = bufSize
 	config.DisableCompression = !compressionEnabled
 	config.UseMultiMetricFormat = useMultiMetricFormat
-	c := newLogsClient(exportertest.NewNopSettingsWithType(metadata.Type), config)
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
 	c.hecWorker = &mockHecWorker{}
-	exp, err := exporterhelper.NewMetrics(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), config,
+	exp, err := exporterhelper.NewMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), config,
 		c.pushMetricsData)
 	require.NoError(b, err)
 
@@ -1916,10 +1916,10 @@ func benchPushMetricData(b *testing.B, numResources int, numRecords int, bufSize
 func BenchmarkConsumeLogsRejected(b *testing.B) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.DisableCompression = true
-	c := newLogsClient(exportertest.NewNopSettingsWithType(metadata.Type), config)
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
 	c.hecWorker = &mockHecWorker{failSend: true}
 
-	exp, err := exporterhelper.NewLogs(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), config,
+	exp, err := exporterhelper.NewLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), config,
 		c.pushLogData)
 	require.NoError(b, err)
 
@@ -1943,7 +1943,7 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 	for _, disable := range []bool{true, false} {
 		config.DisableCompression = disable
 
-		c := newLogsClient(exportertest.NewNopSettingsWithType(metadata.Type), config)
+		c := newLogsClient(exportertest.NewNopSettings(metadata.Type), config)
 		c.hecWorker = &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
 
 		err := c.pushLogData(context.Background(), logs)
@@ -2051,7 +2051,7 @@ func TestPushLogsPartialSuccess(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
 	cfg.ExportRaw = true
 	cfg.MaxContentLengthLogs = 6
-	c := newLogsClient(exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), cfg)
 
 	// The first request succeeds, the second fails.
 	httpClient, _ := newTestClientWithPresetResponses([]int{200, 503}, []string{"OK", "NOK"})
@@ -2073,7 +2073,7 @@ func TestPushLogsPartialSuccess(t *testing.T) {
 }
 
 func TestPushLogsRetryableFailureMultipleResources(t *testing.T) {
-	c := newLogsClient(exportertest.NewNopSettingsWithType(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
+	c := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
 
 	httpClient, _ := newTestClientWithPresetResponses([]int{503}, []string{"NOK"})
 	url := &url.URL{Scheme: "http", Host: "splunk"}

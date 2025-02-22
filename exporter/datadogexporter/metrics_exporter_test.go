@@ -68,7 +68,7 @@ func TestNewExporter(t *testing.T) {
 	}
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -393,7 +393,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
-				exportertest.NewNopSettingsWithType(metadata.Type),
+				exportertest.NewNopSettings(metadata.Type),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,
@@ -476,7 +476,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 			HostnameSource: HostnameSourceFirstResource,
 		},
 	}
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -837,7 +837,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
-				exportertest.NewNopSettingsWithType(metadata.Type),
+				exportertest.NewNopSettings(metadata.Type),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,

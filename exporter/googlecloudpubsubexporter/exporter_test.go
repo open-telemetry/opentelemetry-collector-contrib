@@ -47,7 +47,7 @@ func TestExporterClientError(t *testing.T) {
 	cfg.Topic = defaultTopic
 	require.NoError(t, cfg.Validate())
 
-	exporter := ensureExporter(exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+	exporter := ensureExporter(exportertest.NewNopSettings(metadata.Type), cfg)
 	exporter.makeClient = func(context.Context, *Config, string) (publisherClient, error) {
 		return nil, fmt.Errorf("something went wrong")
 	}
@@ -215,7 +215,7 @@ func newTestExporter(t *testing.T, options ...func(*Config)) (*pubsubExporter, *
 	}
 	require.NoError(t, cfg.Validate())
 
-	exporter := ensureExporter(exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+	exporter := ensureExporter(exportertest.NewNopSettings(metadata.Type), cfg)
 	publisher := &mockPublisher{}
 	exporter.makeClient = func(context.Context, *Config, string) (publisherClient, error) {
 		return publisher, nil

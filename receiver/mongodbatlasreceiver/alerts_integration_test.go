@@ -58,7 +58,7 @@ func TestAlertsReceiver(t *testing.T) {
 
 			recv, err := fact.CreateLogs(
 				context.Background(),
-				receivertest.NewNopSettingsWithType(metadata.Type),
+				receivertest.NewNopSettings(metadata.Type),
 				&Config{
 					Alerts: AlertConfig{
 						Enabled:  true,
@@ -123,7 +123,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 
 			recv, err := fact.CreateLogs(
 				context.Background(),
-				receivertest.NewNopSettingsWithType(metadata.Type),
+				receivertest.NewNopSettings(metadata.Type),
 				&Config{
 					Alerts: AlertConfig{
 						Enabled:  true,
@@ -211,7 +211,7 @@ func TestAtlasPoll(t *testing.T) {
 
 	recv, err := fact.CreateLogs(
 		context.Background(),
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			Alerts: AlertConfig{
 				Enabled: true,

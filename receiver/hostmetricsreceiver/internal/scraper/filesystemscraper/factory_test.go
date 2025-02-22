@@ -23,7 +23,7 @@ func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{}
 
-	scraper, err := factory.CreateMetrics(context.Background(), scrapertest.NewNopSettingsWithType(metadata.Type), cfg)
+	scraper, err := factory.CreateMetrics(context.Background(), scrapertest.NewNopSettings(metadata.Type), cfg)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, scraper)
@@ -33,7 +33,7 @@ func TestCreateMetrics_Error(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{IncludeDevices: DeviceMatchConfig{Devices: []string{""}}}
 
-	_, err := factory.CreateMetrics(context.Background(), scrapertest.NewNopSettingsWithType(metadata.Type), cfg)
+	_, err := factory.CreateMetrics(context.Background(), scrapertest.NewNopSettings(metadata.Type), cfg)
 
 	assert.Error(t, err)
 }

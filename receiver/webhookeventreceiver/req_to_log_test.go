@@ -116,8 +116,8 @@ func TestReqToLog(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			reqLog, reqLen := reqToLog(test.sc, test.query, defaultConfig, receivertest.NewNopSettingsWithType(metadata.Type))
-			test.tt(t, reqLog, reqLen, receivertest.NewNopSettingsWithType(metadata.Type))
+			reqLog, reqLen := reqToLog(test.sc, test.query, defaultConfig, receivertest.NewNopSettings(metadata.Type))
+			test.tt(t, reqLog, reqLen, receivertest.NewNopSettings(metadata.Type))
 		})
 	}
 }

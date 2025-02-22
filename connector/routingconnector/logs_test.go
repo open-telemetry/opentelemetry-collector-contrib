@@ -51,7 +51,7 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Logs))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
@@ -118,7 +118,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -222,7 +222,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -357,7 +357,7 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -408,7 +408,7 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -859,7 +859,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 
 			conn, err := NewFactory().CreateLogsToLogs(
 				context.Background(),
-				connectortest.NewNopSettingsWithType(metadata.Type),
+				connectortest.NewNopSettings(metadata.Type),
 				tt.cfg,
 				router.(consumer.Logs),
 			)

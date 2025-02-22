@@ -20,7 +20,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := createDefaultConfig()
 
-	params := receivertest.NewNopSettingsWithType(metadata.Type)
+	params := receivertest.NewNopSettings(metadata.Type)
 
 	lConsumer := consumertest.NewNop()
 	lReceiver, err := factory.CreateLogs(context.Background(), params, cfg, lConsumer)

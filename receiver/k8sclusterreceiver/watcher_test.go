@@ -230,7 +230,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	origPod := pods[0]
 	updatedPod := getUpdatedPod(origPod)
 
-	rw := newResourceWatcher(receivertest.NewNopSettingsWithType(metadata.Type), &Config{MetadataCollectionInterval: 2 * time.Hour}, metadata.NewStore())
+	rw := newResourceWatcher(receivertest.NewNopSettings(metadata.Type), &Config{MetadataCollectionInterval: 2 * time.Hour}, metadata.NewStore())
 	rw.entityLogConsumer = logsConsumer
 
 	step1 := time.Now()
@@ -569,7 +569,7 @@ func TestObjMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		observedLogger, _ := observer.New(zapcore.WarnLevel)
-		set := receivertest.NewNopSettingsWithType(metadata.Type)
+		set := receivertest.NewNopSettings(metadata.Type)
 		set.TelemetrySettings.Logger = zap.New(observedLogger)
 		t.Run(tt.name, func(t *testing.T) {
 			dc := &resourceWatcher{metadataStore: tt.metadataStore}

@@ -65,8 +65,8 @@ func TestLoadConfig(t *testing.T) {
 					config.TLSSetting = configtls.ClientConfig{
 						InsecureSkipVerify: true,
 					}
-					config.MaxIdleConns = &maxIdleConns
-					config.IdleConnTimeout = &idleConnTimeout
+					config.MaxIdleConns = maxIdleConns
+					config.IdleConnTimeout = idleConnTimeout
 				}),
 				Format:             "proto",
 				DefaultServiceName: "test_name",

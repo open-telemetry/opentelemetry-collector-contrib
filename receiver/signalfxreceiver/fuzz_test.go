@@ -22,7 +22,7 @@ func FuzzHandleDatapointReq(f *testing.F) {
 			t.Skip()
 		}
 		req.Header.Add(httpContentTypeHeader, otlpProtobufContentType)
-		rec, err := newReceiver(receivertest.NewNopSettingsWithType(metadata.Type), Config{})
+		rec, err := newReceiver(receivertest.NewNopSettings(metadata.Type), Config{})
 		if err != nil {
 			t.Fatal(err)
 		}

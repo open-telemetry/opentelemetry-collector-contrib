@@ -114,7 +114,7 @@ func TestHuaweiCloudCESReceiverIntegration(t *testing.T) {
 
 	recv, err := NewFactory().CreateMetrics(
 		context.Background(),
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		sink,
 	)
