@@ -36,7 +36,7 @@ type Config struct {
 
 	// MetricsBuilderConfig config. Enable or disable stats by name.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	Endpoint                      string
+	Endpoint                      string `mapstructure:"endpoint"`
 }
 
 func (config Config) Validate() error {
