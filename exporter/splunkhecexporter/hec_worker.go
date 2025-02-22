@@ -68,8 +68,9 @@ func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[s
 	}
 
 	// Drain the response body to avoid leaking connections.
-	_, errCopy := io.Copy(io.Discard, resp.Body)
-	return errCopy // TODO: Do not return error here. Draining errors is not a failure in data sending.
+	_, _ = io.Copy(io.Discard, resp.Body)
+
+	return nil
 }
 
 var _ hecWorker = &defaultHecWorker{}
