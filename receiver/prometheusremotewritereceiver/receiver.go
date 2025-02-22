@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -262,8 +263,107 @@ func addSummaryDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.
 	// TODO: Implement this function
 }
 
-func addHistogramDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
+func addHistogramDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
+	scopeName := ls.Get("otel_scope_name")
+	scopeVersion := ls.Get("otel_scope_version")
+
+	var scope pmetric.ScopeMetrics
+	scopeFound := false
+	for i := 0; i < rm.ScopeMetrics().Len(); i++ {
+		current := rm.ScopeMetrics().At(i)
+		if scopeName == current.Scope().Name() && scopeVersion == current.Scope().Version() {
+			scope = current
+			scopeFound = true
+			break
+		}
+	}
+
+	if !scopeFound {
+		scope = rm.ScopeMetrics().AppendEmpty()
+		scope.Scope().SetName(scopeName)
+		scope.Scope().SetVersion(scopeVersion)
+	}
+
+	metric := scope.Metrics().AppendEmpty()
+	metric.SetName(ls.Get(labels.MetricName))
+	histogram := metric.SetEmptyHistogram()
+
+	for _, h := range ts.Histograms {
+		dp := histogram.DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.Timestamp(h.Timestamp))
+
+		attrs := dp.Attributes()
+		for _, l := range ls {
+			if l.Name == "instance" || l.Name == "job" ||
+				l.Name == labels.MetricName ||
+				l.Name == "otel_scope_name" || l.Name == "otel_scope_version" {
+				continue
+			}
+			attrs.PutStr(l.Name, l.Value)
+		}
+
+		// Set Count and Sum directly
+		switch v := h.Count.(type) {
+		case *writev2.Histogram_CountInt:
+			dp.SetCount((v.CountInt))
+		case *writev2.Histogram_CountFloat:
+			dp.SetCount(uint64(v.CountFloat))
+		}
+		dp.SetSum(h.Sum)
+
+		explicitBounds := []float64{}
+		counts := []uint64{}
+
+		// Process negative spans
+		boundary := -math.Exp2(float64(h.Schema))
+		for i, span := range h.NegativeSpans {
+			base := 0
+			if i > 0 {
+				base = int(h.NegativeSpans[i-1].Length)
+			}
+			bucketBoundary := boundary * float64(base+int(span.Offset))
+			for j := 0; j < int(span.Length); j++ {
+				if i+j < len(h.NegativeCounts) {
+					explicitBounds = append(explicitBounds, bucketBoundary)
+					counts = append(counts, uint64(h.NegativeCounts[i+j]))
+				}
+				bucketBoundary += boundary
+			}
+		}
+
+		// Process positive spans
+		boundary = math.Exp2(float64(h.Schema)) // For schema=1, this gives us 2
+		for i, span := range h.PositiveSpans {
+			base := 0
+			if i > 0 {
+				base = int(h.PositiveSpans[i-1].Length)
+			}
+			bucketBoundary := boundary // Start at 2^schema
+			// Move to starting point based on offset
+			for k := 0; k < base+int(span.Offset); k++ {
+				bucketBoundary *= 2
+			}
+			for j := 0; j < int(span.Length); j++ {
+				if i+j < len(h.PositiveCounts) {
+					explicitBounds = append(explicitBounds, bucketBoundary)
+					counts = append(counts, uint64(h.PositiveCounts[i+j]))
+				}
+				bucketBoundary *= 2 // Double each time
+			}
+		}
+
+		// Add zero count at the end
+		switch v := h.ZeroCount.(type) {
+		case *writev2.Histogram_ZeroCountInt:
+			counts = append(counts, (v.ZeroCountInt))
+		case *writev2.Histogram_ZeroCountFloat:
+			counts = append(counts, uint64(v.ZeroCountFloat))
+		}
+
+		// Assign data to histogram data point
+		dp.ExplicitBounds().FromRaw(explicitBounds)
+		dp.BucketCounts().FromRaw(counts)
+	}
 }
 
 // addDatapoints adds the labels to the datapoints attributes.

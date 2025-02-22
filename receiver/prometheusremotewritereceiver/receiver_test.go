@@ -14,10 +14,12 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	promconfig "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -258,6 +260,101 @@ func TestTranslateV2(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(tc.expectedMetrics, metrics))
 			assert.Equal(t, tc.expectedStats, stats)
+		})
+	}
+}
+
+func TestAddHistogramDatapoints(t *testing.T) {
+	tests := []struct {
+		name     string
+		labels   labels.Labels
+		series   writev2.TimeSeries
+		validate func(t *testing.T, rm pmetric.ResourceMetrics)
+	}{
+		{
+			name: "basic histogram with positive values",
+			labels: labels.Labels{
+				{Name: "otel_scope_name", Value: "test_scope"},
+				{Name: "otel_scope_version", Value: "v1.0"},
+				{Name: "job", Value: "test_job"},
+				{Name: "instance", Value: "test_instance"},
+				{Name: labels.MetricName, Value: "test_histogram"},
+				{Name: "custom_label", Value: "custom_value"},
+			},
+			series: writev2.TimeSeries{
+				Histograms: []writev2.Histogram{
+					{
+						Count:          &writev2.Histogram_CountFloat{CountFloat: 100},
+						Sum:            50.0,
+						Schema:         1,
+						ZeroThreshold:  0.0001,
+						ZeroCount:      &writev2.Histogram_ZeroCountFloat{ZeroCountFloat: 10},
+						PositiveSpans:  []writev2.BucketSpan{{Offset: 0, Length: 2}},
+						PositiveCounts: []float64{30, 60},
+						Timestamp:      123456789,
+					},
+				},
+			},
+			validate: func(t *testing.T, rm pmetric.ResourceMetrics) {
+				// Validate scope metrics
+				assert.Equal(t, 1, rm.ScopeMetrics().Len())
+				scope := rm.ScopeMetrics().At(0)
+				assert.Equal(t, "test_scope", scope.Scope().Name())
+				assert.Equal(t, "v1.0", scope.Scope().Version())
+
+				// Validate metrics
+				assert.Equal(t, 1, scope.Metrics().Len())
+				metric := scope.Metrics().At(0)
+				assert.Equal(t, "test_histogram", metric.Name())
+				assert.Equal(t, pmetric.MetricTypeHistogram, metric.Type())
+
+				// Validate histogram data points
+				histogram := metric.Histogram()
+				assert.Equal(t, 1, histogram.DataPoints().Len())
+				dp := histogram.DataPoints().At(0)
+
+				// Validate timestamp
+				assert.Equal(t, pcommon.Timestamp(123456789), dp.Timestamp())
+
+				// Validate counts and sum
+				assert.Equal(t, uint64(100), dp.Count())
+				assert.Equal(t, 50.0, dp.Sum())
+
+				// Validate buckets
+				expectedBounds := []float64{2.0, 4.0}  // 2^1 and 2^2
+				expectedCounts := []uint64{30, 60, 10} // Last 10 is zero count
+
+				assert.Equal(t, expectedBounds, dp.ExplicitBounds().AsRaw())
+				assert.Equal(t, expectedCounts, dp.BucketCounts().AsRaw())
+
+				// Validate attributes
+				attrs := dp.Attributes()
+				val, exists := attrs.Get("custom_label")
+				assert.True(t, exists)
+				assert.Equal(t, "custom_value", val.AsString())
+
+				// Verify system labels are not included
+				_, exists = attrs.Get("job")
+				assert.False(t, exists)
+				_, exists = attrs.Get("instance")
+				assert.False(t, exists)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a new Metrics instance
+			metricsData := pmetric.NewMetrics()
+			rm := metricsData.ResourceMetrics().AppendEmpty()
+
+			// Initialize scope metrics first
+			sm := rm.ScopeMetrics().AppendEmpty()
+			sm.Scope().SetName(tt.labels.Get("otel_scope_name"))
+			sm.Scope().SetVersion(tt.labels.Get("otel_scope_version"))
+
+			addHistogramDatapoints(rm, tt.labels, tt.series)
+			tt.validate(t, rm)
 		})
 	}
 }
