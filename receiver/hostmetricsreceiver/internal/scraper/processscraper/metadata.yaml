@@ -182,7 +182,8 @@ metrics:
     description: Number of handles held by the process.
     extended_documentation: >-
       This metric is only available on Windows.
-      It requires Windows Management Interface to be enabled.
+      It requires  [Windows Management Instrumentation (WMI)](https://learn.microsoft.com/en-us/windows/win32/wmisdk/wmi-start-page)
+      to be enabled.
     unit: '{count}'
     sum:
       value_type: int
@@ -209,7 +210,7 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
     attributes: [direction]
-  
+
   process.uptime:
     enabled: false
     description: The time the process has been running.

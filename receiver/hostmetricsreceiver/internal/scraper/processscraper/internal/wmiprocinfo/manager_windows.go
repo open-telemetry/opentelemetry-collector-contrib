@@ -12,8 +12,49 @@ import (
 	"github.com/yusufpapurcu/wmi"
 )
 
-func NewManager() Manager {
-	return &wmiProcInfoManager{queryer: wmiProcessQueryer{}}
+// NewManager will create a new wmiProcInfoManager, constructing
+// the WMI query based on the provided options.
+func NewManager(queryOpts ...QueryOption) Manager {
+	query, err := constructQueryString(queryOpts...)
+	if err != nil {
+		return nil
+	}
+	return &wmiProcInfoManager{
+		querier: wmiProcessQuerier{
+			query: query,
+			client: &wmi.Client{
+				AllowMissingFields: true,
+			},
+		},
+	}
+}
+
+type QueryOption func(string) string
+
+// WithHandleCount includes the HandleCount field in the WMI query.
+func WithHandleCount(q string) string {
+	return q + ", HandleCount"
+}
+
+// WithParentProcessId includes the ParentProcessId field in the WMI query.
+func WithParentProcessId(q string) string {
+	return q + ", ParentProcessId"
+}
+
+func constructQueryString(queryOpts ...QueryOption) (string, error) {
+	queryStr := "SELECT ProcessId"
+	queryOptSet := false
+
+	for _, opt := range queryOpts {
+		queryStr = opt(queryStr)
+		queryOptSet = true
+	}
+
+	if !queryOptSet {
+		return "", errors.New("no query options supplied")
+	}
+
+	return queryStr + " FROM Win32_Process", nil
 }
 
 var (
@@ -26,17 +67,17 @@ type wmiProcInfo struct {
 	ppid        int64
 }
 
-type wmiQueryer interface {
+type wmiQuerier interface {
 	wmiProcessQuery() (map[int64]*wmiProcInfo, error)
 }
 
 type wmiProcInfoManager struct {
-	queryer   wmiQueryer
+	querier   wmiQuerier
 	processes map[int64]*wmiProcInfo
 }
 
 func (m *wmiProcInfoManager) Refresh() error {
-	processes, err := m.queryer.wmiProcessQuery()
+	processes, err := m.querier.wmiProcessQuery()
 	if err != nil {
 		return err
 	}
@@ -71,7 +112,10 @@ func (m *wmiProcInfoManager) GetProcessPpid(pid int64) (int64, error) {
 	return procInfo.ppid, nil
 }
 
-type wmiProcessQueryer struct{}
+type wmiProcessQuerier struct {
+	query  string
+	client *wmi.Client
+}
 
 //revive:disable-next-line:var-naming
 type Win32_Process struct {
@@ -80,13 +124,9 @@ type Win32_Process struct {
 	HandleCount     uint32
 }
 
-func (wmiProcessQueryer) wmiProcessQuery() (map[int64]*wmiProcInfo, error) {
+func (q wmiProcessQuerier) wmiProcessQuery() (map[int64]*wmiProcInfo, error) {
 	processes := []Win32_Process{}
-	// Based on reflection of Win32_Process type, this creates the following query:
-	// `get-wmiobject -query "select ProcessId, ParentProcessId, HandleCount from Win32_Process"`
-	q := wmi.CreateQuery(&processes, "")
-	err := wmi.Query(q, &processes)
-	if err != nil {
+	if err := q.client.Query(q.query, &processes); err != nil {
 		return nil, err
 	}
 

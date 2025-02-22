@@ -4,11 +4,14 @@
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
+	"errors"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
+
+var ErrProcessHandlesRequiresWMI = errors.New("the process.handles metric requires WMI to be enabled")
 
 // Config relating to Process Metric Scraper.
 type Config struct {
@@ -54,10 +57,14 @@ type Config struct {
 	// before metrics are scraped for it.  The default value is 0 seconds (0s).
 	ScrapeProcessDelay time.Duration `mapstructure:"scrape_process_delay"`
 
-	// DisableWMI toggles the use of Windows Management Interface to fetch certain process information on Windows.
-	// WMI should only need be disabled in a scenario where the Windows Management Interface is not enabled on the system.
-	// This configuration has no effect on non-Windows systems.
-	DisableWMI bool `mapstructure:"disable_wmi"`
+	WMIEnabled bool `mapstructure:"wmi_enabled"`
+}
+
+func (cfg *Config) Validate() error {
+	if !cfg.WMIEnabled && cfg.Metrics.ProcessHandles.Enabled {
+		return ErrProcessHandlesRequiresWMI
+	}
+	return nil
 }
 
 type MatchConfig struct {

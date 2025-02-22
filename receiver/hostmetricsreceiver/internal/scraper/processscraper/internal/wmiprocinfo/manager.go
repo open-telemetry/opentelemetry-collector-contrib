@@ -5,8 +5,9 @@ package wmiprocinfo // import "github.com/open-telemetry/opentelemetry-collector
 
 import "errors"
 
-var ErrPlatformSupport = errors.New("wmi process info collection is only supported on Windows")
+var ErrPlatformSupport = errors.New("WMI process info collection is only supported on Windows")
 
+// Manager is the public interface for a WMI Process Info manager.
 type Manager interface {
 	Refresh() error
 	GetProcessHandleCount(pid int64) (uint32, error)

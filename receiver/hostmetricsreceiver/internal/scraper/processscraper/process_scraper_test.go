@@ -398,17 +398,121 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 	require.Regexp(t, "^error creating process exclude filters:", err.Error())
 }
 
-func TestScrapeMetrics_NewError_Windows(t *testing.T) {
+func TestScrapeMetrics_WMIManagerCreationConditions(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
 	if runtime.GOOS != "windows" {
-		t.Skipf("skipping windows test on non-windows system %s", runtime.GOOS)
+		t.Skip("this logic for non-windows is tested in TestScrapeMetrics_NonWindowsNoWMIManager")
 	}
 
-	// process.handles metric cannot be enabled if the config disables WMI
-	mb := metadata.DefaultMetricsBuilderConfig()
-	mb.Metrics.ProcessHandles.Enabled = true
-	_, err := newProcessScraper(receivertest.NewNopSettings(), &Config{DisableWMI: true, MetricsBuilderConfig: mb})
-	require.Error(t, err)
-	require.ErrorIs(t, err, errProcessHandlesRequiresWMI)
+	testCases := []struct {
+		name          string
+		config        *Config
+		shouldHaveWMI bool
+	}{
+		{
+			name: "WMI disabled",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.WMIEnabled = false
+				return c
+			}(),
+			shouldHaveWMI: false,
+		},
+		{
+			name: "No WMI metrics",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.Metrics.ProcessHandles.Enabled = false
+				c.ResourceAttributes.ProcessParentPid.Enabled = false
+				return c
+			}(),
+			shouldHaveWMI: false,
+		},
+		{
+			name: "No process handles, yes parent pid",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.Metrics.ProcessHandles.Enabled = false
+				c.ResourceAttributes.ProcessParentPid.Enabled = true
+				return c
+			}(),
+			shouldHaveWMI: true,
+		},
+		{
+			name: "Yes process handles, no parent pid",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.Metrics.ProcessHandles.Enabled = true
+				c.ResourceAttributes.ProcessParentPid.Enabled = false
+				return c
+			}(),
+			shouldHaveWMI: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), tc.config)
+			require.NoError(t, err)
+
+			// This could be done as a one-liner but it leads to nicer
+			// console messages from testify this way.
+			if tc.shouldHaveWMI {
+				require.NotNil(t, scraper.wmiProcInfoManager)
+			} else {
+				require.Nil(t, scraper.wmiProcInfoManager)
+			}
+		})
+	}
+}
+
+type mockWMIManager struct {
+	parentPidCallCount int
+}
+
+func (*mockWMIManager) Refresh() error                                  { return nil }
+func (*mockWMIManager) GetProcessHandleCount(pid int64) (uint32, error) { return 0, nil }
+func (m *mockWMIManager) GetProcessPpid(pid int64) (int64, error) {
+	m.parentPidCallCount++
+	return 0, nil
+}
+
+func scrapeWithMockManager(t *testing.T, cfg *Config, m *mockWMIManager) {
+	scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+	scraper.wmiProcInfoManager = m
+	err = scraper.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	scraper.scrape(context.Background())
+}
+
+func TestScrapeMetrics_CallsCorrectParentPid(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+	if runtime.GOOS != "windows" {
+		t.Skip("no testable behaviour on non-windows platforms")
+	}
+
+	c := createDefaultConfig().(*Config)
+	m := &mockWMIManager{}
+	scrapeWithMockManager(t, c, m)
+	require.Positive(t, m.parentPidCallCount)
+
+	c = createDefaultConfig().(*Config)
+	c.WMIEnabled = false
+	m = &mockWMIManager{}
+	scrapeWithMockManager(t, c, m)
+	require.Zero(t, m.parentPidCallCount)
+}
+
+func TestScrapeMetrics_NonWindowsNoWMIManager(t *testing.T) {
+	skipTestOnUnsupportedOS(t)
+	if runtime.GOOS == "windows" {
+		t.Skip("this logic for windows is tested in TestScrapeMetrics_WMIManagerCreationConditions")
+	}
+
+	s, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
+	require.NoError(t, err)
+	require.Nil(t, s.wmiProcInfoManager)
 }
 
 func TestScrapeMetrics_GetProcessesError(t *testing.T) {

@@ -42,8 +42,6 @@ const (
 	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + memoryUtilizationMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen + signalMetricsLen + uptimeMetricsLen
 )
 
-var errProcessHandlesRequiresWMI = errors.New("the process.handles metric requires the use of Windows Management Interface")
-
 type parentPidFunc func(ctx context.Context, handle processHandle, pid int32) (int32, error)
 
 // scraper for Process Metrics
@@ -60,8 +58,8 @@ type processScraper struct {
 	// for mocking
 	getProcessCreateTime func(p processHandle, ctx context.Context) (int64, error)
 	getProcessHandles    func(context.Context) (processHandles, error)
-	getParentPid         parentPidFunc
 
+	getParentPid       parentPidFunc
 	wmiProcInfoManager wmiprocinfo.Manager
 }
 
@@ -75,15 +73,21 @@ func newProcessScraper(settings scraper.Settings, cfg *Config) (*processScraper,
 		scrapeProcessDelay:   cfg.ScrapeProcessDelay,
 		getParentPid:         parentPid,
 		ucals:                make(map[int32]*ucal.CPUUtilizationCalculator),
-		wmiProcInfoManager:   wmiprocinfo.NewManager(),
 	}
 
 	var err error
 
-	if runtime.GOOS == "windows" {
-		err = configureWindowsSettings(scraper)
-		if err != nil {
-			return nil, fmt.Errorf("error configuring Windows settings: %w", err)
+	if runtime.GOOS == "windows" && cfg.WMIEnabled {
+		opts := []wmiprocinfo.QueryOption{}
+		if cfg.Metrics.ProcessHandles.Enabled {
+			opts = append(opts, wmiprocinfo.WithHandleCount)
+		}
+		if cfg.ResourceAttributes.ProcessParentPid.Enabled {
+			opts = append(opts, wmiprocinfo.WithParentProcessId)
+		}
+		scraper.wmiProcInfoManager = wmiprocinfo.NewManager(opts...)
+		if scraper.wmiProcInfoManager != nil {
+			scraper.getParentPid = scraper.getWMIParentPidFunc()
 		}
 	}
 
@@ -445,19 +449,10 @@ func (s *processScraper) scrapeAndAppendOpenFileDescriptorsMetric(ctx context.Co
 }
 
 func (s *processScraper) refreshWMIProcInfo() error {
-	var err error
-
-	if s.config.DisableWMI {
+	if s.wmiProcInfoManager == nil {
 		return nil
 	}
-
-	if s.config.Metrics.ProcessHandles.Enabled || s.config.ResourceAttributes.ProcessParentPid.Enabled {
-		err = s.wmiProcInfoManager.Refresh()
-		if errors.Is(err, wmiprocinfo.ErrPlatformSupport) {
-			return nil
-		}
-	}
-	return err
+	return s.wmiProcInfoManager.Refresh()
 }
 
 func (s *processScraper) scrapeAndAppendHandlesMetric(_ context.Context, now pcommon.Timestamp, pid int64) error {
@@ -495,8 +490,7 @@ func (s *processScraper) scrapeAndAppendSignalsPendingMetric(ctx context.Context
 	return nil
 }
 
-<<<<<<< HEAD
-func (s *scraper) getWMIParentPidFunc() parentPidFunc {
+func (s *processScraper) getWMIParentPidFunc() parentPidFunc {
 	return func(_ context.Context, _ processHandle, pid int32) (int32, error) {
 		ppid64, err := s.wmiProcInfoManager.GetProcessPpid(int64(pid))
 		if err != nil {
@@ -506,15 +500,6 @@ func (s *scraper) getWMIParentPidFunc() parentPidFunc {
 	}
 }
 
-func configureWindowsSettings(s *scraper) error {
-	if s.config.DisableWMI {
-		if s.config.Metrics.ProcessHandles.Enabled {
-			return errProcessHandlesRequiresWMI
-		}
-	} else {
-		s.getParentPid = s.getWMIParentPidFunc()
-	}
-=======
 func (s *processScraper) scrapeAndAppendUptimeMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
 	if !s.config.MetricsBuilderConfig.Metrics.ProcessUptime.Enabled {
 		return nil
@@ -529,6 +514,5 @@ func (s *processScraper) scrapeAndAppendUptimeMetric(ctx context.Context, now pc
 	uptime := now.AsTime().Sub(time.Unix(0, ts*int64(time.Millisecond)))
 	s.mb.RecordProcessUptimeDataPoint(now, uptime.Seconds())
 
->>>>>>> main
 	return nil
 }

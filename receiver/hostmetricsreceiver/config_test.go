@@ -108,23 +108,48 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
-func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
+func TestLoadInvalidConfig(t *testing.T) {
+	testCases := []struct {
+		name          string
+		configPath    string
+		failMarshal   bool
+		errorContains string
+	}{
+		{
+			name:          "no scrapers",
+			configPath:    "config-noscrapers.yaml",
+			errorContains: "must specify at least one scraper when using hostmetrics receiver",
+		},
+		{
+			name:          "invalid scraper key",
+			configPath:    "config-invalidscraperkey.yaml",
+			errorContains: "invalid scraper key: invalidscraperkey",
+			failMarshal:   true,
+		},
+		{
+			name:          "handles enabled wmi disabled",
+			configPath:    "config-handles-no-wmi.yaml",
+			errorContains: processscraper.ErrProcessHandlesRequiresWMI.Error(),
+		},
+	}
 
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-noscrapers.yaml"))
-	require.NoError(t, err)
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	require.NoError(t, cm.Unmarshal(cfg))
-	require.ErrorContains(t, xconfmap.Validate(cfg), "must specify at least one scraper when using hostmetrics receiver")
-}
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tc.configPath))
+			require.NoError(t, err)
 
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-invalidscraperkey.yaml"))
-	require.NoError(t, err)
-
-	require.ErrorContains(t, cm.Unmarshal(cfg), "invalid scraper key: invalidscraperkey")
+			if tc.failMarshal {
+				require.ErrorContains(t, cm.Unmarshal(cfg), tc.errorContains)
+			} else {
+				require.NoError(t, cm.Unmarshal(cfg))
+				require.ErrorContains(t, xconfmap.Validate(cfg), tc.errorContains)
+			}
+		})
+	}
 }
