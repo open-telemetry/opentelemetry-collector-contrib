@@ -41,7 +41,7 @@ func TestNewConnector(t *testing.T) {
 
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopSettingsWithType(metadata.Type)
+	creationParams := connectortest.NewNopSettings(metadata.Type)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	traceToMetricsConnector, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -60,7 +60,7 @@ func TestTraceToTraceConnector(t *testing.T) {
 
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopSettingsWithType(metadata.Type)
+	creationParams := connectortest.NewNopSettings(metadata.Type)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	traceToTracesConnector, err := factory.CreateTracesToTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -125,7 +125,7 @@ func creteConnector(t *testing.T) (*traceToMetricConnector, *consumertest.Metric
 
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopSettingsWithType(metadata.Type)
+	creationParams := connectortest.NewNopSettings(metadata.Type)
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Traces.ResourceAttributesAsContainerTags = []string{semconv.AttributeCloudAvailabilityZone, semconv.AttributeCloudRegion, "az"}
 	cfg.Traces.BucketInterval = 1 * time.Second

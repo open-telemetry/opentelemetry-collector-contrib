@@ -2007,7 +2007,7 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
-	exp, err := f.CreateTraces(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+	exp, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -2025,7 +2025,7 @@ func newTestMetricsExporter(t *testing.T, url string, fns ...func(*Config)) expo
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
-	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -2053,7 +2053,7 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
-	exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+	exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
 }
