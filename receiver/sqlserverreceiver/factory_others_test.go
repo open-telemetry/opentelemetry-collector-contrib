@@ -38,7 +38,7 @@ func TestCreateMetricsOtherOS(t *testing.T) {
 				require.True(t, directDBConnectionEnabled(cfg))
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
-				params := receivertest.NewNopSettingsWithType(metadata.Type)
+				params := receivertest.NewNopSettings(metadata.Type)
 				scrapers, err := setupScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
@@ -58,7 +58,7 @@ func TestCreateMetricsOtherOS(t *testing.T) {
 
 				r, err := factory.CreateMetrics(
 					context.Background(),
-					receivertest.NewNopSettingsWithType(metadata.Type),
+					receivertest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),
 				)
