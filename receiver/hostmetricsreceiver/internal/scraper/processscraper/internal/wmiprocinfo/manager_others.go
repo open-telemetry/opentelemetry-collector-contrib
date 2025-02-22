@@ -5,7 +5,7 @@
 
 package wmiprocinfo // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/wmiprocinfo"
 
-func NewManager() Manager {
+func NewManager(queryOpts ...QueryOption) Manager {
 	return &unsupportedManager{}
 }
 

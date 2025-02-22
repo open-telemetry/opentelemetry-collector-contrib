@@ -13,3 +13,31 @@ type Manager interface {
 	GetProcessHandleCount(pid int64) (uint32, error)
 	GetProcessPpid(pid int64) (int64, error)
 }
+
+type QueryOption func(string) string
+
+// WithHandleCount includes the HandleCount field in the WMI query.
+func WithHandleCount(q string) string {
+	return q + ", HandleCount"
+}
+
+// WithParentProcessId includes the ParentProcessId field in the WMI query.
+func WithParentProcessId(q string) string {
+	return q + ", ParentProcessId"
+}
+
+func constructQueryString(queryOpts ...QueryOption) (string, error) {
+	queryStr := "SELECT ProcessId"
+	queryOptSet := false
+
+	for _, opt := range queryOpts {
+		queryStr = opt(queryStr)
+		queryOptSet = true
+	}
+
+	if !queryOptSet {
+		return "", errors.New("no query options supplied")
+	}
+
+	return queryStr + " FROM Win32_Process", nil
+}

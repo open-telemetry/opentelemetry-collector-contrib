@@ -29,34 +29,6 @@ func NewManager(queryOpts ...QueryOption) Manager {
 	}
 }
 
-type QueryOption func(string) string
-
-// WithHandleCount includes the HandleCount field in the WMI query.
-func WithHandleCount(q string) string {
-	return q + ", HandleCount"
-}
-
-// WithParentProcessId includes the ParentProcessId field in the WMI query.
-func WithParentProcessId(q string) string {
-	return q + ", ParentProcessId"
-}
-
-func constructQueryString(queryOpts ...QueryOption) (string, error) {
-	queryStr := "SELECT ProcessId"
-	queryOptSet := false
-
-	for _, opt := range queryOpts {
-		queryStr = opt(queryStr)
-		queryOptSet = true
-	}
-
-	if !queryOptSet {
-		return "", errors.New("no query options supplied")
-	}
-
-	return queryStr + " FROM Win32_Process", nil
-}
-
 var (
 	ErrNoProcesses     = errors.New("no process info is currently registered")
 	ErrProcessNotFound = errors.New("process info not found")
