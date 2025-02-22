@@ -1,0 +1,4 @@
+change_type: enhancement
+component: prometheusremotewrite
+note: "Handling histogram Prometheus Remote-Write v2 into OpenTelemetry histogram metrics."
+issues: [#37277]
