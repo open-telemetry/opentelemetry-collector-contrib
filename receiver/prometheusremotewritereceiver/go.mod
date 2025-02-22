@@ -7,7 +7,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.120.1
-	github.com/prometheus/prometheus v0.302.0
+	github.com/prometheus/prometheus v0.301.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.120.1-0.20250221111745-6de29ce16921
 	go.opentelemetry.io/collector/component/componentstatus v0.120.1-0.20250221111745-6de29ce16921
@@ -63,9 +63,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.120.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.120.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.120.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -81,14 +79,12 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.26.1-0.20250221111745-6de29ce16921 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.26.1-0.20250221111745-6de29ce16921 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.26.1-0.20250221111745-6de29ce16921 // indirect
-	go.opentelemetry.io/collector/confmap/xconfmap v0.120.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.120.1-0.20250221111745-6de29ce16921 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.120.1-0.20250221111745-6de29ce16921 // indirect
 	go.opentelemetry.io/collector/extension v0.120.1-0.20250221111745-6de29ce16921 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.120.1-0.20250221111745-6de29ce16921 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.120.1-0.20250221111745-6de29ce16921 // indirect
 	go.opentelemetry.io/collector/pipeline v0.120.1-0.20250221111745-6de29ce16921 // indirect
-	go.opentelemetry.io/collector/processor v0.120.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.120.1-0.20250221111745-6de29ce16921 // indirect
 	go.opentelemetry.io/collector/semconv v0.120.1-0.20250221111745-6de29ce16921 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.59.0 // indirect
@@ -125,3 +121,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor => ../../processor/deltatocumulativeprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics => ../../internal/exp/metrics
