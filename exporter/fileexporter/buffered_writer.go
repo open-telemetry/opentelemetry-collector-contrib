@@ -16,9 +16,7 @@ type bufferedWriteCloser struct {
 	buffered *bufio.Writer
 }
 
-var (
-	_ io.WriteCloser = (*bufferedWriteCloser)(nil)
-)
+var _ io.WriteCloser = (*bufferedWriteCloser)(nil)
 
 func newBufferedWriteCloser(f io.WriteCloser) io.WriteCloser {
 	return &bufferedWriteCloser{

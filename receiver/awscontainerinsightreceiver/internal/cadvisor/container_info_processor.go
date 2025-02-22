@@ -37,7 +37,7 @@ type podKey struct {
 	namespace    string
 }
 
-func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger) []*extractors.CAdvisorMetric {
+func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger, metricExtractors []extractors.MetricExtractor) []*extractors.CAdvisorMetric {
 	var metrics []*extractors.CAdvisorMetric
 	podKeys := make(map[string]podKey)
 
@@ -47,7 +47,7 @@ func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInf
 		if len(info.Stats) == 0 {
 			continue
 		}
-		outMetrics, outPodKey, err := processContainer(info, mInfo, containerOrchestrator, logger)
+		outMetrics, outPodKey, err := processContainer(info, mInfo, containerOrchestrator, logger, metricExtractors)
 		if err != nil {
 			logger.Warn("drop some container info", zap.Error(err))
 			continue
@@ -73,7 +73,7 @@ func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInf
 			continue
 		}
 
-		metrics = append(metrics, processPod(info, mInfo, podKeys, logger)...)
+		metrics = append(metrics, processPod(info, mInfo, podKeys, logger, metricExtractors)...)
 	}
 
 	// This happens when our cgroup path based pod detection logic is not working.
@@ -87,7 +87,7 @@ func processContainers(cInfos []*cInfo.ContainerInfo, mInfo extractors.CPUMemInf
 }
 
 // processContainers get metrics for individual container and gather information for pod so we can look it up later.
-func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger) ([]*extractors.CAdvisorMetric, *podKey, error) {
+func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, containerOrchestrator string, logger *zap.Logger, metricExtractors []extractors.MetricExtractor) ([]*extractors.CAdvisorMetric, *podKey, error) {
 	var result []*extractors.CAdvisorMetric
 	var pKey *podKey
 
@@ -152,7 +152,7 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 
 	tags[ci.Timestamp] = strconv.FormatInt(extractors.GetStats(info).Timestamp.UnixNano(), 10)
 
-	for _, extractor := range GetMetricsExtractors() {
+	for _, extractor := range metricExtractors {
 		if extractor.HasValue(info) {
 			result = append(result, extractor.GetValue(info, mInfo, containerType)...)
 		}
@@ -164,7 +164,7 @@ func processContainer(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProv
 	return result, pKey, nil
 }
 
-func processPod(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, podKeys map[string]podKey, logger *zap.Logger) []*extractors.CAdvisorMetric {
+func processPod(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, podKeys map[string]podKey, logger *zap.Logger, metricExtractors []extractors.MetricExtractor) []*extractors.CAdvisorMetric {
 	var result []*extractors.CAdvisorMetric
 	if isContainerInContainer(info.Name) {
 		logger.Debug("drop metric because it's nested container", zap.String("name", info.Name))
@@ -183,7 +183,7 @@ func processPod(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, 
 
 	tags[ci.Timestamp] = strconv.FormatInt(extractors.GetStats(info).Timestamp.UnixNano(), 10)
 
-	for _, extractor := range GetMetricsExtractors() {
+	for _, extractor := range metricExtractors {
 		if extractor.HasValue(info) {
 			result = append(result, extractor.GetValue(info, mInfo, ci.TypePod)...)
 		}
@@ -203,7 +203,7 @@ func processPod(info *cInfo.ContainerInfo, mInfo extractors.CPUMemInfoProvider, 
 // - Guaranteed /kubepods.slice/kubepods-podc8f7bb69_65f2_4b61_ae5a_9b19ac47a239.slice/docker-523b624a86a2a74c2bedf586d8448c86887ef7858a8dec037d6559e5ad3fccb5.scope
 // - Burstable /kubepods.slice/kubepods-besteffort.slice/kubepods-besteffort-podab0e310c_0bdb_48e8_ac87_81a701514645.slice/docker-caa8a5e51cd6610f8f0110b491e8187d23488b9635acccf0355a7975fd3ff158.scope
 // - Docker in Docker /kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podc9adcee4_c874_4dad_8bc8_accdbd67ac3a.slice/docker-e58cfbc8b67f6e1af458efdd31cb2a8abdbf9f95db64f4c852b701285a09d40e.scope/docker/fb651068cfbd4bf3d45fb092ec9451f8d1a36b3753687bbaa0a9920617eae5b9
-// So we check the number of segements within the cgroup path to determine if it's a container running in container.
+// So we check the number of segments within the cgroup path to determine if it's a container running in container.
 func isContainerInContainer(p string) bool {
 	segs := strings.Split(strings.TrimLeft(p, "/"), "/")
 	// Without nested container, the number of segments (regardless of cgroupfs/systemd) are either 3 or 4 (depends on QoS)

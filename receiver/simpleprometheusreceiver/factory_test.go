@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver/internal/metadata"
 )
 
 func TestFactory(t *testing.T) {
@@ -17,9 +19,9 @@ func TestFactory(t *testing.T) {
 	cfg := f.CreateDefaultConfig()
 	require.NotNil(t, cfg)
 
-	r, err := f.CreateMetricsReceiver(
+	r, err := f.CreateMetrics(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),
 	)

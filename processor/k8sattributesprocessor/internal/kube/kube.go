@@ -91,12 +91,12 @@ type Client interface {
 	GetPod(PodIdentifier) (*Pod, bool)
 	GetNamespace(string) (*Namespace, bool)
 	GetNode(string) (*Node, bool)
-	Start()
+	Start() error
 	Stop()
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace, InformerProviderReplicaSet) (Client, error)
+type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace, InformerProviderReplicaSet, bool, time.Duration) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -176,7 +176,7 @@ type Filters struct {
 	Node      string
 	Namespace string
 	Fields    []FieldFilter
-	Labels    []FieldFilter
+	Labels    []LabelFilter
 }
 
 // FieldFilter represents exactly one filter by field rule.
@@ -189,6 +189,24 @@ type FieldFilter struct {
 	// Currently only two operations are supported,
 	//  - Equals
 	//  - NotEquals
+	Op selection.Operator
+}
+
+// LabelFilter represents exactly one filter by label rule.
+type LabelFilter struct {
+	// Key matches the label name.
+	Key string
+	// Value matches the label value.
+	Value string
+	// Op determines the matching operation.
+	// The following operations are supported,
+	//	- Exists
+	// 	- DoesNotExist
+	//	- Equals
+	//	- DoubleEquals
+	//	- NotEquals
+	//	- GreaterThan
+	//	- LessThan
 	Op selection.Operator
 }
 

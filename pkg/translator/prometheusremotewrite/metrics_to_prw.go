@@ -68,7 +68,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 			// TODO: decide if instrumentation library information should be exported as labels
 			for k := 0; k < metricSlice.Len(); k++ {
 				metric := metricSlice.At(k)
-				mostRecentTimestamp = maxTimestamp(mostRecentTimestamp, mostRecentTimestampInMetric(metric))
+				mostRecentTimestamp = max(mostRecentTimestamp, mostRecentTimestampInMetric(metric))
 
 				if !isValidAggregationTemporality(metric) {
 					errs = multierr.Append(errs, fmt.Errorf("invalid temporality and type combination for metric %q", metric.Name()))
@@ -155,7 +155,7 @@ func isSameMetric(ts *prompb.TimeSeries, lbls []prompb.Label) bool {
 		return false
 	}
 	for i, l := range ts.Labels {
-		if l.Name != ts.Labels[i].Name || l.Value != ts.Labels[i].Value {
+		if l.Name != lbls[i].Name || l.Value != lbls[i].Value {
 			return false
 		}
 	}

@@ -34,7 +34,7 @@ func TestExtensionStartStop(t *testing.T) {
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = refreshInterval
 		sdCfg.ResultFile = output
-		cs := extensiontest.NewNopSettings()
+		cs := extensiontest.NewNopSettings(extensiontest.NopType)
 		ext, err := createExtensionWithFetcher(cs, sdCfg, f)
 		require.NoError(t, err)
 		return ext
@@ -59,7 +59,7 @@ func TestExtensionStartStop(t *testing.T) {
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = 100 * time.Millisecond
 		sdCfg.ResultFile = "testdata/ut_ext_critical_error.actual.yaml"
-		cs := extensiontest.NewNopSettings()
+		cs := extensiontest.NewNopSettings(extensiontest.NopType)
 		statusEventChan := make(chan *componentstatus.Event)
 		ext, err := createExtensionWithFetcher(cs, sdCfg, f)
 		require.NoError(t, err)
@@ -81,15 +81,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetFactory(component.Kind, component.Type) component.Factory {
-	return nil
-}
-
 func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
-	return nil
-}
-
-func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	return nil
 }
 

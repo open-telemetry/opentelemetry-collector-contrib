@@ -23,6 +23,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 	input.PutInt("test4", 1234)
 	input.PutDouble("test5", 1234)
 	input.PutBool("test6", true)
+	input.PutStr("test7", "")
 
 	ottlValue := ottl.StandardFunctionGetter[pcommon.Map]{
 		FCtx: ottl.FunctionContext{
@@ -77,6 +78,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -97,6 +99,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -117,6 +120,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -137,6 +141,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -158,6 +163,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -196,6 +202,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -217,6 +224,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -238,6 +246,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -258,6 +267,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -278,6 +288,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -298,6 +309,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -318,6 +330,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -338,6 +351,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -360,6 +374,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -382,6 +397,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -404,6 +420,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test.4", 1234)
 				expectedMap.PutDouble("test.5", 1234)
 				expectedMap.PutBool("test.6", true)
+				expectedMap.PutStr("test.7", "")
 			},
 		},
 		{
@@ -426,6 +443,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
 			},
 		},
 		{
@@ -447,6 +465,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test-4", 1234)
 				expectedMap.PutDouble("test-5", 1234)
 				expectedMap.PutBool("test-6", true)
+				expectedMap.PutStr("test-7", "")
 			},
 		},
 		{
@@ -469,6 +488,30 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
 				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "")
+			},
+		},
+		{
+			name:    "replacement for empty string",
+			target:  target,
+			mode:    modeValue,
+			pattern: `^$`,
+			replacement: ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(context.Context, pcommon.Map) (any, error) {
+					return "empty_string_replacement", nil
+				},
+			},
+			replacementFormat: ottl.Optional[ottl.StringGetter[pcommon.Map]]{},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test2", "hello")
+				expectedMap.PutStr("test3", "goodbye world1 and world2")
+				expectedMap.PutInt("test4", 1234)
+				expectedMap.PutDouble("test5", 1234)
+				expectedMap.PutBool("test6", true)
+				expectedMap.PutStr("test7", "empty_string_replacement")
 			},
 		},
 	}
@@ -627,5 +670,5 @@ func Test_replaceAllPatterns_invalid_model(t *testing.T) {
 	invalidMode := "invalid"
 	exprFunc, err := replaceAllPatterns[any](target, invalidMode, "regex", replacement, function, replacementFormat)
 	assert.Nil(t, exprFunc)
-	assert.Contains(t, err.Error(), "invalid mode")
+	assert.ErrorContains(t, err, "invalid mode")
 }

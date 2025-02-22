@@ -62,7 +62,7 @@ func newLogsExporter(
 		return nil, fmt.Errorf("failed to initialize the logs exporter: %w", err)
 	}
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		params,
 		cfg,

@@ -4,11 +4,16 @@ status:
   class: extension
   stability:
     alpha: [extension]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   codeowners:
-    active: [rmfitzpatrick, dmitryax]
+    active: [dmitryax, ChrsMark]
+    emeritus: [rmfitzpatrick]
 
 # TODO: Update the extension to make the tests pass
 tests:
   skip_lifecycle: true
   skip_shutdown: true
+  goleak:
+    ignore:
+      top:
+        - "k8s.io/apimachinery/pkg/watch.(*Broadcaster).loop"

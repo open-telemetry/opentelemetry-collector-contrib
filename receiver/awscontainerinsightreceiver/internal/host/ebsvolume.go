@@ -53,7 +53,8 @@ type ebsVolume struct {
 type ebsVolumeOption func(*ebsVolume)
 
 func newEBSVolume(ctx context.Context, session *session.Session, instanceID string, region string,
-	refreshInterval time.Duration, logger *zap.Logger, options ...ebsVolumeOption) ebsVolumeProvider {
+	refreshInterval time.Duration, logger *zap.Logger, options ...ebsVolumeOption,
+) ebsVolumeProvider {
 	e := &ebsVolume{
 		dev2Vol:         make(map[string]string),
 		instanceID:      instanceID,
@@ -124,16 +125,16 @@ func (e *ebsVolume) refresh(ctx context.Context) {
 	}
 }
 
-func (e *ebsVolume) addEBSVolumeMapping(zone *string, attachement *ec2.VolumeAttachment) string {
-	// *attachement.Device is sth like: /dev/xvda
-	devPath := e.findNvmeBlockNameIfPresent(*attachement.Device)
+func (e *ebsVolume) addEBSVolumeMapping(zone *string, attachment *ec2.VolumeAttachment) string {
+	// *attachment.Device is sth like: /dev/xvda
+	devPath := e.findNvmeBlockNameIfPresent(*attachment.Device)
 	if devPath == "" {
-		devPath = *attachement.Device
+		devPath = *attachment.Device
 	}
 
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	e.dev2Vol[devPath] = fmt.Sprintf("aws://%s/%s", *zone, *attachement.VolumeId)
+	e.dev2Vol[devPath] = fmt.Sprintf("aws://%s/%s", *zone, *attachment.VolumeId)
 	return devPath
 }
 

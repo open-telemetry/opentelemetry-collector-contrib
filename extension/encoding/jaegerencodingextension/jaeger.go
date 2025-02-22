@@ -7,14 +7,13 @@ import (
 	"bytes"
 
 	"github.com/gogo/protobuf/jsonpb"
-	jaegerproto "github.com/jaegertracing/jaeger/model"
+	jaegerproto "github.com/jaegertracing/jaeger-idl/model/v1"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-type jaegerProtobufTrace struct {
-}
+type jaegerProtobufTrace struct{}
 
 func (j jaegerProtobufTrace) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 	span := &jaegerproto.Span{}
@@ -25,8 +24,7 @@ func (j jaegerProtobufTrace) UnmarshalTraces(buf []byte) (ptrace.Traces, error) 
 	return jaegerSpanToTraces(span)
 }
 
-type jaegerJSONTrace struct {
-}
+type jaegerJSONTrace struct{}
 
 func (j jaegerJSONTrace) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 	span := &jaegerproto.Span{}

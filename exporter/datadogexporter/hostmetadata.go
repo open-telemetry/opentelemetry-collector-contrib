@@ -4,7 +4,7 @@
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 )
 
 // newMetadataConfigfromConfig creates a new metadata pusher config from the main
@@ -18,5 +18,6 @@ func newMetadataConfigfromConfig(cfg *Config) hostmetadata.PusherConfig {
 		InsecureSkipVerify:  cfg.TLSSetting.InsecureSkipVerify,
 		ClientConfig:        cfg.ClientConfig,
 		RetrySettings:       cfg.BackOffConfig,
+		ReporterPeriod:      cfg.HostMetadata.ReporterPeriod,
 	}
 }

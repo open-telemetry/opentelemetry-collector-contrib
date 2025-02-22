@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -47,8 +47,7 @@ func (s *brokerScraper) shutdown(context.Context) error {
 }
 
 func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
-
-	var scrapeErrors = scrapererror.ScrapeErrors{}
+	scrapeErrors := scrapererror.ScrapeErrors{}
 
 	if s.client == nil {
 		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
@@ -104,16 +103,16 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,
-	settings receiver.Settings) (scraperhelper.Scraper, error) {
+	settings receiver.Settings,
+) (scraper.Metrics, error) {
 	s := brokerScraper{
 		settings:     settings,
 		config:       cfg,
 		saramaConfig: saramaConfig,
 	}
-	return scraperhelper.NewScraper(
-		brokersScraperType,
+	return scraper.NewMetrics(
 		s.scrape,
-		scraperhelper.WithStart(s.start),
-		scraperhelper.WithShutdown(s.shutdown),
+		scraper.WithStart(s.start),
+		scraper.WithShutdown(s.shutdown),
 	)
 }

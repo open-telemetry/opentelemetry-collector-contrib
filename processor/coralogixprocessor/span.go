@@ -24,7 +24,7 @@ func newCoralogixProcessor(ctx context.Context, set processor.Settings, cfg *Con
 		config: cfg,
 	}
 
-	return processorhelper.NewTracesProcessor(ctx,
+	return processorhelper.NewTraces(ctx,
 		set,
 		cfg,
 		nextConsumer,

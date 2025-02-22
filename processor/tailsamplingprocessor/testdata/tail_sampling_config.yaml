@@ -3,7 +3,8 @@ tail_sampling:
   num_traces: 100
   expected_new_traces_per_sec: 10
   decision_cache:
-    sampled_cache_size: 500
+    sampled_cache_size: 1000
+    non_sampled_cache_size: 10000
   policies:
     [
         {

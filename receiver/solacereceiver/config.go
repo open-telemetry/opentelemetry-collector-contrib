@@ -19,6 +19,7 @@ const (
 
 var (
 	errMissingAuthDetails       = errors.New("authentication details are required, either for plain user name password or XOAUTH2 or client certificate")
+	errTooManyAuthDetails       = errors.New("only one authentication method must be used")
 	errMissingQueueName         = errors.New("queue definition is required, queue definition has format queue://<queuename>")
 	errMissingPlainTextParams   = errors.New("missing plain text auth params: Username, Password")
 	errMissingXauth2Params      = errors.New("missing xauth2 text auth params: Username, Bearer")
@@ -46,8 +47,21 @@ type Config struct {
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.Auth.PlainText == nil && cfg.Auth.External == nil && cfg.Auth.XAuth2 == nil {
+	authMethod := 0
+	if cfg.Auth.PlainText != nil {
+		authMethod++
+	}
+	if cfg.Auth.External != nil {
+		authMethod++
+	}
+	if cfg.Auth.XAuth2 != nil {
+		authMethod++
+	}
+	if authMethod == 0 {
 		return errMissingAuthDetails
+	}
+	if authMethod > 1 {
+		return errTooManyAuthDetails
 	}
 	if len(strings.TrimSpace(cfg.Queue)) == 0 {
 		return errMissingQueueName
@@ -80,8 +94,7 @@ type SaslXAuth2Config struct {
 }
 
 // SaslExternalConfig defines the configuration for the SASL External used in conjunction with TLS client authentication.
-type SaslExternalConfig struct {
-}
+type SaslExternalConfig struct{}
 
 // FlowControl defines the configuration for what to do in backpressure scenarios, e.g. memorylimiter errors
 type FlowControl struct {

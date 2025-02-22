@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -210,6 +209,23 @@ func TestUnmarshal(t *testing.T) {
 					cfg := NewConfig()
 					cfg.OrderingCriteria = matcher.OrderingCriteria{
 						Regex: `err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log`,
+						SortBy: []matcher.Sort{
+							{
+								SortType: "numeric",
+								RegexKey: "file_num",
+							},
+						},
+					}
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
+			{
+				Name: "sort_by_group_by",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					cfg.OrderingCriteria = matcher.OrderingCriteria{
+						Regex:   `err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log`,
+						GroupBy: `err\.(?P<value>[a-z]+).[0-9]*.*log`,
 						SortBy: []matcher.Sort{
 							{
 								SortType: "numeric",
@@ -626,7 +642,6 @@ func TestBuild(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			tc := tc
 			t.Parallel()
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
@@ -643,92 +658,7 @@ func TestBuild(t *testing.T) {
 	}
 }
 
-func TestBuildWithSplitFunc(t *testing.T) {
-	t.Parallel()
-
-	basicConfig := func() *Config {
-		cfg := NewConfig()
-		cfg.Include = []string{"/var/log/testpath.*"}
-		cfg.Exclude = []string{"/var/log/testpath.ex*"}
-		cfg.PollInterval = 10 * time.Millisecond
-		return cfg
-	}
-
-	cases := []struct {
-		name             string
-		modifyBaseConfig func(*Config)
-		errorRequirement require.ErrorAssertionFunc
-		validate         func(*testing.T, *Manager)
-	}{
-		{
-			"Basic",
-			func(_ *Config) {},
-			require.NoError,
-			func(t *testing.T, m *Manager) {
-				require.Equal(t, 10*time.Millisecond, m.pollInterval)
-			},
-		},
-		{
-			"BadIncludeGlob",
-			func(cfg *Config) {
-				cfg.Include = []string{"["}
-			},
-			require.Error,
-			nil,
-		},
-		{
-			"BadExcludeGlob",
-			func(cfg *Config) {
-				cfg.Include = []string{"["}
-			},
-			require.Error,
-			nil,
-		},
-		{
-			"InvalidEncoding",
-			func(cfg *Config) {
-				cfg.Encoding = "UTF-3233"
-			},
-			require.Error,
-			nil,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			tc := tc
-			t.Parallel()
-			cfg := basicConfig()
-			tc.modifyBaseConfig(cfg)
-
-			splitNone := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-				if !atEOF {
-					return 0, nil, nil
-				}
-				if len(data) == 0 {
-					return 0, nil, nil
-				}
-				return len(data), data, nil
-			}
-
-			set := componenttest.NewNopTelemetrySettings()
-			input, err := cfg.BuildWithSplitFunc(set, emittest.Nop, splitNone)
-			tc.errorRequirement(t, err)
-			if err != nil {
-				return
-			}
-
-			tc.validate(t, input)
-		})
-	}
-}
-
 func TestBuildWithHeader(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), true))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), false))
-	})
-
 	basicConfig := func() *Config {
 		cfg := NewConfig()
 		cfg.Include = []string{"/var/log/testpath.*"}
@@ -794,7 +724,6 @@ func TestBuildWithHeader(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			tc := tc
 			t.Parallel()
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)

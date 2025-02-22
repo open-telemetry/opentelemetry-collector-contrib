@@ -77,7 +77,6 @@ func createGeoIPProviders(
 		}
 
 		providers = append(providers, provider)
-
 	}
 
 	return providers, nil
@@ -89,7 +88,7 @@ func createMetricsProcessor(ctx context.Context, set processor.Settings, cfg com
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewMetricsProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg, defaultResourceAttributes, providers).processMetrics, processorhelper.WithCapabilities(processorCapabilities))
+	return processorhelper.NewMetrics(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg, defaultResourceAttributes, providers, set).processMetrics, processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createTracesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
@@ -98,7 +97,7 @@ func createTracesProcessor(ctx context.Context, set processor.Settings, cfg comp
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTracesProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg, defaultResourceAttributes, providers).processTraces, processorhelper.WithCapabilities(processorCapabilities))
+	return processorhelper.NewTraces(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg, defaultResourceAttributes, providers, set).processTraces, processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createLogsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
@@ -107,5 +106,5 @@ func createLogsProcessor(ctx context.Context, set processor.Settings, cfg compon
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewLogsProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg, defaultResourceAttributes, providers).processLogs, processorhelper.WithCapabilities(processorCapabilities))
+	return processorhelper.NewLogs(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg, defaultResourceAttributes, providers, set).processLogs, processorhelper.WithCapabilities(processorCapabilities))
 }

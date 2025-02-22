@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/metadata"
 )
 
 func TestPushLogData(t *testing.T) {
@@ -75,14 +77,14 @@ func TestPushLogData(t *testing.T) {
 			}))
 			defer ts.Close()
 
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Endpoint = ts.URL
 			cfg := &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: ts.URL,
-				},
+				ClientConfig: clientConfig,
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -254,14 +256,15 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}))
 			defer ts.Close()
 
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Endpoint = ts.URL
+
 			cfg := &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: ts.URL,
-				},
+				ClientConfig: clientConfig,
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())

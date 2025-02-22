@@ -27,9 +27,9 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		f.CreateDefaultConfig,
-		receiver.WithTraces(f.CreateTracesReceiver, metadata.TracesStability),
-		receiver.WithMetrics(f.CreateMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(f.CreateLogsReceiver, metadata.LogsStability),
+		receiver.WithTraces(f.CreateTraces, metadata.TracesStability),
+		receiver.WithMetrics(f.CreateMetrics, metadata.MetricsStability),
+		receiver.WithLogs(f.CreateLogs, metadata.LogsStability),
 	)
 }
 
@@ -41,37 +41,37 @@ func (factory *pubsubReceiverFactory) CreateDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func (factory *pubsubReceiverFactory) ensureReceiver(params receiver.Settings, config component.Config) (*pubsubReceiver, error) {
+func (factory *pubsubReceiverFactory) ensureReceiver(settings receiver.Settings, config component.Config) (*pubsubReceiver, error) {
 	receiver := factory.receivers[config.(*Config)]
 	if receiver != nil {
 		return receiver, nil
 	}
 	rconfig := config.(*Config)
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID:             params.ID,
+		ReceiverID:             settings.ID,
 		Transport:              reportTransport,
-		ReceiverCreateSettings: params,
+		ReceiverCreateSettings: settings,
 	})
 	if err != nil {
 		return nil, err
 	}
 	receiver = &pubsubReceiver{
-		logger:    params.Logger,
+		settings:  settings,
 		obsrecv:   obsrecv,
-		userAgent: strings.ReplaceAll(rconfig.UserAgent, "{{version}}", params.BuildInfo.Version),
+		userAgent: strings.ReplaceAll(rconfig.UserAgent, "{{version}}", settings.BuildInfo.Version),
 		config:    rconfig,
 	}
 	factory.receivers[config.(*Config)] = receiver
 	return receiver, nil
 }
 
-func (factory *pubsubReceiverFactory) CreateTracesReceiver(
+func (factory *pubsubReceiverFactory) CreateTraces(
 	_ context.Context,
 	params receiver.Settings,
 	cfg component.Config,
-	consumer consumer.Traces) (receiver.Traces, error) {
-
-	err := cfg.(*Config).validateForTrace()
+	consumer consumer.Traces,
+) (receiver.Traces, error) {
+	err := cfg.(*Config).validate()
 	if err != nil {
 		return nil, err
 	}
@@ -83,13 +83,13 @@ func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 	return receiver, nil
 }
 
-func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
+func (factory *pubsubReceiverFactory) CreateMetrics(
 	_ context.Context,
 	params receiver.Settings,
 	cfg component.Config,
-	consumer consumer.Metrics) (receiver.Metrics, error) {
-
-	err := cfg.(*Config).validateForMetric()
+	consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	err := cfg.(*Config).validate()
 	if err != nil {
 		return nil, err
 	}
@@ -101,13 +101,13 @@ func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 	return receiver, nil
 }
 
-func (factory *pubsubReceiverFactory) CreateLogsReceiver(
+func (factory *pubsubReceiverFactory) CreateLogs(
 	_ context.Context,
 	params receiver.Settings,
 	cfg component.Config,
-	consumer consumer.Logs) (receiver.Logs, error) {
-
-	err := cfg.(*Config).validateForLog()
+	consumer consumer.Logs,
+) (receiver.Logs, error) {
+	err := cfg.(*Config).validate()
 	if err != nil {
 		return nil, err
 	}

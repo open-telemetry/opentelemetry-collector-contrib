@@ -111,7 +111,6 @@ func TestHostObserver(t *testing.T) {
 				assert.Equal(t, filepath.Base(exe), details.ProcessName)
 				assert.Equal(t, tt.protocol, details.Transport)
 				assert.Equal(t, isIPv6, details.IsIPv6)
-
 			}
 		})
 	}
@@ -156,7 +155,8 @@ func getExpectedHost(host string, isIPv6 bool) string {
 
 func startAndStopObserver(
 	t *testing.T,
-	getConnectionsOverride func() (conns []psnet.ConnectionStat, err error)) mockNotifier {
+	getConnectionsOverride func() (conns []psnet.ConnectionStat, err error),
+) mockNotifier {
 	ml := endpointsLister{
 		logger:                zap.NewNop(),
 		observerName:          "host_observer/1",

@@ -85,13 +85,13 @@ func TestSqlServerScraper(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	logger, obsLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = zap.New(logger)
 	s := newSQLServerPCScraper(settings, cfg)
 
 	assert.NoError(t, s.start(context.Background(), nil))
 	assert.Empty(t, s.watcherRecorders)
-	assert.Equal(t, 21, obsLogs.Len())
+	assert.Equal(t, 23, obsLogs.Len())
 	assert.Equal(t, 21, obsLogs.FilterMessageSnippet("failed to create perf counter with path \\SQLServer:").Len())
 	assert.Equal(t, 21, obsLogs.FilterMessageSnippet("The specified object was not found on the computer.").Len())
 	assert.Equal(t, 1, obsLogs.FilterMessageSnippet("\\SQLServer:General Statistics\\").Len())
@@ -109,15 +109,17 @@ func TestSqlServerScraper(t *testing.T) {
 	require.NoError(t, err)
 }
 
-var goldenScrapePath = filepath.Join("testdata", "golden_scrape.yaml")
-var goldenNamedInstanceScrapePath = filepath.Join("testdata", "golden_named_instance_scrape.yaml")
-var dbInstance = "db-instance"
+var (
+	goldenScrapePath              = filepath.Join("testdata", "golden_scrape.yaml")
+	goldenNamedInstanceScrapePath = filepath.Join("testdata", "golden_named_instance_scrape.yaml")
+	dbInstance                    = "db-instance"
+)
 
 func TestScrape(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
-		settings := receivertest.NewNopSettings()
+		settings := receivertest.NewNopSettings(metadata.Type)
 		scraper := newSQLServerPCScraper(settings, cfg)
 
 		for i, rec := range perfCounterRecorders {
@@ -161,7 +163,7 @@ func TestScrape(t *testing.T) {
 		cfg.ComputerName = "CustomServer"
 		cfg.InstanceName = "CustomInstance"
 
-		settings := receivertest.NewNopSettings()
+		settings := receivertest.NewNopSettings(metadata.Type)
 		scraper := newSQLServerPCScraper(settings, cfg)
 
 		for i, rec := range perfCounterRecorders {

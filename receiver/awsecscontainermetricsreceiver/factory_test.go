@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/metadata"
 )
 
 func TestValidConfig(t *testing.T) {
@@ -20,10 +21,10 @@ func TestValidConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)
@@ -31,12 +32,12 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	require.Nil(t, metricsReceiver)
 }
 
-func TestCreateMetricsReceiverWithEnv(t *testing.T) {
+func TestCreateMetricsWithEnv(t *testing.T) {
 	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "http://www.test.com")
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)
@@ -44,12 +45,12 @@ func TestCreateMetricsReceiverWithEnv(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 }
 
-func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
+func TestCreateMetricsWithBadUrl(t *testing.T) {
 	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "bad-url-format")
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)
@@ -57,14 +58,14 @@ func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
 	require.Nil(t, metricsReceiver)
 }
 
-func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
+func TestCreateMetricsWithNilConsumer(t *testing.T) {
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		nil,
 	)
 
-	require.Error(t, err, "Nil Comsumer")
+	require.Error(t, err, "Nil Consumer")
 	require.Nil(t, metricsReceiver)
 }

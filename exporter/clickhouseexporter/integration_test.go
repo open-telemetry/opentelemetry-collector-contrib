@@ -9,7 +9,7 @@ package clickhouseexporter
 import (
 	"context"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"strconv"
 	"testing"
 	"time"
@@ -95,7 +95,6 @@ func verifyExportLog(t *testing.T, logExporter *logsExporter) {
 
 	type log struct {
 		Timestamp          string            `db:"Timestamp"`
-		TimestampDate      string            `db:"TimestampDate"`
 		TimestampTime      string            `db:"TimestampTime"`
 		TraceID            string            `db:"TraceId"`
 		SpanID             string            `db:"SpanId"`
@@ -117,7 +116,6 @@ func verifyExportLog(t *testing.T, logExporter *logsExporter) {
 
 	expectLog := log{
 		Timestamp:         "2023-12-25T09:53:49Z",
-		TimestampDate:     "2023-12-25T00:00:00Z",
 		TimestampTime:     "2023-12-25T09:53:49Z",
 		TraceID:           "01020300000000000000000000000000",
 		SpanID:            "0102030000000000",
@@ -608,7 +606,5 @@ func verifySummaryMetric(t *testing.T, db *sqlx.DB) {
 }
 
 func randPort() string {
-	rs := rand.NewSource(time.Now().Unix())
-	r := rand.New(rs)
-	return strconv.Itoa(r.Intn(999) + 9000)
+	return strconv.Itoa(rand.IntN(999) + 9000)
 }

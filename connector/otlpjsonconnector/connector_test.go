@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -46,7 +47,7 @@ func TestLogsToLogs2(t *testing.T) {
 			sink := &consumertest.LogsSink{}
 			conn, err := factory.CreateLogsToLogs(context.Background(),
 
-				connectortest.NewNopSettings(), createDefaultConfig(), sink)
+				connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
@@ -99,7 +100,7 @@ func TestLogsToMetrics(t *testing.T) {
 			sink := &consumertest.MetricsSink{}
 			conn, err := factory.CreateLogsToMetrics(context.Background(),
 
-				connectortest.NewNopSettings(), createDefaultConfig(), sink)
+				connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
@@ -152,7 +153,7 @@ func TestLogsToTraces(t *testing.T) {
 			sink := &consumertest.TracesSink{}
 			conn, err := factory.CreateLogsToTraces(context.Background(),
 
-				connectortest.NewNopSettings(), createDefaultConfig(), sink)
+				connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
@@ -176,5 +177,51 @@ func TestLogsToTraces(t *testing.T) {
 				assert.NoError(t, ptracetest.CompareTraces(expected, allMetrics[0]))
 			}
 		})
+	}
+}
+
+// This benchmark looks at how performance is affected when all three connectors are consuming logs (at the same time)
+func BenchmarkConsumeLogs(b *testing.B) {
+	inputlogs := "input-log.yaml"
+	inputTraces := "input-trace.yaml"
+	inputMetrics := "input-metric.yaml"
+
+	factory := NewFactory()
+	// initialize log -> log connector
+	logsink := &consumertest.LogsSink{}
+	logscon, _ := factory.CreateLogsToLogs(context.Background(),
+		connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), logsink)
+
+	require.NoError(b, logscon.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(b, logscon.Shutdown(context.Background()))
+	}()
+
+	// initialize log -> traces connector
+	tracesink := &consumertest.TracesSink{}
+	traceconn, _ := factory.CreateLogsToTraces(context.Background(),
+		connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), tracesink)
+	require.NoError(b, traceconn.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(b, traceconn.Shutdown(context.Background()))
+	}()
+
+	// initialize log -> metric connector
+	metricsink := &consumertest.MetricsSink{}
+	metricconn, _ := factory.CreateLogsToMetrics(context.Background(),
+		connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), metricsink)
+	require.NoError(b, metricconn.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(b, metricconn.Shutdown(context.Background()))
+	}()
+
+	testLogs, _ := golden.ReadLogs(filepath.Join("testdata", "logsToLogs", inputlogs))
+	testTraces, _ := golden.ReadLogs(filepath.Join("testdata", "logsToTraces", inputTraces))
+	testMetrics, _ := golden.ReadLogs(filepath.Join("testdata", "logsToMetrics", inputMetrics))
+
+	for i := 0; i < b.N; i++ {
+		assert.NoError(b, logscon.ConsumeLogs(context.Background(), testLogs))
+		assert.NoError(b, traceconn.ConsumeLogs(context.Background(), testTraces))
+		assert.NoError(b, metricconn.ConsumeLogs(context.Background(), testMetrics))
 	}
 }

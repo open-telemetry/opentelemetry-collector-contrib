@@ -6,7 +6,6 @@ package solacereceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -41,7 +41,7 @@ const (
 )
 
 const (
-	brokerComponenteNameAttr = "receiver_name"
+	brokerComponentNameAttr = "receiver_name"
 )
 
 // solaceTracesReceiver uses azure AMQP to consume and handle telemetry data from SOlace. Implements receiver.Traces
@@ -68,7 +68,6 @@ type solaceTracesReceiver struct {
 
 // newTracesReceiver creates a new solaceTraceReceiver as a receiver.Traces
 func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Traces) (receiver.Traces, error) {
-
 	factory, err := newAMQPMessagingServiceFactory(config, set.Logger)
 	if err != nil {
 		set.Logger.Warn("Error validating messaging service configuration", zap.Any("error", err))
@@ -89,7 +88,7 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 		receiverName = "solace"
 	}
 	solaceBrokerAttrs := attribute.NewSet(
-		attribute.String(brokerComponenteNameAttr, receiverName),
+		attribute.String(brokerComponentNameAttr, receiverName),
 	)
 
 	unmarshaller := newTracesUnmarshaller(set.Logger, telemetryBuilder, solaceBrokerAttrs)
@@ -221,7 +220,6 @@ func (s *solaceTracesReceiver) receiveMessages(ctx context.Context, service mess
 			return err
 		}
 	}
-
 }
 
 // receiveMessage is the heart of the receiver's control flow. It will receive messages, unmarshal the message and forward the trace.
@@ -257,39 +255,42 @@ func (s *solaceTracesReceiver) receiveMessage(ctx context.Context, service messa
 	}
 
 	var flowControlCount int64
+	var spanCount int
 flowControlLoop:
 	for {
 		// forward to next consumer. Forwarding errors are not fatal so are not propagated to the caller.
 		// Temporary consumer errors will lead to redelivered messages, permanent will be accepted
+		if (traces != ptrace.Traces{}) {
+			spanCount = traces.SpanCount() // get the span count into a variable before we call consumeTraces
+		}
+
 		forwardErr := s.nextConsumer.ConsumeTraces(ctx, traces)
-		if forwardErr != nil {
-			if !consumererror.IsPermanent(forwardErr) {
-				s.settings.Logger.Info("Encountered temporary error while forwarding traces to next receiver, will allow redelivery", zap.Error(forwardErr))
-				// handle flow control metrics
-				if flowControlCount == 0 {
-					s.telemetryBuilder.SolacereceiverReceiverFlowControlStatus.Record(ctx, int64(flowControlStateControlled), metric.WithAttributeSet(s.metricAttrs))
-				}
-				flowControlCount++
-				s.telemetryBuilder.SolacereceiverReceiverFlowControlRecentRetries.Record(ctx, flowControlCount, metric.WithAttributeSet(s.metricAttrs))
-				// Backpressure scenario. For now, we are only delayed retry, eventually we may need to handle this
-				delayTimer := time.NewTimer(s.config.Flow.DelayedRetry.Delay)
-				select {
-				case <-delayTimer.C:
-					continue flowControlLoop
-				case <-ctx.Done():
-					s.settings.Logger.Info("Context was cancelled while attempting redelivery, exiting")
-					disposition = nil // do not make any network requests, we are shutting down
-					return fmt.Errorf("delayed retry interrupted by shutdown request")
-				}
-			} else { // error is permanent, we want to accept the message and increment the number of dropped messages
-				s.settings.Logger.Warn("Encountered permanent error while forwarding traces to next receiver, will swallow trace", zap.Error(forwardErr))
-				s.telemetryBuilder.SolacereceiverDroppedSpanMessages.Add(ctx, 1, metric.WithAttributeSet(s.metricAttrs))
-				break flowControlLoop
-			}
-		} else {
+		if forwardErr == nil {
 			// no forward error
-			s.telemetryBuilder.SolacereceiverReportedSpans.Add(ctx, int64(traces.SpanCount()), metric.WithAttributeSet(s.metricAttrs))
+			s.telemetryBuilder.SolacereceiverReportedSpans.Add(ctx, int64(spanCount), metric.WithAttributeSet(s.metricAttrs))
 			break flowControlLoop
+		}
+		if consumererror.IsPermanent(forwardErr) { // error is permanent, we want to accept the message and increment the number of dropped messages
+			s.settings.Logger.Warn("Encountered permanent error while forwarding traces to next receiver, will swallow trace", zap.Error(forwardErr))
+			s.telemetryBuilder.SolacereceiverDroppedSpanMessages.Add(ctx, 1, metric.WithAttributeSet(s.metricAttrs))
+			break flowControlLoop
+		}
+		s.settings.Logger.Info("Encountered temporary error while forwarding traces to next receiver, will allow redelivery", zap.Error(forwardErr))
+		// handle flow control metrics
+		if flowControlCount == 0 {
+			s.telemetryBuilder.SolacereceiverReceiverFlowControlStatus.Record(ctx, int64(flowControlStateControlled), metric.WithAttributeSet(s.metricAttrs))
+		}
+		flowControlCount++
+		s.telemetryBuilder.SolacereceiverReceiverFlowControlRecentRetries.Record(ctx, flowControlCount, metric.WithAttributeSet(s.metricAttrs))
+		// Backpressure scenario. For now, we are only delayed retry, eventually we may need to handle this
+		delayTimer := time.NewTimer(s.config.Flow.DelayedRetry.Delay)
+		select {
+		case <-delayTimer.C:
+			continue flowControlLoop
+		case <-ctx.Done():
+			s.settings.Logger.Info("Context was cancelled while attempting redelivery, exiting")
+			disposition = nil // do not make any network requests, we are shutting down
+			return errors.New("delayed retry interrupted by shutdown request")
 		}
 	}
 	// Make sure to clear the stats no matter what, unless we were interrupted in which case we should preserve the last state

@@ -25,7 +25,7 @@ type azureBlobEventHandler struct {
 	tracesDataConsumer       tracesDataConsumer
 	logsContainerName        string
 	tracesContainerName      string
-	eventHubSonnectionString string
+	eventHubConnectionString string
 	hub                      *eventhub.Hub
 	logger                   *zap.Logger
 }
@@ -37,12 +37,11 @@ const (
 )
 
 func (p *azureBlobEventHandler) run(ctx context.Context) error {
-
 	if p.hub != nil {
 		return nil
 	}
 
-	hub, err := eventhub.NewHubFromConnectionString(p.eventHubSonnectionString)
+	hub, err := eventhub.NewHubFromConnectionString(p.eventHubConnectionString)
 	if err != nil {
 		return err
 	}
@@ -65,7 +64,6 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 }
 
 func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *eventhub.Event) error {
-
 	type eventData struct {
 		Topic           string
 		Subject         string
@@ -74,7 +72,7 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *ev
 		Data            map[string]any
 		DataVersion     string
 		MetadataVersion string
-		EsventTime      string
+		EventTime       string
 	}
 	var eventDataSlice []eventData
 	marshalErr := json.Unmarshal(event.Data, &eventDataSlice)
@@ -88,7 +86,6 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *ev
 
 	if eventType == blobCreatedEventType {
 		blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
-
 		if err != nil {
 			return err
 		}
@@ -112,7 +109,6 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *ev
 }
 
 func (p *azureBlobEventHandler) close(ctx context.Context) error {
-
 	if p.hub != nil {
 		err := p.hub.Close(ctx)
 		if err != nil {
@@ -131,12 +127,12 @@ func (p *azureBlobEventHandler) setTracesDataConsumer(tracesDataConsumer tracesD
 	p.tracesDataConsumer = tracesDataConsumer
 }
 
-func newBlobEventHandler(eventHubSonnectionString string, logsContainerName string, tracesContainerName string, blobClient blobClient, logger *zap.Logger) *azureBlobEventHandler {
+func newBlobEventHandler(eventHubConnectionString string, logsContainerName string, tracesContainerName string, blobClient blobClient, logger *zap.Logger) *azureBlobEventHandler {
 	return &azureBlobEventHandler{
 		blobClient:               blobClient,
 		logsContainerName:        logsContainerName,
 		tracesContainerName:      tracesContainerName,
-		eventHubSonnectionString: eventHubSonnectionString,
+		eventHubConnectionString: eventHubConnectionString,
 		logger:                   logger,
 	}
 }

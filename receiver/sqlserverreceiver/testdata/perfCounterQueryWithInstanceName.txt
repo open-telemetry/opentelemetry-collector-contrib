@@ -145,6 +145,7 @@ INSERT INTO @PCounters SELECT * FROM PerfCounters;
 SELECT
 	 'sqlserver_performance' AS [measurement]
 	,REPLACE(@@SERVERNAME,'\',':') AS [sql_instance]
+	,HOST_NAME() AS [computer_name]
 	,pc.[object_name] AS [object]
 	,pc.[counter_name] AS [counter]
 	,CASE pc.[instance_name] WHEN '_Total' THEN 'Total' ELSE ISNULL(pc.[instance_name],'') END AS [instance]

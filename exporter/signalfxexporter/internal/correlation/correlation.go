@@ -68,7 +68,6 @@ func newCorrelationClient(ctx context.Context, cfg *Config, accessToken configop
 		AccessToken: string(accessToken),
 		URL:         corrURL,
 	})
-
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to create correlation client: %w", err)
@@ -91,12 +90,11 @@ func (cor *Tracker) ProcessTraces(ctx context.Context, traces ptrace.Traces) err
 		res := traces.ResourceSpans().At(0).Resource()
 		hostID, ok := splunk.ResourceToHostID(res)
 
-		if ok {
-			cor.log.Info("Detected host resource ID for correlation", zap.Any("hostID", hostID))
-		} else {
+		if !ok {
 			cor.log.Warn("Unable to determine host resource ID for correlation syncing")
 			return
 		}
+		cor.log.Info("Detected host resource ID for correlation", zap.Any("hostID", hostID))
 
 		hostDimension := string(hostID.Key)
 

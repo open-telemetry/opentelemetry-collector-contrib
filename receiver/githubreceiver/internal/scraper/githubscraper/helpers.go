@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v65/github"
+	"github.com/google/go-github/v69/github"
 )
 
 const (
@@ -128,7 +128,6 @@ func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *gith
 	gClient = graphql.NewClient(defaultGraphURL, ghs.client)
 
 	if ghs.cfg.ClientConfig.Endpoint != "" {
-
 		// Given endpoint set as `https://myGHEserver.com` we need to join the path
 		// with `api/graphql`
 		gu, err := url.JoinPath(ghs.cfg.ClientConfig.Endpoint, "api/graphql")
@@ -260,7 +259,6 @@ func (ghs *githubScraper) evalCommits(
 			additions += c.Nodes[b].Additions
 			deletions += c.Nodes[b].Deletions
 		}
-
 	}
 	return additions, deletions, age, nil
 }
@@ -291,9 +289,9 @@ func (ghs *githubScraper) getCommitData(
 	tar := data.Repository.Refs.Nodes[0].GetTarget()
 
 	// We do a sanity type check just to make sure the GraphQL response was
-	// indead for commits. This is a byproduct of the `... on Commit` syntax
+	// indeed for commits. This is a byproduct of the `... on Commit` syntax
 	// within the GraphQL query and then return the actual history if the
-	// returned Target is inded of type Commit.
+	// returned Target is indeed of type Commit.
 	if ct, ok := tar.(*BranchHistoryTargetCommit); ok {
 		return &ct.History, nil
 	}

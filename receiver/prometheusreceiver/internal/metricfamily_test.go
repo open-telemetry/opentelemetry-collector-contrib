@@ -170,7 +170,8 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 					at:         11,
 					value:      66,
 					metric:     "histogram_with_created_bucket",
-					extraLabel: labels.Label{Name: "le", Value: "+Inf"}},
+					extraLabel: labels.Label{Name: "le", Value: "+Inf"},
+				},
 			},
 			want: func() pmetric.HistogramDataPoint {
 				point := pmetric.NewHistogramDataPoint()
@@ -250,7 +251,6 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			mp := newMetricFamily(tt.metricName, mc, zap.NewNop())
 			for i, tv := range tt.scrapes {
@@ -430,7 +430,6 @@ func TestMetricGroupData_toExponentialDistributionUnitTest(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			mp := newMetricFamily(tt.metricName, mc, zap.NewNop())
 			for i, tv := range tt.scrapes {
@@ -733,7 +732,6 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			mp := newMetricFamily(tt.name, mc, zap.NewNop())
 			for _, lbs := range tt.labelsScrapes {
@@ -876,7 +874,6 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			mp := newMetricFamily(tt.metricKind, mc, zap.NewNop())
 			for _, tv := range tt.scrapes {

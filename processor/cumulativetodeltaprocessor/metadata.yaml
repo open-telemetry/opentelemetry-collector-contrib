@@ -4,7 +4,7 @@ status:
   class: processor
   stability:
     beta: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   warnings: [Statefulness]
   codeowners:
     active: [TylerHelmuth]

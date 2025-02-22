@@ -20,9 +20,10 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadata"
 )
 
-func TestNewLogsProcessor(t *testing.T) {
+func TestNewLogs(t *testing.T) {
 	tests := []struct {
 		name         string
 		nextConsumer consumer.Logs
@@ -47,7 +48,7 @@ func TestNewLogsProcessor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(), tt.nextConsumer, tt.cfg)
+			got, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), tt.nextConsumer, tt.cfg)
 			if tt.wantErr {
 				assert.Nil(t, got)
 				assert.Error(t, err)
@@ -171,7 +172,7 @@ func TestLogsSampling(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			processor, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(), sink, tt.cfg)
+			processor, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), sink, tt.cfg)
 			require.NoError(t, err)
 			logs := plog.NewLogs()
 			lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
@@ -210,7 +211,7 @@ func TestLogsSampling(t *testing.T) {
 func TestLogsSamplingState(t *testing.T) {
 	// This hard-coded TraceID will sample at 50% and not at 49%.
 	// The equivalent randomness is 0x80000000000000.
-	var defaultTID = mustParseTID("fefefefefefefefefe80000000000000")
+	defaultTID := mustParseTID("fefefefefefefefefe80000000000000")
 
 	tests := []struct {
 		name     string
@@ -354,7 +355,7 @@ func TestLogsSamplingState(t *testing.T) {
 			tid: mustParseTID("fefefefefefefefefefefefefefefefe"),
 			attrs: map[string]any{
 				"sampling.threshold": "c", // Corresponds with 25%
-				"prio":               37,  // Lower than 50, higher than 25
+				"prio":               37,  // Lower than 50, greater than 25
 			},
 			sampled:  true,
 			adjCount: 4,
@@ -385,14 +386,13 @@ func TestLogsSamplingState(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprint(tt.name), func(t *testing.T) {
-
 			sink := new(consumertest.LogsSink)
 			cfg := &Config{}
 			if tt.cfg != nil {
 				*cfg = *tt.cfg
 			}
 
-			set := processortest.NewNopSettings()
+			set := processortest.NewNopSettings(metadata.Type)
 			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)
 
@@ -416,7 +416,7 @@ func TestLogsSamplingState(t *testing.T) {
 			} else {
 				require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 				require.Contains(t, observed.All()[0].Message, "logs sampler")
-				require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), tt.log)
+				require.ErrorContains(t, observed.All()[0].Context[0].Interface.(error), tt.log)
 			}
 
 			sampledData := sink.AllLogs()
@@ -473,7 +473,6 @@ func TestLogsMissingRandomness(t *testing.T) {
 			{100, traceIDAttributeSource, false, true},
 		} {
 			t.Run(fmt.Sprint(tt.pct, "_", tt.source, "_", tt.failClosed, "_", mode), func(t *testing.T) {
-
 				ctx := context.Background()
 				logs := plog.NewLogs()
 				record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -490,7 +489,7 @@ func TestLogsMissingRandomness(t *testing.T) {
 				}
 
 				sink := new(consumertest.LogsSink)
-				set := processortest.NewNopSettings()
+				set := processortest.NewNopSettings(metadata.Type)
 				// Note: there is a debug-level log we are expecting when FailClosed
 				// causes a drop.
 				logger, observed := observer.New(zap.DebugLevel)
@@ -515,7 +514,7 @@ func TestLogsMissingRandomness(t *testing.T) {
 					// pct==0 bypasses the randomness check
 					require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 					require.Contains(t, observed.All()[0].Message, "logs sampler")
-					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), "missing randomness")
+					require.ErrorContains(t, observed.All()[0].Context[0].Interface.(error), "missing randomness")
 				} else {
 					require.Empty(t, observed.All(), "should have no logs: %v", observed.All())
 				}

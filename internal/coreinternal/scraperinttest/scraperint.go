@@ -71,11 +71,11 @@ func (it *IntegrationTest) Run(t *testing.T) {
 	cfg := it.factory.CreateDefaultConfig()
 	it.customConfig(t, cfg, ci)
 	sink := new(consumertest.MetricsSink)
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(it.factory.Type())
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings.Logger = zap.New(observedZapCore)
 
-	rcvr, err := it.factory.CreateMetricsReceiver(context.Background(), settings, cfg, sink)
+	rcvr, err := it.factory.CreateMetrics(context.Background(), settings, cfg, sink)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {

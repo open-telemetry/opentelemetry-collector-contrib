@@ -3,7 +3,7 @@ type: awsfirehose
 status:
   class: receiver
   stability:
-    alpha: [metrics]
+    alpha: [metrics, logs]
   distributions: [contrib]
   codeowners:
     active: [Aneurysm9]

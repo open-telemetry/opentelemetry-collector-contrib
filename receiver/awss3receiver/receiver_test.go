@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.22.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver/internal/metadata"
 )
 
 func generateTraceData() ptrace.Traces {
@@ -67,24 +69,8 @@ type hostWithExtensions struct {
 	extensions map[component.ID]component.Component
 }
 
-func (h hostWithExtensions) Start(context.Context, component.Host) error {
-	panic("unsupported")
-}
-
-func (h hostWithExtensions) Shutdown(context.Context) error {
-	panic("unsupported")
-}
-
-func (h hostWithExtensions) GetFactory(component.Kind, component.Type) component.Factory {
-	panic("unsupported")
-}
-
 func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component {
 	return h.extensions
-}
-
-func (h hostWithExtensions) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	panic("unsupported")
 }
 
 type nonEncodingExtension struct{}
@@ -235,7 +221,7 @@ func Test_receiveBytes_traces(t *testing.T) {
 				}
 				return nil
 			})
-			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 			require.NoError(t, err)
 			r := &awss3Receiver{
 				logger:  zap.NewNop(),
@@ -369,7 +355,7 @@ func Test_receiveBytes_metrics(t *testing.T) {
 				}
 				return nil
 			})
-			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 			require.NoError(t, err)
 			r := &awss3Receiver{
 				logger:  zap.NewNop(),
@@ -503,7 +489,7 @@ func Test_receiveBytes_logs(t *testing.T) {
 				}
 				return nil
 			})
-			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 			require.NoError(t, err)
 			r := &awss3Receiver{
 				logger:  zap.NewNop(),

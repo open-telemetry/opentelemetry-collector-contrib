@@ -29,9 +29,9 @@ In these situations the function will error if it does not know how to do the co
 Use `ErrorMode` to determine how the `Statement` handles these errors.
 See the component-specific guides for how each uses error mode:
 
-- [filterprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor#ottl)
-- [routingprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/routingprocessor#tech-preview-opentelemetry-transformation-language-statements-as-routing-conditions)
-- [transformprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#config)
+- [filterprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/filterprocessor/README.md#configuration)
+- [routingconnector](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/connector/routingconnector/README.md#configuration)
+- [transformprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md#config)
 
 ## Editors
 
@@ -39,9 +39,9 @@ Editors are what OTTL uses to transform telemetry.
 
 Editors:
 
-- Are allowed to transform telemetry. When a Function is invoked the expectation is that the underlying telemetry is modified in some way.
-- May have side effects. Some Functions may generate telemetry and add it to the telemetry payload to be processed in this batch.
-- May return values. Although not common and not required, Functions may return values.
+- Are allowed to transform telemetry. When an Editor is invoked the expectation is that the underlying telemetry is modified in some way.
+- May have side effects. Some Editors may generate telemetry and add it to the telemetry payload to be processed in this batch.
+- May return values. Although not common and not required, Editors may return values.
 
 Available Editors:
 
@@ -69,9 +69,9 @@ The `append` function appends single or multiple string values to `target`.
 
 Resulting field is always of type `pcommon.Slice` and will not convert the types of existing or new items in the slice. This means that it is possible to create a slice whose elements have different types.  Be careful when using `append` to set attribute values, as this will produce values that are not possible to create through OpenTelemetry APIs [according to](https://opentelemetry.io/docs/specs/otel/common/#attribute) the OpenTelemetry specification.
 
-  - `append(attributes["tags"], "prod")`
-  - `append(attributes["tags"], values = ["staging", "staging:east"])`
-  - `append(attributes["tags_copy"], attributes["tags"])`
+- `append(log.attributes["tags"], "prod")`
+- `append(log.attributes["tags"], values = ["staging", "staging:east"])`
+- `append(log.attributes["tags_copy"], log.attributes["tags"])`
 
 ### delete_key
 
@@ -86,7 +86,7 @@ The key will be deleted from the map.
 Examples:
 
 
-- `delete_key(attributes, "http.request.header.authorization")`
+- `delete_key(log.attributes, "http.request.header.authorization")`
 
 - `delete_key(resource.attributes, "http.request.header.authorization")`
 
@@ -103,7 +103,7 @@ All keys that match the pattern will be deleted from the map.
 Examples:
 
 
-- `delete_matching_keys(attributes, "(?i).*password.*")`
+- `delete_matching_keys(log.attributes, "(?i).*password.*")`
 
 - `delete_matching_keys(resource.attributes, "(?i).*password.*")`
 
@@ -120,7 +120,7 @@ All keys that match the pattern will remain in the map, while non matching keys 
 Examples:
 
 
-- `keep_matching_keys(attributes, "(?i).*version.*")`
+- `keep_matching_keys(log.attributes, "(?i).*version.*")`
 
 - `keep_matching_keys(resource.attributes, "(?i).*version.*")`
 
@@ -201,13 +201,13 @@ A `depth` of `0` means that no flattening will occur.
 
 Examples:
 
-- `flatten(attributes)`
+- `flatten(resource.attributes)`
 
 
-- `flatten(cache, "k8s", 4)`
+- `flatten(metric.cache, "k8s", 4)`
 
 
-- `flatten(body, depth=2)`
+- `flatten(log.body, depth=2)`
 
 
 ### keep_keys
@@ -222,7 +222,7 @@ The map will be changed to only contain the keys specified by the list of string
 
 Examples:
 
-- `keep_keys(attributes, ["http.method"])`
+- `keep_keys(log.attributes, ["http.method"])`
 
 
 - `keep_keys(resource.attributes, ["http.method", "http.route", "http.url"])`
@@ -245,7 +245,7 @@ Which items are dropped is random, provide keys in `priority_keys` to preserve r
 
 Examples:
 
-- `limit(attributes, 100, [])`
+- `limit(log.attributes, 100, [])`
 
 
 - `limit(resource.attributes, 50, ["http.host", "http.method"])`
@@ -268,13 +268,13 @@ If strategy is:
 
 Examples:
 
-- `merge_maps(attributes, ParseJSON(body), "upsert")`
+- `merge_maps(log.attributes, ParseJSON(log.body), "upsert")`
 
 
-- `merge_maps(attributes, ParseJSON(attributes["kubernetes"]), "update")`
+- `merge_maps(log.attributes, ParseJSON(log.attributes["kubernetes"]), "update")`
 
 
-- `merge_maps(attributes, resource.attributes, "insert")`
+- `merge_maps(log.attributes, resource.attributes, "insert")`
 
 ### replace_all_matches
 
@@ -289,8 +289,8 @@ Each string value in `target` that matches `pattern` will get replaced with `rep
 
 Examples:
 
-- `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
-- `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}", SHA256, "/user/%s")`
+- `replace_all_matches(resource.attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
+- `replace_all_matches(resource.attributes, "/user/*/list/*", "/user/{userId}/list/{listId}", SHA256, "/user/%s")`
 
 ### replace_all_patterns
 
@@ -310,11 +310,11 @@ The `function` is an optional argument that can take in any Converter that accep
 
 Examples:
 
-- `replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")`
-- `replace_all_patterns(attributes, "key", "/account/\\d{4}", "/account/{accountId}")`
-- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
-- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.")`
-- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.", SHA256, "k8s.%s")`
+- `replace_all_patterns(resource.attributes, "value", "/account/\\d{4}", "/account/{accountId}")`
+- `replace_all_patterns(resource.attributes, "key", "/account/\\d{4}", "/account/{accountId}")`
+- `replace_all_patterns(resource.attributes, "key", "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
+- `replace_all_patterns(resource.attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.")`
+- `replace_all_patterns(resource.attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.", SHA256, "k8s.%s")`
 
 Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
@@ -335,8 +335,8 @@ The `function` is an optional argument that can take in any Converter that accep
 
 Examples:
 
-- `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
-- `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}", SHA256, "/user/%s")`
+- `replace_match(span.attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
+- `replace_match(span.attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}", SHA256, "/user/%s")`
 
 ### replace_pattern
 
@@ -355,8 +355,8 @@ The `function` is an optional argument that can take in any Converter that accep
 Examples:
 
 - `replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")`
-- `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
-- `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "$$1.", SHA256, "k8s.%s")`
+- `replace_pattern(metric.name, "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
+- `replace_pattern(metric.name, "^kube_([0-9A-Za-z]+_)", "$$1.", SHA256, "k8s.%s")`
 
 Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
@@ -374,16 +374,16 @@ How the underlying telemetry field is updated is decided by the path expression 
 
 Examples:
 
-- `set(attributes["http.path"], "/foo")`
+- `set(resource.attributes["http.path"], "/foo")`
 
 
-- `set(name, attributes["http.route"])`
+- `set(metric.name, resource.attributes["http.route"])`
 
 
-- `set(trace_state["svc"], "example")`
+- `set(span.trace_state["svc"], "example")`
 
 
-- `set(attributes["source"], trace_state["source"])`
+- `set(span.attributes["source"], span.trace_state["source"])`
 
 ### truncate_all
 
@@ -397,7 +397,7 @@ The map will be mutated such that the number of characters in all string values 
 
 Examples:
 
-- `truncate_all(attributes, 100)`
+- `truncate_all(log.attributes, 100)`
 
 
 - `truncate_all(resource.attributes, 50)`
@@ -413,16 +413,21 @@ Available Converters:
 - [Decode](#decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
+- [ConvertAttributesToElementsXML](#convertattributestoelementsxml)
+- [ConvertTextToElementsXML](#converttexttoelementsxml)
 - [Day](#day)
+- [Double](#double)
+- [Duration](#duration)
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
 - [FNV](#fnv)
 - [Format](#format)
+- [FormatTime](#formattime)
+- [GetXML](#getxml)
 - [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
-- [Double](#double)
-- [Duration](#duration)
+- [InsertXML](#insertxml)
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
@@ -440,22 +445,32 @@ Available Converters:
 - [Minute](#minute)
 - [Minutes](#minutes)
 - [Month](#month)
+- [Nanosecond](#nanosecond)
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
 - [ParseCSV](#parsecsv)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
+- [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
+- [RemoveXML](#removexml)
+- [Second](#second)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
 - [SHA512](#sha512)
+- [SliceToMap](#slicetomap)
 - [Sort](#sort)
 - [SpanID](#spanid)
 - [Split](#split)
 - [String](#string)
 - [Substring](#substring)
 - [Time](#time)
+- [ToCamelCase](#tocamelcase)
+- [ToKeyValueString](#tokeyvaluestring)
+- [ToLowerCase](#tolowercase)
+- [ToSnakeCase](#tosnakecase)
+- [ToUpperCase](#touppercase)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
@@ -482,7 +497,7 @@ Examples:
 - `Base64Decode("aGVsbG8gd29ybGQ=")`
 
 
-- `Base64Decode(attributes["encoded field"])`
+- `Base64Decode(resource.attributes["encoded field"])`
 
 ### Decode
 
@@ -498,7 +513,7 @@ Examples:
 - `Decode("aGVsbG8gd29ybGQ=", "base64")`
 
 
-- `Decode(attributes["encoded field"], "us-ascii")`
+- `Decode(resource.attributes["encoded field"], "us-ascii")`
 
 ### Concat
 
@@ -512,13 +527,13 @@ The `Concat` Converter takes a sequence of values and a delimiter and concatenat
 
 Examples:
 
-- `Concat([attributes["http.method"], attributes["http.path"]], ": ")`
+- `Concat([span.attributes["http.method"], span.attributes["http.path"]], ": ")`
 
 
-- `Concat([name, 1], " ")`
+- `Concat([metric.name, 1], " ")`
 
 
-- `Concat(["HTTP method is: ", attributes["http.method"]], "")`
+- `Concat(["HTTP method is: ", span.attributes["http.method"]], "")`
 
 ### ConvertCase
 
@@ -542,6 +557,61 @@ If `toCase` is any value other than the options above, the `ConvertCase` Convert
 Examples:
 
 - `ConvertCase(metric.name, "snake")`
+
+### ConvertAttributesToElementsXML
+
+`ConvertAttributesToElementsXML(target, Optional[xpath])`
+
+The `ConvertAttributesToElementsXML` Converter returns an edited version of an XML string where attributes are converted into child elements.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or cannot be parsed as XML, `ConvertAttributesToElementsXML` will return an error.
+
+`xpath` (optional) is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Attributes will only be converted within the result(s) of the xpath.
+
+For example, `<a foo="bar"><b>baz</b></a>` will be converted to `<a><b>baz</b><foo>bar</foo></a>`.
+
+Examples:
+
+Convert all attributes in a document
+
+- `ConvertAttributesToElementsXML(log.body)`
+
+Convert only attributes within "Record" elements
+
+- `ConvertAttributesToElementsXML(log.body, "/Log/Record")`
+
+### ConvertTextToElementsXML
+
+`ConvertTextToElementsXML(target, Optional[xpath], Optional[elementName])`
+
+The `ConvertTextToElementsXML` Converter returns an edited version of an XML string where all text belongs to a dedicated element.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or cannot be parsed as XML, `ConvertTextToElementsXML` will return an error.
+
+`xpath` (optional) is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Content will only be converted within the result(s) of the xpath. The default is `/`.
+
+`elementName` (optional) is a string that is used for any element tags that are created to wrap content.
+The default is `"value"`.
+
+For example, `<a><b>foo</b>bar</a>` will be converted to `<a><b>foo</b><value>bar</value></a>`.
+
+Examples:
+
+Ensure all text content in a document is wrapped in a dedicated element
+
+- `ConvertTextToElementsXML(log.body)`
+
+Use a custom name for any new elements
+
+- `ConvertTextToElementsXML(log.body, elementName = "custom")`
+
+Convert only part of the document
+
+- `ConvertTextToElementsXML(log.body, "/some/part/", "value")`
 
 ### Day
 
@@ -575,7 +645,7 @@ The `value` is either a path expression to a telemetry field to retrieve or a li
 
 Examples:
 
-- `Double(attributes["http.status_code"])`
+- `Double(log.attributes["http.status_code"])`
 
 
 - `Double("2.0")`
@@ -608,9 +678,9 @@ If `target` is not a string or nil `ExtractPatterns` will return an error. If `p
 
 Examples:
 
-- `ExtractPatterns(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
+- `ExtractPatterns(resource.attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
 
-- `ExtractPatterns(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
+- `ExtractPatterns(log.body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
 
 ### ExtractGrokPatterns
 
@@ -669,23 +739,23 @@ Examples:
 
 - _Uses regex pattern with named captures to extract_:
 
-  `ExtractGrokPatterns(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
+  `ExtractGrokPatterns(resource.attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
 
 - _Uses regex pattern with named captures to extract_:
 
-  `ExtractGrokPatterns(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
+  `ExtractGrokPatterns(log.body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
 
 - _Uses `URI` from default set to extract URI and includes only named captures_:
 
-  `ExtractGrokPatterns(body, "%{URI}", true)`
+  `ExtractGrokPatterns(log.body, "%{URI}", true)`
 
 - _Uses more complex pattern consisting of elements from default set and includes only named captures_:
   
-  `ExtractGrokPatterns(body, "%{DATESTAMP:timestamp} %{TZ:event.timezone} %{DATA:user.name} %{GREEDYDATA:postgresql.log.connection_id} %{POSINT:process.pid:int}", true)`
+  `ExtractGrokPatterns(log.body, "%{DATESTAMP:timestamp} %{TZ:event.timezone} %{DATA:user.name} %{GREEDYDATA:postgresql.log.connection_id} %{POSINT:process.pid:int}", true)`
 
 - _Uses `LOGLINE` pattern defined in `patternDefinitions` passed as last argument_:
   
-  `ExtractGrokPatterns(body, "%{LOGLINE}", true, ["LOGLINE=%{DATESTAMP:timestamp} %{TZ:event.timezone} %{DATA:user.name} %{GREEDYDATA:postgresql.log.connection_id} %{POSINT:process.pid:int}"])`
+  `ExtractGrokPatterns(log.body, "%{LOGLINE}", true, ["LOGLINE=%{DATESTAMP:timestamp} %{TZ:event.timezone} %{DATA:user.name} %{GREEDYDATA:postgresql.log.connection_id} %{POSINT:process.pid:int}"])`
 
 - Add custom patterns to parse the password from `/etc/passwd` and making `pattern` readable:
 
@@ -717,7 +787,7 @@ If an error occurs during hashing it will be returned.
 
 Examples:
 
-- `FNV(attributes["device.name"])`
+- `FNV(resource.attributes["device.name"])`
 
 
 - `FNV("name")`
@@ -737,9 +807,108 @@ Format specifiers that can be used in `formatString` are documented in Go's [fmt
 
 Examples:
 
-- `Format("%02d", [attributes["priority"]])`
+- `Format("%02d", [log.attributes["priority"]])`
 - `Format("%04d-%02d-%02d", [Year(Now()), Month(Now()), Day(Now())])`
-- `Format("%s/%s/%04d-%02d-%02d.log", [attributes["hostname"], body["program"], Year(Now()), Month(Now()), Day(Now())])`
+- `Format("%s/%s/%04d-%02d-%02d.log", [resource.attributes["hostname"], log.body["program"], Year(Now()), Month(Now()), Day(Now())])`
+
+### FormatTime
+
+`FormatTime(time, format)`
+
+The `FormatTime` Converter takes a `time.Time` and converts it to a human-readable string representation of the time according to the specified format.
+
+`time` is `time.Time`. If `time` is another type an error is returned. `format` is a string.
+
+If either `time` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If `format` does not follow the parsing rules used by this parser, an error is returned.
+
+`format` denotes a human-readable textual representation of the resulting time value formatted according to ctime-like format string. It follows [standard Go Layout formatting](https://pkg.go.dev/time#pkg-constants) with few additional substitutes:
+| substitution | description | examples |
+|-----|-----|-----|
+|`%Y` | Year as a zero-padded number | 0001, 0002, ..., 2019, 2020, ..., 9999 |
+|`%y` | Year, last two digits as a zero-padded number | 01, ..., 99 |
+|`%m` | Month as a zero-padded number | 01, 02, ..., 12 |
+|`%o` | Month as a space-padded number | 1, 2, ..., 12 |
+|`%q` | Month as an unpadded number | 1,2,...,12 |
+|`%b`, `%h` | Abbreviated month name | Jan, Feb, ... |
+|`%B` | Full month name | January, February, ... |
+|`%d` | Day of the month as a zero-padded number | 01, 02, ..., 31 |
+|`%e` | Day of the month as a space-padded number| 1, 2, ..., 31 |
+|`%g` | Day of the month as a unpadded number | 1,2,...,31 |
+|`%a` | Abbreviated weekday name | Sun, Mon, ... |
+|`%A` | Full weekday name | Sunday, Monday, ... |
+|`%H` | Hour (24-hour clock) as a zero-padded number | 00, ..., 24 |
+|`%I` | Hour (12-hour clock) as a zero-padded number | 00, ..., 12 |
+|`%l` | Hour 12-hour clock | 0, ..., 24 |
+|`%p` | Locale’s equivalent of either AM or PM | AM, PM |
+|`%P` | Locale’s equivalent of either am or pm | am, pm |
+|`%M` | Minute as a zero-padded number | 00, 01, ..., 59 |
+|`%S` | Second as a zero-padded number | 00, 01, ..., 59 |
+|`%L` | Millisecond as a zero-padded number | 000, 001, ..., 999 |
+|`%f` | Microsecond as a zero-padded number | 000000, ..., 999999 |
+|`%s` | Nanosecond as a zero-padded number | 00000000, ..., 99999999 |
+|`%z` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty | +0000, -0400 |
+|`%Z` | Timezone name or abbreviation or empty | UTC, EST, CST |
+|`%i` | Timezone as +/-HH | -07 |
+|`%j` | Timezone as +/-HH:MM | -07:00 |
+|`%k` | Timezone as +/-HH:MM:SS | -07:00:00 |
+|`%w` | Timezone as +/-HHMMSS | -070000 |
+|`%D`, `%x` | Short MM/DD/YYYY date, equivalent to %m/%d/%y | 01/21/2031 |
+|`%F` | Short YYYY-MM-DD date, equivalent to %Y-%m-%d | 2031-01-21 |
+|`%T`,`%X` | ISO 8601 time format (HH:MM:SS), equivalent to %H:%M:%S | 02:55:02 |
+|`%r` | 12-hour clock time | 02:55:02 pm |
+|`%R` | 24-hour HH:MM time, equivalent to %H:%M | 13:55 |
+|`%n` | New-line character ('\n') | |
+|`%t` | Horizontal-tab character ('\t') | |
+|`%%` | A % sign | |
+|`%c` | Date and time representation | Mon Jan 02 15:04:05 2006 |
+
+Examples:
+
+- `FormatTime(Time("02/04/2023", "%m/%d/%Y"), "%A %h %e %Y")`
+- `FormatTime(UnixNano(span.attributes["time_nanoseconds"]), "%b %d %Y %H:%M:%S")`
+- `FormatTime(TruncateTime(spanevent.time, Duration("10h 20m"))), "%Y-%m-%d %H:%M:%S")`
+
+### GetXML
+
+`GetXML(target, xpath)`
+
+The `GetXML` Converter returns an XML string with selected elements.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or is not valid xml, `GetXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Currently, this converter only supports selecting elements.
+
+Examples:
+
+Get all elements at the root of the document with tag "a"
+
+- `GetXML(log.body, "/a")`
+
+Gel all elements anywhere in the document with tag "a"
+
+- `GetXML(log.body, "//a")`
+
+Get the first element at the root of the document with tag "a"
+
+- `GetXML(log.body, "/a[1]")`
+
+Get all elements in the document with tag "a" that have an attribute "b" with value "c"
+
+- `GetXML(log.body, "//a[@b='c']")`
+
+Get `foo` from `<a>foo</a>`
+
+- `GetXML(log.body, "/a/text()")`
+
+Get `hello` from `<a><![CDATA[hello]]></a>`
+
+- `GetXML(log.body, "/a/text()")`
+
+Get `bar` from `<a foo="bar"/>`
+
+- `GetXML(log.body, "/a/@foo")`
 
 ### Hex
 
@@ -763,7 +932,7 @@ The `value` is either a path expression to a telemetry field to retrieve or a li
 
 Examples:
 
-- `Hex(attributes["http.status_code"])`
+- `Hex(span.attributes["http.status_code"])`
 
 
 - `Hex(2.0)`
@@ -796,6 +965,35 @@ Examples:
 
 - `Hours(Duration("1h"))`
 
+### InsertXML
+
+`InsertXML(target, xpath, value)`
+
+The `InsertXML` Converter returns an edited version of an XML string with child elements added to selected elements.
+
+`target` is a Getter that returns a string. This string should be in XML format and represents the document which will
+be modified. If `target` is not a string, nil, or is not valid xml, `InsertXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements.
+
+`value` is a Getter that returns a string. This string should be in XML format and represents the document which will
+be inserted into `target`. If `value` is not a string, nil, or is not valid xml, `InsertXML` will return an error.
+
+Examples:
+
+Add an element "foo" to the root of the document
+
+- `InsertXML(log.body, "/", "<foo/>")`
+
+Add an element "bar" to any element called "foo"
+
+- `InsertXML(log.body, "//foo", "<bar/>")`
+
+Fetch and insert an xml document into another
+
+- `InsertXML(log.body, "/subdoc", log.attributes["subdoc"])`
+
 ### Int
 
 `Int(value)`
@@ -817,7 +1015,7 @@ The `value` is either a path expression to a telemetry field to retrieve or a li
 
 Examples:
 
-- `Int(attributes["http.status_code"])`
+- `Int(log.attributes["http.status_code"])`
 
 
 - `Int("2.0")`
@@ -846,7 +1044,7 @@ Examples:
 - `IsBool(42)`
 
 
-- `IsBool(attributes["any key"])`
+- `IsBool(resource.attributes["any key"])`
 
 ### IsDouble
 
@@ -860,9 +1058,9 @@ If `value` is a `float64` or a `pcommon.ValueTypeDouble` then returns `true`, ot
 
 Examples:
 
-- `IsDouble(body)`
+- `IsDouble(log.body)`
 
-- `IsDouble(attributes["maybe a double"])`
+- `IsDouble(log.attributes["maybe a double"])`
 
 ### IsInt
 
@@ -876,9 +1074,9 @@ If `value` is a `int64` or a `pcommon.ValueTypeInt` then returns `true`, otherwi
 
 Examples:
 
-- `IsInt(body)`
+- `IsInt(log.body)`
 
-- `IsInt(attributes["maybe a int"])`
+- `IsInt(log.attributes["maybe a int"])`
 
 ### IsRootSpan
 
@@ -889,13 +1087,13 @@ its `parent_span_id` is equal to hexadecimal representation of zero.
 
 This function is supported with [OTTL span context](../contexts/ottlspan/README.md). In any other context it is not supported.
 
-The function returns `false` in all other scenarios, including `parent_span_id == ""` or `parent_span_id == nil`.
+The function returns `false` in all other scenarios, including `span.parent_span_id == ""` or `span.parent_span_id == nil`.
 
 Examples:
 
 - `IsRootSpan()`
 
-- `set(attributes["isRoot"], "true") where IsRootSpan()`
+- `set(span.attributes["isRoot"], "true") where IsRootSpan()`
 
 ### IsMap
 
@@ -909,10 +1107,10 @@ If `value` is a `map[string]any` or a `pcommon.ValueTypeMap` then returns `true`
 
 Examples:
 
-- `IsMap(body)`
+- `IsMap(log.body)`
 
 
-- `IsMap(attributes["maybe a map"])`
+- `IsMap(log.attributes["maybe a map"])`
 
 ### IsMatch
 
@@ -935,7 +1133,7 @@ If target is nil, false is always returned.
 
 Examples:
 
-- `IsMatch(attributes["http.path"], "foo")`
+- `IsMatch(span.attributes["http.path"], "foo")`
 
 
 - `IsMatch("string", ".*ring")`
@@ -952,9 +1150,9 @@ If `value` is a `list`, `pcommon.ValueTypeSlice`. `pcommon.Slice`, or any other 
 
 Examples:
 
-- `IsList(body)`
+- `IsList(log.body)`
 
-- `IsList(attributes["maybe a slice"])`
+- `IsList(resource.attributes["maybe a slice"])`
 
 ### IsString
 
@@ -968,9 +1166,9 @@ If `value` is a `string` or a `pcommon.ValueTypeStr` then returns `true`, otherw
 
 Examples:
 
-- `IsString(body)`
+- `IsString(log.body)`
 
-- `IsString(attributes["maybe a string"])`
+- `IsString(resource.attributes["maybe a string"])`
 
 ### Len
 
@@ -984,7 +1182,7 @@ If the `target` is not an acceptable type, the `Len` Converter will return an er
 
 Examples:
 
-- `Len(body)`
+- `Len(log.body)`
 
 ### Log
 
@@ -1007,10 +1205,10 @@ If target is nil an error is returned.
 
 Examples:
 
-- `Log(attributes["duration_ms"])`
+- `Log(span.attributes["duration_ms"])`
 
 
-- `Int(Log(attributes["duration_ms"])`
+- `Int(Log(span.attributes["duration_ms"])`
 
 ### MD5
 
@@ -1026,7 +1224,7 @@ If an error occurs during hashing it will be returned.
 
 Examples:
 
-- `MD5(attributes["device.name"])`
+- `MD5(resource.attributes["device.name"])`
 
 - `MD5("name")`
 
@@ -1102,6 +1300,20 @@ Examples:
 
 - `Month(Now())`
 
+### Nanosecond
+
+`Nanosecond(value)`
+
+The `Nanosecond` Converter returns the nanosecond component from the specified time using the Go stdlib [`time.Nanosecond` function](https://pkg.go.dev/time#Time.Nanosecond).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Nanosecond(Now())`
+
 ### Nanoseconds
 
 `Nanoseconds(value)`
@@ -1127,7 +1339,7 @@ The returned type is `time.Time`.
 Examples:
 
 - `UnixSeconds(Now())`
-- `set(start_time, Now())`
+- `set(span.start_time, Now())`
 
 ### ParseCSV
 
@@ -1153,10 +1365,10 @@ Examples:
 - `ParseCSV("999-999-9999,Joe Smith,joe.smith@example.com", "phone,name,email")`
 
 
-- `ParseCSV(body, "phone|name|email", delimiter="|")`
+- `ParseCSV(log.body, "phone|name|email", delimiter="|")`
 
 
-- `ParseCSV(attributes["csv_line"], attributes["csv_headers"], delimiter="|", headerDelimiter=",", mode="lazyQuotes")`
+- `ParseCSV(log.attributes["csv_line"], log.attributes["csv_headers"], delimiter="|", headerDelimiter=",", mode="lazyQuotes")`
 
 
 - `ParseCSV("\"555-555-5556,Joe Smith\",joe.smith@example.com", "phone,name,email", mode="ignoreQuotes")`
@@ -1170,7 +1382,7 @@ The `ParseJSON` Converter returns a `pcommon.Map` or `pcommon.Slice` struct that
 `target` is a Getter that returns a string. This string should be in json format.
 If `target` is not a string, nil, or cannot be parsed as JSON, `ParseJSON` will return an error.
 
-Unmarshalling is done using [jsoniter](https://github.com/json-iterator/go).
+Unmarshalling is done using [goccy/go-json](https://github.com/goccy/go-json).
 Each JSON type is converted into a `pdata.Value` using the following map:
 
 ```
@@ -1190,10 +1402,10 @@ Examples:
 - `ParseJSON("[\"attr1\",\"attr2\"]")`
 
 
-- `ParseJSON(attributes["kubernetes"])`
+- `ParseJSON(resource.attributes["kubernetes"])`
 
 
-- `ParseJSON(body)`
+- `ParseJSON(log.body)`
 
 ### ParseKeyValue
 
@@ -1212,8 +1424,134 @@ Examples:
 
 - `ParseKeyValue("k1=v1 k2=v2 k3=v3")`
 - `ParseKeyValue("k1!v1_k2!v2_k3!v3", "!", "_")`
-- `ParseKeyValue(attributes["pairs"])`
+- `ParseKeyValue(log.attributes["pairs"])`
 
+### ParseSimplifiedXML
+
+`ParseSimplifiedXML(target)`
+
+The `ParseSimplifiedXML` Converter returns a `pcommon.Map` struct that is the result of parsing the target string without preservation of attributes or extraneous text content.
+
+The goal of this Converter is to produce a more user-friendly representation of XML data than the [`ParseXML`](#parsexml) Converter.
+This Converter should be preferred over `ParseXML` when minor semantic details (e.g. order of elements) are not critically important, when subsequent processing or querying of the result is expected, or when human-readability is a concern.
+
+This Converter disregards certain aspects of XML, specifically attributes and extraneous text content, in order to produce
+a direct representation of XML data. Users are encouraged to simplify their XML documents prior to using `ParseSimplifiedXML`.
+
+See other functions which may be useful for preparing XML documents:
+
+- [`ConvertAttributesToElementsXML`](#convertattributestoelementsxml)
+- [`ConvertTextToElementsXML`](#converttexttoelementsxml)
+- [`RemoveXML`](#removexml)
+- [`InsertXML`](#insertxml)
+- [`GetXML`](#getxml)
+
+#### Formal Definitions
+
+A "Simplified XML" document contains no attributes and no extraneous text content.
+
+An element has "extraneous text content" when it contains both text and element content. e.g.
+
+```xml
+<foo>
+    bar <!-- extraneous text content -->
+    <hello>world</hello> <!-- element content -->
+</foo>
+```
+
+#### Parsing logic
+
+1. Declaration elements, attributes, comments, and extraneous text content are ignored.
+2. Elements which contain a value are converted into key/value pairs.
+   e.g. `<foo>bar</foo>` becomes `"foo": "bar"`
+3. Elements which contain child elements are converted into a key/value pair where the value is a map.
+   e.g. `<foo> <bar>baz</bar> </foo>` becomes `"foo": { "bar": "baz" }`
+4. Sibling elements that share the same tag will be combined into a slice.
+   e.g. `<a> <b>1</b> <c>2</c> <c>3</c> </foo>` becomes `"a": { "b": "1", "c": [ "2", "3" ] }`.
+5. Empty elements are dropped, but they can determine whether a value should be a slice or map.
+   e.g. `<a> <b>1</b> <b/> </a>` becomes `"a": { "b": [ "1" ] }` instead of `"a": { "b": "1" }`
+
+#### Examples
+
+Parse a Simplified XML document from the body:
+
+```xml
+<event>
+    <id>1</id>
+    <user>jane</user>
+    <details>
+      <time>2021-10-01T12:00:00Z</time>
+      <description>Something happened</description>
+      <cause>unknown</cause>
+    </details>
+</event>
+```
+
+```json
+{
+  "event": {
+    "id": 1,
+    "user": "jane",
+    "details": {
+      "time": "2021-10-01T12:00:00Z",
+      "description": "Something happened",
+      "cause": "unknown"
+    }
+  }
+}
+```
+
+Parse a Simplified XML document with unique child elements:
+
+```xml
+<x>
+  <y>1</y>
+  <z>2</z>
+</x>
+```
+
+```json
+{
+  "x": {
+    "y": "1",
+    "z": "2"
+  }
+}
+```
+
+Parse a Simplified XML document with multiple elements of the same tag:
+
+```xml
+<a>
+  <b>1</b>
+  <b>2</b>
+</a>
+```
+
+```json
+{
+  "a": {
+    "b": ["1", "2"]
+  }
+}
+```
+
+Parse a Simplified XML document with CDATA element:
+
+```xml
+<a>
+  <b>1</b>
+  <b><![CDATA[2]]></b>
+</a>
+```
+
+```json
+{
+  "a": {
+    "b": ["1", "2"]
+  }
+}
+```
 
 ### ParseXML
 
@@ -1279,13 +1617,90 @@ will be parsed as:
 
 Examples:
 
-- `ParseXML(body)`
+- `ParseXML(log.body)`
 
-- `ParseXML(attributes["xml"])`
+- `ParseXML(log.attributes["xml"])`
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
 
+### RemoveXML
 
+`RemoveXML(target, xpath)`
+
+The `RemoveXML` Converter returns an edited version of an XML string with selected elements removed.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or is not valid xml, `RemoveXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements to remove from the XML document.
+
+For example, the XPath `/Log/Record[./Name/@type="archive"]` applied to the following XML document:
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<Log>
+  <Record>
+    <ID>00001</ID>
+    <Name type="archive"></Name>
+    <Data>Some data</Data>
+  </Record>
+  <Record>
+    <ID>00002</ID>
+    <Name type="user"></Name>
+    <Data>Some data</Data>
+  </Record>
+</Log>
+```
+
+will return:
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<Log>
+  <Record>
+    <ID>00002</ID>
+    <Name type="user"></Name>
+    <Data>Some data</Data>
+  </Record>
+</Log>
+```
+
+Examples:
+
+Delete the attribute "foo" from the elements with tag "a"
+
+- `RemoveXML(log.body, "/a/@foo")`
+
+Delete all elements with tag "b" that are children of elements with tag "a"
+
+- `RemoveXML(log.body, "/a/b")`
+
+Delete all elements with tag "b" that are children of elements with tag "a" and have the attribute "foo" with value "bar"
+
+- `RemoveXML(log.body, "/a/b[@foo='bar']")`
+
+Delete all comments
+
+- `RemoveXML(log.body, "//comment()")`
+
+Delete text from nodes that contain the word "sensitive"
+
+- `RemoveXML(log.body, "//*[contains(text(), 'sensitive')]")`
+
+### Second
+
+`Second(value)`
+
+The `Second` Converter returns the second component from the specified time using the Go stdlib [`time.Second` function](https://pkg.go.dev/time#Time.Second).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Second(Now())`
 
 ### Seconds
 
@@ -1315,7 +1730,7 @@ If an error occurs during hashing it will be returned.
 
 Examples:
 
-- `SHA1(attributes["device.name"])`
+- `SHA1(resource.attributes["device.name"])`
 
 
 - `SHA1("name")`
@@ -1336,7 +1751,7 @@ If an error occurs during hashing it will be returned.
 
 Examples:
 
-- `SHA256(attributes["device.name"])`
+- `SHA256(resource.attributes["device.name"])`
 
 - `SHA256("name")`
 
@@ -1353,9 +1768,70 @@ If an error occurs during hashing, the error will be returned.
 
 Examples:
 
-- `SHA512(attributes["device.name"])`
+- `SHA512(resource.attributes["device.name"])`
 
 - `SHA512("name")`
+
+### SliceToMap
+
+`SliceToMap(target, keyPath, Optional[valuePath])`
+
+The `SliceToMap` converter converts a slice of objects to a map. The arguments are as follows:
+
+- `target`: A list of maps containing the entries to be converted.
+- `keyPath`: A string array that determines the name of the keys for the map entries by pointing to the value of an attribute within each slice item. Note that
+the `keyPath` must resolve to a string value, otherwise the converter will not be able to convert the item
+to a map entry.
+- `valuePath`: This optional string array determines which attribute should be used as the value for the map entry. If no
+`valuePath` is defined, the value of the map entry will be the same as the original slice item.
+
+Examples:
+
+The examples below will convert the following input: 
+
+```yaml
+attributes:
+  hello: world
+  things:
+    - name: foo
+      value: 2
+    - name: bar
+      value: 5
+```
+
+- `SliceToMap(resource.attributes["things"], ["name"])`:
+
+This converts the input above to the following:
+
+```yaml
+attributes:
+  hello: world
+  things:
+    foo:
+      name: foo
+      value: 2
+    bar:
+      name: bar
+      value: 5
+```
+
+- `SliceToMap(resource.attributes["things"], ["name"], ["value"])`:
+
+This converts the input above to the following:
+
+```yaml
+attributes:
+  hello: world
+  things:
+    foo: 2
+    bar: 5
+```
+
+Once the `SliceToMap` function has been applied to a value, the converted entries are addressable via their keys:
+
+- `set(resource.attributes["thingsMap"], SliceToMap(resource.attributes["things"], ["name"]))`
+- `set(resource.attributes["element_1"], resource.attributes["thingsMap"]["foo'])`
+- `set(resource.attributes["element_2"], resource.attributes["thingsMap"]["bar'])`
 
 ### Sort
 
@@ -1382,8 +1858,8 @@ The behavior varies based on the types of elements in the target slice:
 
 Examples:
 
-- `Sort(attributes["device.tags"])`
-- `Sort(attributes["device.tags"], "desc")`
+- `Sort(resource.attributes["device.tags"])`
+- `Sort(resource.attributes["device.tags"], "desc")`
 
 ### SpanID
 
@@ -1407,9 +1883,21 @@ The `Split` Converter separates a string by the delimiter, and returns an array 
 
 If the `target` is not a string or does not exist, the `Split` Converter will return an error.
 
+### Trim
+
+```Trim(target, Optional[replacement])```
+
+The `Trim` Converter removes the leading and trailing character (default: a space character).
+
+If the `target` is not a string or does not exist, the `Trim` Converter will return an error.
+
+`target` is a string.
+`replacement` is an optional string representing the character to replace with (default: a space character).
+
 Examples:
 
-- `Split("A|B|C", "|")`
+- `Trim(" this is a test ", " ")`
+- `Trim("!!this is a test!!", "!!")`
 
 ### String
 
@@ -1433,8 +1921,8 @@ The `value` is either a path expression to a telemetry field to retrieve, or a l
 Examples:
 
 - `String("test")`
-- `String(attributes["http.method"])`
-- `String(span_id)`
+- `String(span.attributes["http.method"])`
+- `String(span.span_id)`
 - `String([1,2,3])`
 - `String(false)`
 
@@ -1490,6 +1978,10 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 |`%s` | Nanosecond as a zero-padded number | 00000000, ..., 99999999 |
 |`%z` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty | +0000, -0400 |
 |`%Z` | Timezone name or abbreviation or empty | UTC, EST, CST |
+|`%i` | Timezone as +/-HH | -07 |
+|`%j` | Timezone as +/-HH:MM | -07:00 |
+|`%k` | Timezone as +/-HH:MM:SS | -07:00:00 |
+|`%w` | Timezone as +/-HHMMSS | -070000 |
 |`%D`, `%x` | Short MM/DD/YYYY date, equivalent to %m/%d/%y | 01/21/2031 |
 |`%F` | Short YYYY-MM-DD date, equivalent to %Y-%m-%d | 2031-01-21 |
 |`%T`,`%X` | ISO 8601 time format (HH:MM:SS), equivalent to %H:%M:%S | 02:55:02 |
@@ -1530,6 +2022,92 @@ Examples:
 - `Time("mercoledì set 4 2024", "%A %h %e %Y", "", "it")`
 - `Time("Febrero 25 lunes, 2002, 02:03:04 p.m.", "%B %d %A, %Y, %r", "America/New_York", "es-ES")`
 
+### ToCamelCase
+
+`ToCamelCase(target)`
+
+The `ToCamelCase` Converter converts the `target` string into camel case (e.g. `my_metric_name` to `MyMetricName`).
+
+`target` is a string.
+
+Examples:
+
+- `ToCamelCase(metric.name)`
+
+### ToKeyValueString
+
+`ToKeyValueString(target, Optional[delimiter], Optional[pair_delimiter], Optional[sort_output])`
+
+The `ToKeyValueString` Converter takes a `pcommon.Map` and converts it to a `string` of key value pairs.
+
+- `target` is a Getter that returns a `pcommon.Map`. 
+- `delimiter` is an optional string that is used to join keys and values, the default is `=`. 
+- `pair_delimiter` is an optional string that is used to join key value pairs, the default is a single space (` `).
+- `sort_output` is an optional bool that is used to deterministically sort the keys of the output string. It should only be used if the output is required to be in the same order each time, as it introduces some performance overhead. 
+
+For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use default delimiters and be converted into the following string:
+
+```
+`k1=v1 k2=v2 k3=v3`
+```
+
+**Note:** Any nested arrays or maps will be represented as a JSON string. It is recommended to [flatten](#flatten) `target` before using this function. 
+
+For example, `{"k1":"v1","k2":{"k3":"v3","k4":["v4","v5"]}}` will be converted to:
+
+```
+`k1=v1 k2={\"k3\":\"v3\",\"k4\":[\"v4\",\"v5\"]}`
+```
+
+**Note:** If any keys or values contain either delimiter, they will be double quoted. If any double quotes are present in the quoted value, they will be escaped.
+
+For example, `{"k1":"v1","k2":"v=2","k3"="\"v=3\""}` will be converted to:
+
+```
+`k1=v1 k2="v=2" k3="\"v=3\""`
+```
+
+Examples:
+
+- `ToKeyValueString(log.body)`
+- `ToKeyValueString(log.body, ":", ",", true)`
+
+### ToLowerCase
+
+`ToLowerCase(target)`
+
+The `ToLowerCase` Converter converts the `target` string into lower case (e.g. `MyMetricName` to `mymetricmame`).
+
+`target` is a string.
+
+Examples:
+
+- `ToLowerCase(metric.name)`
+
+### ToSnakeCase
+
+`ToSnakeCase(target)`
+
+The `ToSnakeCase` Converter converts the `target` string into snake case (e.g. `MyMetricName` to `my_metric_name`).
+
+`target` is a string.
+
+Examples:
+
+- `ToSnakeCase(metric.name)`
+
+### ToUpperCase
+
+`ToUpperCase(target)`
+
+The `ToUpperCase` Converter converts the `target` string into upper case (e.g. `MyMetricName` to `MYMETRICNAME`).
+
+`target` is a string.
+
+Examples:
+
+- `ToUpperCase(metric.name)`
+
 ### TraceID
 
 `TraceID(bytes)`
@@ -1554,7 +2132,7 @@ While some common paths can return a `time.Time` object, you will most like need
 
 Examples:
 
-- `TruncateTime(start_time, Duration("1s"))`
+- `TruncateTime(span.start_time, Duration("1s"))`
 
 ### Unix
 
@@ -1712,35 +2290,3 @@ The returned type is `int64`.
 Examples:
 
 - `Year(Now())`
-
-## Function syntax
-
-Functions should be named and formatted according to the following standards.
-
-- Function names MUST start with a verb unless it is a Factory that creates a new type.
-- Converters MUST be UpperCamelCase.
-- Function names that contain multiple words MUST separate those words with `_`.
-- Functions that interact with multiple items MUST have plurality in the name. Ex: `truncate_all`, `keep_keys`, `replace_all_matches`.
-- Functions that interact with a single item MUST NOT have plurality in the name. If a function would interact with multiple items due to a condition, like `where`, it is still considered singular. Ex: `set`, `delete`, `replace_match`.
-- Functions that change a specific target MUST set the target as the first parameter.
-
-## Adding New Editors/Converters
-
-Before raising a PR with a new Editor or Converter, raise an issue to verify its acceptance. While acceptance is strongly specific to a specific use case, consider these guidelines for early assessment.
-
-Your proposal likely will be accepted if:
-- The proposed functionality is missing,
-- The proposed solution significantly improves user experience and readability for very common use cases,
-- The proposed solution is more performant in cases where it is possible to achieve the same result with existing options.
-
-It will be up for discussion if your proposal solves an issue that can be achieved in another way but does not improve user experience or performance.
-
-Your proposal likely won't be accepted if:
-- User experience is worse and assumes a highly technical user,
-- The performance of your proposal very negatively affects the processing pipeline.
-
-As with code, OTTL aims for readability first. This means:
-- Using short, meaningful, and descriptive names,
-- Ensuring naming consistency across Editors and Converters,
-- Avoiding deep nesting to achieve desired transformations,
-- Ensuring Editors and Converters have a single responsibility.

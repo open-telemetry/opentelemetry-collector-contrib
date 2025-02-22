@@ -653,7 +653,7 @@ type metricSnowflakeQueryBytesSpilledLocalAvg struct {
 // init fills snowflake.query.bytes_spilled.local.avg metric with initial data.
 func (m *metricSnowflakeQueryBytesSpilledLocalAvg) init() {
 	m.data.SetName("snowflake.query.bytes_spilled.local.avg")
-	m.data.SetDescription("Avergae bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.")
+	m.data.SetDescription("Average bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -710,7 +710,7 @@ type metricSnowflakeQueryBytesSpilledRemoteAvg struct {
 // init fills snowflake.query.bytes_spilled.remote.avg metric with initial data.
 func (m *metricSnowflakeQueryBytesSpilledRemoteAvg) init() {
 	m.data.SetName("snowflake.query.bytes_spilled.remote.avg")
-	m.data.SetDescription("Avergae bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.")
+	m.data.SetDescription("Average bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1971,7 +1971,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                  mbc,

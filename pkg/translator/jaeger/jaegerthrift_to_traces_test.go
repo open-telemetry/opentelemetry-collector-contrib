@@ -7,7 +7,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
+	"github.com/jaegertracing/jaeger-idl/thrift-gen/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -65,7 +65,6 @@ func TestJThriftTagsToInternalAttributes(t *testing.T) {
 }
 
 func TestThriftBatchToInternalTraces(t *testing.T) {
-
 	tests := []struct {
 		name string
 		jb   *jaeger.Batch
@@ -326,6 +325,7 @@ func generateThriftTwoParentsSpan() *jaeger.Span {
 		},
 	}
 }
+
 func unixNanoToMicroseconds(ns pcommon.Timestamp) int64 {
 	return int64(ns / 1000)
 }

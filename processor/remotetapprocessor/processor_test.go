@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"golang.org/x/time/rate"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor/internal/metadata"
 )
 
 func TestConsumeMetrics(t *testing.T) {
@@ -36,7 +38,7 @@ func TestConsumeMetrics(t *testing.T) {
 				Limit: rate.Limit(c.limit),
 			}
 
-			processor := newProcessor(processortest.NewNopSettings(), conf)
+			processor := newProcessor(processortest.NewNopSettings(metadata.Type), conf)
 
 			ch := make(chan []byte)
 			idx := processor.cs.add(ch)
@@ -60,7 +62,6 @@ func TestConsumeMetrics(t *testing.T) {
 			processor.cs.closeAndRemove(idx)
 			wg.Wait()
 			assert.Equal(t, c.limit, receiveNum)
-
 		})
 	}
 }
@@ -85,7 +86,7 @@ func TestConsumeLogs(t *testing.T) {
 				Limit: rate.Limit(c.limit),
 			}
 
-			processor := newProcessor(processortest.NewNopSettings(), conf)
+			processor := newProcessor(processortest.NewNopSettings(metadata.Type), conf)
 
 			ch := make(chan []byte)
 			idx := processor.cs.add(ch)
@@ -134,7 +135,7 @@ func TestConsumeTraces(t *testing.T) {
 				Limit: rate.Limit(c.limit),
 			}
 
-			processor := newProcessor(processortest.NewNopSettings(), conf)
+			processor := newProcessor(processortest.NewNopSettings(metadata.Type), conf)
 
 			ch := make(chan []byte)
 			idx := processor.cs.add(ch)

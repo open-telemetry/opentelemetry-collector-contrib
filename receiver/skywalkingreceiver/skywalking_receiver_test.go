@@ -23,11 +23,11 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metadata"
 )
 
-var (
-	skywalkingReceiver = component.MustNewIDWithName("skywalking", "receiver_test")
-)
+var skywalkingReceiver = component.MustNewIDWithName("skywalking", "receiver_test")
 
 var traceJSON = []byte(`
 	[{
@@ -76,14 +76,13 @@ func TestStartAndShutdown(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = skywalkingReceiver
 	sr := newSkywalkingReceiver(config, set)
 	err := sr.registerTraceConsumer(sink)
 	require.NoError(t, err)
 	require.NoError(t, sr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, sr.Shutdown(context.Background())) })
-
 }
 
 func TestGRPCReception(t *testing.T) {
@@ -93,7 +92,7 @@ func TestGRPCReception(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = skywalkingReceiver
 	mockSwReceiver := newSkywalkingReceiver(config, set)
 	err := mockSwReceiver.registerTraceConsumer(sink)
@@ -132,14 +131,14 @@ func TestHttpReception(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = skywalkingReceiver
 	mockSwReceiver := newSkywalkingReceiver(config, set)
 	err := mockSwReceiver.registerTraceConsumer(sink)
 	require.NoError(t, err)
 	require.NoError(t, mockSwReceiver.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, mockSwReceiver.Shutdown(context.Background())) })
-	req, err := http.NewRequest("POST", "http://127.0.0.1:12800/v3/segments", bytes.NewBuffer(traceJSON))
+	req, err := http.NewRequest(http.MethodPost, "http://127.0.0.1:12800/v3/segments", bytes.NewBuffer(traceJSON))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
@@ -151,7 +150,6 @@ func TestHttpReception(t *testing.T) {
 	// verify
 	assert.NoError(t, err, "send skywalking segment successful.")
 	assert.NotNil(t, response)
-
 }
 
 func mockGrpcTraceSegment(sequence int) *agent.SegmentObject {

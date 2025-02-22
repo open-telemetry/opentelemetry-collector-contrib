@@ -8,7 +8,7 @@ import (
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/gogo/protobuf/jsonpb"
-	jaegerproto "github.com/jaegertracing/jaeger/model"
+	jaegerproto "github.com/jaegertracing/jaeger-idl/model/v1"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 
@@ -22,10 +22,7 @@ type jaegerMarshaler struct {
 var _ TracesMarshaler = (*jaegerMarshaler)(nil)
 
 func (j jaegerMarshaler) Marshal(traces ptrace.Traces, _ string) ([]*pulsar.ProducerMessage, error) {
-	batches, err := jaeger.ProtoFromTraces(traces)
-	if err != nil {
-		return nil, err
-	}
+	batches := jaeger.ProtoFromTraces(traces)
 
 	var errs error
 	messages := make([]*pulsar.ProducerMessage, 0, len(batches))
@@ -54,8 +51,7 @@ type jaegerBatchMarshaler interface {
 	encoding() string
 }
 
-type jaegerProtoBatchMarshaler struct {
-}
+type jaegerProtoBatchMarshaler struct{}
 
 var _ jaegerBatchMarshaler = (*jaegerProtoBatchMarshaler)(nil)
 

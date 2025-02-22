@@ -35,7 +35,7 @@ import (
 
 // createConfigYaml creates a yaml config for an otel collector for testing.
 func createConfigYaml(
-	t testing.TB,
+	tb testing.TB,
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
 	processors map[string]string,
@@ -43,7 +43,7 @@ func createConfigYaml(
 	pipelineType string,
 	debug bool,
 ) string {
-	t.Helper()
+	tb.Helper()
 
 	processorSection, processorList := createConfigSection(processors)
 	extensionSection, extensionList := createConfigSection(extensions)
@@ -90,7 +90,7 @@ service:
 		debugVerbosity,
 		processorSection,
 		extensionSection,
-		testutil.GetAvailablePort(t),
+		testutil.GetAvailablePort(tb),
 		logLevel,
 		extensionList,
 		pipelineType,
@@ -129,28 +129,28 @@ type recreatableOtelCol struct {
 	col *otelcol.Collector
 }
 
-func newRecreatableOtelCol(t testing.TB) *recreatableOtelCol {
+func newRecreatableOtelCol(tb testing.TB) *recreatableOtelCol {
 	var (
 		err       error
 		factories otelcol.Factories
 	)
-	factories.Receivers, err = receiver.MakeFactoryMap(
+	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		otlpreceiver.NewFactory(),
 	)
-	require.NoError(t, err)
-	factories.Extensions, err = extension.MakeFactoryMap(
+	require.NoError(tb, err)
+	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory](
 		filestorage.NewFactory(),
 	)
-	require.NoError(t, err)
-	factories.Processors, err = processor.MakeFactoryMap()
-	require.NoError(t, err)
-	factories.Exporters, err = exporter.MakeFactoryMap(
+	require.NoError(tb, err)
+	factories.Processors, err = otelcol.MakeFactoryMap[processor.Factory]()
+	require.NoError(tb, err)
+	factories.Exporters, err = otelcol.MakeFactoryMap[exporter.Factory](
 		elasticsearchexporter.NewFactory(),
 		debugexporter.NewFactory(),
 	)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	return &recreatableOtelCol{
-		tempDir:   t.TempDir(),
+		tempDir:   tb.TempDir(),
 		factories: factories,
 	}
 }

@@ -24,14 +24,16 @@ type WavefrontParser struct {
 	ExtractCollectdTags bool `mapstructure:"extract_collectd_tags"`
 }
 
-var _ protocol.Parser = (*WavefrontParser)(nil)
-var _ protocol.ParserConfig = (*WavefrontParser)(nil)
+var (
+	_ protocol.Parser       = (*WavefrontParser)(nil)
+	_ protocol.ParserConfig = (*WavefrontParser)(nil)
+)
 
-// Only two chars can be espcaped per Wavafront SDK, see
+// Only two chars can be escaped per Wavefront SDK, see
 // https://github.com/wavefrontHQ/wavefront-sdk-go/blob/2c5891318fcd83c35c93bba2b411640495473333/senders/formatter.go#L20
 var escapedCharReplacer = strings.NewReplacer(
 	`\"`, `"`, // Replaces escaped double-quotes
-	`\n`, "\n", // Repaces escaped new-line.
+	`\n`, "\n", // Replaces escaped new-line.
 )
 
 // BuildParser creates a new Parser instance that receives Wavefront metric data.

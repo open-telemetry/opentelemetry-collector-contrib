@@ -25,7 +25,7 @@ func TestValidate(t *testing.T) {
 				Metrics: &MetricsConfig{
 					Names: []*NamedConfig{{
 						Namespace:      "AWS/EC2",
-						MetricName:     "CPUUtilizaition",
+						MetricName:     "CPUUtilization",
 						Period:         time.Second * 60,
 						AwsAggregation: "Sum",
 						Dimensions: []MetricDimensionsConfig{{
@@ -89,7 +89,7 @@ func TestValidate(t *testing.T) {
 				Metrics: &MetricsConfig{
 					Names: []*NamedConfig{{
 						Namespace:      "AWS/EC2",
-						MetricName:     "CPUUtilizaition",
+						MetricName:     "CPUUtilization",
 						Period:         time.Second * 60,
 						AwsAggregation: "Last",
 					}},
@@ -105,7 +105,7 @@ func TestValidate(t *testing.T) {
 				Metrics: &MetricsConfig{
 					Names: []*NamedConfig{{
 						Namespace:      "AWS/EC2",
-						MetricName:     "CPUUtilizaition",
+						MetricName:     "CPUUtilization",
 						Period:         time.Second * 60,
 						AwsAggregation: "p99",
 					}},
@@ -120,7 +120,7 @@ func TestValidate(t *testing.T) {
 				Metrics: &MetricsConfig{
 					Names: []*NamedConfig{{
 						Namespace:      "AWS/EC2",
-						MetricName:     "CPUUtilizaition",
+						MetricName:     "CPUUtilization",
 						Period:         time.Second * 60,
 						AwsAggregation: "TS99",
 					}},
@@ -133,17 +133,19 @@ func TestValidate(t *testing.T) {
 				Region:       "eu-west-1",
 				PollInterval: time.Minute * 5,
 				Metrics: &MetricsConfig{
-					Names: []*NamedConfig{{
-						Namespace:      "AWS/EC2",
-						MetricName:     "CPUUtilizaition",
-						Period:         time.Second * 60,
-						AwsAggregation: "TS99",
-					},
+					Names: []*NamedConfig{
 						{
 							Namespace:      "AWS/EC2",
-							MetricName:     "CPUUtilizaition",
+							MetricName:     "CPUUtilization",
 							Period:         time.Second * 60,
-							AwsAggregation: "TS99"},
+							AwsAggregation: "TS99",
+						},
+						{
+							Namespace:      "AWS/EC2",
+							MetricName:     "CPUUtilization",
+							Period:         time.Second * 60,
+							AwsAggregation: "TS99",
+						},
 					},
 				},
 			},
@@ -179,7 +181,7 @@ func TestValidate(t *testing.T) {
 				Metrics: &MetricsConfig{
 					Names: []*NamedConfig{{
 						Namespace:      "AWS/EC2",
-						MetricName:     "CPUUtilizaition",
+						MetricName:     "CPUUtilization",
 						Period:         time.Second * 60,
 						AwsAggregation: "Sum",
 						Dimensions: []MetricDimensionsConfig{{
@@ -199,7 +201,7 @@ func TestValidate(t *testing.T) {
 				Metrics: &MetricsConfig{
 					Names: []*NamedConfig{{
 						Namespace:      "AWS/EC2",
-						MetricName:     "CPUUtilizaition",
+						MetricName:     "CPUUtilization",
 						Period:         time.Second * 60,
 						AwsAggregation: "Sum",
 						Dimensions: []MetricDimensionsConfig{{

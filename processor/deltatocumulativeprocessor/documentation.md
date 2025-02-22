@@ -14,6 +14,14 @@ number of datapoints dropped due to given 'reason'
 | ---- | ----------- | ---------- | --------- |
 | {datapoint} | Sum | Int | true |
 
+### otelcol_deltatocumulative.datapoints.linear
+
+total number of datapoints processed. may have 'error' attribute, if processing failed
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {datapoint} | Sum | Int | true |
+
 ### otelcol_deltatocumulative.datapoints.processed
 
 number of datapoints processed
@@ -55,6 +63,14 @@ duration after which streams inactive streams are dropped
 | s | Gauge | Int |
 
 ### otelcol_deltatocumulative.streams.tracked
+
+number of streams tracked
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {dps} | Sum | Int | false |
+
+### otelcol_deltatocumulative.streams.tracked.linear
 
 number of streams tracked
 

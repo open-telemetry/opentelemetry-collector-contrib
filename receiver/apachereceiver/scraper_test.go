@@ -15,10 +15,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -32,11 +32,11 @@ func TestScraper(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 
 	serverName, port, err := parseResourceAttributes(cfg.Endpoint)
 	require.NoError(t, err)
-	scraper := newApacheScraper(receivertest.NewNopSettings(), cfg, serverName, port)
+	scraper := newApacheScraper(receivertest.NewNopSettings(metadata.Type), cfg, serverName, port)
 
 	err = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -58,15 +58,15 @@ func TestScraper(t *testing.T) {
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newApacheScraper(receivertest.NewNopSettings(), &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "localhost:8080",
-			TLSSetting: configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile: "/non/existent",
-				},
-			},
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "localhost:8080"
+	clientConfig.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "/non/existent",
 		},
+	}
+	sc := newApacheScraper(receivertest.NewNopSettings(metadata.Type), &Config{
+		ClientConfig: clientConfig,
 	},
 		"localhost",
 		"8080")
@@ -75,7 +75,6 @@ func TestScraperFailedStart(t *testing.T) {
 }
 
 func TestParseScoreboard(t *testing.T) {
-
 	t.Run("test freq count", func(t *testing.T) {
 		scoreboard := `S_DD_L_GGG_____W__IIII_C________________W__________________________________.........................____WR______W____W________________________C______________________________________W_W____W______________R_________R________C_________WK_W________K_____W__C__________W___R______.............................................................................................................................`
 		results := parseScoreboard(scoreboard)
@@ -160,7 +159,7 @@ BytesPerSec: 73.12
 
 func TestScraperError(t *testing.T) {
 	t.Run("no client", func(t *testing.T) {
-		sc := newApacheScraper(receivertest.NewNopSettings(), &Config{}, "", "")
+		sc := newApacheScraper(receivertest.NewNopSettings(metadata.Type), &Config{}, "", "")
 		sc.httpClient = nil
 
 		_, err := sc.scrape(context.Background())
@@ -172,7 +171,7 @@ func TestScraperError(t *testing.T) {
 func newMockServer(t *testing.T) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.String() == "/server-status?auto" {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err := rw.Write([]byte(`ServerUptimeSeconds: 410
 Total Accesses: 14169
 Total kBytes: 20910
@@ -193,6 +192,6 @@ Scoreboard: S_DD_L_GGG_____W__IIII_C________________W___________________________
 			assert.NoError(t, err)
 			return
 		}
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 	}))
 }

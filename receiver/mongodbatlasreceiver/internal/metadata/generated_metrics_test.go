@@ -52,14 +52,14 @@ func TestMetricsBuilder(t *testing.T) {
 			expectEmpty: true,
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
 
@@ -92,6 +92,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, 1, AttributeDiskDirectionRead)
 
+			allMetricsCount++
+			mb.RecordMongodbatlasDiskPartitionQueueDepthDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, 1, AttributeDiskStatusFree)
@@ -99,6 +102,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts, 1, AttributeDiskStatusFree)
+
+			allMetricsCount++
+			mb.RecordMongodbatlasDiskPartitionThroughputDataPoint(ts, 1, AttributeDiskDirectionRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -127,6 +133,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbatlasProcessCacheIoDataPoint(ts, 1, AttributeCacheDirectionReadInto)
+
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessCacheRatioDataPoint(ts, 1, AttributeCacheRatioTypeCacheFill)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -333,7 +342,7 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
-			if test.expectEmpty {
+			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
@@ -343,10 +352,10 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.metricsSet == testDataSetDefault {
+			if tt.metricsSet == testDataSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.metricsSet == testDataSetAll {
+			if tt.metricsSet == testDataSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -442,6 +451,18 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("disk_direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "read", attrVal.Str())
+				case "mongodbatlas.disk.partition.queue.depth":
+					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.queue.depth"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.queue.depth")
+					validatedMetrics["mongodbatlas.disk.partition.queue.depth"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Disk queue depth", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodbatlas.disk.partition.space.average":
 					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.space.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.space.average")
 					validatedMetrics["mongodbatlas.disk.partition.space.average"] = true
@@ -472,6 +493,21 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("disk_status")
 					assert.True(t, ok)
 					assert.EqualValues(t, "free", attrVal.Str())
+				case "mongodbatlas.disk.partition.throughput":
+					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.throughput"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.throughput")
+					validatedMetrics["mongodbatlas.disk.partition.throughput"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Disk throughput", ms.At(i).Description())
+					assert.Equal(t, "By/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("disk_direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "read", attrVal.Str())
 				case "mongodbatlas.disk.partition.usage.average":
 					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.usage.average")
 					validatedMetrics["mongodbatlas.disk.partition.usage.average"] = true
@@ -568,6 +604,21 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("cache_direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "read_into", attrVal.Str())
+				case "mongodbatlas.process.cache.ratio":
+					assert.False(t, validatedMetrics["mongodbatlas.process.cache.ratio"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.ratio")
+					validatedMetrics["mongodbatlas.process.cache.ratio"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Cache ratios represented as (%)", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("cache_ratio_type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "cache_fill", attrVal.Str())
 				case "mongodbatlas.process.cache.size":
 					assert.False(t, validatedMetrics["mongodbatlas.process.cache.size"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.size")
 					validatedMetrics["mongodbatlas.process.cache.size"] = true

@@ -24,6 +24,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
+				CloudAccountID: ResourceAttributeConfig{Enabled: true},
 				CloudPlatform:  ResourceAttributeConfig{Enabled: true},
 				CloudProvider:  ResourceAttributeConfig{Enabled: true},
 				K8sClusterName: ResourceAttributeConfig{Enabled: true},
@@ -32,6 +33,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
+				CloudAccountID: ResourceAttributeConfig{Enabled: false},
 				CloudPlatform:  ResourceAttributeConfig{Enabled: false},
 				CloudProvider:  ResourceAttributeConfig{Enabled: false},
 				K8sClusterName: ResourceAttributeConfig{Enabled: false},
@@ -41,9 +43,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }

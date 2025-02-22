@@ -21,6 +21,8 @@ receiver_creator/1:
       container.key: container.value
     pod:
       pod.key: pod.value
+    pod.container:
+      pod.container.key: pod.container.value
     port:
       port.key: port.value
     hostport:

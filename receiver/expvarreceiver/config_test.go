@@ -15,7 +15,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
 )
@@ -27,7 +28,9 @@ func TestLoadConfig(t *testing.T) {
 	metricCfg := metadata.DefaultMetricsBuilderConfig()
 	metricCfg.Metrics.ProcessRuntimeMemstatsTotalAlloc.Enabled = true
 	metricCfg.Metrics.ProcessRuntimeMemstatsMallocs.Enabled = false
-
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "http://localhost:8000/custom/path"
+	clientConfig.Timeout = time.Second * 5
 	tests := []struct {
 		id           component.ID
 		expected     component.Config
@@ -45,10 +48,7 @@ func TestLoadConfig(t *testing.T) {
 					InitialDelay:       time.Second,
 					Timeout:            time.Second * 5,
 				},
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "http://localhost:8000/custom/path",
-					Timeout:  time.Second * 5,
-				},
+				ClientConfig:         clientConfig,
 				MetricsBuilderConfig: metricCfg,
 			},
 		},
@@ -79,10 +79,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{})); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}

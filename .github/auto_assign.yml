@@ -12,8 +12,10 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - atoulme
+    # - ChrsMark on leave
     - crobert-1
     - dashpole
+    - dehaansa
     - mwear
     - songy23
     - fatsheep9146
@@ -23,8 +25,7 @@ assigneeGroups:
     - codeboten
     - djaglowski
     - dmitryax
-    # Unavailable 2024-08-12 -- 2024-08-23, 2024-09-06 -- 2024-09-30
-    # - evan-bradley
+    - evan-bradley
     - jpkrohling
     - MovieStoreGuy
     - mx-psi

@@ -25,8 +25,8 @@ func newEnvelopeStreamFactory(
 	settings component.TelemetrySettings,
 	authTokenProvider *UAATokenProvider,
 	httpConfig confighttp.ClientConfig,
-	host component.Host) (*EnvelopeStreamFactory, error) {
-
+	host component.Host,
+) (*EnvelopeStreamFactory, error) {
 	httpClient, err := httpConfig.ToClient(ctx, host, settings)
 	if err != nil {
 		return nil, fmt.Errorf("creating HTTP client for Cloud Foundry RLP Gateway: %w", err)
@@ -89,12 +89,11 @@ type authorizationProvider struct {
 
 func (ap *authorizationProvider) Do(request *http.Request) (*http.Response, error) {
 	token, err := ap.authTokenProvider.ProvideToken()
-	if err == nil {
-		request.Header.Set("Authorization", token)
-	} else {
+	if err != nil {
 		ap.logger.Error("fetching authentication token", zap.Error(err))
 		return nil, errors.New("obtaining authentication token for the request")
 	}
+	request.Header.Set("Authorization", token)
 
 	return ap.client.Do(request)
 }

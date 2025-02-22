@@ -6,6 +6,7 @@ package oauth2clientauthextension
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -14,7 +15,9 @@ import (
 
 func TestCreateDefaultConfig(t *testing.T) {
 	// prepare and test
-	expected := &Config{}
+	expected := &Config{
+		ExpiryBuffer: 5 * time.Minute,
+	}
 
 	// test
 	cfg := createDefaultConfig()
@@ -24,7 +27,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateExtension(t *testing.T) {
+func TestCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
 	tests := []struct {
@@ -51,7 +54,7 @@ func TestCreateExtension(t *testing.T) {
 			cfg.ClientSecret = testcase.settings.ClientSecret
 			cfg.TokenURL = testcase.settings.TokenURL
 			cfg.Scopes = testcase.settings.Scopes
-			ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+			ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 			if testcase.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, ext)

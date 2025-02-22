@@ -17,6 +17,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
 )
 
 func Test_scraper_readStats(t *testing.T) {
@@ -50,7 +51,7 @@ func Test_scraper_readStats(t *testing.T) {
 
 	haProxyCfg := newDefaultConfig().(*Config)
 	haProxyCfg.Endpoint = socketAddr
-	s := newScraper(haProxyCfg, receivertest.NewNopSettings())
+	s := newScraper(haProxyCfg, receivertest.NewNopSettings(metadata.Type))
 	m, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, m)
@@ -94,7 +95,7 @@ func Test_scraper_readStatsWithIncompleteValues(t *testing.T) {
 
 	haProxyCfg := newDefaultConfig().(*Config)
 	haProxyCfg.Endpoint = socketAddr
-	s := newScraper(haProxyCfg, receivertest.NewNopSettings())
+	s := newScraper(haProxyCfg, receivertest.NewNopSettings(metadata.Type))
 	m, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, m)
@@ -138,7 +139,7 @@ func Test_scraper_readStatsWithNoValues(t *testing.T) {
 
 	haProxyCfg := newDefaultConfig().(*Config)
 	haProxyCfg.Endpoint = socketAddr
-	s := newScraper(haProxyCfg, receivertest.NewNopSettings())
+	s := newScraper(haProxyCfg, receivertest.NewNopSettings(metadata.Type))
 	m, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, m)

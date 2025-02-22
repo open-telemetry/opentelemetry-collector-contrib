@@ -14,17 +14,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-// LogEmitter is a stanza operator that emits log entries to a channel
+// LogEmitter is a stanza operator that emits log entries to the consumer callback function `consumerFunc`
 type LogEmitter struct {
 	OutputOperator
-	logChan       chan []*entry.Entry
-	closeChan     chan struct{}
+	cancel        context.CancelFunc
 	stopOnce      sync.Once
 	batchMux      sync.Mutex
 	batch         []*entry.Entry
 	wg            sync.WaitGroup
 	maxBatchSize  uint
 	flushInterval time.Duration
+	consumerFunc  func(context.Context, []*entry.Entry)
 }
 
 var (
@@ -61,15 +61,14 @@ func (o flushIntervalOption) apply(e *LogEmitter) {
 }
 
 // NewLogEmitter creates a new receiver output
-func NewLogEmitter(set component.TelemetrySettings, opts ...EmitterOption) *LogEmitter {
+func NewLogEmitter(set component.TelemetrySettings, consumerFunc func(context.Context, []*entry.Entry), opts ...EmitterOption) *LogEmitter {
 	op, _ := NewOutputConfig("log_emitter", "log_emitter").Build(set)
 	e := &LogEmitter{
 		OutputOperator: op,
-		logChan:        make(chan []*entry.Entry),
-		closeChan:      make(chan struct{}),
 		maxBatchSize:   defaultMaxBatchSize,
 		batch:          make([]*entry.Entry, 0, defaultMaxBatchSize),
 		flushInterval:  defaultFlushInterval,
+		consumerFunc:   consumerFunc,
 	}
 	for _, opt := range opts {
 		opt.apply(e)
@@ -79,37 +78,31 @@ func NewLogEmitter(set component.TelemetrySettings, opts ...EmitterOption) *LogE
 
 // Start starts the goroutine(s) required for this operator
 func (e *LogEmitter) Start(_ operator.Persister) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	e.cancel = cancel
+
 	e.wg.Add(1)
-	go e.flusher()
+	go e.flusher(ctx)
 	return nil
 }
 
 // Stop will close the log channel and stop running goroutines
 func (e *LogEmitter) Stop() error {
 	e.stopOnce.Do(func() {
-		close(e.closeChan)
+		// the cancel func could be nil if the emitter is never started.
+		if e.cancel != nil {
+			e.cancel()
+		}
 		e.wg.Wait()
-
-		close(e.logChan)
 	})
 
 	return nil
 }
 
-// OutChannel returns the channel on which entries will be sent to.
-func (e *LogEmitter) OutChannel() <-chan []*entry.Entry {
-	return e.logChan
-}
-
-// OutChannelForWrite returns the channel on which entries can be sent to.
-func (e *LogEmitter) OutChannelForWrite() chan []*entry.Entry {
-	return e.logChan
-}
-
 // Process will emit an entry to the output channel
 func (e *LogEmitter) Process(ctx context.Context, ent *entry.Entry) error {
 	if oldBatch := e.appendEntry(ent); len(oldBatch) > 0 {
-		e.flush(ctx, oldBatch)
+		e.consumerFunc(ctx, oldBatch)
 	}
 
 	return nil
@@ -132,7 +125,7 @@ func (e *LogEmitter) appendEntry(ent *entry.Entry) []*entry.Entry {
 }
 
 // flusher flushes the current batch every flush interval. Intended to be run as a goroutine
-func (e *LogEmitter) flusher() {
+func (e *LogEmitter) flusher(ctx context.Context) {
 	defer e.wg.Done()
 
 	ticker := time.NewTicker(e.flushInterval)
@@ -142,23 +135,19 @@ func (e *LogEmitter) flusher() {
 		select {
 		case <-ticker.C:
 			if oldBatch := e.makeNewBatch(); len(oldBatch) > 0 {
-				e.flush(context.Background(), oldBatch)
+				e.consumerFunc(ctx, oldBatch)
 			}
-		case <-e.closeChan:
+		case <-ctx.Done():
+			// Create a new context with timeout for the final flush
+			flushCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
 			// flush currently batched entries
 			if oldBatch := e.makeNewBatch(); len(oldBatch) > 0 {
-				e.flush(context.Background(), oldBatch)
+				e.consumerFunc(flushCtx, oldBatch)
 			}
 			return
 		}
-	}
-}
-
-// flush flushes the provided batch to the log channel.
-func (e *LogEmitter) flush(ctx context.Context, batch []*entry.Entry) {
-	select {
-	case e.logChan <- batch:
-	case <-ctx.Done():
 	}
 }
 

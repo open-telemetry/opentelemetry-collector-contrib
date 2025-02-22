@@ -62,6 +62,17 @@ func Test_NewBoolExprForSpan(t *testing.T) {
 	}
 }
 
+func Test_NewBoolExprForSpanWithOptions(t *testing.T) {
+	_, err := NewBoolExprForSpanWithOptions(
+		[]string{`span.name == "foo"`},
+		StandardSpanFuncs(),
+		ottl.PropagateError,
+		componenttest.NewNopTelemetrySettings(),
+		[]ottlspan.Option{ottlspan.EnablePathContextNames()},
+	)
+	assert.NoError(t, err)
+}
+
 func Test_NewBoolExprForSpanEvent(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -102,6 +113,17 @@ func Test_NewBoolExprForSpanEvent(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
+}
+
+func Test_NewBoolExprForSpanEventWithOptions(t *testing.T) {
+	_, err := NewBoolExprForSpanEventWithOptions(
+		[]string{`spanevent.name == "foo"`},
+		StandardSpanEventFuncs(),
+		ottl.PropagateError,
+		componenttest.NewNopTelemetrySettings(),
+		[]ottlspanevent.Option{ottlspanevent.EnablePathContextNames()},
+	)
+	assert.NoError(t, err)
 }
 
 func Test_NewBoolExprForMetric(t *testing.T) {
@@ -146,6 +168,17 @@ func Test_NewBoolExprForMetric(t *testing.T) {
 	}
 }
 
+func Test_NewBoolExprForMetricWithOptions(t *testing.T) {
+	_, err := NewBoolExprForMetricWithOptions(
+		[]string{`metric.name == "foo"`},
+		StandardMetricFuncs(),
+		ottl.PropagateError,
+		componenttest.NewNopTelemetrySettings(),
+		[]ottlmetric.Option{ottlmetric.EnablePathContextNames()},
+	)
+	assert.NoError(t, err)
+}
+
 func Test_NewBoolExprForDataPoint(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -186,6 +219,17 @@ func Test_NewBoolExprForDataPoint(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
+}
+
+func Test_NewBoolExprForDataPointWithOptions(t *testing.T) {
+	_, err := NewBoolExprForDataPointWithOptions(
+		[]string{"datapoint.count > 0"},
+		StandardDataPointFuncs(),
+		ottl.PropagateError,
+		componenttest.NewNopTelemetrySettings(),
+		[]ottldatapoint.Option{ottldatapoint.EnablePathContextNames()},
+	)
+	assert.NoError(t, err)
 }
 
 func Test_NewBoolExprForLog(t *testing.T) {
@@ -230,6 +274,17 @@ func Test_NewBoolExprForLog(t *testing.T) {
 	}
 }
 
+func Test_NewBoolExprForLogWithOptions(t *testing.T) {
+	_, err := NewBoolExprForLogWithOptions(
+		[]string{`log.body != ""`},
+		StandardLogFuncs(),
+		ottl.PropagateError,
+		componenttest.NewNopTelemetrySettings(),
+		[]ottllog.Option{ottllog.EnablePathContextNames()},
+	)
+	assert.NoError(t, err)
+}
+
 func Test_NewBoolExprForResource(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -270,6 +325,17 @@ func Test_NewBoolExprForResource(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
+}
+
+func Test_NewBoolExprForResourceWithOptions(t *testing.T) {
+	_, err := NewBoolExprForResourceWithOptions(
+		[]string{`resource.dropped_attributes_count == 0`},
+		StandardResourceFuncs(),
+		ottl.PropagateError,
+		componenttest.NewNopTelemetrySettings(),
+		[]ottlresource.Option{ottlresource.EnablePathContextNames()},
+	)
+	assert.NoError(t, err)
 }
 
 func Test_NewBoolExprForScope(t *testing.T) {
@@ -320,4 +386,15 @@ func Test_NewBoolExprForScope(t *testing.T) {
 			assert.Equal(t, tt.expectedResult, result)
 		})
 	}
+}
+
+func Test_NewBoolExprForScopeWithOptions(t *testing.T) {
+	_, err := NewBoolExprForScopeWithOptions(
+		[]string{`scope.name != ""`},
+		StandardScopeFuncs(),
+		ottl.PropagateError,
+		componenttest.NewNopTelemetrySettings(),
+		[]ottlscope.Option{ottlscope.EnablePathContextNames()},
+	)
+	assert.NoError(t, err)
 }

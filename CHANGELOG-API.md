@@ -7,6 +7,160 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.120.1
+
+## v0.120.0
+
+### 🛑 Breaking changes 🛑
+
+- `s3provider`: Delete deprecated `New` factory function. Use `NewFactory` instead. (#37921)
+- `secretsmanagerprovider`: Delete deprecated `New` function, use `NewFactory` instead (#37923)
+- `pkg/stanza`: Remove deprecated `flush.WithPeriod`. (#37784)
+- `pkg/stanza`: Remove deprecated func BuildWithSplitFunc from stanza/fileconsumer (#37723)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate all functions in stanza/decode (#37734)
+
+### 💡 Enhancements 💡
+
+- `pkg/translator/prometheusremotewrite`: add support for metric type sum in FromMetricsV2 (#33661)
+  The public function is partially implemented and not ready for use
+- `pkg/datadog`: Expose the internal Zaplogger implementation (#37939)
+- `dbstorageextension`: Add DB Transactions to dbstorage.Batch() method as it is expected by Storage API (#37805)
+- `internal/datadog`: create new package `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/hostmetadata` which exposes `GetSourceProvider` from `github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata` (#37668)
+- `textutil`: Remove unnecessary copy while decoding and constructing string (#37734)
+  This PR affects all log receivers, text extension and kafkareceiver.
+- `telemetrygen`: Exported the API for telemetrygen for test uses. Additionally added new E2E tests and fixed race condition (#36984)
+- `tailsamplingprocessor`: Add support for external caches when using the Tailsampling Processor in code. (#37035)
+
+## v0.119.0
+
+### 🚀 New components 🚀
+
+- `metricstarttimeprocessor`: Add the initial skeleton for the metricsstarttimeprocessor (#37186)
+  The component is still in development and is not ready for use.
+
+## v0.118.0
+
+### 🛑 Breaking changes 🛑
+
+- `routingconnector`: Change `match_once` parameter from `bool` to `*bool`. (#29882)
+  Boolean values should still unmarshal successfully, but direct instantiation in code will fail.
+  The change allows us to check for usage and warn of the upcoming removal in v0.120.0.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Enhanced error messages for invalid cache access and introduced options to configure their values within the OTTL contexts. (#29017)
+- `pkg/ottl`: Add value expression parser that enables components using ottl to retrieve values from the output of an expression (#35621)
+  the expression can be either a literal value, a path value within the context, or the result of a converter and/or a mathematical expression.
+
+## v0.117.0
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Change OTTL contexts to properly handle `ottl.Path` with context (#29017)
+  The OTTL contexts have a new option `EnablePathContextNames` to enable support for expressing a statement's context via path names in the statement
+
+## v0.116.0
+
+### 🚩 Deprecations 🚩
+
+- `routingprocessor`: Deprecated in favor of the routing connector. (#36616)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add the `ottl.ParserCollection` utility to help handling parsers for multiple OTTL contexts (#29017)
+  The `ottl.ParserCollection` groups contexts' `ottl.Parser`s, choosing the suitable one 
+  to parse a given statement. It supports context inference using the given statements, 
+  and allows prepending the context name to the statements' paths.
+  
+
+## v0.115.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/datadog`: Refactor the API that provides metrics translator (#36474)
+  This is API change only and does not affect end users
+
+## v0.114.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza`: Changed signature of `emit.Callback` function in `pkg/stanza/fileconsumer/emit` package by introducing `emit.Token` struct that encapsulates the token's body and attributes. (#36260)
+
+### 💡 Enhancements 💡
+
+- `pkg/datadog`: Expose an API `TranslatorFromConfig` that creates a new metrics translator (#36300)
+  This is only code refactor and has no user-facing impact
+
+## v0.113.0
+
+### 🛑 Breaking changes 🛑
+
+- `testbed`: `scenarios.createConfigYaml()` and `utils.CreateConfigYaml()` functions now take processor configs as a struct slice argument instead of `map[string]string`. (#33003)
+  - This is to preserve processor order. `ProcessorNameAndConfigBody` is the newly created struct.
+  
+
+### 💡 Enhancements 💡
+
+- `receiver/prometheusremotewrite`: Implement body unmarshaling for Prometheus Remote Write requests (#35624)
+  Warning - The HTTP Server still doesn't do anything. It's just a placeholder for now.
+
+## v0.112.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/translator/jaeger`: Remove error from method signature as it always returns nil (#35560)
+
+### 🚀 New components 🚀
+
+- `pkg/status`: Refactors the extension/healthcheckv2extension/internal/status into pkg/status (#34692)
+
+### 💡 Enhancements 💡
+
+- `pkg/translator/prometheusremotewrite`: add FromMetricsV2 (#33661)
+  The public function is partially implemented and not ready for use
+- `receiver/prometheusremotewrite`: Add HTTP Server to handler Prometheus Remote Write requests (#35535)
+  Warning - The HTTP Server still doesn't do anything. It's just a placeholder for now.
+
+## v0.111.0
+
+### 💡 Enhancements 💡
+
+- `opampsupervisor`: Pass config structure instead of file path when using NewSupervisor function (#34379)
+
+## v0.110.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: TimeoutSettings/QueueSettings fields in various Config structs are no longer embedded (#35158)
+  Structs in which .TimeoutSettings is no longer embedded:
+  * carbonexporter.Config
+  * googlecloudpubsubreceiver.Config
+  Structs in which .TimeoutSettings and .QueueSettings are no longer embedded:
+  * alertmanagerexporter.Config
+  * googlecloudexporter.Config
+  * googlemanagedprometheusexporter.Config
+  * otelarrowexporter.Config
+  
+
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: The datadog exporter config has been deprecated in favor of the new `datadog/config` package. The new package is shared between the Datadog exporter and the Datadog Connector.
+ (#35067)
+  The new `datadog/config` package is a shared module for Datadog exporter configuration. The module is shared between the Datadog exporter and the Datadog Connector.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/datadog`: Create a new module for Datadog exporter configuration.
+ (#35067)
+  This change introduces a new module for Datadog exporter configuration. The module is shared between the Datadog exporter and the Datadog Connector.
+  
+- `kafkaexporter`: Add option to supply destination topic through context. (#34503, #34432)
+
 ## v0.109.0
 
 ### 🛑 Breaking changes 🛑
@@ -387,9 +541,9 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 ### 🚩 Deprecations 🚩
 
 - `pkg/stanza`: Deprecate 'helper.EncodingConfig' and 'helper.NewEncodingConfig' (#25846)
-- `pkg/stanza`: Deprecate encoding related elements of helper pacakge, in favor of new decoder package (#26019)
+- `pkg/stanza`: Deprecate encoding related elements of helper package, in favor of new decoder package (#26019)
   Includes the following deprecations | - Decoder - NewDecoder - LookupEncoding - IsNop
-- `pkg/stanza`: Deprecate tokenization related elements of helper pacakge, in favor of new tokenize package (#25914)
+- `pkg/stanza`: Deprecate tokenization related elements of helper package, in favor of new tokenize package (#25914)
   Includes the following deprecations | - Flusher - FlusherConfig - NewFlusherConfig - Multiline - MultilineConfig - NewMultilineConfig - NewLineStartSplitFunc - NewLineEndSplitFunc - NewNewlineSplitFunc - Splitter - SplitterConfig - NewSplitterConfig - SplitNone
 
 ### 💡 Enhancements 💡

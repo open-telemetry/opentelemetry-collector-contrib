@@ -11,7 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/metadata"
 )
@@ -22,6 +24,8 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -29,14 +33,16 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(metadata.Type),
 			expected: &Config{
-				ArrayName: "foobar.example.com",
+				ClientConfig: clientConfig,
+				ArrayName:    "foobar.example.com",
+				Namespace:    "purefa",
 				Settings: &Settings{
 					ReloadIntervals: &ReloadIntervals{
-						Array:       15 * time.Second,
-						Hosts:       15 * time.Second,
-						Directories: 15 * time.Second,
-						Pods:        15 * time.Second,
-						Volumes:     15 * time.Second,
+						Array:       60 * time.Second,
+						Hosts:       60 * time.Second,
+						Directories: 60 * time.Second,
+						Pods:        60 * time.Second,
+						Volumes:     60 * time.Second,
 					},
 				},
 			},
@@ -52,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 
 			expected := factory.CreateDefaultConfig().(*Config)

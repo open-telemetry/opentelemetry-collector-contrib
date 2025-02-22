@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -36,6 +37,23 @@ func TestLoadConfig(t *testing.T) {
 
 	hundred := 100
 	idleConnTimeout := 10 * time.Second
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = 10 * time.Second
+	clientConfig.Endpoint = "https://splunk:8088/services/collector"
+	clientConfig.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile:   "",
+			CertFile: "",
+			KeyFile:  "",
+		},
+		InsecureSkipVerify: false,
+	}
+	clientConfig.HTTP2PingTimeout = 10 * time.Second
+	clientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
+	clientConfig.MaxIdleConns = hundred
+	clientConfig.MaxIdleConnsPerHost = hundred
+	clientConfig.IdleConnTimeout = idleConnTimeout
 
 	tests := []struct {
 		id       component.ID
@@ -61,23 +79,7 @@ func TestLoadConfig(t *testing.T) {
 				MaxContentLengthLogs:    2 * 1024 * 1024,
 				MaxContentLengthMetrics: 2 * 1024 * 1024,
 				MaxContentLengthTraces:  2 * 1024 * 1024,
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:  10 * time.Second,
-					Endpoint: "https://splunk:8088/services/collector",
-					TLSSetting: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile:   "",
-							CertFile: "",
-							KeyFile:  "",
-						},
-						InsecureSkipVerify: false,
-					},
-					MaxIdleConns:         &hundred,
-					MaxIdleConnsPerHost:  &hundred,
-					IdleConnTimeout:      &idleConnTimeout,
-					HTTP2ReadIdleTimeout: 10 * time.Second,
-					HTTP2PingTimeout:     10 * time.Second,
-				},
+				ClientConfig:            clientConfig,
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
@@ -100,6 +102,12 @@ func TestLoadConfig(t *testing.T) {
 					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
 						MaxSizeItems: 10,
 					},
+				},
+				OtelAttrsToHec: splunk.HecToOtelAttrs{
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Host:       "myhost",
 				},
 				HecToOtelAttrs: splunk.HecToOtelAttrs{
 					Source:     "mysource",
@@ -139,7 +147,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -229,13 +237,13 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Token = "foo"
 				return cfg
 			}(),
-			wantErr: "queue size must be positive",
+			wantErr: "sending_queue: `queue_size` must be positive",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := component.ValidateConfig(tt.cfg)
+			err := xconfmap.Validate(tt.cfg)
 			if tt.wantErr == "" {
 				require.NoError(t, err)
 			} else {

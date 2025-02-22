@@ -47,7 +47,7 @@ func getSplunkSearchResults(user string, password string, baseURL string, jobID 
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	eventURL := fmt.Sprintf("%s/services/search/jobs/%s/events?output_mode=json", baseURL, jobID)
 	logger.Println("URL: " + eventURL)
-	reqEvents, err := http.NewRequest("GET", eventURL, nil)
+	reqEvents, err := http.NewRequest(http.MethodGet, eventURL, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -89,7 +89,7 @@ func checkSearchJobStatusCode(user string, password string, baseURL string, jobI
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	checkReqEvents, err := http.NewRequest("GET", checkEventURL, nil)
+	checkReqEvents, err := http.NewRequest(http.MethodGet, checkEventURL, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -115,6 +115,7 @@ func checkSearchJobStatusCode(user string, password string, baseURL string, jobI
 	logger.Printf("Is Splunk Search completed [isDone flag]: %v\n", isDone)
 	return isDone
 }
+
 func postSearchRequest(user string, password string, baseURL string, searchQuery string, startTime string, endTime string) string {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	searchURL := fmt.Sprintf("%s/services/search/jobs?output_mode=json", baseURL)
@@ -129,7 +130,7 @@ func postSearchRequest(user string, password string, baseURL string, searchQuery
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	req, err := http.NewRequest("POST", searchURL, strings.NewReader(data.Encode()))
+	req, err := http.NewRequest(http.MethodPost, searchURL, strings.NewReader(data.Encode()))
 	if err != nil {
 		logger.Printf("Error while preparing POST request")
 		panic(err)
@@ -172,7 +173,7 @@ func CheckMetricsFromSplunk(index string, metricName string) []any {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr, Timeout: 10 * time.Second}
-	req, err := http.NewRequest("GET", apiURL, nil)
+	req, err := http.NewRequest(http.MethodGet, apiURL, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -209,7 +210,7 @@ func CreateAnIndexInSplunk(index string, indexType string) {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	req, err := http.NewRequest("POST", indexURL, strings.NewReader(data.Encode()))
+	req, err := http.NewRequest(http.MethodPost, indexURL, strings.NewReader(data.Encode()))
 	if err != nil {
 		logger.Printf("Error while preparing POST request")
 		panic(err)

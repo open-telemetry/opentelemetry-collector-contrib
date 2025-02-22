@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -46,11 +47,13 @@ func ensureExporter(params exporter.Settings, pCfg *Config) *pubsubExporter {
 	receiver = &pubsubExporter{
 		logger:           params.Logger,
 		userAgent:        strings.ReplaceAll(pCfg.UserAgent, "{{version}}", params.BuildInfo.Version),
-		ceSource:         fmt.Sprintf("/opentelemetry/collector/%s/%s", name, params.BuildInfo.Version),
+		ceSource:         fmt.Sprintf("/opentelemetry/collector/%s/%s", metadata.Type.String(), params.BuildInfo.Version),
 		config:           pCfg,
 		tracesMarshaler:  &ptrace.ProtoMarshaler{},
 		metricsMarshaler: &pmetric.ProtoMarshaler{},
 		logsMarshaler:    &plog.ProtoMarshaler{},
+		makeUUID:         uuid.NewRandom,
+		makeClient:       newPublisherClient,
 	}
 	// we ignore the error here as the config is already validated with the same method
 	receiver.ceCompression, _ = pCfg.parseCompression()
@@ -84,12 +87,12 @@ func createDefaultConfig() component.Config {
 func createTracesExporter(
 	ctx context.Context,
 	set exporter.Settings,
-	cfg component.Config) (exporter.Traces, error) {
-
+	cfg component.Config,
+) (exporter.Traces, error) {
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -106,11 +109,11 @@ func createTracesExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	set exporter.Settings,
-	cfg component.Config) (exporter.Metrics, error) {
-
+	cfg component.Config,
+) (exporter.Metrics, error) {
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -127,12 +130,12 @@ func createMetricsExporter(
 func createLogsExporter(
 	ctx context.Context,
 	set exporter.Settings,
-	cfg component.Config) (exporter.Logs, error) {
-
+	cfg component.Config,
+) (exporter.Logs, error) {
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,

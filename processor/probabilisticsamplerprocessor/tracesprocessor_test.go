@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,8 +22,9 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadata"
 )
 
 // defaultHashSeed is used throughout to ensure that the HashSeed is real
@@ -49,7 +50,7 @@ func TestEmptyHashFunction(t *testing.T) {
 	require.InDelta(t, 0.568, float64(hashed)/float64(numHashBuckets), 0.001)
 }
 
-func TestNewTracesProcessor(t *testing.T) {
+func TestNewTraces(t *testing.T) {
 	tests := []struct {
 		name         string
 		nextConsumer consumer.Traces
@@ -74,7 +75,7 @@ func TestNewTracesProcessor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), tt.cfg, tt.nextConsumer)
+			got, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), tt.cfg, tt.nextConsumer)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -150,26 +151,21 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := newAssertTraces(t, testSvcName)
 
-			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), tt.cfg, sink)
-			if err != nil {
-				t.Errorf("error when creating traceSamplerProcessor: %v", err)
-				return
-			}
+			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), tt.cfg, sink)
+			require.NoError(t, err, "error when creating traceSamplerProcessor")
 			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName, 1) {
 				assert.NoError(t, tsp.ConsumeTraces(context.Background(), td))
 			}
 			sampled := sink.spanCount
 			actualPercentageSamplingPercentage := float32(sampled) / float32(tt.numBatches*tt.numTracesPerBatch) * 100.0
 			delta := math.Abs(float64(actualPercentageSamplingPercentage - tt.cfg.SamplingPercentage))
-			if delta > tt.acceptableDelta {
-				t.Errorf(
-					"got %f percentage sampling rate, want %f (allowed delta is %f but got %f)",
-					actualPercentageSamplingPercentage,
-					tt.cfg.SamplingPercentage,
-					tt.acceptableDelta,
-					delta,
-				)
-			}
+			assert.LessOrEqualf(t, delta, tt.acceptableDelta,
+				"got %f percentage sampling rate, want %f (allowed delta is %f but got %f)",
+				actualPercentageSamplingPercentage,
+				tt.cfg.SamplingPercentage,
+				tt.acceptableDelta,
+				delta,
+			)
 		})
 	}
 }
@@ -211,18 +207,14 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 			tt.cfg.HashSeed = defaultHashSeed
 
 			sink := new(consumertest.TracesSink)
-			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), tt.cfg, sink)
-			if err != nil {
-				t.Errorf("error when creating traceSamplerProcessor: %v", err)
-				return
-			}
+			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), tt.cfg, sink)
+			require.NoError(t, err, "error when creating traceSamplerProcessor")
 
 			for _, td := range genRandomTestData(tt.numBatches, tt.numTracesPerBatch, testSvcName, tt.resourceSpanPerTrace) {
 				assert.NoError(t, tsp.ConsumeTraces(context.Background(), td))
 				assert.Equal(t, tt.resourceSpanPerTrace*tt.numTracesPerBatch, sink.SpanCount())
 				sink.Reset()
 			}
-
 		})
 	}
 }
@@ -246,7 +238,6 @@ func Test_tracessamplerprocessor_MissingRandomness(t *testing.T) {
 		{100, false, true},
 	} {
 		t.Run(fmt.Sprint(tt.pct, "_", tt.failClosed), func(t *testing.T) {
-
 			ctx := context.Background()
 			traces := ptrace.NewTraces()
 			span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -262,7 +253,7 @@ func Test_tracessamplerprocessor_MissingRandomness(t *testing.T) {
 
 			sink := new(consumertest.TracesSink)
 
-			set := processortest.NewNopSettings()
+			set := processortest.NewNopSettings(metadata.Type)
 			// Note: there is a debug-level log we are expecting when FailClosed
 			// causes a drop.
 			logger, observed := observer.New(zap.DebugLevel)
@@ -287,7 +278,7 @@ func Test_tracessamplerprocessor_MissingRandomness(t *testing.T) {
 				// pct==0 bypasses the randomness check
 				require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 				require.Contains(t, observed.All()[0].Message, "traces sampler")
-				require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), "missing randomness")
+				require.ErrorContains(t, observed.All()[0].Context[0].Interface.(error), "missing randomness")
 			} else {
 				require.Empty(t, observed.All(), "should have no logs: %v", observed.All())
 			}
@@ -388,7 +379,6 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	for _, mode := range AllModes {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-
 				sink := new(consumertest.TracesSink)
 
 				cfg := &Config{}
@@ -398,7 +388,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 				cfg.Mode = mode
 				cfg.HashSeed = defaultHashSeed
 
-				tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, sink)
+				tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 				require.NoError(t, err)
 
 				err = tsp.ConsumeTraces(context.Background(), tt.td)
@@ -504,11 +494,11 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 	// This hard-coded TraceID will sample at 50% and not at 49%.
 	// The equivalent randomness is 0x80000000000000.
-	var defaultTID = mustParseTID("fefefefefefefefefe80000000000000")
+	defaultTID := mustParseTID("fefefefefefefefefe80000000000000")
 
 	// improbableTraceID will sample at all supported probabilities.  In
 	// hex, the leading 18 digits do not matter, the trailing 14 are all `f`.
-	var improbableTraceID = mustParseTID("111111111111111111ffffffffffffff")
+	improbableTraceID := mustParseTID("111111111111111111ffffffffffffff")
 
 	sid := idutils.UInt64ToSpanID(0xfefefefe)
 	tests := []struct {
@@ -846,7 +836,6 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 	for _, tt := range tests {
 		for _, mode := range []SamplerMode{Equalizing, Proportional} {
 			t.Run(fmt.Sprint(mode, "_", tt.name), func(t *testing.T) {
-
 				sink := new(consumertest.TracesSink)
 				cfg := &Config{}
 				if tt.cfg != nil {
@@ -855,7 +844,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				cfg.Mode = mode
 				cfg.HashSeed = defaultHashSeed
 
-				set := processortest.NewNopSettings()
+				set := processortest.NewNopSettings(metadata.Type)
 				logger, observed := observer.New(zap.DebugLevel)
 				set.Logger = zap.New(logger)
 
@@ -909,7 +898,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				} else {
 					require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 					require.Contains(t, observed.All()[0].Message, "traces sampler")
-					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), tt.log)
+					require.ErrorContains(t, observed.All()[0].Context[0].Interface.(error), tt.log)
 				}
 			})
 		}
@@ -1006,14 +995,13 @@ func Test_tracesamplerprocessor_TraceStateErrors(t *testing.T) {
 				cfg.Mode = mode
 				cfg.FailClosed = true
 
-				set := processortest.NewNopSettings()
+				set := processortest.NewNopSettings(metadata.Type)
 				logger, observed := observer.New(zap.DebugLevel)
 				set.Logger = zap.New(logger)
 
 				expectMessage := ""
 				if tt.sf != nil {
 					expectMessage = tt.sf(mode)
-
 				}
 
 				tsp, err := newTracesProcessor(context.Background(), set, cfg, sink)
@@ -1031,10 +1019,10 @@ func Test_tracesamplerprocessor_TraceStateErrors(t *testing.T) {
 
 				require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 				if observed.All()[0].Message == "trace sampler" {
-					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), expectMessage)
+					require.ErrorContains(t, observed.All()[0].Context[0].Interface.(error), expectMessage)
 				} else {
 					require.Contains(t, observed.All()[0].Message, "traces sampler")
-					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), expectMessage)
+					require.ErrorContains(t, observed.All()[0].Context[0].Interface.(error), expectMessage)
 				}
 			})
 		}
@@ -1083,7 +1071,7 @@ func Test_tracesamplerprocessor_HashSeedTraceState(t *testing.T) {
 			cfg.HashSeed = defaultHashSeed
 			cfg.SamplingPrecision = 4
 
-			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, sink)
+			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 			require.NoError(t, err)
 
 			// Repeat until we find 10 sampled cases; each sample will have
@@ -1142,9 +1130,9 @@ func initSpanWithAttribute(key string, value pcommon.Value, dest ptrace.Span) {
 
 // genRandomTestData generates a slice of ptrace.Traces with the numBatches elements which one with
 // numTracesPerBatch spans (ie.: each span has a different trace ID). All spans belong to the specified
-// serviceName.
+// serviceName. A fixed-seed random generator is used to ensure tests are repeatable.
 func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, resourceSpanCount int) (tdd []ptrace.Traces) {
-	r := rand.New(rand.NewSource(1))
+	r := rand.New(rand.NewPCG(123, 456))
 	var traceBatches []ptrace.Traces
 	for i := 0; i < numBatches; i++ {
 		traces := ptrace.NewTraces()
@@ -1254,7 +1242,7 @@ func TestHashingFunction(t *testing.T) {
 		sampled bool
 	}
 
-	var expect50PctData = []expect50PctHashed{
+	expect50PctData := []expect50PctHashed{
 		{653, "474a03c76d75951a4b4c537ced8f1122", true},
 		{563, "53a518291e91307e43cd8467bb06f986", true},
 		{142, "a56a02f843b9bc6ee0b13889249e90e6", true},
@@ -1362,7 +1350,7 @@ func TestHashingFunction(t *testing.T) {
 	// verifying it printed the expected results.
 	for _, tc := range expect50PctData {
 		sink := new(consumertest.TracesSink)
-		tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), &Config{
+		tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), &Config{
 			HashSeed:           tc.seed,
 			SamplingPercentage: 50,
 		}, sink)

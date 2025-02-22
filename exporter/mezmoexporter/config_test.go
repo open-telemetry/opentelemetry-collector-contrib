@@ -13,8 +13,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter/internal/metadata"
@@ -42,7 +44,12 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
 				ClientConfig: confighttp.ClientConfig{
-					Timeout: 5 * time.Second,
+					Timeout:             5 * time.Second,
+					MaxIdleConns:        defaultMaxIdleConns,
+					MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
+					MaxConnsPerHost:     defaultMaxConnsPerHost,
+					IdleConnTimeout:     defaultIdleConnTimeout,
+					Headers:             map[string]configopaque.String{},
 				},
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             false,
@@ -72,7 +79,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

@@ -13,12 +13,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		testFunc func(*testing.T)
@@ -47,12 +47,12 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			},
 		},
 		{
-			desc: "creates a new factory and CreateMetricsReceiver returns error with incorrect config",
+			desc: "creates a new factory and CreateMetrics returns error with incorrect config",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
-				_, err := factory.CreateMetricsReceiver(
+				_, err := factory.CreateMetrics(
 					context.Background(),
-					receivertest.NewNopSettings(),
+					receivertest.NewNopSettings(metadata.Type),
 					nil,
 					consumertest.NewNop(),
 				)
@@ -60,18 +60,18 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			},
 		},
 		{
-			desc: "creates a new factory and CreateMetricsReceiver returns no error",
+			desc: "creates a new factory and CreateMetrics returns no error",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
-				r, err := factory.CreateMetricsReceiver(
+				r, err := factory.CreateMetrics(
 					context.Background(),
-					receivertest.NewNopSettings(),
+					receivertest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg.(*Config))
+				scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg.(*Config))
 				require.Empty(t, scrapers)
 				require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 				require.NoError(t, r.Shutdown(context.Background()))
@@ -92,7 +92,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 				require.True(t, directDBConnectionEnabled(cfg))
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
-				params := receivertest.NewNopSettings()
+				params := receivertest.NewNopSettings(metadata.Type)
 				scrapers, err := setupScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
@@ -123,9 +123,9 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 				require.True(t, databaseIOScraperFound)
 
-				r, err := factory.CreateMetricsReceiver(
+				r, err := factory.CreateMetrics(
 					context.Background(),
-					receivertest.NewNopSettings(),
+					receivertest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),
 				)

@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -20,21 +22,21 @@ func TestNewFactory(t *testing.T) {
 	assert.NotNil(t, f)
 }
 
-func TestCreateTracesReceiver(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	f := NewFactory()
 	ctx := context.Background()
-	params := receivertest.NewNopSettings()
-	receiver, err := f.CreateTracesReceiver(ctx, params, getConfig(), consumertest.NewNop())
+	params := receivertest.NewNopSettings(metadata.Type)
+	receiver, err := f.CreateTraces(ctx, params, getConfig(), consumertest.NewNop())
 
 	require.NoError(t, err)
 	assert.NotNil(t, receiver)
 }
 
-func TestCreateLogsReceiver(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	f := NewFactory()
 	ctx := context.Background()
-	params := receivertest.NewNopSettings()
-	receiver, err := f.CreateLogsReceiver(ctx, params, getConfig(), consumertest.NewNop())
+	params := receivertest.NewNopSettings(metadata.Type)
+	receiver, err := f.CreateLogs(ctx, params, getConfig(), consumertest.NewNop())
 
 	require.NoError(t, err)
 	assert.NotNil(t, receiver)
@@ -43,12 +45,12 @@ func TestCreateLogsReceiver(t *testing.T) {
 func TestTracesAndLogsReceiversAreSame(t *testing.T) {
 	f := NewFactory()
 	ctx := context.Background()
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 	config := getConfig()
-	logsReceiver, err := f.CreateLogsReceiver(ctx, params, config, consumertest.NewNop())
+	logsReceiver, err := f.CreateLogs(ctx, params, config, consumertest.NewNop())
 	require.NoError(t, err)
 
-	tracesReceiver, err := f.CreateTracesReceiver(ctx, params, config, consumertest.NewNop())
+	tracesReceiver, err := f.CreateTraces(ctx, params, config, consumertest.NewNop())
 	require.NoError(t, err)
 
 	assert.Equal(t, logsReceiver, tracesReceiver)

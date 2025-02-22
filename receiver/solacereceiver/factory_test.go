@@ -11,18 +11,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
-	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 )
 
-func TestCreateTracesReceiver(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -32,9 +31,9 @@ func TestCreateTracesReceiver(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = component.MustNewIDWithName("solace", "factory")
-	receiver, err := factory.CreateTracesReceiver(
+	receiver, err := factory.CreateTraces(
 		context.Background(),
 		set,
 		cfg,
@@ -46,31 +45,31 @@ func TestCreateTracesReceiver(t *testing.T) {
 	assert.Equal(t, castedReceiver.config, cfg)
 }
 
-func TestCreateTracesReceiverWrongConfig(t *testing.T) {
+func TestCreateTracesWrongConfig(t *testing.T) {
 	factory := NewFactory()
-	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), nil, nil)
-	assert.Equal(t, component.ErrDataTypeIsNotSupported, err)
+	_, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), nil, nil)
+	assert.Equal(t, pipeline.ErrSignalNotSupported, err)
 }
 
-func TestCreateTracesReceiverBadConfigNoAuth(t *testing.T) {
+func TestCreateTracesBadConfigNoAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "some-queue"
 	factory := NewFactory()
-	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	_, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.Equal(t, errMissingAuthDetails, err)
 }
 
-func TestCreateTracesReceiverBadConfigIncompleteAuth(t *testing.T) {
+func TestCreateTracesBadConfigIncompleteAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "some-queue"
 	cfg.Auth = Authentication{PlainText: &SaslPlainTextConfig{Username: "someUsername"}} // missing password
 	factory := NewFactory()
-	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	_, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.Equal(t, errMissingPlainTextParams, err)
 }
 
-func TestCreateTracesReceiverBadMetrics(t *testing.T) {
-	set := receivertest.NewNopSettings()
+func TestCreateTracesBadMetrics(t *testing.T) {
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = component.MustNewIDWithName("solace", "factory")
 	// the code here sets up a custom meter provider
 	// to trigger the error condition required for this test
@@ -90,9 +89,7 @@ func TestCreateTracesReceiverBadMetrics(t *testing.T) {
 	defer func() {
 		require.NoError(t, provider.Shutdown(context.Background()))
 	}()
-	set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
-		return provider
-	}
+	set.MeterProvider = provider
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -101,7 +98,7 @@ func TestCreateTracesReceiverBadMetrics(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "primary").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	receiver, err := factory.CreateTracesReceiver(
+	receiver, err := factory.CreateTraces(
 		context.Background(),
 		set,
 		cfg,

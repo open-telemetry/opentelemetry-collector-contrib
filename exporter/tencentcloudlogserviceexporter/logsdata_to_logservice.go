@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"google.golang.org/protobuf/proto"
 
 	cls "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter/proto"
@@ -116,7 +116,8 @@ func instrumentationLibraryToLogContents(scope pcommon.InstrumentationScope) []*
 
 func mapLogRecordToLogService(lr plog.LogRecord,
 	resourceContents,
-	instrumentationLibraryContents []*cls.Log_Content) *cls.Log {
+	instrumentationLibraryContents []*cls.Log_Content,
+) *cls.Log {
 	if lr.Body().Type() == pcommon.ValueTypeEmpty {
 		return nil
 	}

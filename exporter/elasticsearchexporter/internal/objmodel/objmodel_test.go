@@ -283,7 +283,7 @@ func TestDocument_Serialize_Flat(t *testing.T) {
 			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
 			doc.Dedup()
-			err := doc.Serialize(&buf, false, false)
+			err := doc.Serialize(&buf, false)
 			require.NoError(t, err)
 
 			assert.Equal(t, test.want, buf.String())
@@ -344,7 +344,7 @@ func TestDocument_Serialize_Dedot(t *testing.T) {
 			assert.NoError(t, m.FromRaw(test.attrs))
 			doc := DocumentFromAttributes(m)
 			doc.Dedup()
-			err := doc.Serialize(&buf, true, false)
+			err := doc.Serialize(&buf, true)
 			require.NoError(t, err)
 
 			assert.Equal(t, test.want, buf.String())
@@ -361,6 +361,7 @@ func TestValue_Serialize(t *testing.T) {
 		"bool value: true":   {value: BoolValue(true), want: "true"},
 		"bool value: false":  {value: BoolValue(false), want: "false"},
 		"int value":          {value: IntValue(42), want: "42"},
+		"uint value":         {value: UIntValue(42), want: "42"},
 		"double value: 3.14": {value: DoubleValue(3.14), want: "3.14"},
 		"double value: 1.0":  {value: DoubleValue(1.0), want: "1.0"},
 		"NaN is undefined":   {value: DoubleValue(math.NaN()), want: "null"},
@@ -391,7 +392,7 @@ func TestValue_Serialize(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var buf strings.Builder
-			err := test.value.iterJSON(newJSONVisitor(&buf), false, false)
+			err := test.value.iterJSON(newJSONVisitor(&buf), false)
 			require.NoError(t, err)
 			assert.Equal(t, test.want, buf.String())
 		})

@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -25,7 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -60,6 +59,7 @@ func NewConfig() *Config {
 		MaxConcurrentFiles: defaultMaxConcurrentFiles,
 		StartAt:            "end",
 		FingerprintSize:    fingerprint.DefaultSize,
+		InitialBufferSize:  scanner.DefaultBufferSize,
 		MaxLogSize:         reader.DefaultMaxLogSize,
 		Encoding:           defaultEncoding,
 		FlushPeriod:        reader.DefaultFlushPeriod,
@@ -78,6 +78,7 @@ type Config struct {
 	MaxBatches              int             `mapstructure:"max_batches,omitempty"`
 	StartAt                 string          `mapstructure:"start_at,omitempty"`
 	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
+	InitialBufferSize       helper.ByteSize `mapstructure:"initial_buffer_size,omitempty"`
 	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
 	Encoding                string          `mapstructure:"encoding,omitempty"`
 	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
@@ -87,17 +88,13 @@ type Config struct {
 	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
 	IncludeFileRecordNumber bool            `mapstructure:"include_file_record_number,omitempty"`
 	Compression             string          `mapstructure:"compression,omitempty"`
+	PollsToArchive          int             `mapstructure:"-"` // TODO: activate this config once archiving is set up
 	AcquireFSLock           bool            `mapstructure:"acquire_fs_lock,omitempty"`
 }
 
 type HeaderConfig struct {
 	Pattern           string            `mapstructure:"pattern"`
 	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
-}
-
-// Deprecated [v0.97.0] Use Build and WithSplitFunc option instead
-func (c Config) BuildWithSplitFunc(set component.TelemetrySettings, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
-	return c.Build(set, emit, WithSplitFunc(splitFunc))
 }
 
 func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts ...Option) (*Manager, error) {
@@ -113,7 +110,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		opt(o)
 	}
 
-	enc, err := decode.LookupEncoding(c.Encoding)
+	enc, err := textutils.LookupEncoding(c.Encoding)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find encoding: %w", err)
 	}
@@ -159,7 +156,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		TelemetrySettings:       set,
 		FromBeginning:           startAtBeginning,
 		FingerprintSize:         int(c.FingerprintSize),
-		InitialBufferSize:       scanner.DefaultBufferSize,
+		InitialBufferSize:       int(c.InitialBufferSize),
 		MaxLogSize:              int(c.MaxLogSize),
 		Encoding:                enc,
 		SplitFunc:               splitFunc,
@@ -174,13 +171,6 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		AcquireFSLock:           c.AcquireFSLock,
 	}
 
-	var t tracker.Tracker
-	if o.noTracking {
-		t = tracker.NewNoStateTracker(set, c.MaxConcurrentFiles/2)
-	} else {
-		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
-	}
-
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
 		return nil, err
@@ -192,8 +182,8 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		pollInterval:     c.PollInterval,
 		maxBatchFiles:    c.MaxConcurrentFiles / 2,
 		maxBatches:       c.MaxBatches,
-		tracker:          t,
 		telemetryBuilder: telemetryBuilder,
+		noTracking:       o.noTracking,
 	}, nil
 }
 
@@ -218,7 +208,7 @@ func (c Config) validate() error {
 		return errors.New("'max_batches' must not be negative")
 	}
 
-	enc, err := decode.LookupEncoding(c.Encoding)
+	enc, err := textutils.LookupEncoding(c.Encoding)
 	if err != nil {
 		return err
 	}

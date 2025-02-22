@@ -7,14 +7,13 @@ import (
 	"bytes"
 
 	"github.com/gogo/protobuf/jsonpb"
-	jaegerproto "github.com/jaegertracing/jaeger/model"
+	jaegerproto "github.com/jaegertracing/jaeger-idl/model/v1"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-type jaegerProtoSpanUnmarshaler struct {
-}
+type jaegerProtoSpanUnmarshaler struct{}
 
 var _ TracesUnmarshaler = (*jaegerProtoSpanUnmarshaler)(nil)
 
@@ -31,8 +30,7 @@ func (j jaegerProtoSpanUnmarshaler) Encoding() string {
 	return "jaeger_proto"
 }
 
-type jaegerJSONSpanUnmarshaler struct {
-}
+type jaegerJSONSpanUnmarshaler struct{}
 
 var _ TracesUnmarshaler = (*jaegerJSONSpanUnmarshaler)(nil)
 

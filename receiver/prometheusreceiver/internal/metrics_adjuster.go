@@ -209,7 +209,7 @@ func (jm *JobsMap) maybeGC() {
 
 func (jm *JobsMap) get(job, instance string) *timeseriesMap {
 	sig := job + ":" + instance
-	// a read locke is taken here as we will not need to modify jobsMap if the target timeseriesMap is available.
+	// a read lock is taken here as we will not need to modify jobsMap if the target timeseriesMap is available.
 	jm.RLock()
 	tsm, ok := jm.jobsMap[sig]
 	jm.RUnlock()
@@ -241,6 +241,11 @@ type initialPointAdjuster struct {
 	jobsMap          *JobsMap
 	logger           *zap.Logger
 	useCreatedMetric bool
+	// usePointTimeForReset forces the adjuster to use the timestamp of the
+	// point instead of the start timestamp when it detects resets.  This is
+	// useful when this adjuster is used after another adjuster that
+	// pre-populated start times.
+	usePointTimeForReset bool
 }
 
 // NewInitialPointAdjuster returns a new MetricsAdjuster that adjust metrics' start times based on the initial received points.
@@ -255,25 +260,31 @@ func NewInitialPointAdjuster(logger *zap.Logger, gcInterval time.Duration, useCr
 // AdjustMetrics takes a sequence of metrics and adjust their start times based on the initial and
 // previous points in the timeseriesMap.
 func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
-	// By contract metrics will have at least 1 data point, so for sure will have at least one ResourceMetrics.
-
-	job, found := metrics.ResourceMetrics().At(0).Resource().Attributes().Get(semconv.AttributeServiceName)
-	if !found {
-		return errors.New("adjusting metrics without job")
+	if removeStartTimeAdjustment.IsEnabled() {
+		return nil
 	}
-
-	instance, found := metrics.ResourceMetrics().At(0).Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
-	if !found {
-		return errors.New("adjusting metrics without instance")
-	}
-	tsm := a.jobsMap.get(job.Str(), instance.Str())
-
-	// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
-	// nothing else can modify the data used for adjustment.
-	tsm.Lock()
-	defer tsm.Unlock()
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
+		_, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
+		if !found {
+			return errors.New("adjusting metrics without job")
+		}
+
+		_, found = rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
+		if !found {
+			return errors.New("adjusting metrics without instance")
+		}
+	}
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		job, _ := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
+		instance, _ := rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
+		tsm := a.jobsMap.get(job.Str(), instance.Str())
+
+		// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
+		// nothing else can modify the data used for adjustment.
+		tsm.Lock()
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
@@ -303,6 +314,7 @@ func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 				}
 			}
 		}
+		tsm.Unlock()
 	}
 	return nil
 }
@@ -343,6 +355,10 @@ func (a *initialPointAdjuster) adjustMetricHistogram(tsm *timeseriesMap, current
 		if currentDist.Count() < tsi.histogram.previousCount || currentDist.Sum() < tsi.histogram.previousSum {
 			// reset re-initialize everything.
 			tsi.histogram.startTime = currentDist.StartTimestamp()
+			if a.usePointTimeForReset {
+				tsi.histogram.startTime = currentDist.Timestamp()
+				currentDist.SetStartTimestamp(tsi.histogram.startTime)
+			}
 			tsi.histogram.previousCount = currentDist.Count()
 			tsi.histogram.previousSum = currentDist.Sum()
 			continue
@@ -391,6 +407,10 @@ func (a *initialPointAdjuster) adjustMetricExponentialHistogram(tsm *timeseriesM
 		if currentDist.Count() < tsi.histogram.previousCount || currentDist.Sum() < tsi.histogram.previousSum {
 			// reset re-initialize everything.
 			tsi.histogram.startTime = currentDist.StartTimestamp()
+			if a.usePointTimeForReset {
+				tsi.histogram.startTime = currentDist.Timestamp()
+				currentDist.SetStartTimestamp(tsi.histogram.startTime)
+			}
 			tsi.histogram.previousCount = currentDist.Count()
 			tsi.histogram.previousSum = currentDist.Sum()
 			continue
@@ -432,6 +452,10 @@ func (a *initialPointAdjuster) adjustMetricSum(tsm *timeseriesMap, current pmetr
 		if currentSum.DoubleValue() < tsi.number.previousValue {
 			// reset re-initialize everything.
 			tsi.number.startTime = currentSum.StartTimestamp()
+			if a.usePointTimeForReset {
+				tsi.number.startTime = currentSum.Timestamp()
+				currentSum.SetStartTimestamp(tsi.number.startTime)
+			}
 			tsi.number.previousValue = currentSum.DoubleValue()
 			continue
 		}
@@ -478,6 +502,10 @@ func (a *initialPointAdjuster) adjustMetricSummary(tsm *timeseriesMap, current p
 				currentSummary.Sum() < tsi.summary.previousSum) {
 			// reset re-initialize everything.
 			tsi.summary.startTime = currentSummary.StartTimestamp()
+			if a.usePointTimeForReset {
+				tsi.summary.startTime = currentSummary.Timestamp()
+				currentSummary.SetStartTimestamp(tsi.summary.startTime)
+			}
 			tsi.summary.previousCount = currentSummary.Count()
 			tsi.summary.previousSum = currentSummary.Sum()
 			continue

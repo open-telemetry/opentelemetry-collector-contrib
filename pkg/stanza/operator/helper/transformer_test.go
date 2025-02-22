@@ -26,8 +26,7 @@ func TestTransformerConfigMissingBase(t *testing.T) {
 	cfg.OutputIDs = []string{"test-output"}
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := cfg.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "missing required `type` field.")
+	require.ErrorContains(t, err, "missing required `type` field.")
 }
 
 func TestTransformerConfigMissingOutput(t *testing.T) {
@@ -58,8 +57,7 @@ func TestTransformerOnErrorInvalid(t *testing.T) {
 	cfg.OnError = "invalid"
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := cfg.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "operator config has an invalid `on_error` field.")
+	require.ErrorContains(t, err, "operator config has an invalid `on_error` field.")
 }
 
 func TestTransformerOperatorCanProcess(t *testing.T) {
@@ -143,7 +141,7 @@ func TestTransformerDropOnErrorQuiet(t *testing.T) {
 	}
 
 	err := transformer.ProcessWith(ctx, testEntry, transform)
-	require.NoError(t, err)
+	require.Error(t, err)
 	output.AssertNotCalled(t, "Process", mock.Anything, mock.Anything)
 
 	// Test output logs
@@ -233,7 +231,7 @@ func TestTransformerSendOnErrorQuiet(t *testing.T) {
 	}
 
 	err := transformer.ProcessWith(ctx, testEntry, transform)
-	require.NoError(t, err)
+	require.Error(t, err)
 	output.AssertCalled(t, "Process", mock.Anything, mock.Anything)
 
 	// Test output logs

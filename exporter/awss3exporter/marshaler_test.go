@@ -50,30 +50,13 @@ type hostWithExtensions struct {
 	encoding encodingExtension
 }
 
-func (h hostWithExtensions) Start(context.Context, component.Host) error {
-	panic("unsupported")
-}
-
-func (h hostWithExtensions) Shutdown(context.Context) error {
-	panic("unsupported")
-}
-
-func (h hostWithExtensions) GetFactory(component.Kind, component.Type) component.Factory {
-	panic("unsupported")
-}
-
 func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component {
 	return map[component.ID]component.Component{
 		component.MustNewID("foo"): h.encoding,
 	}
 }
 
-func (h hostWithExtensions) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	panic("unsupported")
-}
-
-type encodingExtension struct {
-}
+type encodingExtension struct{}
 
 func (e encodingExtension) Start(_ context.Context, _ component.Host) error {
 	panic("unsupported")

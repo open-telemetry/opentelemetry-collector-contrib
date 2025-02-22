@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.26.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -265,7 +265,6 @@ func TestSyncMetadata(t *testing.T) {
 			for i, log := range logs.All() {
 				assert.Equal(t, tt.wantLogs[i], log.Message)
 			}
-
 		})
 	}
 }

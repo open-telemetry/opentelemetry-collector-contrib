@@ -1,0 +1,55 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeMetrics:
+      - metrics:
+          - description: Span sum if ...
+            name: span.sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "8.2"
+                  timeUnixNano: "1678392127922309000"
+              isMonotonic: true
+          - description: Span event sum if ...
+            name: spanevent.sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "23.900000"
+                  timeUnixNano: "1678392127922310000"
+              isMonotonic: true
+
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: notbar
+    scopeMetrics:
+      - metrics:
+          - description: Span sum if ...
+            name: span.sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "8.2"
+                  timeUnixNano: "1678392127922363000"
+              isMonotonic: true
+          - description: Span event sum if ...
+            name: spanevent.sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "23.3"
+                  timeUnixNano: "1678392127922364000"
+              isMonotonic: true
+

@@ -10,37 +10,37 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
 
 var errLogsConsumer = errors.New("Error from ConsumeLogs")
 
 func TestLogsRegisterConsumers(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird consumertest.LogsSink
-	logsFirst := component.NewIDWithName(component.DataTypeLogs, "logs/first")
-	logsSecond := component.NewIDWithName(component.DataTypeLogs, "logs/second")
-	logsThird := component.NewIDWithName(component.DataTypeLogs, "logs/third")
+	logsFirst := pipeline.NewIDWithName(pipeline.SignalLogs, "logs/first")
+	logsSecond := pipeline.NewIDWithName(pipeline.SignalLogs, "logs/second")
+	logsThird := pipeline.NewIDWithName(pipeline.SignalLogs, "logs/third")
 
 	cfg := &Config{
-		PipelinePriority: [][]component.ID{{logsFirst}, {logsSecond}, {logsThird}},
+		PipelinePriority: [][]pipeline.ID{{logsFirst}, {logsSecond}, {logsThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
-	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
 		logsFirst:  &sinkFirst,
 		logsSecond: &sinkSecond,
 		logsThird:  &sinkThird,
 	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 
 	failoverConnector := conn.(*logsFailover)
 	defer func() {
@@ -50,37 +50,34 @@ func TestLogsRegisterConsumers(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
-	lc, _, ok := failoverConnector.failover.getCurrentConsumer()
-	lc1 := failoverConnector.failover.GetConsumerAtIndex(1)
-	lc2 := failoverConnector.failover.GetConsumerAtIndex(2)
+	lc := failoverConnector.failover.TestGetConsumerAtIndex(0)
+	lc1 := failoverConnector.failover.TestGetConsumerAtIndex(1)
+	lc2 := failoverConnector.failover.TestGetConsumerAtIndex(2)
 
-	assert.True(t, ok)
-	require.Implements(t, (*consumer.Logs)(nil), lc)
-	require.Implements(t, (*consumer.Logs)(nil), lc1)
-	require.Implements(t, (*consumer.Logs)(nil), lc2)
+	require.Equal(t, lc, &sinkFirst)
+	require.Equal(t, lc1, &sinkSecond)
+	require.Equal(t, lc2, &sinkThird)
 }
 
 func TestLogsWithValidFailover(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird consumertest.LogsSink
-	logsFirst := component.NewIDWithName(component.DataTypeLogs, "logs/first")
-	logsSecond := component.NewIDWithName(component.DataTypeLogs, "logs/second")
-	logsThird := component.NewIDWithName(component.DataTypeLogs, "logs/third")
+	logsFirst := pipeline.NewIDWithName(pipeline.SignalLogs, "logs/first")
+	logsSecond := pipeline.NewIDWithName(pipeline.SignalLogs, "logs/second")
+	logsThird := pipeline.NewIDWithName(pipeline.SignalLogs, "logs/third")
 
 	cfg := &Config{
-		PipelinePriority: [][]component.ID{{logsFirst}, {logsSecond}, {logsThird}},
+		PipelinePriority: [][]pipeline.ID{{logsFirst}, {logsSecond}, {logsThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
-	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
 		logsFirst:  &sinkFirst,
 		logsSecond: &sinkSecond,
 		logsThird:  &sinkThird,
 	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 
@@ -99,25 +96,23 @@ func TestLogsWithValidFailover(t *testing.T) {
 
 func TestLogsWithFailoverError(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird consumertest.LogsSink
-	logsFirst := component.NewIDWithName(component.DataTypeLogs, "logs/first")
-	logsSecond := component.NewIDWithName(component.DataTypeLogs, "logs/second")
-	logsThird := component.NewIDWithName(component.DataTypeLogs, "logs/third")
+	logsFirst := pipeline.NewIDWithName(pipeline.SignalLogs, "logs/first")
+	logsSecond := pipeline.NewIDWithName(pipeline.SignalLogs, "logs/second")
+	logsThird := pipeline.NewIDWithName(pipeline.SignalLogs, "logs/third")
 
 	cfg := &Config{
-		PipelinePriority: [][]component.ID{{logsFirst}, {logsSecond}, {logsThird}},
+		PipelinePriority: [][]pipeline.ID{{logsFirst}, {logsSecond}, {logsThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
-	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
 		logsFirst:  &sinkFirst,
 		logsSecond: &sinkSecond,
 		logsThird:  &sinkThird,
 	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 
@@ -136,7 +131,7 @@ func TestLogsWithFailoverError(t *testing.T) {
 
 func consumeLogsAndCheckStable(conn *logsFailover, idx int, lr plog.Logs) bool {
 	_ = conn.ConsumeLogs(context.Background(), lr)
-	stableIndex := conn.failover.pS.TestStableIndex()
+	stableIndex := conn.failover.pS.CurrentPipeline()
 	return stableIndex == idx
 }
 

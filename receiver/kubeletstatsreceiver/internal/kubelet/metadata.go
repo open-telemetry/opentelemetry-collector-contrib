@@ -34,14 +34,14 @@ var supportedLabels = map[MetadataLabel]bool{
 func ValidateMetadataLabelsConfig(labels []MetadataLabel) error {
 	labelsFound := map[MetadataLabel]bool{}
 	for _, label := range labels {
-		if _, supported := supportedLabels[label]; supported {
-			if _, duplicate := labelsFound[label]; duplicate {
-				return fmt.Errorf("duplicate metadata label: %q", label)
-			}
-			labelsFound[label] = true
-		} else {
+		_, supported := supportedLabels[label]
+		if !supported {
 			return fmt.Errorf("label %q is not supported", label)
 		}
+		if _, duplicate := labelsFound[label]; duplicate {
+			return fmt.Errorf("duplicate metadata label: %q", label)
+		}
+		labelsFound[label] = true
 	}
 	return nil
 }
@@ -84,7 +84,8 @@ func getContainerResources(r *v1.ResourceRequirements) resources {
 }
 
 func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList, nodeCap NodeCapacity,
-	detailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error) Metadata {
+	detailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error,
+) Metadata {
 	m := Metadata{
 		Labels:                    getLabelsMap(labels),
 		PodsMetadata:              podsMetadata,
@@ -154,7 +155,8 @@ func getLabelsMap(metadataLabels []MetadataLabel) map[MetadataLabel]bool {
 
 // getExtraResources gets extra resources based on provided metadata label.
 func (m *Metadata) setExtraResources(rb *metadata.ResourceBuilder, podRef stats.PodReference,
-	extraMetadataLabel MetadataLabel, extraMetadataFrom string) error {
+	extraMetadataLabel MetadataLabel, extraMetadataFrom string,
+) error {
 	// Ensure MetadataLabel exists before proceeding.
 	if !m.Labels[extraMetadataLabel] || len(m.Labels) == 0 {
 		return nil
@@ -207,7 +209,6 @@ func (m *Metadata) getContainerID(podUID string, containerName string) (string, 
 					return stripContainerID(containerStatus.ContainerID), nil
 				}
 			}
-
 		}
 	}
 

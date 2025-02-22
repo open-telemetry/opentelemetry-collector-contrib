@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -62,7 +63,7 @@ func newLogProcessor(settings component.TelemetrySettings, config component.Conf
 }
 
 type getExporters interface {
-	GetExporters() map[component.DataType]map[component.ID]component.Component
+	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }
 
 func (p *logProcessor) Start(_ context.Context, host component.Host) error {
@@ -70,7 +71,7 @@ func (p *logProcessor) Start(_ context.Context, host component.Host) error {
 	if !ok {
 		return fmt.Errorf("unable to get exporters")
 	}
-	err := p.router.registerExporters(ge.GetExporters()[component.DataTypeLogs])
+	err := p.router.registerExporters(ge.GetExporters()[pipeline.SignalLogs])
 	if err != nil {
 		return err
 	}
@@ -181,7 +182,7 @@ func (p *logProcessor) recordNonRoutedResourceLogs(ctx context.Context, routingK
 func (p *logProcessor) routeForContext(ctx context.Context, l plog.Logs) error {
 	value := p.extractor.extractFromContext(ctx)
 	exporters := p.router.getExporters(value)
-	if value == "" { // "" is a  key for default exporters
+	if value == "" { // "" is a key for default exporters
 		p.telemetry.RoutingProcessorNonRoutedLogRecords.Add(
 			ctx,
 			int64(l.LogRecordCount()),

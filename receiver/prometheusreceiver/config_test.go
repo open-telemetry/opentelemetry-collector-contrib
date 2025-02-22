@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -67,7 +68,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 
 	r0 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
@@ -82,7 +83,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 
 	r1 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
@@ -98,7 +99,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 
 	r2 := cfg.(*Config)
 	assert.Len(t, r2.PrometheusConfig.ScrapeConfigs, 1)
@@ -116,7 +117,7 @@ func TestValidateConfigWithScrapeConfigFiles(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
@@ -131,7 +132,7 @@ func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 }
 
 func TestLoadConfigFailsOnNoPrometheusOrTAConfig(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-non-existent-scrape-config.yaml"))
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-nonexistent-scrape-config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 
@@ -139,25 +140,25 @@ func TestLoadConfigFailsOnNoPrometheusOrTAConfig(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.ErrorContains(t, component.ValidateConfig(cfg), "no Prometheus scrape_configs or target_allocator set")
+	require.ErrorContains(t, xconfmap.Validate(cfg), "no Prometheus scrape_configs or target_allocator set")
 
 	cfg = factory.CreateDefaultConfig()
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withConfigAndTA").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 
 	cfg = factory.CreateDefaultConfig()
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withOnlyTA").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 
 	cfg = factory.CreateDefaultConfig()
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withOnlyScrape").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 }
 
 // As one of the config parameters is consuming prometheus
@@ -186,7 +187,7 @@ func TestConfigWarningsOnRenameDisallowed(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 	// Use a fake logger
-	creationSet := receivertest.NewNopSettings()
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	creationSet.Logger = zap.New(observedZapCore)
 	_, err = createMetricsReceiver(context.Background(), creationSet, cfg, nil)
@@ -205,7 +206,7 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	err = component.ValidateConfig(cfg)
+	err = xconfmap.Validate(cfg)
 	require.Error(t, err)
 
 	wantErrMsg := `unsupported features:
@@ -216,11 +217,11 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
         rule_files`
 
 	gotErrMsg := strings.ReplaceAll(err.Error(), "\t", strings.Repeat(" ", 8))
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	require.Contains(t, gotErrMsg, wantErrMsg)
 }
 
 func TestNonExistentAuthCredentialsFile(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-non-existent-auth-credentials-file.yaml"))
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-nonexistent-auth-credentials-file.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -230,12 +231,12 @@ func TestNonExistentAuthCredentialsFile(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.ErrorContains(t,
-		component.ValidateConfig(cfg),
+		xconfmap.Validate(cfg),
 		`error checking authorization credentials file "/nonexistentauthcredentialsfile"`)
 }
 
 func TestTLSConfigNonExistentCertFile(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-non-existent-cert-file.yaml"))
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-nonexistent-cert-file.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -245,12 +246,12 @@ func TestTLSConfigNonExistentCertFile(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.ErrorContains(t,
-		component.ValidateConfig(cfg),
+		xconfmap.Validate(cfg),
 		`error checking client cert file "/nonexistentcertfile"`)
 }
 
 func TestTLSConfigNonExistentKeyFile(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-non-existent-key-file.yaml"))
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-nonexistent-key-file.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -260,7 +261,7 @@ func TestTLSConfigNonExistentKeyFile(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.ErrorContains(t,
-		component.ValidateConfig(cfg),
+		xconfmap.Validate(cfg),
 		`error checking client key file "/nonexistentkeyfile"`)
 }
 
@@ -315,7 +316,7 @@ func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 }
 
 func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
@@ -328,7 +329,7 @@ func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 }
 
 func TestTargetAllocatorInvalidHTTPScrape(t *testing.T) {
@@ -343,7 +344,7 @@ func TestTargetAllocatorInvalidHTTPScrape(t *testing.T) {
 }
 
 func TestFileSDConfigWithoutSDFile(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "non-existent-prometheus-sd-file-config.yaml"))
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "nonexistent-prometheus-sd-file-config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -352,5 +353,5 @@ func TestFileSDConfigWithoutSDFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 }

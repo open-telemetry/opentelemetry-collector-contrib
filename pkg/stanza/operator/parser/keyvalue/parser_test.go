@@ -44,8 +44,7 @@ func TestConfigBuildFailure(t *testing.T) {
 	config.OnError = "invalid_on_error"
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid `on_error` field")
+	require.ErrorContains(t, err, "invalid `on_error` field")
 }
 
 func TestBuild(t *testing.T) {
@@ -151,22 +150,19 @@ func TestBuild(t *testing.T) {
 func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("cannot split %q into 2 items, got 1 item(s)", "invalid"))
+	require.ErrorContains(t, err, fmt.Sprintf("cannot split %q into 2 items, got 1 item(s)", "invalid"))
 }
 
 func TestParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]int{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type []int cannot be parsed as key value pairs")
+	require.ErrorContains(t, err, "type []int cannot be parsed as key value pairs")
 }
 
 func TestParserEmptyInput(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "parse from field body is empty")
+	require.ErrorContains(t, err, "parse from field body is empty")
 }
 
 func TestKVImplementations(t *testing.T) {
@@ -690,6 +686,24 @@ key=value`,
 				Body: `k1='v1' k2='v2`,
 			},
 			true,
+			false,
+		},
+		{
+			"containerd output",
+			func(_ *Config) {},
+			&entry.Entry{
+				Body: `time="2024-11-01T12:38:17.992190505Z" level=warning msg="cleanup warnings time='2024-11-01T12:38:17Z' level=debug msg=\"starting signal loop\" namespace=moby-10000.10000 pid=1608080 runtime=io.containerd.runc.v2" namespace=moby-10000.10000`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"time":      "2024-11-01T12:38:17.992190505Z",
+					"level":     "warning",
+					"msg":       `cleanup warnings time='2024-11-01T12:38:17Z' level=debug msg=\"starting signal loop\" namespace=moby-10000.10000 pid=1608080 runtime=io.containerd.runc.v2`,
+					"namespace": "moby-10000.10000",
+				},
+				Body: `time="2024-11-01T12:38:17.992190505Z" level=warning msg="cleanup warnings time='2024-11-01T12:38:17Z' level=debug msg=\"starting signal loop\" namespace=moby-10000.10000 pid=1608080 runtime=io.containerd.runc.v2" namespace=moby-10000.10000`,
+			},
+			false,
 			false,
 		},
 	}

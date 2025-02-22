@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -3099,13 +3099,12 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	if mbc.Metrics.ContainerCPUUtilization.Enabled {
-		settings.Logger.Warn("[WARNING] `container.cpu.utilization` should not be enabled: WARNING: This metric will be disabled in a future release. Use metric container.cpu.usage instead.")
+		settings.Logger.Warn("[WARNING] `container.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric container.cpu.usage instead.")
 	}
 	if mbc.Metrics.K8sNodeCPUUtilization.Enabled {
-		settings.Logger.Warn("[WARNING] `k8s.node.cpu.utilization` should not be enabled: WARNING: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead.")
+		settings.Logger.Warn("[WARNING] `k8s.node.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead.")
 	}
 	if mbc.Metrics.K8sPodCPUUtilization.Enabled {
 		settings.Logger.Warn("[WARNING] `k8s.pod.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead.")

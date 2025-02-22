@@ -6,10 +6,10 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, schmikei, StefanKurek]
+    active: [schmikei, StefanKurek]
     seeking_new: true
 
-resource_attributes:  
+resource_attributes:
   vcenter.datacenter.name:
     description: The name of the vCenter datacenter.
     enabled: true
@@ -106,6 +106,13 @@ attributes:
       - "off"
       - "standby"
       - "unknown"
+  cpu_state: 
+    description: CPU time spent in idle, ready or idle state.
+    type: string
+    enum:
+      - "idle"
+      - "ready"
+      - "wait"
   disk_direction:
     name_override: direction
     description: The direction of disk latency.
@@ -413,6 +420,15 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+  vcenter.host.memory.capacity:
+    enabled: false
+    description: Total memory  capacity of the host system.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: double
+      aggregation_temporality: cumulative
+    attributes: []
   vcenter.host.network.throughput:
     enabled: true
     description: The amount of data that was transmitted or received over the network by the host.
@@ -524,7 +540,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   vcenter.resource_pool.memory.ballooned:
-    enabled: true 
+    enabled: true
     description: The amount of memory in a resource pool that is ballooned due to virtualization.
     unit: MiBy
     sum:
@@ -559,9 +575,26 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+  vcenter.vm.cpu.time:
+    enabled: false
+    description:  CPU time spent in idle, ready or wait state.
+    unit: "%"
+    gauge:
+      value_type: double 
+    attributes: [cpu_state, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
   vcenter.vm.memory.ballooned:
     enabled: true
     description: The amount of memory that is ballooned due to virtualization.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.vm.memory.granted:
+    enabled: false
+    description: The amount of memory that is granted to a VM.
     unit: MiBy
     sum:
       monotonic: false
@@ -644,6 +677,22 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
+  vcenter.vm.network.broadcast.packet.rate:
+    enabled: false
+    description: The rate of broadcast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+    unit: "{packets/s}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+  vcenter.vm.network.multicast.packet.rate:
+    enabled: false
+    description: The rate of multicast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+    unit: "{packets/s}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
   vcenter.vm.network.packet.rate:
     enabled: true
     description: The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
@@ -721,3 +770,4 @@ metrics:
     gauge:
       value_type: int
     attributes: [vsan_latency_type]
+ 

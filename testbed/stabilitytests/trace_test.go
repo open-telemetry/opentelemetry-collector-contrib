@@ -24,10 +24,13 @@ import (
 var (
 	contribPerfResultsSummary = &testbed.PerformanceResults{}
 	resourceCheckPeriod, _    = time.ParseDuration("1m")
-	processorsConfig          = map[string]string{
-		"batch": `
+	processorsConfig          = []scenarios.ProcessorNameAndConfigBody{
+		{
+			Name: "batch",
+			Body: `
   batch:
 `,
+		},
 	}
 )
 
@@ -49,6 +52,7 @@ func TestStabilityTracesOpenCensus(t *testing.T) {
 		contribPerfResultsSummary,
 		processorsConfig,
 		nil,
+		nil,
 	)
 }
 
@@ -64,6 +68,7 @@ func TestStabilityTracesSAPM(t *testing.T) {
 		},
 		contribPerfResultsSummary,
 		processorsConfig,
+		nil,
 		nil,
 	)
 }
@@ -81,6 +86,7 @@ func TestStabilityTracesOTLP(t *testing.T) {
 		contribPerfResultsSummary,
 		processorsConfig,
 		nil,
+		nil,
 	)
 }
 
@@ -96,6 +102,7 @@ func TestStabilityTracesJaegerGRPC(t *testing.T) {
 		},
 		contribPerfResultsSummary,
 		processorsConfig,
+		nil,
 		nil,
 	)
 }
@@ -113,6 +120,7 @@ func TestStabilityTracesZipkin(t *testing.T) {
 		contribPerfResultsSummary,
 		processorsConfig,
 		nil,
+		nil,
 	)
 }
 
@@ -128,6 +136,7 @@ func TestStabilityTracesDatadog(t *testing.T) {
 		},
 		contribPerfResultsSummary,
 		processorsConfig,
+		nil,
 		nil,
 	)
 }

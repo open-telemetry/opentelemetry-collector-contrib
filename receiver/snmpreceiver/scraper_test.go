@@ -15,11 +15,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/metadata"
 )
 
 type MockClient struct {
@@ -42,7 +43,6 @@ func (_m *MockClient) Close() error {
 
 // Connect provides a mock function with given fields:
 func (_m *MockClient) Connect() error {
-
 	ret := _m.Called()
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -92,7 +92,7 @@ func TestStart(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				scraper := &snmpScraper{
 					cfg:      &Config{},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 				}
 				err := scraper.start(context.Background(), componenttest.NewNopHost())
 				require.Error(t, err)
@@ -101,10 +101,9 @@ func TestStart(t *testing.T) {
 		{
 			desc: "Valid Config",
 			testFunc: func(t *testing.T) {
-
 				scraper := &snmpScraper{
 					cfg:      createDefaultConfig().(*Config),
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 				}
 				err := scraper.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
@@ -131,7 +130,7 @@ func TestScrape(t *testing.T) {
 				mockClient.On("Close").Return(nil)
 				scraper := &snmpScraper{
 					cfg:      &Config{},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -166,7 +165,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -202,7 +201,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -240,7 +239,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -287,7 +286,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -336,7 +335,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -386,7 +385,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -451,7 +450,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -517,7 +516,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -589,7 +588,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -633,7 +632,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -681,7 +680,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -736,7 +735,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -800,7 +799,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -866,7 +865,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -933,7 +932,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1016,7 +1015,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1110,7 +1109,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1202,7 +1201,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1282,7 +1281,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1366,7 +1365,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1435,7 +1434,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1513,7 +1512,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1591,7 +1590,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1669,7 +1668,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1755,7 +1754,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1831,7 +1830,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1911,7 +1910,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2001,7 +2000,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2099,7 +2098,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2175,7 +2174,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2258,7 +2257,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2340,7 +2339,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2422,7 +2421,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2491,7 +2490,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2596,7 +2595,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2685,7 +2684,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2761,7 +2760,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2820,7 +2819,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2887,7 +2886,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2964,7 +2963,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -3061,7 +3060,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopSettings(),
+					settings: receivertest.NewNopSettings(metadata.Type),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}

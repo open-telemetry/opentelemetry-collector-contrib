@@ -3,7 +3,7 @@
 
 //go:build windows
 
-package wmiprocinfo // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/wmiprocinfo"
+package handlecount
 
 import (
 	"errors"
@@ -15,9 +15,9 @@ import (
 )
 
 func TestHandleCountManager(t *testing.T) {
-	testInfos := map[int64]*wmiProcInfo{
-		1: {handleCount: 3, ppid: 10},
-		2: {handleCount: 5, ppid: 20},
+	testInfos := map[int64]uint32{
+		1: 3,
+		2: 5,
 	}
 	m := deterministicManagerWithInfo(testInfos)
 
@@ -27,33 +27,25 @@ func TestHandleCountManager(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, uint32(3), count)
 
-	ppid, err := m.GetProcessPpid(1)
-	assert.NoError(t, err)
-	assert.Equal(t, int64(10), ppid)
-
 	count, err = m.GetProcessHandleCount(2)
 	assert.NoError(t, err)
 	assert.Equal(t, uint32(5), count)
 
-	ppid, err = m.GetProcessPpid(2)
-	assert.NoError(t, err)
-	assert.Equal(t, int64(20), ppid)
-
 	_, err = m.GetProcessHandleCount(3)
-	assert.ErrorIs(t, errors.Unwrap(err), ErrProcessNotFound)
+	assert.ErrorIs(t, errors.Unwrap(err), ErrNoHandleCountForProcess)
 	assert.True(t, strings.Contains(err.Error(), "3"))
 }
 
 type mockQueryer struct {
-	info map[int64]*wmiProcInfo
+	info map[int64]uint32
 }
 
-func (s mockQueryer) wmiProcessQuery() (map[int64]*wmiProcInfo, error) {
+func (s mockQueryer) queryProcessHandleCounts() (map[int64]uint32, error) {
 	return s.info, nil
 }
 
-func deterministicManagerWithInfo(info map[int64]*wmiProcInfo) *wmiProcInfoManager {
-	return &wmiProcInfoManager{
+func deterministicManagerWithInfo(info map[int64]uint32) *handleCountManager {
+	return &handleCountManager{
 		queryer: mockQueryer{info: info},
 	}
 }

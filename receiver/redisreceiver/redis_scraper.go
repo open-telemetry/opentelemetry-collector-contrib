@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
@@ -33,7 +33,7 @@ type redisScraper struct {
 
 const redisMaxDbs = 16 // Maximum possible number of redis databases
 
-func newRedisScraper(cfg *Config, settings receiver.Settings) (scraperhelper.Scraper, error) {
+func newRedisScraper(cfg *Config, settings receiver.Settings) (scraper.Metrics, error) {
 	opts := &redis.Options{
 		Addr:     cfg.Endpoint,
 		Username: cfg.Username,
@@ -48,7 +48,7 @@ func newRedisScraper(cfg *Config, settings receiver.Settings) (scraperhelper.Scr
 	return newRedisScraperWithClient(newRedisClient(opts), settings, cfg)
 }
 
-func newRedisScraperWithClient(client client, settings receiver.Settings, cfg *Config) (scraperhelper.Scraper, error) {
+func newRedisScraperWithClient(client client, settings receiver.Settings, cfg *Config) (scraper.Metrics, error) {
 	configInfo, err := newConfigInfo(cfg)
 	if err != nil {
 		return nil, err
@@ -60,10 +60,9 @@ func newRedisScraperWithClient(client client, settings receiver.Settings, cfg *C
 		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		configInfo: configInfo,
 	}
-	return scraperhelper.NewScraper(
-		metadata.Type,
+	return scraper.NewMetrics(
 		rs.Scrape,
-		scraperhelper.WithShutdown(rs.shutdown),
+		scraper.WithShutdown(rs.shutdown),
 	)
 }
 
@@ -196,7 +195,7 @@ func (rs *redisScraper) recordCmdMetrics(ts pcommon.Timestamp, inf info) {
 	}
 }
 
-// recordCmdStatsMetrics records metrics for a particlar Redis command.
+// recordCmdStatsMetrics records metrics for a particular Redis command.
 // Only 'calls' and 'usec' are recorded at the moment.
 // 'cmd' is the Redis command, 'val' is the values string (e.g. "calls=1685,usec=6032,usec_per_call=3.58,rejected_calls=0,failed_calls=0").
 func (rs *redisScraper) recordCmdStatsMetrics(ts pcommon.Timestamp, cmd, val string) {

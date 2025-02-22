@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
@@ -106,8 +107,7 @@ func TestValidateConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			err := test.conf.Validate()
-			require.Error(t, err)
-			require.Contains(t, err.Error(), test.expect.Error())
+			require.ErrorContains(t, err, test.expect.Error())
 		})
 	}
 }
@@ -141,7 +141,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	conf := factory.CreateDefaultConfig()
 	require.NoError(t, cmNoStr.Unmarshal(conf))
-	require.NoError(t, component.ValidateConfig(conf))
+	require.NoError(t, xconfmap.Validate(conf))
 
 	require.Equal(t, expect, conf)
 }

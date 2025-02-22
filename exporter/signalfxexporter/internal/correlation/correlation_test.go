@@ -14,13 +14,15 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 )
 
 func TestTrackerAddSpans(t *testing.T) {
 	tracker := NewTracker(
 		DefaultConfig(),
 		"abcd",
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 	)
 
 	err := tracker.Start(context.Background(), componenttest.NewNopHost())
@@ -44,7 +46,6 @@ func TestTrackerAddSpans(t *testing.T) {
 }
 
 func TestTrackerStart(t *testing.T) {
-
 	tests := []struct {
 		name    string
 		config  *Config
@@ -73,7 +74,7 @@ func TestTrackerStart(t *testing.T) {
 			tracker := NewTracker(
 				tt.config,
 				"abcd",
-				exportertest.NewNopSettings(),
+				exportertest.NewNopSettings(metadata.Type),
 			)
 
 			err := tracker.Start(context.Background(), componenttest.NewNopHost())
@@ -81,7 +82,7 @@ func TestTrackerStart(t *testing.T) {
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.errMsg != "" {
-					require.Contains(t, err.Error(), tt.errMsg)
+					require.ErrorContains(t, err, tt.errMsg)
 				}
 			} else {
 				require.NoError(t, err)

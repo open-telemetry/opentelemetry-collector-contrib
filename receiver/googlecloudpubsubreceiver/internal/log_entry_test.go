@@ -4,7 +4,6 @@
 package internal
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -15,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 )
 
 type Log struct {
@@ -64,22 +62,18 @@ func generateLog(t *testing.T, log Log) (pcommon.Resource, plog.LogRecord, error
 }
 
 func TestTranslateLogEntry(t *testing.T) {
-
 	tests := []struct {
 		input string
 		want  Log
 	}{
 		// TODO: Add publicly shareable log test data.
 	}
-
-	logger, _ := zap.NewDevelopment()
-
 	for _, tt := range tests {
 		var errs error
 		wantRes, wantLr, err := generateLog(t, tt.want)
 		errs = multierr.Append(errs, err)
 
-		gotRes, gotLr, err := TranslateLogEntry(context.TODO(), logger, []byte(tt.input))
+		gotRes, gotLr, err := TranslateLogEntry([]byte(tt.input))
 		errs = multierr.Append(errs, err)
 		errs = multierr.Combine(errs, compareResources(wantRes, gotRes), compareLogRecords(wantLr, gotLr))
 

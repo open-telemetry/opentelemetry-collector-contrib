@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 type logKeyValuePair struct {
@@ -43,7 +43,7 @@ func createLogData(numberOfLogs int) plog.Logs {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
 	rl := logs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().PutStr("resouceKey", "resourceValue")
+	rl.Resource().Attributes().PutStr("resourceKey", "resourceValue")
 	rl.Resource().Attributes().PutStr(conventions.AttributeServiceName, "test-log-service-exporter")
 	rl.Resource().Attributes().PutStr(conventions.AttributeHostName, "test-host")
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -102,7 +102,6 @@ func TestConvertLogs(t *testing.T) {
 			})
 		}
 		gotLogPairs = append(gotLogPairs, pairs)
-
 	}
 
 	wantLogs := make([][]logKeyValuePair, 0, validLogCount)

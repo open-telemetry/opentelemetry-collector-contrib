@@ -141,7 +141,7 @@ func testMetrics() pmetric.MetricSlice {
 
 	dp = dps.AppendEmpty()
 	attributes = pcommon.NewMap()
-	setDPDoubleVal(dp, 2, attributes, time.Date(1997, 07, 27, 1, 1, 1, 1, &time.Location{}))
+	setDPDoubleVal(dp, 2, attributes, time.Date(1997, 0o7, 27, 1, 1, 1, 1, &time.Location{}))
 	return slice
 }
 

@@ -297,73 +297,73 @@ func mockServer(t *testing.T) *httptest.Server {
 		authUser, authPass, ok := req.BasicAuth()
 		switch {
 		case !ok:
-			rw.WriteHeader(401)
+			rw.WriteHeader(http.StatusUnauthorized)
 			return
 		case authUser == user500:
-			rw.WriteHeader(500)
+			rw.WriteHeader(http.StatusInternalServerError)
 			return
 		case authUser != goodUser || authPass != goodPassword:
-			rw.WriteHeader(403)
+			rw.WriteHeader(http.StatusForbidden)
 			return
 		}
 
 		if req.URL.Path == "/api/v1/transport-nodes" {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(tNodeBytes)
 			assert.NoError(t, err)
 			return
 		}
 
 		if req.URL.Path == "/api/v1/cluster/nodes" {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(cNodeBytes)
 			assert.NoError(t, err)
 			return
 		}
 
 		if req.URL.Path == fmt.Sprintf("/api/v1/cluster/nodes/%s/network/interfaces", managerNode1) {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(mNodeInterfaces)
 			assert.NoError(t, err)
 			return
 		}
 
 		if req.URL.Path == fmt.Sprintf("/api/v1/transport-nodes/%s/status", transportNode1) {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(tNodeStatus)
 			assert.NoError(t, err)
 			return
 		}
 
 		if req.URL.Path == fmt.Sprintf("/api/v1/transport-nodes/%s/network/interfaces", transportNode1) {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(tNodeInterfaces)
 			assert.NoError(t, err)
 			return
 		}
 
 		if req.URL.Path == fmt.Sprintf("/api/v1/transport-nodes/%s/network/interfaces/%s/stats", transportNode1, transportNodeNic1) {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(tNodeInterfaceStats)
 			assert.NoError(t, err)
 			return
 		}
 
 		if req.URL.Path == fmt.Sprintf("/api/v1/cluster/nodes/%s/network/interfaces/%s/stats", managerNode1, managerNodeNic1) {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(mNodeInterfaceStats)
 			assert.NoError(t, err)
 			return
 		}
 
 		if req.URL.Path == fmt.Sprintf("/api/v1/cluster/nodes/%s/status", managerNode1) {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err = rw.Write(mNodeStatus)
 			assert.NoError(t, err)
 			return
 		}
 
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 	}))
 
 	return nsxMock

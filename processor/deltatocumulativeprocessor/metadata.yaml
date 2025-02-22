@@ -4,11 +4,10 @@ status:
   class: processor
   stability:
     alpha: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   warnings: [Statefulness]
   codeowners:
-    active: [sh0rez, RichieSams, jpkrohling]
-
+    active: [sh0rez, RichieSams]
 
 telemetry:
   metrics:
@@ -19,6 +18,14 @@ telemetry:
       sum:
         value_type: int
         monotonic: false
+      enabled: true
+    deltatocumulative.streams.tracked.linear:
+      description: number of streams tracked
+      unit: "{dps}"
+      sum:
+        value_type: int
+        monotonic: false
+        async: true
       enabled: true
     deltatocumulative.streams.limit:
       description: upper limit of tracked streams
@@ -49,6 +56,14 @@ telemetry:
       enabled: true
     deltatocumulative.datapoints.dropped:
       description: number of datapoints dropped due to given 'reason'
+      unit: "{datapoint}"
+      sum:
+        value_type: int
+        monotonic: true
+      enabled: true
+
+    deltatocumulative.datapoints.linear:
+      description: total number of datapoints processed. may have 'error' attribute, if processing failed
       unit: "{datapoint}"
       sum:
         value_type: int

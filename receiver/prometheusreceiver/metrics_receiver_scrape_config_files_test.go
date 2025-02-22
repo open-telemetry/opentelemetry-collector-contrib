@@ -4,7 +4,6 @@
 package prometheusreceiver
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -42,9 +41,9 @@ func TestScrapeConfigFiles(t *testing.T) {
 		marshalledScrapeConfigs, err := yaml.Marshal(cfg.PrometheusConfig.ScrapeConfigs)
 		require.NoError(t, err)
 		tmpDir := t.TempDir()
-		cfgFileName := fmt.Sprintf("%s/test-scrape-config.yaml", tmpDir)
-		scrapeConfigFileContent := fmt.Sprintf("scrape_configs:\n%s", string(marshalledScrapeConfigs))
-		err = os.WriteFile(cfgFileName, []byte(scrapeConfigFileContent), 0400)
+		cfgFileName := tmpDir + "/test-scrape-config.yaml"
+		scrapeConfigFileContent := "scrape_configs:\n" + string(marshalledScrapeConfigs)
+		err = os.WriteFile(cfgFileName, []byte(scrapeConfigFileContent), 0o400)
 		require.NoError(t, err)
 		cfg.PrometheusConfig.ScrapeConfigs = []*config.ScrapeConfig{}
 		cfg.PrometheusConfig.ScrapeConfigFiles = []string{cfgFileName}

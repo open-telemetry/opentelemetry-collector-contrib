@@ -11,12 +11,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -51,14 +53,13 @@ type metricsExporter struct {
 }
 
 func (e *metricsExporter) start(ctx context.Context, host component.Host) (err error) {
-
 	switch {
 	case !isEmpty(e.config.Metrics.Endpoint):
-		if e.clientConn, err = e.config.Metrics.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+		if e.clientConn, err = e.config.Metrics.ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 	case !isEmpty(e.config.Domain):
-		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 	}
@@ -77,7 +78,6 @@ func (e *metricsExporter) start(ctx context.Context, host component.Host) (err e
 }
 
 func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
-
 	rss := md.ResourceMetrics()
 	for i := 0; i < rss.Len(); i++ {
 		resourceMetric := rss.At(i)
@@ -86,9 +86,17 @@ func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) e
 		resourceMetric.Resource().Attributes().PutStr(cxSubsystemNameAttrName, subsystem)
 	}
 
-	_, err := e.metricExporter.Export(e.enhanceContext(ctx), pmetricotlp.NewExportRequestFromMetrics(md), e.callOptions...)
+	resp, err := e.metricExporter.Export(e.enhanceContext(ctx), pmetricotlp.NewExportRequestFromMetrics(md), e.callOptions...)
 	if err != nil {
 		return processError(err)
+	}
+
+	partialSuccess := resp.PartialSuccess()
+	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
+		e.settings.Logger.Error("Partial success response from Coralogix",
+			zap.String("message", partialSuccess.ErrorMessage()),
+			zap.Int64("rejected_data_points", partialSuccess.RejectedDataPoints()),
+		)
 	}
 
 	return nil

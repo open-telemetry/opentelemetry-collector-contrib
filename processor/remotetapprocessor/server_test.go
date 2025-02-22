@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"golang.org/x/net/websocket"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor/internal/metadata"
 )
 
 func TestSocketConnectionLogs(t *testing.T) {
@@ -28,7 +30,7 @@ func TestSocketConnectionLogs(t *testing.T) {
 		Limit: 1,
 	}
 	logSink := &consumertest.LogsSink{}
-	processor, err := NewFactory().CreateLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg,
+	processor, err := NewFactory().CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg,
 		logSink)
 	require.NoError(t, err)
 	err = processor.Start(context.Background(), componenttest.NewNopHost())
@@ -50,7 +52,7 @@ func TestSocketConnectionLogs(t *testing.T) {
 		n, _ := wsConn.Read(buf)
 		return n == 132
 	}, 1*time.Second, 100*time.Millisecond, "received message")
-	require.Equal(t, `{"resourceLogs":[{"resource":{},"scopeLogs":[{"scope":{},"logRecords":[{"body":{"stringValue":"foo"},"traceId":"","spanId":""}]}]}]}`, string(buf[0:132]))
+	require.JSONEq(t, `{"resourceLogs":[{"resource":{},"scopeLogs":[{"scope":{},"logRecords":[{"body":{"stringValue":"foo"},"traceId":"","spanId":""}]}]}]}`, string(buf[0:132]))
 
 	err = processor.Shutdown(context.Background())
 	require.NoError(t, err)
@@ -66,7 +68,7 @@ func TestSocketConnectionMetrics(t *testing.T) {
 		Limit: 1,
 	}
 	metricsSink := &consumertest.MetricsSink{}
-	processor, err := NewFactory().CreateMetricsProcessor(context.Background(), processortest.NewNopSettings(), cfg,
+	processor, err := NewFactory().CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg,
 		metricsSink)
 	require.NoError(t, err)
 	err = processor.Start(context.Background(), componenttest.NewNopHost())
@@ -86,7 +88,7 @@ func TestSocketConnectionMetrics(t *testing.T) {
 		n, _ := wsConn.Read(buf)
 		return n == 94
 	}, 1*time.Second, 100*time.Millisecond, "received message")
-	require.Equal(t, `{"resourceMetrics":[{"resource":{},"scopeMetrics":[{"scope":{},"metrics":[{"name":"foo"}]}]}]}`, string(buf[0:94]))
+	require.JSONEq(t, `{"resourceMetrics":[{"resource":{},"scopeMetrics":[{"scope":{},"metrics":[{"name":"foo"}]}]}]}`, string(buf[0:94]))
 
 	err = processor.Shutdown(context.Background())
 	require.NoError(t, err)
@@ -102,7 +104,7 @@ func TestSocketConnectionTraces(t *testing.T) {
 		Limit: 1,
 	}
 	tracesSink := &consumertest.TracesSink{}
-	processor, err := NewFactory().CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg,
+	processor, err := NewFactory().CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg,
 		tracesSink)
 	require.NoError(t, err)
 	err = processor.Start(context.Background(), componenttest.NewNopHost())
@@ -122,7 +124,7 @@ func TestSocketConnectionTraces(t *testing.T) {
 		n, _ := wsConn.Read(buf)
 		return n == 143
 	}, 1*time.Second, 100*time.Millisecond, "received message")
-	require.Equal(t, `{"resourceSpans":[{"resource":{},"scopeSpans":[{"scope":{},"spans":[{"traceId":"","spanId":"","parentSpanId":"","name":"foo","status":{}}]}]}]}`, string(buf[0:143]))
+	require.JSONEq(t, `{"resourceSpans":[{"resource":{},"scopeSpans":[{"scope":{},"spans":[{"traceId":"","spanId":"","parentSpanId":"","name":"foo","status":{}}]}]}]}`, string(buf[0:143]))
 
 	err = processor.Shutdown(context.Background())
 	require.NoError(t, err)

@@ -16,4 +16,7 @@ const (
 	// TracerVersion specifies the name of the header which contains the version
 	// of the tracer sending the payload.
 	TracerVersion = "Datadog-Meta-Tracer-Version"
+
+	// ContainerID specifies uuid of the container.
+	ContainerID = "Datadog-Container-Id"
 )

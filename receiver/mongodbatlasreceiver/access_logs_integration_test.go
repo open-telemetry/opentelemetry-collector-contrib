@@ -19,10 +19,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 func TestAccessLogsIntegration(t *testing.T) {
@@ -57,9 +58,9 @@ func TestAccessLogsIntegration(t *testing.T) {
 	sink := &consumertest.LogsSink{}
 	fact := NewFactory()
 
-	recv, err := fact.CreateLogsReceiver(
+	recv, err := fact.CreateLogs(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			Logs: LogConfig{

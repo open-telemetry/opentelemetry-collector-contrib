@@ -17,8 +17,7 @@ func TestOutputConfigMissingBase(t *testing.T) {
 	config := OutputConfig{}
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "missing required `type` field.")
+	require.ErrorContains(t, err, "missing required `type` field.")
 }
 
 func TestOutputConfigBuildValid(t *testing.T) {
@@ -84,6 +83,5 @@ func TestOutputOperatorSetOutputs(t *testing.T) {
 	}
 
 	err := output.SetOutputs([]operator.Operator{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "Operator can not output")
+	require.ErrorContains(t, err, "Operator can not output")
 }

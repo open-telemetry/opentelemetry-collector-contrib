@@ -4,13 +4,18 @@
 package deltatocumulativeprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor"
 
 import (
+	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
+
+	telemetry "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/telemetry"
 )
 
-var _ component.ConfigValidator = (*Config)(nil)
+var _ xconfmap.Validator = (*Config)(nil)
 
 type Config struct {
 	MaxStale   time.Duration `mapstructure:"max_stale"`
@@ -31,8 +36,14 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		MaxStale: 5 * time.Minute,
 
-		// disable. TODO: find good default
+		// TODO: find good default
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31603
-		MaxStreams: 0,
+		MaxStreams: math.MaxInt,
 	}
+}
+
+func (c Config) Metrics(tel telemetry.Metrics) {
+	ctx := context.Background()
+	tel.DeltatocumulativeStreamsMaxStale.Record(ctx, int64(c.MaxStale.Seconds()))
+	tel.DeltatocumulativeStreamsLimit.Record(ctx, int64(c.MaxStreams))
 }

@@ -1,0 +1,163 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeMetrics:
+      - metrics:
+          - description: Data point sum by attribute with default
+            name: datapoint.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "24"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: foo
+                    - key: datapoint.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678391923822404000"
+                - asDouble: "12"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: notfoo
+                    - key: datapoint.optional
+                      value:
+                        stringValue: other
+                  timeUnixNano: "1678391923822404000"
+                - asDouble: "21"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: foo
+                    - key: datapoint.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678391923822404000"
+              isMonotonic: true
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: notbar
+    scopeMetrics:
+      - metrics:
+          - description: Data point sum by attribute with default
+            name: datapoint.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "25.2"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: foo
+                    - key: datapoint.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678391923822416000"
+                - asDouble: "24"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: foo
+                    - key: datapoint.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678391923822416000"
+                - asDouble: "12"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: notfoo
+                    - key: datapoint.optional
+                      value:
+                        stringValue: other
+                  timeUnixNano: "1678391923822416000"
+              isMonotonic: true
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: notfoo
+    scopeMetrics:
+      - metrics:
+          - description: Data point sum by attribute with default
+            name: datapoint.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "25.2"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: foo
+                    - key: datapoint.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678391923822426000"
+                - asDouble: "24"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: foo
+                    - key: datapoint.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678391923822426000"
+                - asDouble: "12"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: notfoo
+                    - key: datapoint.optional
+                      value:
+                        stringValue: other
+                  timeUnixNano: "1678391923822426000"
+              isMonotonic: true
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Data point sum by attribute with default
+            name: datapoint.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "24"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: foo
+                    - key: datapoint.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678391923822435000"
+                - asDouble: "12"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: notfoo
+                    - key: datapoint.optional
+                      value:
+                        stringValue: other
+                  timeUnixNano: "1678391923822435000"
+                - asDouble: "25.2"
+                  attributes:
+                    - key: datapoint.required
+                      value:
+                        stringValue: foo
+                    - key: datapoint.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678391923822435000"
+              isMonotonic: true

@@ -74,7 +74,7 @@ func Test_Time(t *testing.T) {
 				},
 			},
 			format:   "%b %d %Y %H:%M:%S",
-			expected: time.Date(2023, 3, 14, 17, 02, 59, 0, time.Local),
+			expected: time.Date(2023, 3, 14, 17, 0o2, 59, 0, time.Local),
 		},
 		{
 			name: "day of the week long form",
@@ -134,7 +134,7 @@ func Test_Time(t *testing.T) {
 				},
 			},
 			format:   "%Y-%m-%dT%H:%M:%S%z %Z",
-			expected: time.Date(2012, 11, 01, 22, 8, 41, 0, time.FixedZone("EST", 0)),
+			expected: time.Date(2012, 11, 0o1, 22, 8, 41, 0, time.FixedZone("EST", 0)),
 		},
 		{
 			name: "RFC 3339 in custom format before 2000",
@@ -144,7 +144,7 @@ func Test_Time(t *testing.T) {
 				},
 			},
 			format:   "%Y-%m-%dT%H:%M:%S %Z",
-			expected: time.Date(1986, 10, 01, 00, 17, 33, 00, time.FixedZone("MST", -7*60*60)),
+			expected: time.Date(1986, 10, 0o1, 0o0, 17, 33, 0o0, time.FixedZone("MST", -7*60*60)),
 		},
 		{
 			name: "no location",
@@ -154,7 +154,7 @@ func Test_Time(t *testing.T) {
 				},
 			},
 			format:   "%Y/%m/%d",
-			expected: time.Date(2022, 01, 01, 0, 0, 0, 0, time.Local),
+			expected: time.Date(2022, 0o1, 0o1, 0, 0, 0, 0, time.Local),
 		},
 		{
 			name: "with location - America",
@@ -187,7 +187,7 @@ func Test_Time(t *testing.T) {
 			},
 			location: "Asia/Shanghai",
 			format:   "%Y-%m-%dT%H:%M:%S %Z",
-			expected: time.Date(1986, 10, 01, 00, 17, 33, 00, time.FixedZone("MST", -7*60*60)),
+			expected: time.Date(1986, 10, 0o1, 0o0, 17, 33, 0o0, time.FixedZone("MST", -7*60*60)),
 		},
 		{
 			name: "with locale",
@@ -198,7 +198,7 @@ func Test_Time(t *testing.T) {
 			},
 			format:   "%B %d %A, %Y, %r",
 			locale:   "es-ES",
-			expected: time.Date(2002, 2, 25, 14, 03, 04, 0, time.Local),
+			expected: time.Date(2002, 2, 25, 14, 0o3, 0o4, 0, time.Local),
 		},
 		{
 			name: "with locale - date only",
@@ -221,7 +221,7 @@ func Test_Time(t *testing.T) {
 			format:   "%B %d %A, %Y, %r",
 			location: "America/New_York",
 			locale:   "es-ES",
-			expected: time.Date(2002, 2, 25, 14, 03, 04, 0, locationAmericaNewYork),
+			expected: time.Date(2002, 2, 25, 14, 0o3, 0o4, 0, locationAmericaNewYork),
 		},
 	}
 	for _, tt := range tests {
@@ -400,7 +400,7 @@ func Benchmark_Time(t *testing.B) {
 				},
 			},
 			format:   "%b %d %Y %H:%M:%S",
-			expected: time.Date(2023, 3, 14, 17, 02, 59, 0, time.Local),
+			expected: time.Date(2023, 3, 14, 17, 0o2, 59, 0, time.Local),
 		},
 		{
 			name: "day of the week long form",
@@ -460,7 +460,7 @@ func Benchmark_Time(t *testing.B) {
 				},
 			},
 			format:   "%Y-%m-%dT%H:%M:%S%z %Z",
-			expected: time.Date(2012, 11, 01, 22, 8, 41, 0, time.FixedZone("EST", 0)),
+			expected: time.Date(2012, 11, 0o1, 22, 8, 41, 0, time.FixedZone("EST", 0)),
 		},
 		{
 			name: "RFC 3339 in custom format before 2000",
@@ -470,7 +470,7 @@ func Benchmark_Time(t *testing.B) {
 				},
 			},
 			format:   "%Y-%m-%dT%H:%M:%S %Z",
-			expected: time.Date(1986, 10, 01, 00, 17, 33, 00, time.FixedZone("MST", -7*60*60)),
+			expected: time.Date(1986, 10, 0o1, 0o0, 17, 33, 0o0, time.FixedZone("MST", -7*60*60)),
 		},
 		{
 			name: "no location",
@@ -480,7 +480,7 @@ func Benchmark_Time(t *testing.B) {
 				},
 			},
 			format:   "%Y/%m/%d",
-			expected: time.Date(2022, 01, 01, 0, 0, 0, 0, time.Local),
+			expected: time.Date(2022, 0o1, 0o1, 0, 0, 0, 0, time.Local),
 		},
 		{
 			name: "with location - America",
@@ -513,7 +513,7 @@ func Benchmark_Time(t *testing.B) {
 			},
 			location: "Asia/Shanghai",
 			format:   "%Y-%m-%dT%H:%M:%S %Z",
-			expected: time.Date(1986, 10, 01, 00, 17, 33, 00, time.FixedZone("MST", -7*60*60)),
+			expected: time.Date(1986, 10, 0o1, 0o0, 17, 33, 0o0, time.FixedZone("MST", -7*60*60)),
 		},
 	}
 	for _, tt := range tests {

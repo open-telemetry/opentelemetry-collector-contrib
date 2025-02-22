@@ -54,7 +54,7 @@ type Config struct {
 	RemoteProfile string `mapstructure:"remote_profile"`
 	// The SASL/DIGEST-MD5 realm
 	Realm string `mapstructure:"realm"`
-	// Array of additional JARs to be added to the the class path when launching the JMX Metric Gatherer JAR
+	// Array of additional JARs to be added to the class path when launching the JMX Metric Gatherer JAR
 	AdditionalJars []string `mapstructure:"additional_jars"`
 	// Map of resource attributes used by the Java SDK Autoconfigure to set resource attributes
 	ResourceAttributes map[string]string `mapstructure:"resource_attributes"`
@@ -101,7 +101,7 @@ func (c *Config) parseProperties(logger *zap.Logger) []string {
 		logLevel = getZapLoggerLevelEquivalent(logger)
 	}
 
-	parsed = append(parsed, fmt.Sprintf("-Dorg.slf4j.simpleLogger.defaultLogLevel=%s", logLevel))
+	parsed = append(parsed, "-Dorg.slf4j.simpleLogger.defaultLogLevel="+logLevel)
 	// Sorted for testing and reproducibility
 	sort.Strings(parsed)
 	return parsed
@@ -196,9 +196,13 @@ func (c *Config) validateJar(supportedJarDetails map[string]supportedJar, jar st
 	return nil
 }
 
-var validLogLevels = map[string]struct{}{"trace": {}, "debug": {}, "info": {}, "warn": {}, "error": {}, "off": {}}
-var validTargetSystems = map[string]struct{}{"activemq": {}, "cassandra": {}, "hbase": {}, "hadoop": {},
-	"jetty": {}, "jvm": {}, "kafka": {}, "kafka-consumer": {}, "kafka-producer": {}, "solr": {}, "tomcat": {}, "wildfly": {}}
+var (
+	validLogLevels     = map[string]struct{}{"trace": {}, "debug": {}, "info": {}, "warn": {}, "error": {}, "off": {}}
+	validTargetSystems = map[string]struct{}{
+		"activemq": {}, "cassandra": {}, "hbase": {}, "hadoop": {},
+		"jetty": {}, "jvm": {}, "kafka": {}, "kafka-consumer": {}, "kafka-producer": {}, "solr": {}, "tomcat": {}, "wildfly": {},
+	}
+)
 var AdditionalTargetSystems = "n/a"
 
 // Separated into two functions for tests

@@ -1,0 +1,44 @@
+-- in --
+resourceMetrics:
+  - schemaUrl: https://test.com/resource
+    scopeMetrics:
+      - schemaUrl: https://test.com/scope
+        scope:
+          name: Test
+          version: 1.2.3
+        metrics:
+          - name: sum
+            sum:
+              aggregationTemporality: 1 # delta
+              dataPoints:
+                - {startTimeUnixNano: 1000, timeUnixNano: 1100, asDouble: 0}
+                - {startTimeUnixNano: 1100, timeUnixNano: 1200, asDouble: 0}
+              # - {startTimeUnixNano: 1200, timeUnixNano: 1300, asDouble: 0}
+                - {startTimeUnixNano: 1300, timeUnixNano: 1400, asDouble: 0} # gap (previous sample missing): accept
+                - {startTimeUnixNano: 1200, timeUnixNano: 1300, asDouble: 0} # out of order: drop
+                - {startTimeUnixNano:  500, timeUnixNano:  550, asDouble: 0} # belongs to older series: drop
+
+-- out --
+resourceMetrics:
+  - schemaUrl: https://test.com/resource
+    scopeMetrics:
+      - schemaUrl: https://test.com/scope
+        scope:
+          name: Test
+          version: 1.2.3
+        metrics:
+          - name: sum
+            sum:
+              aggregationTemporality: 2 # cumulative
+              dataPoints:
+                - {startTimeUnixNano: 1000, timeUnixNano: 1100, asDouble: 0}
+                - {startTimeUnixNano: 1000, timeUnixNano: 1200, asDouble: 0}
+                - {startTimeUnixNano: 1000, timeUnixNano: 1400, asDouble: 0}
+
+-- telemetry --
+counter otelcol_deltatocumulative.datapoints.linear:
+- int: 3
+- attr: {error: "delta.ErrOutOfOrder"}
+  int: 1
+- attr: {error: "delta.ErrOlderStart"}
+  int: 1

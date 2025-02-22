@@ -4,7 +4,7 @@
 package mezmoexporter
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -40,7 +40,7 @@ func TestTruncateString(t *testing.T) {
 
 func TestRandString(t *testing.T) {
 	t.Run("Test fixed length string", func(t *testing.T) {
-		var s = randString(16 * 1024)
+		s := randString(16 * 1024)
 		require.Len(t, s, 16*1024)
 	})
 }
@@ -51,7 +51,7 @@ const letters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 func randString(n int) string {
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+		b[i] = letters[rand.IntN(len(letters))]
 	}
 	return string(b)
 }

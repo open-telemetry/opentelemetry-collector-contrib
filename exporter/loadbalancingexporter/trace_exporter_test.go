@@ -7,9 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"net"
-	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -23,11 +22,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
@@ -51,7 +48,7 @@ func TestNewTracesExporter(t *testing.T) {
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			// test
-			_, err := newTracesExporter(exportertest.NewNopSettings(), tt.config)
+			_, err := newTracesExporter(exportertest.NewNopSettings(metadata.Type), tt.config)
 
 			// verify
 			require.Equal(t, tt.err, err)
@@ -68,7 +65,7 @@ func TestTracesExporterStart(t *testing.T) {
 		{
 			"ok",
 			func() *traceExporterImp {
-				p, _ := newTracesExporter(exportertest.NewNopSettings(), simpleConfig())
+				p, _ := newTracesExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
 				return p
 			}(),
 			nil,
@@ -108,7 +105,7 @@ func TestTracesExporterStart(t *testing.T) {
 }
 
 func TestTracesExporterShutdown(t *testing.T) {
-	p, err := newTracesExporter(exportertest.NewNopSettings(), simpleConfig())
+	p, err := newTracesExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -163,13 +160,13 @@ func TestConsumeTraces_ConcurrentResolverChange(t *testing.T) {
 	consumeDone := make(chan struct{})
 
 	// imitate a slow exporter
-	te := &mockTracesExporter{Component: mockComponent{}}
-	te.ConsumeTracesFn = func(_ context.Context, _ ptrace.Traces) error {
-		close(consumeStarted)
-		time.Sleep(50 * time.Millisecond)
-		return te.consumeErr
-	}
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		te := &mockTracesExporter{Component: mockComponent{}}
+		te.ConsumeTracesFn = func(_ context.Context, _ ptrace.Traces) error {
+			close(consumeStarted)
+			time.Sleep(50 * time.Millisecond)
+			return te.consumeErr
+		}
 		return te, nil
 	}
 	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
@@ -347,35 +344,6 @@ func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
 	// verify
 	assert.Error(t, res)
 	assert.EqualError(t, res, fmt.Sprintf("unable to export traces, unexpected exporter type: expected exporter.Traces but got %T", newNopMockExporter()))
-}
-
-func TestBuildExporterConfig(t *testing.T) {
-	// prepare
-	factories, err := otelcoltest.NopFactories()
-	require.NoError(t, err)
-
-	factories.Exporters[metadata.Type] = NewFactory()
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
-	// nolint:staticcheck
-	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "test-build-exporter-config.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	c := cfg.Exporters[component.NewID(metadata.Type)]
-	require.NotNil(t, c)
-
-	// test
-	defaultCfg := otlpexporter.NewFactory().CreateDefaultConfig().(*otlpexporter.Config)
-	exporterCfg := buildExporterConfig(c.(*Config), "the-endpoint")
-
-	// verify
-	grpcSettings := defaultCfg.ClientConfig
-	grpcSettings.Endpoint = "the-endpoint"
-	assert.Equal(t, grpcSettings, exporterCfg.ClientConfig)
-
-	assert.Equal(t, defaultCfg.TimeoutConfig, exporterCfg.TimeoutConfig)
-	assert.Equal(t, defaultCfg.QueueConfig, exporterCfg.QueueConfig)
-	assert.Equal(t, defaultCfg.RetryConfig, exporterCfg.RetryConfig)
 }
 
 func TestBatchWithTwoTraces(t *testing.T) {
@@ -617,7 +585,7 @@ func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
 	require.NotNil(b, lb)
 	require.NoError(b, err)
 
-	p, err := newTracesExporter(exportertest.NewNopSettings(), config)
+	p, err := newTracesExporter(exportertest.NewNopSettings(metadata.Type), config)
 	require.NotNil(b, p)
 	require.NoError(b, err)
 
@@ -680,10 +648,10 @@ func BenchmarkConsumeTraces_10E1000T(b *testing.B) {
 }
 
 func randomTraces() ptrace.Traces {
-	v1 := uint8(rand.Intn(256))
-	v2 := uint8(rand.Intn(256))
-	v3 := uint8(rand.Intn(256))
-	v4 := uint8(rand.Intn(256))
+	v1 := uint8(rand.IntN(256))
+	v2 := uint8(rand.IntN(256))
+	v3 := uint8(rand.IntN(256))
+	v4 := uint8(rand.IntN(256))
 	traces := ptrace.NewTraces()
 	appendSimpleTraceWithID(traces.ResourceSpans().AppendEmpty(), [16]byte{v1, v2, v3, v4})
 	return traces

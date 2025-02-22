@@ -13,7 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 )
 
@@ -72,7 +72,6 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 	rawName = sanitize(rawName)
 	absoluteName := filepath.Join(lfs.cfg.Directory, rawName)
 	client, err := newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
-
 	if err != nil {
 		return nil, err
 	}

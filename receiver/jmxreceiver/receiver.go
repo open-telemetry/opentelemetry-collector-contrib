@@ -155,7 +155,7 @@ func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
 		}
 		defer listener.Close()
 		addr := listener.Addr().(*net.TCPAddr)
-		port = fmt.Sprintf("%d", addr.Port)
+		port = strconv.Itoa(addr.Port)
 		endpoint = fmt.Sprintf("%s:%s", host, port)
 		jmx.config.OTLPExporterConfig.Endpoint = endpoint
 	}
@@ -165,7 +165,7 @@ func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
 	config.GRPC.NetAddr = confignet.AddrConfig{Endpoint: endpoint, Transport: confignet.TransportTypeTCP}
 	config.HTTP = nil
 
-	return factory.CreateMetricsReceiver(context.Background(), jmx.params, config, jmx.nextConsumer)
+	return factory.CreateMetrics(context.Background(), jmx.params, config, jmx.nextConsumer)
 }
 
 func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
@@ -194,7 +194,7 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 
 	endpoint := jmx.config.OTLPExporterConfig.Endpoint
 	if !strings.HasPrefix(endpoint, "http") {
-		endpoint = fmt.Sprintf("http://%s", endpoint)
+		endpoint = "http://" + endpoint
 	}
 
 	config["otel.metrics.exporter"] = "otlp"

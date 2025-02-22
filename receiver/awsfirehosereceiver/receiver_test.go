@@ -10,9 +10,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -21,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 )
 
 const (
@@ -39,8 +43,14 @@ func newNopFirehoseConsumer(statusCode int, err error) *nopFirehoseConsumer {
 	return &nopFirehoseConsumer{statusCode, err}
 }
 
-func (nfc *nopFirehoseConsumer) Consume(context.Context, [][]byte, map[string]string) (int, error) {
+func (nfc *nopFirehoseConsumer) Consume(context.Context, nextRecordFunc, map[string]string) (int, error) {
 	return nfc.statusCode, nfc.err
+}
+
+type firehoseConsumerFunc func(context.Context, nextRecordFunc, map[string]string) (int, error)
+
+func (f firehoseConsumerFunc) Consume(ctx context.Context, next nextRecordFunc, common map[string]string) (int, error) {
+	return f(ctx, next, common)
 }
 
 func TestStart(t *testing.T) {
@@ -57,11 +67,9 @@ func TestStart(t *testing.T) {
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			cfg := &Config{
-				RecordType: defaultRecordType,
-			}
+			cfg := &Config{}
 			ctx := context.TODO()
-			r := testFirehoseReceiver(cfg, nil)
+			r := testFirehoseReceiver(cfg, &nopFirehoseConsumer{})
 			got := r.Start(ctx, testCase.host)
 			require.Equal(t, testCase.wantErr, got)
 			if r.server != nil {
@@ -76,13 +84,12 @@ func TestStart(t *testing.T) {
 			require.NoError(t, listener.Close())
 		})
 		cfg := &Config{
-			RecordType: defaultRecordType,
 			ServerConfig: confighttp.ServerConfig{
 				Endpoint: listener.Addr().String(),
 			},
 		}
 		ctx := context.TODO()
-		r := testFirehoseReceiver(cfg, nil)
+		r := testFirehoseReceiver(cfg, &nopFirehoseConsumer{})
 		got := r.Start(ctx, componenttest.NewNopHost())
 		require.Error(t, got)
 		if r.server != nil {
@@ -95,8 +102,7 @@ func TestFirehoseRequest(t *testing.T) {
 	defaultConsumer := newNopFirehoseConsumer(http.StatusOK, nil)
 	firehoseConsumerErr := errors.New("firehose consumer error")
 	cfg := &Config{
-		RecordType: defaultRecordType,
-		AccessKey:  testFirehoseAccessKey,
+		AccessKey: testFirehoseAccessKey,
 	}
 	var noRecords []firehoseRecord
 	testCases := map[string]struct {
@@ -147,11 +153,6 @@ func TestFirehoseRequest(t *testing.T) {
 			wantStatusCode: http.StatusBadRequest,
 			wantErr:        errInBodyDiffRequestID,
 		},
-		"WithInvalidBody": {
-			body:           "{ test: ",
-			wantStatusCode: http.StatusBadRequest,
-			wantErr:        errors.New("json: cannot unmarshal string into Go value of type awsfirehosereceiver.firehoseRequest"),
-		},
 		"WithNoRecords": {
 			body:           testFirehoseRequest(testFirehoseRequestID, noRecords),
 			wantStatusCode: http.StatusOK,
@@ -165,6 +166,12 @@ func TestFirehoseRequest(t *testing.T) {
 		"WithCorruptBase64Records": {
 			body: testFirehoseRequest(testFirehoseRequestID, []firehoseRecord{
 				{Data: "XXXXXaGVsbG8="},
+			}),
+			consumer: firehoseConsumerFunc(func(_ context.Context, next nextRecordFunc, _ map[string]string) (int, error) {
+				if _, err := next(); err != nil {
+					return http.StatusBadRequest, err
+				}
+				return http.StatusOK, nil
 			}),
 			wantStatusCode: http.StatusBadRequest,
 			wantErr:        fmt.Errorf("unable to base64 decode the record at index 0: %w", base64.CorruptInputError(12)),
@@ -190,13 +197,7 @@ func TestFirehoseRequest(t *testing.T) {
 			body, err := json.Marshal(testCase.body)
 			require.NoError(t, err)
 
-			requestBody := bytes.NewBuffer(body)
-
-			request := httptest.NewRequest("POST", "/", requestBody)
-			request.Header.Set(headerContentType, "application/json")
-			request.Header.Set(headerContentLength, fmt.Sprintf("%d", requestBody.Len()))
-			request.Header.Set(headerFirehoseRequestID, testFirehoseRequestID)
-			request.Header.Set(headerFirehoseAccessKey, testFirehoseAccessKey)
+			request := newTestRequest(body)
 			if testCase.headers != nil {
 				for k, v := range testCase.headers {
 					request.Header.Set(k, v)
@@ -232,13 +233,39 @@ func TestFirehoseRequest(t *testing.T) {
 	}
 }
 
+// TestFirehoseRequestInvalidJSON is tested separately from TestFirehoseRequest
+// because the error message is highly dependent on the JSON decoding library used,
+// so we don't do an exact match.
+func TestFirehoseRequestInvalidJSON(t *testing.T) {
+	consumer := newNopFirehoseConsumer(http.StatusOK, nil)
+	r := testFirehoseReceiver(&Config{}, consumer)
+
+	got := httptest.NewRecorder()
+	r.ServeHTTP(got, newTestRequest([]byte("{ test: ")))
+	require.Equal(t, http.StatusBadRequest, got.Code)
+
+	var gotResponse firehoseResponse
+	require.NoError(t, json.Unmarshal(got.Body.Bytes(), &gotResponse))
+	require.Equal(t, testFirehoseRequestID, gotResponse.RequestID)
+	require.Regexp(t, gotResponse.ErrorMessage, `awsfirehosereceiver\.firehoseRequest\.ReadStringAsSlice: expects .*`)
+}
+
 // testFirehoseReceiver is a convenience function for creating a test firehoseReceiver
 func testFirehoseReceiver(config *Config, consumer firehoseConsumer) *firehoseReceiver {
 	return &firehoseReceiver{
-		settings: receivertest.NewNopSettings(),
+		settings: receivertest.NewNopSettings(metadata.Type),
 		config:   config,
 		consumer: consumer,
 	}
+}
+
+func newTestRequest(requestBody []byte) *http.Request {
+	request := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(requestBody))
+	request.Header.Set(headerContentType, "application/json")
+	request.Header.Set(headerContentLength, strconv.Itoa(len(requestBody)))
+	request.Header.Set(headerFirehoseRequestID, testFirehoseRequestID)
+	request.Header.Set(headerFirehoseAccessKey, testFirehoseAccessKey)
+	return request
 }
 
 func testFirehoseRequest(requestID string, records []firehoseRecord) firehoseRequest {
@@ -252,4 +279,15 @@ func testFirehoseRequest(requestID string, records []firehoseRecord) firehoseReq
 func testFirehoseRecord(data string) firehoseRecord {
 	encoded := base64.StdEncoding.EncodeToString([]byte(data))
 	return firehoseRecord{Data: encoded}
+}
+
+func newNextRecordFunc(records [][]byte) nextRecordFunc {
+	return func() ([]byte, error) {
+		if len(records) == 0 {
+			return nil, io.EOF
+		}
+		next := records[0]
+		records = records[1:]
+		return next, nil
+	}
 }

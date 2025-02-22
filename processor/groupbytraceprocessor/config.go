@@ -9,7 +9,6 @@ import (
 
 // Config is the configuration for the processor.
 type Config struct {
-
 	// NumTraces is the max number of traces to keep in memory waiting for the duration.
 	// Default: 1_000_000.
 	NumTraces int `mapstructure:"num_traces"`

@@ -11,13 +11,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 )
 
 func TestNextToken(t *testing.T) {
 	s, testCalls := sinkTest(t)
 	for _, c := range testCalls {
 		token := s.NextToken(t)
-		assert.Equal(t, c.Token, token)
+		assert.Equal(t, c.Body, token)
 	}
 }
 
@@ -25,7 +27,7 @@ func TestNextTokenTimeout(t *testing.T) {
 	s, testCalls := sinkTest(t, WithTimeout(10*time.Millisecond))
 	for _, c := range testCalls {
 		token := s.NextToken(t)
-		assert.Equal(t, c.Token, token)
+		assert.Equal(t, c.Body, token)
 	}
 
 	// Create a new T so we can expect it to fail without failing the overall test.
@@ -38,8 +40,8 @@ func TestNextTokens(t *testing.T) {
 	s, testCalls := sinkTest(t)
 	for i := 0; i < 5; i++ {
 		tokens := s.NextTokens(t, 2)
-		assert.Equal(t, testCalls[2*i].Token, tokens[0])
-		assert.Equal(t, testCalls[2*i+1].Token, tokens[1])
+		assert.Equal(t, testCalls[2*i].Body, tokens[0])
+		assert.Equal(t, testCalls[2*i+1].Body, tokens[1])
 	}
 }
 
@@ -47,8 +49,8 @@ func TestNextTokensTimeout(t *testing.T) {
 	s, testCalls := sinkTest(t, WithTimeout(10*time.Millisecond))
 	for i := 0; i < 5; i++ {
 		tokens := s.NextTokens(t, 2)
-		assert.Equal(t, testCalls[2*i].Token, tokens[0])
-		assert.Equal(t, testCalls[2*i+1].Token, tokens[1])
+		assert.Equal(t, testCalls[2*i].Body, tokens[0])
+		assert.Equal(t, testCalls[2*i+1].Body, tokens[1])
 	}
 
 	// Create a new T so we can expect it to fail without failing the overall test.
@@ -61,8 +63,8 @@ func TestNextCall(t *testing.T) {
 	s, testCalls := sinkTest(t)
 	for _, c := range testCalls {
 		token, attributes := s.NextCall(t)
-		require.Equal(t, c.Token, token)
-		require.Equal(t, c.Attrs, attributes)
+		require.Equal(t, c.Body, token)
+		require.Equal(t, c.Attributes, attributes)
 	}
 }
 
@@ -70,8 +72,8 @@ func TestNextCallTimeout(t *testing.T) {
 	s, testCalls := sinkTest(t, WithTimeout(10*time.Millisecond))
 	for _, c := range testCalls {
 		token, attributes := s.NextCall(t)
-		require.Equal(t, c.Token, token)
-		require.Equal(t, c.Attrs, attributes)
+		require.Equal(t, c.Body, token)
+		require.Equal(t, c.Attributes, attributes)
 	}
 
 	// Create a new T so we can expect it to fail without failing the overall test.
@@ -83,14 +85,14 @@ func TestNextCallTimeout(t *testing.T) {
 func TestExpectToken(t *testing.T) {
 	s, testCalls := sinkTest(t)
 	for _, c := range testCalls {
-		s.ExpectToken(t, c.Token)
+		s.ExpectToken(t, c.Body)
 	}
 }
 
 func TestExpectTokenTimeout(t *testing.T) {
 	s, testCalls := sinkTest(t, WithTimeout(10*time.Millisecond))
 	for _, c := range testCalls {
-		s.ExpectToken(t, c.Token)
+		s.ExpectToken(t, c.Body)
 	}
 
 	// Create a new T so we can expect it to fail without failing the overall test.
@@ -102,14 +104,14 @@ func TestExpectTokenTimeout(t *testing.T) {
 func TestExpectTokens(t *testing.T) {
 	s, testCalls := sinkTest(t)
 	for i := 0; i < 5; i++ {
-		s.ExpectTokens(t, testCalls[2*i].Token, testCalls[2*i+1].Token)
+		s.ExpectTokens(t, testCalls[2*i].Body, testCalls[2*i+1].Body)
 	}
 }
 
 func TestExpectTokensTimeout(t *testing.T) {
 	s, testCalls := sinkTest(t, WithTimeout(10*time.Millisecond))
 	for i := 0; i < 5; i++ {
-		s.ExpectTokens(t, testCalls[2*i].Token, testCalls[2*i+1].Token)
+		s.ExpectTokens(t, testCalls[2*i].Body, testCalls[2*i+1].Body)
 	}
 
 	// Create a new T so we can expect it to fail without failing the overall test.
@@ -121,14 +123,14 @@ func TestExpectTokensTimeout(t *testing.T) {
 func TestExpectCall(t *testing.T) {
 	s, testCalls := sinkTest(t)
 	for _, c := range testCalls {
-		s.ExpectCall(t, c.Token, c.Attrs)
+		s.ExpectCall(t, c.Body, c.Attributes)
 	}
 }
 
 func TestExpectCallTimeout(t *testing.T) {
 	s, testCalls := sinkTest(t, WithTimeout(10*time.Millisecond))
 	for _, c := range testCalls {
-		s.ExpectCall(t, c.Token, c.Attrs)
+		s.ExpectCall(t, c.Body, c.Attributes)
 	}
 
 	// Create a new T so we can expect it to fail without failing the overall test.
@@ -139,7 +141,7 @@ func TestExpectCallTimeout(t *testing.T) {
 
 func TestExpectCalls(t *testing.T) {
 	s, testCalls := sinkTest(t)
-	testCallsOutOfOrder := make([]*Call, 0, 10)
+	testCallsOutOfOrder := make([]emit.Token, 0, 10)
 	for i := 0; i < len(testCalls); i += 2 {
 		testCallsOutOfOrder = append(testCallsOutOfOrder, testCalls[i])
 	}
@@ -151,7 +153,7 @@ func TestExpectCalls(t *testing.T) {
 
 func TestExpectCallsTimeout(t *testing.T) {
 	s, testCalls := sinkTest(t, WithTimeout(10*time.Millisecond))
-	testCallsOutOfOrder := make([]*Call, 0, 10)
+	testCallsOutOfOrder := make([]emit.Token, 0, 10)
 	for i := 0; i < len(testCalls); i += 2 {
 		testCallsOutOfOrder = append(testCallsOutOfOrder, testCalls[i])
 	}
@@ -162,7 +164,7 @@ func TestExpectCallsTimeout(t *testing.T) {
 
 	// Create a new T so we can expect it to fail without failing the overall test.
 	tt := new(testing.T)
-	s.ExpectCalls(tt, new(Call))
+	s.ExpectCalls(tt, emit.Token{})
 	assert.True(t, tt.Failed())
 }
 
@@ -185,24 +187,24 @@ func TestExpectNoCallsFailure(t *testing.T) {
 func TestWithCallBuffer(t *testing.T) {
 	s, testCalls := sinkTest(t, WithCallBuffer(5))
 	for i := 0; i < 10; i++ {
-		s.ExpectCall(t, testCalls[i].Token, testCalls[i].Attrs)
+		s.ExpectCall(t, testCalls[i].Body, testCalls[i].Attributes)
 	}
 }
 
-func sinkTest(t *testing.T, opts ...SinkOpt) (*Sink, []*Call) {
+func sinkTest(t *testing.T, opts ...SinkOpt) (*Sink, []emit.Token) {
 	s := NewSink(opts...)
-	testCalls := make([]*Call, 0, 10)
+	testCalls := make([]emit.Token, 0, 10)
 	for i := 0; i < 10; i++ {
-		testCalls = append(testCalls, &Call{
-			Token: []byte(fmt.Sprintf("token-%d", i)),
-			Attrs: map[string]any{
+		testCalls = append(testCalls, emit.Token{
+			Body: []byte(fmt.Sprintf("token-%d", i)),
+			Attributes: map[string]any{
 				"key": fmt.Sprintf("value-%d", i),
 			},
 		})
 	}
 	go func() {
 		for _, c := range testCalls {
-			assert.NoError(t, s.Callback(context.Background(), c.Token, c.Attrs))
+			assert.NoError(t, s.Callback(context.Background(), emit.NewToken(c.Body, c.Attributes)))
 		}
 	}()
 	return s, testCalls

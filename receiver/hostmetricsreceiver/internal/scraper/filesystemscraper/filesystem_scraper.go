@@ -6,7 +6,6 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -17,8 +16,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
@@ -29,9 +28,9 @@ const (
 	metricsLen         = standardMetricsLen + systemSpecificMetricsLen
 )
 
-// scraper for FileSystem Metrics
-type scraper struct {
-	settings receiver.Settings
+// filesystemsScraper for FileSystem Metrics
+type filesystemsScraper struct {
+	settings scraper.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
 	fsFilter fsFilter
@@ -48,18 +47,17 @@ type deviceUsage struct {
 }
 
 // newFileSystemScraper creates a FileSystem Scraper
-func newFileSystemScraper(_ context.Context, settings receiver.Settings, cfg *Config) (*scraper, error) {
+func newFileSystemScraper(_ context.Context, settings scraper.Settings, cfg *Config) (*filesystemsScraper, error) {
 	fsFilter, err := cfg.createFilter()
 	if err != nil {
 		return nil, err
 	}
 
-	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, partitions: disk.PartitionsWithContext, usage: disk.UsageWithContext, fsFilter: *fsFilter}
+	scraper := &filesystemsScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, partitions: disk.PartitionsWithContext, usage: disk.UsageWithContext, fsFilter: *fsFilter}
 	return scraper, nil
 }
 
-func (s *scraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
+func (s *filesystemsScraper) start(ctx context.Context, _ component.Host) error {
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -69,8 +67,7 @@ func (s *scraper) start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
+func (s *filesystemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	var errors scrapererror.ScrapeErrors
@@ -91,11 +88,27 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	usages := make([]*deviceUsage, 0, len(partitions))
+
+	type mountKey struct {
+		mountpoint string
+		device     string
+	}
+	seen := map[mountKey]struct{}{}
+
 	for _, partition := range partitions {
+		key := mountKey{
+			mountpoint: partition.Mountpoint,
+			device:     partition.Device,
+		}
+		if _, ok := seen[key]; partition.Mountpoint != "" && ok {
+			continue
+		}
+		seen[key] = struct{}{}
+
 		if !s.fsFilter.includePartition(partition) {
 			continue
 		}
-		translatedMountpoint := translateMountpoint(s.config.RootPath, partition.Mountpoint)
+		translatedMountpoint := translateMountpoint(ctx, s.config.rootPath, partition.Mountpoint)
 		usage, usageErr := s.usage(ctx, translatedMountpoint)
 		if usageErr != nil {
 			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", translatedMountpoint, usageErr))
@@ -162,9 +175,12 @@ func (f *fsFilter) includeMountPoint(mountPoint string) bool {
 }
 
 // translateMountsRootPath translates a mountpoint from the host perspective to the chrooted perspective.
-func translateMountpoint(rootPath, mountpoint string) string {
-	if mountInfo := os.Getenv("HOST_PROC_MOUNTINFO"); mountInfo != "" {
-		return mountpoint
+func translateMountpoint(ctx context.Context, rootPath string, mountpoint string) string {
+	if env, ok := ctx.Value(common.EnvKey).(common.EnvMap); ok {
+		mountInfo := env[common.EnvKeyType("HOST_PROC_MOUNTINFO")]
+		if mountInfo != "" {
+			return mountpoint
+		}
 	}
 	return filepath.Join(rootPath, mountpoint)
 }

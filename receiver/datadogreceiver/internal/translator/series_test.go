@@ -30,7 +30,6 @@ func testPointsToDatadogPoints(points []testPoint) [][]*float64 {
 		datadogPoints[i] = []*float64{float64Ptr(float64(point.Ts)), float64Ptr(point.Value)}
 	}
 	return datadogPoints
-
 }
 
 func TestHandleMetricsPayloadV2(t *testing.T) {

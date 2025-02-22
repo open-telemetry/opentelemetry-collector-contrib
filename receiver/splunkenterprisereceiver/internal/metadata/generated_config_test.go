@@ -34,6 +34,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkDataIndexesExtendedEventCount:         MetricConfig{Enabled: true},
 					SplunkDataIndexesExtendedRawSize:            MetricConfig{Enabled: true},
 					SplunkDataIndexesExtendedTotalSize:          MetricConfig{Enabled: true},
+					SplunkHealth:                                MetricConfig{Enabled: true},
 					SplunkIndexerAvgRate:                        MetricConfig{Enabled: true},
 					SplunkIndexerCPUTime:                        MetricConfig{Enabled: true},
 					SplunkIndexerQueueRatio:                     MetricConfig{Enabled: true},
@@ -45,6 +46,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkIndexesMedianDataAge:                  MetricConfig{Enabled: true},
 					SplunkIndexesSize:                           MetricConfig{Enabled: true},
 					SplunkIoAvgIops:                             MetricConfig{Enabled: true},
+					SplunkKvstoreBackupStatus:                   MetricConfig{Enabled: true},
+					SplunkKvstoreReplicationStatus:              MetricConfig{Enabled: true},
+					SplunkKvstoreStatus:                         MetricConfig{Enabled: true},
 					SplunkLicenseIndexUsage:                     MetricConfig{Enabled: true},
 					SplunkParseQueueRatio:                       MetricConfig{Enabled: true},
 					SplunkPipelineSetCount:                      MetricConfig{Enabled: true},
@@ -53,6 +57,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkSchedulerCompletionRatio:              MetricConfig{Enabled: true},
 					SplunkServerIntrospectionQueuesCurrent:      MetricConfig{Enabled: true},
 					SplunkServerIntrospectionQueuesCurrentBytes: MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsAdhoc:            MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsCompleted:        MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsIncomplete:       MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsInvalid:          MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsJobCacheCount:    MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsJobCacheSize:     MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsSavedsearches:    MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsScheduled:        MetricConfig{Enabled: true},
 					SplunkTypingQueueRatio:                      MetricConfig{Enabled: true},
 				},
 			},
@@ -70,6 +82,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkDataIndexesExtendedEventCount:         MetricConfig{Enabled: false},
 					SplunkDataIndexesExtendedRawSize:            MetricConfig{Enabled: false},
 					SplunkDataIndexesExtendedTotalSize:          MetricConfig{Enabled: false},
+					SplunkHealth:                                MetricConfig{Enabled: false},
 					SplunkIndexerAvgRate:                        MetricConfig{Enabled: false},
 					SplunkIndexerCPUTime:                        MetricConfig{Enabled: false},
 					SplunkIndexerQueueRatio:                     MetricConfig{Enabled: false},
@@ -81,6 +94,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkIndexesMedianDataAge:                  MetricConfig{Enabled: false},
 					SplunkIndexesSize:                           MetricConfig{Enabled: false},
 					SplunkIoAvgIops:                             MetricConfig{Enabled: false},
+					SplunkKvstoreBackupStatus:                   MetricConfig{Enabled: false},
+					SplunkKvstoreReplicationStatus:              MetricConfig{Enabled: false},
+					SplunkKvstoreStatus:                         MetricConfig{Enabled: false},
 					SplunkLicenseIndexUsage:                     MetricConfig{Enabled: false},
 					SplunkParseQueueRatio:                       MetricConfig{Enabled: false},
 					SplunkPipelineSetCount:                      MetricConfig{Enabled: false},
@@ -89,6 +105,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkSchedulerCompletionRatio:              MetricConfig{Enabled: false},
 					SplunkServerIntrospectionQueuesCurrent:      MetricConfig{Enabled: false},
 					SplunkServerIntrospectionQueuesCurrentBytes: MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsAdhoc:            MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsCompleted:        MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsIncomplete:       MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsInvalid:          MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsJobCacheCount:    MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsJobCacheSize:     MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsSavedsearches:    MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsScheduled:        MetricConfig{Enabled: false},
 					SplunkTypingQueueRatio:                      MetricConfig{Enabled: false},
 				},
 			},
@@ -97,9 +121,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }

@@ -10,9 +10,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
@@ -21,8 +20,8 @@ import (
 // This file implements factory for Splunk HEC receiver.
 
 const (
-	// Default endpoints to bind to.
-	defaultPort = 8088
+	// Default endpoint to bind to.
+	defaultEndpoint = "localhost:8088"
 )
 
 // NewFactory creates a factory for Splunk HEC receiver.
@@ -38,7 +37,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: localhostgate.EndpointForPort(defaultPort),
+			Endpoint: defaultEndpoint,
 		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{},
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
@@ -57,7 +56,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-// CreateMetricsReceiver creates a metrics receiver based on provided config.
+// CreateMetrics creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	_ context.Context,
 	params receiver.Settings,
@@ -68,7 +67,7 @@ func createMetricsReceiver(
 	var recv receiver.Metrics
 	rCfg := cfg.(*Config)
 	r := receivers.GetOrAdd(cfg, func() component.Component {
-		recv, err = newMetricsReceiver(params, *rCfg, consumer)
+		recv, err = newReceiver(params, *rCfg)
 		return recv
 	})
 	if err != nil {
@@ -89,7 +88,7 @@ func createLogsReceiver(
 	var recv receiver.Logs
 	rCfg := cfg.(*Config)
 	r := receivers.GetOrAdd(cfg, func() component.Component {
-		recv, err = newLogsReceiver(params, *rCfg, consumer)
+		recv, err = newReceiver(params, *rCfg)
 		return recv
 	})
 	if err != nil {

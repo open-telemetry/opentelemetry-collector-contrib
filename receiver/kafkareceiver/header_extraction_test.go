@@ -25,10 +25,10 @@ import (
 
 func TestHeaderExtractionTraces(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverCreateSettings: receivertest.NewNopSettings(),
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
 	})
 	require.NoError(t, err)
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings().TelemetrySettings)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings(metadata.Type).TelemetrySettings)
 	require.NoError(t, err)
 	nextConsumer := &consumertest.TracesSink{}
 	c := tracesConsumerGroupHandler{
@@ -85,15 +85,14 @@ func TestHeaderExtractionTraces(t *testing.T) {
 	}
 	cancelFunc()
 	wg.Wait()
-
 }
 
 func TestHeaderExtractionLogs(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverCreateSettings: receivertest.NewNopSettings(),
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
 	})
 	require.NoError(t, err)
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings().TelemetrySettings)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings(metadata.Type).TelemetrySettings)
 	require.NoError(t, err)
 	nextConsumer := &consumertest.LogsSink{}
 	unmarshaler := newTextLogsUnmarshaler()
@@ -147,15 +146,14 @@ func TestHeaderExtractionLogs(t *testing.T) {
 	}
 	cancelFunc()
 	wg.Wait()
-
 }
 
 func TestHeaderExtractionMetrics(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverCreateSettings: receivertest.NewNopSettings(),
+		ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
 	})
 	require.NoError(t, err)
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings().TelemetrySettings)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings(metadata.Type).TelemetrySettings)
 	require.NoError(t, err)
 	nextConsumer := &consumertest.MetricsSink{}
 	c := metricsConsumerGroupHandler{
@@ -210,7 +208,6 @@ func TestHeaderExtractionMetrics(t *testing.T) {
 	}
 	cancelFunc()
 	wg.Wait()
-
 }
 
 func validateHeader(t *testing.T, rs pcommon.Resource, headerKey string, headerValue string) {

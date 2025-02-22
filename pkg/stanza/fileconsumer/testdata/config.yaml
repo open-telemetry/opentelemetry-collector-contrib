@@ -51,6 +51,14 @@ exclude_one:
     - "*.log"
   exclude:
     - one.log
+sort_by_group_by:
+  type: mock
+  ordering_criteria:
+    regex: 'err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log'
+    group_by: 'err\.(?P<value>[a-z]+).[0-9]*.*log'
+    sort_by:
+      - regex_key: file_num
+        sort_type: numeric
 sort_by_numeric:
   type: mock
   ordering_criteria:

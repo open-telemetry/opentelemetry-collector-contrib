@@ -13,33 +13,42 @@ import (
 	"sync"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/column/orderedmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
-var supportedMetricTypes = map[string]struct{}{
-	createGaugeTableSQL:        {},
-	createSumTableSQL:          {},
-	createHistogramTableSQL:    {},
-	createExpHistogramTableSQL: {},
-	createSummaryTableSQL:      {},
+var supportedMetricTypes = map[pmetric.MetricType]string{
+	pmetric.MetricTypeGauge:                createGaugeTableSQL,
+	pmetric.MetricTypeSum:                  createSumTableSQL,
+	pmetric.MetricTypeHistogram:            createHistogramTableSQL,
+	pmetric.MetricTypeExponentialHistogram: createExpHistogramTableSQL,
+	pmetric.MetricTypeSummary:              createSummaryTableSQL,
 }
 
 var logger *zap.Logger
+
+type MetricTablesConfigMapper map[pmetric.MetricType]MetricTypeConfig
+
+type MetricTypeConfig struct {
+	Name string `mapstructure:"name"`
+}
 
 // MetricsModel is used to group metric data and insert into clickhouse
 // any type of metrics need implement it.
 type MetricsModel interface {
 	// Add used to bind MetricsMetaData to a specific metric then put them into a slice
-	Add(resAttr map[string]string, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error
+	Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error
 	// insert is used to insert metric data to clickhouse
 	insert(ctx context.Context, db *sql.DB) error
 }
 
-// MetricsMetaData  contain specific metric data
+// MetricsMetaData contain specific metric data
 type MetricsMetaData struct {
-	ResAttr    map[string]string
+	ResAttr    pcommon.Map
 	ResURL     string
 	ScopeURL   string
 	ScopeInstr pcommon.InstrumentationScope
@@ -51,9 +60,9 @@ func SetLogger(l *zap.Logger) {
 }
 
 // NewMetricsTable create metric tables with an expiry time to storage metric telemetry data
-func NewMetricsTable(ctx context.Context, tableName, cluster, engine, ttlExpr string, db *sql.DB) error {
-	for table := range supportedMetricTypes {
-		query := fmt.Sprintf(table, tableName, cluster, engine, ttlExpr)
+func NewMetricsTable(ctx context.Context, tablesConfig MetricTablesConfigMapper, cluster, engine, ttlExpr string, db *sql.DB) error {
+	for key, queryTemplate := range supportedMetricTypes {
+		query := fmt.Sprintf(queryTemplate, tablesConfig[key].Name, cluster, engine, ttlExpr)
 		if _, err := db.ExecContext(ctx, query); err != nil {
 			return fmt.Errorf("exec create metrics table sql: %w", err)
 		}
@@ -62,22 +71,22 @@ func NewMetricsTable(ctx context.Context, tableName, cluster, engine, ttlExpr st
 }
 
 // NewMetricsModel create a model for contain different metric data
-func NewMetricsModel(tableName string) map[pmetric.MetricType]MetricsModel {
+func NewMetricsModel(tablesConfig MetricTablesConfigMapper) map[pmetric.MetricType]MetricsModel {
 	return map[pmetric.MetricType]MetricsModel{
 		pmetric.MetricTypeGauge: &gaugeMetrics{
-			insertSQL: fmt.Sprintf(insertGaugeTableSQL, tableName),
+			insertSQL: fmt.Sprintf(insertGaugeTableSQL, tablesConfig[pmetric.MetricTypeGauge].Name),
 		},
 		pmetric.MetricTypeSum: &sumMetrics{
-			insertSQL: fmt.Sprintf(insertSumTableSQL, tableName),
+			insertSQL: fmt.Sprintf(insertSumTableSQL, tablesConfig[pmetric.MetricTypeSum].Name),
 		},
 		pmetric.MetricTypeHistogram: &histogramMetrics{
-			insertSQL: fmt.Sprintf(insertHistogramTableSQL, tableName),
+			insertSQL: fmt.Sprintf(insertHistogramTableSQL, tablesConfig[pmetric.MetricTypeHistogram].Name),
 		},
 		pmetric.MetricTypeExponentialHistogram: &expHistogramMetrics{
-			insertSQL: fmt.Sprintf(insertExpHistogramTableSQL, tableName),
+			insertSQL: fmt.Sprintf(insertExpHistogramTableSQL, tablesConfig[pmetric.MetricTypeExponentialHistogram].Name),
 		},
 		pmetric.MetricTypeSummary: &summaryMetrics{
-			insertSQL: fmt.Sprintf(insertSummaryTableSQL, tableName),
+			insertSQL: fmt.Sprintf(insertSummaryTableSQL, tablesConfig[pmetric.MetricTypeSummary].Name),
 		},
 	}
 }
@@ -112,7 +121,7 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, cli
 	)
 	for i := 0; i < exemplars.Len(); i++ {
 		exemplar := exemplars.At(i)
-		attrs = append(attrs, attributesToMap(exemplar.FilteredAttributes()))
+		attrs = append(attrs, AttributesToMap(exemplar.FilteredAttributes()))
 		times = append(times, exemplar.Timestamp().AsTime())
 		values = append(values, getValue(exemplar.IntValue(), exemplar.DoubleValue(), exemplar.ValueType()))
 
@@ -159,13 +168,21 @@ func getValue(intValue int64, floatValue float64, dataType any) float64 {
 	}
 }
 
-func attributesToMap(attributes pcommon.Map) map[string]string {
-	m := make(map[string]string, attributes.Len())
-	attributes.Range(func(k string, v pcommon.Value) bool {
-		m[k] = v.AsString()
-		return true
-	})
-	return m
+func AttributesToMap(attributes pcommon.Map) column.IterableOrderedMap {
+	return orderedmap.CollectN(func(yield func(string, string) bool) {
+		attributes.Range(func(k string, v pcommon.Value) bool {
+			return yield(k, v.AsString())
+		})
+	}, attributes.Len())
+}
+
+func GetServiceName(resAttr pcommon.Map) string {
+	var serviceName string
+	if v, ok := resAttr.Get(conventions.AttributeServiceName); ok {
+		serviceName = v.AsString()
+	}
+
+	return serviceName
 }
 
 func convertSliceToArraySet[T any](slice []T) clickhouse.ArraySet {

@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -35,6 +34,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -49,12 +51,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow/mock"
-	componentMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
+	componentmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
 const otlpReceiverName = "receiver_test"
 
-var testReceiverID = component.NewIDWithName(componentMetadata.Type, otlpReceiverName)
+var testReceiverID = component.NewIDWithName(componentmetadata.Type, otlpReceiverName)
 
 func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
@@ -101,13 +103,12 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	td := testdata.GenerateTraces(1)
 
-	tt, err := componenttest.SetupTelemetry(testReceiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
-	ocr := newGRPCReceiver(t, addr, tt.TelemetrySettings(), sink, nil)
+	ocr := newGRPCReceiver(t, addr, tt.NewTelemetrySettings(), sink, nil)
 	require.NotNil(t, ocr)
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
@@ -134,7 +135,48 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 	require.Len(t, sink.AllTraces(), expectedReceivedBatches)
 
 	expectedIngestionBlockedRPCs := 1
-	require.NoError(t, tt.CheckReceiverTraces("grpc", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs)))
+
+	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
+	assert.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_accepted_spans",
+			Description: "Number of spans successfully pushed into the pipeline. [alpha]",
+			Unit:        "{spans}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", testReceiverID.String()),
+							attribute.String("transport", "grpc")),
+						Value: int64(expectedReceivedBatches),
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	got, err = tt.GetMetric("otelcol_receiver_refused_spans")
+	assert.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_refused_spans",
+			Description: "Number of spans that could not be pushed into the pipeline. [alpha]",
+			Unit:        "{spans}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", testReceiverID.String()),
+							attribute.String("transport", "grpc")),
+						Value: int64(expectedIngestionBlockedRPCs),
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestGRPCInvalidTLSCredentials(t *testing.T) {
@@ -154,9 +196,9 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 		},
 	}
 
-	r, err := NewFactory().CreateTracesReceiver(
+	r, err := NewFactory().CreateTraces(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(componentmetadata.Type),
 		cfg,
 		consumertest.NewNop())
 
@@ -217,18 +259,17 @@ func newGRPCReceiver(t *testing.T, endpoint string, settings component.Telemetry
 }
 
 func newReceiver(t *testing.T, factory receiver.Factory, settings component.TelemetrySettings, cfg *Config, id component.ID, tc consumer.Traces, mc consumer.Metrics) component.Component {
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(componentmetadata.Type)
 	set.TelemetrySettings = settings
-	set.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
 	set.ID = id
 	var r component.Component
 	var err error
 	if tc != nil {
-		r, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
+		r, err = factory.CreateTraces(context.Background(), set, cfg, tc)
 		require.NoError(t, err)
 	}
 	if mc != nil {
-		r, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc)
+		r, err = factory.CreateMetrics(context.Background(), set, cfg, mc)
 		require.NoError(t, err)
 	}
 	return r
@@ -245,9 +286,9 @@ func TestStandardShutdown(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(componentmetadata.Type)
 	set.ID = testReceiverID
-	r, err := NewFactory().CreateTracesReceiver(
+	r, err := NewFactory().CreateTraces(
 		context.Background(),
 		set,
 		cfg,
@@ -322,12 +363,12 @@ func TestOTelArrowShutdown(t *testing.T) {
 				cfg.GRPC.Keepalive.ServerParameters.MaxConnectionAgeGrace = 5 * time.Second
 			}
 			cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-			set := receivertest.NewNopSettings()
+			set := receivertest.NewNopSettings(componentmetadata.Type)
 			core, obslogs := observer.New(zapcore.DebugLevel)
 			set.TelemetrySettings.Logger = zap.New(core)
 
 			set.ID = testReceiverID
-			r, err := NewFactory().CreateTracesReceiver(
+			r, err := NewFactory().CreateTraces(
 				ctx,
 				set,
 				cfg,
@@ -575,7 +616,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 		headerBuf.Reset()
 		err := hpd.WriteField(hpack.HeaderField{
 			Name:  "seq",
-			Value: fmt.Sprint(i),
+			Value: strconv.Itoa(i),
 		})
 		require.NoError(t, err)
 		err = hpd.WriteField(hpack.HeaderField{
@@ -584,7 +625,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 		})
 		require.NoError(t, err)
 		expectMDs = append(expectMDs, metadata.MD{
-			"seq":  []string{fmt.Sprint(i)},
+			"seq":  []string{strconv.Itoa(i)},
 			"test": []string{"value"},
 		})
 
@@ -668,7 +709,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 		map[component.ID]component.Component{
 			authID: newTestAuthExtension(t, func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 				if ctx.Value(inStreamCtx{}) != nil {
-					return ctx, fmt.Errorf(errorString)
+					return ctx, errors.New(errorString)
 				}
 				return context.WithValue(ctx, inStreamCtx{}, t), nil
 			}),
@@ -760,7 +801,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 				headerBuf.Reset()
 				err := hpd.WriteField(hpack.HeaderField{
 					Name:  "seq",
-					Value: fmt.Sprint(i),
+					Value: strconv.Itoa(i),
 				})
 				assert.NoError(t, err)
 
@@ -819,10 +860,10 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 	}
 	// No keepalive parameters are set
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(componentmetadata.Type)
 
 	set.ID = testReceiverID
-	r, err := NewFactory().CreateTracesReceiver(
+	r, err := NewFactory().CreateTraces(
 		ctx,
 		set,
 		cfg,

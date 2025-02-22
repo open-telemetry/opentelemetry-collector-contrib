@@ -5,6 +5,7 @@ package spanmetricsconnector
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
@@ -13,11 +14,12 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 )
 
 func TestNewConnector(t *testing.T) {
-	defaultMethod := "GET"
+	defaultMethod := http.MethodGet
 	defaultMethodValue := pcommon.NewValueStr(defaultMethod)
 	for _, tc := range []struct {
 		name                         string
@@ -46,7 +48,7 @@ func TestNewConnector(t *testing.T) {
 			// Prepare
 			factory := NewFactory()
 
-			creationParams := connectortest.NewNopSettings()
+			creationParams := connectortest.NewNopSettings(metadata.Type)
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Histogram.Explicit = &ExplicitHistogramConfig{
 				Buckets: tc.durationHistogramBuckets,

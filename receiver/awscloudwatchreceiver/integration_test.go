@@ -22,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver/internal/metadata"
 )
 
 func TestLoggingIntegration(t *testing.T) {
@@ -39,9 +40,9 @@ func TestLoggingIntegration(t *testing.T) {
 	cfg.Logs.Groups.AutodiscoverConfig = &AutodiscoverConfig{
 		Limit: 1,
 	}
-	recv, err := NewFactory().CreateLogsReceiver(
+	recv, err := NewFactory().CreateLogs(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		sink,
 	)

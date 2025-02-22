@@ -25,8 +25,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateTracesExporter(t *testing.T) {
-
+func TestCreateTraces(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -36,8 +35,8 @@ func TestCreateTracesExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	params := exportertest.NewNopSettings(metadata.Type)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exporter)
 }
@@ -48,24 +47,24 @@ func TestGenerateUrl(t *testing.T) {
 		region   string
 		expected string
 	}
-	var generateURLTests = []generateURLTest{
+	generateURLTests := []generateURLTest{
 		{"", "us", "https://listener.logz.io:8071/?token=token"},
 		{"", "", "https://listener.logz.io:8071/?token=token"},
-		{"https://doesnotexist.com", "", "https://doesnotexist.com"},
-		{"https://doesnotexist.com", "us", "https://doesnotexist.com"},
-		{"https://doesnotexist.com", "not-valid", "https://doesnotexist.com"},
+		{"https://nonexistent.com", "", "https://nonexistent.com"},
+		{"https://nonexistent.com", "us", "https://nonexistent.com"},
+		{"https://nonexistent.com", "not-valid", "https://nonexistent.com"},
 		{"", "not-valid", "https://listener.logz.io:8071/?token=token"},
 		{"", "US", "https://listener.logz.io:8071/?token=token"},
 		{"", "Us", "https://listener.logz.io:8071/?token=token"},
 		{"", "EU", "https://listener-eu.logz.io:8071/?token=token"},
 	}
 	for _, test := range generateURLTests {
+		clientConfig := confighttp.NewDefaultClientConfig()
+		clientConfig.Endpoint = test.endpoint
 		cfg := &Config{
-			Region: test.region,
-			Token:  "token",
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: test.endpoint,
-			},
+			Region:       test.region,
+			Token:        "token",
+			ClientConfig: clientConfig,
 		}
 		output, _ := generateEndpoint(cfg)
 		require.Equal(t, test.expected, output)
@@ -77,7 +76,7 @@ func TestGetListenerURL(t *testing.T) {
 		arg1     string
 		expected string
 	}
-	var getListenerURLTests = []getListenerURLTest{
+	getListenerURLTests := []getListenerURLTest{
 		{"us", "https://listener.logz.io:8071"},
 		{"eu", "https://listener-eu.logz.io:8071"},
 		{"au", "https://listener-au.logz.io:8071"},

@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"gopkg.in/natefinch/lumberjack.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -22,81 +24,108 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateMetricsExporterError(t *testing.T) {
+func TestCreateMetricsError(t *testing.T) {
 	cfg := &Config{
 		FormatType: formatTypeJSON,
 	}
 	e, err := createMetricsExporter(
 		context.Background(),
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	require.NoError(t, err)
 	err = e.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 }
 
-func TestCreateMetricsExporter(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	cfg := &Config{
 		FormatType: formatTypeJSON,
 		Path:       tempFileName(t),
 	}
 	exp, err := createMetricsExporter(
 		context.Background(),
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	cfg := &Config{
 		FormatType: formatTypeJSON,
 		Path:       tempFileName(t),
 	}
 	exp, err := createTracesExporter(
 		context.Background(),
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
-func TestCreateTracesExporterError(t *testing.T) {
+func TestCreateTracesError(t *testing.T) {
 	cfg := &Config{
 		FormatType: formatTypeJSON,
 	}
 	e, err := createTracesExporter(
 		context.Background(),
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	require.NoError(t, err)
 	err = e.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 }
 
-func TestCreateLogsExporter(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	cfg := &Config{
 		FormatType: formatTypeJSON,
 		Path:       tempFileName(t),
 	}
 	exp, err := createLogsExporter(
 		context.Background(),
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
-func TestCreateLogsExporterError(t *testing.T) {
+func TestCreateLogsError(t *testing.T) {
 	cfg := &Config{
 		FormatType: formatTypeJSON,
 	}
 	e, err := createLogsExporter(
 		context.Background(),
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
+		cfg)
+	require.NoError(t, err)
+	err = e.Start(context.Background(), componenttest.NewNopHost())
+	assert.Error(t, err)
+}
+
+func TestCreateProfiles(t *testing.T) {
+	cfg := &Config{
+		FormatType: formatTypeJSON,
+		Path:       tempFileName(t),
+	}
+	exp, err := createProfilesExporter(
+		context.Background(),
+		exportertest.NewNopSettings(metadata.Type),
+		cfg)
+	assert.NoError(t, err)
+	require.NotNil(t, exp)
+	assert.NoError(t, exp.Shutdown(context.Background()))
+}
+
+func TestCreateProfilesError(t *testing.T) {
+	cfg := &Config{
+		FormatType: formatTypeJSON,
+	}
+	e, err := createProfilesExporter(
+		context.Background(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	require.NoError(t, err)
 	err = e.Start(context.Background(), componenttest.NewNopHost())

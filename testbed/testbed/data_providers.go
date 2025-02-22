@@ -9,14 +9,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
@@ -60,7 +60,6 @@ func (dp *perfTestDataProvider) GenerateTraces() (ptrace.Traces, bool) {
 
 	traceID := dp.traceIDSequence.Add(1)
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
-
 		startTime := time.Now().Add(time.Duration(i+int(traceID)*1000) * time.Second)
 		endTime := startTime.Add(time.Millisecond)
 
@@ -243,22 +242,22 @@ type FileDataProvider struct {
 
 // NewFileDataProvider creates an instance of FileDataProvider which generates test data
 // loaded from a file.
-func NewFileDataProvider(filePath string, dataType component.DataType) (*FileDataProvider, error) {
+func NewFileDataProvider(filePath string, dataType pipeline.Signal) (*FileDataProvider, error) {
 	dp := &FileDataProvider{}
 	var err error
 	// Load the message from the file and count the data points.
 	switch dataType {
-	case component.DataTypeTraces:
+	case pipeline.SignalTraces:
 		if dp.traces, err = golden.ReadTraces(filePath); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.traces.SpanCount()
-	case component.DataTypeMetrics:
+	case pipeline.SignalMetrics:
 		if dp.metrics, err = golden.ReadMetrics(filePath); err != nil {
 			return nil, err
 		}
 		dp.ItemsPerBatch = dp.metrics.DataPointCount()
-	case component.DataTypeLogs:
+	case pipeline.SignalLogs:
 		if dp.logs, err = golden.ReadLogs(filePath); err != nil {
 			return nil, err
 		}

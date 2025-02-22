@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"time"
 
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
@@ -235,15 +236,6 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 			name = fmt.Sprintf("k8s.%v.%v.%v", a.From, fieldType, a.Key)
 		}
 
-		var r *regexp.Regexp
-		if a.Regex != "" {
-			var err error
-			r, err = regexp.Compile(a.Regex)
-			if err != nil {
-				return rules, err
-			}
-		}
-
 		var keyRegex *regexp.Regexp
 		var hasKeyRegexReference bool
 		if a.KeyRegex != "" {
@@ -259,7 +251,7 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 		}
 
 		rules = append(rules, kube.FieldExtractionRule{
-			Name: name, Key: a.Key, KeyRegex: keyRegex, HasKeyRegexReference: hasKeyRegexReference, Regex: r, From: a.From,
+			Name: name, Key: a.Key, KeyRegex: keyRegex, HasKeyRegexReference: hasKeyRegexReference, From: a.From,
 		})
 	}
 	return rules, nil
@@ -288,7 +280,7 @@ func withFilterNamespace(ns string) option {
 // withFilterLabels allows specifying options to control filtering pods by pod labels.
 func withFilterLabels(filters ...FieldFilterConfig) option {
 	return func(p *kubernetesprocessor) error {
-		var labels []kube.FieldFilter
+		var labels []kube.LabelFilter
 		for _, f := range filters {
 			var op selection.Operator
 			switch f.Op {
@@ -301,7 +293,7 @@ func withFilterLabels(filters ...FieldFilterConfig) option {
 			default:
 				op = selection.Equals
 			}
-			labels = append(labels, kube.FieldFilter{
+			labels = append(labels, kube.LabelFilter{
 				Key:   f.Key,
 				Value: f.Value,
 				Op:    op,
@@ -378,6 +370,22 @@ func withExcludes(podExclude ExcludeConfig) option {
 			ignoredNames.Pods = append(ignoredNames.Pods, kube.ExcludePods{Name: regexp.MustCompile(name.Name)})
 		}
 		p.podIgnore = ignoredNames
+		return nil
+	}
+}
+
+// withWaitForMetadata allows specifying whether to wait for pod metadata to be synced.
+func withWaitForMetadata(wait bool) option {
+	return func(p *kubernetesprocessor) error {
+		p.waitForMetadata = wait
+		return nil
+	}
+}
+
+// withWaitForMetadataTimeout allows specifying the timeout for waiting for pod metadata to be synced.
+func withWaitForMetadataTimeout(timeout time.Duration) option {
+	return func(p *kubernetesprocessor) error {
+		p.waitForMetadataTimeout = timeout
 		return nil
 	}
 }

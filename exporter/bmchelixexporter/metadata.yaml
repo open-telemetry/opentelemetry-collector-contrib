@@ -1,0 +1,9 @@
+type: bmchelix
+
+status:
+  class: exporter
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [bertysentry, NassimBtk, MovieStoreGuy]

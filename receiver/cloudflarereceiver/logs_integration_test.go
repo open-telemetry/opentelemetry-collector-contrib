@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
 )
 
 const (
@@ -49,9 +50,9 @@ func TestReceiverTLSIntegration(t *testing.T) {
 			_, testPort, err := net.SplitHostPort(testAddr)
 			require.NoError(t, err)
 
-			recv, err := fact.CreateLogsReceiver(
+			recv, err := fact.CreateLogs(
 				context.Background(),
-				receivertest.NewNopSettings(),
+				receivertest.NewNopSettings(metadata.Type),
 				&Config{
 					Logs: LogsConfig{
 						Secret:   testSecret,
@@ -82,7 +83,7 @@ func TestReceiverTLSIntegration(t *testing.T) {
 			payload, err := os.ReadFile(filepath.Join("testdata", "sample-payloads", fmt.Sprintf("%s.txt", payloadName)))
 			require.NoError(t, err)
 
-			req, err := http.NewRequest("POST", fmt.Sprintf("https://localhost:%s", testPort), bytes.NewBuffer(payload))
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://localhost:%s", testPort), bytes.NewBuffer(payload))
 			require.NoError(t, err)
 
 			client, err := clientWithCert(filepath.Join("testdata", "cert", "ca.crt"))
@@ -125,7 +126,7 @@ func clientWithCert(path string) (*http.Client, error) {
 	roots := x509.NewCertPool()
 	ok := roots.AppendCertsFromPEM(b)
 	if !ok {
-		return nil, errors.New("failed to append certficate as root certificate")
+		return nil, errors.New("failed to append certificate as root certificate")
 	}
 
 	return &http.Client{

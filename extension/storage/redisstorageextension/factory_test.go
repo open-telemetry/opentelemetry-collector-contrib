@@ -31,9 +31,9 @@ func TestFactory(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			e, err := f.CreateExtension(
+			e, err := f.Create(
 				context.Background(),
-				extensiontest.NewNopSettings(),
+				extensiontest.NewNopSettings(f.Type()),
 				test.config,
 			)
 			require.NoError(t, err)

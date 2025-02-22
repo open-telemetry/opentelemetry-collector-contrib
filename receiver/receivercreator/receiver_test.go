@@ -34,8 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-type mockObserver struct {
-}
+type mockObserver struct{}
 
 func (m *mockObserver) Start(_ context.Context, _ component.Host) error {
 	return nil
@@ -75,10 +74,10 @@ func TestMockedEndToEnd(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 	mockConsumer := new(consumertest.MetricsSink)
 
-	rcvr, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, mockConsumer)
+	rcvr, err := factory.CreateMetrics(context.Background(), params, cfg, mockConsumer)
 	require.NoError(t, err)
 	sc := rcvr.(*sharedcomponent.SharedComponent)
 	dyn := sc.Component.(*receiverCreator)

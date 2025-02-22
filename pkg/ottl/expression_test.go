@@ -59,6 +59,56 @@ func basicSlice() (ExprFunc[any], error) {
 	}, nil
 }
 
+func basicSliceString() (ExprFunc[any], error) {
+	return func(_ context.Context, _ any) (any, error) {
+		return []any{
+			[]string{
+				"pass",
+			},
+		}, nil
+	}, nil
+}
+
+func basicSliceBool() (ExprFunc[any], error) {
+	return func(_ context.Context, _ any) (any, error) {
+		return []any{
+			[]bool{
+				true,
+			},
+		}, nil
+	}, nil
+}
+
+func basicSliceInteger() (ExprFunc[any], error) {
+	return func(_ context.Context, _ any) (any, error) {
+		return []any{
+			[]int64{
+				1,
+			},
+		}, nil
+	}, nil
+}
+
+func basicSliceFloat() (ExprFunc[any], error) {
+	return func(_ context.Context, _ any) (any, error) {
+		return []any{
+			[]float64{
+				1,
+			},
+		}, nil
+	}, nil
+}
+
+func basicSliceByte() (ExprFunc[any], error) {
+	return func(_ context.Context, _ any) (any, error) {
+		return []any{
+			[]byte{
+				byte('p'),
+			},
+		}, nil
+	}, nil
+}
+
 func Test_newGetter(t *testing.T) {
 	tests := []struct {
 		name string
@@ -236,6 +286,101 @@ func Test_newGetter(t *testing.T) {
 				},
 			},
 			want: "pass",
+		},
+		{
+			name: "function call nested SliceString",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "SliceString",
+						Keys: []key{
+							{
+								Int: ottltest.Intp(0),
+							},
+							{
+								Int: ottltest.Intp(0),
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
+		},
+		{
+			name: "function call nested SliceBool",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "SliceBool",
+						Keys: []key{
+							{
+								Int: ottltest.Intp(0),
+							},
+							{
+								Int: ottltest.Intp(0),
+							},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "function call nested SliceInteger",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "SliceInteger",
+						Keys: []key{
+							{
+								Int: ottltest.Intp(0),
+							},
+							{
+								Int: ottltest.Intp(0),
+							},
+						},
+					},
+				},
+			},
+			want: 1,
+		},
+		{
+			name: "function call nested SliceFloat",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "SliceFloat",
+						Keys: []key{
+							{
+								Int: ottltest.Intp(0),
+							},
+							{
+								Int: ottltest.Intp(0),
+							},
+						},
+					},
+				},
+			},
+			want: 1.0,
+		},
+		{
+			name: "function call nested SliceByte",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "SliceByte",
+						Keys: []key{
+							{
+								Int: ottltest.Intp(0),
+							},
+							{
+								Int: ottltest.Intp(0),
+							},
+						},
+					},
+				},
+			},
+			want: byte('p'),
 		},
 		{
 			name: "enum",
@@ -532,6 +677,11 @@ func Test_newGetter(t *testing.T) {
 		createFactory("Map", &struct{}{}, basicMap),
 		createFactory("PSlice", &struct{}{}, pslice),
 		createFactory("Slice", &struct{}{}, basicSlice),
+		createFactory("SliceString", &struct{}{}, basicSliceString),
+		createFactory("SliceBool", &struct{}{}, basicSliceBool),
+		createFactory("SliceInteger", &struct{}{}, basicSliceInteger),
+		createFactory("SliceFloat", &struct{}{}, basicSliceFloat),
+		createFactory("SliceByte", &struct{}{}, basicSliceByte),
 	)
 
 	p, _ := NewParser[any](
@@ -571,6 +721,7 @@ func Test_newGetter(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
 func Test_exprGetter_Get_Invalid(t *testing.T) {
 	tests := []struct {
 		name string
@@ -899,7 +1050,7 @@ func Test_FunctionGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardStringGetter_WrappedError(t *testing.T) {
 	getter := StandardStringGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1046,7 +1197,7 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardStringLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardStringLikeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1123,7 +1274,7 @@ func Test_StandardFloatGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardFloatGetter_WrappedError(t *testing.T) {
 	getter := StandardFloatGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1300,7 +1451,7 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardFloatLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardFloatLikeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1377,7 +1528,7 @@ func Test_StandardIntGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardIntGetter_WrappedError(t *testing.T) {
 	getter := StandardIntGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1554,7 +1705,7 @@ func Test_StandardIntLikeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardIntLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardIntLikeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1753,7 +1904,7 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardByteSliceLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardByteSliceLikeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1830,7 +1981,7 @@ func Test_StandardBoolGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardBoolGetter_WrappedError(t *testing.T) {
 	getter := StandardBoolGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1986,7 +2137,7 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardBoolLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardBoolLikeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -2073,7 +2224,7 @@ func Test_StandardPMapGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardPMapGetter_WrappedError(t *testing.T) {
 	getter := StandardPMapGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -2178,7 +2329,7 @@ func Test_StandardDurationGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardDurationGetter_WrappedError(t *testing.T) {
 	getter := StandardDurationGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -2267,7 +2418,7 @@ func Test_StandardTimeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardTimeGetter_WrappedError(t *testing.T) {
 	getter := StandardTimeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {

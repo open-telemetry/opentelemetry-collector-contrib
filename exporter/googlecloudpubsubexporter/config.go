@@ -38,7 +38,7 @@ type Config struct {
 
 // WatermarkConfig customizes the behavior of the watermark
 type WatermarkConfig struct {
-	// Behavior of the watermark. Currently, only  of the message (none, earliest and current, current being the default)
+	// Behavior of the watermark. Currently, only of the message (none, earliest and current, current being the default)
 	// will set the timestamp on pubsub based on timestamps of the events inside the message
 	Behavior string `mapstructure:"behavior"`
 	// Indication on how much the timestamp can drift from the current time, the timestamp will be capped to the allowed

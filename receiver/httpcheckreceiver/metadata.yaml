@@ -4,10 +4,10 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   warnings: []
   codeowners:
-    active: [codeboten]
+    active: [codeboten, VenuEmmadi]
 
 resource_attributes:
 

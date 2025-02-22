@@ -7,6 +7,7 @@ package skywalkingreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -18,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metadata"
 )
@@ -28,9 +28,9 @@ const (
 	protoGRPC = "grpc"
 	protoHTTP = "http"
 
-	// Default ports to bind to.
-	defaultGRPCPort = 11800
-	defaultHTTPPort = 12800
+	// Default endpoints to bind to.
+	defaultGRPCEndpoint = "localhost:11800"
+	defaultHTTPEndpoint = "localhost:12800"
 )
 
 // NewFactory creates a new Skywalking receiver factory.
@@ -48,12 +48,12 @@ func createDefaultConfig() component.Config {
 		Protocols: Protocols{
 			GRPC: &configgrpc.ServerConfig{
 				NetAddr: confignet.AddrConfig{
-					Endpoint:  localhostgate.EndpointForPort(defaultGRPCPort),
+					Endpoint:  defaultGRPCEndpoint,
 					Transport: confignet.TransportTypeTCP,
 				},
 			},
 			HTTP: &confighttp.ServerConfig{
-				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
+				Endpoint: defaultHTTPEndpoint,
 			},
 		},
 	}
@@ -66,7 +66,6 @@ func createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-
 	// Convert settings in the source c to configuration struct
 	// that Skywalking receiver understands.
 	rCfg := cfg.(*Config)
@@ -94,7 +93,6 @@ func createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	// Convert settings in the source c to configuration struct
 	// that Skywalking receiver understands.
 	rCfg := cfg.(*Config)
@@ -148,7 +146,7 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 		return 0, fmt.Errorf("endpoint port is not a number: %w", err)
 	}
 	if port < 1 || port > 65535 {
-		return 0, fmt.Errorf("port number must be between 1 and 65535")
+		return 0, errors.New("port number must be between 1 and 65535")
 	}
 	return int(port), nil
 }

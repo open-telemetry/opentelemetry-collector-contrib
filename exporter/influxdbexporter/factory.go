@@ -34,13 +34,14 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = 5 * time.Second
+	clientConfig.Headers = map[string]configopaque.String{
+		"User-Agent": "OpenTelemetry -> Influx",
+	}
+
 	return &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Timeout: 5 * time.Second,
-			Headers: map[string]configopaque.String{
-				"User-Agent": "OpenTelemetry -> Influx",
-			},
-		},
+		ClientConfig:        clientConfig,
 		QueueSettings:       exporterhelper.NewDefaultQueueConfig(),
 		BackOffConfig:       configretry.NewDefaultBackOffConfig(),
 		MetricsSchema:       common.MetricsSchemaTelegrafPrometheusV1.String(),
@@ -76,7 +77,7 @@ func createTraceExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -111,7 +112,7 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings, config co
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -141,7 +142,7 @@ func createLogsExporter(ctx context.Context, set exporter.Settings, config compo
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,

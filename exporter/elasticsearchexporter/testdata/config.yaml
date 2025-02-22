@@ -17,7 +17,7 @@ elasticsearch/trace:
   flush:
     bytes: 10485760
   retry:
-    max_requests: 5
+    max_retries: 5
     retry_on_status:
       - 429
       - 500
@@ -38,7 +38,7 @@ elasticsearch/metric:
   flush:
     bytes: 10485760
   retry:
-    max_requests: 5
+    max_retries: 5
     retry_on_status:
       - 429
       - 500
@@ -61,7 +61,7 @@ elasticsearch/log:
   flush:
     bytes: 10485760
   retry:
-    max_requests: 5
+    max_retries: 5
     retry_on_status:
       - 429
       - 500
@@ -77,12 +77,15 @@ elasticsearch/raw:
     mode: raw
 elasticsearch/cloudid:
   cloudid: foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY=
-elasticsearch/deprecated_index:
-  endpoints: [https://elastic.example.com:9200]
-  index: my_log_index
 elasticsearch/confighttp_endpoint:
   endpoint: https://elastic.example.com:9200
 elasticsearch/batcher_disabled:
   endpoint: https://elastic.example.com:9200
   batcher:
     enabled: false
+elasticsearch/compression_none:
+  endpoint: https://elastic.example.com:9200
+  compression: none
+elasticsearch/compression_gzip:
+  endpoint: https://elastic.example.com:9200
+  compression: gzip

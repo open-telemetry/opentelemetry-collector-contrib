@@ -12,8 +12,8 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
@@ -36,7 +36,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 		},
 	}, cfg)
 
-	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.NoError(t, xconfmap.Validate(cfg))
 
 	ccfg := cfg.(*Config)
 	ccfg.CollectorName = "test_collector"
@@ -52,7 +52,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	require.NotNil(t, ext)
 }
 
-func TestFactory_CreateExtension(t *testing.T) {
+func TestFactory_Create(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.CollectorName = "test_collector"
 	cfg.Credentials.InstallationToken = "dummy_install_token"

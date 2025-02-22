@@ -6,7 +6,7 @@ package azuredataexplorerexporter // import "github.com/open-telemetry/opentelem
 import (
 	"context"
 	"io"
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 	"testing"
 	"time"
@@ -25,7 +25,8 @@ import (
 
 func TestNewExporter(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	c := Config{ClusterURI: "https://CLUSTER.kusto.windows.net",
+	c := Config{
+		ClusterURI:         "https://CLUSTER.kusto.windows.net",
 		ApplicationID:      "unknown",
 		ApplicationKey:     "unknown",
 		TenantID:           "unknown",
@@ -163,9 +164,7 @@ func TestIngestedDataRecordCount(t *testing.T) {
 		ingestOptions: ingestOptions,
 		logger:        logger,
 	}
-	source := rand.NewSource(time.Now().UTC().UnixNano())
-	genRand := rand.New(source)
-	recordstoingest := genRand.Intn(20)
+	recordstoingest := rand.IntN(20)
 	err := adxDataProducer.metricsDataPusher(context.Background(), createMetricsData(recordstoingest))
 	ingestedrecordsactual := ingestor.Records()
 	assert.Len(t, ingestedrecordsactual, recordstoingest, "Number of metrics created should match number of records ingested")
@@ -178,6 +177,7 @@ func TestCreateKcsb(t *testing.T) {
 		name              string // name of the test
 		config            Config // config for the test
 		isMsi             bool   // is MSI enabled
+		isAzureAuth       bool   // is azure authentication enabled
 		applicationID     string // application id
 		managedIdentityID string // managed identity id
 	}{
@@ -216,9 +216,17 @@ func TestCreateKcsb(t *testing.T) {
 			managedIdentityID: "636d798f-b005-41c9-9809-81a5e5a12b2e",
 			applicationID:     "",
 		},
+		{
+			name: "azure auth",
+			config: Config{
+				ClusterURI:   "https://CLUSTER.kusto.windows.net",
+				Database:     "tests",
+				UseAzureAuth: true,
+			},
+			isAzureAuth: true,
+		},
 	}
-	for i := range tests {
-		tt := tests[i]
+	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			wantAppID := tt.applicationID
 			gotKcsb := createKcsb(&tt.config, "1.0.0")
@@ -229,6 +237,8 @@ func TestCreateKcsb(t *testing.T) {
 			wantManagedID := tt.managedIdentityID
 			assert.Equal(t, wantManagedID, gotKcsb.ManagedServiceIdentity)
 			assert.Equal(t, "https://CLUSTER.kusto.windows.net", gotKcsb.DataSource)
+			wantIsAzure := tt.isAzureAuth
+			assert.Equal(t, wantIsAzure, gotKcsb.DefaultAuth)
 		})
 	}
 }
@@ -298,7 +308,6 @@ func createLogsData() plog.Logs {
 	log.SetSeverityNumber(plog.SeverityNumberDebug)
 	log.SetSeverityText("DEBUG")
 	return logs
-
 }
 
 func createTracesData() ptrace.Traces {

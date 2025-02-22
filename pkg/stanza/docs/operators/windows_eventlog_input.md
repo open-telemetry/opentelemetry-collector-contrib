@@ -12,6 +12,8 @@ The `windows_eventlog_input` operator reads logs from the windows event log API.
 | `max_reads`     | 100                      | The maximum number of bodies read into memory, before beginning a new batch. |
 | `start_at`      | `end`                    | On first startup, where to start reading logs from the API. Options are `beginning` or `end`. |
 | `poll_interval` | 1s                       | The interval at which the channel is checked for new log entries. This check begins again after all new bodies have been read. |
+| `raw` | false | If false, the body of emitted log records will contain a structured representation of the event. Otherwise, the body will be the original XML string. |
+| `suppress_rendering_info` | false | If false, [additional syscalls](https://learn.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtformatmessage#remarks) may be made to retrieve detailed information about the event. Otherwise, some unresolved values may be present in the event. |
 | `attributes`    | {}                       | A map of `key: value` pairs to add to the entry's attributes. |
 | `resource`      | {}                       | A map of `key: value` pairs to add to the entry's resource. |
 

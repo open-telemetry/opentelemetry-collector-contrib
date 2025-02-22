@@ -22,15 +22,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system/internal/metadata"
 )
 
-var (
-	_ = featuregate.GlobalRegistry().MustRegister(
-		"processor.resourcedetection.hostCPUSteppingAsString",
-		featuregate.StageStable,
-		featuregate.WithRegisterDescription("Change type of host.cpu.stepping to string."),
-		featuregate.WithRegisterFromVersion("v0.95.0"),
-		featuregate.WithRegisterToVersion("v0.110.0"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/664"),
-	)
+var _ = featuregate.GlobalRegistry().MustRegister(
+	"processor.resourcedetection.hostCPUSteppingAsString",
+	featuregate.StageStable,
+	featuregate.WithRegisterDescription("Change type of host.cpu.stepping to string."),
+	featuregate.WithRegisterFromVersion("v0.95.0"),
+	featuregate.WithRegisterToVersion("v0.110.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/664"),
 )
 
 const (

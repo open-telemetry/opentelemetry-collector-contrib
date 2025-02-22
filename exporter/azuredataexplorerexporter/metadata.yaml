@@ -6,7 +6,8 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [asaharn, ag-ramachandran]
+    active: [ag-ramachandran]
+    emeritus: [asaharn]
 
 # TODO: Update the exporter to pass the tests
 tests:
@@ -16,8 +17,3 @@ tests:
     application_key: "xx-xx-xx-xx"
     tenant_id: "21ff9e36-fbaa-43c8-98ba-00431ea10bc3"
   skip_lifecycle: true
-  goleak:
-    ignore:
-      top:
-        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
-        - "go.opencensus.io/stats/view.(*worker).start"

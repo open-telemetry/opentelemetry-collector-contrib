@@ -8,13 +8,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/metadata"
 )
 
-var creationParams = receivertest.NewNopSettings()
+var creationParams = receivertest.NewNopSettings(metadata.Type)
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
@@ -38,10 +41,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 	}
 
-	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.NoError(t, xconfmap.Validate(cfg))
 }
 
-func TestCreateTracesReceiver(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).PerfCounters = []ObjectConfig{
@@ -58,13 +61,13 @@ func TestCreateTracesReceiver(t *testing.T) {
 			Gauge:       GaugeMetric{},
 		},
 	}
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
 
-	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, tReceiver)
 }
 
-func TestCreateTracesReceiverNoMetrics(t *testing.T) {
+func TestCreateTracesNoMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).PerfCounters = []ObjectConfig{
@@ -73,13 +76,13 @@ func TestCreateTracesReceiverNoMetrics(t *testing.T) {
 			Counters: []CounterConfig{{Name: "counter"}},
 		},
 	}
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
 
-	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, tReceiver)
 }
 
-func TestCreateLogsReceiver(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).PerfCounters = []ObjectConfig{
@@ -97,8 +100,8 @@ func TestCreateLogsReceiver(t *testing.T) {
 		},
 	}
 
-	tReceiver, err := factory.CreateLogsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateLogs(context.Background(), creationParams, cfg, consumertest.NewNop())
 
-	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, tReceiver)
 }

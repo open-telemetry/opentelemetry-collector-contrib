@@ -53,7 +53,8 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 									{
 										Line: `{"attributes":{"http.status":200,"tenant.id":"1"}}`,
 									},
-								}},
+								},
+							},
 						},
 					},
 				},
@@ -105,7 +106,8 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 									{
 										Line: `{"attributes":{"http.status":200},"resources":{"tenant.id":"11"}}`,
 									},
-								}},
+								},
+							},
 						},
 					},
 				},
@@ -148,7 +150,8 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
-								}},
+								},
+							},
 						},
 					},
 				},
@@ -191,7 +194,8 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 									{
 										Line: `{"attributes":{"http.status":200,"tenant.id":"31"},"resources":{"tenant.id":"21"}}`,
 									},
-								}},
+								},
+							},
 						},
 					},
 				},

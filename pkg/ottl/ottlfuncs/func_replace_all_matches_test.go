@@ -20,6 +20,8 @@ func Test_replaceAllMatches(t *testing.T) {
 	input.PutStr("test", "hello world")
 	input.PutStr("test2", "hello")
 	input.PutStr("test3", "goodbye")
+	input.PutStr("test4", "")
+	input.PutInt("test5", 123)
 
 	ottlValue := ottl.StandardFunctionGetter[pcommon.Map]{
 		FCtx: ottl.FunctionContext{
@@ -64,6 +66,8 @@ func Test_replaceAllMatches(t *testing.T) {
 				expectedMap.PutStr("test", "prefix=hash(hello {universe})")
 				expectedMap.PutStr("test2", "prefix=hash(hello {universe})")
 				expectedMap.PutStr("test3", "goodbye")
+				expectedMap.PutStr("test4", "")
+				expectedMap.PutInt("test5", 123)
 			},
 		},
 		{
@@ -81,6 +85,8 @@ func Test_replaceAllMatches(t *testing.T) {
 				expectedMap.PutStr("test", "hello {universe}")
 				expectedMap.PutStr("test2", "hello {universe}")
 				expectedMap.PutStr("test3", "goodbye")
+				expectedMap.PutStr("test4", "")
+				expectedMap.PutInt("test5", 123)
 			},
 		},
 		{
@@ -98,6 +104,27 @@ func Test_replaceAllMatches(t *testing.T) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutStr("test2", "hello")
 				expectedMap.PutStr("test3", "goodbye")
+				expectedMap.PutStr("test4", "")
+				expectedMap.PutInt("test5", 123)
+			},
+		},
+		{
+			name:    "replace empty string",
+			target:  target,
+			pattern: "",
+			replacement: ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(context.Context, pcommon.Map) (any, error) {
+					return "empty_string_replacement", nil
+				},
+			},
+			function:          ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{},
+			replacementFormat: ottl.Optional[ottl.StringGetter[pcommon.Map]]{},
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test2", "hello")
+				expectedMap.PutStr("test3", "goodbye")
+				expectedMap.PutStr("test4", "empty_string_replacement")
+				expectedMap.PutInt("test5", 123)
 			},
 		},
 	}

@@ -5,9 +5,9 @@ status:
   stability:
     beta: [metrics]
     development: [logs]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   codeowners:
-    active: [dmitryax, TylerHelmuth, povilasv]
+    active: [dmitryax, TylerHelmuth, povilasv, ChrsMark]
 
 sem_conv_version: 1.18.0
 

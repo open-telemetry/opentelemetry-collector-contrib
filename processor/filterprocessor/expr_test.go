@@ -19,10 +19,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
-const filteredMetric = "p0_metric_1"
-const filteredAttrKey = "pt-label-key-1"
+const (
+	filteredMetric  = "p0_metric_1"
+	filteredAttrKey = "pt-label-key-1"
+)
 
 var filteredAttrVal = pcommon.NewValueStr("pt-label-val-1")
 
@@ -126,9 +129,9 @@ func testProcessor(t *testing.T, include []string, exclude []string) (processor.
 	cfg := exprConfig(factory, include, exclude)
 	ctx := context.Background()
 	next := &consumertest.MetricsSink{}
-	proc, err := factory.CreateMetricsProcessor(
+	proc, err := factory.CreateMetrics(
 		ctx,
-		processortest.NewNopSettings(),
+		processortest.NewNopSettings(metadata.Type),
 		cfg,
 		next,
 	)

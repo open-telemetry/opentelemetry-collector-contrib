@@ -49,10 +49,10 @@ func (cs *CarbonDataSender) Start() error {
 			Timeout: 5 * time.Second,
 		},
 	}
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(factory.Type())
 	params.Logger = zap.L()
 
-	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}

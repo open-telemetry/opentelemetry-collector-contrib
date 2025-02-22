@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
@@ -24,37 +26,33 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
-				PipelinePriority: [][]component.ID{
+				PipelinePriority: [][]pipeline.ID{
 					{
-						component.NewIDWithName(component.DataTypeTraces, ""),
+						pipeline.NewIDWithName(pipeline.SignalTraces, ""),
 					},
 				},
 				RetryInterval: 10 * time.Minute,
-				RetryGap:      30 * time.Second,
-				MaxRetries:    10,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
-				PipelinePriority: [][]component.ID{
+				PipelinePriority: [][]pipeline.ID{
 					{
-						component.NewIDWithName(component.DataTypeTraces, "first"),
-						component.NewIDWithName(component.DataTypeTraces, "also_first"),
+						pipeline.NewIDWithName(pipeline.SignalTraces, "first"),
+						pipeline.NewIDWithName(pipeline.SignalTraces, "also_first"),
 					},
 					{
-						component.NewIDWithName(component.DataTypeTraces, "second"),
+						pipeline.NewIDWithName(pipeline.SignalTraces, "second"),
 					},
 					{
-						component.NewIDWithName(component.DataTypeTraces, "third"),
+						pipeline.NewIDWithName(pipeline.SignalTraces, "third"),
 					},
 					{
-						component.NewIDWithName(component.DataTypeTraces, "fourth"),
+						pipeline.NewIDWithName(pipeline.SignalTraces, "fourth"),
 					},
 				},
 				RetryInterval: 5 * time.Minute,
-				RetryGap:      time.Minute,
-				MaxRetries:    10,
 			},
 		},
 	}
@@ -71,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tc.expected, cfg)
 		})
 	}
@@ -89,7 +87,7 @@ func TestValidateConfig(t *testing.T) {
 			err:  errNoPipelinePriority,
 		},
 		{
-			name: "invalid ratio of retry_gap to retry_interval",
+			name: "invalid retry_interval",
 			id:   component.NewIDWithName(metadata.Type, "invalid"),
 			err:  errInvalidRetryIntervals,
 		},
@@ -108,7 +106,7 @@ func TestValidateConfig(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, sub.Unmarshal(cfg))
 
-				assert.EqualError(t, component.ValidateConfig(cfg), tc.err.Error())
+				assert.ErrorContains(t, xconfmap.Validate(cfg), tc.err.Error())
 			})
 		})
 	}

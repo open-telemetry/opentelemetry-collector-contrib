@@ -9,9 +9,9 @@ import (
 )
 
 func TestResourceBuilder(t *testing.T) {
-	for _, test := range []string{"default", "all_set", "none_set"} {
-		t.Run(test, func(t *testing.T) {
-			cfg := loadResourceAttributesConfig(t, test)
+	for _, tt := range []string{"default", "all_set", "none_set"} {
+		t.Run(tt, func(t *testing.T) {
+			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
 			rb.SetContainerID("container.id-val")
 			rb.SetContainerImageName("container.image.name-val")
@@ -54,7 +54,7 @@ func TestResourceBuilder(t *testing.T) {
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
-			switch test {
+			switch tt {
 			case "default":
 				assert.Equal(t, 30, res.Attributes().Len())
 			case "all_set":
@@ -63,7 +63,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
-				assert.Failf(t, "unexpected test case: %s", test)
+				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 
 			val, ok := res.Attributes().Get("container.id")
@@ -82,12 +82,12 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "container.image.tag-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.runtime")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "container.runtime-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.runtime.version")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "container.runtime.version-val", val.Str())
 			}
@@ -97,7 +97,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "k8s.container.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.container.status.last_terminated_reason")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.container.status.last_terminated_reason-val", val.Str())
 			}
@@ -152,7 +152,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "k8s.job.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.kubelet.version")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.kubelet.version-val", val.Str())
 			}
@@ -182,7 +182,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "k8s.pod.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.pod.qos_class")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.pod.qos_class-val", val.Str())
 			}
@@ -242,12 +242,12 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "openshift.clusterquota.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("os.description")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "os.description-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("os.type")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "os.type-val", val.Str())
 			}

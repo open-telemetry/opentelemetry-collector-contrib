@@ -32,9 +32,7 @@ const (
 	kubeProxy          = "kube-proxy"
 )
 
-var (
-	re = regexp.MustCompile(splitRegexStr)
-)
+var re = regexp.MustCompile(splitRegexStr)
 
 type cachedEntry struct {
 	pod      corev1.Pod
@@ -208,18 +206,17 @@ func (p *PodStore) Decorate(ctx context.Context, metric CIMetric, kubernetesBlob
 		}
 
 		// If the entry is not a placeholder, decorate the pod
-		if entry.pod.Name != "" {
-			p.decorateCPU(metric, &entry.pod)
-			p.decorateMem(metric, &entry.pod)
-			p.addStatus(metric, &entry.pod)
-			addContainerCount(metric, &entry.pod)
-			addContainerID(&entry.pod, metric, kubernetesBlob, p.logger)
-			p.addPodOwnersAndPodName(metric, &entry.pod, kubernetesBlob)
-			addLabels(&entry.pod, kubernetesBlob)
-		} else {
-			p.logger.Warn(fmt.Sprintf("no pod information is found in podstore for pod %s", podKey))
+		if entry.pod.Name == "" {
+			p.logger.Warn("no pod information is found in podstore for pod " + podKey)
 			return false
 		}
+		p.decorateCPU(metric, &entry.pod)
+		p.decorateMem(metric, &entry.pod)
+		p.addStatus(metric, &entry.pod)
+		addContainerCount(metric, &entry.pod)
+		addContainerID(&entry.pod, metric, kubernetesBlob, p.logger)
+		p.addPodOwnersAndPodName(metric, &entry.pod, kubernetesBlob)
+		addLabels(&entry.pod, kubernetesBlob)
 	}
 	return true
 }
@@ -262,7 +259,7 @@ func (p *PodStore) refreshInternal(now time.Time, podList []corev1.Pod) {
 		pod := podList[i]
 		podKey := createPodKeyFromMetaData(&pod)
 		if podKey == "" {
-			p.logger.Warn(fmt.Sprintf("podKey is unavailable, refresh pod store for pod %s", pod.Name))
+			p.logger.Warn("podKey is unavailable, refresh pod store for pod " + pod.Name)
 			continue
 		}
 		if pod.Status.Phase != corev1.PodSucceeded && pod.Status.Phase != corev1.PodFailed {
@@ -283,7 +280,8 @@ func (p *PodStore) refreshInternal(now time.Time, podList []corev1.Pod) {
 
 		p.setCachedEntry(podKey, &cachedEntry{
 			pod:      pod,
-			creation: now})
+			creation: now,
+		})
 	}
 
 	p.nodeInfo.setNodeStats(nodeStats{podCnt: podCount, containerCnt: containerCount, memReq: memRequest, cpuReq: cpuRequest})

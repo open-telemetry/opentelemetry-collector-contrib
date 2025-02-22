@@ -19,6 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/models"
 )
@@ -33,6 +34,18 @@ var (
 )
 
 func TestScraperStart(t *testing.T) {
+	clientConfigNoCA := confighttp.NewDefaultClientConfig()
+	clientConfigNoCA.Endpoint = defaultEndpoint
+	clientConfigNoCA.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "/non/existent",
+		},
+	}
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.TLSSetting = configtls.ClientConfig{}
+	clientConfig.Endpoint = defaultEndpoint
+
 	testcases := []struct {
 		desc        string
 		scraper     *flinkmetricsScraper
@@ -42,14 +55,7 @@ func TestScraperStart(t *testing.T) {
 			desc: "Bad Config",
 			scraper: &flinkmetricsScraper{
 				cfg: &Config{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint: defaultEndpoint,
-						TLSSetting: configtls.ClientConfig{
-							Config: configtls.Config{
-								CAFile: "/non/existent",
-							},
-						},
-					},
+					ClientConfig: clientConfigNoCA,
 				},
 				settings: componenttest.NewNopTelemetrySettings(),
 			},
@@ -59,10 +65,7 @@ func TestScraperStart(t *testing.T) {
 			desc: "Valid Config",
 			scraper: &flinkmetricsScraper{
 				cfg: &Config{
-					ClientConfig: confighttp.ClientConfig{
-						TLSSetting: configtls.ClientConfig{},
-						Endpoint:   defaultEndpoint,
-					},
+					ClientConfig: clientConfig,
 				},
 				settings: componenttest.NewNopTelemetrySettings(),
 			},
@@ -245,7 +248,7 @@ func TestScraperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newflinkScraper(createDefaultConfig().(*Config), receivertest.NewNopSettings())
+			scraper := newflinkScraper(createDefaultConfig().(*Config), receivertest.NewNopSettings(metadata.Type))
 			scraper.client = tc.setupMockClient(t)
 			actualMetrics, err := scraper.scrape(context.Background())
 

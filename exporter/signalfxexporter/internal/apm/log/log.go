@@ -7,8 +7,7 @@ package log // import "github.com/open-telemetry/opentelemetry-collector-contrib
 // Fields is a map that is used to populated logging context.
 type Fields map[string]any
 
-type nilLogger struct {
-}
+type nilLogger struct{}
 
 func (n nilLogger) Debug(string) {
 }

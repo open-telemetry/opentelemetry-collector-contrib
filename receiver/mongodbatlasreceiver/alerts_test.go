@@ -24,15 +24,16 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
 
@@ -163,9 +164,8 @@ func TestPayloadToLogRecord(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			logs, err := payloadToLogs(now, []byte(tc.payload))
 			if tc.expectedErr != "" {
-				require.Error(t, err)
 				require.Nil(t, logs)
-				require.Contains(t, err.Error(), tc.expectedErr)
+				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, logs)
@@ -240,12 +240,10 @@ func TestVerifyHMACSignature(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := verifyHMACSignature(tc.secret, tc.payload, tc.signatureHeader)
 			if tc.expectedErr != "" {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tc.expectedErr)
+				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
 				require.NoError(t, err)
 			}
-
 		})
 	}
 }
@@ -262,7 +260,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "No ContentLength set",
 			request: &http.Request{
 				ContentLength: -1,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 				Header: map[string][]string{
@@ -277,7 +275,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "ContentLength too large",
 			request: &http.Request{
 				ContentLength: maxContentLength + 1,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 				Header: map[string][]string{
@@ -292,7 +290,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "ContentLength is incorrect for payload",
 			request: &http.Request{
 				ContentLength: 1,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 				Header: map[string][]string{
@@ -307,7 +305,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "ContentLength is larger than actual payload",
 			request: &http.Request{
 				ContentLength: 32,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 				Header: map[string][]string{
@@ -322,7 +320,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "No HMAC signature",
 			request: &http.Request{
 				ContentLength: 15,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 			},
@@ -334,7 +332,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "Incorrect HMAC signature",
 			request: &http.Request{
 				ContentLength: 15,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 				Header: map[string][]string{
@@ -349,7 +347,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "Invalid payload",
 			request: &http.Request{
 				ContentLength: 14,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"`)),
 				Header: map[string][]string{
@@ -364,7 +362,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "Consumer fails",
 			request: &http.Request{
 				ContentLength: 15,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 				Header: map[string][]string{
@@ -379,7 +377,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "Request succeeds",
 			request: &http.Request{
 				ContentLength: 15,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 				Header: map[string][]string{
@@ -401,7 +399,7 @@ func TestHandleRequest(t *testing.T) {
 				consumer = &consumertest.LogsSink{}
 			}
 
-			set := receivertest.NewNopSettings()
+			set := receivertest.NewNopSettings(metadata.Type)
 			set.Logger = zaptest.NewLogger(t)
 			ar, err := newAlertsReceiver(set, &Config{Alerts: AlertConfig{Secret: "some_secret"}}, consumer)
 			require.NoError(t, err, "Failed to create alerts receiver")
@@ -585,11 +583,10 @@ func TestAlertsRetrieval(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			logSink := &consumertest.LogsSink{}
-			alertsRcvr, err := newAlertsReceiver(receivertest.NewNopSettings(), tc.config(), logSink)
+			alertsRcvr, err := newAlertsReceiver(receivertest.NewNopSettings(metadata.Type), tc.config(), logSink)
 			require.NoError(t, err)
 			alertsRcvr.client = tc.client()
 
@@ -610,7 +607,7 @@ func TestAlertsRetrieval(t *testing.T) {
 
 func TestAlertPollingExclusions(t *testing.T) {
 	logSink := &consumertest.LogsSink{}
-	alertsRcvr, err := newAlertsReceiver(receivertest.NewNopSettings(), &Config{
+	alertsRcvr, err := newAlertsReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
 		Alerts: AlertConfig{
 			Enabled: true,
 			Mode:    alertModePoll,

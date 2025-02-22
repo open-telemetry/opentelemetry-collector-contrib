@@ -1,4 +1,4 @@
-FROM mongo:7.0
+FROM mongo:8.0
 
 COPY scripts/setup.sh /setup.sh
 RUN chmod +x /setup.sh

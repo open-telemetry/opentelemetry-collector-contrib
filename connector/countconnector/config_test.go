@@ -279,7 +279,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Metrics: map[string]MetricInfo{
 					"my.metric.count": {
-						Description: "My metric count."},
+						Description: "My metric count.",
+					},
 					"limited.metric.count": {
 						Description: "Limited metric count.",
 						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-m")`},
@@ -515,8 +516,7 @@ func TestConfigErrors(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.input.Validate()
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), tc.expect)
+			assert.ErrorContains(t, err, tc.expect)
 		})
 	}
 }

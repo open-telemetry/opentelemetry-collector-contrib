@@ -24,8 +24,10 @@ import (
 	"go.uber.org/zap"
 )
 
-var expectedForm = "<165>1 2003-08-24T12:14:15Z 192.0.2.1 myproc 8710 - - It's time to make the do-nuts.\n"
-var originalForm = "<165>1 2003-08-24T05:14:15-07:00 192.0.2.1 myproc 8710 - - It's time to make the do-nuts."
+var (
+	expectedForm = "<165>1 2003-08-24T12:14:15Z 192.0.2.1 myproc 8710 - - It's time to make the do-nuts.\n"
+	originalForm = "<165>1 2003-08-24T05:14:15-07:00 192.0.2.1 myproc 8710 - - It's time to make the do-nuts."
+)
 
 type exporterTest struct {
 	srv net.TCPListener
@@ -40,9 +42,11 @@ func exampleLog(t *testing.T) plog.LogRecord {
 	assert.NoError(t, err, "failed to start test syslog server")
 	ts := pcommon.NewTimestampFromTime(timeStr)
 	buffer.SetTimestamp(ts)
-	attrMap := map[string]any{"proc_id": "8710", "message": "It's time to make the do-nuts.",
+	attrMap := map[string]any{
+		"proc_id": "8710", "message": "It's time to make the do-nuts.",
 		"appname": "myproc", "hostname": "192.0.2.1", "priority": int64(165),
-		"version": int64(1)}
+		"version": int64(1),
+	}
 	for k, v := range attrMap {
 		if _, ok := v.(string); ok {
 			buffer.Attributes().PutStr(k, v.(string))
@@ -70,10 +74,12 @@ func createExporterCreateSettings() exporter.Settings {
 }
 
 func TestInitExporter(t *testing.T) {
-	_, err := initExporter(&Config{Endpoint: "test.com",
+	_, err := initExporter(&Config{
+		Endpoint: "test.com",
 		Network:  "tcp",
 		Port:     514,
-		Protocol: "rfc5424"}, createExporterCreateSettings())
+		Protocol: "rfc5424",
+	}, createExporterCreateSettings())
 	assert.NoError(t, err)
 }
 
@@ -130,7 +136,6 @@ func prepareExporterTest(t *testing.T, cfg *Config, invalidExporter bool) *expor
 		srv: testServer,
 		exp: exp,
 	}
-
 }
 
 func createTestConfig() *Config {
@@ -187,29 +192,32 @@ func TestSyslogExportFail(t *testing.T) {
 }
 
 func TestTLSConfig(t *testing.T) {
-
 	tests := []struct {
 		name        string
 		network     string
 		tlsSettings configtls.ClientConfig
 		tlsConfig   *tls.Config
 	}{
-		{name: "TCP with TLS configuration",
+		{
+			name:        "TCP with TLS configuration",
 			network:     "tcp",
 			tlsSettings: configtls.ClientConfig{},
 			tlsConfig:   &tls.Config{},
 		},
-		{name: "TCP insecure",
+		{
+			name:        "TCP insecure",
 			network:     "tcp",
 			tlsSettings: configtls.ClientConfig{Insecure: true},
 			tlsConfig:   nil,
 		},
-		{name: "UDP with TLS configuration",
+		{
+			name:        "UDP with TLS configuration",
 			network:     "udp",
 			tlsSettings: configtls.ClientConfig{},
 			tlsConfig:   nil,
 		},
-		{name: "UDP insecure",
+		{
+			name:        "UDP insecure",
 			network:     "udp",
 			tlsSettings: configtls.ClientConfig{Insecure: true},
 			tlsConfig:   nil,
@@ -218,13 +226,14 @@ func TestTLSConfig(t *testing.T) {
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-
 			exporter, err := initExporter(
-				&Config{Endpoint: "test.com",
+				&Config{
+					Endpoint:   "test.com",
 					Network:    testInstance.network,
 					Port:       514,
 					Protocol:   "rfc5424",
-					TLSSetting: testInstance.tlsSettings},
+					TLSSetting: testInstance.tlsSettings,
+				},
 				createExporterCreateSettings())
 
 			assert.NoError(t, err)
@@ -233,7 +242,6 @@ func TestTLSConfig(t *testing.T) {
 			} else {
 				assert.Nil(t, exporter.tlsConfig)
 			}
-
 		})
 	}
 }

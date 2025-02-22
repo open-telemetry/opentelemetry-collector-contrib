@@ -11,14 +11,15 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -30,7 +31,7 @@ func TestScrape(t *testing.T) {
 		name                     string
 		config                   Config
 		rootPath                 string
-		osEnv                    map[string]string
+		osEnv                    map[common.EnvKeyType]string
 		bootTimeFunc             func(context.Context) (uint64, error)
 		partitionsFunc           func(context.Context, bool) ([]disk.PartitionStat, error)
 		usageFunc                func(context.Context, string) (*disk.UsageStat, error)
@@ -80,12 +81,12 @@ func TestScrape(t *testing.T) {
 				IncludeVirtualFS:     true,
 				IncludeFSTypes:       FSTypeMatchConfig{Config: filterset.Config{MatchType: filterset.Strict}, FSTypes: []string{"tmpfs"}},
 			},
-			partitionsFunc: func(_ context.Context, includeVirtual bool) (paritions []disk.PartitionStat, err error) {
-				paritions = append(paritions, disk.PartitionStat{Device: "root-device", Fstype: "ext4"})
+			partitionsFunc: func(_ context.Context, includeVirtual bool) (partitions []disk.PartitionStat, err error) {
+				partitions = append(partitions, disk.PartitionStat{Device: "root-device", Fstype: "ext4"})
 				if includeVirtual {
-					paritions = append(paritions, disk.PartitionStat{Device: "shm", Fstype: "tmpfs"})
+					partitions = append(partitions, disk.PartitionStat{Device: "shm", Fstype: "tmpfs"})
 				}
-				return paritions, err
+				return partitions, err
 			},
 			usageFunc: func(context.Context, string) (*disk.UsageStat, error) {
 				return &disk.UsageStat{}, nil
@@ -198,8 +199,8 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name: "RootPath at /hostfs but HOST_PROC_MOUNTINFO is set",
-			osEnv: map[string]string{
-				"HOST_PROC_MOUNTINFO": "/proc/1/self",
+			osEnv: map[common.EnvKeyType]string{
+				common.HostProcMountinfo: "/proc/1/self",
 			},
 			config: Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -266,7 +267,7 @@ func TestScrape(t *testing.T) {
 			newErrRegex: "^error creating exclude_fs_types filter:",
 		},
 		{
-			name: "Invalid Include Moountpoints Filter",
+			name: "Invalid Include Mountpoints Filter",
 			config: Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				IncludeMountPoints:   MountPointMatchConfig{MountPoints: []string{"test"}},
@@ -274,7 +275,7 @@ func TestScrape(t *testing.T) {
 			newErrRegex: "^error creating include_mount_points filter:",
 		},
 		{
-			name: "Invalid Exclude Moountpoints Filter",
+			name: "Invalid Exclude Mountpoints Filter",
 			config: Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				ExcludeMountPoints:   MountPointMatchConfig{MountPoints: []string{"test"}},
@@ -347,16 +348,52 @@ func TestScrape(t *testing.T) {
 			usageFunc:   func(context.Context, string) (*disk.UsageStat, error) { return nil, errors.New("err2") },
 			expectedErr: "err2",
 		},
+		{
+			name: "Do not report duplicate mount points",
+			config: Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
+			usageFunc: func(context.Context, string) (*disk.UsageStat, error) {
+				return &disk.UsageStat{
+					Fstype: "fs_type_a",
+				}, nil
+			},
+			partitionsFunc: func(context.Context, bool) ([]disk.PartitionStat, error) {
+				return []disk.PartitionStat{
+					{
+						Device:     "device_a",
+						Mountpoint: "mount_point_a",
+						Fstype:     "fs_type_a",
+					},
+					{
+						Device:     "device_a",
+						Mountpoint: "mount_point_a",
+						Fstype:     "fs_type_a",
+					},
+				}, nil
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 1,
+			expectedDeviceAttributes: []map[string]pcommon.Value{
+				{
+					"device":     pcommon.NewValueStr("device_a"),
+					"mountpoint": pcommon.NewValueStr("mount_point_a"),
+					"type":       pcommon.NewValueStr("fs_type_a"),
+					"mode":       pcommon.NewValueStr("unknown"),
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
+			envMap := common.EnvMap{}
 			for k, v := range test.osEnv {
-				t.Setenv(k, v)
+				envMap[k] = v
 			}
+			ctx := context.WithValue(context.Background(), common.EnvKey, envMap)
 			test.config.SetRootPath(test.rootPath)
-			scraper, err := newFileSystemScraper(context.Background(), receivertest.NewNopSettings(), &test.config)
+			scraper, err := newFileSystemScraper(ctx, scrapertest.NewNopSettings(metadata.Type), &test.config)
 			if test.newErrRegex != "" {
 				require.Error(t, err)
 				require.Regexp(t, test.newErrRegex, err)
@@ -374,16 +411,16 @@ func TestScrape(t *testing.T) {
 				scraper.bootTime = test.bootTimeFunc
 			}
 
-			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			err = scraper.start(ctx, componenttest.NewNopHost())
 			if test.initializationErr != "" {
 				assert.EqualError(t, err, test.initializationErr)
 				return
 			}
 			require.NoError(t, err, "Failed to initialize file system scraper: %v", err)
 
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(ctx)
 			if test.expectedErr != "" {
-				assert.Contains(t, err.Error(), test.expectedErr)
+				assert.ErrorContains(t, err, test.expectedErr)
 
 				isPartial := scrapererror.IsPartialScrapeError(err)
 				assert.True(t, isPartial)
@@ -450,7 +487,8 @@ func assertFileSystemUsageMetricValid(
 	t *testing.T,
 	metric pmetric.Metric,
 	expectedDeviceDataPoints int,
-	expectedDeviceAttributes []map[string]pcommon.Value) {
+	expectedDeviceAttributes []map[string]pcommon.Value,
+) {
 	for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
 		for _, label := range []string{"device", "type", "mode", "mountpoint"} {
 			internal.AssertSumMetricHasAttribute(t, metric, i, label)

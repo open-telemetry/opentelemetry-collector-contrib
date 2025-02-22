@@ -6,3 +6,7 @@
    url: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
  - name: contrib
    url: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+ - name: k8s
+   url: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s
+ - name: otlp
+   url: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-otlp

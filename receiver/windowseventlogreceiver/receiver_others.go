@@ -7,7 +7,7 @@ package windowseventlogreceiver // import "github.com/open-telemetry/opentelemet
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -30,5 +30,5 @@ func createLogsReceiver(
 	_ component.Config,
 	_ consumer.Logs,
 ) (receiver.Logs, error) {
-	return nil, fmt.Errorf("windows eventlog receiver is only supported on Windows")
+	return nil, errors.New("windows eventlog receiver is only supported on Windows")
 }

@@ -5,6 +5,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -154,9 +155,7 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 		case <-stopperChan:
 			return
 		}
-
 	}
-
 }
 
 func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {
@@ -207,7 +206,7 @@ func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsCon
 		case data, ok := <-res:
 			if data.Type == apiWatch.Error {
 				errObject := apierrors.FromObject(data.Object)
-				// nolint:errorlint
+				//nolint:errorlint
 				if errObject.(*apierrors.StatusError).ErrStatus.Code == http.StatusGone {
 					kr.setting.Logger.Info("received a 410, grabbing new resource version", zap.Any("data", data))
 					// we received a 410 so we need to restart
@@ -254,7 +253,7 @@ func getResourceVersion(ctx context.Context, config *K8sObjectsConfig, resource 
 			return "", fmt.Errorf("could not perform initial list for watch on %v, %w", config.gvr.String(), err)
 		}
 		if objects == nil {
-			return "", fmt.Errorf("nil objects returned, this is an error in the k8sobjectsreceiver")
+			return "", errors.New("nil objects returned, this is an error in the k8sobjectsreceiver")
 		}
 
 		resourceVersion = objects.GetResourceVersion()

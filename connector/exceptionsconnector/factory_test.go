@@ -5,6 +5,7 @@ package exceptionsconnector
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,11 +13,12 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 )
 
 func TestNewConnector(t *testing.T) {
-	defaultMethod := "GET"
+	defaultMethod := http.MethodGet
 	defaultMethodValue := pcommon.NewValueStr(defaultMethod)
 	for _, tc := range []struct {
 		name           string
@@ -42,7 +44,7 @@ func TestNewConnector(t *testing.T) {
 			// Prepare
 			factory := NewFactory()
 
-			creationParams := connectortest.NewNopSettings()
+			creationParams := connectortest.NewNopSettings(metadata.Type)
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Dimensions = tc.dimensions
 

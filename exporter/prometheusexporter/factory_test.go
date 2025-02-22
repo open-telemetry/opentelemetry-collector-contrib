@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -19,25 +21,25 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateMetricsExporter(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.Endpoint = ""
 	exp, err := createMetricsExporter(
 		context.Background(),
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	require.Equal(t, errBlankPrometheusAddress, err)
 	require.Nil(t, exp)
 }
 
-func TestCreateMetricsExporterExportHelperError(t *testing.T) {
+func TestCreateMetricsExportHelperError(t *testing.T) {
 	cfg, ok := createDefaultConfig().(*Config)
 	require.True(t, ok)
 
 	cfg.Endpoint = "http://localhost:8889"
 
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.Logger = nil
 
 	// Should give us an exporterhelper.errNilLogger

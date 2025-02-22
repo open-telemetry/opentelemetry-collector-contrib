@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
@@ -75,7 +76,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -198,6 +199,7 @@ func TestValidate(t *testing.T) {
 		})
 	}
 }
+
 func TestConfig_Validate_MaxSize(t *testing.T) {
 	for _, maxSize := range []int32{structure.MaximumMaxSize + 1, -1, -structure.MaximumMaxSize} {
 		cfg := &Config{
@@ -213,10 +215,10 @@ func TestConfig_Validate_MaxSize(t *testing.T) {
 			},
 		}
 		err := cfg.Validate()
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "histogram max_size out of range")
+		assert.ErrorContains(t, err, "histogram max_size out of range")
 	}
 }
+
 func TestConfig_Validate_HistogramGoodConfig(t *testing.T) {
 	for _, maxSize := range []int32{structure.MaximumMaxSize, 0, 2} {
 		cfg := &Config{

@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -604,7 +605,6 @@ func TestBuildEventFromLog(t *testing.T) {
 			assert.Equal(t, expected, was)
 		})
 	}
-
 }
 
 func TestBuildEventFromLogExportResources(t *testing.T) {
@@ -673,6 +673,7 @@ func TestBuildEventFromLogExportScopeInfo(t *testing.T) {
 
 	assert.Equal(t, expected, was)
 }
+
 func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedTimestamp(t *testing.T) {
 	// When LogRecord doesn't have timestamp set, but it has ObservedTimestamp set,
 	// ObservedTimestamp should be used
@@ -755,7 +756,7 @@ func extract(req *http.Request) (add_events.AddEventsRequest, error) {
 }
 
 func TestConsumeLogsShouldSucceed(t *testing.T) {
-	createSettings := exportertest.NewNopSettings()
+	createSettings := exportertest.NewNopSettings(metadata.Type)
 
 	attempt := atomic.Uint64{}
 	wasSuccessful := atomic.Bool{}
@@ -1090,7 +1091,6 @@ func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityTextInvalidVal
 
 	ld = makeLogRecordWithSeverityNumberAndSeverityText(100, "")
 	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
-
 }
 
 func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityTextDataSetTraceLogLevel(t *testing.T) {

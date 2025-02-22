@@ -28,10 +28,11 @@ import (
 	"go.uber.org/zap"
 	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 
 var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -44,15 +45,16 @@ var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
 type traceExporter struct {
 	params           exporter.Settings
 	cfg              *Config
-	ctx              context.Context         // ctx triggers shutdown upon cancellation
-	client           *zorkian.Client         // client sends runnimg metrics to backend & performs API validation
-	metricsAPI       *datadogV2.MetricsApi   // client sends runnimg metrics to backend
-	scrubber         scrub.Scrubber          // scrubber scrubs sensitive information from error messages
-	onceMetadata     *sync.Once              // onceMetadata ensures that metadata is sent only once across all exporters
-	agent            *agent.Agent            // agent processes incoming traces
-	sourceProvider   source.Provider         // is able to source the origin of a trace (hostname, container, etc)
-	metadataReporter *inframetadata.Reporter // reports host metadata from resource attributes and metrics
-	retrier          *clientutil.Retrier     // retrier handles retries on requests
+	ctx              context.Context          // ctx triggers shutdown upon cancellation
+	client           *zorkian.Client          // client sends running metrics to backend & performs API validation
+	metricsAPI       *datadogV2.MetricsApi    // client sends running metrics to backend
+	scrubber         scrub.Scrubber           // scrubber scrubs sensitive information from error messages
+	onceMetadata     *sync.Once               // onceMetadata ensures that metadata is sent only once across all exporters
+	agent            *agent.Agent             // agent processes incoming traces
+	sourceProvider   source.Provider          // is able to source the origin of a trace (hostname, container, etc)
+	metadataReporter *inframetadata.Reporter  // reports host metadata from resource attributes and metrics
+	retrier          *clientutil.Retrier      // retrier handles retries on requests
+	gatewayUsage     *attributes.GatewayUsage // gatewayUsage stores the gateway usage metrics
 }
 
 func newTracesExporter(
@@ -63,6 +65,7 @@ func newTracesExporter(
 	sourceProvider source.Provider,
 	agent *agent.Agent,
 	metadataReporter *inframetadata.Reporter,
+	gatewayUsage *attributes.GatewayUsage,
 ) (*traceExporter, error) {
 	scrubber := scrub.NewScrubber()
 	exp := &traceExporter{
@@ -75,6 +78,7 @@ func newTracesExporter(
 		sourceProvider:   sourceProvider,
 		retrier:          clientutil.NewRetrier(params.Logger, cfg.BackOffConfig, scrubber),
 		metadataReporter: metadataReporter,
+		gatewayUsage:     gatewayUsage,
 	}
 	// client to send running metric to the backend & perform API key validation
 	errchan := make(chan error)
@@ -135,7 +139,7 @@ func (exp *traceExporter) consumeTraces(
 	}
 	for i := 0; i < rspans.Len(); i++ {
 		rspan := rspans.At(i)
-		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, header)
+		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(ctx, rspan, header, exp.gatewayUsage)
 		switch src.Kind {
 		case source.HostnameKind:
 			hosts[src.Identifier] = struct{}{}
@@ -155,11 +159,15 @@ func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[stri
 	var err error
 	if isMetricExportV2Enabled() {
 		series := make([]datadogV2.MetricSeries, 0, len(hosts)+len(tags))
+		timestamp := uint64(now)
 		for host := range hosts {
-			series = append(series, metrics.DefaultMetrics("traces", host, uint64(now), buildTags)...)
+			series = append(series, metrics.DefaultMetrics("traces", host, timestamp, buildTags)...)
+			if exp.gatewayUsage != nil {
+				series = append(series, metrics.GatewayUsageGauge(timestamp, host, buildTags, exp.gatewayUsage))
+			}
 		}
 		for tag := range tags {
-			ms := metrics.DefaultMetrics("traces", "", uint64(now), buildTags)
+			ms := metrics.DefaultMetrics("traces", "", timestamp, buildTags)
 			for i := range ms {
 				ms[i].Tags = append(ms[i].Tags, tag)
 			}
@@ -226,6 +234,11 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 			return clientutil.NewHTTPClient(cfg.ClientConfig)
 		}
 	}
+	if datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
+		acfg.Features["enable_operation_and_resource_name_logic_v2"] = struct{}{}
+	} else {
+		params.Logger.Info("Please enable feature gate datadog.EnableOperationAndResourceNameV2 for improved operation and resource name logic. This feature will be enabled by default in the future - if you have Datadog monitors or alerts set on operation/resource names, you may need to migrate them to the new convention.")
+	}
 	if v := cfg.Traces.GetFlushInterval(); v > 0 {
 		acfg.TraceWriter.FlushPeriodSeconds = v
 	}
@@ -238,6 +251,9 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 	if cfg.Traces.ComputeTopLevelBySpanKind {
 		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
 	}
-	tracelog.SetLogger(&zaplogger{params.Logger}) // TODO: This shouldn't be a singleton
+	if !datadog.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
+		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
+	}
+	tracelog.SetLogger(&datadog.Zaplogger{Logger: params.Logger}) // TODO: This shouldn't be a singleton
 	return acfg, nil
 }

@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
@@ -358,7 +358,6 @@ func (p *connectorImp) resetState() {
 				}
 			}
 		})
-
 	}
 }
 
@@ -410,7 +409,6 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					h := histograms.GetOrCreate(key, attributes)
 					p.addExemplar(span, duration, h)
 					h.Observe(duration)
-
 				}
 				// aggregate sums metrics
 				s := sums.GetOrCreate(key, attributes)

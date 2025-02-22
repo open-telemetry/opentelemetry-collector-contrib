@@ -4,6 +4,7 @@
 package signalfxexporter
 
 import (
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"testing"
@@ -18,8 +19,8 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/zap"
 
 	apmcorrelation "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
@@ -38,6 +39,10 @@ func TestLoadConfig(t *testing.T) {
 	seventy := 70
 	hundred := 100
 	idleConnTimeout := 30 * time.Second
+	defaultMaxIdleConns := http.DefaultTransport.(*http.Transport).MaxIdleConns
+	defaultMaxIdleConnsPerHost := http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
+	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
+	defaultIdleConnTimeout := http.DefaultTransport.(*http.Transport).IdleConnTimeout
 
 	tests := []struct {
 		id       component.ID
@@ -50,10 +55,11 @@ func TestLoadConfig(t *testing.T) {
 				Realm:       "ap0",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:              10 * time.Second,
-					Headers:              nil,
-					MaxIdleConns:         &hundred,
-					MaxIdleConnsPerHost:  &hundred,
-					IdleConnTimeout:      &idleConnTimeout,
+					Headers:              map[string]configopaque.String{},
+					MaxIdleConns:         hundred,
+					MaxIdleConnsPerHost:  hundred,
+					MaxConnsPerHost:      defaultMaxConnsPerHost,
+					IdleConnTimeout:      idleConnTimeout,
 					HTTP2ReadIdleTimeout: 10 * time.Second,
 					HTTP2PingTimeout:     10 * time.Second,
 				},
@@ -79,15 +85,19 @@ func TestLoadConfig(t *testing.T) {
 					IdleConnTimeout:     30 * time.Second,
 					Timeout:             10 * time.Second,
 				},
-				TranslationRules:    nil,
 				ExcludeMetrics:      nil,
 				IncludeMetrics:      nil,
 				DeltaTranslationTTL: 3600,
 				ExcludeProperties:   nil,
 				Correlation: &correlation.Config{
 					ClientConfig: confighttp.ClientConfig{
-						Endpoint: "",
-						Timeout:  5 * time.Second,
+						Endpoint:            "",
+						Timeout:             5 * time.Second,
+						Headers:             map[string]configopaque.String{},
+						MaxIdleConns:        defaultMaxIdleConns,
+						MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
+						MaxConnsPerHost:     defaultMaxConnsPerHost,
+						IdleConnTimeout:     defaultIdleConnTimeout,
 					},
 					StaleServiceTimeout: 5 * time.Minute,
 					SyncAttributes: map[string]string{
@@ -118,9 +128,10 @@ func TestLoadConfig(t *testing.T) {
 						"added-entry": "added value",
 						"dot.test":    "test",
 					},
-					MaxIdleConns:         &seventy,
-					MaxIdleConnsPerHost:  &seventy,
-					IdleConnTimeout:      &idleConnTimeout,
+					MaxIdleConns:         seventy,
+					MaxIdleConnsPerHost:  seventy,
+					MaxConnsPerHost:      defaultMaxConnsPerHost,
+					IdleConnTimeout:      idleConnTimeout,
 					HTTP2ReadIdleTimeout: 10 * time.Second,
 					HTTP2PingTimeout:     10 * time.Second,
 				},
@@ -148,40 +159,6 @@ func TestLoadConfig(t *testing.T) {
 					MaxConnsPerHost:     10000,
 					IdleConnTimeout:     2 * time.Hour,
 					Timeout:             20 * time.Second,
-				},
-				TranslationRules: []translation.Rule{
-					{
-						Action: translation.ActionRenameDimensionKeys,
-						Mapping: map[string]string{
-							"k8s.cluster.name": "kubernetes_cluster",
-						},
-					},
-					{
-						Action: translation.ActionDropDimensions,
-						DimensionPairs: map[string]map[string]bool{
-							"foo":  nil,
-							"foo1": {"bar": true},
-						},
-					},
-					{
-						Action:     translation.ActionDropDimensions,
-						MetricName: "metric",
-						DimensionPairs: map[string]map[string]bool{
-							"foo":  nil,
-							"foo1": {"bar": true},
-						},
-					},
-					{
-						Action: translation.ActionDropDimensions,
-						MetricNames: map[string]bool{
-							"metric1": true,
-							"metric2": true,
-						},
-						DimensionPairs: map[string]map[string]bool{
-							"foo":  nil,
-							"foo1": {"bar": true},
-						},
-					},
 				},
 				ExcludeMetrics: []dpfilters.MetricFilter{
 					{
@@ -246,8 +223,13 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Correlation: &correlation.Config{
 					ClientConfig: confighttp.ClientConfig{
-						Endpoint: "",
-						Timeout:  5 * time.Second,
+						Endpoint:            "",
+						Timeout:             5 * time.Second,
+						Headers:             map[string]configopaque.String{},
+						MaxIdleConns:        defaultMaxIdleConns,
+						MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
+						MaxConnsPerHost:     defaultMaxConnsPerHost,
+						IdleConnTimeout:     defaultIdleConnTimeout,
 					},
 					StaleServiceTimeout: 5 * time.Minute,
 					SyncAttributes: map[string]string{
@@ -278,7 +260,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			// We need to add the default exclude rules.
 			assert.NoError(t, setDefaultExcludes(tt.expected))
 			assert.Equal(t, tt.expected, cfg)
@@ -295,24 +277,12 @@ func TestConfigGetMetricTranslator(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Test empty config",
+			name: "Test default translation rules",
 			cfg: &Config{
 				DeltaTranslationTTL: 3600,
 			},
 			want: func() *translation.MetricTranslator {
 				translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600, done)
-				require.NoError(t, err)
-				return translator
-			}(),
-		},
-		{
-			name: "Test empty rules",
-			cfg: &Config{
-				TranslationRules:    []translation.Rule{},
-				DeltaTranslationTTL: 3600,
-			},
-			want: func() *translation.MetricTranslator {
-				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600, done)
 				require.NoError(t, err)
 				return translator
 			}(),
@@ -329,37 +299,10 @@ func TestConfigGetMetricTranslator(t *testing.T) {
 				return translator
 			}(),
 		},
-		{
-			name: "Test disable rules overrides rules",
-			cfg: &Config{
-				TranslationRules:               []translation.Rule{{Action: translation.ActionDropDimensions}},
-				DisableDefaultTranslationRules: true,
-				DeltaTranslationTTL:            3600,
-			},
-			want: func() *translation.MetricTranslator {
-				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600, done)
-				require.NoError(t, err)
-				return translator
-			}(),
-		},
-		{
-			name: "Test invalid translation rules",
-			cfg: &Config{
-				Realm:       "us0",
-				AccessToken: "access_token",
-				TranslationRules: []translation.Rule{
-					{
-						Action: translation.ActionRenameDimensionKeys,
-					},
-				},
-				DeltaTranslationTTL: 3600,
-			},
-			wantErr: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.cfg.getMetricTranslator(zap.NewNop(), done)
+			got, err := tt.cfg.getMetricTranslator(done)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -516,7 +459,7 @@ func TestConfigValidateErrors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Error(t, component.ValidateConfig(tt.cfg))
+			assert.Error(t, xconfmap.Validate(tt.cfg))
 		})
 	}
 }

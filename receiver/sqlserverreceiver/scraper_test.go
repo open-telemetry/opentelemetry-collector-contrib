@@ -6,7 +6,7 @@ package sqlserverreceiver
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
 func enableAllScraperMetrics(cfg *Config) {
@@ -51,6 +52,7 @@ func TestEmptyScrape(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	// Ensure there aren't any scrapers when all metrics are disabled.
@@ -61,7 +63,7 @@ func TestEmptyScrape(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLRecompilationRate.Enabled = false
 	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLCompilationRate.Enabled = false
 	cfg.MetricsBuilderConfig.Metrics.SqlserverUserConnectionCount.Enabled = false
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.Empty(t, scrapers)
 }
 
@@ -72,11 +74,13 @@ func TestSuccessfulScrape(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	enableAllScraperMetrics(cfg)
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
 
 	for _, scraper := range scrapers {
@@ -85,20 +89,20 @@ func TestSuccessfulScrape(t *testing.T) {
 		defer assert.NoError(t, scraper.Shutdown(context.Background()))
 
 		scraper.client = mockClient{
-			instanceName: scraper.instanceName,
+			instanceName: scraper.config.InstanceName,
 			SQL:          scraper.sqlQuery,
 		}
 
-		actualMetrics, err := scraper.Scrape(context.Background())
+		actualMetrics, err := scraper.ScrapeMetrics(context.Background())
 		assert.NoError(t, err)
 
 		var expectedFile string
 		switch scraper.sqlQuery {
-		case getSQLServerDatabaseIOQuery(scraper.instanceName):
+		case getSQLServerDatabaseIOQuery(scraper.config.InstanceName):
 			expectedFile = filepath.Join("testdata", "expectedDatabaseIO.yaml")
-		case getSQLServerPerformanceCounterQuery(scraper.instanceName):
+		case getSQLServerPerformanceCounterQuery(scraper.config.InstanceName):
 			expectedFile = filepath.Join("testdata", "expectedPerfCounters.yaml")
-		case getSQLServerPropertiesQuery(scraper.instanceName):
+		case getSQLServerPropertiesQuery(scraper.config.InstanceName):
 			expectedFile = filepath.Join("testdata", "expectedProperties.yaml")
 		}
 
@@ -122,11 +126,12 @@ func TestScrapeInvalidQuery(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 
 	assert.NoError(t, cfg.Validate())
 
 	enableAllScraperMetrics(cfg)
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	for _, scraper := range scrapers {
@@ -135,11 +140,11 @@ func TestScrapeInvalidQuery(t *testing.T) {
 		defer assert.NoError(t, scraper.Shutdown(context.Background()))
 
 		scraper.client = mockClient{
-			instanceName: scraper.instanceName,
+			instanceName: scraper.config.InstanceName,
 			SQL:          "Invalid SQL query",
 		}
 
-		actualMetrics, err := scraper.Scrape(context.Background())
+		actualMetrics, err := scraper.ScrapeMetrics(context.Background())
 		assert.Error(t, err)
 		assert.Empty(t, actualMetrics)
 	}
@@ -165,7 +170,6 @@ func readFile(fname string) ([]sqlquery.StringMap, error) {
 	}
 
 	return metrics, nil
-
 }
 
 func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
@@ -180,7 +184,7 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 	case getSQLServerPropertiesQuery(mc.instanceName):
 		queryResults, err = readFile("propertyQueryData.txt")
 	default:
-		return nil, fmt.Errorf("No valid query found")
+		return nil, errors.New("No valid query found")
 	}
 
 	if err != nil {

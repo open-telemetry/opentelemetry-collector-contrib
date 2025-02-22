@@ -16,8 +16,10 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
+var typ = component.MustNewType("podman_stats")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "podman_stats", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -28,14 +30,14 @@ func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {
-		name     string
 		createFn func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error)
+		name     string
 	}{
 
 		{
 			name: "metrics",
 			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateMetricsReceiver(ctx, set, cfg, consumertest.NewNop())
+				return factory.CreateMetrics(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
 	}
@@ -47,9 +49,9 @@ func TestComponentLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(&cfg))
 
-	for _, test := range tests {
-		t.Run(test.name+"-shutdown", func(t *testing.T) {
-			c, err := test.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
+	for _, tt := range tests {
+		t.Run(tt.name+"-shutdown", func(t *testing.T) {
+			c, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)

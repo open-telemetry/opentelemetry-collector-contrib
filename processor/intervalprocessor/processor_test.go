@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor/internal/metadata"
 )
 
 func TestAggregation(t *testing.T) {
@@ -48,9 +49,9 @@ func TestAggregation(t *testing.T) {
 			next := &consumertest.MetricsSink{}
 
 			factory := NewFactory()
-			mgp, err := factory.CreateMetricsProcessor(
+			mgp, err := factory.CreateMetrics(
 				context.Background(),
-				processortest.NewNopSettings(),
+				processortest.NewNopSettings(metadata.Type),
 				config,
 				next,
 			)

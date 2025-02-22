@@ -30,7 +30,6 @@ var (
 
 // NewFactory returns a new factory for the Filter processor.
 func NewFactory() processor.Factory {
-
 	return processor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
@@ -55,8 +54,8 @@ func createTracesProcessor(
 	_ context.Context,
 	params processor.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Traces) (processor.Traces, error) {
-
+	nextConsumer consumer.Traces,
+) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 
 	var st storage

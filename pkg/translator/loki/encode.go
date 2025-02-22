@@ -179,7 +179,6 @@ func valueToKeyvals(key string, value pcommon.Value) []any {
 			prefix = key + "_"
 		}
 		value.Map().Range(func(k string, v pcommon.Value) bool {
-
 			keyvals = append(keyvals, valueToKeyvals(prefix+k, v)...)
 			return true
 		})

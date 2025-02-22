@@ -3,7 +3,8 @@ type: sapm
 status:
   class: receiver
   stability:
-    beta: [traces]
+    deprecated: [traces]
   distributions: [contrib]
   codeowners:
     active: [atoulme]
+    seeking_new: true

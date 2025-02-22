@@ -10,10 +10,12 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
 	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -47,12 +49,12 @@ type logsExporter struct {
 func (e *logsExporter) start(ctx context.Context, host component.Host) (err error) {
 	switch {
 	case !isEmpty(e.config.Logs.Endpoint):
-		if e.clientConn, err = e.config.Logs.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+		if e.clientConn, err = e.config.Logs.ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 	case !isEmpty(e.config.Domain):
 
-		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 	}
@@ -78,7 +80,6 @@ func (e *logsExporter) shutdown(context.Context) error {
 }
 
 func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
-
 	rss := ld.ResourceLogs()
 	for i := 0; i < rss.Len(); i++ {
 		resourceLog := rss.At(i)
@@ -87,9 +88,17 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 		resourceLog.Resource().Attributes().PutStr(cxSubsystemNameAttrName, subsystem)
 	}
 
-	_, err := e.logExporter.Export(e.enhanceContext(ctx), plogotlp.NewExportRequestFromLogs(ld), e.callOptions...)
+	resp, err := e.logExporter.Export(e.enhanceContext(ctx), plogotlp.NewExportRequestFromLogs(ld), e.callOptions...)
 	if err != nil {
 		return processError(err)
+	}
+
+	partialSuccess := resp.PartialSuccess()
+	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
+		e.settings.Logger.Error("Partial success response from Coralogix",
+			zap.String("message", partialSuccess.ErrorMessage()),
+			zap.Int64("rejected_log_records", partialSuccess.RejectedLogRecords()),
+		)
 	}
 
 	return nil

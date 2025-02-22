@@ -10,25 +10,27 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/otlpmetricstream"
 )
 
 const (
-	defaultRecordType = cwmetricstream.TypeStr
-	defaultEndpoint   = "0.0.0.0:4433"
-	defaultPort       = 4433
+	defaultEndpoint = "localhost:4433"
 )
 
 var (
 	errUnrecognizedRecordType = errors.New("unrecognized record type")
 	availableRecordTypes      = map[string]bool{
-		cwmetricstream.TypeStr: true,
+		cwmetricstream.TypeStr:   true,
+		cwlog.TypeStr:            true,
+		otlpmetricstream.TypeStr: true,
 	}
 )
 
@@ -38,7 +40,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
 }
 
 // validateRecordType checks the available record types for the
@@ -52,10 +55,20 @@ func validateRecordType(recordType string) error {
 
 // defaultMetricsUnmarshalers creates a map of the available metrics
 // unmarshalers.
-func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.MetricsUnmarshaler {
+func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]pmetric.Unmarshaler {
 	cwmsu := cwmetricstream.NewUnmarshaler(logger)
-	return map[string]unmarshaler.MetricsUnmarshaler{
-		cwmsu.Type(): cwmsu,
+	otlpv1msu := otlpmetricstream.NewUnmarshaler(logger)
+	return map[string]pmetric.Unmarshaler{
+		cwmsu.Type():     cwmsu,
+		otlpv1msu.Type(): otlpv1msu,
+	}
+}
+
+// defaultLogsUnmarshalers creates a map of the available logs unmarshalers.
+func defaultLogsUnmarshalers(logger *zap.Logger) map[string]plog.Unmarshaler {
+	u := cwlog.NewUnmarshaler(logger)
+	return map[string]plog.Unmarshaler{
+		u.Type(): u,
 	}
 }
 
@@ -63,14 +76,13 @@ func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.Metri
 // to port 8443 and the record type set to the CloudWatch metric stream.
 func createDefaultConfig() component.Config {
 	return &Config{
-		RecordType: defaultRecordType,
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: localhostgate.EndpointForPort(defaultPort),
+			Endpoint: defaultEndpoint,
 		},
 	}
 }
 
-// createMetricsReceiver implements the CreateMetricsReceiver function type.
+// createMetricsReceiver implements the CreateMetrics function type.
 func createMetricsReceiver(
 	_ context.Context,
 	set receiver.Settings,
@@ -78,4 +90,14 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	return newMetricsReceiver(cfg.(*Config), set, defaultMetricsUnmarshalers(set.Logger), nextConsumer)
+}
+
+// createMetricsReceiver implements the CreateMetricsReceiver function type.
+func createLogsReceiver(
+	_ context.Context,
+	set receiver.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (receiver.Logs, error) {
+	return newLogsReceiver(cfg.(*Config), set, defaultLogsUnmarshalers(set.Logger), nextConsumer)
 }

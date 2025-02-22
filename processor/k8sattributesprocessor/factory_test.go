@@ -11,6 +11,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -27,33 +30,41 @@ func TestCreateProcessor(t *testing.T) {
 	kubeClientProvider = newFakeClient
 
 	cfg := factory.CreateDefaultConfig()
-	params := processortest.NewNopSettings()
+	params := processortest.NewNopSettings(metadata.Type)
 
-	tp, err := factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, mp)
 	assert.NoError(t, err)
 
-	lp, err := factory.CreateLogsProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	lp, err := factory.CreateLogs(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, lp)
+	assert.NoError(t, err)
+
+	pp, err := factory.(xprocessor.Factory).CreateProfiles(context.Background(), params, cfg, consumertest.NewNop())
+	assert.NotNil(t, pp)
 	assert.NoError(t, err)
 
 	oCfg := cfg.(*Config)
 	oCfg.Passthrough = true
 
-	tp, err = factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	tp, err = factory.CreateTraces(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	mp, err = factory.CreateMetricsProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	mp, err = factory.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, mp)
 	assert.NoError(t, err)
 
-	lp, err = factory.CreateLogsProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	lp, err = factory.CreateLogs(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, lp)
+	assert.NoError(t, err)
+
+	pp, err = factory.(xprocessor.Factory).CreateProfiles(context.Background(), params, cfg, consumertest.NewNop())
+	assert.NotNil(t, pp)
 	assert.NoError(t, err)
 
 	// Switch it back so other tests run afterwards will not fail on unexpected state

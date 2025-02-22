@@ -4,14 +4,14 @@
 package metrics_test
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -133,8 +133,8 @@ func BenchmarkMergeManyIntoMany(b *testing.B) {
 func generateMetrics(t require.TestingT, rmCount int) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 
-	timeStamp := pcommon.Timestamp(rand.Intn(256))
-	value := int64(rand.Intn(256))
+	timeStamp := pcommon.Timestamp(rand.IntN(256))
+	value := rand.Int64N(256)
 
 	for i := 0; i < rmCount; i++ {
 		rm := md.ResourceMetrics().AppendEmpty()

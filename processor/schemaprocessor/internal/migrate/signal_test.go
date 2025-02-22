@@ -17,7 +17,7 @@ func TestSignalApply(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		sig    *SignalNameChange
+		sig    SignalNameChange
 		val    alias.NamedSignal
 		expect string
 	}{
@@ -60,11 +60,10 @@ func TestSignalApply(t *testing.T) {
 			expect: "instance.uptime",
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			tc.sig.Apply(tc.val)
+			tc.sig.Do(StateSelectorApply, tc.val)
 			assert.Equal(t, tc.expect, tc.val.Name(), "Must match expected name")
 		})
 	}
@@ -75,7 +74,7 @@ func TestSignalRollback(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		sig    *SignalNameChange
+		sig    SignalNameChange
 		val    alias.NamedSignal
 		expect string
 	}{
@@ -118,11 +117,10 @@ func TestSignalRollback(t *testing.T) {
 			expect: "system.uptime",
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			tc.sig.Rollback(tc.val)
+			tc.sig.Do(StateSelectorRollback, tc.val)
 			assert.Equal(t, tc.expect, tc.val.Name(), "Must match expected name")
 		})
 	}

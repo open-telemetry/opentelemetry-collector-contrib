@@ -9,7 +9,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math/rand"
+	"math/rand/v2"
 	"net/http"
 	"os"
 	"time"
@@ -26,7 +26,7 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 )
 
 // Initializes an OTLP exporter, and configures the corresponding trace and
@@ -150,16 +150,15 @@ func main() {
 	)
 
 	defaultCtx := baggage.ContextWithBaggage(context.Background(), bag)
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for {
 		startTime := time.Now()
 		ctx, span := tracer.Start(defaultCtx, "ExecuteRequest")
 		makeRequest(ctx)
 		span.End()
 		latencyMs := float64(time.Since(startTime)) / 1e6
-		nr := int(rng.Int31n(7))
+		nr := rand.IntN(7)
 		for i := 0; i < nr; i++ {
-			randLineLength := rng.Int63n(999)
+			randLineLength := rand.Int64N(999)
 			lineCounts.Add(ctx, 1, metric.WithAttributes(commonLabels...))
 			lineLengths.Record(ctx, randLineLength, metric.WithAttributes(commonLabels...))
 			fmt.Printf("#%d: LineLength: %dBy\n", i, randLineLength)
@@ -174,7 +173,6 @@ func main() {
 }
 
 func makeRequest(ctx context.Context) {
-
 	demoServerAddr, ok := os.LookupEnv("DEMO_SERVER_ENDPOINT")
 	if !ok {
 		demoServerAddr = "http://0.0.0.0:7080/hello"
@@ -186,7 +184,7 @@ func makeRequest(ctx context.Context) {
 	}
 
 	// Make sure we pass the context to the request to avoid broken traces.
-	req, err := http.NewRequestWithContext(ctx, "GET", demoServerAddr, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, demoServerAddr, nil)
 	if err != nil {
 		handleErr(err, "failed to http request")
 	}

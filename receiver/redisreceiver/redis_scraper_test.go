@@ -18,14 +18,14 @@ import (
 
 func TestRedisRunnable(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:6379"
 	rs := &redisScraper{mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)}
 	runner, err := newRedisScraperWithClient(newFakeClient(), settings, cfg)
 	require.NoError(t, err)
-	md, err := runner.Scrape(context.Background())
+	md, err := runner.ScrapeMetrics(context.Background())
 	require.NoError(t, err)
 	// + 6 because there are two keyspace entries each of which has three metrics
 	// -2 because maxmemory and slave_repl_offset is by default disabled, so recorder is there, but there won't be data point
@@ -38,9 +38,8 @@ func TestRedisRunnable(t *testing.T) {
 
 func TestNewReceiver_invalid_endpoint(t *testing.T) {
 	c := createDefaultConfig().(*Config)
-	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), c, nil)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid endpoint")
+	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), c, nil)
+	assert.ErrorContains(t, err, "invalid endpoint")
 }
 
 func TestNewReceiver_invalid_auth_error(t *testing.T) {
@@ -50,8 +49,7 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 			CAFile: "/invalid",
 		},
 	}
-	r, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), c, nil)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
+	r, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), c, nil)
+	assert.ErrorContains(t, err, "failed to load TLS config")
 	assert.Nil(t, r)
 }

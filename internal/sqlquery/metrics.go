@@ -4,12 +4,13 @@
 package sqlquery // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 func rowToMetric(row StringMap, cfg MetricCfg, dest pmetric.Metric, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ControllerConfig) error {
@@ -18,36 +19,38 @@ func rowToMetric(row StringMap, cfg MetricCfg, dest pmetric.Metric, startTime pc
 	dest.SetUnit(cfg.Unit)
 	dataPointSlice := setMetricFields(cfg, dest)
 	dataPoint := dataPointSlice.AppendEmpty()
+	var errs []error
 	if cfg.StartTsColumn != "" {
 		if val, found := row[cfg.StartTsColumn]; found {
 			timestamp, err := strconv.ParseInt(val, 10, 64)
 			if err != nil {
-				return fmt.Errorf("failed to parse uint64 for %q, value was %q: %w", cfg.StartTsColumn, val, err)
+				errs = append(errs, fmt.Errorf("failed to parse uint64 for %q, value was %q: %w", cfg.StartTsColumn, val, err))
 			}
 			startTime = pcommon.Timestamp(timestamp)
 		} else {
-			return fmt.Errorf("rowToMetric: start_ts_column not found")
+			errs = append(errs, fmt.Errorf("rowToMetric: start_ts_column not found"))
 		}
 	}
 	if cfg.TsColumn != "" {
 		if val, found := row[cfg.TsColumn]; found {
 			timestamp, err := strconv.ParseInt(val, 10, 64)
 			if err != nil {
-				return fmt.Errorf("failed to parse uint64 for %q, value was %q: %w", cfg.TsColumn, val, err)
+				errs = append(errs, fmt.Errorf("failed to parse uint64 for %q, value was %q: %w", cfg.TsColumn, val, err))
 			}
 			ts = pcommon.Timestamp(timestamp)
 		} else {
-			return fmt.Errorf("rowToMetric: ts_column not found")
+			errs = append(errs, fmt.Errorf("rowToMetric: ts_column not found"))
 		}
 	}
 	setTimestamp(cfg, dataPoint, startTime, ts, scrapeCfg)
 	value, found := row[cfg.ValueColumn]
 	if !found {
-		return fmt.Errorf("rowToMetric: value_column '%s' not found in result set", cfg.ValueColumn)
+		errs = append(errs, fmt.Errorf("rowToMetric: value_column '%s' not found in result set", cfg.ValueColumn))
 	}
+
 	err := setDataPointValue(cfg, value, dataPoint)
 	if err != nil {
-		return fmt.Errorf("rowToMetric: %w", err)
+		errs = append(errs, fmt.Errorf("rowToMetric: %w", err))
 	}
 	attrs := dataPoint.Attributes()
 	for k, v := range cfg.StaticAttributes {
@@ -57,10 +60,10 @@ func rowToMetric(row StringMap, cfg MetricCfg, dest pmetric.Metric, startTime pc
 		if attrVal, found := row[columnName]; found {
 			attrs.PutStr(columnName, attrVal)
 		} else {
-			return fmt.Errorf("rowToMetric: attribute_column not found: '%s'", columnName)
+			errs = append(errs, fmt.Errorf("rowToMetric: attribute_column '%s' not found in result set", columnName))
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func setTimestamp(cfg MetricCfg, dp pmetric.NumberDataPoint, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ControllerConfig) {

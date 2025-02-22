@@ -12,9 +12,18 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
+)
+
+var allowErrorPropagationFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.resourcedetection.propagateerrors",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, allows errors returned from resource detectors to propagate in the Start() method and stop the collector."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37961"),
+	featuregate.WithRegisterFromVersion("v0.121.0"),
 )
 
 type DetectorType string
@@ -45,7 +54,8 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 	timeout time.Duration,
 	attributes []string,
 	detectorConfigs ResourceDetectorConfig,
-	detectorTypes ...DetectorType) (*ResourceProvider, error) {
+	detectorTypes ...DetectorType,
+) (*ResourceProvider, error) {
 	detectors, err := f.getDetectors(params, detectorConfigs, detectorTypes)
 	if err != nil {
 		return nil, err
@@ -128,6 +138,10 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 		r, schemaURL, err := detector.Detect(ctx)
 		if err != nil {
 			p.logger.Warn("failed to detect resource", zap.Error(err))
+			if allowErrorPropagationFeatureGate.IsEnabled() {
+				p.detectedResource.err = err
+				return
+			}
 		} else {
 			mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, schemaURL)
 			MergeResource(res, r, false)

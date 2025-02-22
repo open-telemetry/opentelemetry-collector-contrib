@@ -27,6 +27,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/metadata"
 )
 
 const jmxPort = "7199"
@@ -137,7 +138,7 @@ func integrationTest(version string, jar string) func(*testing.T) {
 }
 
 func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           "service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi",
@@ -157,5 +158,5 @@ func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 	}()
 
 	err := receiver.Start(context.Background(), componenttest.NewNopHost())
-	require.Contains(t, err.Error(), "listen tcp: lookup <invalid>:")
+	require.ErrorContains(t, err, "listen tcp: lookup <invalid>:")
 }

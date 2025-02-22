@@ -10,10 +10,12 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -48,14 +50,13 @@ func newTracesExporter(cfg component.Config, set exporter.Settings) (*tracesExpo
 }
 
 func (e *tracesExporter) start(ctx context.Context, host component.Host) (err error) {
-
 	switch {
 	case !isEmpty(e.config.Traces.Endpoint):
-		if e.clientConn, err = e.config.Traces.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+		if e.clientConn, err = e.config.Traces.ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 	case !isEmpty(e.config.Domain):
-		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 	}
@@ -74,23 +75,30 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) (err er
 }
 
 func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
-
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		resourceSpan := rss.At(i)
 		appName, subsystem := e.config.getMetadataFromResource(resourceSpan.Resource())
 		resourceSpan.Resource().Attributes().PutStr(cxAppNameAttrName, appName)
 		resourceSpan.Resource().Attributes().PutStr(cxSubsystemNameAttrName, subsystem)
-
 	}
 
-	_, err := e.traceExporter.Export(e.enhanceContext(ctx), ptraceotlp.NewExportRequestFromTraces(td), e.callOptions...)
+	resp, err := e.traceExporter.Export(e.enhanceContext(ctx), ptraceotlp.NewExportRequestFromTraces(td), e.callOptions...)
 	if err != nil {
 		return processError(err)
 	}
 
+	partialSuccess := resp.PartialSuccess()
+	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
+		e.settings.Logger.Error("Partial success response from Coralogix",
+			zap.String("message", partialSuccess.ErrorMessage()),
+			zap.Int64("rejected_spans", partialSuccess.RejectedSpans()),
+		)
+	}
+
 	return nil
 }
+
 func (e *tracesExporter) shutdown(context.Context) error {
 	if e.clientConn == nil {
 		return nil

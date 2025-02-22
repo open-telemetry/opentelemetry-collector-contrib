@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/performance"
+	"github.com/vmware/govmomi/session"
 	"github.com/vmware/govmomi/view"
 	"github.com/vmware/govmomi/vim25"
 	"github.com/vmware/govmomi/vim25/mo"
@@ -30,14 +30,14 @@ import (
 
 // vcenterClient is a client that collects data from a vCenter endpoint.
 type vcenterClient struct {
-	logger     *zap.Logger
-	moClient   *govmomi.Client
-	vimDriver  *vim25.Client
-	vsanDriver *vsan.Client
-	finder     *find.Finder
-	pm         *performance.Manager
-	vm         *view.Manager
-	cfg        *Config
+	logger         *zap.Logger
+	sessionManager *session.Manager
+	vimDriver      *vim25.Client
+	vsanDriver     *vsan.Client
+	finder         *find.Finder
+	pm             *performance.Manager
+	vm             *view.Manager
+	cfg            *Config
 }
 
 var newVcenterClient = defaultNewVcenterClient
@@ -51,8 +51,8 @@ func defaultNewVcenterClient(l *zap.Logger, c *Config) *vcenterClient {
 
 // EnsureConnection will establish a connection to the vSphere SDK if not already established
 func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
-	if vc.moClient != nil {
-		sessionActive, _ := vc.moClient.SessionManager.SessionIsActive(ctx)
+	if vc.sessionManager != nil {
+		sessionActive, _ := vc.sessionManager.SessionIsActive(ctx)
 		if sessionActive {
 			return nil
 		}
@@ -62,24 +62,30 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	client, err := govmomi.NewClient(ctx, sdkURL, vc.cfg.Insecure)
-	if err != nil {
-		return fmt.Errorf("unable to connect to vSphere SDK on listed endpoint: %w", err)
-	}
+
+	soapClient := soap.NewClient(sdkURL, vc.cfg.Insecure)
 	tlsCfg, err := vc.cfg.LoadTLSConfig(ctx)
 	if err != nil {
 		return err
 	}
 	if tlsCfg != nil {
-		client.DefaultTransport().TLSClientConfig = tlsCfg
+		soapClient.DefaultTransport().TLSClientConfig = tlsCfg
 	}
+
+	client, err := vim25.NewClient(ctx, soapClient)
+	if err != nil {
+		return fmt.Errorf("unable to connect to vSphere SDK on listed endpoint: %w", err)
+	}
+
+	sessionManager := session.NewManager(client)
+
 	user := url.UserPassword(vc.cfg.Username, string(vc.cfg.Password))
-	err = client.Login(ctx, user)
+	err = sessionManager.Login(ctx, user)
 	if err != nil {
 		return fmt.Errorf("unable to login to vcenter sdk: %w", err)
 	}
-	vc.moClient = client
-	vc.vimDriver = client.Client
+	vc.sessionManager = sessionManager
+	vc.vimDriver = client
 	vc.finder = find.NewFinder(vc.vimDriver)
 	vc.pm = performance.NewManager(vc.vimDriver)
 	vc.vm = view.NewManager(vc.vimDriver)
@@ -92,10 +98,10 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	return nil
 }
 
-// Disconnect will logout of the autenticated session
+// Disconnect will logout of the authenticated session
 func (vc *vcenterClient) Disconnect(ctx context.Context) error {
-	if vc.moClient != nil {
-		return vc.moClient.Logout(ctx)
+	if vc.sessionManager != nil {
+		return vc.sessionManager.Logout(ctx)
 	}
 	return nil
 }

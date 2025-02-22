@@ -10,37 +10,37 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
 
 var errMetricsConsumer = errors.New("Error from ConsumeMetrics")
 
 func TestMetricsRegisterConsumers(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird consumertest.MetricsSink
-	metricsFirst := component.NewIDWithName(component.DataTypeMetrics, "metrics/first")
-	metricsSecond := component.NewIDWithName(component.DataTypeMetrics, "metrics/second")
-	metricsThird := component.NewIDWithName(component.DataTypeMetrics, "metrics/third")
+	metricsFirst := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/first")
+	metricsSecond := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/second")
+	metricsThird := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/third")
 
 	cfg := &Config{
-		PipelinePriority: [][]component.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
+		PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
-	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
 		metricsFirst:  &sinkFirst,
 		metricsSecond: &sinkSecond,
 		metricsThird:  &sinkThird,
 	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Metrics))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 
 	failoverConnector := conn.(*metricsFailover)
 	defer func() {
@@ -50,37 +50,34 @@ func TestMetricsRegisterConsumers(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
-	mc, _, ok := failoverConnector.failover.getCurrentConsumer()
-	mc1 := failoverConnector.failover.GetConsumerAtIndex(1)
-	mc2 := failoverConnector.failover.GetConsumerAtIndex(2)
+	mc := failoverConnector.failover.TestGetConsumerAtIndex(0)
+	mc1 := failoverConnector.failover.TestGetConsumerAtIndex(1)
+	mc2 := failoverConnector.failover.TestGetConsumerAtIndex(2)
 
-	assert.True(t, ok)
-	require.Implements(t, (*consumer.Metrics)(nil), mc)
-	require.Implements(t, (*consumer.Metrics)(nil), mc1)
-	require.Implements(t, (*consumer.Metrics)(nil), mc2)
+	require.Equal(t, mc, &sinkFirst)
+	require.Equal(t, mc1, &sinkSecond)
+	require.Equal(t, mc2, &sinkThird)
 }
 
 func TestMetricsWithValidFailover(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird consumertest.MetricsSink
-	metricsFirst := component.NewIDWithName(component.DataTypeMetrics, "metrics/first")
-	metricsSecond := component.NewIDWithName(component.DataTypeMetrics, "metrics/second")
-	metricsThird := component.NewIDWithName(component.DataTypeMetrics, "metrics/third")
+	metricsFirst := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/first")
+	metricsSecond := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/second")
+	metricsThird := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/third")
 
 	cfg := &Config{
-		PipelinePriority: [][]component.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
+		PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
-	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
 		metricsFirst:  &sinkFirst,
 		metricsSecond: &sinkSecond,
 		metricsThird:  &sinkThird,
 	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Metrics))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 
 	require.NoError(t, err)
 
@@ -99,25 +96,23 @@ func TestMetricsWithValidFailover(t *testing.T) {
 
 func TestMetricsWithFailoverError(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird consumertest.MetricsSink
-	metricsFirst := component.NewIDWithName(component.DataTypeMetrics, "metrics/first")
-	metricsSecond := component.NewIDWithName(component.DataTypeMetrics, "metrics/second")
-	metricsThird := component.NewIDWithName(component.DataTypeMetrics, "metrics/third")
+	metricsFirst := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/first")
+	metricsSecond := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/second")
+	metricsThird := pipeline.NewIDWithName(pipeline.SignalMetrics, "metrics/third")
 
 	cfg := &Config{
-		PipelinePriority: [][]component.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
+		PipelinePriority: [][]pipeline.ID{{metricsFirst}, {metricsSecond}, {metricsThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
-	router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{
+	router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
 		metricsFirst:  &sinkFirst,
 		metricsSecond: &sinkSecond,
 		metricsThird:  &sinkThird,
 	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Metrics))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 
 	require.NoError(t, err)
 
@@ -136,7 +131,7 @@ func TestMetricsWithFailoverError(t *testing.T) {
 
 func consumeMetricsAndCheckStable(conn *metricsFailover, idx int, mr pmetric.Metrics) bool {
 	_ = conn.ConsumeMetrics(context.Background(), mr)
-	stableIndex := conn.failover.pS.TestStableIndex()
+	stableIndex := conn.failover.pS.CurrentPipeline()
 	return stableIndex == idx
 }
 
