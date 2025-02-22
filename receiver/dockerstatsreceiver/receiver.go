@@ -70,7 +70,6 @@ func (c *Config) resolveDockerEndpoint() string {
 		return dockerHost
 	}
 	return defaultEndpoint
-
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {

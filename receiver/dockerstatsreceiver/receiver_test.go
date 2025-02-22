@@ -170,13 +170,8 @@ func TestResolveDockerEndpoint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Set the environment variable for the test
-			if tt.env != "" {
-				os.Setenv(dockerHostEnv, tt.env)
-				defer os.Unsetenv(dockerHostEnv)
-			} else {
-				os.Unsetenv(dockerHostEnv)
-			}
+			t.Setenv(dockerHostEnv, tt.env)
+
 			assert.Equal(t, tt.expected, tt.cfg.resolveDockerEndpoint(), tt.description)
 
 		})
