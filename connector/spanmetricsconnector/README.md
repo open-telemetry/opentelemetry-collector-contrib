@@ -224,41 +224,69 @@ target_info{job="shippingservice", instance="...", ...} 1
 calls_total{span_name="/Address", service_name="shippingservice", span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_UNSET", ...} 142
 ```
 
-### Output Metrics
+### More Examples
 
-#### Viewing Span Metrics in Prometheus
+For more example configuration covering various other use cases, please visit the [testdata directory](../../connector/spanmetricsconnector/testdata).
+
+[Connectors README]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
+
+## Output Metrics
+
+### Viewing Span Metrics in Prometheus 
+
+The Span Metrics Connector in the OpenTelemetry Collector transforms trace span data into aggregated metrics, following the Request, Error, and Duration (R.E.D) methodology. It outputs key metrics such as request counts (calls), error rates (calls{status_code="5xx"}), and latency distributions (duration histograms). These metrics provide a structured view of service performance, enabling real-time monitoring, alerting, and analysis.
 
 You can observe the output from the `spanmetrics` connector in Prometheus by visiting [http://localhost:9090/graph](http://localhost:9090/graph).  
 Navigate to the **Graph** or **Explore** section and enter a metric name to visualize the data.
 
-#### Available Metrics
+### Available Metrics
 
-### `traces_span_metrics_calls_total`
-This metric provides the total number of span calls, categorized by various attributes.
+When the spanmetrics connector processes traces, it generates several Prometheus-formatted metrics. Each metric provides different insights into your service's behavior and performance.
 
-#### Example Data:
+#### Request Count Metric
+
+##### `traces_span_metrics_calls_total`
+
+This counter metric tracks the total number of spans (requests) processed by your services. Each time series is uniquely identified by its label combinations, allowing you to analyze traffic patterns across different services and endpoints.
+
+Example Data:
 ```plaintext
-{
+traces_span_metrics_calls_total{
   http_method="GET",
   http_status_code="200",
   job="go-trace-demo",
   service_name="go-trace-demo",
   span_kind="SPAN_KIND_INTERNAL",
   span_name="handle_request"
-}
+} 42
 ```
 
-### `traces_span_metrics_duration_milliseconds_bucket`
-Histogram-based metric representing the distribution of span durations across predefined buckets.
+#### Duration Metrics
 
-### `traces_span_metrics_duration_milliseconds_count`
-The total number of spans recorded.
+The connector generates three related metrics to provide comprehensive insights into span durations:
 
-### `traces_span_metrics_duration_milliseconds_sum`
-The cumulative duration of all spans in milliseconds.
+##### `traces_span_metrics_duration_milliseconds_bucket`
 
-### More Examples
+This histogram metric shows how your spans' durations are distributed across predefined time buckets. It helps you understand the latency distribution of your services and set meaningful SLOs.
 
-For more example configuration covering various other use cases, please visit the [testdata directory](../../connector/spanmetricsconnector/testdata).
+Each bucket counts spans that completed within its duration threshold, making it easy to calculate percentiles and analyze performance patterns.
 
-[Connectors README]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
+##### `traces_span_metrics_duration_milliseconds_count`
+
+This counter metric shows the total number of spans measured for duration. It matches the total number of spans processed and serves as the denominator when calculating average durations.
+
+##### `traces_span_metrics_duration_milliseconds_sum`
+
+This counter metric maintains the running sum of all span durations in milliseconds. When combined with the count metric, it allows you to calculate average durations using the formula: `sum/count`.
+
+#### Label Conventions
+
+All metrics include standard labels that help you analyze your data:
+- `service_name`: Identifies the service generating the spans
+- `span_name`: Names the specific operation being measured
+- `span_kind`: Indicates the type of span (SERVER, CLIENT, etc.)
+- `status_code`: Shows the operation's result status
+- Any additional dimensions configured in your spanmetrics connector
+
+Note: Label names follow Prometheus naming conventions (lowercase with underscores) rather than OpenTelemetry conventions.
+
