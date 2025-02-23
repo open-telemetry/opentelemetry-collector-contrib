@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
@@ -34,6 +35,9 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	batcherConfig := exporterbatcher.NewDefaultConfig()
+	batcherConfig.Enabled = false
+
 	return &Config{
 		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
@@ -59,8 +63,9 @@ func createDefaultConfig() component.Config {
 			Endpoint:    "https://",
 			Compression: configcompression.TypeGzip,
 		},
-		PrivateKey: "",
-		AppName:    "",
+		PrivateKey:    "",
+		AppName:       "",
+		BatcherConfig: batcherConfig,
 	}
 }
 
@@ -83,6 +88,7 @@ func createTraceExporter(ctx context.Context, set exporter.Settings, config comp
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
+		exporterhelper.WithBatcher(cfg.BatcherConfig),
 	)
 }
 
@@ -107,6 +113,7 @@ func createMetricsExporter(
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithBatcher(oCfg.BatcherConfig),
 	)
 }
 
@@ -131,6 +138,7 @@ func createLogsExporter(
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithBatcher(oCfg.BatcherConfig),
 	)
 }
 
@@ -155,5 +163,6 @@ func createProfilesExporter(
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithBatcher(oCfg.BatcherConfig),
 	)
 }
