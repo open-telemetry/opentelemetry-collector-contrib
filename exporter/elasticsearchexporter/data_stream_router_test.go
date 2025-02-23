@@ -99,6 +99,15 @@ func TestRouteLogRecord(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "logs", ds.Type) // should equal to logs
 	})
+
+	t.Run("test data_stream.type does not accept values other than logs/metrics", func(t *testing.T) {
+		dsType := "random"
+		router := dynamicDocumentRouter{mode: MappingBodyMap}
+		attrs := pcommon.NewMap()
+		attrs.PutStr("data_stream.type", dsType)
+		_, err := router.routeLogRecord(pcommon.NewResource(), pcommon.NewInstrumentationScope(), attrs)
+		require.Error(t, err, "data_stream.type cannot be other than logs or metrics")
+	})
 }
 
 func TestRouteDataPoint(t *testing.T) {

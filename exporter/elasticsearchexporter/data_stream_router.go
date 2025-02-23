@@ -99,19 +99,19 @@ type dynamicDocumentRouter struct {
 }
 
 func (r dynamicDocumentRouter) routeLogRecord(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeLogs), nil
+	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeLogs)
 }
 
 func (r dynamicDocumentRouter) routeDataPoint(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeMetrics), nil
+	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeMetrics)
 }
 
 func (r dynamicDocumentRouter) routeSpan(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeTraces), nil
+	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeTraces)
 }
 
 func (r dynamicDocumentRouter) routeSpanEvent(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeLogs), nil
+	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeLogs)
 }
 
 type logstashDocumentRouter struct {
@@ -153,7 +153,7 @@ func routeRecord(
 	index string,
 	mode MappingMode,
 	defaultDSType string,
-) elasticsearch.Index {
+) (elasticsearch.Index, error) {
 	resourceAttr := resource.Attributes()
 	scopeAttr := scope.Attributes()
 
@@ -169,6 +169,9 @@ func routeRecord(
 	// if mapping mode is bodymap, allow overriding data_stream.type
 	if mode == MappingBodyMap {
 		dsType, _ = getFromAttributes(elasticsearch.DataStreamType, defaultDSType, recordAttr, scopeAttr, resourceAttr)
+		if dsType != "logs" && dsType != "metrics" {
+			return elasticsearch.Index{}, fmt.Errorf("data_stream.type cannot be other than logs or metrics")
+		}
 	}
 
 	dataStreamMode := datasetExists || namespaceExists
@@ -176,7 +179,7 @@ func routeRecord(
 		prefix, prefixExists := getFromAttributes(indexPrefix, "", resourceAttr, scopeAttr, recordAttr)
 		suffix, suffixExists := getFromAttributes(indexSuffix, "", resourceAttr, scopeAttr, recordAttr)
 		if prefixExists || suffixExists {
-			return elasticsearch.Index{Index: fmt.Sprintf("%s%s%s", prefix, index, suffix)}
+			return elasticsearch.Index{Index: fmt.Sprintf("%s%s%s", prefix, index, suffix)}, nil
 		}
 	}
 
@@ -198,5 +201,5 @@ func routeRecord(
 
 	dataset = sanitizeDataStreamField(dataset, disallowedDatasetRunes, datasetSuffix)
 	namespace = sanitizeDataStreamField(namespace, disallowedNamespaceRunes, "")
-	return elasticsearch.NewDataStreamIndex(dsType, dataset, namespace)
+	return elasticsearch.NewDataStreamIndex(dsType, dataset, namespace), nil
 }
