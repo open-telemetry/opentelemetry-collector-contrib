@@ -44,3 +44,4 @@ internal/tools/testresults/*
 go.work*
 
 /result
+".chloggen/aws-sdk-v2-migration.yaml" 
