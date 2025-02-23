@@ -31,7 +31,7 @@ func TestWriteLineProtocol_v2API(t *testing.T) {
 	}
 	nextConsumer := new(mockConsumer)
 
-	receiver, outerErr := NewFactory().CreateMetrics(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), config, nextConsumer)
+	receiver, outerErr := NewFactory().CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), config, nextConsumer)
 	require.NoError(t, outerErr)
 	require.NotNil(t, receiver)
 
