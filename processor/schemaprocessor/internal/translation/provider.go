@@ -47,7 +47,7 @@ func (hp *httpProvider) Retrieve(ctx context.Context, schemaURL string) (string,
 		return "", fmt.Errorf("request failed: %w", err)
 	}
 	defer func() {
-		err = resp.Body.Close()
+		_ = resp.Body.Close()
 	}()
 
 	if resp.StatusCode != http.StatusOK {
