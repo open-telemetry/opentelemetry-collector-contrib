@@ -8,9 +8,10 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/scraper"
+	collectorscraper "go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver/internal/metadata"
@@ -18,7 +19,6 @@ import (
 
 var errConfigNotTLSCheck = errors.New(`invalid config`)
 
-// NewFactory creates a new filestats receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
@@ -27,10 +27,12 @@ func NewFactory() receiver.Factory {
 }
 
 func newDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultControllerConfig()
+
 	return &Config{
-		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		Targets:              []*targetConfig{},
+		Targets:              []*confignet.TCPAddrConfig{},
 	}
 }
 
@@ -45,8 +47,8 @@ func newReceiver(
 		return nil, errConfigNotTLSCheck
 	}
 
-	mp := newScraper(tlsCheckConfig, settings)
-	s, err := scraper.NewMetrics(mp.scrape)
+	mp := newScraper(tlsCheckConfig, settings, getConnectionState)
+	s, err := collectorscraper.NewMetrics(mp.scrape)
 	if err != nil {
 		return nil, err
 	}

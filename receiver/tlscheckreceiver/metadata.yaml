@@ -8,11 +8,10 @@ status:
   codeowners:
     active: [atoulme, michael-burt]
 
-
 resource_attributes:
-  tlscheck.url:
+  tlscheck.endpoint:
     enabled: true
-    description: Url at which the certificate was accessed.
+    description: Endpoint at which the certificate was accessed.
     type: string
 
 attributes:

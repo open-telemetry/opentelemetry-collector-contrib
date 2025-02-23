@@ -20,12 +20,19 @@ By default, the TLS Check Receiver will emit a single metric, `tlscheck.time_lef
 
 ## Example Configuration
 
+Targets are 
+
 ```yaml
 receivers:
   tlscheck:
     targets:
-      - url: https://example.com
-      - url: https://foobar.com:8080
+      - endpoint: example.com:443
+        dialer: 
+          timeout: 15s
+      - endpoint: foobar.com:8080
+        dialer: 
+          timeout: 15s
+      - endpoint: localhost:10901
 ```
 
 ## Certificate Verification
