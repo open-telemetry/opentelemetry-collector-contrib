@@ -25,7 +25,7 @@ func TestCreateProvider(t *testing.T) {
 		DatabasePath: "",
 	}
 
-	provider, err := factory.CreateGeoIPProvider(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), cfg)
+	provider, err := factory.CreateGeoIPProvider(context.Background(), processortest.NewNopSettings(metadata.Type), cfg)
 
 	assert.ErrorContains(t, err, "could not open geoip database")
 	assert.Nil(t, provider)

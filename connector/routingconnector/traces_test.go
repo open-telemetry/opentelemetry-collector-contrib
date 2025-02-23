@@ -51,7 +51,7 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
@@ -118,7 +118,7 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
 		context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
 	)
@@ -223,7 +223,7 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
 		context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
 	)
@@ -335,7 +335,7 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
 		context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
 	)
@@ -388,7 +388,7 @@ func TestTraceConnectorCapabilities(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
 		context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Traces),
 	)
@@ -849,7 +849,7 @@ func TestTracesConnectorDetailed(t *testing.T) {
 
 			conn, err := NewFactory().CreateTracesToTraces(
 				context.Background(),
-				connectortest.NewNopSettingsWithType(metadata.Type),
+				connectortest.NewNopSettings(metadata.Type),
 				tt.cfg,
 				router.(consumer.Traces),
 			)

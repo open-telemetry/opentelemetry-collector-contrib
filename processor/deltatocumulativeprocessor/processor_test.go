@@ -184,7 +184,7 @@ func setupTestTelemetry() testTelemetry {
 }
 
 func (tt *testTelemetry) newSettings() processor.Settings {
-	set := processortest.NewNopSettingsWithType(metadata.Type)
+	set := processortest.NewNopSettings(metadata.Type)
 	set.TelemetrySettings.MeterProvider = tt.meterProvider
 	return set
 }

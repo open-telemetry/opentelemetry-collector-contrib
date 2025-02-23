@@ -22,7 +22,7 @@ func FuzzConsumeTraces(f *testing.F) {
 			return
 		}
 		sink := new(consumertest.TracesSink)
-		set := processortest.NewNopSettingsWithType(metadata.Type)
+		set := processortest.NewNopSettings(metadata.Type)
 		cfg := &Config{}
 		tsp, err := newTracesProcessor(context.Background(), set, sink, *cfg)
 		if err != nil {

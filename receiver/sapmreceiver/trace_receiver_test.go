@@ -246,7 +246,7 @@ func compressZstd(reqBytes []byte) ([]byte, error) {
 }
 
 func setupReceiver(t *testing.T, config *Config, sink consumer.Traces) receiver.Traces {
-	params := receivertest.NewNopSettingsWithType(metadata.Type)
+	params := receivertest.NewNopSettings(metadata.Type)
 	sr, err := newReceiver(params, config, sink)
 	assert.NoError(t, err, "should not have failed to create the SAPM receiver")
 	t.Log("Starting")

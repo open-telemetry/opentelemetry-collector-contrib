@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.23.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/featuregate v1.26.0
-	go.opentelemetry.io/collector/pdata v1.26.0
+	go.opentelemetry.io/collector/featuregate v1.26.1-0.20250221111745-6de29ce16921
+	go.opentelemetry.io/collector/pdata v1.26.1-0.20250221111745-6de29ce16921
 	go.uber.org/goleak v1.3.0
 )
 

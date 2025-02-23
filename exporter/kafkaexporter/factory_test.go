@@ -81,7 +81,7 @@ func TestCreateMetricExporter(t *testing.T) {
 			f := NewFactory()
 			exporter, err := f.CreateMetrics(
 				context.Background(),
-				exportertest.NewNopSettingsWithType(metadata.Type),
+				exportertest.NewNopSettings(metadata.Type),
 				tc.conf,
 			)
 			require.NoError(t, err)
@@ -145,7 +145,7 @@ func TestCreateLogExporter(t *testing.T) {
 			f := NewFactory()
 			exporter, err := f.CreateLogs(
 				context.Background(),
-				exportertest.NewNopSettingsWithType(metadata.Type),
+				exportertest.NewNopSettings(metadata.Type),
 				tc.conf,
 			)
 			require.NoError(t, err)
@@ -209,7 +209,7 @@ func TestCreateTraceExporter(t *testing.T) {
 			f := NewFactory()
 			exporter, err := f.CreateTraces(
 				context.Background(),
-				exportertest.NewNopSettingsWithType(metadata.Type),
+				exportertest.NewNopSettings(metadata.Type),
 				tc.conf,
 			)
 			require.NoError(t, err)

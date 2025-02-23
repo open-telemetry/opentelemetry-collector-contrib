@@ -24,7 +24,7 @@ func FuzzHandleRawReq(f *testing.F) {
 		req.Header.Add("If-None-Match", `W/"wyzzy"`)
 		sink := new(consumertest.LogsSink)
 		defaultConfig := createDefaultConfig().(*Config)
-		rcv, err := newReceiver(receivertest.NewNopSettingsWithType(metadata.Type), *defaultConfig)
+		rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *defaultConfig)
 		rcv.logsConsumer = sink
 		if err != nil {
 			t.Fatal(err)

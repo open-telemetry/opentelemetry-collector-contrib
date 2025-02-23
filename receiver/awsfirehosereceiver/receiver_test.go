@@ -253,7 +253,7 @@ func TestFirehoseRequestInvalidJSON(t *testing.T) {
 // testFirehoseReceiver is a convenience function for creating a test firehoseReceiver
 func testFirehoseReceiver(config *Config, consumer firehoseConsumer) *firehoseReceiver {
 	return &firehoseReceiver{
-		settings: receivertest.NewNopSettingsWithType(metadata.Type),
+		settings: receivertest.NewNopSettings(metadata.Type),
 		config:   config,
 		consumer: consumer,
 	}

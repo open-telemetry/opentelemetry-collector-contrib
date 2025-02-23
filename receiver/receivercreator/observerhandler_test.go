@@ -602,7 +602,7 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 }
 
 func newMockRunner(t *testing.T) *mockRunner {
-	cs := receivertest.NewNopSettingsWithType(metadata.Type)
+	cs := receivertest.NewNopSettings(metadata.Type)
 	return &mockRunner{
 		receiverRunner: receiverRunner{
 			params:      cs,
@@ -622,7 +622,7 @@ func newObserverHandler(
 	nextMetrics consumer.Metrics,
 	nextTraces consumer.Traces,
 ) (*observerHandler, *mockRunner) {
-	set := receivertest.NewNopSettingsWithType(metadata.Type)
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = component.MustNewIDWithName("some_type", "some.name")
 	mr := newMockRunner(t)
 	return &observerHandler{

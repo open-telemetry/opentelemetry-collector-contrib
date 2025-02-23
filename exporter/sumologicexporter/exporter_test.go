@@ -83,7 +83,7 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 	cfg.ClientConfig.Endpoint = testServer.URL
 	cfg.ClientConfig.Auth = nil
 
-	exp, err := initExporter(cfg, exportertest.NewNopSettingsWithType(metadata.Type))
+	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
 
 	require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
@@ -246,7 +246,7 @@ func TestInvalidHTTPClient(t *testing.T) {
 	}
 	exp, err := initExporter(&Config{
 		ClientConfig: clientConfig,
-	}, exportertest.NewNopSettingsWithType(metadata.Type))
+	}, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
 
 	assert.EqualError(t,
@@ -510,7 +510,7 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 	cfg := createConfig()
 	cfg.ClientConfig.Endpoint = testServer.URL
 
-	exp, err := initExporter(cfg, exportertest.NewNopSettingsWithType(metadata.Type))
+	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(b, err)
 	require.NoError(b, exp.start(context.Background(), componenttest.NewNopHost()))
 	defer func() {

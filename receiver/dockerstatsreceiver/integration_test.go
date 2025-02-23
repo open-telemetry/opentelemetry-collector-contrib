@@ -37,7 +37,7 @@ func factory() (rcvr.Factory, *Config) {
 func paramsAndContext(t *testing.T) (rcvr.Settings, context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-	settings := receivertest.NewNopSettingsWithType(metadata.Type)
+	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
 	return settings, ctx, cancel
 }

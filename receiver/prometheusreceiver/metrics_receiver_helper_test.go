@@ -696,7 +696,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	}
 
 	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(receivertest.NewNopSettingsWithType(metadata.Type), config, cms)
+	receiver := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), config, cms)
 	receiver.skipOffsetting = true
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))

@@ -126,7 +126,7 @@ func TestHandleWorkflowRun(t *testing.T) {
 			receiver := &githubTracesReceiver{
 				logger:   logger,
 				cfg:      createDefaultConfig().(*Config),
-				settings: receivertest.NewNopSettingsWithType(metadata.Type),
+				settings: receivertest.NewNopSettings(metadata.Type),
 			}
 
 			// Handle the workflow run event

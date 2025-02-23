@@ -32,7 +32,7 @@ func TestNewMongodbScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	scraper := newMongodbScraper(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	require.NotEmpty(t, scraper.config.hostlist())
 }
 
@@ -41,7 +41,7 @@ func TestScraperLifecycle(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	scraper := newMongodbScraper(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, scraper.shutdown(context.Background()))
 
@@ -288,7 +288,7 @@ func TestScraperScrape(t *testing.T) {
 			scraperCfg.MetricsBuilderConfig.Metrics.MongodbUptime.Enabled = true
 			scraperCfg.MetricsBuilderConfig.Metrics.MongodbHealth.Enabled = true
 
-			scraper := newMongodbScraper(receivertest.NewNopSettingsWithType(metadata.Type), scraperCfg)
+			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
 
 			mc := tc.setupMockClient(t)
 			if mc != nil {

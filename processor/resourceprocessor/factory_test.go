@@ -31,11 +31,11 @@ func TestCreateProcessor(t *testing.T) {
 		},
 	}
 
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 
-	mp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 }
@@ -48,9 +48,9 @@ func TestInvalidAttributeActions(t *testing.T) {
 		},
 	}
 
-	_, err := factory.CreateTraces(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), cfg, nil)
+	_, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nil)
 	assert.Error(t, err)
 
-	_, err = factory.CreateMetrics(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), cfg, nil)
+	_, err = factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nil)
 	assert.Error(t, err)
 }

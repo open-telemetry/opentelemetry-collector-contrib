@@ -56,7 +56,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				_, err := factory.CreateMetrics(
 					context.Background(),
-					receivertest.NewNopSettingsWithType(metadata.Type),
+					receivertest.NewNopSettings(metadata.Type),
 					nil,
 					consumertest.NewNop(),
 				)

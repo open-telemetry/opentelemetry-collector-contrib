@@ -23,7 +23,7 @@ func TestWindowsFactory(t *testing.T) {
 
 	r, err := f.CreateMetrics(
 		context.Background(),
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),
 	)

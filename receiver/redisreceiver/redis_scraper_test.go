@@ -18,7 +18,7 @@ import (
 
 func TestRedisRunnable(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
-	settings := receivertest.NewNopSettingsWithType(metadata.Type)
+	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:6379"
@@ -38,7 +38,7 @@ func TestRedisRunnable(t *testing.T) {
 
 func TestNewReceiver_invalid_endpoint(t *testing.T) {
 	c := createDefaultConfig().(*Config)
-	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), c, nil)
+	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), c, nil)
 	assert.ErrorContains(t, err, "invalid endpoint")
 }
 
@@ -49,7 +49,7 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 			CAFile: "/invalid",
 		},
 	}
-	r, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), c, nil)
+	r, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), c, nil)
 	assert.ErrorContains(t, err, "failed to load TLS config")
 	assert.Nil(t, r)
 }

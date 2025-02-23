@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 )
 
-var creationSet = receivertest.NewNopSettingsWithType(metadata.Type)
+var creationSet = receivertest.NewNopSettings(metadata.Type)
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := Factory{}

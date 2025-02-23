@@ -23,7 +23,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig()
-	_, err := createMetricsExporter(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+	_, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
 }
 
@@ -33,7 +33,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	exp, err := factory.CreateMetrics(
 		context.Background(),
-		exportertest.NewNopSettingsWithType(metadata.Type),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -43,7 +43,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	exp, err = factory.CreateMetrics(
 		context.Background(),
-		exportertest.NewNopSettingsWithType(metadata.Type),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)

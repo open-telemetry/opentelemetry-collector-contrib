@@ -21,7 +21,7 @@ func TestHealthCheck(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	defaultConfig.WebHook.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
-	receiver, err := newTracesReceiver(receivertest.NewNopSettingsWithType(metadata.Type), defaultConfig, consumer)
+	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
 
 	r := receiver

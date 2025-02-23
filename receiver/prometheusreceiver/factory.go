@@ -63,7 +63,6 @@ func createMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	configWarnings(set.Logger, cfg.(*Config))
-	addDefaultFallbackScrapeProtocol(cfg.(*Config))
 	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer), nil
 }
 
@@ -73,14 +72,6 @@ func configWarnings(logger *zap.Logger, cfg *Config) {
 			if rc.TargetLabel == "__name__" {
 				logger.Warn("metric renaming using metric_relabel_configs will result in unknown-typed metrics without a unit or description", zap.String("job", sc.JobName))
 			}
-		}
-	}
-}
-
-func addDefaultFallbackScrapeProtocol(cfg *Config) {
-	for _, sc := range cfg.PrometheusConfig.ScrapeConfigs {
-		if sc.ScrapeFallbackProtocol == "" {
-			sc.ScrapeFallbackProtocol = promconfig.PrometheusText1_0_0
 		}
 	}
 }

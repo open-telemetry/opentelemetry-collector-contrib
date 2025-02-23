@@ -149,7 +149,7 @@ func TestExportMarkers(t *testing.T) {
 			config.APIURL = markerServer.URL
 
 			f := NewFactory()
-			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), &config)
+			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), &config)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -237,7 +237,7 @@ func TestExportMarkers_Error(t *testing.T) {
 			config.APIURL = markerServer.URL
 
 			f := NewFactory()
-			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), &config)
+			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), &config)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -288,7 +288,7 @@ func TestExportMarkers_NoAPICall(t *testing.T) {
 			config.APIURL = markerServer.URL
 
 			f := NewFactory()
-			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), &config)
+			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), &config)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())

@@ -49,7 +49,7 @@ func TestCreateProcessors(t *testing.T) {
 
 			tp, tErr := factory.CreateTraces(
 				context.Background(),
-				processortest.NewNopSettingsWithType(metadata.Type),
+				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				consumertest.NewNop())
 			// Not implemented error
@@ -58,7 +58,7 @@ func TestCreateProcessors(t *testing.T) {
 
 			mp, mErr := factory.CreateMetrics(
 				context.Background(),
-				processortest.NewNopSettingsWithType(metadata.Type),
+				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				consumertest.NewNop())
 			assert.NotNil(t, mp)

@@ -47,7 +47,7 @@ func TestNewLogsExporter(t *testing.T) {
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			// test
-			_, err := newLogsExporter(exportertest.NewNopSettingsWithType(metadata.Type), tt.config)
+			_, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), tt.config)
 
 			// verify
 			require.Equal(t, tt.err, err)
@@ -65,7 +65,7 @@ func TestLogExporterStart(t *testing.T) {
 		{
 			"ok",
 			func() *logExporterImp {
-				p, _ := newLogsExporter(exportertest.NewNopSettingsWithType(metadata.Type), simpleConfig())
+				p, _ := newLogsExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
 				return p
 			}(),
 			nil,
@@ -76,7 +76,7 @@ func TestLogExporterStart(t *testing.T) {
 				// prepare
 				lb, err := newLoadBalancer(ts.Logger, simpleConfig(), nil, tb)
 				require.NoError(t, err)
-				p, _ := newLogsExporter(exportertest.NewNopSettingsWithType(metadata.Type), simpleConfig())
+				p, _ := newLogsExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
 
 				lb.res = &mockResolver{
 					onStart: func(context.Context) error {
@@ -106,7 +106,7 @@ func TestLogExporterStart(t *testing.T) {
 }
 
 func TestLogExporterShutdown(t *testing.T) {
-	p, err := newLogsExporter(exportertest.NewNopSettingsWithType(metadata.Type), simpleConfig())
+	p, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -416,7 +416,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newLogsExporter(exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+	p, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 

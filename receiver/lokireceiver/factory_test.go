@@ -33,7 +33,7 @@ func TestCreateReceiver(t *testing.T) {
 			Transport: confignet.TransportTypeTCP,
 		},
 	}
-	set := receivertest.NewNopSettingsWithType(metadata.Type)
+	set := receivertest.NewNopSettings(metadata.Type)
 	receiver, err := factory.CreateLogs(context.Background(), set, cfg, consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, receiver, "receiver creation failed")

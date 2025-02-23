@@ -27,7 +27,7 @@ func TestFactory_CreateLogs(t *testing.T) {
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Host = defaultHost
 	})
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateLogs(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
@@ -40,7 +40,7 @@ func TestFactory_CreateTraces(t *testing.T) {
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Host = defaultHost
 	})
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
@@ -53,7 +53,7 @@ func TestFactory_CreateMetrics(t *testing.T) {
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Host = defaultHost
 	})
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)

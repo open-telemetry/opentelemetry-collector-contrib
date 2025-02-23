@@ -27,7 +27,7 @@ func TestToPrometheusConfig(t *testing.T) {
 	baCfg := baFactory.CreateDefaultConfig().(*bearertokenauthextension.Config)
 	baCfg.BearerToken = "the-token"
 
-	baExt, err := baFactory.Create(context.Background(), extensiontest.NewNopSettingsWithType(baFactory.Type()), baCfg)
+	baExt, err := baFactory.Create(context.Background(), extensiontest.NewNopSettings(baFactory.Type()), baCfg)
 	require.NoError(t, err)
 
 	host := &mockHost{

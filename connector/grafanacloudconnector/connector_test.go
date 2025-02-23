@@ -48,7 +48,7 @@ func TestNewConnector(t *testing.T) {
 				cfg.MetricsFlushInterval = *tc.metricsFlushInterval
 			}
 
-			c, err := factory.CreateTracesToMetrics(context.Background(), connectortest.NewNopSettingsWithType(metadata.Type), cfg, consumertest.NewNop())
+			c, err := factory.CreateTracesToMetrics(context.Background(), connectortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			imp := c.(*connectorImp)
 
 			assert.NilError(t, err)
@@ -78,7 +78,7 @@ func TestConsumeTraces(t *testing.T) {
 			cfg.MetricsFlushInterval = 50 * time.Millisecond
 
 			sink := &consumertest.MetricsSink{}
-			c, err := factory.CreateTracesToMetrics(context.Background(), connectortest.NewNopSettingsWithType(metadata.Type), cfg, sink)
+			c, err := factory.CreateTracesToMetrics(context.Background(), connectortest.NewNopSettings(metadata.Type), cfg, sink)
 			assert.NilError(t, err)
 
 			ctx := context.Background()

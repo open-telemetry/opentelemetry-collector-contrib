@@ -34,7 +34,7 @@ func TestConnectorCreatedWithValidConfiguration(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
@@ -56,7 +56,7 @@ func TestCreationFailsWithIncorrectConsumer(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), cfg, consumer)
+		connectortest.NewNopSettings(metadata.Type), cfg, consumer)
 
 	assert.ErrorIs(t, err, errUnexpectedConsumer)
 	assert.Nil(t, conn)

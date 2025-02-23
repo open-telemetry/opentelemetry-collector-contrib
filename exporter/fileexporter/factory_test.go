@@ -30,7 +30,7 @@ func TestCreateMetricsError(t *testing.T) {
 	}
 	e, err := createMetricsExporter(
 		context.Background(),
-		exportertest.NewNopSettingsWithType(metadata.Type),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	require.NoError(t, err)
 	err = e.Start(context.Background(), componenttest.NewNopHost())
@@ -44,7 +44,7 @@ func TestCreateMetrics(t *testing.T) {
 	}
 	exp, err := createMetricsExporter(
 		context.Background(),
-		exportertest.NewNopSettingsWithType(metadata.Type),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -58,7 +58,7 @@ func TestCreateTraces(t *testing.T) {
 	}
 	exp, err := createTracesExporter(
 		context.Background(),
-		exportertest.NewNopSettingsWithType(metadata.Type),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -71,7 +71,7 @@ func TestCreateTracesError(t *testing.T) {
 	}
 	e, err := createTracesExporter(
 		context.Background(),
-		exportertest.NewNopSettingsWithType(metadata.Type),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	require.NoError(t, err)
 	err = e.Start(context.Background(), componenttest.NewNopHost())
@@ -85,7 +85,7 @@ func TestCreateLogs(t *testing.T) {
 	}
 	exp, err := createLogsExporter(
 		context.Background(),
-		exportertest.NewNopSettingsWithType(metadata.Type),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -98,7 +98,7 @@ func TestCreateLogsError(t *testing.T) {
 	}
 	e, err := createLogsExporter(
 		context.Background(),
-		exportertest.NewNopSettingsWithType(metadata.Type),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	require.NoError(t, err)
 	err = e.Start(context.Background(), componenttest.NewNopHost())
@@ -112,7 +112,7 @@ func TestCreateProfiles(t *testing.T) {
 	}
 	exp, err := createProfilesExporter(
 		context.Background(),
-		exportertest.NewNopSettingsWithType(metadata.Type),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -125,7 +125,7 @@ func TestCreateProfilesError(t *testing.T) {
 	}
 	e, err := createProfilesExporter(
 		context.Background(),
-		exportertest.NewNopSettingsWithType(metadata.Type),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	require.NoError(t, err)
 	err = e.Start(context.Background(), componenttest.NewNopHost())

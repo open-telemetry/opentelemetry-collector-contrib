@@ -57,7 +57,7 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	exporterSettings := exportertest.NewNopSettingsWithType(metadata.Type)
+	exporterSettings := exportertest.NewNopSettings(metadata.Type)
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateLogs(
@@ -87,7 +87,7 @@ func benchmarkMetrics(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	exporterSettings := exportertest.NewNopSettingsWithType(metadata.Type)
+	exporterSettings := exportertest.NewNopSettings(metadata.Type)
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateMetrics(
@@ -117,7 +117,7 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	exporterSettings := exportertest.NewNopSettingsWithType(metadata.Type)
+	exporterSettings := exportertest.NewNopSettings(metadata.Type)
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateTraces(

@@ -154,6 +154,14 @@ gotest:
 gotest-with-cover:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-cover"
 	$(GOCMD) tool covdata textfmt -i=./coverage/unit -o ./$(GROUP)-coverage.txt
+	
+.PHONY: gotest-with-junit
+gotest-with-junit:
+	@$(MAKE) for-all-target TARGET="test-with-junit"
+
+.PHONY: gotest-with-junit-and-cover
+gotest-with-junit-and-cover:
+	@$(MAKE) for-all-target TARGET="test-with-junit-and-cover"
 
 .PHONY: gobuildtest
 gobuildtest:
