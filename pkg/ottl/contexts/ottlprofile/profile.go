@@ -96,7 +96,6 @@ func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySet
 		functions,
 		pep.parsePath,
 		telemetrySettings,
-		ottl.WithEnumParser[TransformContext](parseEnum),
 	)
 	if err != nil {
 		return ottl.Parser[TransformContext]{}, err
@@ -152,19 +151,6 @@ func NewConditionSequence(conditions []*ottl.Condition[TransformContext], teleme
 		op(&c)
 	}
 	return c
-}
-
-// symbolTable and parseEnum are here for completeness, currently unused.
-var symbolTable = map[ottl.EnumSymbol]ottl.Enum{}
-
-func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
-	if val != nil {
-		if enum, ok := symbolTable[*val]; ok {
-			return &enum, nil
-		}
-		return nil, fmt.Errorf("enum symbol, %s, not found", *val)
-	}
-	return nil, fmt.Errorf("enum symbol not provided")
 }
 
 type pathExpressionParser struct {

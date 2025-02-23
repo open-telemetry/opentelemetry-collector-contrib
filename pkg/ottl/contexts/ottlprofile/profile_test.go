@@ -212,29 +212,6 @@ func Test_newPathGetSetter_WithCache(t *testing.T) {
 	assert.Equal(t, cacheValue, ctx.getCache())
 }
 
-func Test_ParseEnum_False(t *testing.T) {
-	tests := []struct {
-		name       string
-		enumSymbol *ottl.EnumSymbol
-	}{
-		{
-			name:       "unknown enum symbol",
-			enumSymbol: (*ottl.EnumSymbol)(ottltest.Strp("not an enum")),
-		},
-		{
-			name:       "nil enum symbol",
-			enumSymbol: nil,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actual, err := parseEnum(tt.enumSymbol)
-			assert.Error(t, err)
-			assert.Nil(t, actual)
-		})
-	}
-}
-
 var profileID = pprofile.ProfileID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 
 func createProfileTelemetry() pprofile.Profile {
