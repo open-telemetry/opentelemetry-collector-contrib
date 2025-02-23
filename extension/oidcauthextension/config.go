@@ -28,6 +28,10 @@ type Config struct {
 	// The claim that holds the subject's group membership information.
 	// Optional.
 	GroupsClaim string `mapstructure:"groups_claim"`
+
+	// The supported signing algorithms for the JWT. Defaults to 'RS256' via jose-go.
+	// Optional
+	SigningAlgs []string `mapstructure:"signing_algs"`
 }
 
 func (c *Config) Validate() error {
