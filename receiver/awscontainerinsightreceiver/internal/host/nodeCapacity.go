@@ -43,10 +43,15 @@ func newNodeCapacity(logger *zap.Logger, options ...nodeCapacityOption) (nodeCap
 		opt(nc)
 	}
 
-	if _, err := nc.osLstat(hostProc); os.IsNotExist(err) {
+	actualHostProc, ok := os.LookupEnv(string(common.HostProcEnvKey))
+	if !ok {
+		actualHostProc = hostProc
+	}
+
+	if _, err := nc.osLstat(actualHostProc); os.IsNotExist(err) {
 		return nil, err
 	}
-	envMap := common.EnvMap{common.HostProcEnvKey: hostProc}
+	envMap := common.EnvMap{common.HostProcEnvKey: actualHostProc}
 	ctx := context.WithValue(context.Background(), common.EnvKey, envMap)
 
 	nc.parseCPU(ctx)

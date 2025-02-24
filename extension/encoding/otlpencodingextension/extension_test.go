@@ -30,7 +30,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "otlp_json"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 		},
 
@@ -40,7 +40,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "otlp_proto"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 		},
 	}

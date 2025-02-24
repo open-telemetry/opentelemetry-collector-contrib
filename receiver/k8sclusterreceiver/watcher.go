@@ -36,6 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/hpa"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/jobs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/namespace"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicaset"
@@ -314,6 +315,8 @@ func (rw *resourceWatcher) objMetadata(obj any) map[experimentalmetricmetadata.R
 		return cronjob.GetMetadata(o)
 	case *autoscalingv2.HorizontalPodAutoscaler:
 		return hpa.GetMetadata(o)
+	case *corev1.Namespace:
+		return namespace.GetMetadata(o)
 	}
 	return nil
 }

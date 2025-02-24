@@ -3,7 +3,7 @@ type: opencensus
 status:
   class: receiver
   stability:
-    beta: [metrics, traces]
+    deprecated: [metrics, traces]
   distributions: [core, contrib, k8s]
   codeowners:
     active: [open-telemetry/collector-approvers]
