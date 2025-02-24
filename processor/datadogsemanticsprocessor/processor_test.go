@@ -178,7 +178,7 @@ func TestBasicTranslation(t *testing.T) {
 				require.Equal(t, "spanenv2", env.AsString())
 				version, _ := span.Attributes().Get("datadog.version")
 				require.Equal(t, "v2", version.AsString())
-				statusCode, _ := span.Attributes().Get("datadog.status_code")
+				statusCode, _ := span.Attributes().Get("datadog.http_status_code")
 				require.Equal(t, "200", statusCode.AsString())
 				ddError, _ := span.Attributes().Get("datadog.error")
 				require.Equal(t, int64(0), ddError.Int())
@@ -230,7 +230,7 @@ func TestBasicTranslation(t *testing.T) {
 								"datadog.span.kind":             "specified-span-kind",
 								"datadog.env":                   "specified-env",
 								"datadog.version":               "specified-version",
-								"datadog.status_code":           "500",
+								"datadog.http_status_code":      "500",
 								"datadog.error":                 1,
 								"datadog.error.msg":             "specified-error-msg",
 								"datadog.error.type":            "specified-error-type",
@@ -255,7 +255,7 @@ func TestBasicTranslation(t *testing.T) {
 				require.Equal(t, "web", ddType.AsString())
 				env, _ := span.Attributes().Get("datadog.env")
 				require.Equal(t, "spanenv2", env.AsString())
-				statusCode, _ := span.Attributes().Get("datadog.status_code")
+				statusCode, _ := span.Attributes().Get("datadog.http_status_code")
 				require.Equal(t, "200", statusCode.AsString())
 				ddError, _ := span.Attributes().Get("datadog.error")
 				require.Equal(t, int64(1), ddError.Int())
@@ -307,7 +307,7 @@ func TestBasicTranslation(t *testing.T) {
 								"datadog.span.kind":             "specified-span-kind",
 								"datadog.env":                   "specified-env",
 								"datadog.version":               "specified-version",
-								"datadog.status_code":           "500",
+								"datadog.http_status_code":      "500",
 								"datadog.error":                 1,
 								"datadog.error.msg":             "specified-error-msg",
 								"datadog.error.type":            "specified-error-type",
@@ -332,7 +332,7 @@ func TestBasicTranslation(t *testing.T) {
 				require.Equal(t, "specified-type", ddType.AsString())
 				env, _ := span.Attributes().Get("datadog.env")
 				require.Equal(t, "specified-env", env.AsString())
-				statusCode, _ := span.Attributes().Get("datadog.status_code")
+				statusCode, _ := span.Attributes().Get("datadog.http_status_code")
 				require.Equal(t, "500", statusCode.AsString())
 				ddError, _ := span.Attributes().Get("datadog.error")
 				require.Equal(t, int64(1), ddError.Int())

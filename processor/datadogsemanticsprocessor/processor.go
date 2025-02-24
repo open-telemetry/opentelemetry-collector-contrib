@@ -58,7 +58,7 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 				metaMap := make(map[string]string)
 				code := traceutil.GetOTelStatusCode(otelspan)
 				if code != 0 {
-					insertAttrIfMissing(sattr, "datadog.status_code", fmt.Sprintf("%d", code))
+					insertAttrIfMissing(sattr, "datadog.http_status_code", fmt.Sprintf("%d", code))
 				}
 				ddError := int64(status2Error(otelspan.Status(), otelspan.Events(), metaMap))
 				insertAttrIfMissing(sattr, "datadog.error", ddError)
