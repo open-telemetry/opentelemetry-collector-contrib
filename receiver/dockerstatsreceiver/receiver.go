@@ -6,6 +6,7 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -45,11 +46,30 @@ type metricsReceiver struct {
 }
 
 func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver {
+	// Resolve the Docker endpoint during receiver initialization
+	config.Endpoint = config.resolveDockerEndpoint()
+
 	return &metricsReceiver{
 		config:   config,
 		settings: set,
 		mb:       metadata.NewMetricsBuilder(config.MetricsBuilderConfig, set),
 	}
+}
+
+const (
+	defaultEndpoint = "unix:///var/run/docker.sock"
+	dockerHostEnv   = "DOCKER_HOST"
+)
+
+func (c *Config) resolveDockerEndpoint() string {
+	if c.Endpoint != "" {
+		return c.Endpoint
+	}
+
+	if dockerHost := os.Getenv(dockerHostEnv); dockerHost != "" {
+		return dockerHost
+	}
+	return defaultEndpoint
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
@@ -62,7 +82,6 @@ func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 	if err = r.client.LoadContainerList(ctx); err != nil {
 		return err
 	}
-
 	cctx, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
 
