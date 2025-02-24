@@ -28,7 +28,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require go.opentelemetry.io/collector/service v0.120.0
+require go.opentelemetry.io/collector/service v0.120.1-0.20250224010654-18e18b21da7a
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

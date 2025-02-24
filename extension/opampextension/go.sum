@@ -206,6 +206,8 @@ go.opentelemetry.io/collector/semconv v0.120.1-0.20250224010654-18e18b21da7a h1:
 go.opentelemetry.io/collector/semconv v0.120.1-0.20250224010654-18e18b21da7a/go.mod h1:te6VQ4zZJO5Lp8dM2XIhDxDiL45mwX0YAQQWRQ0Qr9U=
 go.opentelemetry.io/collector/service v0.120.0 h1:7E0ILhOYP72qZBNmprsJxLFozEuXlF0Evy5e4HinTJI=
 go.opentelemetry.io/collector/service v0.120.0/go.mod h1:hRVK2Tvgm6W+8zb6NZ4fKuhMot3jzz6tu9YHDgwIQ8E=
+go.opentelemetry.io/collector/service v0.120.1-0.20250224010654-18e18b21da7a h1:8a98NW8UY61IadDC667Bx930uazcw424BXVJITx4hg0=
+go.opentelemetry.io/collector/service v0.120.1-0.20250224010654-18e18b21da7a/go.mod h1:UPgfiVkSqZIkz6EC+GYLEYq9VNfQiti52moLu2KtZgc=
 go.opentelemetry.io/contrib/bridges/otelzap v0.9.0 h1:f+xpAfhQTjR8beiSMe1bnT/25PkeyWmOcI+SjXWguNw=
 go.opentelemetry.io/contrib/bridges/otelzap v0.9.0/go.mod h1:T1Z1jyS5FttgQoF6UcGhnM+gF9wU32B4lHO69nXw4FE=
 go.opentelemetry.io/contrib/config v0.14.0 h1:QAG8uHNp5ZiCkpT7XggSmg5AyW1sA0LgypMoXgBB1+4=
