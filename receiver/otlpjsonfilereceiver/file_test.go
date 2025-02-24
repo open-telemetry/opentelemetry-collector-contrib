@@ -44,7 +44,7 @@ func TestFileProfilesReceiver(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.ProfilesSink)
-	receiver, err := factory.(xreceiver.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	receiver, err := factory.(xreceiver.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	require.NoError(t, err)
@@ -71,7 +71,7 @@ func TestFileTracesReceiver(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.TracesSink)
-	receiver, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	receiver, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	require.NoError(t, err)
@@ -101,7 +101,7 @@ func TestFileMetricsReceiver(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.MetricsSink)
-	receiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	receiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
@@ -135,7 +135,7 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	cfg.IncludeFileName = false
 
 	sink := new(consumertest.MetricsSink)
-	receiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	receiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
@@ -170,7 +170,7 @@ func TestFileLogsReceiver(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.LogsSink)
-	receiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	receiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
@@ -238,7 +238,7 @@ func TestFileMixedSignals(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	cfg.IncludeFileName = false
-	cs := receivertest.NewNopSettings()
+	cs := receivertest.NewNopSettings(metadata.Type)
 	ms := new(consumertest.MetricsSink)
 	mr, err := factory.CreateMetrics(context.Background(), cs, cfg, ms)
 	assert.NoError(t, err)
