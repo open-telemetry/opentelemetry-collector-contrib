@@ -21,12 +21,6 @@ import (
 
 const MaxRetryInterval = 32 * time.Second
 
-type DetectorType string
-
-type Detector interface {
-	Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error)
-}
-
 var allowErrorPropagationFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.resourcedetection.propagateerrors",
 	featuregate.StageAlpha,
@@ -34,6 +28,12 @@ var allowErrorPropagationFeatureGate = featuregate.GlobalRegistry().MustRegister
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37961"),
 	featuregate.WithRegisterFromVersion("v0.121.0"),
 )
+
+type DetectorType string
+
+type Detector interface {
+	Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error)
+}
 
 type DetectorConfig any
 
