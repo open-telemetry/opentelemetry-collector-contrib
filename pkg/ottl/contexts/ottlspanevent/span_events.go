@@ -49,7 +49,7 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 	err = errors.Join(err, encoder.AddObject("spanevent", logging.SpanEvent(tCtx.spanEvent)))
 	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
 	if tCtx.eventIndex != nil {
-		encoder.AddInt64("eventindex", *tCtx.eventIndex)
+		encoder.AddInt64("event_index", *tCtx.eventIndex)
 	}
 	return err
 }
