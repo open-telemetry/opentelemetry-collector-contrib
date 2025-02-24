@@ -87,7 +87,6 @@ const (
 	AttributeCICDPipelineTaskRunStatusSuccess      = "success"
 	AttributeCICDPipelineTaskRunStatusFailure      = "failure"
 	AttributeCICDPipelineTaskRunStatusCancellation = "cancellation"
-	AttributeCICDPipelineTaskRunStatusError        = "error"
 	AttributeCICDPipelineTaskRunStatusSkip         = "skip"
 
 	// The following attributes are not part of the semantic conventions yet.

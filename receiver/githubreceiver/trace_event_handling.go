@@ -256,7 +256,7 @@ func (gtr *githubTracesReceiver) createStepSpans(
 }
 
 // newUniqueSteps creates a new slice of step names from the provided GitHub
-// event steps. Each step name, if duplicated, is appended with `_n` where n is
+// event steps. Each step name, if duplicated, is appended with `-n` where n is
 // the numbered occurrence.
 func newUniqueSteps(steps []*github.TaskStep) []string {
 	if len(steps) == 0 {
