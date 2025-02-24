@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	k8stest "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 const (
@@ -265,9 +266,9 @@ func startUpSink(t *testing.T, consumer any) func() {
 
 	switch c := consumer.(type) {
 	case *consumertest.MetricsSink:
-		rcvr, err = f.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, c)
+		rcvr, err = f.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, c)
 	case *consumertest.LogsSink:
-		rcvr, err = f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, c)
+		rcvr, err = f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, c)
 	default:
 		t.Fatalf("unsupported consumer type: %T", c)
 	}

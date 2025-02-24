@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"gopkg.in/yaml.v3"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/compare"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/sdktest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/testar"
@@ -183,7 +184,7 @@ func setupTestTelemetry() testTelemetry {
 }
 
 func (tt *testTelemetry) newSettings() processor.Settings {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	set.TelemetrySettings.MeterProvider = tt.meterProvider
 	return set
 }

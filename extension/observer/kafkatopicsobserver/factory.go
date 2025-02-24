@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	defaultBroker            = "localhost:9092"
-	defaultSessionTimeout    = 10 * time.Second
-	defaultHeartbeatInterval = 3 * time.Second
+	defaultBroker             = "localhost:9092"
+	defaultSessionTimeout     = 10 * time.Second
+	defaultHeartbeatInterval  = 3 * time.Second
+	defaultTopicsSyncInterval = 5 * time.Second
 )
 
 // NewFactory should be called to create a factory with default values.
@@ -31,9 +32,10 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Brokers:           []string{defaultBroker},
-		SessionTimeout:    defaultSessionTimeout,
-		HeartbeatInterval: defaultHeartbeatInterval,
+		Brokers:            []string{defaultBroker},
+		SessionTimeout:     defaultSessionTimeout,
+		HeartbeatInterval:  defaultHeartbeatInterval,
+		TopicsSyncInterval: defaultTopicsSyncInterval,
 	}
 }
 

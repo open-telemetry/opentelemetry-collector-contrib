@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 
@@ -27,10 +26,9 @@ func TestPerformanceProfilerExtensionUsage(t *testing.T) {
 		BlockProfileFraction: 3,
 		MutexProfileFraction: 5,
 	}
-	tt, err := componenttest.SetupTelemetry(component.MustNewID("TestPprofExtension"))
-	require.NoError(t, err, "SetupTelemetry should succeed")
+	tt := componenttest.NewTelemetry()
 
-	pprofExt := newServer(config, tt.TelemetrySettings())
+	pprofExt := newServer(config, tt.NewTelemetrySettings())
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -61,9 +59,8 @@ func TestPerformanceProfilerExtensionPortAlreadyInUse(t *testing.T) {
 			Endpoint: endpoint,
 		},
 	}
-	tt, err := componenttest.SetupTelemetry(component.MustNewID("TestPprofExtension"))
-	require.NoError(t, err, "SetupTelemetry should succeed")
-	pprofExt := newServer(config, tt.TelemetrySettings())
+	tt := componenttest.NewTelemetry()
+	pprofExt := newServer(config, tt.NewTelemetrySettings())
 	require.NotNil(t, pprofExt)
 
 	require.Error(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -76,9 +73,8 @@ func TestPerformanceProfilerMultipleStarts(t *testing.T) {
 		},
 	}
 
-	tt, err := componenttest.SetupTelemetry(component.MustNewID("TestPprofExtension"))
-	require.NoError(t, err, "SetupTelemetry should succeed")
-	pprofExt := newServer(config, tt.TelemetrySettings())
+	tt := componenttest.NewTelemetry()
+	pprofExt := newServer(config, tt.NewTelemetrySettings())
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -95,9 +91,8 @@ func TestPerformanceProfilerMultipleShutdowns(t *testing.T) {
 		},
 	}
 
-	tt, err := componenttest.SetupTelemetry(component.MustNewID("TestPprofExtension"))
-	require.NoError(t, err, "SetupTelemetry should succeed")
-	pprofExt := newServer(config, tt.TelemetrySettings())
+	tt := componenttest.NewTelemetry()
+	pprofExt := newServer(config, tt.NewTelemetrySettings())
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))
@@ -111,9 +106,8 @@ func TestPerformanceProfilerShutdownWithoutStart(t *testing.T) {
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 	}
-	tt, err := componenttest.SetupTelemetry(component.MustNewID("TestPprofExtension"))
-	require.NoError(t, err, "SetupTelemetry should succeed")
-	pprofExt := newServer(config, tt.TelemetrySettings())
+	tt := componenttest.NewTelemetry()
+	pprofExt := newServer(config, tt.NewTelemetrySettings())
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Shutdown(context.Background()))
@@ -133,9 +127,8 @@ func TestPerformanceProfilerLifecycleWithFile(t *testing.T) {
 		},
 		SaveToFile: tmpFile.Name(),
 	}
-	tt, err := componenttest.SetupTelemetry(component.MustNewID("TestPprofExtension"))
-	require.NoError(t, err, "SetupTelemetry should succeed")
-	pprofExt := newServer(config, tt.TelemetrySettings())
+	tt := componenttest.NewTelemetry()
+	pprofExt := newServer(config, tt.NewTelemetrySettings())
 	require.NotNil(t, pprofExt)
 
 	require.NoError(t, pprofExt.Start(context.Background(), componenttest.NewNopHost()))

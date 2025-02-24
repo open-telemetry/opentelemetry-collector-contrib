@@ -111,7 +111,7 @@ func TestNewDetector(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			detector, err := NewDetector(processortest.NewNopSettings(), tt.cfg)
+			detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), tt.cfg)
 			assert.NotNil(t, detector)
 			assert.NoError(t, err)
 		})

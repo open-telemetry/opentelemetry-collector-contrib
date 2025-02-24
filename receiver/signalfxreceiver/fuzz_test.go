@@ -11,6 +11,8 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver/internal/metadata"
 )
 
 func FuzzHandleDatapointReq(f *testing.F) {
@@ -20,7 +22,7 @@ func FuzzHandleDatapointReq(f *testing.F) {
 			t.Skip()
 		}
 		req.Header.Add(httpContentTypeHeader, otlpProtobufContentType)
-		rec, err := newReceiver(receivertest.NewNopSettings(), Config{})
+		rec, err := newReceiver(receivertest.NewNopSettings(metadata.Type), Config{})
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -19,7 +19,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, createDefaultConfig().(*Config), cfg)
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-	ext, err := createExtension(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), cfg)
+	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 	require.NoError(t, ext.Shutdown(context.Background()))
@@ -28,7 +28,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 func TestFactory_Create(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig()
-	ext, err := createExtension(context.Background(), extensiontest.NewNopSettingsWithType(f.Type()), cfg)
+	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 	require.NoError(t, ext.Shutdown(context.Background()))

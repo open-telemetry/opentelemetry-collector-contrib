@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 // Test data and validation functions for all four core metrics for Prometheus Receiver.
@@ -1623,7 +1625,7 @@ scrape_configs:
       - %s
         `, strings.TrimPrefix(svr.URL, "http://")), promslog.NewNopLogger())
 	require.NoError(t, err)
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	receiver := newPrometheusReceiver(set, &Config{
 		PrometheusConfig: (*PromConfig)(cfg),
 	}, new(consumertest.MetricsSink))

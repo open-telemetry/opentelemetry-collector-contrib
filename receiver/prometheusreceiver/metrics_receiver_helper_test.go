@@ -36,6 +36,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 type mockPrometheusResponse struct {
@@ -695,7 +696,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	}
 
 	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(receivertest.NewNopSettings(), config, cms)
+	receiver := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), config, cms)
 	receiver.skipOffsetting = true
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
