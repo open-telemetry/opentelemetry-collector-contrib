@@ -19,7 +19,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 
-	tReceiver, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "traces receiver creation failed")
 }

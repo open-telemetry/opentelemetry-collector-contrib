@@ -40,7 +40,7 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 	}
 	sink := new(consumertest.LogsSink)
 
-	set := receivertest.NewNopSettingsWithType(metadata.Type)
+	set := receivertest.NewNopSettings(metadata.Type)
 	lr, err := newALSReceiver(config, sink, set)
 	require.NoError(t, err)
 
