@@ -4,6 +4,7 @@
 package redactionprocessor
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -26,12 +27,14 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				AllowAllKeys:  false,
-				AllowedKeys:   []string{"description", "group", "id", "name"},
-				IgnoredKeys:   []string{"safe_attribute"},
-				BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{14})"},
-				AllowedValues: []string{".+@mycompany.com"},
-				Summary:       debug,
+				AllowAllKeys:       false,
+				AllowedKeys:        []string{"description", "group", "id", "name"},
+				IgnoredKeys:        []string{"safe_attribute"},
+				BlockedValues:      []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{14})"},
+				HashFunction:       MD5,
+				BlockedKeyPatterns: []string{".*token.*", ".*api_key.*"},
+				AllowedValues:      []string{".+@mycompany.com"},
+				Summary:            debug,
 			},
 		},
 		{
@@ -54,6 +57,38 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
+		})
+	}
+}
+
+func TestValidateConfig(t *testing.T) {
+	tests := []struct {
+		name     string
+		cfg      Config
+		expected error
+	}{
+		{
+			name: "valid",
+			cfg: Config{
+				HashFunction: MD5,
+			},
+		},
+		{
+			name: "empty",
+			cfg:  Config{},
+		},
+		{
+			name: "invalid",
+			cfg: Config{
+				HashFunction: "hash",
+			},
+			expected: errors.New("unsupported hash function: 'hash'. Supported functions are: 'md5', 'sha1', 'sha3'"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.cfg.Validate())
 		})
 	}
 }
