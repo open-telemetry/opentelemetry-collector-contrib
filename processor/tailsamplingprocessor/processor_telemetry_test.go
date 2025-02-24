@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 )
 
 func TestMetricsAfterOneEvaluation(t *testing.T) {
@@ -691,7 +692,7 @@ func setupTestTelemetry() testTelemetry {
 }
 
 func (tt *testTelemetry) newSettings() processor.Settings {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	set.ID = component.NewID(component.MustNewType("tail_sampling"))
 	set.TelemetrySettings.MeterProvider = tt.meterProvider
 	return set

@@ -23,7 +23,7 @@ func TestStatefulsetMetrics(t *testing.T) {
 	ss := testutils.NewStatefulset("1")
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(mb, ss, ts)
 	m := mb.Emit()
 

@@ -44,7 +44,7 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	)
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(zap.NewNop(), mb, pod, ts)
 	m := mb.Emit()
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
@@ -71,7 +71,7 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	mbc.ResourceAttributes.K8sPodQosClass.Enabled = true
 	mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.Enabled = true
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings())
+	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(zap.NewNop(), mb, pod, ts)
 	m := mb.Emit()
 
