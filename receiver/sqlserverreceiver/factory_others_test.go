@@ -81,7 +81,7 @@ func TestFactoryOtherOS(t *testing.T) {
 				require.True(t, directDBConnectionEnabled(cfg))
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
-				params := receivertest.NewNopSettings()
+				params := receivertest.NewNopSettings(metadata.Type)
 				scrapers, err := setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.Empty(t, scrapers)
@@ -98,9 +98,12 @@ func TestFactoryOtherOS(t *testing.T) {
 				sqlScrapers = setupSQLServerLogsScrapers(params, cfg)
 				require.NotEmpty(t, sqlScrapers)
 
+				q, err := getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime)
+				require.NoError(t, err)
+
 				databaseTopQueryScraperFound := false
 				for _, scraper := range sqlScrapers {
-					if scraper.sqlQuery == getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime) {
+					if scraper.sqlQuery == q {
 						databaseTopQueryScraperFound = true
 						break
 					}
@@ -110,7 +113,7 @@ func TestFactoryOtherOS(t *testing.T) {
 
 				r, err := factory.CreateLogs(
 					context.Background(),
-					receivertest.NewNopSettings(),
+					receivertest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),
 				)

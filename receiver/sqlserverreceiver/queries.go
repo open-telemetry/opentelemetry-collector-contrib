@@ -4,8 +4,11 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
+	"bytes"
 	"fmt"
+	"path/filepath"
 	"strings"
+	"text/template"
 )
 
 // Direct access to queries is not recommended: The receiver allows filtering based on
@@ -336,51 +339,7 @@ func getSQLServerPropertiesQuery(instanceName string) string {
 	return fmt.Sprintf(sqlServerProperties, "")
 }
 
-const (
-	lookbackTimeDeclaration = `DECLARE @lookbackTime INT = -%d;`
-	topNValueDeclaration    = `DECLARE @topNValue INT = %d;`
-)
-
-const sqlServerQueryTextAndPlan = `
-%s
-%s
-with qstats as (
-	SELECT TOP(@topNValue)
-		REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
-		HOST_NAME() AS [computer_name],
-		MAX(qs.plan_handle) AS query_plan_handle,
-		qs.query_hash AS query_hash,
-		qs.query_plan_hash AS query_plan_hash,
-		SUM(qs.execution_count) AS execution_count,
-		SUM(qs.total_elapsed_time) AS total_elapsed_time,
-		SUM(qs.total_worker_time) AS total_worker_time,
-		SUM(qs.total_logical_reads) AS total_logical_reads,
-		SUM(qs.total_physical_reads) AS total_physical_reads,
-		SUM(qs.total_logical_writes) AS total_logical_writes,
-		SUM(qs.total_rows) AS total_rows,
-		SUM(qs.total_grant_kb) as total_grant_kb
-	FROM sys.dm_exec_query_stats AS qs
-	WHERE qs.last_execution_time BETWEEN DATEADD(SECOND, @lookbackTime, GETDATE()) AND GETDATE() %s
-	GROUP BY
-		qs.query_hash,
-		qs.query_plan_hash
-)
-SELECT qs.*,
-	SUBSTRING(st.text, (stats.statement_start_offset / 2) + 1,
-			 ((CASE statement_end_offset
-				   WHEN -1 THEN DATALENGTH(st.text)
-				   ELSE stats.statement_end_offset END - stats.statement_start_offset) / 2) + 1) AS query_text,
-	ISNULL(qp.query_plan, '') AS query_plan
-FROM qstats AS qs
-		INNER JOIN sys.dm_exec_query_stats AS stats on qs.query_plan_handle = stats.plan_handle
-		CROSS APPLY sys.dm_exec_query_plan(qs.query_plan_handle) AS qp
-		CROSS APPLY sys.dm_exec_sql_text(qs.query_plan_handle) AS st;
-`
-
-func getSQLServerQueryTextAndPlanQuery(instanceName string, maxQuerySampleCount uint, lookbackTime uint) string {
-	topQueryCountStatement := fmt.Sprintf(topNValueDeclaration, maxQuerySampleCount)
-	lookbackTimeStatement := fmt.Sprintf(lookbackTimeDeclaration, lookbackTime)
-
+func getSQLServerQueryTextAndPlanQuery(instanceName string, maxQuerySampleCount uint, lookbackTime uint) (string, error) {
 	var instanceNameClause string
 
 	if instanceName != "" {
@@ -389,5 +348,18 @@ func getSQLServerQueryTextAndPlanQuery(instanceName string, maxQuerySampleCount 
 		instanceNameClause = ""
 	}
 
-	return fmt.Sprintf(sqlServerQueryTextAndPlan, lookbackTimeStatement, topQueryCountStatement, instanceNameClause)
+	templateFile := filepath.Join("templates", "dbQueryAndTextQuery.tmpl")
+
+	tmpl := template.Must(template.New(filepath.Base(templateFile)).Option("missingkey=error").ParseFiles(templateFile))
+	buf := bytes.Buffer{}
+
+	if err := tmpl.Execute(&buf, map[string]any{
+		"topNValue":          maxQuerySampleCount,
+		"lookbackTime":       lookbackTime,
+		"instanceNameClause": instanceNameClause,
+	}); err != nil {
+		return "", fmt.Errorf("failed executing template: %w", err)
+	}
+
+	return buf.String(), nil
 }

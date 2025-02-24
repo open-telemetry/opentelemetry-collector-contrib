@@ -76,7 +76,7 @@ func TestQueryTextAndPlanQueryContents(t *testing.T) {
 		instanceName             string
 		maxQuerySampleCount      uint
 		lookbackTime             uint
-		getQuery                 func(string, uint, uint) string
+		getQuery                 func(string, uint, uint) (string, error)
 		expectedQueryValFilename string
 	}{
 		{
@@ -104,7 +104,8 @@ func TestQueryTextAndPlanQueryContents(t *testing.T) {
 			// Replace all will fix newlines when testing on Windows
 			expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
 
-			actual := tt.getQuery(tt.instanceName, tt.maxQuerySampleCount, tt.lookbackTime)
+			actual, err := tt.getQuery(tt.instanceName, tt.maxQuerySampleCount, tt.lookbackTime)
+			require.NoError(t, err)
 			require.Equal(t, expected, actual)
 		})
 	}

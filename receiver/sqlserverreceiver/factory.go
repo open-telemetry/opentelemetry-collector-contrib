@@ -73,14 +73,20 @@ func setupQueries(cfg *Config) []string {
 	return queries
 }
 
-func setupLogQueries(cfg *Config) []string {
+func setupLogQueries(cfg *Config) ([]string, []error) {
 	var queries []string
+	var errs []error
 
 	if cfg.EnableTopQueryCollection {
-		queries = append(queries, getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime))
+		q, err := getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			queries = append(queries, q)
+		}
 	}
 
-	return queries
+	return queries, errs
 }
 
 func directDBConnectionEnabled(config *Config) bool {
@@ -140,9 +146,20 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 		return nil
 	}
 
-	queries := setupLogQueries(cfg)
+	queries, errs := setupLogQueries(cfg)
+	if len(errs) > 0 {
+		params.Logger.Info("Failed to template queries in SQLServer receiver: Configuration might not be correct.")
+		return nil
+	}
+
 	if len(queries) == 0 {
 		params.Logger.Info("No direct connection will be made to the SQL Server: No logs are enabled requiring it.")
+		return nil
+	}
+
+	queryTextAndPlanQuery, err := getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime)
+	if err != nil {
+		params.Logger.Error("Failed to template needed queries in SQLServer receiver: Configuration might not be correct.", zap.Error(err))
 		return nil
 	}
 
@@ -157,9 +174,8 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 		id := component.NewIDWithName(metadata.Type, fmt.Sprintf("logs-query-%d: %s", i, query))
 
 		var cache *lru.Cache[string, int64]
-		var err error
 
-		if query == getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime) {
+		if query == queryTextAndPlanQuery {
 			// we have 8 metrics in this query and multiple 2 to allow to cache more queries.
 			cache, err = lru.New[string, int64](int(cfg.MaxQuerySampleCount * 8 * 2))
 			if err != nil {

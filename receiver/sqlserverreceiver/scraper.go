@@ -111,8 +111,13 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 }
 
 func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, error) {
+	queryTextAndPlanQuery, err := getSQLServerQueryTextAndPlanQuery(s.config.InstanceName, s.config.MaxQuerySampleCount, s.config.LookbackTime)
+	if err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to template needed queries: %w", err)
+	}
+
 	switch s.sqlQuery {
-	case getSQLServerQueryTextAndPlanQuery(s.config.InstanceName, s.config.MaxQuerySampleCount, s.config.LookbackTime):
+	case queryTextAndPlanQuery:
 		return s.recordDatabaseQueryTextAndPlan(ctx, s.config.TopQueryCount)
 	default:
 		return plog.Logs{}, fmt.Errorf("Attempted to get logs from unsupported query: %s", s.sqlQuery)
@@ -377,7 +382,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	resourceLog.Resource().Attributes().PutStr("db.system.type", "microsoft.sql_server")
 
 	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
-	scopedLog.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver")
+	scopedLog.Scope().SetName(metadata.ScopeName)
 	scopedLog.Scope().SetVersion("v0.0.1")
 
 	timestamp := pcommon.NewTimestampFromTime(time.Now())

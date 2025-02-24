@@ -147,7 +147,7 @@ func TestFactory(t *testing.T) {
 				factory := NewFactory()
 				_, err := factory.CreateLogs(
 					context.Background(),
-					receivertest.NewNopSettings(),
+					receivertest.NewNopSettings(metadata.Type),
 					nil,
 					consumertest.NewNop())
 				require.ErrorIs(t, err, errConfigNotSQLServer)
@@ -160,12 +160,12 @@ func TestFactory(t *testing.T) {
 				cfg := factory.CreateDefaultConfig()
 				r, err := factory.CreateLogs(
 					context.Background(),
-					receivertest.NewNopSettings(),
+					receivertest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),
 				)
 				require.NoError(t, err)
-				scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(), cfg.(*Config))
+				scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg.(*Config))
 				require.Empty(t, scrapers)
 				require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 				require.NoError(t, r.Shutdown(context.Background()))
@@ -186,7 +186,7 @@ func TestFactory(t *testing.T) {
 				require.True(t, directDBConnectionEnabled(cfg))
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
-				params := receivertest.NewNopSettings()
+				params := receivertest.NewNopSettings(metadata.Type)
 				scrapers, err := setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.Empty(t, scrapers)
@@ -203,9 +203,12 @@ func TestFactory(t *testing.T) {
 				sqlScrapers = setupSQLServerLogsScrapers(params, cfg)
 				require.NotEmpty(t, sqlScrapers)
 
+				q, err := getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime)
+				require.NoError(t, err)
+
 				databaseTopQueryScraperFound := false
 				for _, scraper := range sqlScrapers {
-					if scraper.sqlQuery == getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime) {
+					if scraper.sqlQuery == q {
 						databaseTopQueryScraperFound = true
 						break
 					}
@@ -215,7 +218,7 @@ func TestFactory(t *testing.T) {
 
 				r, err := factory.CreateLogs(
 					context.Background(),
-					receivertest.NewNopSettings(),
+					receivertest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),
 				)

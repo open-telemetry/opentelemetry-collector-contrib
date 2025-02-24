@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
@@ -64,7 +65,7 @@ func TestEmptyScrape(t *testing.T) {
 	// Disable all metrics manually that are enabled by default
 	enableAllScraperMetrics(cfg, false)
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.Empty(t, scrapers)
 }
 
@@ -134,7 +135,7 @@ func TestScrapeInvalidQuery(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 
 	enableAllScraperMetrics(cfg, true)
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	for _, scraper := range scrapers {
@@ -165,7 +166,7 @@ func TestScrapeCacheAndDiff(t *testing.T) {
 
 	enableAllScraperMetrics(cfg, false)
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
@@ -252,7 +253,11 @@ func readFile(fname string) ([]sqlquery.StringMap, error) {
 
 func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
 	var queryResults []sqlquery.StringMap
-	var err error
+
+	queryTextAndPlanQuery, err := getSQLServerQueryTextAndPlanQuery(mc.instanceName, mc.maxQuerySampleCount, mc.lookbackTime)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get query text and plan query: %w", err)
+	}
 
 	switch mc.SQL {
 	case getSQLServerDatabaseIOQuery(mc.instanceName):
@@ -261,7 +266,7 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("perfCounterQueryData.txt")
 	case getSQLServerPropertiesQuery(mc.instanceName):
 		queryResults, err = readFile("propertyQueryData.txt")
-	case getSQLServerQueryTextAndPlanQuery(mc.instanceName, mc.maxQuerySampleCount, mc.lookbackTime):
+	case queryTextAndPlanQuery:
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	default:
 		return nil, errors.New("No valid query found")
@@ -275,10 +280,14 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 
 func (mc mockInvalidClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
 	var queryResults []sqlquery.StringMap
-	var err error
+
+	queryTextAndPlanQuery, err := getSQLServerQueryTextAndPlanQuery(mc.instanceName, mc.maxQuerySampleCount, mc.lookbackTime)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get query text and plan query: %w", err)
+	}
 
 	switch mc.SQL {
-	case getSQLServerQueryTextAndPlanQuery(mc.instanceName, mc.maxQuerySampleCount, mc.lookbackTime):
+	case queryTextAndPlanQuery:
 		queryResults, err = readFile("queryTextAndPlanQueryInvalidData.txt")
 	default:
 		return nil, errors.New("No valid query found")
@@ -303,7 +312,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	enableAllScraperMetrics(cfg, false)
 	cfg.EnableTopQueryCollection = true
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]
@@ -361,7 +370,7 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 	enableAllScraperMetrics(cfg, false)
 	cfg.EnableTopQueryCollection = true
 
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	scraper := scrapers[0]

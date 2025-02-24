@@ -1,4 +1,3 @@
-
 DECLARE @lookbackTime INT = -120;
 DECLARE @topNValue INT = 2000;
 with qstats as (
