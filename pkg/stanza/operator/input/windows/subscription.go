@@ -15,8 +15,12 @@ import (
 
 // Subscription is a subscription to a windows eventlog channel.
 type Subscription struct {
-	handle uintptr
-	Server string
+	handle        uintptr
+	Server        string
+	startAt       string
+	sessionHandle uintptr
+	channel       string
+	bookmark      Bookmark
 }
 
 // Open will open the subscription handle.
@@ -47,6 +51,10 @@ func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel strin
 	}
 
 	s.handle = subscriptionHandle
+	s.startAt = startAt
+	s.sessionHandle = sessionHandle
+	s.channel = channel
+	s.bookmark = bookmark
 	return nil
 }
 
@@ -76,12 +84,41 @@ func (s *Subscription) Read(maxReads int) ([]Event, error) {
 		return nil, fmt.Errorf("max reads must be greater than 0")
 	}
 
+	events, err := s.readWithRetry(maxReads)
+	if err != nil {
+		return nil, err
+	}
+
+	return events, nil
+}
+
+// readWithRetry will read events from the subscription with dynamic batch sizing.
+// If the RPC_S_INVALID_BOUND error is encountered, the subscription is closed and reopened with half the batch size.
+func (s *Subscription) readWithRetry(maxReads int) ([]Event, error) {
 	eventHandles := make([]uintptr, maxReads)
 	var eventsRead uint32
+
 	err := evtNext(s.handle, uint32(maxReads), &eventHandles[0], 0, 0, &eventsRead)
 
-	if errors.Is(err, ErrorInvalidOperation) && eventsRead == 0 {
-		return nil, nil
+	// Handle the RPC_S_INVALID_BOUND error
+	if err != nil && errors.Is(err, windows.RPC_S_INVALID_BOUND) {
+		// Close and reopen the subscription
+		if closeErr := s.Close(); closeErr != nil {
+			return nil, fmt.Errorf("failed to close subscription during recovery: %w", closeErr)
+		}
+
+		// Reopen with the same parameters (these should be stored in the subscription)
+		if openErr := s.Open(s.startAt, s.sessionHandle, s.channel, s.bookmark); openErr != nil {
+			return nil, fmt.Errorf("failed to reopen subscription during recovery: %w", openErr)
+		}
+
+		// Retry with half the batch size
+		newMaxReads := maxReads / 2
+		if newMaxReads < 1 {
+			newMaxReads = 1
+		}
+
+		return s.readWithRetry(newMaxReads)
 	}
 
 	if err != nil && !errors.Is(err, windows.ERROR_NO_MORE_ITEMS) {
