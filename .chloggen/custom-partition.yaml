@@ -16,7 +16,7 @@ issues: [37915, 37503]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Users can provide custom file partitions using [strftime](https://linux.die.net/man/3/strftime) formatting.
+  Users can provide custom file partitions using [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) formatting.
   The default value of `year=%Y/month=%m/day=%d/hour=%H/minute=%M` matches the older pattern (with `s3_partition: minute`)
   
   If users do not provide a value for `s3_prefix`, the exporter will not create a `/` folder in the bucket.

@@ -22,7 +22,7 @@ type PartitionKeyBuilder struct {
 	PartitionPrefix string
 	// PartitionFormat is used to separate values into
 	// different time buckets.
-	// Uses [strftime](https://linux.die.net/man/3/strftime) formatting.
+	// Uses [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) formatting.
 	PartitionFormat string
 	// FilePrefix is used to define the prefix of the file written
 	// to the directory in S3.
