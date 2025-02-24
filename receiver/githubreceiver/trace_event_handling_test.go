@@ -434,7 +434,7 @@ func TestCreateStepSpans(t *testing.T) {
 			receiver := &githubTracesReceiver{
 				logger:   logger,
 				cfg:      createDefaultConfig().(*Config),
-				settings: receivertest.NewNopSettings(),
+				settings: receivertest.NewNopSettings(metadata.Type),
 			}
 
 			// Create traces and resource spans
