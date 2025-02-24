@@ -241,6 +241,13 @@ func (p *Parser[K]) newKeys(keys []key) ([]Key[K], error) {
 				getter = g
 			}
 		}
+		if keys[i].MathExpression != nil {
+			g, err := p.evaluateMathExpression(keys[i].MathExpression)
+			if err != nil {
+				return nil, err
+			}
+			getter = g
+		}
 		ks[i] = &baseKey[K]{
 			s: keys[i].String,
 			i: keys[i].Int,

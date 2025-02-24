@@ -109,7 +109,7 @@ func TestCollectMetricData(t *testing.T) {
 	})
 	expectedRMs++
 
-	dc := NewDataCollector(receivertest.NewNopSettings(), ms, metadata.DefaultMetricsBuilderConfig(), []string{"Ready"}, nil)
+	dc := NewDataCollector(receivertest.NewNopSettings(metadata.Type), ms, metadata.DefaultMetricsBuilderConfig(), []string{"Ready"}, nil)
 	m1 := dc.CollectMetricData(time.Now())
 
 	// Verify number of resource metrics only, content is tested in other tests.

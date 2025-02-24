@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor/internal/metadata"
 )
 
 func TestMetricsTransformProcessor(t *testing.T) {
@@ -29,7 +31,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 
 			mtp, err := processorhelper.NewMetrics(
 				context.Background(),
-				processortest.NewNopSettings(),
+				processortest.NewNopSettings(metadata.Type),
 				&Config{},
 				next,
 				p.processMetrics,

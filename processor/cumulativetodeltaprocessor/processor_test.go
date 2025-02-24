@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/metadata"
 )
 
 var (
@@ -633,7 +634,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			factory := NewFactory()
 			mgp, err := factory.CreateMetrics(
 				context.Background(),
-				processortest.NewNopSettings(),
+				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				next,
 			)

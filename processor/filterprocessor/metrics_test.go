@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
 
@@ -335,7 +336,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			factory := NewFactory()
 			fmp, err := factory.CreateMetrics(
 				context.Background(),
-				processortest.NewNopSettings(),
+				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				next,
 			)
@@ -456,7 +457,7 @@ func benchmarkFilter(b *testing.B, mp *filterconfig.MetricMatchProperties) {
 	ctx := context.Background()
 	proc, _ := factory.CreateMetrics(
 		ctx,
-		processortest.NewNopSettings(),
+		processortest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -534,7 +535,7 @@ func requireNotPanics(t *testing.T, metrics pmetric.Metrics) {
 	ctx := context.Background()
 	proc, _ := factory.CreateMetrics(
 		ctx,
-		processortest.NewNopSettings(),
+		processortest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -764,7 +765,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterMetricProcessor(processortest.NewNopSettings(), &Config{Metrics: tt.conditions, ErrorMode: tt.errorMode})
+			processor, err := newFilterMetricProcessor(processortest.NewNopSettings(metadata.Type), &Config{Metrics: tt.conditions, ErrorMode: tt.errorMode})
 			assert.NoError(t, err)
 
 			got, err := processor.processMetrics(context.Background(), constructMetrics())

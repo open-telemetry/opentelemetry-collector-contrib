@@ -63,8 +63,8 @@ func TestLoadConfig(t *testing.T) {
 					config.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
-					config.MaxIdleConns = &maxIdleConns
-					config.IdleConnTimeout = &idleConnTimeout
+					config.MaxIdleConns = maxIdleConns
+					config.IdleConnTimeout = idleConnTimeout
 					config.Auth = &configauth.Authentication{AuthenticatorID: component.MustNewID("sample_basic_auth")}
 				}),
 				BackOffConfig: configretry.BackOffConfig{

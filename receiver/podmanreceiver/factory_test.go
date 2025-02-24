@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -29,7 +31,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig()
 
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 	traceReceiver, err := factory.CreateTraces(context.Background(), params, config, consumertest.NewNop())
 	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, traceReceiver)

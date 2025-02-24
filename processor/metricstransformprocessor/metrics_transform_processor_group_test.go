@@ -18,6 +18,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor/internal/metadata"
 )
 
 type metricsGroupingTest struct {
@@ -67,7 +68,7 @@ func TestMetricsGrouping(t *testing.T) {
 
 				mtp, err := processorhelper.NewMetrics(
 					context.Background(),
-					processortest.NewNopSettings(),
+					processortest.NewNopSettings(metadata.Type),
 					&Config{},
 					next, p.processMetrics, processorhelper.WithCapabilities(consumerCapabilities))
 				require.NoError(t, err)

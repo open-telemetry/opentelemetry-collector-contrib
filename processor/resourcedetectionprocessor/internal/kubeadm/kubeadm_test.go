@@ -37,7 +37,7 @@ func TestDetect(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(context.Background())
@@ -61,7 +61,7 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(context.Background())

@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
@@ -61,7 +62,7 @@ func TestCreateTracesE2E(t *testing.T) {
 	}
 	// Create an exporter
 	f := NewFactory()
-	exp, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(), config)
+	exp, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -124,7 +125,7 @@ func TestCreateLogsE2E(t *testing.T) {
 	}
 	// Create an exporter
 	f := NewFactory()
-	exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), config)
+	exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -185,7 +186,7 @@ func TestCreateMetricsE2E(t *testing.T) {
 	}
 	// Create an exporter
 	f := NewFactory()
-	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(), config)
+	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)

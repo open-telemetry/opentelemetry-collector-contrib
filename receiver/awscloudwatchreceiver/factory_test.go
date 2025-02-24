@@ -24,7 +24,7 @@ func TestCreateLogs(t *testing.T) {
 	cfg.Region = "us-west-2"
 	_, err := NewFactory().CreateLogs(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		nil,
 	)

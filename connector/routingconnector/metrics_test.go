@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pmetricutiltest"
 )
 
@@ -50,7 +51,7 @@ func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateMetricsToMetrics(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Metrics))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Metrics))
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
@@ -117,7 +118,7 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Metrics),
 	)
@@ -228,7 +229,7 @@ func TestMetricsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Metrics),
 	)
@@ -378,7 +379,7 @@ func TestMetricsResourceAttributeDroppedByOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Metrics),
 	)
@@ -429,7 +430,7 @@ func TestMetricsConnectorCapabilities(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateMetricsToMetrics(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Metrics),
 	)
@@ -1097,7 +1098,7 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 
 			conn, err := NewFactory().CreateMetricsToMetrics(
 				context.Background(),
-				connectortest.NewNopSettings(),
+				connectortest.NewNopSettings(metadata.Type),
 				tt.cfg,
 				router.(consumer.Metrics),
 			)

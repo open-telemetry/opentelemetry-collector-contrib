@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/cache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
@@ -38,7 +39,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 			withPolicies(policies),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), nextConsumer, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -85,7 +86,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 			withPolicies(policies),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), nextConsumer, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -134,7 +135,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 			withPolicies(policies),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), nextConsumer, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -238,7 +239,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 			withPolicies(policies),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), nextConsumer, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -331,7 +332,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 			withPolicies(policies),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), nextConsumer, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -430,7 +431,7 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 			withPolicies(policies),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), nextConsumer, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -504,7 +505,7 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 			WithSampledDecisionCache(c),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), nextConsumer, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -581,7 +582,7 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 			WithNonSampledDecisionCache(c),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), nextConsumer, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))

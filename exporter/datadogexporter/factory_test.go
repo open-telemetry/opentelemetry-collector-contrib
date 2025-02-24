@@ -85,7 +85,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateMetrics(
 		ctx,
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg,
 	)
 
@@ -124,7 +124,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 		// metrics exporter
 		mexp, err := factory.CreateMetrics(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -132,7 +132,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 		texp, err := factory.CreateTraces(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -140,7 +140,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 		lexp, err := factory.CreateLogs(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -151,7 +151,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 		ctx := context.Background()
 		exp, err := factory.CreateMetrics(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.NoError(t, err)
@@ -159,7 +159,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 		texp, err := factory.CreateTraces(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.NoError(t, err)
@@ -167,7 +167,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 		lexp, err := factory.CreateLogs(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.NoError(t, err)
@@ -208,7 +208,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 		// metrics exporter
 		mexp, err := factory.CreateMetrics(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -216,7 +216,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		texp, err := factory.CreateTraces(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -224,7 +224,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		lexp, err := factory.CreateLogs(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -235,7 +235,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 		ctx := context.Background()
 		exp, err := factory.CreateMetrics(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.NoError(t, err)
@@ -243,7 +243,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		texp, err := factory.CreateTraces(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.NoError(t, err)
@@ -251,7 +251,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		lexp, err := factory.CreateLogs(
 			ctx,
-			exportertest.NewNopSettings(),
+			exportertest.NewNopSettings(metadata.Type),
 			cfg,
 		)
 		assert.NoError(t, err)
@@ -281,7 +281,7 @@ func TestCreateAPILogsExporter(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateLogs(
 		ctx,
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg,
 	)
 
@@ -315,7 +315,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 	expTraces, err := factory.CreateTraces(
 		ctx,
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg,
 	)
 	assert.NoError(t, err)
@@ -323,7 +323,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 	expMetrics, err := factory.CreateMetrics(
 		ctx,
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg,
 	)
 	assert.NoError(t, err)
@@ -364,14 +364,14 @@ func TestStopExporters(t *testing.T) {
 	ctx := context.Background()
 	expTraces, err := factory.CreateTraces(
 		ctx,
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg,
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, expTraces)
 	expMetrics, err := factory.CreateMetrics(
 		ctx,
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg,
 	)
 	assert.NoError(t, err)
