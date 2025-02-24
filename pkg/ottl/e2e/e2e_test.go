@@ -375,7 +375,7 @@ func Test_e2e_converters(t *testing.T) {
 		{
 			statement: `set(attributes["array"][0.0], "bar")`,
 			want:      func(_ ottllog.TransformContext) {},
-			errMsg:    "unable to resolve an integer index in slice: invalid key type",
+			errMsg:    "unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got 'float64'",
 		},
 		{
 			statement: `set(attributes["array"][ConvertCase(attributes["A|B|C"], "upper")], "bar")`,
@@ -404,6 +404,24 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes[attributes[attributes["flags"]]], "something2")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("something", "something2")
+			},
+		},
+		{
+			statement: `set(body, attributes["things"][Len(attributes["things"]) - 1]["name"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("bar")
+			},
+		},
+		{
+			statement: `set(body, attributes["things"][attributes["int_value"] + 1]["name"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("bar")
+			},
+		},
+		{
+			statement: `set(body, attributes[attributes["foo"][attributes["slice"]][attributes["int_value"] + 1 - 1]])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("val2")
 			},
 		},
 		{

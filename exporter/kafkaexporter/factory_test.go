@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 )
 
 // applyConfigOption is used to modify values of the
@@ -79,7 +81,7 @@ func TestCreateMetricExporter(t *testing.T) {
 			f := NewFactory()
 			exporter, err := f.CreateMetrics(
 				context.Background(),
-				exportertest.NewNopSettings(),
+				exportertest.NewNopSettings(metadata.Type),
 				tc.conf,
 			)
 			require.NoError(t, err)
@@ -143,7 +145,7 @@ func TestCreateLogExporter(t *testing.T) {
 			f := NewFactory()
 			exporter, err := f.CreateLogs(
 				context.Background(),
-				exportertest.NewNopSettings(),
+				exportertest.NewNopSettings(metadata.Type),
 				tc.conf,
 			)
 			require.NoError(t, err)
@@ -207,7 +209,7 @@ func TestCreateTraceExporter(t *testing.T) {
 			f := NewFactory()
 			exporter, err := f.CreateTraces(
 				context.Background(),
-				exportertest.NewNopSettings(),
+				exportertest.NewNopSettings(metadata.Type),
 				tc.conf,
 			)
 			require.NoError(t, err)
