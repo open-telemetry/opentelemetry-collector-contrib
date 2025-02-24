@@ -166,7 +166,9 @@ behaviours, which may be configured through the following settings:
 The mapping mode can also be controlled via the client metadata key `X-Elastic-Mapping-Mode`,
 e.g. via HTTP headers, gRPC metadata. This will override the configured `mapping::mode`.
 It is possible to restrict which mapping modes may be requested by configuring
-`mapping::allowed_modes`, which defaults to all mapping modes.
+`mapping::allowed_modes`, which defaults to all mapping modes. Keep in mind that not all
+processors or exporter configurations (e.g. `sending_queue::enabled`) will maintain client
+metadata.
 
 See below for a description of each mapping mode.
 
