@@ -12,12 +12,12 @@ require (
 	github.com/knadh/koanf/v2 v2.1.2
 	github.com/open-telemetry/opamp-go v0.18.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/config/configopaque v1.25.1-0.20250217163935-4397ebc2111c
-	go.opentelemetry.io/collector/config/configtls v1.25.1-0.20250217163935-4397ebc2111c
-	go.opentelemetry.io/collector/confmap v1.25.1-0.20250217163935-4397ebc2111c
-	go.opentelemetry.io/collector/confmap/provider/envprovider v1.25.1-0.20250217163935-4397ebc2111c
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.25.1-0.20250217163935-4397ebc2111c
-	go.opentelemetry.io/collector/semconv v0.119.1-0.20250217163935-4397ebc2111c
+	go.opentelemetry.io/collector/config/configopaque v1.26.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/config/configtls v1.26.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/confmap v1.26.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.26.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.26.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/semconv v0.120.1-0.20250224010654-18e18b21da7a
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/sys v0.30.0

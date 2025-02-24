@@ -7,6 +7,33 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.120.1
+
+## v0.120.0
+
+### 🛑 Breaking changes 🛑
+
+- `s3provider`: Delete deprecated `New` factory function. Use `NewFactory` instead. (#37921)
+- `secretsmanagerprovider`: Delete deprecated `New` function, use `NewFactory` instead (#37923)
+- `pkg/stanza`: Remove deprecated `flush.WithPeriod`. (#37784)
+- `pkg/stanza`: Remove deprecated func BuildWithSplitFunc from stanza/fileconsumer (#37723)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate all functions in stanza/decode (#37734)
+
+### 💡 Enhancements 💡
+
+- `pkg/translator/prometheusremotewrite`: add support for metric type sum in FromMetricsV2 (#33661)
+  The public function is partially implemented and not ready for use
+- `pkg/datadog`: Expose the internal Zaplogger implementation (#37939)
+- `dbstorageextension`: Add DB Transactions to dbstorage.Batch() method as it is expected by Storage API (#37805)
+- `internal/datadog`: create new package `github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/hostmetadata` which exposes `GetSourceProvider` from `github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata` (#37668)
+- `textutil`: Remove unnecessary copy while decoding and constructing string (#37734)
+  This PR affects all log receivers, text extension and kafkareceiver.
+- `telemetrygen`: Exported the API for telemetrygen for test uses. Additionally added new E2E tests and fixed race condition (#36984)
+- `tailsamplingprocessor`: Add support for external caches when using the Tailsampling Processor in code. (#37035)
+
 ## v0.119.0
 
 ### 🚀 New components 🚀
