@@ -81,7 +81,7 @@ func TestSuccessfulScrape(t *testing.T) {
 
 	enableAllScraperMetrics(cfg, true)
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
 
 	for _, scraper := range scrapers {

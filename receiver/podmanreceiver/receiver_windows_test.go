@@ -14,7 +14,7 @@ import (
 )
 
 func TestNewReceiver(t *testing.T) {
-	mr, err := newMetricsReceiver(receivertest.NewNopSettingsWithType(metadata.Type), &Config{}, consumertest.NewNop(), nil)
+	mr, err := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), &Config{}, consumertest.NewNop(), nil)
 	assert.Nil(t, mr)
 	assert.Error(t, err)
 	assert.Equal(t, "podman receiver is not supported on windows", err.Error())
