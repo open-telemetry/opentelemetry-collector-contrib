@@ -24,7 +24,7 @@ func TestValidConfig(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	r, err := createMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)
@@ -35,7 +35,7 @@ func TestCreateMetrics(t *testing.T) {
 func TestCreateLogsReceiver(t *testing.T) {
 	r, err := createLogsReceiver(
 		context.Background(),
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)

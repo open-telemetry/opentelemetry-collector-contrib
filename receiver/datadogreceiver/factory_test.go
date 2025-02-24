@@ -19,7 +19,7 @@ func TestCreateTraces(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "http://localhost:0"
 
-	tReceiver, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "traces receiver creation failed")
 }
@@ -29,7 +29,7 @@ func TestCreateMetrics(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "http://localhost:0"
 
-	tReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "metrics receiver creation failed")
 }
