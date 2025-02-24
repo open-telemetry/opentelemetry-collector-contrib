@@ -40,7 +40,7 @@ func BenchmarkLogsConsumer_cwlogs(b *testing.B) {
 				config.Endpoint = "localhost:0"
 				r, err := createLogsReceiver(
 					context.Background(),
-					receivertest.NewNopSettingsWithType(metadata.Type),
+					receivertest.NewNopSettings(metadata.Type),
 					config,
 					consumertest.NewNop(),
 				)
@@ -95,7 +95,7 @@ func BenchmarkMetricsConsumer_cwmetrics(b *testing.B) {
 				config.Endpoint = "localhost:0"
 				r, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopSettingsWithType(metadata.Type),
+					receivertest.NewNopSettings(metadata.Type),
 					config,
 					consumertest.NewNop(),
 				)

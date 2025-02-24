@@ -20,28 +20,28 @@ import (
 
 func TestNewMetricsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newMetricsExporter(c, exportertest.NewNopSettingsWithType(metadata.Type), metricsMarshalers())
+	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(metadata.Type), metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newMetricsExporter(c, exportertest.NewNopSettingsWithType(metadata.Type), metricsMarshalers())
+	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(metadata.Type), metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newLogsExporter(c, exportertest.NewNopSettingsWithType(metadata.Type), logsMarshalers())
+	mexp, err := newLogsExporter(c, exportertest.NewNopSettings(metadata.Type), logsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newLogsExporter(c, exportertest.NewNopSettingsWithType(metadata.Type), logsMarshalers())
+	mexp, err := newLogsExporter(c, exportertest.NewNopSettings(metadata.Type), logsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }

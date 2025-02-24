@@ -22,8 +22,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage/internal/metadata"
 )
 
 func TestExtensionIntegrityWithSqlite(t *testing.T) {
@@ -185,7 +183,7 @@ func newSqliteTestExtension(dbPath string) (storage.Extension, error) {
 	cfg.DriverName = driverSQLite
 	cfg.DataSource = fmt.Sprintf("%s?_busy_timeout=10000&_journal=WAL&_sync=NORMAL", dbPath)
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(metadata.Type), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +230,7 @@ func newPostgresTestExtension() (storage.Extension, testcontainers.Container, er
 	cfg.DriverName = driverPostgreSQL
 	cfg.DataSource = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", "127.0.0.1", port.Port(), "root", "passwd", "db")
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettingsWithType(metadata.Type), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
 	if err != nil {
 		return nil, nil, err
 	}

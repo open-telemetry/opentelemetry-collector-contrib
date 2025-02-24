@@ -23,7 +23,7 @@ func TestNewFactory(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	metricsReceiver, _ := createMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)
