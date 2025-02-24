@@ -182,7 +182,7 @@ they are put at the root of the document, to conform with the conventions of the
 scheme that maps these as `constant_keyword` fields.
 
 `data_stream.dataset` will always be appended with `.otel`. It is recommended to use with
-`*_dynamic_index.enabled: true` to route documents to data stream
+`*_dynamic_index::enabled: true` (e.g. `logs_dynamic_index::enabled`) to route documents to data stream
 `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`.
 
 Span events are stored in separate documents. They will be routed with `data_stream.type` set to
