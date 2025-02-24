@@ -15,7 +15,7 @@ import (
 func TestNewMetricsExporterWithNilConfig(t *testing.T) {
 	t.Parallel()
 
-	exp, err := newMetricsExporter(nil, exportertest.NewNopSettingsWithType(metadata.Type))
+	exp, err := newMetricsExporter(nil, exportertest.NewNopSettings(metadata.Type))
 	assert.Nil(t, exp)
 	assert.Error(t, err)
 }
@@ -24,7 +24,7 @@ func TestNewMetricsExporterWithDefaultConfig(t *testing.T) {
 	t.Parallel()
 
 	cfg := createDefaultConfig().(*Config)
-	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettingsWithType(metadata.Type))
+	exp, err := newMetricsExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	assert.NotNil(t, exp)
 	assert.NoError(t, err)
 }

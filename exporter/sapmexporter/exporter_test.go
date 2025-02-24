@@ -38,7 +38,7 @@ func TestCreateTraces(t *testing.T) {
 			AccessTokenPassthrough: true,
 		},
 	}
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 
 	te, err := newSAPMTracesExporter(cfg, params)
 	assert.NoError(t, err)
@@ -197,7 +197,7 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 					AccessTokenPassthrough: tt.accessTokenPassthrough,
 				},
 			}
-			params := exportertest.NewNopSettingsWithType(metadata.Type)
+			params := exportertest.NewNopSettings(metadata.Type)
 
 			se, err := newSAPMExporter(cfg, params)
 			assert.NoError(t, err)
@@ -265,7 +265,7 @@ func TestSAPMClientTokenAccess(t *testing.T) {
 					AccessTokenPassthrough: tt.accessTokenPassthrough,
 				},
 			}
-			params := exportertest.NewNopSettingsWithType(metadata.Type)
+			params := exportertest.NewNopSettings(metadata.Type)
 
 			se, err := newSAPMExporter(cfg, params)
 			assert.NoError(t, err)
@@ -385,7 +385,7 @@ func TestCompression(t *testing.T) {
 					DisableCompression: tt.configDisableCompression,
 					Compression:        tt.configCompression,
 				}
-				params := exportertest.NewNopSettingsWithType(metadata.Type)
+				params := exportertest.NewNopSettings(metadata.Type)
 
 				se, err := newSAPMExporter(cfg, params)
 				assert.NoError(t, err)

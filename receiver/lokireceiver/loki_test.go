@@ -102,7 +102,7 @@ func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 	}
 	sink := new(consumertest.LogsSink)
 
-	set := receivertest.NewNopSettingsWithType(metadata.Type)
+	set := receivertest.NewNopSettings(metadata.Type)
 	lr, err := newLokiReceiver(config, sink, set)
 	require.NoError(t, err)
 
@@ -126,7 +126,7 @@ func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
 	}
 	sink := new(consumertest.LogsSink)
 
-	set := receivertest.NewNopSettingsWithType(metadata.Type)
+	set := receivertest.NewNopSettings(metadata.Type)
 	lr, err := newLokiReceiver(config, sink, set)
 	require.NoError(t, err)
 
@@ -404,7 +404,7 @@ func TestExpectedStatus(t *testing.T) {
 			}
 
 			consumer := consumertest.NewErr(tt.err)
-			lr, err := newLokiReceiver(config, consumer, receivertest.NewNopSettingsWithType(metadata.Type))
+			lr, err := newLokiReceiver(config, consumer, receivertest.NewNopSettings(metadata.Type))
 			require.NoError(t, err)
 
 			require.NoError(t, lr.Start(context.Background(), componenttest.NewNopHost()))

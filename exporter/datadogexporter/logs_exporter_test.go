@@ -233,7 +233,7 @@ func TestLogsExporter(t *testing.T) {
 				},
 			}
 
-			params := exportertest.NewNopSettingsWithType(metadata.Type)
+			params := exportertest.NewNopSettings(metadata.Type)
 			f := NewFactory()
 			ctx := context.Background()
 			exp, err := f.CreateLogs(ctx, params, cfg)
@@ -597,7 +597,7 @@ func TestLogsAgentExporter(t *testing.T) {
 					BatchWait:        1,
 				},
 			}
-			params := exportertest.NewNopSettingsWithType(metadata.Type)
+			params := exportertest.NewNopSettings(metadata.Type)
 			f := NewFactory()
 			ctx := context.Background()
 			exp, err := f.CreateLogs(ctx, params, cfg)
