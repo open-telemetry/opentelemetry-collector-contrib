@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 )
 
 var (
@@ -72,6 +73,7 @@ type Config struct {
 	HTTPPath            string
 	Headers             KeyValue
 	ResourceAttributes  KeyValue
+	ServiceName         string
 	TelemetryAttributes KeyValue
 
 	// OTLP TLS configuration
@@ -102,6 +104,8 @@ func (c *Config) Endpoint() string {
 func (c *Config) GetAttributes() []attribute.KeyValue {
 	var attributes []attribute.KeyValue
 
+	// may be overridden by `--otlp-attributes service.name="foo"`
+	attributes = append(attributes, semconv.ServiceNameKey.String(c.ServiceName))
 	if len(c.ResourceAttributes) > 0 {
 		for k, t := range c.ResourceAttributes {
 			switch v := t.(type) {
@@ -158,6 +162,8 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.InsecureSkipVerify, "otlp-insecure-skip-verify", c.InsecureSkipVerify, "Whether a client verifies the server's certificate chain and host name")
 	fs.BoolVar(&c.UseHTTP, "otlp-http", c.UseHTTP, "Whether to use HTTP exporter rather than a gRPC one")
 
+	fs.StringVar(&c.ServiceName, "service", c.ServiceName, "Service name to use")
+
 	// custom headers
 	fs.Var(&c.Headers, "otlp-header", "Custom header to be passed along with each OTLP request. The value is expected in the format key=\"value\". "+
 		"Note you may need to escape the quotes when using the tool from a cli. "+
@@ -198,6 +204,7 @@ func (c *Config) SetDefaults() {
 	c.HTTPPath = ""
 	c.Headers = make(KeyValue)
 	c.ResourceAttributes = make(KeyValue)
+	c.ServiceName = "telemetrygen"
 	c.TelemetryAttributes = make(KeyValue)
 	c.CaFile = ""
 	c.ClientAuth.Enabled = false

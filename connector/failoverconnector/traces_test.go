@@ -31,8 +31,6 @@ func TestTracesRegisterConsumers(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
 		RetryInterval:    25 * time.Millisecond,
-		RetryGap:         5 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
@@ -42,7 +40,7 @@ func TestTracesRegisterConsumers(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	failoverConnector := conn.(*tracesFailover)
 	defer func() {
@@ -52,14 +50,13 @@ func TestTracesRegisterConsumers(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, conn)
 
-	tc, _, ok := failoverConnector.failover.getCurrentConsumer()
-	tc1 := failoverConnector.failover.GetConsumerAtIndex(1)
-	tc2 := failoverConnector.failover.GetConsumerAtIndex(2)
+	tc := failoverConnector.failover.getConsumerAtIndex(0)
+	tc1 := failoverConnector.failover.TestGetConsumerAtIndex(1)
+	tc2 := failoverConnector.failover.TestGetConsumerAtIndex(2)
 
-	assert.True(t, ok)
-	require.Implements(t, (*consumer.Traces)(nil), tc)
-	require.Implements(t, (*consumer.Traces)(nil), tc1)
-	require.Implements(t, (*consumer.Traces)(nil), tc2)
+	require.Equal(t, tc, &sinkFirst)
+	require.Equal(t, tc1, &sinkSecond)
+	require.Equal(t, tc2, &sinkThird)
 }
 
 func TestTracesWithValidFailover(t *testing.T) {
@@ -73,8 +70,6 @@ func TestTracesWithValidFailover(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
@@ -84,7 +79,7 @@ func TestTracesWithValidFailover(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
 
@@ -111,8 +106,6 @@ func TestTracesWithFailoverError(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}},
 		RetryInterval:    50 * time.Millisecond,
-		RetryGap:         10 * time.Millisecond,
-		MaxRetries:       10000,
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
@@ -122,7 +115,7 @@ func TestTracesWithFailoverError(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
 
@@ -141,14 +134,8 @@ func TestTracesWithFailoverError(t *testing.T) {
 
 func consumeTracesAndCheckStable(conn *tracesFailover, idx int, tr ptrace.Traces) bool {
 	_ = conn.ConsumeTraces(context.Background(), tr)
-	stableIndex := conn.failover.pS.TestStableIndex()
+	stableIndex := conn.failover.pS.CurrentPipeline()
 	return stableIndex == idx
-}
-
-func consumeTracesAndCheckCurrent(conn *tracesFailover, idx int, tr ptrace.Traces) bool {
-	_ = conn.ConsumeTraces(context.Background(), tr)
-	currentIndex := conn.failover.pS.TestCurrentIndex()
-	return currentIndex == idx
 }
 
 func sampleTrace() ptrace.Traces {

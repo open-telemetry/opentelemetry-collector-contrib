@@ -756,7 +756,7 @@ func extract(req *http.Request) (add_events.AddEventsRequest, error) {
 }
 
 func TestConsumeLogsShouldSucceed(t *testing.T) {
-	createSettings := exportertest.NewNopSettingsWithType(metadata.Type)
+	createSettings := exportertest.NewNopSettings(metadata.Type)
 
 	attempt := atomic.Uint64{}
 	wasSuccessful := atomic.Bool{}
