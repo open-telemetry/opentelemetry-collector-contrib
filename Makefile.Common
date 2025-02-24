@@ -8,16 +8,6 @@ SHELL = /bin/bash
 SHELL_CASE_EXP = case "$$(uname -s)" in CYGWIN*|MINGW*|MSYS*) echo "true";; esac;
 UNIX_SHELL_ON_WINDOWS := $(shell $(SHELL_CASE_EXP))
 
-ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
-	# The "sed" transformation below is needed on Windows, since commands like `go list -f '{{ .Dir }}'`
-	# return Windows paths and such paths are incompatible with other *nix tools, like `find`,
-	# used by the Makefile shell.
-	# The backslash needs to be doubled so its passed correctly to the shell.
-	NORMALIZE_DIRS = sed -e 's/^/\\//' -e 's/://' -e 's/\\\\/\\//g' | sort
-else
-	NORMALIZE_DIRS = sort
-endif
-
 # SRC_ROOT is the top of the source tree.
 SRC_ROOT := $(shell git rev-parse --show-toplevel)
 # SRC_PARENT_DIR is the absolute path of source tree's parent directory
@@ -40,6 +30,8 @@ GOTESTARCH?=$(GOARCH)
 
 DOCKERCMD ?= docker
 
+CURR_MOD := $(shell go list -m | tr '/' '-' )
+
 # In order to help reduce toil related to managing tooling for the open telemetry collector
 # this section of the makefile looks at only requiring command definitions to be defined
 # as part of $(TOOLS_MOD_DIR)/tools.go, following the existing practice.
@@ -51,6 +43,9 @@ TOOLS_PKG_NAMES  := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.
 TOOLS_BIN_DIR    := $(SRC_ROOT)/.tools
 TOOLS_BIN_NAMES  := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(TOOLS_PKG_NAMES)))
 CHLOGGEN_CONFIG  := .chloggen/config.yaml
+
+# no trailing slash
+JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults
 
 .PHONY: install-tools
 install-tools: $(TOOLS_BIN_NAMES)
@@ -80,6 +75,7 @@ GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 GCI                 := $(TOOLS_BIN_DIR)/gci
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
 TESTIFYLINT         := $(TOOLS_BIN_DIR)/testifylint
+CHECKAPI            := $(TOOLS_BIN_DIR)/checkapi
 
 GOTESTSUM_OPT?= --rerun-fails=1
 TESTIFYLINT_OPT?= --enable-all --disable=float-compare,require-error,suite-subtest-run,encoded-compare
@@ -87,43 +83,14 @@ TESTIFYLINT_OPT?= --enable-all --disable=float-compare,require-error,suite-subte
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
 
-ALL_PKG_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./... | $(NORMALIZE_DIRS))
-
-ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
-                                -not -path '*/third_party/*' \
-                                -not -path '*/local/*' \
-                                -type f | sort)
-
-ALL_SRC_AND_SHELL := find . -type f \( -iname '*.go' -o -iname "*.sh" \) ! -path '**/third_party/*' | sort
-
 # All source code and documents. Used in spell check.
-ALL_SRC_AND_DOC_CMD := find $(ALL_PKG_DIRS) -name "*.md" -o -name "*.go" -o -name "*.yaml" -not -path '*/third_party/*' -type f | sort
-ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
-	# Windows has a low limit, 8192 chars, to create a process. Workaround it by breaking it in smaller commands.
-	MISSPELL_CMD := $(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL)
-	MISSPELL_CORRECTION_CMD := $(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL_CORRECTION)
-else
-	ALL_SRC_AND_DOC := $(shell $(ALL_SRC_AND_DOC_CMD))
-	MISSPELL_CMD := $(MISSPELL) $(ALL_SRC_AND_DOC)
-	MISSPELL_CORRECTION_CMD := $(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
-endif
+ALL_SRC_AND_DOC_CMD := find . -name "*.md" -o -name "*.go" -o -name "*.yaml" -not -path '*/third_party/*' -type f | sort
 
-# ALL_PKGS is used with 'go cover'
-ALL_PKGS := $(shell $(GOCMD) list $(sort $(dir $(ALL_SRC))))
 
 ADDLICENSE_CMD := $(ADDLICENSE) -s=only -y "" -c "The OpenTelemetry Authors"
 
 pwd:
 	@pwd
-
-all-pkgs:
-	@echo $(ALL_PKGS) | tr ' ' '\n' | sort
-
-all-srcs:
-	@echo $(ALL_SRC) | tr ' ' '\n' | sort
-
-all-pkg-dirs:
-	@echo $(ALL_PKG_DIRS) | tr ' ' '\n' | sort
 
 .DEFAULT_GOAL := common
 
@@ -143,6 +110,17 @@ test-with-cover: $(GOTESTSUM)
 do-unit-tests-with-cover: $(GOTESTSUM)
 	@echo "running $(GOCMD) unit test ./... + coverage in `pwd`"
 	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_COVERAGE)
+	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
+
+.PHONY: test-with-junit
+test-with-junit: $(GOTESTSUM)
+	mkdir -p $(JUNIT_OUT_DIR)
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." --junitfile $(JUNIT_OUT_DIR)/$(CURR_MOD)-junit.xml -- $(GOTEST_OPT) ./...
+
+.PHONY: test-with-junit-and-cover
+test-with-junit-and-cover: $(GOTESTSUM)
+	mkdir -p $(JUNIT_OUT_DIR)
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." --junitfile $(JUNIT_OUT_DIR)/$(CURR_MOD)-junit.xml -- $(GOTEST_OPT_WITH_COVERAGE) ./...
 	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
 
 .PHONY: buildtest
@@ -175,10 +153,11 @@ do-integration-tests-with-cover: $(GOTESTSUM)
 
 .PHONY: benchmark
 benchmark: $(GOTESTSUM)
-	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="$(ALL_PKGS)" -- -bench=. -run=notests --tags=$(GO_BUILD_TAGS)
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="$$(find . -name 'go.mod' -not -path '*/third_party/*' -not -path '*/local/*' -type f | xargs dirname | sort | uniq | xargs -L 1 bash -c 'cd $$0 && go list -f "{{ .Dir }}"' | xargs echo)" -- -bench=. -run=notests --tags=$(GO_BUILD_TAGS)
 
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)
+	ALL_SRC_AND_SHELL := find . -type f \( -iname '*.go' -o -iname "*.sh" \) ! -path '**/third_party/*' | sort
 	@ADDLICENSEOUT=$$(for f in $$($(ALL_SRC_AND_SHELL)); do \
 		`$(ADDLICENSE_CMD) "$$f" 2>&1`; \
 	done); \
@@ -192,6 +171,7 @@ addlicense: $(ADDLICENSE)
 
 .PHONY: checklicense
 checklicense: $(ADDLICENSE)
+  ALL_SRC_AND_SHELL := find . -type f \( -iname '*.go' -o -iname "*.sh" \) ! -path '**/third_party/*' | sort
 	@licRes=$$(for f in $$($(ALL_SRC_AND_SHELL)); do \
 		awk '/Copyright The OpenTelemetry Authors|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; \
 		awk '/SPDX-License-Identifier: Apache-2.0|generated|GENERATED/ && NR<=4 { found=1; next } END { if (!found) print FILENAME }' $$f; \
@@ -239,13 +219,26 @@ toolchain:
 	$(GOCMD) get toolchain@none
 
 .PHONY: misspell
+ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
 misspell: $(TOOLS_BIN_DIR)/misspell
 	@echo "running $(MISSPELL)"
-	@$(MISSPELL_CMD)
+	# Windows has a low limit, 8192 chars, to create a process. Workaround it by breaking it in smaller commands.
+	@$$(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL)
+else
+misspell: $(TOOLS_BIN_DIR)/misspell
+	@echo "running $(MISSPELL)"
+	@$(MISSPELL) $$($(ALL_SRC_AND_DOC_CMD))
+endif
 
 .PHONY: misspell-correction
+ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
 misspell-correction: $(TOOLS_BIN_DIR)/misspell
-	$(MISSPELL_CORRECTION_CMD)
+	# Windows has a low limit, 8192 chars, to create a process. Workaround it by breaking it in smaller commands.
+	@$$(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL_CORRECTION)
+else
+misspell-correction: $(TOOLS_BIN_DIR)/misspell
+	@$(MISSPELL_CORRECTION) $$($(ALL_SRC_AND_DOC_CMD))
+endif
 
 .PHONY: moddownload
 moddownload:
@@ -263,7 +256,7 @@ testifylint-fix:
 .PHONY: gci
 gci: $(TOOLS_BIN_DIR)/gci
 	@echo "running $(GCI)"
-	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" $(ALL_SRC_AND_DOC)
+	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" $$($(ALL_SRC_AND_DOC_CMD))
 
 CHANGED_GOLANG_SOURCES?=$(shell git diff main --name-only | grep -E '.*\.go$$' | grep -v -E '.*_test\.go$$')
 .PHONY: for-affected-components

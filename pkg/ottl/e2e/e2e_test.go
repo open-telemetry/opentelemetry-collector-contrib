@@ -448,6 +448,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], ToCamelCase("foo_bar"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "FooBar")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ToSnakeCase("fooBar"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "foo_bar")

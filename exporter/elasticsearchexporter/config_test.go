@@ -4,6 +4,7 @@
 package elasticsearchexporter
 
 import (
+	"compress/gzip"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -80,12 +81,13 @@ func TestConfig(t *testing.T) {
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = &defaultMaxIdleConns
-					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.MaxIdleConns = defaultMaxIdleConns
+					cfg.IdleConnTimeout = defaultIdleConnTimeout
 					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
 					cfg.Compression = defaultCompression
+					cfg.CompressionParams.Level = gzip.BestSpeed
 				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
@@ -107,8 +109,7 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "none",
-					Dedot: true,
+					Mode: "none",
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -154,12 +155,13 @@ func TestConfig(t *testing.T) {
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = &defaultMaxIdleConns
-					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.MaxIdleConns = defaultMaxIdleConns
+					cfg.IdleConnTimeout = defaultIdleConnTimeout
 					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
 					cfg.Compression = defaultCompression
+					cfg.CompressionParams.Level = gzip.BestSpeed
 				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
@@ -181,8 +183,7 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "none",
-					Dedot: true,
+					Mode: "none",
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -228,12 +229,13 @@ func TestConfig(t *testing.T) {
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
-					cfg.MaxIdleConns = &defaultMaxIdleConns
-					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.MaxIdleConns = defaultMaxIdleConns
+					cfg.IdleConnTimeout = defaultIdleConnTimeout
 					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
 					cfg.Compression = defaultCompression
+					cfg.CompressionParams.Level = gzip.BestSpeed
 				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
@@ -255,8 +257,7 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "none",
-					Dedot: true,
+					Mode: "none",
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,

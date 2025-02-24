@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
 )
 
 func TestPayloadToLogRecord(t *testing.T) {
@@ -364,7 +365,7 @@ func gzippedMessage(message string) string {
 }
 
 func newReceiver(t *testing.T, cfg *Config, nextConsumer consumer.Logs) *logsReceiver {
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.Logger = zaptest.NewLogger(t)
 	r, err := newLogsReceiver(set, cfg, nextConsumer)
 	require.NoError(t, err)

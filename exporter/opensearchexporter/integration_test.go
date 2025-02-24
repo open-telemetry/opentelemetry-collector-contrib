@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
@@ -131,7 +132,7 @@ func TestOpenSearchTraceExporter(t *testing.T) {
 
 		// Create exporter
 		f := NewFactory()
-		exporter, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
+		exporter, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 		require.NoError(t, err)
 
 		// Initialize the exporter
@@ -261,7 +262,7 @@ func TestOpenSearchLogExporter(t *testing.T) {
 
 		// Create exporter
 		f := NewFactory()
-		exporter, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
+		exporter, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 		require.NoError(t, err)
 
 		// Initialize the exporter
