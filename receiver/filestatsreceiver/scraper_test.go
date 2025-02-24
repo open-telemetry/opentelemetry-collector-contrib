@@ -20,7 +20,7 @@ func Test_Scrape(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Include = filepath.Join(tmpDir, "*.log")
-	s := newScraper(cfg, receivertest.NewNopSettingsWithType(metadata.Type))
+	s := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	metrics, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -56,7 +56,7 @@ func Test_Scrape_All(t *testing.T) {
 	cfg.Metrics.FileCtime.Enabled = true
 	cfg.Metrics.FileCount.Enabled = true
 
-	s := newScraper(cfg, receivertest.NewNopSettingsWithType(metadata.Type))
+	s := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	metrics, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, 1, metrics.ResourceMetrics().Len())

@@ -18,7 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 )
 
-var creationSet = receivertest.NewNopSettingsWithType(metadata.Type)
+var creationSet = receivertest.NewNopSettings(metadata.Type)
 
 type mockConfig struct{}
 
