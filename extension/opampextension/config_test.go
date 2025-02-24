@@ -39,9 +39,8 @@ func TestUnmarshalConfig(t *testing.T) {
 			},
 			InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
 			Capabilities: Capabilities{
-				ReportsEffectiveConfig:     true,
-				ReportsHealth:              true,
-				ReportsAvailableComponents: true,
+				ReportsEffectiveConfig: true,
+				ReportsHealth:          true,
 			},
 			PPIDPollInterval: 5 * time.Second,
 		}, cfg)
@@ -65,9 +64,8 @@ func TestUnmarshalHttpConfig(t *testing.T) {
 			},
 			InstanceUID: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
 			Capabilities: Capabilities{
-				ReportsEffectiveConfig:     true,
-				ReportsHealth:              true,
-				ReportsAvailableComponents: true,
+				ReportsEffectiveConfig: true,
+				ReportsHealth:          true,
 			},
 			PPIDPollInterval: 5 * time.Second,
 		}, cfg)

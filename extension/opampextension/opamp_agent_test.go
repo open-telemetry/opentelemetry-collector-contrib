@@ -43,7 +43,6 @@ func TestNewOpampAgent(t *testing.T) {
 	assert.NotEmpty(t, o.instanceID.String())
 	assert.True(t, o.capabilities.ReportsEffectiveConfig)
 	assert.True(t, o.capabilities.ReportsHealth)
-	assert.True(t, o.capabilities.ReportsAvailableComponents)
 	assert.Empty(t, o.effectiveConfig)
 	assert.Nil(t, o.agentDescription)
 	assert.NoError(t, o.Shutdown(context.Background()))
@@ -229,8 +228,10 @@ func TestStart(t *testing.T) {
 
 func TestStartAvailableComponents(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := extensiontest.NewNopSettingsWithType(extensiontest.NopType)
-	o, err := newOpampAgent(cfg.(*Config), set)
+	agentConfig := cfg.(*Config)
+	agentConfig.Capabilities.ReportsAvailableComponents = true
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
+	o, err := newOpampAgent(agentConfig, set)
 	o.opampClient = mockOpAMPClient{}
 	assert.NoError(t, err)
 
