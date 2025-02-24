@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/pflag"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
@@ -14,11 +15,12 @@ import (
 // Config describes the test scenario.
 type Config struct {
 	common.Config
-	NumMetrics int
-	MetricName string
-	MetricType MetricType
-	SpanID     string
-	TraceID    string
+	NumMetrics      int
+	MetricName      string
+	MetricType      MetricType
+	TemporalityType TemporalityType
+	SpanID          string
+	TraceID         string
 }
 
 // NewConfig creates a new Config with default values.
@@ -34,11 +36,13 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&c.HTTPPath, "otlp-http-url-path", c.HTTPPath, "Which URL path to write to")
 
-	fs.Var(&c.MetricType, "metric-type", "Metric type enum. must be one of 'Gauge' or 'Sum'")
 	fs.IntVar(&c.NumMetrics, "metrics", c.NumMetrics, "Number of metrics to generate in each worker (ignored if duration is provided)")
 
 	fs.StringVar(&c.TraceID, "trace-id", c.TraceID, "TraceID to use as exemplar")
 	fs.StringVar(&c.SpanID, "span-id", c.SpanID, "SpanID to use as exemplar")
+
+	fs.Var(&c.MetricType, "metric-type", "Metric type enum. must be one of 'Gauge' or 'Sum'")
+	fs.Var(&c.TemporalityType, "temporality-type", "Temporality for Sum and Histogram metrics. Must be one of 'delta' or 'cumulative'")
 }
 
 // SetDefaults sets the default values for the configuration
@@ -49,9 +53,12 @@ func (c *Config) SetDefaults() {
 	c.HTTPPath = "/v1/metrics"
 	c.NumMetrics = 1
 
+	c.MetricName = "gen"
 	// Use Gauge as default metric type.
 	c.MetricType = MetricTypeGauge
-	c.MetricName = "gen"
+	// Use cumulative temporality as default.
+	c.TemporalityType = TemporalityType(metricdata.CumulativeTemporality)
+
 	c.TraceID = ""
 	c.SpanID = ""
 }
