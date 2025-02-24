@@ -22,14 +22,14 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.120.1-0.20250221111745-6de29ce16921
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/config/configcompression v1.26.1-0.20250221111745-6de29ce16921
+	go.opentelemetry.io/collector/config/configcompression v1.26.1-0.20250224010654-18e18b21da7a
 	go.opentelemetry.io/collector/config/confighttp v0.120.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/config/configretry v1.26.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/config/configtls v1.26.1-0.20250221111745-6de29ce16921
+	go.opentelemetry.io/collector/config/configretry v1.26.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/config/configtls v1.26.1-0.20250224010654-18e18b21da7a
 	go.opentelemetry.io/collector/consumer/consumererror v0.120.1-0.20250221111745-6de29ce16921
 	go.opentelemetry.io/collector/exporter v0.120.1-0.20250221111745-6de29ce16921
 	go.opentelemetry.io/collector/exporter/exportertest v0.120.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/pdata v1.26.1-0.20250221111745-6de29ce16921
+	go.opentelemetry.io/collector/pdata v1.26.1-0.20250224010654-18e18b21da7a
 	go.opentelemetry.io/collector/semconv v0.120.1-0.20250221111745-6de29ce16921
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -134,10 +134,10 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zorkian/go-datadog-api v2.30.0+incompatible // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/client v1.26.1-0.20250221111745-6de29ce16921 // indirect
+	go.opentelemetry.io/collector/client v1.26.1-0.20250224010654-18e18b21da7a // indirect
 	go.opentelemetry.io/collector/config/configauth v0.120.1-0.20250221111745-6de29ce16921 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.26.1-0.20250221111745-6de29ce16921 // indirect
-	go.opentelemetry.io/collector/consumer v1.26.1-0.20250221111745-6de29ce16921 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.26.1-0.20250224010654-18e18b21da7a // indirect
+	go.opentelemetry.io/collector/consumer v1.26.1-0.20250224010654-18e18b21da7a // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.120.1-0.20250221111745-6de29ce16921 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.120.1-0.20250221111745-6de29ce16921 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.120.1-0.20250221111745-6de29ce16921 // indirect

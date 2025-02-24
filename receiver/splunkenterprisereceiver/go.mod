@@ -11,12 +11,12 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250221111745-6de29ce16921
 	go.opentelemetry.io/collector/config/configauth v0.120.1-0.20250221111745-6de29ce16921
 	go.opentelemetry.io/collector/config/confighttp v0.120.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/config/configopaque v1.26.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/confmap v1.26.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/consumer v1.26.1-0.20250221111745-6de29ce16921
+	go.opentelemetry.io/collector/config/configopaque v1.26.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/confmap v1.26.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/consumer v1.26.1-0.20250224010654-18e18b21da7a
 	go.opentelemetry.io/collector/consumer/consumertest v0.120.1-0.20250221111745-6de29ce16921
 	go.opentelemetry.io/collector/extension/auth v0.120.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/pdata v1.26.1-0.20250221111745-6de29ce16921
+	go.opentelemetry.io/collector/pdata v1.26.1-0.20250224010654-18e18b21da7a
 	go.opentelemetry.io/collector/receiver v0.120.1-0.20250221111745-6de29ce16921
 	go.opentelemetry.io/collector/receiver/receivertest v0.120.1-0.20250221111745-6de29ce16921
 	go.opentelemetry.io/collector/scraper v0.120.1-0.20250221111745-6de29ce16921
@@ -51,9 +51,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/client v1.26.1-0.20250221111745-6de29ce16921 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.26.1-0.20250221111745-6de29ce16921 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.26.1-0.20250221111745-6de29ce16921 // indirect
+	go.opentelemetry.io/collector/client v1.26.1-0.20250224010654-18e18b21da7a // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.26.1-0.20250224010654-18e18b21da7a // indirect
+	go.opentelemetry.io/collector/config/configtls v1.26.1-0.20250224010654-18e18b21da7a // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.120.1-0.20250221111745-6de29ce16921 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.120.1-0.20250221111745-6de29ce16921 // indirect
 	go.opentelemetry.io/collector/extension v0.120.1-0.20250221111745-6de29ce16921 // indirect
