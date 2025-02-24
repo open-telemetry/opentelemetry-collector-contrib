@@ -12,18 +12,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 )
 
 func TestType(t *testing.T) {
-	unmarshaler := NewUnmarshaler(zap.NewNop())
+	unmarshaler := NewUnmarshaler(zap.NewNop(), component.NewDefaultBuildInfo())
 	require.Equal(t, TypeStr, unmarshaler.Type())
 }
 
 func TestUnmarshal(t *testing.T) {
-	unmarshaler := NewUnmarshaler(zap.NewNop())
+	unmarshaler := NewUnmarshaler(zap.NewNop(), component.NewDefaultBuildInfo())
 	testCases := map[string]struct {
 		filename               string
 		wantResourceCount      int
@@ -91,6 +94,8 @@ func TestUnmarshal(t *testing.T) {
 					assertStringArray(t, attrs, conventions.AttributeAWSLogGroupNames, testCase.wantResourceLogGroups[i])
 					assertStringArray(t, attrs, conventions.AttributeAWSLogStreamNames, testCase.wantResourceLogStreams[i])
 					ilm := rm.ScopeLogs().At(0)
+					assert.Equal(t, metadata.ScopeName, ilm.Scope().Name())
+					assert.Equal(t, component.NewDefaultBuildInfo().Version, ilm.Scope().Version())
 					gotLogCount += ilm.LogRecords().Len()
 				}
 				require.Equal(t, testCase.wantLogCount, gotLogCount)
@@ -100,7 +105,7 @@ func TestUnmarshal(t *testing.T) {
 }
 
 func TestLogTimestamp(t *testing.T) {
-	unmarshaler := NewUnmarshaler(zap.NewNop())
+	unmarshaler := NewUnmarshaler(zap.NewNop(), component.NewDefaultBuildInfo())
 	record, err := os.ReadFile(filepath.Join(".", "testdata", "single_record"))
 	require.NoError(t, err)
 

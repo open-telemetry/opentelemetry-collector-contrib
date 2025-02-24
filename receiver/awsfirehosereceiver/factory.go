@@ -55,9 +55,9 @@ func validateRecordType(recordType string) error {
 
 // defaultMetricsUnmarshalers creates a map of the available metrics
 // unmarshalers.
-func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]pmetric.Unmarshaler {
-	cwmsu := cwmetricstream.NewUnmarshaler(logger)
-	otlpv1msu := otlpmetricstream.NewUnmarshaler(logger)
+func defaultMetricsUnmarshalers(logger *zap.Logger, buildInfo component.BuildInfo) map[string]pmetric.Unmarshaler {
+	cwmsu := cwmetricstream.NewUnmarshaler(logger, buildInfo)
+	otlpv1msu := otlpmetricstream.NewUnmarshaler(logger, buildInfo)
 	return map[string]pmetric.Unmarshaler{
 		cwmsu.Type():     cwmsu,
 		otlpv1msu.Type(): otlpv1msu,
@@ -65,8 +65,8 @@ func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]pmetric.Unmarshal
 }
 
 // defaultLogsUnmarshalers creates a map of the available logs unmarshalers.
-func defaultLogsUnmarshalers(logger *zap.Logger) map[string]plog.Unmarshaler {
-	u := cwlog.NewUnmarshaler(logger)
+func defaultLogsUnmarshalers(logger *zap.Logger, buildInfo component.BuildInfo) map[string]plog.Unmarshaler {
+	u := cwlog.NewUnmarshaler(logger, buildInfo)
 	return map[string]plog.Unmarshaler{
 		u.Type(): u,
 	}
@@ -89,7 +89,7 @@ func createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	return newMetricsReceiver(cfg.(*Config), set, defaultMetricsUnmarshalers(set.Logger), nextConsumer)
+	return newMetricsReceiver(cfg.(*Config), set, defaultMetricsUnmarshalers(set.Logger, set.BuildInfo), nextConsumer)
 }
 
 // createMetricsReceiver implements the CreateMetricsReceiver function type.
@@ -99,5 +99,5 @@ func createLogsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-	return newLogsReceiver(cfg.(*Config), set, defaultLogsUnmarshalers(set.Logger), nextConsumer)
+	return newLogsReceiver(cfg.(*Config), set, defaultLogsUnmarshalers(set.Logger, set.BuildInfo), nextConsumer)
 }
