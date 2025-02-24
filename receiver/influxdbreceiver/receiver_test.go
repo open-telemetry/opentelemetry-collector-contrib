@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver/internal/metadata"
 )
 
 func TestWriteLineProtocol_v2API(t *testing.T) {
@@ -30,7 +31,7 @@ func TestWriteLineProtocol_v2API(t *testing.T) {
 	}
 	nextConsumer := new(mockConsumer)
 
-	receiver, outerErr := NewFactory().CreateMetrics(context.Background(), receivertest.NewNopSettings(), config, nextConsumer)
+	receiver, outerErr := NewFactory().CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), config, nextConsumer)
 	require.NoError(t, outerErr)
 	require.NotNil(t, receiver)
 

@@ -33,6 +33,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 type MockTargetAllocator struct {
@@ -729,7 +731,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
 			baseCfg := promconfig.Config{GlobalConfig: promconfig.DefaultGlobalConfig}
-			manager := NewManager(receivertest.NewNopSettings(), tc.cfg, &baseCfg, false)
+			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, &baseCfg, false)
 			require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 			allocator.wg.Wait()
@@ -912,7 +914,7 @@ func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
 	scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
 	baseCfg := promconfig.Config{GlobalConfig: promconfig.DefaultGlobalConfig, ScrapeConfigs: initialScrapeConfigs}
-	manager := NewManager(receivertest.NewNopSettings(), cfg, &baseCfg, false)
+	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, &baseCfg, false)
 	require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 	allocator.wg.Wait()

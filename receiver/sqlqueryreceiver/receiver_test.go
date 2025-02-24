@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/metadata"
 )
 
 func TestCreateLogs(t *testing.T) {
@@ -24,7 +25,7 @@ func TestCreateLogs(t *testing.T) {
 	ctx := context.Background()
 	receiver, err := createReceiver(
 		ctx,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			Config: sqlquery.Config{
 				ControllerConfig: scraperhelper.ControllerConfig{
@@ -53,7 +54,7 @@ func TestCreateMetrics(t *testing.T) {
 	ctx := context.Background()
 	receiver, err := createReceiver(
 		ctx,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			Config: sqlquery.Config{
 				ControllerConfig: scraperhelper.ControllerConfig{

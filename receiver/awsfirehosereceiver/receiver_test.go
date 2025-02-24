@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 )
 
 const (
@@ -251,7 +253,7 @@ func TestFirehoseRequestInvalidJSON(t *testing.T) {
 // testFirehoseReceiver is a convenience function for creating a test firehoseReceiver
 func testFirehoseReceiver(config *Config, consumer firehoseConsumer) *firehoseReceiver {
 	return &firehoseReceiver{
-		settings: receivertest.NewNopSettings(),
+		settings: receivertest.NewNopSettings(metadata.Type),
 		config:   config,
 		consumer: consumer,
 	}

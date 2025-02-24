@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.22.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver/internal/metadata"
 )
 
 func generateTraceData() ptrace.Traces {
@@ -219,7 +221,7 @@ func Test_receiveBytes_traces(t *testing.T) {
 				}
 				return nil
 			})
-			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 			require.NoError(t, err)
 			r := &awss3Receiver{
 				logger:  zap.NewNop(),
@@ -353,7 +355,7 @@ func Test_receiveBytes_metrics(t *testing.T) {
 				}
 				return nil
 			})
-			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 			require.NoError(t, err)
 			r := &awss3Receiver{
 				logger:  zap.NewNop(),
@@ -487,7 +489,7 @@ func Test_receiveBytes_logs(t *testing.T) {
 				}
 				return nil
 			})
-			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 			require.NoError(t, err)
 			r := &awss3Receiver{
 				logger:  zap.NewNop(),

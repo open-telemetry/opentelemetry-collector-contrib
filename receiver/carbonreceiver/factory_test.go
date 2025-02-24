@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -24,7 +26,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:0" // Endpoint is required, not going to be used here.
 
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 	tReceiver, err := createMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "receiver creation failed")

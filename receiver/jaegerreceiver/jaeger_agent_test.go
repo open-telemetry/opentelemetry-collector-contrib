@@ -48,7 +48,7 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	}
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
@@ -77,7 +77,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	}
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
@@ -99,7 +99,7 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	}
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
@@ -111,7 +111,7 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig Protocols) {
 	// 1. Create the Jaeger receiver aka "server"
 	sink := new(consumertest.TracesSink)
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	jr, err := newJaegerReceiver(jaegerAgent, receiverConfig, sink, set)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })

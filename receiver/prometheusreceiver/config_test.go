@@ -187,7 +187,7 @@ func TestConfigWarningsOnRenameDisallowed(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 	// Use a fake logger
-	creationSet := receivertest.NewNopSettings()
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	creationSet.Logger = zap.New(observedZapCore)
 	_, err = createMetricsReceiver(context.Background(), creationSet, cfg, nil)

@@ -12,7 +12,7 @@ import (
 )
 
 func getTelemetryAssets(t require.TestingT) (exporter.Settings, *metadata.TelemetryBuilder) {
-	s := exportertest.NewNopSettings()
+	s := exportertest.NewNopSettings(metadata.Type)
 	tb, err := metadata.NewTelemetryBuilder(s.TelemetrySettings)
 	require.NoError(t, err)
 	return s, tb

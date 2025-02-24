@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
 
@@ -342,7 +343,7 @@ func TestConsumeLogs(t *testing.T) {
 	expCfg.LogGroupName = "testGroup"
 	expCfg.LogStreamName = "testStream"
 	expCfg.MaxRetries = 0
-	exp, err := newCwLogsPusher(expCfg, exportertest.NewNopSettings())
+	exp, err := newCwLogsPusher(expCfg, exportertest.NewNopSettings(metadata.Type))
 
 	testcases := []struct {
 		id                 string
@@ -417,7 +418,7 @@ func TestNewExporterWithoutRegionErr(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.MaxRetries = 0
-	exp, err := newCwLogsExporter(expCfg, exportertest.NewNopSettings())
+	exp, err := newCwLogsExporter(expCfg, exportertest.NewNopSettings(metadata.Type))
 	assert.Nil(t, exp)
 	assert.Error(t, err)
 }

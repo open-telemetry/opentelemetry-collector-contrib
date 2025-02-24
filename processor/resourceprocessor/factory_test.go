@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -30,11 +31,11 @@ func TestCreateProcessor(t *testing.T) {
 		},
 	}
 
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 
-	mp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	mp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 }
@@ -47,9 +48,9 @@ func TestInvalidAttributeActions(t *testing.T) {
 		},
 	}
 
-	_, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), cfg, nil)
+	_, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nil)
 	assert.Error(t, err)
 
-	_, err = factory.CreateMetrics(context.Background(), processortest.NewNopSettings(), cfg, nil)
+	_, err = factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nil)
 	assert.Error(t, err)
 }

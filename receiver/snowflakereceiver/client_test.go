@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver/internal/metadata"
 )
 
 func TestDefaultClientCreation(t *testing.T) {
@@ -45,7 +47,7 @@ func TestClientReadDB(t *testing.T) {
 
 	client := snowflakeClient{
 		client: db,
-		logger: receivertest.NewNopSettings().Logger,
+		logger: receivertest.NewNopSettings(metadata.Type).Logger,
 	}
 
 	ctx := context.Background()
@@ -269,7 +271,7 @@ func TestMetricQueries(t *testing.T) {
 
 			client := snowflakeClient{
 				client: db,
-				logger: receivertest.NewNopSettings().Logger,
+				logger: receivertest.NewNopSettings(metadata.Type).Logger,
 			}
 			ctx := context.Background()
 

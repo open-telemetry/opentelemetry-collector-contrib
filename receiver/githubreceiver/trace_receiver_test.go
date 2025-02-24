@@ -13,13 +13,15 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 )
 
 func TestHealthCheck(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	defaultConfig.WebHook.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
-	receiver, err := newTracesReceiver(receivertest.NewNopSettings(), defaultConfig, consumer)
+	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
 
 	r := receiver

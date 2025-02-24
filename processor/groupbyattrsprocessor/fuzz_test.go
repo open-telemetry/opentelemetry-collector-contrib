@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor/internal/metadata"
 )
 
 func FuzzProcessTraces(f *testing.F) {
@@ -20,7 +22,7 @@ func FuzzProcessTraces(f *testing.F) {
 		if err != nil {
 			return
 		}
-		gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{})
+		gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -35,7 +37,7 @@ func FuzzProcessLogs(f *testing.F) {
 		if err != nil {
 			return
 		}
-		gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{})
+		gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -50,7 +52,7 @@ func FuzzProcessMetrics(f *testing.F) {
 		if err != nil {
 			return
 		}
-		gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{})
+		gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{})
 		if err != nil {
 			t.Fatal(err)
 		}

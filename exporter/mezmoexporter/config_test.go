@@ -45,10 +45,10 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:             5 * time.Second,
-					MaxIdleConns:        &defaultMaxIdleConns,
-					MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
-					MaxConnsPerHost:     &defaultMaxConnsPerHost,
-					IdleConnTimeout:     &defaultIdleConnTimeout,
+					MaxIdleConns:        defaultMaxIdleConns,
+					MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
+					MaxConnsPerHost:     defaultMaxConnsPerHost,
+					IdleConnTimeout:     defaultIdleConnTimeout,
 					Headers:             map[string]configopaque.String{},
 				},
 				BackOffConfig: configretry.BackOffConfig{
