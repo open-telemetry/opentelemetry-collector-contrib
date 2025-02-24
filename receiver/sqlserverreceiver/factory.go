@@ -148,7 +148,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 
 	queries, errs := setupLogQueries(cfg)
 	if len(errs) > 0 {
-		params.Logger.Info("Failed to template queries in SQLServer receiver: Configuration might not be correct.")
+		params.Logger.Error("Failed to template queries in SQLServer receiver: Configuration might not be correct.", zap.Error(errors.Join(errs...)))
 		return nil
 	}
 
