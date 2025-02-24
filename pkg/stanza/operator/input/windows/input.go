@@ -27,6 +27,8 @@ type Input struct {
 	buffer              *Buffer
 	channel             string
 	maxReads            int
+	currentMaxReads     int
+	originalMaxReads    int
 	startAt             string
 	raw                 bool
 	excludeProviders    map[string]struct{}
@@ -40,6 +42,7 @@ type Input struct {
 	remoteSessionHandle windows.Handle
 	startRemoteSession  func() error
 	processEvent        func(context.Context, Event) error
+	logger              *zap.Logger
 }
 
 // newInput creates a new Input operator.
@@ -197,8 +200,17 @@ func (i *Input) readOnInterval(ctx context.Context) {
 
 // read will read events from the subscription.
 func (i *Input) read(ctx context.Context) {
-	events, err := i.subscription.Read(i.maxReads)
+	events, err := i.subscription.Read(i.currentMaxReads)
 	if err != nil {
+		if errors.Is(err, windows.RPC_S_INVALID_BOUND) {
+			i.logger.Warn("Encountered RPC_S_INVALID_BOUND, reducing batch size",
+				zap.Int("current_batch_size", i.currentMaxReads),
+				zap.Int("original_batch_size", i.originalMaxReads))
+
+			i.currentMaxReads = max(i.currentMaxReads/2, 1)
+			return
+		}
+
 		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
 		if i.isRemote() && (errors.Is(err, windows.ERROR_INVALID_HANDLE) || errors.Is(err, errSubscriptionHandleNotOpen)) {
 			i.Logger().Info("Resubscribing, closing remote subscription")
@@ -226,7 +238,7 @@ func (i *Input) read(ctx context.Context) {
 
 	for n, event := range events {
 		if err := i.processEvent(ctx, event); err != nil {
-			i.Logger().Error("process event", zap.Error(err))
+			i.logger.Error("process event", zap.Error(err))
 		}
 		if len(events) == n+1 {
 			i.updateBookmarkOffset(ctx, event)
