@@ -20,7 +20,7 @@ import (
 func Test_loadAndCreateMetricsRuntimeReceiver(t *testing.T) {
 	logCore, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore).With(zap.String("name", "receiver_creator"))
-	rcs := receivertest.NewNopSettings()
+	rcs := receivertest.NewNopSettings(metadata.Type)
 	rcs.Logger = logger
 	run := &receiverRunner{params: rcs, idNamespace: component.NewIDWithName(metadata.Type, "1")}
 	exampleFactory := &nopWithEndpointFactory{}

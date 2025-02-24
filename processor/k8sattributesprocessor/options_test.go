@@ -89,16 +89,14 @@ func TestWithExtractAnnotations(t *testing.T) {
 				{
 					TagName: "tag1",
 					Key:     "key1",
-					Regex:   "field=(?P<value>.+)",
 					From:    kube.MetadataFromPod,
 				},
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name:  "tag1",
-					Key:   "key1",
-					Regex: regexp.MustCompile(`field=(?P<value>.+)`),
-					From:  kube.MetadataFromPod,
+					Name: "tag1",
+					Key:  "key1",
+					From: kube.MetadataFromPod,
 				},
 			},
 			"",
@@ -228,16 +226,14 @@ func TestWithExtractLabels(t *testing.T) {
 				{
 					TagName: "tag1",
 					Key:     "key1",
-					Regex:   "field=(?P<value>.+)",
 					From:    kube.MetadataFromPod,
 				},
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name:  "tag1",
-					Key:   "key1",
-					Regex: regexp.MustCompile(`field=(?P<value>.+)`),
-					From:  kube.MetadataFromPod,
+					Name: "tag1",
+					Key:  "key1",
+					From: kube.MetadataFromPod,
 				},
 			},
 			"",
@@ -609,18 +605,6 @@ func Test_extractFieldRules(t *testing.T) {
 					From: kube.MetadataFromPod,
 				},
 			},
-		},
-		{
-			name: "badregex",
-			args: args{"field", []FieldExtractConfig{
-				{
-					TagName: "name",
-					Key:     "key",
-					Regex:   "[",
-					From:    kube.MetadataFromPod,
-				},
-			}},
-			wantErr: true,
 		},
 		{
 			name: "keyregex-capture-group",
