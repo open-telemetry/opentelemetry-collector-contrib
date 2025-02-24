@@ -49,10 +49,12 @@ func (pki *PartitionKeyBuilder) Build(ts time.Time) string {
 }
 
 func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time) string {
-	if pki.PartitionPrefix != "" {
-		pki.PartitionPrefix += "/"
+	// Don't want to overwrite the actual value
+	prefix := pki.PartitionPrefix
+	if prefix != "" {
+		prefix += "/"
 	}
-	return pki.PartitionPrefix + timefmt.Format(ts, pki.PartitionFormat)
+	return prefix + timefmt.Format(ts, pki.PartitionFormat)
 }
 
 func (pki *PartitionKeyBuilder) fileName() string {

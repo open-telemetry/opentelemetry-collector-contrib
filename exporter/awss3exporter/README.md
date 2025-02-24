@@ -24,7 +24,7 @@ The following exporter configuration parameters are supported.
 | `region`                  | AWS region.                                                                                                                                | "us-east-1" |
 | `s3_bucket`               | S3 bucket                                                                                                                                  |             |
 | `s3_prefix`               | prefix for the S3 key (root directory inside bucket).                                                                                      |             |
-| `s3_partition_format`     | filepath formatting for the partition; See [strftime](https://linux.die.net/man/3/strftime) for format specification.                      | "year=%Y/month=%m/day=%d/hour=%H/minute=%M" |
+| `s3_partition_format`     | filepath formatting for the partition; See [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) for format specification. | "year=%Y/month=%m/day=%d/hour=%H/minute=%M" |
 | `role_arn`                | the Role ARN to be assumed                                                                                                                 |             |
 | `file_prefix`             | file prefix defined by user                                                                                                                |             |
 | `marshaler`               | marshaler used to produce output data                                                                                                      | `otlp_json` |
@@ -86,7 +86,7 @@ metric/year=YYYY/month=MM/day=DD/hour=HH/minute=mm
 ## Partition Formatting
 
 By setting the `s3_partition_format` option, users can specify the file path for their logs.
-See the [strftime](https://linux.die.net/man/3/strftime) reference for more formatting options.
+See the [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) reference for more formatting options.
 
 ```yaml
 exporters:
