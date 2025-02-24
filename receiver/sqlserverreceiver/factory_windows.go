@@ -7,7 +7,6 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -56,10 +55,22 @@ func createMetricsReceiver(
 // createLogsReceiver create a logs receiver based on provided config.
 func createLogsReceiver(
 	_ context.Context,
-	_ receiver.Settings,
-	_ component.Config,
-	_ consumer.Logs,
+	params receiver.Settings,
+	receiverCfg component.Config,
+	logsConsumer consumer.Logs,
 ) (receiver.Logs, error) {
+	cfg, ok := receiverCfg.(*Config)
+	if !ok {
+		return nil, errConfigNotSQLServer
+	}
+
 	// Disable logs receiver on Windows as the only supported logs query (Top Query) is not tested on Windows yet.
-	return nil, fmt.Errorf("logs receiver is not supported on Windows yet")
+	opts := []scraperhelper.ControllerOption{}
+
+	return scraperhelper.NewLogsController(
+		&cfg.ControllerConfig,
+		params,
+		logsConsumer,
+		opts...,
+	)
 }
