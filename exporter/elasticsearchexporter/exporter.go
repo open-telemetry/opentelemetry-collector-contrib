@@ -462,7 +462,6 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	if err != nil {
 		return err
 	}
-	fmt.Println(mappingMode)
 
 	defaultSession, err := e.bulkIndexers.modes[mappingMode].StartSession(ctx)
 	if err != nil {
