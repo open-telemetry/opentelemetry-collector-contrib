@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 )
 
 func TestHandleWorkflowRun(t *testing.T) {
@@ -124,7 +126,7 @@ func TestHandleWorkflowRun(t *testing.T) {
 			receiver := &githubTracesReceiver{
 				logger:   logger,
 				cfg:      createDefaultConfig().(*Config),
-				settings: receivertest.NewNopSettings(),
+				settings: receivertest.NewNopSettings(metadata.Type),
 			}
 
 			// Handle the workflow run event

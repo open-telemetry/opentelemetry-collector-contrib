@@ -20,6 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
 func Test_newProcessor(t *testing.T) {
@@ -58,7 +59,7 @@ func Test_newProcessor(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			logsSink := &consumertest.LogsSink{}
-			settings := processortest.NewNopSettings()
+			settings := processortest.NewNopSettings(metadata.Type)
 
 			if tc.expected != nil {
 				tc.expected.nextConsumer = logsSink
@@ -84,7 +85,7 @@ func TestProcessorShutdownCtxError(t *testing.T) {
 	cancel()
 
 	logsSink := &consumertest.LogsSink{}
-	settings := processortest.NewNopSettings()
+	settings := processortest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		LogCountAttribute: defaultLogCountAttribute,
 		Interval:          1 * time.Second,
@@ -110,7 +111,7 @@ func TestProcessorCapabilities(t *testing.T) {
 
 func TestShutdownBeforeStart(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
-	settings := processortest.NewNopSettings()
+	settings := processortest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		LogCountAttribute: defaultLogCountAttribute,
 		Interval:          1 * time.Second,
@@ -132,7 +133,7 @@ func TestShutdownBeforeStart(t *testing.T) {
 
 func TestProcessorConsume(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
-	settings := processortest.NewNopSettings()
+	settings := processortest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		LogCountAttribute: defaultLogCountAttribute,
 		Interval:          1 * time.Second,
@@ -185,7 +186,7 @@ func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
 	}
 
 	// Create & start a processor
-	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, logsSink)
+	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
 	require.NoError(t, err)
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -222,7 +223,7 @@ func TestProcessorConsumeCondition(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, logsSink)
+	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
 	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
@@ -272,7 +273,7 @@ func TestProcessorConsumeMultipleConditions(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, logsSink)
+	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
 	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
@@ -353,7 +354,7 @@ func TestProcessorIncludeFields(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			logsSink := &consumertest.LogsSink{}
-			settings := processortest.NewNopSettings()
+			settings := processortest.NewNopSettings(metadata.Type)
 
 			// Create a processor
 			p, err := createLogsProcessor(context.Background(), settings, tt.cfg, logsSink)
@@ -397,7 +398,7 @@ func TestProcessorConfigValidate(t *testing.T) {
 		Timezone:          "",
 	}
 
-	_, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(), invalidCfg, consumertest.NewNop())
+	_, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), invalidCfg, consumertest.NewNop())
 	require.Error(t, err)
 
 	validCfg := &Config{
@@ -406,6 +407,6 @@ func TestProcessorConfigValidate(t *testing.T) {
 		Timezone:          defaultTimezone,
 	}
 
-	_, err = createLogsProcessor(context.Background(), processortest.NewNopSettings(), validCfg, consumertest.NewNop())
+	_, err = createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), validCfg, consumertest.NewNop())
 	require.NoError(t, err)
 }
