@@ -7,26 +7,18 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 )
 
 const MaxRetryInterval = 32 * time.Second
-
-var allowErrorPropagationFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"processor.resourcedetection.propagateerrors",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, allows errors returned from resource detectors to propagate in the Start() method and stop the collector."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37961"),
-	featuregate.WithRegisterFromVersion("v0.121.0"),
-)
 
 type DetectorType string
 
@@ -141,34 +133,38 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 		resultsChan[i] = make(chan resourceResult)
 		go func(detector Detector) {
 			sleep := 1 * time.Second
+			var err error
+			var r pcommon.Resource
+			var schemaURL string
 			for {
-				r, schemaURL, err := detector.Detect(ctx)
+				r, schemaURL, err = detector.Detect(ctx)
 				if err == nil {
 					resultsChan[i] <- resourceResult{resource: r, schemaURL: schemaURL, err: nil}
 					return
 				}
 				p.logger.Warn("failed to detect resource", zap.Error(err))
-				if allowErrorPropagationFeatureGate.IsEnabled() {
-					resultsChan[i] <- resourceResult{err: err}
-					return
-				}
-				time.Sleep(sleep)
 				if sleep < MaxRetryInterval {
 					sleep *= 2
+				}
+				timer := time.NewTimer(sleep)
+
+				select {
+				case <-timer.C:
+					fmt.Println("Retrying fetching data...")
+				case <-ctx.Done():
+					p.logger.Warn("Context was cancelled: %w", zap.Error(ctx.Err()))
+					resultsChan[i] <- resourceResult{resource: r, schemaURL: schemaURL, err: err}
+					return
 				}
 			}
 		}(detector)
 	}
 
 	for _, ch := range resultsChan {
-		select {
-		case <-ctx.Done():
-			p.logger.Warn("context was cancelled: %w", zap.Error(ctx.Err()))
-		case result := <-ch:
-			if result.err != nil {
-				p.detectedResource.err = result.err
-				return
-			}
+		result := <-ch
+		if result.err != nil {
+			p.detectedResource.err = errors.Join(p.detectedResource.err, result.err)
+		} else {
 			mergedSchemaURL = MergeSchemaURL(mergedSchemaURL, result.schemaURL)
 			MergeResource(res, result.resource, false)
 		}

@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -133,24 +132,23 @@ func TestDetectResource_DetectorFactoryError(t *testing.T) {
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
-func TestDetectResource_Error_PropagationEnabled(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set(allowErrorPropagationFeatureGate.ID(), true)
-	assert.NoError(t, err)
-	defer func() {
-		_ = featuregate.GlobalRegistry().Set(allowErrorPropagationFeatureGate.ID(), false)
-	}()
-
+func TestDetectResource_Error_ContextDeadline(t *testing.T) {
 	md1 := &MockDetector{}
-	res := pcommon.NewResource()
-	require.NoError(t, res.Attributes().FromRaw(map[string]any{"a": "1", "b": "2"}))
-	md1.On("Detect").Return(res, nil)
+	md1.On("Detect").Return(pcommon.NewResource(), fmt.Errorf("err1"))
 
 	md2 := &MockDetector{}
-	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err1"))
+	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err2"))
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
-	_, _, err = p.Get(context.Background(), &http.Client{Timeout: 10 * time.Second})
+
+	var cancel context.CancelFunc
+	ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
+	defer cancel()
+
+	_, _, err := p.Get(ctx, &http.Client{Timeout: 10 * time.Second})
 	require.Error(t, err)
+	require.Contains(t, err.Error(), "err1")
+	require.Contains(t, err.Error(), "err2")
 }
 
 func TestMergeResource(t *testing.T) {
