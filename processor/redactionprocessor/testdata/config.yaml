@@ -17,10 +17,14 @@ redaction:
   ignored_keys:
     - safe_attribute
   # BlockedValues is a list of regular expressions for blocking values of
-  # allowed span attributes. Values that match are masked
+  # allowed span attributes. Values that match are masked.
   blocked_values:
     - "4[0-9]{12}(?:[0-9]{3})?" ## Visa credit card number
     - "(5[1-5][0-9]{14})"       ## MasterCard number
+  # allowed_values is a list of regular expressions for allowing values of
+  # blocked span attributes. Values that match are not masked.
+  allowed_values:
+    - ".+@mycompany.com"
   # Summary controls the verbosity level of the diagnostic attributes that
   # the processor adds to the spans when it redacts or masks other
   # attributes. In some contexts a list of redacted attributes leaks

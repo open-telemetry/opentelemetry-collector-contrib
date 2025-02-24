@@ -8,7 +8,7 @@ import (
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/gogo/protobuf/jsonpb"
-	jaegerproto "github.com/jaegertracing/jaeger/model"
+	jaegerproto "github.com/jaegertracing/jaeger-idl/model/v1"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"hash/fnv"
 
-	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
 )
 
 const serviceLogType = "jaegerService"
