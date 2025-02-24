@@ -8,18 +8,16 @@ import (
 	"testing"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/testutil"
-	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 func newTestTracesProcessor(cfg component.Config, next consumer.Traces) (processor.Traces, error) {
@@ -38,8 +36,6 @@ type multiTest struct {
 	tp processor.Traces
 
 	nextTrace *consumertest.TracesSink
-
-	// ddspTrace   *datadogsemanticsprocessor
 }
 
 func newMultiTest(
@@ -88,30 +84,11 @@ func (m *multiTest) assertBatchesLen(batchesLen int) {
 	require.Len(m.t, m.nextTrace.AllTraces(), batchesLen)
 }
 
-func (m *multiTest) assertResourceObjectLen(batchNo int) {
-	assert.Equal(m.t, 1, m.nextTrace.AllTraces()[batchNo].ResourceSpans().Len())
-}
-
-func (m *multiTest) assertResourceAttributesLen(batchNo int, attrsLen int) {
-	assert.Equal(m.t, attrsLen, m.nextTrace.AllTraces()[batchNo].ResourceSpans().At(0).Resource().Attributes().Len())
-}
-
-func (m *multiTest) assertResource(batchNum int, resourceFunc func(res pcommon.Resource)) {
-	rss := m.nextTrace.AllTraces()[batchNum].ResourceSpans()
-	r := rss.At(0).Resource()
-
-	if resourceFunc != nil {
-		resourceFunc(r)
-	}
-}
-
 func TestNewProcessor(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig()
 
 	newMultiTest(t, cfg, nil)
 }
-
-type generateResourceFunc func(res pcommon.Resource)
 
 func TestNilBatch(t *testing.T) {
 	m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
@@ -141,7 +118,7 @@ func TestBasicTranslation(t *testing.T) {
 				{
 					LibName:    "libname",
 					LibVersion: "1.2",
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"service.name":                "test-service",
 						"resource.name":               "test-resource",
 						"deployment.environment.name": "spanenv2",
@@ -153,7 +130,7 @@ func TestBasicTranslation(t *testing.T) {
 							SpanID:   [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
 							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
 							Kind:     ptrace.SpanKindServer,
-							Attributes: map[string]interface{}{
+							Attributes: map[string]any{
 								"operation.name":                "test-operation",
 								semconv.AttributeHTTPStatusCode: 200,
 							},
@@ -197,7 +174,7 @@ func TestBasicTranslation(t *testing.T) {
 				{
 					LibName:    "libname",
 					LibVersion: "1.2",
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"service.name":                "test-service",
 						"resource.name":               "test-resource",
 						"deployment.environment.name": "spanenv2",
@@ -208,7 +185,7 @@ func TestBasicTranslation(t *testing.T) {
 								{
 									Timestamp: 66,
 									Name:      "exception",
-									Attributes: map[string]interface{}{
+									Attributes: map[string]any{
 										semconv.AttributeExceptionMessage:    "overridden-msg",
 										semconv.AttributeExceptionType:       "overridden-type",
 										semconv.AttributeExceptionStacktrace: "overridden-stack",
@@ -222,7 +199,7 @@ func TestBasicTranslation(t *testing.T) {
 							SpanID:     [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
 							ParentID:   [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
 							Kind:       ptrace.SpanKindServer,
-							Attributes: map[string]interface{}{
+							Attributes: map[string]any{
 								"datadog.service":               "specified-service",
 								"datadog.resource":              "specified-resource",
 								"datadog.name":                  "specified-operation",
@@ -274,7 +251,7 @@ func TestBasicTranslation(t *testing.T) {
 				{
 					LibName:    "libname",
 					LibVersion: "1.2",
-					Attributes: map[string]interface{}{
+					Attributes: map[string]any{
 						"service.name":                "test-service",
 						"resource.name":               "test-resource",
 						"deployment.environment.name": "spanenv2",
@@ -285,7 +262,7 @@ func TestBasicTranslation(t *testing.T) {
 								{
 									Timestamp: 66,
 									Name:      "exception",
-									Attributes: map[string]interface{}{
+									Attributes: map[string]any{
 										semconv.AttributeExceptionMessage:    "overridden-msg",
 										semconv.AttributeExceptionType:       "overridden-type",
 										semconv.AttributeExceptionStacktrace: "overridden-stack",
@@ -299,7 +276,7 @@ func TestBasicTranslation(t *testing.T) {
 							SpanID:     [8]byte{0, 1, 2, 3, 4, 5, 6, 7},
 							ParentID:   [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
 							Kind:       ptrace.SpanKindServer,
-							Attributes: map[string]interface{}{
+							Attributes: map[string]any{
 								"datadog.service":               "specified-service",
 								"datadog.resource":              "specified-resource",
 								"datadog.name":                  "specified-operation",

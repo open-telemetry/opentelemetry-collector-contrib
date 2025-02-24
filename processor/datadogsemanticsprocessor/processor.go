@@ -9,24 +9,23 @@ import (
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 func insertAttrIfMissing(sattr pcommon.Map, key string, value any) {
 	if _, ok := sattr.Get(key); !ok {
-		switch value.(type) {
+		switch v := value.(type) {
 		case string:
-			sattr.PutStr(key, value.(string))
+			sattr.PutStr(key, v)
 		case int64:
-			sattr.PutInt(key, value.(int64))
+			sattr.PutInt(key, v)
 		}
 	}
 }
 
-func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) (output ptrace.Traces, err error) {
+func (tp *tracesProcessor) processTraces(_ context.Context, td ptrace.Traces) (output ptrace.Traces, err error) {
 	rspans := td.ResourceSpans()
 	for i := 0; i < rspans.Len(); i++ {
 		rspan := rspans.At(i)
@@ -37,7 +36,7 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 				otelspan := libspans.Spans().At(k)
 				sattr := otelspan.Attributes()
 				if tp.overrideIncomingDatadogFields {
-					sattr.RemoveIf(func(k string, v pcommon.Value) bool {
+					sattr.RemoveIf(func(k string, _ pcommon.Value) bool {
 						return strings.HasPrefix(k, "datadog.")
 					})
 				}
