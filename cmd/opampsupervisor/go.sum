@@ -97,8 +97,8 @@ go.opentelemetry.io/collector/confmap/provider/envprovider v1.26.1-0.20250221111
 go.opentelemetry.io/collector/confmap/provider/envprovider v1.26.1-0.20250221111745-6de29ce16921/go.mod h1:NhIEWAC7TelwS1jO+alkgjnWUEnCYMbty4XmNpyil5A=
 go.opentelemetry.io/collector/confmap/provider/fileprovider v1.26.1-0.20250221111745-6de29ce16921 h1:htrVDaQ12dLtJtYvHjxsiiyVfwqn3xMewjgo+1VVgjg=
 go.opentelemetry.io/collector/confmap/provider/fileprovider v1.26.1-0.20250221111745-6de29ce16921/go.mod h1:dLA9sBikILspt7g2fAWpKwe896236tAjGIjJl+zAnr4=
-go.opentelemetry.io/collector/featuregate v1.26.1-0.20250218214003-dae5d199ffc6 h1:nB5Mo4jnl4uA0/PnDRxG9UlM73TrMvbNbF87Ndm4KEA=
-go.opentelemetry.io/collector/featuregate v1.26.1-0.20250218214003-dae5d199ffc6/go.mod h1:Y/KsHbvREENKvvN9RlpiWk/IGBK+CATBYzIIpU7nccc=
+go.opentelemetry.io/collector/featuregate v1.26.1-0.20250221111745-6de29ce16921 h1:O2ovdLxp0F38aKJDCqGNPk3RgOeVEpl8GoPTEfVUreA=
+go.opentelemetry.io/collector/featuregate v1.26.1-0.20250221111745-6de29ce16921/go.mod h1:Y/KsHbvREENKvvN9RlpiWk/IGBK+CATBYzIIpU7nccc=
 go.opentelemetry.io/collector/pdata v1.26.1-0.20250221111745-6de29ce16921 h1:oINVlQS9aRRTBck7GSEQUyllLnR7bL4/5vdNkgRfbTw=
 go.opentelemetry.io/collector/pdata v1.26.1-0.20250221111745-6de29ce16921/go.mod h1:18e8/xDZsqyj00h/5HM5GLdJgBzzG9Ei8g9SpNoiMtI=
 go.opentelemetry.io/collector/semconv v0.120.1-0.20250221111745-6de29ce16921 h1:POWv2a9syktlqr7HbuSzthUXCm7UJ+TG+TRs35QqWL8=
