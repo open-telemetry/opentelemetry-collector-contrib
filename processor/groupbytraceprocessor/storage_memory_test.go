@@ -16,7 +16,7 @@ import (
 )
 
 func TestMemoryCreateAndGetTrace(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	st := newMemoryStorage(tel)
 
@@ -52,7 +52,7 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 }
 
 func TestMemoryDeleteTrace(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings) // prepare
 	st := newMemoryStorage(tel)
 
@@ -80,7 +80,7 @@ func TestMemoryDeleteTrace(t *testing.T) {
 }
 
 func TestMemoryAppendSpans(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings) // prepare
 	st := newMemoryStorage(tel)
 
@@ -132,7 +132,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 }
 
 func TestMemoryTraceIsBeingCloned(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings) // prepare
 	st := newMemoryStorage(tel)
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
