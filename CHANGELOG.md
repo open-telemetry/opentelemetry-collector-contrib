@@ -7,6 +7,122 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.120.1
+
+### 🧰 Bug fixes 🧰
+
+- `receiver/prometheus`: Fix Collector failing to start up if Prometheus receiver is present in config without 'fallback_scrape_protocol'. (#38018)
+
+## v0.120.0
+
+### 🛑 Breaking changes 🛑
+
+- `receiver/prometheus`: Prometheus receiver now uses scrapers in Prometheus 3.0. (#36873)
+  There are a number of breaking changes in Prometheus 3.0. Learn more about those changes and migration guide on https://prometheus.io/docs/prometheus/latest/migration/.
+- `all`: Added support for go1.24, bumped minimum version to 1.23 (#37875)
+- `elasticsearchexporter`: Use go-elasticsearch/v8, require minimum version of ES 7.17.x or 8.x (#32454)
+- `elasticsearchexporter`: Remove dedot config. ECS mode now always dedots, no others dedot at all. (#33772)
+- `activedirectorydsreceiver`: Fixed typo in the attribute `distingushed_names`, renaming it to `distinguished_names`. (#37606)
+- `githubreceiver`: The `required_header` configuration option for the trace receiver has been changed to `required_headers`. (#37578)
+- `receiver/hostmetrics`: Remove receiver.hostmetrics.normalizeProcessCPUUtilization feature gate (#34763)
+- `tailsamplingprocessor`: Fix the decision timer metric to capture longer latencies beyond 50ms. (#37722)
+  This changes the unit of the decision timer metric from microseconds to milliseconds.
+- `routingconnector`: Remove `match_once` configuration parameter. (#36824)
+
+### 🚩 Deprecations 🚩
+
+- `opencensusexporter`: Deprecate the OpenCensus exporter (#36791)
+  Migrate to use the OTLP exporter moving forward.
+- `opencensusreceiver`: Deprecate the OpenCensus receiver (#36791)
+  Migrate to use the OTLP receiver moving forward.
+
+### 🚀 New components 🚀
+
+- `bmchelixexporter`: Mark the BMC Helix exporter as Alpha. (#36773)
+- `bmchelixexporter`: metrics implementation (#36773)
+- `kafkatopicsobserver`: Adding new kafka topics observer extension (#37665)
+- `googlecloudlogentryencodingextension`: Introduce the scaffolding of a new component, googlecloudlogentryencodingextension (#37531)
+
+### 💡 Enhancements 💡
+
+- `elasticsearchexporter`: Syncs support for compression level on elasticsearch exporter with confighttp. The default compression level is 1 if not set. (#37260)
+- `processor/transformprocessor`: Add support for global conditions and error mode overrides. (#29017)
+  Global conditions are now available for context-inferred structured configurations, allowing the use of fully 
+  qualified paths. Additionally, a new configuration key called `error_mode` has been added to the context statements group. 
+  This key determines how the processor reacts to errors that occur while processing that specific group of statements. 
+  When provided, it overrides the top-level error mode, offering more granular control over error handling.
+  
+- `pkg/stanza`: Allow users to configure initial buffer size (#37786)
+- `vcenterreceiver`: Adds three more vCenter virtual machine performance metrics (#37488)
+- `k8sclusterreceiver`: Adds new descriptive attributes/metadata to the k8s.namespace and the container entity emitted from k8sclusterreceiver. (#37580)
+  - Adds the following attributes to k8s.namespace entity:
+    - k8s.namespace.phase: The phase of a namespace indicates where the namespace is in its lifecycle. E.g. 'active', 'terminating'
+    - k8s.namespace.creation_timestamp: The time when the namespace object was created.
+  - Adds the following attributes to container entity:
+    - container.creation_timestamp: The time when the container was started. Only available if container is either in 'running' or 'terminated' state.
+  
+- `splunkenterprisereceiver`: Added a new `splunk.health` metric. (#36695)
+- `pkg/ottl`: Introduce ToLowerCase converter function (#32942)
+- `pkg/ottl`: Introduce ToSnakeCase converter function (#32942)
+- `pkg/ottl`: Introduce ToUpperCase converter function (#32942)
+- `datadogreceiver`: Implement support for span links (#37449)
+- `resourcedetectionprocessor`: add the Dynatrace detector to the resource detection processor (#37577)
+- `elasticsearchexporter`: Add profiles support to elasticsearch exporter (#37567)
+- `googlecloudmonitoringreceiver`: support use [monitoring filters](https://cloud.google.com/monitoring/api/v3/filters) to filter metrics (#36898)
+- `awsfirehosereceiver`: Refactor unmarshallers to implement pdata unmarshaler interfaces (#37361)
+- `githubreceiver`: add support for GitHub Actions workflow run events using deterministic Trace and Root Span IDs. (#37578)
+- `pkg/translator/jaeger/internal/jaeger`: Remove jaeger model/converter/thrift/jaeger dependency (#37820)
+- `pkg/translator/zipkin/internal/zipkin`: Remove jaeger model/converter/thrift/zipkin dependency (#37795)
+- `extension/oauth2clientauth`: Add `expiry_buffer` config to `oauth2client` extension, allowing token refresh before expiration with a default buffer of 5 minutes. (#35148)
+  - Prevents authentication failures by refreshing the token early.
+  - The default expiry buffer is set to 5 minutes, and users can adjust it as needed.
+  
+- `datadogexporter`: Add a gauge metric datadog.otel.gateway which is 1 if the collector is used as a gateway or 0 otherwise. (#37499)
+- `pkg/ottl`: Introduce ToCamelCase converter function (#32942)
+- `googlecloudpubsubreceiver`: Turn noisy `warn` log about Pub/Sub servers into `debug`, and turn the reset count into a metric (#37571)
+  The receiver uses the Google Cloud Pub/Sub StreamingPull API and keeps a open connection. The Pub/Sub servers
+  recurrently close the connection after a time period to avoid a long-running sticky connection. Before the
+  receiver logged `warn` log lines everytime this happened. These log lines are moved to debug so that fleets with
+  lots of collectors with the receiver don't span logs at warn level. To keep track of the resets, whenever a
+  connection reset happens a `otelcol_receiver_googlecloudpubsub_stream_restarts` metric is increased by one.
+  
+- `processor/redaction`: Introduce 'allowed_values' parameter for allowed values of attributes (#35840)
+- `exporter/logzioexporter`: Remove dependency on Jaeger pkg/cache (#37833)
+- `routingconnector`: Avoid unnecessary copy of the data in routing connector (#37946)
+- `awscontainerinsightreceiver`: Add support for HOST_PROC environment variable in AWS Container Insight Receiver. (#35862)
+- `syslogreceiver`: Support setting `on_error` config for syslog receiver. (#36906)
+- `processor/tailsampling`: Adds support for optionally recording the policy (and any composite policy) associated with an inclusive tail processor sampling decision. 
+This functionality is disabled by default, you can enable it by passing the following feature flag to the collector: `+processor.tailsamplingprocessor.recordpolicy`
+ (#35180)
+- `tailsamplingprocessor`: makes the `numeric_attribute` more flexible and allows to set only `min_value` or `max_value`, without the need to set both (#37328)
+  This is useful to have simple configurations like these:
+  ```
+  {
+    type: numeric_attribute,
+    numeric_attribute: {
+      key: http.status_code,
+      min_value: 400
+    }
+  }
+  ```
+  
+- `testbed`: Include the specified resource limits for CPU and memory in the benchmark results (#36720)
+- `stefexporter`: Add basic STEF exporter implementation (#37759)
+- `receiver/zipkinreceiver`: Remove zipkinreceiver dependency on Jaeger (#37795)
+
+### 🧰 Bug fixes 🧰
+
+- `azureeventhubreceiver`: Fix bug where persisted offset would be ignored after restart (#37157)
+- `bearertokenauthextension`: Load token lazily for gRPC AUTH to fix token refresh issue (#36749)
+- `opampsupervisor`: The OnConnectionClose was not correctly connected for the supervisor. (#37761)
+- `elasticsearchexporter`: Fix data loss caused by incorrect metric grouping in ECS and OTel mode (#37898)
+  Fix data loss when the same metric exists across different resources or scopes. Data points / metrics were incorrectly grouped together, leading to data loss with warning logs e.g. "metric with name '***' has already been serialized".
+- `k8sattributes`: Fix bug where `Filters.Labels` failed with when the `exists` or `not-exists` operations were used. (#37913)
+- `prometheusreceiver`: Start time metric adjuster now handles reset points correctly (#37717)
+- `prometheusremotewriteexproter`: Resolves a deadlock in the WAL by temporarily releasing a lock while waiting for new writes to the WAL.
+ (#19363, #24399, #15277)
+- `awscontainerinsightreceiver`: Fix race condition in shutdown of AWS Container Insight receiver (#37695)
+
 ## v0.119.0
 
 ### 🛑 Breaking changes 🛑
