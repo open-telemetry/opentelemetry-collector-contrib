@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -31,7 +33,7 @@ func TestCreateMetrics(t *testing.T) {
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	cfg.Scrapers = []string{"topics"}
-	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
+	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	newMetricsReceiver = prev
 	assert.NoError(t, err)
 }

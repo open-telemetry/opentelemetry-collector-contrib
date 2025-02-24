@@ -28,7 +28,7 @@ import (
 func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 	n := testutils.NewNode("1")
 	rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
-	rm := CustomMetrics(receivertest.NewNopSettings(), rb, n,
+	rm := CustomMetrics(receivertest.NewNopSettings(metadata.Type), rb, n,
 		[]string{
 			"Ready",
 			"MemoryPressure",
@@ -74,7 +74,7 @@ func TestNodeOptionalMetrics(t *testing.T) {
 	rac.OsDescription.Enabled = true
 
 	rb := metadata.NewResourceBuilder(rac)
-	rm := CustomMetrics(receivertest.NewNopSettings(), rb, n,
+	rm := CustomMetrics(receivertest.NewNopSettings(metadata.Type), rb, n,
 		[]string{},
 		[]string{
 			"cpu",
@@ -170,7 +170,7 @@ func TestNodeMetrics(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mbc := metadata.DefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sNodeCondition.Enabled = true
-	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings())
+	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(mb, n, ts)
 	m := mb.Emit()
 
