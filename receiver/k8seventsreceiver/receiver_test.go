@@ -29,7 +29,7 @@ func TestNewReceiver(t *testing.T) {
 		return fake.NewSimpleClientset(), nil
 	}
 	r, err := newReceiver(
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		consumertest.NewNop(),
 	)
@@ -41,7 +41,7 @@ func TestNewReceiver(t *testing.T) {
 
 	rCfg.Namespaces = []string{"test", "another_test"}
 	r1, err := newReceiver(
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		consumertest.NewNop(),
 	)
@@ -56,7 +56,7 @@ func TestHandleEvent(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	sink := new(consumertest.LogsSink)
 	r, err := newReceiver(
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		sink,
 	)
@@ -74,7 +74,7 @@ func TestDropEventsOlderThanStartupTime(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	sink := new(consumertest.LogsSink)
 	r, err := newReceiver(
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		sink,
 	)
@@ -109,7 +109,7 @@ func TestGetEventTimestamp(t *testing.T) {
 func TestAllowEvent(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	r, err := newReceiver(
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		consumertest.NewNop(),
 	)

@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -59,6 +60,10 @@ type Config struct {
 	// Default Coralogix application and subsystem name values.
 	AppName   string `mapstructure:"application_name"`
 	SubSystem string `mapstructure:"subsystem_name"`
+
+	// Reference:
+	// 	https://github.com/open-telemetry/opentelemetry-collector/issues/8122
+	BatcherConfig exporterbatcher.Config `mapstructure:"batcher"`
 }
 
 func isEmpty(endpoint string) bool {
