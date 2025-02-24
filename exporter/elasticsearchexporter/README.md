@@ -39,7 +39,7 @@ As a shortcut, the following settings are also supported:
 
 - `user` (optional): Username used for HTTP Basic Authentication.
 - `password` (optional): Password used for HTTP Basic Authentication.
-- `api_key` (optional): [Elasticsearch API Key] in "encoded" format.
+- `api_key` (optional): [Elasticsearch API Key] in "encoded" format (e.g. `VFR2WU41VUJIbG9SbGJUdVFrMFk6NVVhVDE3SDlSQS0wM1Rxb24xdXFldw==`).
 
 Example:
 
@@ -232,7 +232,7 @@ the Elasticsearch document structure.
 
 #### Default (none) mapping mode
 
-In the `none` mapping mode the Elasticsearhc Exporter produces documents with the original
+In the `none` mapping mode the Elasticsearch Exporter produces documents with the original
 field names of from the OTLP data structures.
 
 | Signal    | `none`             |
@@ -472,7 +472,7 @@ processors:
 
 Symptom: `elasticsearchexporter` logs an error "failed to index document" with `error.type` "version_conflict_engine_exception" and `error.reason` containing "version conflict, document already exists".
 
-This happens when the target data stream is a TSDB metrics data stream (e.g. using OTel mapping mode sending to a 8.16+ Elasticsearch).
+This happens when the target data stream is a TSDB metrics data stream (e.g. using OTel mapping mode sending to a 8.16+ Elasticsearch, or ECS mapping mode sending to system integration data streams).
 
 Elasticsearch [Time Series Data Streams](https://www.elastic.co/guide/en/elasticsearch/reference/current/tsds.html) requires that there must only be one document per timestamp with the same dimensions.
 The purpose is to avoid duplicate data when re-trying a batch of metrics that were previously sent but failed to be indexed.
