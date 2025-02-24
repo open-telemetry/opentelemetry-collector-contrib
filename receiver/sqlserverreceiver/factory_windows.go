@@ -56,9 +56,9 @@ func createMetricsReceiver(
 // createLogsReceiver create a logs receiver based on provided config.
 func createLogsReceiver(
 	_ context.Context,
-	params receiver.Settings,
-	receiverCfg component.Config,
-	logsConsumer consumer.Logs,
+	_ receiver.Settings,
+	_ component.Config,
+	_ consumer.Logs,
 ) (receiver.Logs, error) {
 	// Disable logs receiver on Windows as the only supported logs query (Top Query) is not tested on Windows yet.
 	return nil, fmt.Errorf("logs receiver is not supported on Windows yet")

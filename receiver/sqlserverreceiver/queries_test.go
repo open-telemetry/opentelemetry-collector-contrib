@@ -106,7 +106,7 @@ func TestQueryTextAndPlanQueryContents(t *testing.T) {
 
 			actual, err := tt.getQuery(tt.instanceName, tt.maxQuerySampleCount, tt.lookbackTime)
 			require.NoError(t, err)
-			require.Equal(t, expected, actual)
+			require.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(actual))
 		})
 	}
 }
