@@ -191,20 +191,9 @@ func NewConditionSequence(conditions []*ottl.Condition[TransformContext], teleme
 	return c
 }
 
-var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
-	"FLAG_NONE":              0,
-	"FLAG_NO_RECORDED_VALUE": 1,
-}
-
-func init() {
-	for k, v := range internal.MetricSymbolTable {
-		symbolTable[k] = v
-	}
-}
-
 func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	if val != nil {
-		if enum, ok := symbolTable[*val]; ok {
+		if enum, ok := ctxdatapoint.SymbolTable[*val]; ok {
 			return &enum, nil
 		}
 		return nil, fmt.Errorf("enum symbol, %s, not found", *val)
