@@ -117,6 +117,7 @@ var (
 		ContainerImageName:   resourceAttributeEnabled,
 		ContainerName:        resourceAttributeEnabled,
 		ContainerRuntime:     resourceAttributeEnabled,
+		ContainerLabels:      resourceAttributeEnabled,
 	}
 )
 

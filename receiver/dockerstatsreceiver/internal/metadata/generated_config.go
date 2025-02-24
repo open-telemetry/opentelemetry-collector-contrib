@@ -352,6 +352,7 @@ type ResourceAttributesConfig struct {
 	ContainerID          ResourceAttributeConfig `mapstructure:"container.id"`
 	ContainerImageID     ResourceAttributeConfig `mapstructure:"container.image.id"`
 	ContainerImageName   ResourceAttributeConfig `mapstructure:"container.image.name"`
+	ContainerLabels      ResourceAttributeConfig `mapstructure:"container.labels"`
 	ContainerName        ResourceAttributeConfig `mapstructure:"container.name"`
 	ContainerRuntime     ResourceAttributeConfig `mapstructure:"container.runtime"`
 }
@@ -371,6 +372,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		ContainerImageName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		ContainerLabels: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		ContainerName: ResourceAttributeConfig{

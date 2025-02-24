@@ -10,6 +10,9 @@ resourceMetrics:
         - key: container.image.name
           value:
             stringValue: busybox
+        - key: container.labels
+          value:
+            kvlistValue: {}
         - key: container.name
           value:
             stringValue: sleepy1
@@ -112,14 +115,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: container.cpu.limit
             unit: '{cpus}'
-          - description: 'Number of cores available to the container.'
+          - description: Number of cores available to the container.
             gauge:
               dataPoints:
-                - asInt: 2
-                  startTimeUnixNano: "1687762436124732000"
-                  timeUnixNano: "1687762436137493000"
+                - asInt: "2"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: container.cpu.logical.count
-            unit: "{cpus}"
+            unit: '{cpus}'
           - description: CPU shares set for the container.
             gauge:
               dataPoints:
@@ -233,16 +236,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: 'Number of times the memory limit was hit.'
+          - description: Number of times the memory limit was hit.
             name: container.memory.fails
             sum:
-              isMonotonic: true
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: "{fails}"
+              isMonotonic: true
+            unit: '{fails}'
           - description: Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2).
             name: container.memory.file
             sum:
@@ -477,7 +480,7 @@ resourceMetrics:
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 1.5532824571167516e+07
+                - asDouble: 5.848954705252094e+07
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime

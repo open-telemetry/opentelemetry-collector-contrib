@@ -3882,6 +3882,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.ContainerImageName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["container.image.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageName.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.ContainerLabels.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.labels"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerLabels.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ContainerLabels.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.labels"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerLabels.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.ContainerName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["container.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerName.MetricsInclude)
 	}

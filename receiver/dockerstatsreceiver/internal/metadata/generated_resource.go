@@ -56,6 +56,13 @@ func (rb *ResourceBuilder) SetContainerImageName(val string) {
 	}
 }
 
+// SetContainerLabels sets provided value as "container.labels" attribute.
+func (rb *ResourceBuilder) SetContainerLabels(val map[string]any) {
+	if rb.config.ContainerLabels.Enabled {
+		rb.res.Attributes().PutEmptyMap("container.labels").FromRaw(val)
+	}
+}
+
 // SetContainerName sets provided value as "container.name" attribute.
 func (rb *ResourceBuilder) SetContainerName(val string) {
 	if rb.config.ContainerName.Enabled {
