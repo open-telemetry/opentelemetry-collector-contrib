@@ -21,6 +21,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
 )
 
 type Server struct {
@@ -156,7 +157,7 @@ func TestScraper(t *testing.T) {
 			}
 
 			cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(metadata.Type)
 
 			scraper := newScraper(cfg, settings)
 			actualMetrics, err := scraper.scrape(context.Background())
@@ -215,7 +216,7 @@ func TestScraper_TCPErrorMetrics(t *testing.T) {
 			}
 
 			cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(metadata.Type)
 
 			scraper := newScraper(cfg, settings)
 			actualMetrics, err := scraper.scrape(context.Background())
