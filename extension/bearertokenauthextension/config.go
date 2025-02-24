@@ -18,7 +18,10 @@ type Config struct {
 	// BearerToken specifies the bearer token to use for every RPC.
 	BearerToken configopaque.String `mapstructure:"token,omitempty"`
 
-	// Filename points to a file that contains the bearer token to use for every RPC.
+	// Tokens specifies multiple bearer tokens to use for every RPC.
+	Tokens []configopaque.String `mapstructure:"tokens,omitempty"`
+
+	// Filename points to a file that contains the bearer token(s) to use for every RPC.
 	Filename string `mapstructure:"filename,omitempty"`
 }
 
@@ -29,7 +32,7 @@ var (
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.BearerToken == "" && cfg.Filename == "" {
+	if cfg.BearerToken == "" && len(cfg.Tokens) == 0 && cfg.Filename == "" {
 		return errNoTokenProvided
 	}
 	return nil

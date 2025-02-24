@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
@@ -42,6 +43,28 @@ func TestLoadConfig(t *testing.T) {
 				BearerToken: "my-token",
 			},
 		},
+		{
+            id: component.NewIDWithName(metadata.Type, "multipletokens"),
+            expected: &Config{
+                Scheme: "Bearer",
+                Tokens: []configopaque.String{"token1", "thistokenalsoworks"},
+            },
+        },
+        {
+            id: component.NewIDWithName(metadata.Type, "withfilename"),
+            expected: &Config{
+                Scheme:   "Bearer",
+                Filename: "file-containing.token",
+            },
+        },
+        {
+            id: component.NewIDWithName(metadata.Type, "both"),
+            expected: &Config{
+                Scheme:      "Bearer",
+                BearerToken: "ignoredtoken",
+                Filename:    "file-containing.token",
+            },
+        },
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
