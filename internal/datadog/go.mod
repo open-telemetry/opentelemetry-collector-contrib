@@ -54,7 +54,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.63.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.63.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/option v0.63.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/optional v0.62.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.63.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.63.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/system v0.63.0 // indirect

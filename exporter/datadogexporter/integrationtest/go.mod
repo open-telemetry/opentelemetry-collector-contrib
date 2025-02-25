@@ -103,7 +103,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/http v0.63.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.64.0-devel.0.20250129111638-01c8fb06949e // indirect
 	github.com/DataDog/datadog-agent/pkg/util/option v0.64.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/optional v0.62.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/pointer v0.63.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.63.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/startstop v0.63.0 // indirect
