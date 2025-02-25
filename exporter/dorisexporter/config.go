@@ -121,7 +121,6 @@ const (
 	properties = `
 PROPERTIES (
 "replication_num" = "%d",
-"enable_single_replica_compaction" = "true",
 "compaction_policy" = "time_series",
 "dynamic_partition.enable" = "true",
 "dynamic_partition.create_history_partition" = "true",

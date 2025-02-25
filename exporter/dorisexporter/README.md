@@ -30,7 +30,7 @@ The following configuration options are supported:
 * `history_days` (default = 0) Data older than these days will be deleted; ignored if `create_schema` is false. If set to 0, historical data will not be deleted.
 * `create_history_days` (default = 0) The number of days in the history partition that was created when the table was created; ignored if `create_schema` is false. If `history_days` is not 0, `create_history_days` needs to be less than or equal to `history_days`.
 * `replication_num` (default = 1) The number of replicas of the table; ignored if `create_schema` is false.
-* `timezone` (default is UTC) The time zone of doris.
+* `timezone` (default is the time zone of the opentelemetry collector if IANA Time Zone Database is found, else is UTC) The time zone of doris, e.g. Asia/Shanghai.
 * `sending_queue`  [details here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
   * `enabled` (default = true)
   * `num_consumers` (default = 10) Number of consumers that dequeue batches; ignored if `enabled` is false.
