@@ -30,14 +30,11 @@ type commonExporter struct {
 }
 
 func newExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings) *commonExporter {
-	// There won't be an error because it's already been validated in the Config.Validate method.
-	timeZone, _ := cfg.timeZone()
-
 	return &commonExporter{
 		TelemetrySettings: set,
 		logger:            logger,
 		cfg:               cfg,
-		timeZone:          timeZone,
+		timeZone:          cfg.timeLocation,
 	}
 }
 

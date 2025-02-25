@@ -117,10 +117,6 @@ func (cfg *Config) startHistoryDays() int32 {
 	return -cfg.HistoryDays
 }
 
-func (cfg *Config) timeZone() (*time.Location, error) {
-	return time.LoadLocation(cfg.TimeZone)
-}
-
 const (
 	properties = `
 PROPERTIES (
