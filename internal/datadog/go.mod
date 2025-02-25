@@ -42,12 +42,12 @@ require (
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	github.com/DataDog/datadog-agent/comp/core/secrets v0.63.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.63.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/env v0.63.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/mock v0.63.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/env v0.64.0-rc.1// indirect
+	github.com/DataDog/datadog-agent/pkg/config/mock v0.64.0-rc.1// indirect
 	github.com/DataDog/datadog-agent/pkg/config/model v0.63.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.63.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/setup v0.63.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/structure v0.63.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/setup v0.64.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/structure v0.64.0-rc.1// indirect
 	github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.63.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.63.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/executable v0.63.0 // indirect

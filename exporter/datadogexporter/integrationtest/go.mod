@@ -68,12 +68,12 @@ require (
 	github.com/DataDog/datadog-agent/comp/trace/compression/def v0.63.0 // indirect
 	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.63.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.63.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/env v0.63.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/mock v0.63.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/env v0.64.0-rc.1// indirect
+	github.com/DataDog/datadog-agent/pkg/config/mock v0.64.0-rc.1// indirect
 	github.com/DataDog/datadog-agent/pkg/config/model v0.64.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.64.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/config/setup v0.63.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/structure v0.63.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.64.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/setup v0.64.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/structure v0.64.0-rc.1// indirect
 	github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.64.0-devel // indirect
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.63.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/auditor v0.63.0 // indirect
