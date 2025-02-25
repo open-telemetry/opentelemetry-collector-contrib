@@ -40,7 +40,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.26.0 // indirect
 	github.com/aws/aws-sdk-go v1.55.6 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.120.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.120.1 // indirect
