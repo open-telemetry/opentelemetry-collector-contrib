@@ -27,8 +27,8 @@ var (
 	spanID2  = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
 )
 
-func TestSpanPathGetSetter(t *testing.T) {
-	refSpan := createSpan()
+func TestPathGetSetter(t *testing.T) {
+	refSpan := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
@@ -44,14 +44,14 @@ func TestSpanPathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     ottl.Path[*spanContext]
+		path     ottl.Path[*testContext]
 		orig     any
 		newVal   any
 		modified func(span ptrace.Span)
 	}{
 		{
 			name: "trace_id",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "trace_id",
 			},
 			orig:   pcommon.TraceID(traceID),
@@ -62,7 +62,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "span_id",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "span_id",
 			},
 			orig:   pcommon.SpanID(spanID),
@@ -73,9 +73,9 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "trace_id string",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "trace_id",
-				NextPath: &pathtest.Path[*spanContext]{
+				NextPath: &pathtest.Path[*testContext]{
 					N: "string",
 				},
 			},
@@ -87,9 +87,9 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "span_id string",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "span_id",
-				NextPath: &pathtest.Path[*spanContext]{
+				NextPath: &pathtest.Path[*testContext]{
 					N: "string",
 				},
 			},
@@ -101,7 +101,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "trace_state",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "trace_state",
 			},
 			orig:   "key1=val1,key2=val2",
@@ -112,10 +112,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "trace_state key",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "trace_state",
-				KeySlice: []ottl.Key[*spanContext]{
-					&pathtest.Key[*spanContext]{
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("key1"),
 					},
 				},
@@ -128,7 +128,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "parent_span_id",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "parent_span_id",
 			},
 			orig:   pcommon.SpanID(spanID2),
@@ -139,9 +139,9 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "parent_span_id string",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "parent_span_id",
-				NextPath: &pathtest.Path[*spanContext]{
+				NextPath: &pathtest.Path[*testContext]{
 					N: "string",
 				},
 			},
@@ -153,7 +153,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "name",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "name",
 			},
 			orig:   "bear",
@@ -164,7 +164,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "kind",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "kind",
 			},
 			orig:   int64(2),
@@ -175,9 +175,9 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "string kind",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "kind",
-				NextPath: &pathtest.Path[*spanContext]{
+				NextPath: &pathtest.Path[*testContext]{
 					N: "string",
 				},
 			},
@@ -189,9 +189,9 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "deprecated string kind",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "kind",
-				NextPath: &pathtest.Path[*spanContext]{
+				NextPath: &pathtest.Path[*testContext]{
 					N: "deprecated_string",
 				},
 			},
@@ -203,7 +203,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "start_time_unix_nano",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "start_time_unix_nano",
 			},
 			orig:   int64(100_000_000),
@@ -214,7 +214,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "end_time_unix_nano",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "end_time_unix_nano",
 			},
 			orig:   int64(500_000_000),
@@ -225,7 +225,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "attributes",
 			},
 			orig:   refSpan.Attributes(),
@@ -236,10 +236,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*spanContext]{
-					&pathtest.Key[*spanContext]{
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("str"),
 					},
 				},
@@ -252,10 +252,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*spanContext]{
-					&pathtest.Key[*spanContext]{
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("bool"),
 					},
 				},
@@ -268,10 +268,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*spanContext]{
-					&pathtest.Key[*spanContext]{
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("int"),
 					},
 				},
@@ -284,10 +284,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*spanContext]{
-					&pathtest.Key[*spanContext]{
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("double"),
 					},
 				},
@@ -300,10 +300,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*spanContext]{
-					&pathtest.Key[*spanContext]{
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("bytes"),
 					},
 				},
@@ -316,10 +316,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array empty",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*spanContext]{
-					&pathtest.Key[*spanContext]{
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_empty"),
 					},
 				},
@@ -335,10 +335,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*spanContext]{
-					&pathtest.Key[*spanContext]{
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_str"),
 					},
 				},
@@ -354,10 +354,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*spanContext]{
-					&pathtest.Key[*spanContext]{
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_bool"),
 					},
 				},
@@ -373,10 +373,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*spanContext]{
-					&pathtest.Key[*spanContext]{
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_int"),
 					},
 				},
@@ -392,10 +392,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*spanContext]{
-					&pathtest.Key[*spanContext]{
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_float"),
 					},
 				},
@@ -411,10 +411,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*spanContext]{
-					&pathtest.Key[*spanContext]{
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("arr_bytes"),
 					},
 				},
@@ -430,16 +430,16 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes nested",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*spanContext]{
-					&pathtest.Key[*spanContext]{
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("slice"),
 					},
-					&pathtest.Key[*spanContext]{
+					&pathtest.Key[*testContext]{
 						I: ottltest.Intp(0),
 					},
-					&pathtest.Key[*spanContext]{
+					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("map"),
 					},
 				},
@@ -456,16 +456,16 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes nested new values",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "attributes",
-				KeySlice: []ottl.Key[*spanContext]{
-					&pathtest.Key[*spanContext]{
+				KeySlice: []ottl.Key[*testContext]{
+					&pathtest.Key[*testContext]{
 						S: ottltest.Strp("new"),
 					},
-					&pathtest.Key[*spanContext]{
+					&pathtest.Key[*testContext]{
 						I: ottltest.Intp(2),
 					},
-					&pathtest.Key[*spanContext]{
+					&pathtest.Key[*testContext]{
 						I: ottltest.Intp(0),
 					},
 				},
@@ -483,7 +483,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "dropped_attributes_count",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "dropped_attributes_count",
 			},
 			orig:   int64(10),
@@ -494,7 +494,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "events",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "events",
 			},
 			orig:   refSpan.Events(),
@@ -508,7 +508,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "dropped_events_count",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "dropped_events_count",
 			},
 			orig:   int64(20),
@@ -519,7 +519,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "links",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "links",
 			},
 			orig:   refSpan.Links(),
@@ -533,7 +533,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "dropped_links_count",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "dropped_links_count",
 			},
 			orig:   int64(30),
@@ -544,7 +544,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "status",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "status",
 			},
 			orig:   refSpan.Status(),
@@ -555,9 +555,9 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "status code",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "status",
-				NextPath: &pathtest.Path[*spanContext]{
+				NextPath: &pathtest.Path[*testContext]{
 					N: "code",
 				},
 			},
@@ -569,9 +569,9 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "status message",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "status",
-				NextPath: &pathtest.Path[*spanContext]{
+				NextPath: &pathtest.Path[*testContext]{
 					N: "message",
 				},
 			},
@@ -583,7 +583,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "start_time",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "start_time",
 			},
 			orig:   time.Date(1970, 1, 1, 0, 0, 0, 100000000, time.UTC),
@@ -594,7 +594,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "end_time",
-			path: &pathtest.Path[*spanContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "end_time",
 			},
 			orig:   time.Date(1970, 1, 1, 0, 0, 0, 500000000, time.UTC),
@@ -606,10 +606,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := ctxspan.PathGetSetter[*spanContext](tt.path.Context(), tt.path)
+			accessor, err := ctxspan.PathGetSetter[*testContext](tt.path.Context(), tt.path)
 			assert.NoError(t, err)
 
-			span := createSpan()
+			span := createTelemetry()
 
 			got, err := accessor.Get(context.Background(), newSpanContext(span))
 			assert.NoError(t, err)
@@ -618,7 +618,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 			err = accessor.Set(context.Background(), newSpanContext(span), tt.newVal)
 			assert.NoError(t, err)
 
-			expectedSpan := createSpan()
+			expectedSpan := createTelemetry()
 			tt.modified(expectedSpan)
 
 			assert.Equal(t, expectedSpan, span)
@@ -626,24 +626,24 @@ func TestSpanPathGetSetter(t *testing.T) {
 	}
 }
 
-func TestSpanPathGetSetterCacheAccessError(t *testing.T) {
-	path := &pathtest.Path[*spanContext]{
+func TestPathGetSetterCacheAccessError(t *testing.T) {
+	path := &pathtest.Path[*testContext]{
 		N: "cache",
 		C: "span",
-		KeySlice: []ottl.Key[*spanContext]{
-			&pathtest.Key[*spanContext]{
+		KeySlice: []ottl.Key[*testContext]{
+			&pathtest.Key[*testContext]{
 				S: ottltest.Strp("key"),
 			},
 		},
 		FullPath: "span.cache[key]",
 	}
 
-	_, err := ctxspan.PathGetSetter[*spanContext]("spanevent", path)
+	_, err := ctxspan.PathGetSetter[*testContext]("spanevent", path)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), `replace "span.cache[key]" with "spanevent.cache[key]"`)
 }
 
-func createSpan() ptrace.Span {
+func createTelemetry() ptrace.Span {
 	span := ptrace.NewSpan()
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
@@ -698,14 +698,14 @@ func createSpan() ptrace.Span {
 	return span
 }
 
-type spanContext struct {
+type testContext struct {
 	span ptrace.Span
 }
 
-func (r *spanContext) GetSpan() ptrace.Span {
+func (r *testContext) GetSpan() ptrace.Span {
 	return r.span
 }
 
-func newSpanContext(span ptrace.Span) *spanContext {
-	return &spanContext{span: span}
+func newSpanContext(span ptrace.Span) *testContext {
+	return &testContext{span: span}
 }
