@@ -676,4 +676,3 @@ jobs:
           mkdir -p ./internal/tools/testresults/hostmetricsreceiver
           mv ./internal/tools/testresults/github.com-open-telemetry-opentelemetry-collector-contrib-receiver-hostmetricsreceiver-junit.xml ./internal/tools/testresults/hostmetricsreceiver/
           ./tools/issuegenerator -path ./internal/tools/testresults/hostmetricsreceiver/
-          
