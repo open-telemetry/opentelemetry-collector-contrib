@@ -159,11 +159,9 @@ func NewConditionSequence(conditions []*ottl.Condition[TransformContext], teleme
 	return c
 }
 
-var symbolTable = internal.MetricSymbolTable
-
 func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	if val != nil {
-		if enum, ok := symbolTable[*val]; ok {
+		if enum, ok := ctxmetric.SymbolTable[*val]; ok {
 			return &enum, nil
 		}
 		return nil, fmt.Errorf("enum symbol, %s, not found", *val)
