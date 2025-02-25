@@ -387,6 +387,11 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	for i, row := range rows {
+		// skipping the rest of the rows as totalElapsedTimeDiffs is sorted in descending order
+		if totalElapsedTimeDiffs[i] == 0 {
+			break
+		}
+
 		// reporting human-readable query hash and query hash plan
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))

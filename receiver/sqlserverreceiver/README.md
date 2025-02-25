@@ -41,8 +41,8 @@ Windows-specific options:
 Query-level collection specific options (only useful when query-level collection are enabled):
 - `lookback_time` (optional, example = `60`, default = `2 * collection_interval`): The time window (in second) in which to query for top queries.
   - Queries that were finished execution outside the lookback window are not included in the collection. Increasing the lookback window (in seconds) will be useful for capturing long-running queries.
-- `max_query_sample_count` (optional, example = `5000`, default = `1000`): The maximum number of records to fetch in a single query.
-- `top_query_count`: (optional, example = `100`, default = `200`): The maximum number of record to report (to the next consumer) in a single query.
+- `max_query_sample_count` (optional, example = `5000`, default = `1000`): The maximum number of records to fetch in a single run.
+- `top_query_count`: (optional, example = `100`, default = `200`): The maximum number of active queries to report (to the next consumer) in a single run.
 - `logs.enable_top_query_collection`: (optional, default = `false`): Enable collection of top queries.
   - e.g. `sqlserver` receiver will fetch 1000 (value: `max_query_sample_count`) queries from database and report the top 200 (value: `top_query_count`) which used the most CPU time.
 
