@@ -24,7 +24,7 @@ import (
 func TestDefaultValidMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 
 	receiver, err := newCloudFoundryMetricsReceiver(
 		params,
@@ -49,7 +49,7 @@ func TestDefaultValidMetricsReceiver(t *testing.T) {
 func TestDefaultValidLogsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 
 	receiver, err := newCloudFoundryLogsReceiver(
 		params,

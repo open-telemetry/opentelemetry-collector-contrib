@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
@@ -85,6 +86,8 @@ type Config struct {
 	DefaultFetchSize int32 `mapstructure:"default_fetch_size"`
 	// The maximum bytes per fetch from Kafka (default "0", no limit)
 	MaxFetchSize int32 `mapstructure:"max_fetch_size"`
+	// In case of some errors returned by the next consumer, the receiver will wait and retry the failed message
+	ErrorBackOff configretry.BackOffConfig `mapstructure:"error_backoff"`
 }
 
 const (
