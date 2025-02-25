@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -62,7 +63,7 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 			cfg.Connection.Endpoint = endpoint
 			cfg.Connection.VHost = vhost
 			cfg.Connection.Auth = AuthConfig{Plain: PlainAuth{Username: username, Password: password}}
-			exporter, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
+			exporter, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 			require.NoError(t, err)
 			err = exporter.Start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)

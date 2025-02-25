@@ -90,10 +90,11 @@ Emeritus Triagers:
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
 - [Antoine Toulme](https://github.com/atoulme), Splunk
-- [Christos Markou](https://github.com/ChrsMark), Elastic
+- [Christos Markou](https://github.com/ChrsMark), Elastic (on leave)
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
 - [Matt Wear](https://github.com/mwear), Lightstep
+- [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
 Emeritus Approvers:
@@ -111,7 +112,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 - [Sean Marciniak](https://github.com/MovieStoreGuy), Splunk
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
