@@ -17,15 +17,16 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxlog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 	common "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
-const (
-	// Experimental: *NOTE* this constant is subject to change or removal in the future.
-	ContextName            = "log"
-	contextNameDescription = "Log"
-)
+// Experimental: *NOTE* this constant is subject to change or removal in the future.
+const ContextName = ctxlog.Name
 
 var (
 	_ internal.ResourceContext             = (*TransformContext)(nil)
@@ -146,9 +147,9 @@ func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySet
 func EnablePathContextNames() Option {
 	return func(p *ottl.Parser[TransformContext]) {
 		ottl.WithPathContextNames[TransformContext]([]string{
-			ContextName,
-			internal.InstrumentationScopeContextName,
-			internal.ResourceContextName,
+			ctxlog.Name,
+			ctxscope.LegacyName,
+			ctxresource.Name,
 		})(p)
 	}
 }
@@ -185,37 +186,9 @@ func NewConditionSequence(conditions []*ottl.Condition[TransformContext], teleme
 	return c
 }
 
-var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
-	"SEVERITY_NUMBER_UNSPECIFIED": ottl.Enum(plog.SeverityNumberUnspecified),
-	"SEVERITY_NUMBER_TRACE":       ottl.Enum(plog.SeverityNumberTrace),
-	"SEVERITY_NUMBER_TRACE2":      ottl.Enum(plog.SeverityNumberTrace2),
-	"SEVERITY_NUMBER_TRACE3":      ottl.Enum(plog.SeverityNumberTrace3),
-	"SEVERITY_NUMBER_TRACE4":      ottl.Enum(plog.SeverityNumberTrace4),
-	"SEVERITY_NUMBER_DEBUG":       ottl.Enum(plog.SeverityNumberDebug),
-	"SEVERITY_NUMBER_DEBUG2":      ottl.Enum(plog.SeverityNumberDebug2),
-	"SEVERITY_NUMBER_DEBUG3":      ottl.Enum(plog.SeverityNumberDebug3),
-	"SEVERITY_NUMBER_DEBUG4":      ottl.Enum(plog.SeverityNumberDebug4),
-	"SEVERITY_NUMBER_INFO":        ottl.Enum(plog.SeverityNumberInfo),
-	"SEVERITY_NUMBER_INFO2":       ottl.Enum(plog.SeverityNumberInfo2),
-	"SEVERITY_NUMBER_INFO3":       ottl.Enum(plog.SeverityNumberInfo3),
-	"SEVERITY_NUMBER_INFO4":       ottl.Enum(plog.SeverityNumberInfo4),
-	"SEVERITY_NUMBER_WARN":        ottl.Enum(plog.SeverityNumberWarn),
-	"SEVERITY_NUMBER_WARN2":       ottl.Enum(plog.SeverityNumberWarn2),
-	"SEVERITY_NUMBER_WARN3":       ottl.Enum(plog.SeverityNumberWarn3),
-	"SEVERITY_NUMBER_WARN4":       ottl.Enum(plog.SeverityNumberWarn4),
-	"SEVERITY_NUMBER_ERROR":       ottl.Enum(plog.SeverityNumberError),
-	"SEVERITY_NUMBER_ERROR2":      ottl.Enum(plog.SeverityNumberError2),
-	"SEVERITY_NUMBER_ERROR3":      ottl.Enum(plog.SeverityNumberError3),
-	"SEVERITY_NUMBER_ERROR4":      ottl.Enum(plog.SeverityNumberError4),
-	"SEVERITY_NUMBER_FATAL":       ottl.Enum(plog.SeverityNumberFatal),
-	"SEVERITY_NUMBER_FATAL2":      ottl.Enum(plog.SeverityNumberFatal2),
-	"SEVERITY_NUMBER_FATAL3":      ottl.Enum(plog.SeverityNumberFatal3),
-	"SEVERITY_NUMBER_FATAL4":      ottl.Enum(plog.SeverityNumberFatal4),
-}
-
 func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	if val != nil {
-		if enum, ok := symbolTable[*val]; ok {
+		if enum, ok := ctxlog.SymbolTable[*val]; ok {
 			return &enum, nil
 		}
 		return nil, fmt.Errorf("enum symbol, %s, not found", *val)
@@ -229,14 +202,14 @@ type pathExpressionParser struct {
 
 func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	if path == nil {
-		return nil, fmt.Errorf("path cannot be nil")
+		return nil, ctxerror.New("nil", "nil", ctxlog.Name, ctxlog.DocRef)
 	}
 	// Higher contexts parsing
-	if path.Context() != "" && path.Context() != ContextName {
+	if path.Context() != "" && path.Context() != ctxlog.Name {
 		return pep.parseHigherContextPath(path.Context(), path)
 	}
 	// Backward compatibility with paths without context
-	if path.Context() == "" && (path.Name() == internal.ResourceContextName || path.Name() == internal.InstrumentationScopeContextName) {
+	if path.Context() == "" && (path.Name() == ctxresource.Name || path.Name() == ctxscope.LegacyName) {
 		return pep.parseHigherContextPath(path.Name(), path.Next())
 	}
 
@@ -264,7 +237,7 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 			if nextPath.Name() == "string" {
 				return accessStringBody(), nil
 			}
-			return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), contextNameDescription, internal.LogRef)
+			return nil, ctxerror.New(nextPath.Name(), nextPath.String(), ctxlog.Name, ctxlog.DocRef)
 		}
 		if path.Keys() == nil {
 			return accessBody(), nil
@@ -285,7 +258,7 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 			if nextPath.Name() == "string" {
 				return accessStringTraceID(), nil
 			}
-			return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), contextNameDescription, internal.LogRef)
+			return nil, ctxerror.New(nextPath.Name(), nextPath.String(), ctxlog.Name, ctxlog.DocRef)
 		}
 		return accessTraceID(), nil
 	case "span_id":
@@ -294,26 +267,26 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 			if nextPath.Name() == "string" {
 				return accessStringSpanID(), nil
 			}
-			return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), path.String(), contextNameDescription, internal.LogRef)
+			return nil, ctxerror.New(nextPath.Name(), path.String(), ctxlog.Name, ctxlog.DocRef)
 		}
 		return accessSpanID(), nil
 	default:
-		return nil, internal.FormatDefaultErrorMessage(path.Name(), path.String(), contextNameDescription, internal.LogRef)
+		return nil, ctxerror.New(path.Name(), path.String(), ctxlog.Name, ctxlog.DocRef)
 	}
 }
 
 func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	switch context {
-	case internal.ResourceContextName:
-		return internal.ResourcePathGetSetter(ContextName, path)
-	case internal.InstrumentationScopeContextName:
-		return internal.ScopePathGetSetter(ContextName, path)
+	case ctxresource.Name:
+		return internal.ResourcePathGetSetter(ctxlog.Name, path)
+	case ctxscope.LegacyName:
+		return internal.ScopePathGetSetter(ctxlog.Name, path)
 	default:
 		var fullPath string
 		if path != nil {
 			fullPath = path.String()
 		}
-		return nil, internal.FormatDefaultErrorMessage(context, fullPath, contextNameDescription, internal.LogRef)
+		return nil, ctxerror.New(context, fullPath, ctxlog.Name, ctxlog.DocRef)
 	}
 }
 

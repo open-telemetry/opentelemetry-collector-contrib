@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -56,7 +57,7 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	exporterSettings := exportertest.NewNopSettings()
+	exporterSettings := exportertest.NewNopSettings(metadata.Type)
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateLogs(
@@ -86,7 +87,7 @@ func benchmarkMetrics(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	exporterSettings := exportertest.NewNopSettings()
+	exporterSettings := exportertest.NewNopSettings(metadata.Type)
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateMetrics(
@@ -116,7 +117,7 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	exporterSettings := exportertest.NewNopSettings()
+	exporterSettings := exportertest.NewNopSettings(metadata.Type)
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateTraces(

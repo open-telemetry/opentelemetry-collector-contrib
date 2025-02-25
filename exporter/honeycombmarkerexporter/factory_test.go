@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter/internal/metadata"
 )
 
 const defaultURL = `https://api.example.com/v1`
@@ -27,7 +29,7 @@ func TestFactory_CreateLogs(t *testing.T) {
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.APIURL = defaultURL
 	})
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateLogs(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)

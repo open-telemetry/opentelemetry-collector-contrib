@@ -1,0 +1,42 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: genre
+                      value:
+                        stringValue: Action
+                  timeUnixNano: "1734876925424574000"
+            name: genre.count
+          - gauge:
+              dataPoints:
+                - asInt: "3"
+                  attributes:
+                    - key: genre
+                      value:
+                        stringValue: SciFi
+                  timeUnixNano: "1734876925424574000"
+            name: genre.count
+          - gauge:
+              dataPoints:
+                - asDouble: 7.6499999999999995
+                  attributes:
+                    - key: genre
+                      value:
+                        stringValue: Action
+                  timeUnixNano: "1734876925424574000"
+            name: genre.imdb
+          - gauge:
+              dataPoints:
+                - asDouble: 8.200000000000001
+                  attributes:
+                    - key: genre
+                      value:
+                        stringValue: SciFi
+                  timeUnixNano: "1734876925424574000"
+            name: genre.imdb
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver

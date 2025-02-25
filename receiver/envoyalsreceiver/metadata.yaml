@@ -6,4 +6,4 @@ status:
     development: [logs]
   distributions: []
   codeowners:
-    active: [evan-bradley]
+    active: [evan-bradley, zirain]

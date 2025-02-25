@@ -53,23 +53,6 @@ func newWithSettings(_ confmap.ProviderSettings) confmap.Provider {
 	return &provider{client: nil}
 }
 
-// New returns a new confmap.Provider that reads the configuration from a file.
-//
-// This Provider supports "s3" scheme, and can be called with a "uri" that follows:
-//
-//	s3-uri : s3://[BUCKET].s3.[REGION].amazonaws.com/[KEY]
-//
-// One example for s3-uri be like: s3://doc-example-bucket.s3.us-west-2.amazonaws.com/photos/puppy.jpg
-// References: https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
-//
-// Examples:
-// `s3://DOC-EXAMPLE-BUCKET.s3.us-west-2.amazonaws.com/photos/puppy.jpg` - (unix, windows)
-//
-// Deprecated: [v0.100.0] Use NewFactory() instead.
-func New() confmap.Provider {
-	return &provider{client: nil}
-}
-
 func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 	if !strings.HasPrefix(uri, schemeName+":") {
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)

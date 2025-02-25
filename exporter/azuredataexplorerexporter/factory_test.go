@@ -35,7 +35,7 @@ func TestCreateMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
 	assert.NotNil(t, exporter)
 	assert.NoError(t, err)
@@ -65,7 +65,7 @@ func TestCreateMetricsWhenIngestEmpty(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	// Load the #3 which has empty. This
 	assert.Panics(t, func() { _, _ = factory.CreateMetrics(context.Background(), params, cfg) })
 }
@@ -90,7 +90,7 @@ func TestCreateLogs(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateLogs(context.Background(), params, cfg)
 	// Load the #3 which has empty. This
 	assert.NotNil(t, exporter)
@@ -120,7 +120,7 @@ func TestCreateLogsWhenIngestEmpty(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	// Load the #3 which has empty
 	// exporter, err := factory.CreateLogs(context.Background(), params, cfg)
 	assert.Panics(t, func() { _, _ = factory.CreateLogs(context.Background(), params, cfg) })
@@ -138,7 +138,7 @@ func TestCreateTraces(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NotNil(t, exporter)
 	assert.NoError(t, err)
@@ -165,7 +165,7 @@ func TestCreateTracesWhenIngestEmpty(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	// Load the #3 which has empty
 	assert.Panics(t, func() { _, _ = factory.CreateTraces(context.Background(), params, cfg) })
 }

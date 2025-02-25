@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/envoyalsreceiver/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -31,7 +33,7 @@ func TestCreateReceiver(t *testing.T) {
 			Transport: confignet.TransportTypeTCP,
 		},
 	}
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	receiver, err := factory.CreateLogs(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err, "receiver creation failed")
 	require.NotNil(t, receiver, "receiver creation failed")

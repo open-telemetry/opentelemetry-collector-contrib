@@ -9,10 +9,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-)
-
-const (
-	ResourceContextName = "resource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 )
 
 type ResourceContext interface {
@@ -22,7 +21,7 @@ type ResourceContext interface {
 
 func ResourcePathGetSetter[K ResourceContext](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
-		return nil, FormatDefaultErrorMessage(ResourceContextName, ResourceContextName, "Resource", ResourceContextRef)
+		return nil, ctxerror.New("nil", "nil", ctxresource.Name, ctxresource.DocRef)
 	}
 	switch path.Name() {
 	case "attributes":
@@ -35,9 +34,9 @@ func ResourcePathGetSetter[K ResourceContext](lowerContext string, path ottl.Pat
 	case "schema_url":
 		return accessResourceSchemaURLItem[K](), nil
 	case "cache":
-		return nil, FormatCacheErrorMessage(lowerContext, path.Context(), path.String())
+		return nil, ctxcache.NewError(lowerContext, path.Context(), path.String())
 	default:
-		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Resource", ResourceContextRef)
+		return nil, ctxerror.New(path.Name(), path.String(), ctxresource.Name, ctxresource.DocRef)
 	}
 }
 

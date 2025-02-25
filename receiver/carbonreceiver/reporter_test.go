@@ -22,13 +22,12 @@ import (
 
 func TestReporterObservability(t *testing.T) {
 	receiverID := component.NewIDWithName(metadata.Type, "fake_receiver")
-	tt, err := componenttest.SetupTelemetry(receiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	reporter, err := newReporter(receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	reporter, err := newReporter(receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	require.NoError(t, err)
 
 	ctx := reporter.OnDataReceived(context.Background())
@@ -45,7 +44,7 @@ func TestReporterObservability(t *testing.T) {
 	assertReceiverMetrics(t, tt, receiverID, 17, 10)
 }
 
-func assertReceiverMetrics(t *testing.T, tt componenttest.TestTelemetry, id component.ID, accepted, refused int64) {
+func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id component.ID, accepted, refused int64) {
 	got, err := tt.GetMetric("otelcol_receiver_accepted_metric_points")
 	assert.NoError(t, err)
 	metricdatatest.AssertEqual(t,

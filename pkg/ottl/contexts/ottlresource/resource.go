@@ -14,13 +14,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
-const (
-	// Experimental: *NOTE* this constant is subject to change or removal in the future.
-	ContextName = internal.ResourceContextName
-)
+// Experimental: *NOTE* this constant is subject to change or removal in the future.
+const ContextName = ctxresource.Name
 
 var (
 	_ internal.ResourceContext = (*TransformContext)(nil)
@@ -149,7 +149,7 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 		return nil, fmt.Errorf("path cannot be nil")
 	}
 	if path.Context() != "" && path.Context() != ContextName {
-		return nil, internal.FormatDefaultErrorMessage(path.Context(), path.String(), "Resource", internal.ResourceContextRef)
+		return nil, ctxerror.New(path.Context(), path.String(), ctxresource.Name, ctxresource.DocRef)
 	}
 
 	switch path.Name() {

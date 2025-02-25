@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
@@ -31,7 +32,7 @@ func TestNewScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	scraper := newScraper(cfg, receivertest.NewNopSettings())
+	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	require.Empty(t, scraper.resources)
 }
 
@@ -65,6 +66,7 @@ func armMonitorMetricsClientFuncMock(string, azcore.TokenCredential, *arm.Client
 
 func TestAzureScraperStart(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
+	timeMock := getTimeMock()
 
 	tests := []struct {
 		name     string
@@ -76,6 +78,7 @@ func TestAzureScraperStart(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				s := &azureScraper{
 					cfg:                             cfg,
+					time:                            timeMock,
 					azIDCredentialsFunc:             azIDCredentialsFuncMock,
 					azIDWorkloadFunc:                azIDWorkloadFuncMock,
 					armClientFunc:                   armClientFuncMock,
@@ -104,6 +107,7 @@ func TestAzureScraperStart(t *testing.T) {
 				}
 				s := &azureScraper{
 					cfg:                             customCfg,
+					time:                            timeMock,
 					azIDCredentialsFunc:             azIDCredentialsFuncMock,
 					azIDWorkloadFunc:                azIDWorkloadFuncMock,
 					armClientFunc:                   armClientFuncMock,
@@ -132,6 +136,7 @@ func TestAzureScraperStart(t *testing.T) {
 				}
 				s := &azureScraper{
 					cfg:                             customCfg,
+					time:                            timeMock,
 					azIDCredentialsFunc:             azIDCredentialsFuncMock,
 					azIDWorkloadFunc:                azIDWorkloadFuncMock,
 					armClientFunc:                   armClientFuncMock,
@@ -160,6 +165,7 @@ func TestAzureScraperStart(t *testing.T) {
 				}
 				s := &azureScraper{
 					cfg:                             customCfg,
+					time:                            timeMock,
 					azIDCredentialsFunc:             azIDCredentialsFuncMock,
 					azManagedIdentityFunc:           azManagedIdentityFuncMock,
 					armClientFunc:                   armClientFuncMock,
@@ -188,6 +194,7 @@ func TestAzureScraperStart(t *testing.T) {
 				}
 				s := &azureScraper{
 					cfg:                             customCfg,
+					time:                            timeMock,
 					azIDCredentialsFunc:             azIDCredentialsFuncMock,
 					azDefaultCredentialsFunc:        azDefaultCredentialsFuncMock,
 					armClientFunc:                   armClientFuncMock,
@@ -294,7 +301,7 @@ func TestAzureScraperScrape(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(metadata.Type)
 
 			armClientMock := &armClientMock{
 				current: 0,
@@ -319,6 +326,7 @@ func TestAzureScraperScrape(t *testing.T) {
 				clientMetricsValues:      metricsValuesClientMock,
 				mb:                       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
 				mutex:                    &sync.Mutex{},
+				time:                     getTimeMock(),
 			}
 			s.resources = map[string]*azureResource{}
 
@@ -340,6 +348,95 @@ func TestAzureScraperScrape(t *testing.T) {
 			))
 		})
 	}
+}
+
+func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
+	getTestScraper := func() *azureScraper {
+		armClientMock := &armClientMock{
+			current: 0,
+			pages:   getResourcesMockData(false),
+		}
+		counters, pages := getMetricsDefinitionsMockData()
+		metricsDefinitionsClientMock := &metricsDefinitionsClientMock{
+			current: counters,
+			pages:   pages,
+		}
+		metricsValuesClientMock := &metricsValuesClientMock{
+			lists: getMetricsValuesMockData(),
+		}
+
+		return &azureScraper{
+			cfg:                      createDefaultConfig().(*Config),
+			clientResources:          armClientMock,
+			clientMetricsDefinitions: metricsDefinitionsClientMock,
+			clientMetricsValues:      metricsValuesClientMock,
+			mb: metadata.NewMetricsBuilder(
+				metadata.DefaultMetricsBuilderConfig(),
+				receivertest.NewNopSettings(receivertest.NopType),
+			),
+			mutex:     &sync.Mutex{},
+			resources: map[string]*azureResource{},
+			time:      getTimeMock(),
+		}
+	}
+
+	ctx := context.Background()
+
+	t.Run("do_not_fetch_in_same_interval", func(t *testing.T) {
+		s := getTestScraper()
+
+		metrics, err := s.scrape(ctx)
+
+		require.NoError(t, err, "should not fail")
+		require.Positive(t, metrics.MetricCount(), "should return metrics on first call")
+
+		metrics, err = s.scrape(ctx)
+
+		require.NoError(t, err, "should not fail")
+		require.Equal(t, 0, metrics.MetricCount(), "should not return metrics on second call")
+	})
+
+	t.Run("fetch_each_new_interval", func(t *testing.T) {
+		timeJitter := time.Second
+		timeInterval := 50 * time.Second
+		timeIntervals := []time.Time{
+			time.Now().Add(time.Minute),
+			time.Now().Add(time.Minute + 1*timeInterval - timeJitter),
+			time.Now().Add(time.Minute + 2*timeInterval + timeJitter),
+			time.Now().Add(time.Minute + 3*timeInterval - timeJitter),
+			time.Now().Add(time.Minute + 4*timeInterval + timeJitter),
+		}
+		s := getTestScraper()
+		mockedTime := s.time.(*timeMock)
+
+		for _, timeNowNew := range timeIntervals {
+			// implementation uses time.Sub to check if timeWrapper.Now satisfy time grain
+			// we can travel in time by adjusting result of timeWrapper.Now
+			prevTime := mockedTime.time
+			mockedTime.time = timeNowNew
+
+			metrics, err := s.scrape(ctx)
+
+			require.NoError(t, err, "should not fail")
+			if prevTime.Minute() == timeNowNew.Minute() {
+				require.Equal(t, 0, metrics.MetricCount(), "should not fetch metrics in the same minute")
+			} else {
+				require.Positive(t, metrics.MetricCount(), "should fetch metrics in a new minute")
+			}
+		}
+	})
+}
+
+type timeMock struct {
+	time time.Time
+}
+
+func (t *timeMock) Now() time.Time {
+	return t.time
+}
+
+func getTimeMock() timeNowIface {
+	return &timeMock{time: time.Now()}
 }
 
 func getResourcesMockData(tags bool) []armresources.ClientListResponse {

@@ -18,12 +18,13 @@ import (
 	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 func TestNewReceiver_invalid_version_err(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.ProtocolVersion = "invalid"
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), nil)
+	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(metadata.Type), nil)
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }
@@ -37,7 +38,7 @@ func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 		})
 	}
 	allScrapers["brokers"] = mockScraper
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), nil)
+	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(metadata.Type), nil)
 	assert.Nil(t, r)
 	expectedError := errors.New("no scraper found for key: cpu")
 	if assert.Error(t, err) {
@@ -54,9 +55,17 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 			},
 		},
 	}
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), nil)
+	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(metadata.Type), nil)
 	assert.ErrorContains(t, err, "failed to load TLS config")
 	assert.Nil(t, r)
+}
+
+func TestNewReceiver_refresh_frequency(t *testing.T) {
+	c := createDefaultConfig().(*Config)
+	c.RefreshFrequency = 1
+	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(receivertest.NopType), nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, r)
 }
 
 func TestNewReceiver(t *testing.T) {
@@ -69,7 +78,7 @@ func TestNewReceiver(t *testing.T) {
 			})
 	}
 	allScrapers["brokers"] = mockScraper
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), consumertest.NewNop())
+	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, r)
 }
@@ -81,7 +90,7 @@ func TestNewReceiver_handles_scraper_error(t *testing.T) {
 		return nil, errors.New("fail")
 	}
 	allScrapers["brokers"] = mockScraper
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), consumertest.NewNop())
+	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, r)
 }

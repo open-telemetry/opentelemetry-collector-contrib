@@ -51,7 +51,7 @@ func TestFactory(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			e, err := f.Create(
 				context.Background(),
-				extensiontest.NewNopSettings(),
+				extensiontest.NewNopSettings(expectType),
 				test.config,
 			)
 			if test.wantErr {

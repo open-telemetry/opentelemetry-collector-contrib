@@ -10,11 +10,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
@@ -157,5 +157,5 @@ func TestUnmarshalConfigNoProtocols(t *testing.T) {
 	cfg := Config{}
 	// This now produces an error due to breaking change.
 	// https://github.com/open-telemetry/opentelemetry-collector/pull/9385
-	assert.ErrorContains(t, component.ValidateConfig(cfg), "invalid transport type")
+	assert.ErrorContains(t, xconfmap.Validate(cfg), "invalid transport type")
 }

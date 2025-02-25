@@ -1,12 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/confmap v1.25.0
+	go.opentelemetry.io/collector/confmap v1.26.1-0.20250224010654-18e18b21da7a
 	go.uber.org/zap v1.27.0
-
 )
 
 require (

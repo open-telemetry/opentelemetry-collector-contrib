@@ -25,11 +25,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
 )
 
 const (
@@ -132,7 +132,7 @@ func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err err
 		}
 	}
 
-	payloads := exp.translator.MapLogs(ctx, ld)
+	payloads := exp.translator.MapLogs(ctx, ld, nil)
 	hosts := make(map[string]struct{})
 
 	for _, payload := range payloads {

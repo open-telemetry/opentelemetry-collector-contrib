@@ -25,7 +25,7 @@ import (
 
 func createBaseReceiver() (*pstest.Server, *pubsubReceiver) {
 	srv := pstest.NewServer()
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(metadata.Type)
 	return srv, &pubsubReceiver{
 		settings:  settings,
 		userAgent: "test-user-agent",
@@ -98,7 +98,7 @@ func TestReceiver(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(metadata.Type)
 	traceSink := new(consumertest.TracesSink)
 	metricSink := new(consumertest.MetricsSink)
 	logSink := new(consumertest.LogsSink)

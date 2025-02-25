@@ -25,6 +25,7 @@ var apiDict = map[string]string{
 	`SplunkIntrospectionQueues`: `/services/server/introspection/queues?output_mode=json&count=-1`,
 	`SplunkKVStoreStatus`:       `/services/kvstore/status?output_mode=json`,
 	`SplunkDispatchArtifacts`:   `/services/server/status/dispatch-artifacts?output_mode=json&count=-1`,
+	`SplunkHealth`:              `/services/server/health/splunkd/details?output_mode=json`,
 }
 
 type searchResponse struct {
@@ -155,4 +156,18 @@ type DispatchArtifactContent struct {
 	InfoCacheSize      string `json:"cached_job_status_info_csv_size_mb"`
 	StatusCacheSize    string `json:"cached_job_status_status_csv_size_mb"`
 	CacheTotalEntries  string `json:"cached_job_status_total_entries"`
+}
+
+// '/services/server/health/splunkd/details
+type healthArtifacts struct {
+	Entries []healthArtifactEntry `json:"entry"`
+}
+
+type healthArtifactEntry struct {
+	Content healthDetails `json:"content"`
+}
+
+type healthDetails struct {
+	Health   string                   `json:"health"`
+	Features map[string]healthDetails `json:"features,omitempty"`
 }

@@ -10,7 +10,7 @@ OpenTelemetry community members, issue authors, and anyone else who would like t
 
 #### Triagers
 
-Contributors with [triager](https://github.com/open-telemetry/opentelemetry-collector-contrib/#contributing) permissions can help move
+Contributors with [triager](/#Contributing) permissions can help move
 issues along by adding missing component labels, which help organize issues and trigger automations to notify code owners. They can
 also use their familiarity with the Collector and its components to investigate issues themselves. Alternatively, they may point issue
 authors to another resource or someone else who may know more.
@@ -26,7 +26,7 @@ is fit to be added to a component. Code owners will be notified by repository au
 
 Code owners may not have triager permissions on the repository,
 so they can help triage through investigation and by participating in discussions. They can also help organize issues by
-[adding labels via comments](#adding-labels-via-comments).
+[adding labels via comments](/CONTRIBUTING.md#adding-labels-via-comments).
 
 #### Community Members
 

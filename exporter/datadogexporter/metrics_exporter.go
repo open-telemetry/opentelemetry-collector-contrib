@@ -25,11 +25,11 @@ import (
 	"go.uber.org/zap"
 	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
 	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 

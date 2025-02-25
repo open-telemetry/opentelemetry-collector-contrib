@@ -114,7 +114,7 @@ func (e *oidcExtension) authenticate(ctx context.Context, headers map[string][]s
 		// will already attempt to parse the payload as a json and set it as the claims
 		// for the token. As we are using a map to hold the claims, there's no way to fail
 		// to read the claims. It could fail if we were using a custom struct. Instead of
-		// swalling the error, it's better to make this future-proof, in case the underlying
+		// swallowing the error, it's better to make this future-proof, in case the underlying
 		// code changes
 		return ctx, errFailedToObtainClaimsFromToken
 	}

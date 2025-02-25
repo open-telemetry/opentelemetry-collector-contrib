@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -31,7 +30,10 @@ import (
 
 var expectedSpanBody = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attributes.service.instance.id":"23","Duration":1000000,"EndTimestamp":"2023-04-19T03:04:06.000000006Z","Events.fooEvent.eventMockBar":"bar","Events.fooEvent.eventMockFoo":"foo","Events.fooEvent.time":"2023-04-19T03:04:05.000000006Z","Kind":"SPAN_KIND_CLIENT","Link":"[{\"attribute\":{},\"spanID\":\"\",\"traceID\":\"01020304050607080807060504030200\"}]","Name":"client span","Resource.cloud.platform":"aws_elastic_beanstalk","Resource.cloud.provider":"aws","Resource.deployment.environment":"BETA","Resource.service.instance.id":"23","Resource.service.name":"some-service","Resource.service.version":"env-version-1234","Scope.lib-foo":"lib-bar","Scope.name":"io.opentelemetry.rabbitmq-2.7","Scope.version":"1.30.0-alpha","SpanId":"1920212223242526","TraceId":"01020304050607080807060504030201","TraceStatus":2,"TraceStatusDescription":"Test"}`
 
-var expectedLogBody = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
+var (
+	expectedLogBody                   = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
+	expectedLogBodyWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
+)
 
 var expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":440.23}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0.0}}}
@@ -50,48 +52,58 @@ var expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cp
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
 
-var (
-	expectedLogBodyWithEmptyTimestamp         = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
-	expectedLogBodyDeDottedWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes":{"log-attr1":"value1"},"Body":"log-body","Resource":{"foo":{"bar":"baz"},"key1":"value1"},"Scope":{"name":"","version":""},"SeverityNumber":0,"TraceFlags":0}`
-)
-
 func TestEncodeSpan(t *testing.T) {
-	model := &encodeModel{dedot: false}
+	encoder, _ := newEncoder(MappingNone)
 	td := mockResourceSpans()
 	var buf bytes.Buffer
-	err := model.encodeSpan(td.ResourceSpans().At(0).Resource(), "", td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0), td.ResourceSpans().At(0).ScopeSpans().At(0).Scope(), "", elasticsearch.Index{}, &buf)
+	err := encoder.encodeSpan(
+		encodingContext{
+			resource: td.ResourceSpans().At(0).Resource(),
+			scope:    td.ResourceSpans().At(0).ScopeSpans().At(0).Scope(),
+		},
+		td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0),
+		elasticsearch.Index{}, &buf,
+	)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSpanBody, buf.String())
 }
 
 func TestEncodeLog(t *testing.T) {
 	t.Run("empty timestamp with observedTimestamp override", func(t *testing.T) {
-		model := &encodeModel{dedot: false}
+		encoder, _ := newEncoder(MappingNone)
 		td := mockResourceLogs()
 		td.ScopeLogs().At(0).LogRecords().At(0).SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)))
 		var buf bytes.Buffer
-		err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl(), elasticsearch.Index{}, &buf)
+		err := encoder.encodeLog(
+			encodingContext{
+				resource:          td.Resource(),
+				resourceSchemaURL: td.SchemaUrl(),
+				scope:             td.ScopeLogs().At(0).Scope(),
+				scopeSchemaURL:    td.ScopeLogs().At(0).SchemaUrl(),
+			},
+			td.ScopeLogs().At(0).LogRecords().At(0),
+			elasticsearch.Index{}, &buf,
+		)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedLogBody, buf.String())
 	})
 
 	t.Run("both timestamp and observedTimestamp empty", func(t *testing.T) {
-		model := &encodeModel{dedot: false}
+		encoder, _ := newEncoder(MappingNone)
 		td := mockResourceLogs()
 		var buf bytes.Buffer
-		err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl(), elasticsearch.Index{}, &buf)
+		err := encoder.encodeLog(
+			encodingContext{
+				resource:          td.Resource(),
+				resourceSchemaURL: td.SchemaUrl(),
+				scope:             td.ScopeLogs().At(0).Scope(),
+				scopeSchemaURL:    td.ScopeLogs().At(0).SchemaUrl(),
+			},
+			td.ScopeLogs().At(0).LogRecords().At(0),
+			elasticsearch.Index{}, &buf,
+		)
 		assert.NoError(t, err)
 		assert.Equal(t, expectedLogBodyWithEmptyTimestamp, buf.String())
-	})
-
-	t.Run("dedot true", func(t *testing.T) {
-		model := &encodeModel{dedot: true}
-		td := mockResourceLogs()
-		td.Resource().Attributes().PutStr("foo.bar", "baz")
-		var buf bytes.Buffer
-		err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl(), elasticsearch.Index{}, &buf)
-		require.NoError(t, err)
-		require.Equal(t, expectedLogBodyDeDottedWithEmptyTimestamp, buf.String())
 	})
 }
 
@@ -100,10 +112,8 @@ func TestEncodeMetric(t *testing.T) {
 	metrics := createTestMetrics(t)
 
 	// Encode the metrics.
-	model := &encodeModel{
-		dedot: true,
-		mode:  MappingECS,
-	}
+	encoder, _ := newEncoder(MappingECS)
+	hasher := newDataPointHasher(MappingECS)
 
 	groupedDataPoints := make(map[uint32][]datapoints.DataPoint)
 
@@ -114,7 +124,7 @@ func TestEncodeMetric(t *testing.T) {
 	dps := m.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dp := datapoints.NewNumber(m, dps.At(i))
-		dpHash := model.hashDataPoint(dp)
+		dpHash := hasher.hashDataPoint(rm.Resource(), sm.Scope(), dp)
 		dataPoints, ok := groupedDataPoints[dpHash]
 		if !ok {
 			groupedDataPoints[dpHash] = []datapoints.DataPoint{dp}
@@ -126,7 +136,15 @@ func TestEncodeMetric(t *testing.T) {
 	for _, dataPoints := range groupedDataPoints {
 		var buf bytes.Buffer
 		errors := make([]error, 0)
-		_, err := model.encodeMetrics(rm.Resource(), rm.SchemaUrl(), sm.Scope(), sm.SchemaUrl(), dataPoints, &errors, elasticsearch.Index{}, &buf)
+		_, err := encoder.encodeMetrics(
+			encodingContext{
+				resource:          rm.Resource(),
+				resourceSchemaURL: rm.SchemaUrl(),
+				scope:             sm.Scope(),
+				scopeSchemaURL:    sm.SchemaUrl(),
+			},
+			dataPoints, &errors, elasticsearch.Index{}, &buf,
+		)
 		require.Empty(t, errors, err)
 		require.NoError(t, err)
 		docsBytes = append(docsBytes, buf.Bytes())
@@ -211,8 +229,8 @@ func mockResourceLogs() plog.ResourceLogs {
 func TestEncodeAttributes(t *testing.T) {
 	t.Parallel()
 
-	attributes := pcommon.NewMap()
-	err := attributes.FromRaw(map[string]any{
+	logRecord := plog.NewLogRecord()
+	err := logRecord.Attributes().FromRaw(map[string]any{
 		"s": "baz",
 		"o": map[string]any{
 			"sub_i": 19,
@@ -222,95 +240,151 @@ func TestEncodeAttributes(t *testing.T) {
 
 	tests := map[string]struct {
 		mappingMode MappingMode
-		want        func() objmodel.Document
+		want        string
 	}{
 		"raw": {
 			mappingMode: MappingRaw,
-			want: func() objmodel.Document {
-				return objmodel.DocumentFromAttributes(attributes)
-			},
+			want: `
+			{
+			  "@timestamp": "1970-01-01T00:00:00.000000000Z",
+			  "Scope.name": "",
+			  "Scope.version": "",
+			  "SeverityNumber": 0,
+			  "TraceFlags": 0,
+			  "o.sub_i": 19,
+			  "s": "baz"
+			}`,
 		},
 		"none": {
 			mappingMode: MappingNone,
-			want: func() objmodel.Document {
-				doc := objmodel.Document{}
-				doc.AddAttributes("Attributes", attributes)
-				return doc
-			},
+			want: `
+			{
+			  "@timestamp": "1970-01-01T00:00:00.000000000Z",
+			  "Scope.name": "",
+			  "Scope.version": "",
+			  "SeverityNumber": 0,
+			  "TraceFlags": 0,
+			  "Attributes.o.sub_i": 19,
+			  "Attributes.s": "baz"
+			}`,
 		},
 		"ecs": {
 			mappingMode: MappingECS,
-			want: func() objmodel.Document {
-				doc := objmodel.Document{}
-				doc.AddAttributes("Attributes", attributes)
-				return doc
-			},
+			want: `
+			{
+			  "@timestamp": "1970-01-01T00:00:00.000000000Z",
+			  "agent": {
+			    "name": "otlp"
+			  },
+			  "o": {
+			    "sub_i": 19
+			  },
+			  "s": "baz"
+			}`,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			m := encodeModel{
-				mode: test.mappingMode,
-			}
+			encoder, err := newEncoder(test.mappingMode)
+			require.NoError(t, err)
 
-			doc := objmodel.Document{}
-			m.encodeAttributes(&doc, attributes, elasticsearch.Index{})
-			require.Equal(t, test.want(), doc)
+			var buf bytes.Buffer
+			err = encoder.encodeLog(encodingContext{
+				resource: pcommon.NewResource(),
+				scope:    pcommon.NewInstrumentationScope(),
+			}, logRecord, elasticsearch.Index{}, &buf)
+			require.NoError(t, err)
+			require.JSONEq(t, test.want, buf.String())
 		})
 	}
 }
 
-func TestEncodeEvents(t *testing.T) {
+func TestEncodeSpan_Events(t *testing.T) {
 	t.Parallel()
 
-	events := ptrace.NewSpanEventSlice()
-	events.EnsureCapacity(4)
+	span := ptrace.NewSpan()
 	for i := 0; i < 4; i++ {
-		event := events.AppendEmpty()
-		event.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Duration(i) * time.Minute)))
+		event := span.Events().AppendEmpty()
 		event.SetName(fmt.Sprintf("event_%d", i))
 	}
 
 	tests := map[string]struct {
 		mappingMode MappingMode
-		want        func() objmodel.Document
+		want        string
 	}{
 		"raw": {
 			mappingMode: MappingRaw,
-			want: func() objmodel.Document {
-				doc := objmodel.Document{}
-				doc.AddEvents("", events)
-				return doc
-			},
+			want: `
+			{
+			  "@timestamp": "1970-01-01T00:00:00.000000000Z",
+			  "Duration": 0,
+			  "EndTimestamp": "1970-01-01T00:00:00.000000000Z",
+			  "Scope.name": "",
+			  "Scope.version": "",
+			  "Kind": "SPAN_KIND_UNSPECIFIED",
+			  "Link": "[]",
+			  "TraceStatus": 0,
+			  "event_0.time": "1970-01-01T00:00:00.000000000Z",
+			  "event_1.time": "1970-01-01T00:00:00.000000000Z",
+			  "event_2.time": "1970-01-01T00:00:00.000000000Z",
+			  "event_3.time": "1970-01-01T00:00:00.000000000Z"
+			}`,
 		},
 		"none": {
 			mappingMode: MappingNone,
-			want: func() objmodel.Document {
-				doc := objmodel.Document{}
-				doc.AddEvents("Events", events)
-				return doc
-			},
+			want: `
+			{
+			  "@timestamp": "1970-01-01T00:00:00.000000000Z",
+			  "Duration": 0,
+			  "EndTimestamp": "1970-01-01T00:00:00.000000000Z",
+			  "Scope.name": "",
+			  "Scope.version": "",
+			  "Kind": "SPAN_KIND_UNSPECIFIED",
+			  "Link": "[]",
+			  "TraceStatus": 0,
+			  "Events.event_0.time": "1970-01-01T00:00:00.000000000Z",
+			  "Events.event_1.time": "1970-01-01T00:00:00.000000000Z",
+			  "Events.event_2.time": "1970-01-01T00:00:00.000000000Z",
+			  "Events.event_3.time": "1970-01-01T00:00:00.000000000Z"
+			}`,
 		},
 		"ecs": {
 			mappingMode: MappingECS,
-			want: func() objmodel.Document {
-				doc := objmodel.Document{}
-				doc.AddEvents("Events", events)
-				return doc
-			},
+			want: `
+			{
+			  "@timestamp": "1970-01-01T00:00:00.000000000Z",
+			  "Duration": 0,
+			  "EndTimestamp": "1970-01-01T00:00:00.000000000Z",
+			  "Scope": {
+			    "name": "",
+			    "version": ""
+			  },
+			  "Kind": "SPAN_KIND_UNSPECIFIED",
+			  "Link": "[]",
+			  "TraceStatus": 0,
+			  "Events": {
+			    "event_0": {"time": "1970-01-01T00:00:00.000000000Z"},
+			    "event_1": {"time": "1970-01-01T00:00:00.000000000Z"},
+			    "event_2": {"time": "1970-01-01T00:00:00.000000000Z"},
+			    "event_3": {"time": "1970-01-01T00:00:00.000000000Z"}
+			  }
+			}`,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			m := encodeModel{
-				mode: test.mappingMode,
-			}
+			encoder, err := newEncoder(test.mappingMode)
+			require.NoError(t, err)
 
-			doc := objmodel.Document{}
-			m.encodeEvents(&doc, events)
-			require.Equal(t, test.want(), doc)
+			var buf bytes.Buffer
+			err = encoder.encodeSpan(encodingContext{
+				resource: pcommon.NewResource(),
+				scope:    pcommon.NewInstrumentationScope(),
+			}, span, elasticsearch.Index{}, &buf)
+			require.NoError(t, err)
+			require.JSONEq(t, test.want, buf.String())
 		})
 	}
 }
@@ -347,12 +421,12 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	record.SetObservedTimestamp(observedTimestamp)
 	logs.MarkReadOnly()
 
-	m := encodeModel{
-		mode:  MappingECS,
-		dedot: true,
-	}
 	var buf bytes.Buffer
-	err = m.encodeLog(resource, "", record, scope, "", elasticsearch.Index{}, &buf)
+	encoder, _ := newEncoder(MappingECS)
+	err = encoder.encodeLog(
+		encodingContext{resource: resource, scope: scope},
+		record, elasticsearch.Index{}, &buf,
+	)
 	require.NoError(t, err)
 
 	assert.Equal(t, want, buf.String())
@@ -425,59 +499,88 @@ func TestEncodeLogECSMode(t *testing.T) {
 	logs.MarkReadOnly()
 
 	var buf bytes.Buffer
-	m := encodeModel{}
-	doc := m.encodeLogECSMode(resource, record, scope, elasticsearch.Index{})
-	require.NoError(t, doc.Serialize(&buf, false))
+	encoder, _ := newEncoder(MappingECS)
+	err = encoder.encodeLog(encodingContext{
+		resource: resource,
+		scope:    scope,
+	}, record, elasticsearch.Index{}, &buf)
+	require.NoError(t, err)
 
 	require.JSONEq(t, `{
-		"@timestamp":                 "2024-03-12T20:00:41.123456789Z",
-		"service.name":               "foo.bar",
-		"service.version":            "1.1.0",
-		"service.node.name":          "i-103de39e0a",
-		"agent.name":                 "opentelemetry/perl",
-		"agent.version":              "7.9.12",
-		"cloud.provider":             "gcp",
-		"cloud.account.id":           "19347013",
-		"cloud.region":               "us-west-1",
-		"cloud.availability_zone":    "us-west-1b",
-		"cloud.service.name":         "gke",
-		"container.name":             "happy-seger",
-		"container.id":               "e69cc5d3dda",
-		"container.image.name":       "my-app",
-		"container.image.tag":        ["v3.4.0"],
-		"container.runtime":          "docker",
-		"host.hostname":              "i-103de39e0a.gke.us-west-1b.cloud.google.com",
-		"host.name":                  "i-103de39e0a.gke.us-west-1b.cloud.google.com",
-		"host.id":                    "i-103de39e0a",
-		"host.type":                  "t2.medium",
-		"host.architecture":          "x86_64",
-		"process.pid":                9833,
-		"process.command_line":       "/usr/bin/ssh -l user 10.0.0.16",
-		"process.executable":         "/usr/bin/ssh",
-		"service.runtime.name":       "OpenJDK Runtime Environment",
-		"service.runtime.version":    "14.0.2",
-		"host.os.platform":           "darwin",
-		"host.os.full":               "Mac OS Mojave",
-		"host.os.name":               "Mac OS X",
-		"host.os.version":            "10.14.1",
-		"host.os.type":               "macos",
-		"device.id":                  "00000000-54b3-e7c7-0000-000046bffd97",
-		"device.model.identifier":    "SM-G920F",
-		"device.model.name":          "Samsung Galaxy S6",
-		"device.manufacturer":        "Samsung",
-		"event.action":               "user-password-change",
-		"kubernetes.namespace":       "default",
-		"kubernetes.node.name":       "node-1",
-		"kubernetes.pod.name":        "opentelemetry-pod-autoconf",
-		"kubernetes.pod.uid":         "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
-		"kubernetes.deployment.name": "coredns",
-		"kubernetes.job.name":         "job.name",
-		"kubernetes.cronjob.name":     "cronjob.name",
-		"kubernetes.statefulset.name": "statefulset.name",
-		"kubernetes.replicaset.name":  "replicaset.name",
-		"kubernetes.daemonset.name":   "daemonset.name",
-		"kubernetes.container.name":   "container.name",
-		"orchestrator.cluster.name":   "cluster.name"
+		"@timestamp": "2024-03-12T20:00:41.123456789Z",
+		"agent": {
+		  "name": "opentelemetry/perl",
+		  "version": "7.9.12"
+		},
+		"cloud": {
+		  "provider": "gcp",
+		  "account": {"id": "19347013"},
+		  "region": "us-west-1",
+		  "availability_zone": "us-west-1b",
+		  "service": {"name": "gke"}
+		},
+		"container": {
+		  "name": "happy-seger",
+		  "id": "e69cc5d3dda",
+		  "image": {
+		    "name": "my-app",
+		    "tag": ["v3.4.0"]
+		  },
+		  "runtime": "docker"
+		},
+		"host": {
+		  "hostname": "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		  "name": "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		  "id": "i-103de39e0a",
+		  "type": "t2.medium",
+		  "architecture": "x86_64",
+		  "os": {
+		    "platform": "darwin",
+		    "full": "Mac OS Mojave",
+		    "name": "Mac OS X",
+		    "version": "10.14.1",
+		    "type": "macos"
+		  }
+		},
+		"process": {
+		  "pid": 9833,
+		  "command_line": "/usr/bin/ssh -l user 10.0.0.16",
+		  "executable": "/usr/bin/ssh"
+		},
+		"service": {
+		  "name": "foo.bar",
+		  "version": "1.1.0",
+		  "node": {"name": "i-103de39e0a"},
+		  "runtime": {
+		    "name": "OpenJDK Runtime Environment",
+		    "version": "14.0.2"
+		  }
+		},
+		"device": {
+		  "id": "00000000-54b3-e7c7-0000-000046bffd97",
+		  "model": {
+		    "identifier": "SM-G920F",
+		    "name": "Samsung Galaxy S6"
+		  },
+		  "manufacturer": "Samsung"
+		},
+		"event": {"action": "user-password-change"},
+		"kubernetes": {
+		  "namespace": "default",
+		  "node": {"name": "node-1"},
+		  "pod": {
+		    "name": "opentelemetry-pod-autoconf",
+		    "uid": "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff"
+		  },
+		  "deployment": {"name": "coredns"},
+		  "job": {"name": "job.name"},
+		  "cronjob": {"name": "cronjob.name"},
+		  "statefulset": {"name": "statefulset.name"},
+		  "replicaset": {"name": "replicaset.name"},
+		  "daemonset": {"name": "daemonset.name"},
+		  "container": {"name": "container.name"}
+		},
+		"orchestrator": {"cluster": {"name": "cluster.name"}}
 	}`, buf.String())
 }
 
@@ -558,12 +661,15 @@ func TestEncodeLogECSModeAgentName(t *testing.T) {
 			logs.MarkReadOnly()
 
 			var buf bytes.Buffer
-			m := encodeModel{}
-			doc := m.encodeLogECSMode(resource, record, scope, elasticsearch.Index{})
-			require.NoError(t, doc.Serialize(&buf, false))
+			encoder, _ := newEncoder(MappingECS)
+			err := encoder.encodeLog(
+				encodingContext{resource: resource, scope: scope},
+				record, elasticsearch.Index{}, &buf,
+			)
+			require.NoError(t, err)
 			require.JSONEq(t, fmt.Sprintf(`{
 				"@timestamp": "2024-03-13T23:50:59.123456789Z",
-				"agent.name": %q
+				"agent": {"name": %q}
 			}`, test.expectedAgentName), buf.String())
 		})
 	}
@@ -612,20 +718,22 @@ func TestEncodeLogECSModeAgentVersion(t *testing.T) {
 			logs.MarkReadOnly()
 
 			var buf bytes.Buffer
-			m := encodeModel{}
-			doc := m.encodeLogECSMode(resource, record, scope, elasticsearch.Index{})
-			require.NoError(t, doc.Serialize(&buf, false))
+			encoder, _ := newEncoder(MappingECS)
+			err := encoder.encodeLog(
+				encodingContext{resource: resource, scope: scope},
+				record, elasticsearch.Index{}, &buf,
+			)
+			require.NoError(t, err)
 
 			if test.expectedAgentVersion == "" {
 				require.JSONEq(t, `{
 					"@timestamp": "2024-03-13T23:50:59.123456789Z",
-					"agent.name": "otlp"
+					"agent": {"name": "otlp"}
 				}`, buf.String())
 			} else {
 				require.JSONEq(t, fmt.Sprintf(`{
 					"@timestamp": "2024-03-13T23:50:59.123456789Z",
-					"agent.name": "otlp",
-					"agent.version": %q
+					"agent": {"name": "otlp", "version": %q}
 				}`, test.expectedAgentVersion), buf.String())
 			}
 		})
@@ -718,22 +826,37 @@ func TestEncodeLogECSModeHostOSType(t *testing.T) {
 
 			timestamp := pcommon.Timestamp(1710373859123456789)
 			record.SetTimestamp(timestamp)
+			logs.MarkReadOnly()
 
 			var buf bytes.Buffer
-			m := encodeModel{}
-			logs.MarkReadOnly()
-			doc := m.encodeLogECSMode(resource, record, scope, elasticsearch.Index{})
-			require.NoError(t, doc.Serialize(&buf, false))
+			encoder, _ := newEncoder(MappingECS)
+			err := encoder.encodeLog(
+				encodingContext{resource: resource, scope: scope},
+				record, elasticsearch.Index{}, &buf,
+			)
+			require.NoError(t, err)
 
-			expectedJSON := `{"@timestamp":"2024-03-13T23:50:59.123456789Z", "agent.name":"otlp"`
-			if test.expectedHostOsName != "" {
-				expectedJSON += `, "host.os.name":` + strconv.Quote(test.expectedHostOsName)
-			}
-			if test.expectedHostOsType != "" {
-				expectedJSON += `, "host.os.type":` + strconv.Quote(test.expectedHostOsType)
-			}
-			if test.expectedHostOsPlatform != "" {
-				expectedJSON += `, "host.os.platform":` + strconv.Quote(test.expectedHostOsPlatform)
+			expectedJSON := `{"@timestamp":"2024-03-13T23:50:59.123456789Z", "agent":{"name":"otlp"}`
+			if test.expectedHostOsName != "" ||
+				test.expectedHostOsPlatform != "" ||
+				test.expectedHostOsType != "" {
+				expectedJSON += `, "host":{"os":{`
+
+				first := true
+				maybeAdd := func(k, v string) {
+					if v != "" {
+						if first {
+							first = false
+						} else {
+							expectedJSON += ","
+						}
+						expectedJSON += fmt.Sprintf("%q:%q", k, v)
+					}
+				}
+				maybeAdd("name", test.expectedHostOsName)
+				maybeAdd("type", test.expectedHostOsType)
+				maybeAdd("platform", test.expectedHostOsPlatform)
+				expectedJSON += "}}"
 			}
 			expectedJSON += "}"
 			require.JSONEq(t, expectedJSON, buf.String())
@@ -772,12 +895,15 @@ func TestEncodeLogECSModeTimestamps(t *testing.T) {
 			}
 
 			var buf bytes.Buffer
-			m := encodeModel{}
-			doc := m.encodeLogECSMode(resource, record, scope, elasticsearch.Index{})
-			require.NoError(t, doc.Serialize(&buf, false))
+			encoder, _ := newEncoder(MappingECS)
+			err := encoder.encodeLog(
+				encodingContext{resource: resource, scope: scope},
+				record, elasticsearch.Index{}, &buf,
+			)
+			require.NoError(t, err)
 
 			require.JSONEq(t, fmt.Sprintf(
-				`{"@timestamp":%q,"agent.name":"otlp"}`, test.expectedTimestamp,
+				`{"@timestamp":%q,"agent":{"name":"otlp"}}`, test.expectedTimestamp,
 			), buf.String())
 		})
 	}
@@ -1125,18 +1251,25 @@ func TestEncodeLogOtelMode(t *testing.T) {
 		},
 	}
 
-	m := encodeModel{
-		dedot: true, // default
-		mode:  MappingOTel,
-	}
+	encoder, _ := newEncoder(MappingOTel)
 
 	for _, tc := range tests {
 		record, scope, resource := createTestOTelLogRecord(t, tc.rec)
+		router := newDocumentRouter(MappingOTel, true, "", &Config{})
 
-		idx := routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), "", true, scope.Name())
+		idx, err := router.routeLogRecord(resource, scope, record.Attributes())
+		require.NoError(t, err)
 
 		var buf bytes.Buffer
-		err := m.encodeLog(resource, tc.rec.Resource.SchemaURL, record, scope, tc.rec.Scope.SchemaURL, idx, &buf)
+		err = encoder.encodeLog(
+			encodingContext{
+				resource:          resource,
+				resourceSchemaURL: tc.rec.Resource.SchemaURL,
+				scope:             scope,
+				scopeSchemaURL:    tc.rec.Scope.SchemaURL,
+			},
+			record, idx, &buf,
+		)
 		require.NoError(t, err)
 
 		want := tc.rec
@@ -1262,12 +1395,15 @@ func assignDatastreamData(or OTelRecord, a ...string) OTelRecord {
 func TestEncodeLogScalarObjectConflict(t *testing.T) {
 	// If there is an attribute named "foo", and another called "foo.bar",
 	// then "foo" will be renamed to "foo.value".
-	model := &encodeModel{}
+	encoder, _ := newEncoder(MappingNone)
 	td := mockResourceLogs()
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo", "scalar")
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo.bar", "baz")
 	var buf bytes.Buffer
-	err := model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "", elasticsearch.Index{}, &buf)
+	err := encoder.encodeLog(
+		encodingContext{resource: td.Resource(), scope: td.ScopeLogs().At(0).Scope()},
+		td.ScopeLogs().At(0).LogRecords().At(0), elasticsearch.Index{}, &buf,
+	)
 	assert.NoError(t, err)
 
 	encoded := buf.Bytes()
@@ -1281,7 +1417,10 @@ func TestEncodeLogScalarObjectConflict(t *testing.T) {
 	// If there is an attribute named "foo.value", then "foo" would be omitted rather than renamed.
 	td.ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("foo.value", "foovalue")
 	buf = bytes.Buffer{}
-	err = model.encodeLog(td.Resource(), "", td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), "", elasticsearch.Index{}, &buf)
+	err = encoder.encodeLog(
+		encodingContext{resource: td.Resource(), scope: td.ScopeLogs().At(0).Scope()},
+		td.ScopeLogs().At(0).LogRecords().At(0), elasticsearch.Index{}, &buf,
+	)
 	assert.NoError(t, err)
 
 	encoded = buf.Bytes()
@@ -1310,9 +1449,12 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 	bodyMap.PutDouble("pi", 3.14)
 	bodyMap.CopyTo(logRecord.Body().SetEmptyMap())
 
-	m := encodeModel{}
+	encoder, _ := newEncoder(MappingBodyMap)
 	var buf bytes.Buffer
-	err := m.encodeLogBodyMapMode(logRecord, &buf)
+	err := encoder.encodeLog(
+		encodingContext{resource: resourceLogs.Resource(), scope: scopeLogs.Scope()},
+		logRecord, elasticsearch.Index{}, &buf,
+	)
 	require.NoError(t, err)
 
 	require.JSONEq(t, `{
@@ -1326,7 +1468,10 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 
 	// invalid body map
 	logRecord.Body().SetEmptySlice()
-	err = m.encodeLogBodyMapMode(logRecord, &bytes.Buffer{})
+	err = encoder.encodeLog(
+		encodingContext{resource: resourceLogs.Resource(), scope: scopeLogs.Scope()},
+		logRecord, elasticsearch.Index{}, &buf,
+	)
 	require.Error(t, err)
 	require.ErrorIs(t, err, ErrInvalidTypeForBodyMapMode)
 }

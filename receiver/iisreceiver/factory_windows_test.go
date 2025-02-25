@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata"
 )
 
 func TestWindowsFactory(t *testing.T) {
@@ -21,7 +23,7 @@ func TestWindowsFactory(t *testing.T) {
 
 	r, err := f.CreateMetrics(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),
 	)

@@ -36,6 +36,7 @@ type MetricsConfig struct {
 	SplunkDataIndexesExtendedEventCount         MetricConfig `mapstructure:"splunk.data.indexes.extended.event.count"`
 	SplunkDataIndexesExtendedRawSize            MetricConfig `mapstructure:"splunk.data.indexes.extended.raw.size"`
 	SplunkDataIndexesExtendedTotalSize          MetricConfig `mapstructure:"splunk.data.indexes.extended.total.size"`
+	SplunkHealth                                MetricConfig `mapstructure:"splunk.health"`
 	SplunkIndexerAvgRate                        MetricConfig `mapstructure:"splunk.indexer.avg.rate"`
 	SplunkIndexerCPUTime                        MetricConfig `mapstructure:"splunk.indexer.cpu.time"`
 	SplunkIndexerQueueRatio                     MetricConfig `mapstructure:"splunk.indexer.queue.ratio"`
@@ -96,6 +97,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SplunkDataIndexesExtendedTotalSize: MetricConfig{
+			Enabled: false,
+		},
+		SplunkHealth: MetricConfig{
 			Enabled: false,
 		},
 		SplunkIndexerAvgRate: MetricConfig{

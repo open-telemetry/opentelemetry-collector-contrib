@@ -237,7 +237,7 @@ func TestTask_AddMatchedContainer(t *testing.T) {
 		}, task.Matched)
 	})
 
-	t.Run("same container different metris path", func(t *testing.T) {
+	t.Run("same container different metrics path", func(t *testing.T) {
 		task := taskAnnotated{
 			Matched: []matchedContainer{
 				{
