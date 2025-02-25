@@ -13,13 +13,12 @@ import (
 	"sync"
 	"time"
 
+	backoff "github.com/cenkalti/backoff/v5"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 )
-
-const MaxRetryInterval = 32 * time.Second
 
 var allowErrorPropagationFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"processor.resourcedetection.propagateerrors",
@@ -123,13 +122,13 @@ func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resour
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, client.Timeout)
 		defer cancel()
-		p.detectResource(ctx)
+		p.detectResource(ctx, client.Timeout)
 	})
 
 	return p.detectedResource.resource, p.detectedResource.schemaURL, p.detectedResource.err
 }
 
-func (p *ResourceProvider) detectResource(ctx context.Context) {
+func (p *ResourceProvider) detectResource(ctx context.Context, timeout time.Duration) {
 	p.detectedResource = &resourceResult{}
 
 	res := pcommon.NewResource()
@@ -141,7 +140,13 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 	for i, detector := range p.detectors {
 		resultsChan[i] = make(chan resourceResult)
 		go func(detector Detector) {
-			sleep := 1 * time.Second
+			sleep := backoff.ExponentialBackOff{
+				InitialInterval:     1 * time.Second,
+				RandomizationFactor: 1.5,
+				Multiplier:          2,
+				MaxInterval:         timeout,
+			}
+			sleep.Reset()
 			var err error
 			var r pcommon.Resource
 			var schemaURL string
@@ -152,11 +157,8 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 					return
 				}
 				p.logger.Warn("failed to detect resource", zap.Error(err))
-				if sleep < MaxRetryInterval {
-					sleep *= 2
-				}
-				timer := time.NewTimer(sleep)
 
+				timer := time.NewTimer(sleep.NextBackOff())
 				select {
 				case <-timer.C:
 					fmt.Println("Retrying fetching data...")
