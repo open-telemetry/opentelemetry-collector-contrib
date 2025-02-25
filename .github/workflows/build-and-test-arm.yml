@@ -92,7 +92,7 @@ jobs:
             false
           fi
 
-  flakytests-generate-issues:
+  arm-flakytests-generate-issues:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     needs: [arm-unittest-matrix]

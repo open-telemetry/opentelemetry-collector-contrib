@@ -104,7 +104,7 @@ jobs:
             false
           fi
 
-  flakytests-generate-issues:
+  windows-flakytests-generate-issues:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     needs: [windows-unittest-matrix]

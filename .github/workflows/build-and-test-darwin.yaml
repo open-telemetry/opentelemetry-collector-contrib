@@ -105,7 +105,7 @@ jobs:
             echo "One or more matrix jobs failed."
             false
           fi
-  flakytests-generate-issues:
+  darwin-flakytests-generate-issues:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     needs: [darwin-unittest-matrix]
