@@ -44,8 +44,8 @@ github.com/DataDog/datadog-agent/comp/core/telemetry v0.64.0-rc.1 h1:6rAMXCE8oYO
 github.com/DataDog/datadog-agent/comp/core/telemetry v0.64.0-rc.1/go.mod h1:3pJCnf27eqj9vI87oc4alBc/C5Kzo+1lUqWeViGRcfA=
 github.com/DataDog/datadog-agent/comp/def v0.64.0-rc.1 h1:gKe7mMWIZOYjtPjpIvgrpBnJbeP2o8Erxs+tSzu4hHg=
 github.com/DataDog/datadog-agent/comp/def v0.64.0-rc.1/go.mod h1:JV/Y7pmTI2k3dPPeZh5pvbBFOEsavslaeWV2/793yvI=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.63.0 h1:dx0E5liowEKM+aa10l7bAr7cm0jJp3MHpI1eJZsKC3M=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.63.0/go.mod h1:0t15CnmipXHvRjpKrzx2SmhXxwicmWwyuZ/O2a6onfs=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.64.0-rc.1 h1:t/mE1JbmXHmJk9zXjijwi8y/v41aaQvPxZEkG57ug18=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.64.0-rc.1/go.mod h1:g/oddIs6S/OuOB4L5GBwfyEpAkul0m+VnSC5HNdro3I=
 github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.64.0-rc.1 h1:v0XQ3PPJHwaa3ZtzcOXoEzd0XTAEUVA1HBZmfJydnvg=
 github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.64.0-rc.1/go.mod h1:Qp1TDNsq7ZYUg+f4DmT0ERD2dR2SlTn5BajwGMMdoMY=
 github.com/DataDog/datadog-agent/pkg/config/env v0.64.0-rc.1 h1:wAxUstQEcqV6oK1xtlN7XvtiLv9RdejQYzgJY6SK7Hs=
@@ -66,8 +66,8 @@ github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.64.0-rc.1 h1:N3rDJ4ia
 github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.64.0-rc.1/go.mod h1:x+za+FMnaqj8ZtpqVqViXokxwc91s1OrLjT5nzUnWzw=
 github.com/DataDog/datadog-agent/pkg/fips v0.64.0-rc.1 h1:QzGg7B6GzoGzVHK/dyiIp0qIP8VOk8v7R5rHE8BnNys=
 github.com/DataDog/datadog-agent/pkg/fips v0.64.0-rc.1/go.mod h1:z2VEnddy3fWpy/I3f8Bj+tjZCfp9KAh78XbT3DNaNio=
-github.com/DataDog/datadog-agent/pkg/proto v0.63.0 h1:WuCCZlwJGPth95uvcxla5zzNVOAbGMHJWKW28KEvGX8=
-github.com/DataDog/datadog-agent/pkg/proto v0.63.0/go.mod h1:QOAaPRsuM4WNXtP3Rbw+gWamge9lGnDH8ZKB6HdzoAs=
+github.com/DataDog/datadog-agent/pkg/proto v0.64.0-rc.1 h1:8+4sv0i+na4QMjggZrQNFspbVHu7iaZU6VWeupPMdbA=
+github.com/DataDog/datadog-agent/pkg/proto v0.64.0-rc.1/go.mod h1:q324yHcBN5hIeCU8eoinM7lP9c7MOA2FTj7oeWAl3Pc=
 github.com/DataDog/datadog-agent/pkg/util/executable v0.64.0-rc.1 h1:W7Oz2QFE9x4q6W1ytXs7TcKf2cwbTPg34Ch/OWvQt38=
 github.com/DataDog/datadog-agent/pkg/util/executable v0.64.0-rc.1/go.mod h1:zdrBeH31lWrhuqkOcvw4vYcFRdSWAiHztGowtffH/do=
 github.com/DataDog/datadog-agent/pkg/util/filesystem v0.64.0-rc.1 h1:6xRRiqWFq9Sqp/q76lvIeOr6gvhjiC97YBpWqNigrAk=
@@ -102,8 +102,8 @@ github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.26.0 h1:QE9zSsO
 github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.26.0/go.mod h1:wQqLncH+WX3SGmbXXhNHGYrMbGBNfxgdZeAdadv2c6M=
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.26.0 h1:GlvoS6hJN0uANUC3fjx72rOgM4StAKYo2HtQGaasC7s=
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.26.0/go.mod h1:mYQmU7mbHH6DrCaS8N6GZcxwPoeNfyuopUoLQltwSzs=
-github.com/DataDog/sketches-go v1.4.6 h1:acd5fb+QdUzGrosfNLwrIhqyrbMORpvBy7mE+vHlT3I=
-github.com/DataDog/sketches-go v1.4.6/go.mod h1:7Y8GN8Jf66DLyDhc94zuWA3uHEt/7ttt8jHOBWWrSOg=
+github.com/DataDog/sketches-go v1.4.7 h1:eHs5/0i2Sdf20Zkj0udVFWuCrXGRFig2Dcfm5rtcTxc=
+github.com/DataDog/sketches-go v1.4.7/go.mod h1:eAmQ/EBmtSO+nQp7IZMZVRPT4BQTmIc5RZQ+deGlTPM=
 github.com/DataDog/viper v1.14.0 h1:dIjTe/uJiah+QFqFZ+MXeqgmUvWhg37l37ZxFWxr3is=
 github.com/DataDog/viper v1.14.0/go.mod h1:wDdUVJ2SHaMaPrCZrlRCObwkubsX8j5sme3LaR/SGTc=
 github.com/DataDog/zstd v1.5.2 h1:vUG4lAyuPCXO0TLbXvPv7EB7cNK1QV/luu55UHLrrn8=
@@ -869,8 +869,8 @@ google.golang.org/genproto v0.0.0-20200212174721-66ed5ce911ce/go.mod h1:55QSHmfG
 google.golang.org/genproto v0.0.0-20200224152610-e50cd9704f63/go.mod h1:55QSHmfGQM9UVYDPBsyGGes0y52j32PQ3BqQfXhyH3c=
 google.golang.org/genproto v0.0.0-20200305110556-506484158171/go.mod h1:55QSHmfGQM9UVYDPBsyGGes0y52j32PQ3BqQfXhyH3c=
 google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013/go.mod h1:NbSheEEYHJ7i3ixzK3sjbqSGDJWnxyFXZblF3eUsNvo=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20241230172942-26aa7a208def h1:4P81qv5JXI/sDNae2ClVx88cgDDA6DPilADkG9tYKz8=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20241230172942-26aa7a208def/go.mod h1:bdAgzvd4kFrpykc5/AC2eLUiegK9T/qxZHD4hXYf/ho=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20250212204824-5a70512c5d8b h1:FQtJ1MxbXoIIrZHZ33M+w5+dAP9o86rgpjoKr/ZmT7k=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20250212204824-5a70512c5d8b/go.mod h1:8BS3B93F/U1juMFq9+EDk+qOT5CO1R9IzXxG3PTqiRk=
 google.golang.org/grpc v1.19.0/go.mod h1:mqu4LbDTu4XGKhr4mRzUsmM4RtVoemTSY81AxZiDr8c=
 google.golang.org/grpc v1.20.1/go.mod h1:10oTOabMzJvdu6/UiuZezV6QK5dSlG84ov/aaiqXj38=
 google.golang.org/grpc v1.21.0/go.mod h1:oYelfM1adQP15Ek0mdvEgi9Df8B9CZIaU1084ijfRaM=
