@@ -135,7 +135,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test profiles consumer
 			tpn := new(consumertest.ProfilesSink)
-			rpp, err := createProfilesProcessor(context.Background(), processortest.NewNopSettings(), tt.config, tpn)
+			rpp, err := createProfilesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), tt.config, tpn)
 			require.NoError(t, err)
 			assert.True(t, rpp.Capabilities().MutatesData)
 
