@@ -6,9 +6,10 @@ package parser // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"net"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
 // Parser is something that can map input StatsD strings to OTLP Metric representations.
