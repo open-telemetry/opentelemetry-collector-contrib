@@ -167,7 +167,6 @@ func TestMetricsWithTemporality(t *testing.T) {
 			logger, _ := zap.NewDevelopment()
 			require.NoError(t, run(cfg, expFunc, logger))
 
-			// wait for the metrics to be exported.
 			time.Sleep(1 * time.Second)
 
 			// assert
