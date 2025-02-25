@@ -24,18 +24,6 @@ type SpanContext interface {
 	GetSpan() ptrace.Span
 }
 
-var SpanSymbolTable = map[ottl.EnumSymbol]ottl.Enum{
-	"SPAN_KIND_UNSPECIFIED": ottl.Enum(ptrace.SpanKindUnspecified),
-	"SPAN_KIND_INTERNAL":    ottl.Enum(ptrace.SpanKindInternal),
-	"SPAN_KIND_SERVER":      ottl.Enum(ptrace.SpanKindServer),
-	"SPAN_KIND_CLIENT":      ottl.Enum(ptrace.SpanKindClient),
-	"SPAN_KIND_PRODUCER":    ottl.Enum(ptrace.SpanKindProducer),
-	"SPAN_KIND_CONSUMER":    ottl.Enum(ptrace.SpanKindConsumer),
-	"STATUS_CODE_UNSET":     ottl.Enum(ptrace.StatusCodeUnset),
-	"STATUS_CODE_OK":        ottl.Enum(ptrace.StatusCodeOk),
-	"STATUS_CODE_ERROR":     ottl.Enum(ptrace.StatusCodeError),
-}
-
 func SpanPathGetSetter[K SpanContext](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
 		return nil, ctxerror.New("nil", "nil", ctxspan.Name, ctxspan.DocRef)

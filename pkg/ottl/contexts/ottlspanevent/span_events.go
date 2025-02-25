@@ -198,7 +198,7 @@ func NewConditionSequence(conditions []*ottl.Condition[TransformContext], teleme
 
 func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	if val != nil {
-		if enum, ok := internal.SpanSymbolTable[*val]; ok {
+		if enum, ok := ctxspan.SymbolTable[*val]; ok {
 			return &enum, nil
 		}
 		return nil, fmt.Errorf("enum symbol, %s, not found", *val)
