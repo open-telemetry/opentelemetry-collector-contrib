@@ -6,6 +6,7 @@ package k8sleaderelector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -59,6 +60,7 @@ func createExtension(
 		logger:        set.Logger,
 		client:        client,
 		leaseHolderID: leaseHolderID,
+		waitGroup:     sync.WaitGroup{},
 	}, nil
 }
 
