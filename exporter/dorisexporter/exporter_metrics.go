@@ -263,7 +263,7 @@ func (e *metricsExporter) pushMetricDataInternal(ctx context.Context, metrics me
 		return nil
 	}
 
-	return fmt.Errorf("failed to push metric data, response:\n" + string(body))
+	return fmt.Errorf("failed to push metric data, response:%s", string(body))
 }
 
 func (e *metricsExporter) getNumberDataPointValue(dp pmetric.NumberDataPoint) float64 {
