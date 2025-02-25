@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 )
 
 func TestConnectorCreatedWithValidConfiguration(t *testing.T) {
@@ -32,7 +34,7 @@ func TestConnectorCreatedWithValidConfiguration(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)
@@ -48,13 +50,13 @@ func TestCreationFailsWithIncorrectConsumer(t *testing.T) {
 		}},
 	}
 
-	// in the real world, the factory will always receive a consumer with a concerete type of a
+	// in the real world, the factory will always receive a consumer with a concrete type of a
 	// connector router. this tests failure when a consumer of another type is passed in.
 	consumer := &consumertest.TracesSink{}
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettings(), cfg, consumer)
+		connectortest.NewNopSettings(metadata.Type), cfg, consumer)
 
 	assert.ErrorIs(t, err, errUnexpectedConsumer)
 	assert.Nil(t, conn)

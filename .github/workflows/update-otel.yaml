@@ -1,0 +1,53 @@
+name: 'Update contrib to the latest core source'
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "27 8 * * 1" # Run at 08:27 UTC on Mondays.
+
+jobs:
+  update-otel:
+    runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'open-telemetry' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: opentelemetry-collector-contrib
+      - name: Pull the latest collector repo
+        uses: actions/checkout@v4
+        with:
+          path: opentelemetry-collector
+          repository: open-telemetry/opentelemetry-collector
+      - name: Update to latest opentelemetry-collector release and create a PR
+        run: |
+          exec > >(tee log.out) 2>&1
+          cd opentelemetry-collector-contrib
+          git config user.name opentelemetrybot
+          git config user.email 107717825+opentelemetrybot@users.noreply.github.com
+          branch="opentelemetrybot/update-otel-$(date +%s)"
+          git checkout -b $branch
+          make genotelcontribcol
+          make update-otel
+          git push --set-upstream origin $branch  
+          gh pr create --base main --title "[chore] Update core dependencies" --body "This PR updates the opentelemetry-collector dependency to the latest release"
+        env:
+          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+      - name: File an issue if the workflow failed
+        if: failure()
+        run: |
+          template=$(cat <<'END'
+          [Link to job log](%s)
+          
+          <details>
+          <summary>Last 100 lines of log</summary>
+
+          ```
+          %s
+          ```
+          </details>
+          END
+          )
+          job_url="$(gh run view ${{ github.run_id }} -R ${{ github.repository }} --json jobs -q '.jobs[] | select(.name == "update-otel") | .url')"
+          body="$(printf "$template" "$job_url" "$(tail -n100 log.out | tail -c63K)")"
+          gh issue create -R ${{ github.repository }} -t 'update-otel workflow failed' -b "$body" -l 'ci-cd'
+        env:
+          GH_TOKEN: ${{ github.token }}

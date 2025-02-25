@@ -20,10 +20,11 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -748,7 +749,6 @@ func TestRestartOffsets(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -990,7 +990,6 @@ func TestEncodings(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -1398,15 +1397,15 @@ func TestDelayedDisambiguation(t *testing.T) {
 	filetest.WriteString(t, file2, newContent2+"\n")
 	operator.poll(context.Background())
 
-	var sameTokenOtherFile emittest.Call
+	var sameTokenOtherFile emit.Token
 	if attributes[attrs.LogFileName].(string) == filepath.Base(file1.Name()) {
-		sameTokenOtherFile = emittest.Call{Token: []byte(sameContent), Attrs: map[string]any{attrs.LogFileName: filepath.Base(file2.Name())}}
+		sameTokenOtherFile = emit.Token{Body: []byte(sameContent), Attributes: map[string]any{attrs.LogFileName: filepath.Base(file2.Name())}}
 	} else {
-		sameTokenOtherFile = emittest.Call{Token: []byte(sameContent), Attrs: map[string]any{attrs.LogFileName: filepath.Base(file1.Name())}}
+		sameTokenOtherFile = emit.Token{Body: []byte(sameContent), Attributes: map[string]any{attrs.LogFileName: filepath.Base(file1.Name())}}
 	}
-	newFromFile1 := emittest.Call{Token: []byte(newContent1), Attrs: map[string]any{attrs.LogFileName: filepath.Base(file1.Name())}}
-	newFromFile2 := emittest.Call{Token: []byte(newContent2), Attrs: map[string]any{attrs.LogFileName: filepath.Base(file2.Name())}}
-	sink.ExpectCalls(t, &sameTokenOtherFile, &newFromFile1, &newFromFile2)
+	newFromFile1 := emit.Token{Body: []byte(newContent1), Attributes: map[string]any{attrs.LogFileName: filepath.Base(file1.Name())}}
+	newFromFile2 := emit.Token{Body: []byte(newContent2), Attributes: map[string]any{attrs.LogFileName: filepath.Base(file2.Name())}}
+	sink.ExpectCalls(t, sameTokenOtherFile, newFromFile1, newFromFile2)
 }
 
 func TestNoLostPartial(t *testing.T) {

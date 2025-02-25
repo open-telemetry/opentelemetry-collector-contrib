@@ -15,10 +15,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-)
-
-const (
-	SpanContextName = "Span"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspan"
 )
 
 type SpanContext interface {
@@ -37,9 +36,9 @@ var SpanSymbolTable = map[ottl.EnumSymbol]ottl.Enum{
 	"STATUS_CODE_ERROR":     ottl.Enum(ptrace.StatusCodeError),
 }
 
-func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func SpanPathGetSetter[K SpanContext](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
-		return accessSpan[K](), nil
+		return nil, ctxerror.New("nil", "nil", ctxspan.Name, ctxspan.DocRef)
 	}
 	switch path.Name() {
 	case "trace_id":
@@ -48,7 +47,7 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			if nextPath.Name() == "string" {
 				return accessStringTraceID[K](), nil
 			}
-			return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextName, SpanRef)
+			return nil, ctxerror.New(nextPath.Name(), nextPath.String(), ctxspan.Name, ctxspan.DocRef)
 		}
 		return accessTraceID[K](), nil
 	case "span_id":
@@ -57,7 +56,7 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			if nextPath.Name() == "string" {
 				return accessStringSpanID[K](), nil
 			}
-			return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextName, SpanRef)
+			return nil, ctxerror.New(nextPath.Name(), nextPath.String(), ctxspan.Name, ctxspan.DocRef)
 		}
 		return accessSpanID[K](), nil
 	case "trace_state":
@@ -72,7 +71,7 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			if nextPath.Name() == "string" {
 				return accessStringParentSpanID[K](), nil
 			}
-			return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextName, SpanRef)
+			return nil, ctxerror.New(nextPath.Name(), nextPath.String(), ctxspan.Name, ctxspan.DocRef)
 		}
 		return accessParentSpanID[K](), nil
 	case "name":
@@ -86,7 +85,7 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			case "deprecated_string":
 				return accessDeprecatedStringKind[K](), nil
 			default:
-				return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextName, SpanRef)
+				return nil, ctxerror.New(nextPath.Name(), nextPath.String(), ctxspan.Name, ctxspan.DocRef)
 			}
 		}
 		return accessKind[K](), nil
@@ -123,26 +122,14 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			case "message":
 				return accessStatusMessage[K](), nil
 			default:
-				return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextName, SpanRef)
+				return nil, ctxerror.New(nextPath.Name(), nextPath.String(), ctxspan.Name, ctxspan.DocRef)
 			}
 		}
 		return accessStatus[K](), nil
+	case "cache":
+		return nil, ctxcache.NewError(lowerContext, path.Context(), path.String())
 	default:
-		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), SpanContextName, SpanRef)
-	}
-}
-
-func accessSpan[K SpanContext]() ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetSpan(), nil
-		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
-			if newSpan, ok := val.(ptrace.Span); ok {
-				newSpan.CopyTo(tCtx.GetSpan())
-			}
-			return nil
-		},
+		return nil, ctxerror.New(path.Name(), path.String(), ctxspan.Name, ctxspan.DocRef)
 	}
 }
 

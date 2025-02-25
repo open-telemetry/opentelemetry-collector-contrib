@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
 
@@ -15,7 +14,6 @@ import (
 type Config struct {
 	// MetricsBuilderConfig allows to customize scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	internal.ScraperConfig
 
 	// IncludeVirtualFS will also capture filesystems such as tmpfs, ramfs
 	// and other filesystem types that do no have an associated physical device.
@@ -37,6 +35,8 @@ type Config struct {
 	// ExcludeMountPoints specifies a filter on the mount points that should be excluded from the generated metrics.
 	// When `root_path` is set, the mount points must be from the host's perspective.
 	ExcludeMountPoints MountPointMatchConfig `mapstructure:"exclude_mount_points"`
+
+	rootPath string `mapstructure:"-"`
 }
 
 type DeviceMatchConfig struct {
@@ -65,6 +65,10 @@ type fsFilter struct {
 	includeMountPointFilter filterset.FilterSet
 	excludeMountPointFilter filterset.FilterSet
 	filtersExist            bool
+}
+
+func (cfg *Config) SetRootPath(rootPath string) {
+	cfg.rootPath = rootPath
 }
 
 func (cfg *Config) createFilter() (*fsFilter, error) {

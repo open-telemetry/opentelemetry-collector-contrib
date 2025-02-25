@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
 )
 
 type MetricContext interface {
@@ -29,7 +31,7 @@ var MetricSymbolTable = map[ottl.EnumSymbol]ottl.Enum{
 
 func MetricPathGetSetter[K MetricContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
-		return accessMetric[K](), nil
+		return nil, ctxerror.New("nil", "nil", ctxmetric.Name, ctxmetric.DocRef)
 	}
 	switch path.Name() {
 	case "name":
@@ -47,21 +49,7 @@ func MetricPathGetSetter[K MetricContext](path ottl.Path[K]) (ottl.GetSetter[K],
 	case "data_points":
 		return accessDataPoints[K](), nil
 	default:
-		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Metric", MetricRef)
-	}
-}
-
-func accessMetric[K MetricContext]() ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetMetric(), nil
-		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
-			if newMetric, ok := val.(pmetric.Metric); ok {
-				newMetric.CopyTo(tCtx.GetMetric())
-			}
-			return nil
-		},
+		return nil, ctxerror.New(path.Name(), path.String(), ctxmetric.Name, ctxmetric.DocRef)
 	}
 }
 

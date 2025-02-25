@@ -176,7 +176,7 @@ func (cc *Client) putRequestOnRetryChan(r *request) error {
 }
 
 // CorrelateCB is a call back invoked with Correlate requests
-// it is not invoked if the reqeust is deduplicated, cancelled, or the client context is cancelled
+// it is not invoked if the request is deduplicated, cancelled, or the client context is cancelled
 type CorrelateCB func(cor *Correlation, err error)
 
 // Correlate
@@ -191,10 +191,10 @@ func (cc *Client) Correlate(cor *Correlation, cb CorrelateCB) {
 					cor.Logger(cc.log).WithFields(log.Fields{"method": http.MethodPut}).Info("Updated dimension")
 				}
 			case http.StatusTeapot:
-				max := &ErrMaxEntries{}
-				err = json.Unmarshal(body, max)
+				maxEntry := &ErrMaxEntries{}
+				err = json.Unmarshal(body, maxEntry)
 				if err == nil {
-					err = max
+					err = maxEntry
 				}
 			}
 			if err != nil {

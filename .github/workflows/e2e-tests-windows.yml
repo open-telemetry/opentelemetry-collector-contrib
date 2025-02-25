@@ -19,15 +19,32 @@ env:
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
 jobs:
+  windows-file-changed:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Did windows files changed
+        run: echo "changed=$(./.github/workflows/scripts/is_changed_file_windows.sh )" >> "$GITHUB_OUTPUT"
+      - run: echo $(./.github/workflows/scripts/is_changed_file_windows.sh ${{ github.event.pull_request.base.sha }} ${{ github.sha }} )
+
   collector-build:
-    runs-on: windows-latest
-    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest]
+    runs-on: ${{ matrix.os }}
+    needs: [windows-file-changed]
+    if: ${{ github.actor != 'dependabot[bot]' && ((contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') || needs.windows-file-changed.outputs.changed == 'true') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21.12"
+          go-version: "1.23.6"
           cache: false
       - name: Cache Go
         id: go-mod-cache
@@ -52,14 +69,18 @@ jobs:
           path: ./bin/*
 
   supervisor-test:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    runs-on: ${{ matrix.os }}
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     needs: [collector-build]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21.12"
+          go-version: "1.23.6"
           cache: false
       - name: Cache Go
         id: go-mod-cache
@@ -84,7 +105,11 @@ jobs:
           go test -v --tags=e2e
 
   windows-supervisor-service-test:
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    runs-on: ${{ matrix.os }}
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     needs: [collector-build]
     steps:
@@ -93,7 +118,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: ~1.22.8
+          go-version: "~1.23.6"
           cache: false
       - name: Cache Go
         uses: actions/cache@v4

@@ -1,11 +1,12 @@
+// Deprecated: use https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/githubgen
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
 
-go 1.22.0
+go 1.23.0
 
 require (
-	github.com/google/go-github/v67 v67.0.0
-	go.opentelemetry.io/collector/confmap v1.21.1-0.20241206185113-3f3e208e71b8
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.21.1-0.20241206185113-3f3e208e71b8
+	github.com/google/go-github/v69 v69.2.0
+	go.opentelemetry.io/collector/confmap v1.26.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.26.1-0.20250224010654-18e18b21da7a
 	gopkg.in/yaml.v3 v3.0.1
 )
 

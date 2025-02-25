@@ -13,7 +13,14 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
 )
+
+// Experimental: *NOTE* this constant is subject to change or removal in the future.
+const ContextName = ctxmetric.Name
 
 var (
 	_ internal.ResourceContext             = TransformContext{}
@@ -33,8 +40,10 @@ type TransformContext struct {
 
 type Option func(*ottl.Parser[TransformContext])
 
-func NewTransformContext(metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) TransformContext {
-	return TransformContext{
+type TransformContextOption func(*TransformContext)
+
+func NewTransformContext(metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics, options ...TransformContextOption) TransformContext {
+	tc := TransformContext{
 		metric:               metric,
 		metrics:              metrics,
 		instrumentationScope: instrumentationScope,
@@ -42,6 +51,19 @@ func NewTransformContext(metric pmetric.Metric, metrics pmetric.MetricSlice, ins
 		cache:                pcommon.NewMap(),
 		scopeMetrics:         scopeMetrics,
 		resourceMetrics:      resourceMetrics,
+	}
+	for _, opt := range options {
+		opt(&tc)
+	}
+	return tc
+}
+
+// Experimental: *NOTE* this option is subject to change or removal in the future.
+func WithCache(cache *pcommon.Map) TransformContextOption {
+	return func(p *TransformContext) {
+		if cache != nil {
+			p.cache = *cache
+		}
 	}
 }
 
@@ -88,6 +110,21 @@ func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySet
 		opt(&p)
 	}
 	return p, err
+}
+
+// EnablePathContextNames enables the support to path's context names on statements.
+// When this option is configured, all statement's paths must have a valid context prefix,
+// otherwise an error is reported.
+//
+// Experimental: *NOTE* this option is subject to change or removal in the future.
+func EnablePathContextNames() Option {
+	return func(p *ottl.Parser[TransformContext]) {
+		ottl.WithPathContextNames[TransformContext]([]string{
+			ctxmetric.Name,
+			ctxscope.LegacyName,
+			ctxresource.Name,
+		})(p)
+	}
 }
 
 type StatementSequenceOption func(*ottl.StatementSequence[TransformContext])
@@ -140,20 +177,40 @@ type pathExpressionParser struct {
 
 func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	if path == nil {
-		return nil, fmt.Errorf("path cannot be nil")
+		return nil, ctxerror.New("nil", "nil", ctxmetric.Name, ctxmetric.DocRef)
 	}
+	// Higher contexts parsing
+	if path.Context() != "" && path.Context() != ctxmetric.Name {
+		return pep.parseHigherContextPath(path.Context(), path)
+	}
+	// Backward compatibility with paths without context
+	if path.Context() == "" && (path.Name() == ctxresource.Name || path.Name() == ctxscope.LegacyName) {
+		return pep.parseHigherContextPath(path.Name(), path.Next())
+	}
+
 	switch path.Name() {
 	case "cache":
 		if path.Keys() == nil {
 			return accessCache(), nil
 		}
 		return accessCacheKey(path.Keys()), nil
-	case "resource":
-		return internal.ResourcePathGetSetter[TransformContext](path.Next())
-	case "instrumentation_scope":
-		return internal.ScopePathGetSetter[TransformContext](path.Next())
 	default:
 		return internal.MetricPathGetSetter[TransformContext](path)
+	}
+}
+
+func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
+	switch context {
+	case ctxresource.Name:
+		return internal.ResourcePathGetSetter(ctxmetric.Name, path)
+	case ctxscope.LegacyName:
+		return internal.ScopePathGetSetter(ctxmetric.Name, path)
+	default:
+		var fullPath string
+		if path != nil {
+			fullPath = path.String()
+		}
+		return nil, ctxerror.New(context, fullPath, ctxmetric.Name, ctxmetric.DocRef)
 	}
 }
 

@@ -15,6 +15,7 @@ import (
 	"sync"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
@@ -88,7 +89,7 @@ func (s *sfxDPClient) pushMetricsData(
 	}
 
 	// All metrics in the pmetric.Metrics will have the same access token because of the BatchPerResourceMetrics.
-	metricToken := s.retrieveAccessToken(rms.At(0))
+	metricToken := s.retrieveAccessToken(ctx, rms.At(0))
 
 	// export SFx format
 	sfxDataPoints := s.converter.MetricsToSignalFxV2(md)
@@ -194,10 +195,16 @@ func (s *sfxDPClient) encodeBody(dps []*sfxpb.DataPoint) (bodyReader io.Reader, 
 	return s.getReader(body)
 }
 
-func (s *sfxDPClient) retrieveAccessToken(md pmetric.ResourceMetrics) string {
+func (s *sfxDPClient) retrieveAccessToken(ctx context.Context, md pmetric.ResourceMetrics) string {
 	if !s.accessTokenPassthrough {
 		// Nothing to do if token is pass through not configured or resource is nil.
 		return ""
+	}
+
+	cl := client.FromContext(ctx)
+	ss := cl.Metadata.Get(splunk.SFxAccessTokenHeader)
+	if len(ss) > 0 {
+		return ss[0]
 	}
 
 	attrs := md.Resource().Attributes()

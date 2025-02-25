@@ -18,6 +18,6 @@ func validateRootPath(rootPath string) error {
 	return fmt.Errorf("root_path is supported on linux only")
 }
 
-func setGoPsutilEnvVars(_ string, _ environment) common.EnvMap {
+func setGoPsutilEnvVars(_ string) common.EnvMap {
 	return common.EnvMap{}
 }

@@ -33,7 +33,7 @@ receivers:
       - metric_name: "connectors.googleapis.com/flex/instance/cpu/usage_time"
 ```
 
-- `collection_interval` (Optional): The interval at which metrics are collected. Default is 300s.
+- `collection_interval` (Optional): The interval at which metrics are collected. Default is 300s, minimum is 60s. Be careful of the [costs](https://cloud.google.com/stackdriver/pricing#monitoring-costs) and [quotas](https://cloud.google.com/monitoring/quotas#api_quotas) when setting a low interval.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `timeout`: (default = `1m`) The timeout of running commands against the GCP Monitoring REST API.
 - `project_id` (Required): The GCP project ID.
@@ -41,8 +41,10 @@ receivers:
 
 Each single metric can have the following configuration:
 
-- `metric_name` (Required): The specific metric name to collect.
+- `metric_name` (Optional): The specific metric name to collect.
+- `metric_descriptor_filter` (Optional): Filter for [listing metric descriptors](https://cloud.google.com/monitoring/api/v3/filters#metric-descriptor-filter). Only support `project` and `metric.type` as filter objects.
 
+One of `metric_name` and `metric_descriptor_filter` MUST be specified, but MUST not be specified at the same time.
 
 ## Authentication with Google Cloud
 
