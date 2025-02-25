@@ -15,13 +15,15 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
-const (
-	// Experimental: *NOTE* this constant is subject to change or removal in the future.
-	ContextName = internal.SpanContextName
-)
+// Experimental: *NOTE* this constant is subject to change or removal in the future.
+const ContextName = ctxspan.Name
 
 var (
 	_ internal.ResourceContext             = (*TransformContext)(nil)
@@ -123,9 +125,9 @@ func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySet
 func EnablePathContextNames() Option {
 	return func(p *ottl.Parser[TransformContext]) {
 		ottl.WithPathContextNames[TransformContext]([]string{
-			ContextName,
-			internal.ResourceContextName,
-			internal.InstrumentationScopeContextName,
+			ctxspan.Name,
+			ctxresource.Name,
+			ctxscope.LegacyName,
 		})(p)
 	}
 }
@@ -178,14 +180,14 @@ type pathExpressionParser struct {
 
 func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	if path == nil {
-		return nil, fmt.Errorf("path cannot be nil")
+		return nil, ctxerror.New("nil", "nil", ctxspan.Name, ctxspan.DocRef)
 	}
 	// Higher contexts parsing
-	if path.Context() != "" && path.Context() != ContextName {
+	if path.Context() != "" && path.Context() != ctxspan.Name {
 		return pep.parseHigherContextPath(path.Context(), path)
 	}
 	// Backward compatibility with paths without context
-	if path.Context() == "" && (path.Name() == internal.ResourceContextName || path.Name() == internal.InstrumentationScopeContextName) {
+	if path.Context() == "" && (path.Name() == ctxresource.Name || path.Name() == ctxscope.LegacyName) {
 		return pep.parseHigherContextPath(path.Name(), path.Next())
 	}
 
@@ -196,22 +198,22 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 		}
 		return accessCacheKey(path.Keys()), nil
 	default:
-		return internal.SpanPathGetSetter[TransformContext](ContextName, path)
+		return internal.SpanPathGetSetter[TransformContext](ctxspan.Name, path)
 	}
 }
 
 func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	switch context {
-	case internal.ResourceContextName:
-		return internal.ResourcePathGetSetter[TransformContext](ContextName, path)
-	case internal.InstrumentationScopeContextName:
-		return internal.ScopePathGetSetter[TransformContext](ContextName, path)
+	case ctxresource.Name:
+		return internal.ResourcePathGetSetter[TransformContext](ctxspan.Name, path)
+	case ctxscope.LegacyName:
+		return internal.ScopePathGetSetter[TransformContext](ctxspan.Name, path)
 	default:
 		var fullPath string
 		if path != nil {
 			fullPath = path.String()
 		}
-		return nil, internal.FormatDefaultErrorMessage(context, fullPath, internal.SpanContextName, internal.SpanRef)
+		return nil, ctxerror.New(context, fullPath, ctxspan.Name, ctxspan.DocRef)
 	}
 }
 
