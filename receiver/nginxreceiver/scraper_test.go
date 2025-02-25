@@ -32,7 +32,7 @@ func TestScraper(t *testing.T) {
 	cfg.Endpoint = nginxMock.URL + "/status"
 	require.NoError(t, xconfmap.Validate(cfg))
 
-	scraper := newNginxScraper(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	scraper := newNginxScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -61,7 +61,7 @@ func TestScraperError(t *testing.T) {
 		rw.WriteHeader(http.StatusNotFound)
 	}))
 	t.Run("404", func(t *testing.T) {
-		sc := newNginxScraper(receivertest.NewNopSettingsWithType(metadata.Type), &Config{
+		sc := newNginxScraper(receivertest.NewNopSettings(metadata.Type), &Config{
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: nginxMock.URL + "/badpath",
 			},
@@ -73,7 +73,7 @@ func TestScraperError(t *testing.T) {
 	})
 
 	t.Run("parse error", func(t *testing.T) {
-		sc := newNginxScraper(receivertest.NewNopSettingsWithType(metadata.Type), &Config{
+		sc := newNginxScraper(receivertest.NewNopSettings(metadata.Type), &Config{
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: nginxMock.URL + "/status",
 			},
@@ -87,7 +87,7 @@ func TestScraperError(t *testing.T) {
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newNginxScraper(receivertest.NewNopSettingsWithType(metadata.Type), &Config{
+	sc := newNginxScraper(receivertest.NewNopSettings(metadata.Type), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "localhost:8080",
 			TLSSetting: configtls.ClientConfig{

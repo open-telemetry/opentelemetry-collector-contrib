@@ -138,7 +138,7 @@ func integrationTest(version string, jar string) func(*testing.T) {
 }
 
 func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
-	params := receivertest.NewNopSettingsWithType(metadata.Type)
+	params := receivertest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		CollectionInterval: 100 * time.Millisecond,
 		Endpoint:           "service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi",
