@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofile"
 )
 
 const (
@@ -23,7 +25,7 @@ type ProfileContext interface {
 
 func ProfilePathGetSetter[K ProfileContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
-		return nil, FormatDefaultErrorMessage(ProfileContextName, ProfileContextName, "Profile", ProfileRef)
+		return nil, ctxerror.New("nil", "nil", ctxprofile.Name, ctxprofile.DocRef)
 	}
 	switch path.Name() {
 	case "sample_type":
@@ -71,7 +73,7 @@ func ProfilePathGetSetter[K ProfileContext](path ottl.Path[K]) (ottl.GetSetter[K
 	case "original_payload":
 		return accessOriginalPayload[K](), nil
 	default:
-		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Profile", ProfileRef)
+		return nil, ctxerror.New(path.Name(), path.String(), ctxprofile.Name, ctxprofile.DocRef)
 	}
 }
 

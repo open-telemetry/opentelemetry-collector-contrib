@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 )
 
 // create Test_ProfilePathGetSetter
@@ -111,7 +113,7 @@ func Test_ProfilePathGetSetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			path := &TestPath[*profileContext]{N: tt.path}
+			path := &pathtest.Path[*profileContext]{N: tt.path}
 
 			profile := pprofile.NewProfile()
 

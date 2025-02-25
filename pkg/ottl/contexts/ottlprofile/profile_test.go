@@ -13,11 +13,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofile"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -52,7 +51,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	}{
 		{
 			name: "time",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "time",
 			},
 			orig:   time.Date(1970, 1, 1, 0, 0, 0, 100000000, time.UTC),
@@ -63,7 +62,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "time_unix_nano",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "time_unix_nano",
 			},
 			orig:   int64(100_000_000),
@@ -74,7 +73,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "cache",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "cache",
 			},
 			orig:   pcommon.NewMap(),
@@ -85,10 +84,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "cache access",
-			path: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{
 				N: "cache",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("temp"),
 					},
 				},
@@ -105,8 +104,8 @@ func Test_newPathGetSetter(t *testing.T) {
 	for _, tt := range slices.Clone(tests) {
 		testWithContext := tt
 		testWithContext.name = "with_path_context:" + tt.name
-		pathWithContext := *tt.path.(*internal.TestPath[TransformContext])
-		pathWithContext.C = ContextName
+		pathWithContext := *tt.path.(*pathtest.Path[TransformContext])
+		pathWithContext.C = ctxprofile.Name
 		testWithContext.path = &pathWithContext
 		tests = append(tests, testWithContext)
 	}
@@ -154,10 +153,10 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	}{
 		{
 			name: "resource",
-			path: &internal.TestPath[TransformContext]{N: "resource", NextPath: &internal.TestPath[TransformContext]{
+			path: &pathtest.Path[TransformContext]{N: "resource", NextPath: &pathtest.Path[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
-					&internal.TestKey[TransformContext]{
+					&pathtest.Key[TransformContext]{
 						S: ottltest.Strp("foo"),
 					},
 				},
@@ -166,8 +165,8 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 		{
 			name: "resource with context",
-			path: &internal.TestPath[TransformContext]{C: "resource", N: "attributes", KeySlice: []ottl.Key[TransformContext]{
-				&internal.TestKey[TransformContext]{
+			path: &pathtest.Path[TransformContext]{C: "resource", N: "attributes", KeySlice: []ottl.Key[TransformContext]{
+				&pathtest.Key[TransformContext]{
 					S: ottltest.Strp("foo"),
 				},
 			}},
@@ -175,12 +174,12 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 		{
 			name:     "instrumentation_scope",
-			path:     &internal.TestPath[TransformContext]{N: "instrumentation_scope", NextPath: &internal.TestPath[TransformContext]{N: "name"}},
+			path:     &pathtest.Path[TransformContext]{N: "instrumentation_scope", NextPath: &pathtest.Path[TransformContext]{N: "name"}},
 			expected: instrumentationScope.Name(),
 		},
 		{
 			name:     "instrumentation_scope with context",
-			path:     &internal.TestPath[TransformContext]{C: "instrumentation_scope", N: "name"},
+			path:     &pathtest.Path[TransformContext]{C: "instrumentation_scope", N: "name"},
 			expected: instrumentationScope.Name(),
 		},
 	}
@@ -222,142 +221,4 @@ func createProfileTelemetry() pprofile.Profile {
 	profile.SetTime(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 	//	profile.SetDuration(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 	return profile
-}
-
-type mockObjectEncoder struct {
-	fields map[string]interface{}
-}
-
-func (m *mockObjectEncoder) AddArray(key string, marshaler zapcore.ArrayMarshaler) error {
-	return nil
-}
-
-func (m *mockObjectEncoder) AddObject(key string, marshaler zapcore.ObjectMarshaler) error {
-	m.fields[key] = marshaler
-	return nil
-}
-
-func (m *mockObjectEncoder) AddString(key, value string) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddInt32(key string, value int32) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddInt64(key string, value int64) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddFloat64(key string, value float64) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddBool(key string, value bool) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddDuration(key string, value time.Duration) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddTime(key string, value time.Time) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddBinary(key string, value []byte) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddReflected(key string, value interface{}) error {
-	m.fields[key] = value
-	return nil
-}
-
-func (m *mockObjectEncoder) OpenNamespace(key string) {
-	// No-op for mock
-}
-
-func (m *mockObjectEncoder) AddByteString(key string, value []byte) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddComplex128(key string, value complex128) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddComplex64(key string, value complex64) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddFloat32(key string, value float32) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddInt(key string, value int) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddInt16(key string, value int16) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddInt8(key string, value int8) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddUint(key string, value uint) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddUint32(key string, value uint32) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddUint64(key string, value uint64) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddUint16(key string, value uint16) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddUint8(key string, value uint8) {
-	m.fields[key] = value
-}
-
-func (m *mockObjectEncoder) AddUintptr(key string, value uintptr) {
-	m.fields[key] = value
-}
-
-func TestTransformContext_MarshalLogObject(t *testing.T) {
-	profile := pprofile.NewProfile()
-	profile.SetProfileID(pprofile.ProfileID{1, 2, 3, 4})
-	profile.SetTime(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
-	profile.StringTable().Append("typeValue", "unitValue")
-	st := profile.SampleType().AppendEmpty()
-	st.SetTypeStrindex(0)
-	st.SetUnitStrindex(1)
-	st.SetAggregationTemporality(3)
-
-	instrumentationScope := pcommon.NewInstrumentationScope()
-	resource := pcommon.NewResource()
-	cache := pcommon.NewMap()
-
-	ctx := NewTransformContext(profile, instrumentationScope, resource, pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles(), WithCache(&cache))
-
-	logger := zap.NewExample()
-	defer logger.Sync()
-
-	logger.Info("test", zap.Object("context", ctx))
-
-	/*	encoder := &mockObjectEncoder{fields: make(map[string]interface{})}
-		err := ctx.MarshalLogObject(encoder)
-		assert.NoError(t, err)
-
-		assert.Contains(t, encoder.fields, "resource")
-		assert.Contains(t, encoder.fields, "scope")
-		assert.Contains(t, encoder.fields, "profile")
-		assert.Contains(t, encoder.fields, "cache")
-	*/
 }
