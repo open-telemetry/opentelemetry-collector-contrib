@@ -103,6 +103,15 @@ var appPoolPerfCounterRecorders = []perfCounterRecorderConf{
 			},
 		},
 	},
+	{
+		object:   "APP_POOL_WAS",
+		instance: "*",
+		recorders: map[string]recordFunc{
+			"Current Application Pool State": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+				mb.RecordIisApplicationPoolStateDataPoint(ts, int64(val))
+			},
+		},
+	},
 }
 
 func recordMaxQueueItemAge(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
