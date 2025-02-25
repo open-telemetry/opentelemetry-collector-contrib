@@ -141,3 +141,9 @@ metrics:
     gauge:
       value_type: int
     enabled: true
+  iis.application_pool.uptime:
+    description: The application pools uptime period since the last restart.
+    unit: "{ms}"
+    gauge:
+      value_type: int
+    enabled: true

@@ -133,6 +133,55 @@ func newMetricIisApplicationPoolState(cfg MetricConfig) metricIisApplicationPool
 	return m
 }
 
+type metricIisApplicationPoolUptime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills iis.application_pool.uptime metric with initial data.
+func (m *metricIisApplicationPoolUptime) init() {
+	m.data.SetName("iis.application_pool.uptime")
+	m.data.SetDescription("The application pools uptime period since the last restart.")
+	m.data.SetUnit("{ms}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricIisApplicationPoolUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricIisApplicationPoolUptime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricIisApplicationPoolUptime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricIisApplicationPoolUptime(cfg MetricConfig) metricIisApplicationPoolUptime {
+	m := metricIisApplicationPoolUptime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricIisConnectionActive struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -758,6 +807,7 @@ type MetricsBuilder struct {
 	resourceAttributeIncludeFilter  map[string]filter.Filter
 	resourceAttributeExcludeFilter  map[string]filter.Filter
 	metricIisApplicationPoolState   metricIisApplicationPoolState
+	metricIisApplicationPoolUptime  metricIisApplicationPoolUptime
 	metricIisConnectionActive       metricIisConnectionActive
 	metricIisConnectionAnonymous    metricIisConnectionAnonymous
 	metricIisConnectionAttemptCount metricIisConnectionAttemptCount
@@ -796,6 +846,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricsBuffer:                   pmetric.NewMetrics(),
 		buildInfo:                       settings.BuildInfo,
 		metricIisApplicationPoolState:   newMetricIisApplicationPoolState(mbc.Metrics.IisApplicationPoolState),
+		metricIisApplicationPoolUptime:  newMetricIisApplicationPoolUptime(mbc.Metrics.IisApplicationPoolUptime),
 		metricIisConnectionActive:       newMetricIisConnectionActive(mbc.Metrics.IisConnectionActive),
 		metricIisConnectionAnonymous:    newMetricIisConnectionAnonymous(mbc.Metrics.IisConnectionAnonymous),
 		metricIisConnectionAttemptCount: newMetricIisConnectionAttemptCount(mbc.Metrics.IisConnectionAttemptCount),
@@ -893,6 +944,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricIisApplicationPoolState.emit(ils.Metrics())
+	mb.metricIisApplicationPoolUptime.emit(ils.Metrics())
 	mb.metricIisConnectionActive.emit(ils.Metrics())
 	mb.metricIisConnectionAnonymous.emit(ils.Metrics())
 	mb.metricIisConnectionAttemptCount.emit(ils.Metrics())
@@ -939,6 +991,11 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 // RecordIisApplicationPoolStateDataPoint adds a data point to iis.application_pool.state metric.
 func (mb *MetricsBuilder) RecordIisApplicationPoolStateDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricIisApplicationPoolState.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordIisApplicationPoolUptimeDataPoint adds a data point to iis.application_pool.uptime metric.
+func (mb *MetricsBuilder) RecordIisApplicationPoolUptimeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricIisApplicationPoolUptime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordIisConnectionActiveDataPoint adds a data point to iis.connection.active metric.

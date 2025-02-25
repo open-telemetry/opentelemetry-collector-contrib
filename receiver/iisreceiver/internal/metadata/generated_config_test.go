@@ -26,6 +26,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					IisApplicationPoolState:   MetricConfig{Enabled: true},
+					IisApplicationPoolUptime:  MetricConfig{Enabled: true},
 					IisConnectionActive:       MetricConfig{Enabled: true},
 					IisConnectionAnonymous:    MetricConfig{Enabled: true},
 					IisConnectionAttemptCount: MetricConfig{Enabled: true},
@@ -50,6 +51,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					IisApplicationPoolState:   MetricConfig{Enabled: false},
+					IisApplicationPoolUptime:  MetricConfig{Enabled: false},
 					IisConnectionActive:       MetricConfig{Enabled: false},
 					IisConnectionAnonymous:    MetricConfig{Enabled: false},
 					IisConnectionAttemptCount: MetricConfig{Enabled: false},

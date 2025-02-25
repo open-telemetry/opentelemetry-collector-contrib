@@ -20,6 +20,14 @@ The current state of the application pool.
 | ---- | ----------- | ---------- |
 | {state} | Gauge | Int |
 
+### iis.application_pool.uptime
+
+The application pools uptime period since the last restart.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {ms} | Gauge | Int |
+
 ### iis.connection.active
 
 Number of active connections.

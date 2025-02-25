@@ -110,6 +110,9 @@ var appPoolPerfCounterRecorders = []perfCounterRecorderConf{
 			"Current Application Pool State": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisApplicationPoolStateDataPoint(ts, int64(val))
 			},
+			"Current Application Pool Uptime": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+				mb.RecordIisApplicationPoolUptimeDataPoint(ts, int64(val))
+			},
 		},
 	},
 }
