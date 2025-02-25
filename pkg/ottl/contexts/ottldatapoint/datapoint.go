@@ -30,6 +30,7 @@ const ContextName = ctxdatapoint.Name
 var (
 	_ internal.ResourceContext             = (*TransformContext)(nil)
 	_ internal.InstrumentationScopeContext = (*TransformContext)(nil)
+	_ ctxmetric.Context                    = (*TransformContext)(nil)
 	_ zapcore.ObjectMarshaler              = (*TransformContext)(nil)
 )
 
@@ -299,7 +300,7 @@ func (pep *pathExpressionParser) parseHigherContextPath(context string, path ott
 	case ctxscope.LegacyName:
 		return internal.ScopePathGetSetter(ctxdatapoint.Name, path)
 	case ctxmetric.Name:
-		return internal.MetricPathGetSetter(path)
+		return ctxmetric.PathGetSetter(path)
 	default:
 		var fullPath string
 		if path != nil {
