@@ -87,9 +87,6 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 				switch m.Type() {
 				case pmetric.MetricTypeSum:
 					ms := m.Sum()
-					if ms.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
-						return false
-					}
 
 					// Ignore any metrics that aren't monotonic
 					if !ms.IsMonotonic() {
@@ -109,9 +106,6 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 					return ms.DataPoints().Len() == 0
 				case pmetric.MetricTypeHistogram:
 					ms := m.Histogram()
-					if ms.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
-						return false
-					}
 
 					if ms.DataPoints().Len() == 0 {
 						return false
@@ -150,7 +144,8 @@ func (ctdp *cumulativeToDeltaProcessor) shutdown(context.Context) error {
 }
 
 func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metric pmetric.Metric) bool {
-	return (ctdp.includeFS == nil || ctdp.includeFS.Matches(metric.Name())) &&
+	return (metric.AggregationTemporality() == pmetric.AggregationTemporalityCumulative) &&
+		(ctdp.includeFS == nil || ctdp.includeFS.Matches(metric.Name())) &&
 		(len(ctdp.includeMetricTypes) == 0 || ctdp.includeMetricTypes[metric.Type()]) &&
 		(ctdp.excludeFS == nil || !ctdp.excludeFS.Matches(metric.Name())) &&
 		(len(ctdp.excludeMetricTypes) == 0 || !ctdp.excludeMetricTypes[metric.Type()])
