@@ -130,6 +130,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.120.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.120.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor v0.120.1
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor v0.120.1
 
 receivers:
   - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.120.1-0.20250224010654-18e18b21da7a
