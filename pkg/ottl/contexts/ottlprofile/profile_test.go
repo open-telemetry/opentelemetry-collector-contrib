@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
@@ -220,4 +222,142 @@ func createProfileTelemetry() pprofile.Profile {
 	profile.SetTime(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 	//	profile.SetDuration(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 	return profile
+}
+
+type mockObjectEncoder struct {
+	fields map[string]interface{}
+}
+
+func (m *mockObjectEncoder) AddArray(key string, marshaler zapcore.ArrayMarshaler) error {
+	return nil
+}
+
+func (m *mockObjectEncoder) AddObject(key string, marshaler zapcore.ObjectMarshaler) error {
+	m.fields[key] = marshaler
+	return nil
+}
+
+func (m *mockObjectEncoder) AddString(key, value string) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddInt32(key string, value int32) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddInt64(key string, value int64) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddFloat64(key string, value float64) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddBool(key string, value bool) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddDuration(key string, value time.Duration) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddTime(key string, value time.Time) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddBinary(key string, value []byte) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddReflected(key string, value interface{}) error {
+	m.fields[key] = value
+	return nil
+}
+
+func (m *mockObjectEncoder) OpenNamespace(key string) {
+	// No-op for mock
+}
+
+func (m *mockObjectEncoder) AddByteString(key string, value []byte) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddComplex128(key string, value complex128) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddComplex64(key string, value complex64) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddFloat32(key string, value float32) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddInt(key string, value int) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddInt16(key string, value int16) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddInt8(key string, value int8) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddUint(key string, value uint) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddUint32(key string, value uint32) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddUint64(key string, value uint64) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddUint16(key string, value uint16) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddUint8(key string, value uint8) {
+	m.fields[key] = value
+}
+
+func (m *mockObjectEncoder) AddUintptr(key string, value uintptr) {
+	m.fields[key] = value
+}
+
+func TestTransformContext_MarshalLogObject(t *testing.T) {
+	profile := pprofile.NewProfile()
+	profile.SetProfileID(pprofile.ProfileID{1, 2, 3, 4})
+	profile.SetTime(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
+	profile.StringTable().Append("typeValue", "unitValue")
+	st := profile.SampleType().AppendEmpty()
+	st.SetTypeStrindex(0)
+	st.SetUnitStrindex(1)
+	st.SetAggregationTemporality(3)
+
+	instrumentationScope := pcommon.NewInstrumentationScope()
+	resource := pcommon.NewResource()
+	cache := pcommon.NewMap()
+
+	ctx := NewTransformContext(profile, instrumentationScope, resource, pprofile.NewScopeProfiles(), pprofile.NewResourceProfiles(), WithCache(&cache))
+
+	logger := zap.NewExample()
+	defer logger.Sync()
+
+	logger.Info("test", zap.Object("context", ctx))
+
+	/*	encoder := &mockObjectEncoder{fields: make(map[string]interface{})}
+		err := ctx.MarshalLogObject(encoder)
+		assert.NoError(t, err)
+
+		assert.Contains(t, encoder.fields, "resource")
+		assert.Contains(t, encoder.fields, "scope")
+		assert.Contains(t, encoder.fields, "profile")
+		assert.Contains(t, encoder.fields, "cache")
+	*/
 }
