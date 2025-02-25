@@ -93,7 +93,7 @@ type metricIisApplicationPoolState struct {
 // init fills iis.application_pool.state metric with initial data.
 func (m *metricIisApplicationPoolState) init() {
 	m.data.SetName("iis.application_pool.state")
-	m.data.SetDescription("The current state of the application pool.")
+	m.data.SetDescription("The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)")
 	m.data.SetUnit("{state}")
 	m.data.SetEmptyGauge()
 }

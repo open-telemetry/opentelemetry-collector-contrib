@@ -138,7 +138,7 @@ metrics:
 
 ### iis.application_pool.state
 
-The current state of the application pool.
+The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

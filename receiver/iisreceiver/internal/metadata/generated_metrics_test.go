@@ -152,7 +152,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["iis.application_pool.state"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The current state of the application pool.", ms.At(i).Description())
+					assert.Equal(t, "The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)", ms.At(i).Description())
 					assert.Equal(t, "{state}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
