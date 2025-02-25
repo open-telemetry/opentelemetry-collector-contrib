@@ -1,8 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor
 
-go 1.23.0
-
-toolchain go1.23.6
+go 1.22.0
 
 require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.61.0
