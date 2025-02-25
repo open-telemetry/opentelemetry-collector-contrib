@@ -126,7 +126,7 @@ The value is then masked according to the configuration.
 `hash_function` defines the function for hashing the values (or substrings of values)
 instead of masking them with a fixed string. By default, no hash function is used
 and masking with a fixed string is performed. The supported hash functions
-are `md5`, `sha1` and `sha3`.
+are `md5`, `sha1` and `sha3` (SHA-256).
 
 For example, if `notes` is on the list of allowed keys, then the `notes`
 attribute is retained. However, if there is a value such as a credit card

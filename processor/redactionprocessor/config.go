@@ -10,6 +10,10 @@ import (
 	"strings"
 )
 
+var (
+	_ encoding.TextUnmarshaler = (*HashFunction)(nil)
+)
+
 type HashFunction string
 
 const (
@@ -17,10 +21,6 @@ const (
 	SHA1 HashFunction = "sha1"
 	SHA3 HashFunction = "sha3"
 	MD5  HashFunction = "md5"
-)
-
-var (
-	_ encoding.TextUnmarshaler = (*HashFunction)(nil)
 )
 
 type Config struct {
