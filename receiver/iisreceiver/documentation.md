@@ -12,22 +12,6 @@ metrics:
     enabled: false
 ```
 
-### iis.application_pool.state
-
-The current state of the application pool.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {state} | Gauge | Int |
-
-### iis.application_pool.uptime
-
-The application pools uptime period since the last restart.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {ms} | Gauge | Int |
-
 ### iis.connection.active
 
 Number of active connections.
@@ -141,6 +125,32 @@ The amount of time the server has been up.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | s | Gauge | Int |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### iis.application_pool.state
+
+The current state of the application pool.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {state} | Gauge | Int |
+
+### iis.application_pool.uptime
+
+The application pools uptime period since the last restart.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {ms} | Gauge | Int |
 
 ## Resource Attributes
 
