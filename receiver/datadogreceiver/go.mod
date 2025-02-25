@@ -4,11 +4,11 @@ go 1.23.0
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.144
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.62.3
-	github.com/DataDog/datadog-agent/pkg/proto v0.62.3
-	github.com/DataDog/datadog-agent/pkg/trace v0.62.3
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.63.0
+	github.com/DataDog/datadog-agent/pkg/proto v0.63.0
+	github.com/DataDog/datadog-agent/pkg/trace v0.63.0
 	github.com/DataDog/datadog-api-client-go/v2 v2.35.0
-	github.com/DataDog/sketches-go v1.4.6
+	github.com/DataDog/sketches-go v1.4.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.120.1
@@ -34,15 +34,15 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.62.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.62.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.62.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.62.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.62.3 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.63.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.63.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.63.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.63.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.63.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.6.0 // indirect
-	github.com/DataDog/go-sqllexer v0.0.17 // indirect
+	github.com/DataDog/go-sqllexer v0.0.20 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.22.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.24.0 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -81,7 +81,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.8.0 // indirect
-	github.com/shirou/gopsutil/v4 v4.24.11 // indirect
+	github.com/shirou/gopsutil/v4 v4.24.12 // indirect
 	github.com/tklauser/go-sysconf v0.3.14 // indirect
 	github.com/tklauser/numcpus v0.8.0 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
