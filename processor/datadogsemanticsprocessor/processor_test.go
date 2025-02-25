@@ -5,6 +5,7 @@ package datadogsemanticsprocessor
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor/internal/metadata"
 	"testing"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/testutil"
@@ -21,7 +22,7 @@ import (
 )
 
 func newTestTracesProcessor(cfg component.Config, next consumer.Traces) (processor.Traces, error) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	return createTracesProcessor(
 		context.Background(),
 		set,
