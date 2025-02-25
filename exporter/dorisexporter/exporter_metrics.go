@@ -109,41 +109,36 @@ func (e *metricsExporter) initMetricMap(ms pmetric.Metrics) map[pmetric.MetricTy
 	}
 
 	if gaugeLen > 0 {
-		gauge := &metricModelGauge{
-			data: make([]*dMetricGauge, 0, gaugeLen),
-		}
+		gauge := &metricModelGauge{}
+		gauge.data = make([]*dMetricGauge, 0, gaugeLen)
 		gauge.lbl = e.generateMetricLabel(gauge)
 		metricMap[pmetric.MetricTypeGauge] = gauge
 	}
 
 	if sumLen > 0 {
-		sum := &metricModelSum{
-			data: make([]*dMetricSum, 0, sumLen),
-		}
+		sum := &metricModelSum{}
+		sum.data = make([]*dMetricSum, 0, sumLen)
 		sum.lbl = e.generateMetricLabel(sum)
 		metricMap[pmetric.MetricTypeSum] = sum
 	}
 
 	if histogramLen > 0 {
-		histogram := &metricModelHistogram{
-			data: make([]*dMetricHistogram, 0, histogramLen),
-		}
+		histogram := &metricModelHistogram{}
+		histogram.data = make([]*dMetricHistogram, 0, histogramLen)
 		histogram.lbl = e.generateMetricLabel(histogram)
 		metricMap[pmetric.MetricTypeHistogram] = histogram
 	}
 
 	if exponentialHistogramLen > 0 {
-		exponentialHistogram := &metricModelExponentialHistogram{
-			data: make([]*dMetricExponentialHistogram, 0, exponentialHistogramLen),
-		}
+		exponentialHistogram := &metricModelExponentialHistogram{}
+		exponentialHistogram.data = make([]*dMetricExponentialHistogram, 0, exponentialHistogramLen)
 		exponentialHistogram.lbl = e.generateMetricLabel(exponentialHistogram)
 		metricMap[pmetric.MetricTypeExponentialHistogram] = exponentialHistogram
 	}
 
 	if summaryLen > 0 {
-		summary := &metricModelSummary{
-			data: make([]*dMetricSummary, 0, summaryLen),
-		}
+		summary := &metricModelSummary{}
+		summary.data = make([]*dMetricSummary, 0, summaryLen)
 		summary.lbl = e.generateMetricLabel(summary)
 		metricMap[pmetric.MetricTypeSummary] = summary
 	}

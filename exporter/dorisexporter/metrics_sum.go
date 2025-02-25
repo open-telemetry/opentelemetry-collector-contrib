@@ -26,8 +26,7 @@ type dMetricSum struct {
 }
 
 type metricModelSum struct {
-	data []*dMetricSum
-	lbl  string
+	metricModelCommon[dMetricSum]
 }
 
 func (m *metricModelSum) metricType() pmetric.MetricType {
@@ -77,20 +76,4 @@ func (m *metricModelSum) add(pm pmetric.Metric, dm *dMetric, e *metricsExporter)
 	}
 
 	return nil
-}
-
-func (m *metricModelSum) raw() any {
-	return m.data
-}
-
-func (m *metricModelSum) size() int {
-	return len(m.data)
-}
-
-func (m *metricModelSum) bytes() ([]byte, error) {
-	return toJSONLines(m.data)
-}
-
-func (m *metricModelSum) label() string {
-	return m.lbl
 }
