@@ -9,10 +9,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-)
-
-const (
-	ResourceContextName = "resource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 )
 
 type ResourceContext interface {
@@ -22,7 +22,7 @@ type ResourceContext interface {
 
 func ResourcePathGetSetter[K ResourceContext](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
-		return nil, FormatDefaultErrorMessage(ResourceContextName, ResourceContextName, "Resource", ResourceContextRef)
+		return nil, ctxerror.New("nil", "nil", ctxresource.Name, ctxresource.DocRef)
 	}
 	switch path.Name() {
 	case "attributes":
@@ -35,9 +35,9 @@ func ResourcePathGetSetter[K ResourceContext](lowerContext string, path ottl.Pat
 	case "schema_url":
 		return accessResourceSchemaURLItem[K](), nil
 	case "cache":
-		return nil, FormatCacheErrorMessage(lowerContext, path.Context(), path.String())
+		return nil, ctxcache.NewError(lowerContext, path.Context(), path.String())
 	default:
-		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Resource", ResourceContextRef)
+		return nil, ctxerror.New(path.Name(), path.String(), ctxresource.Name, ctxresource.DocRef)
 	}
 }
 
@@ -58,10 +58,10 @@ func accessResourceAttributes[K ResourceContext]() ottl.StandardGetSetter[K] {
 func accessResourceAttributesKey[K ResourceContext](keys []ottl.Key[K]) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
-			return GetMapValue[K](ctx, tCtx, tCtx.GetResource().Attributes(), keys)
+			return ctxutil.GetMapValue[K](ctx, tCtx, tCtx.GetResource().Attributes(), keys)
 		},
 		Setter: func(ctx context.Context, tCtx K, val any) error {
-			return SetMapValue[K](ctx, tCtx, tCtx.GetResource().Attributes(), keys, val)
+			return ctxutil.SetMapValue[K](ctx, tCtx, tCtx.GetResource().Attributes(), keys, val)
 		},
 	}
 }
