@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+package ctxutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 
 import (
 	"context"
@@ -58,7 +58,7 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 	if !ok {
 		currentValue = m.PutEmpty(*s)
 	}
-	return setIndexableValue[K](ctx, tCtx, currentValue, val, keys[1:])
+	return SetIndexableValue[K](ctx, tCtx, currentValue, val, keys[1:])
 }
 
 func FetchValueFromExpression[K any, T int64 | string](ctx context.Context, tCtx K, key ottl.Key[K]) (*T, error) {

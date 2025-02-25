@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package ctxutil_test
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -121,7 +122,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 			s := m.PutEmptySlice("slice")
 			s.AppendEmpty()
 
-			_, err := GetMapValue[any](context.Background(), nil, m, tt.keys)
+			_, err := ctxutil.GetMapValue[any](context.Background(), nil, m, tt.keys)
 			assert.Equal(t, tt.err.Error(), err.Error())
 		})
 	}
@@ -138,13 +139,13 @@ func Test_GetMapValue_MissingKey(t *testing.T) {
 			S: ottltest.Strp("unknown key"),
 		},
 	}
-	result, err := GetMapValue[any](context.Background(), nil, m, keys)
+	result, err := ctxutil.GetMapValue[any](context.Background(), nil, m, keys)
 	assert.NoError(t, err)
 	assert.Nil(t, result)
 }
 
 func Test_GetMapValue_NilKey(t *testing.T) {
-	_, err := GetMapValue[any](context.Background(), nil, pcommon.NewMap(), nil)
+	_, err := ctxutil.GetMapValue[any](context.Background(), nil, pcommon.NewMap(), nil)
 	assert.Error(t, err)
 }
 
@@ -253,7 +254,7 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 			s := m.PutEmptySlice("slice")
 			s.AppendEmpty()
 
-			err := SetMapValue[any](context.Background(), nil, m, tt.keys, "value")
+			err := ctxutil.SetMapValue[any](context.Background(), nil, m, tt.keys, "value")
 			assert.Equal(t, tt.err.Error(), err.Error())
 		})
 	}
@@ -273,7 +274,7 @@ func Test_SetMapValue_AddingNewSubMap(t *testing.T) {
 			S: ottltest.Strp("foo"),
 		},
 	}
-	err := SetMapValue[any](context.Background(), nil, m, keys, "bar")
+	err := ctxutil.SetMapValue[any](context.Background(), nil, m, keys, "bar")
 	assert.NoError(t, err)
 
 	expected := pcommon.NewMap()
@@ -297,7 +298,7 @@ func Test_SetMapValue_EmptyMap(t *testing.T) {
 			S: ottltest.Strp("foo"),
 		},
 	}
-	err := SetMapValue[any](context.Background(), nil, m, keys, "bar")
+	err := ctxutil.SetMapValue[any](context.Background(), nil, m, keys, "bar")
 	assert.NoError(t, err)
 
 	expected := pcommon.NewMap()
@@ -307,6 +308,6 @@ func Test_SetMapValue_EmptyMap(t *testing.T) {
 }
 
 func Test_SetMapValue_NilKey(t *testing.T) {
-	err := SetMapValue[any](context.Background(), nil, pcommon.NewMap(), nil, "bar")
+	err := ctxutil.SetMapValue[any](context.Background(), nil, pcommon.NewMap(), nil, "bar")
 	assert.Error(t, err)
 }

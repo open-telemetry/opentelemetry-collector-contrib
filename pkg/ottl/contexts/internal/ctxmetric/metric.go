@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+package ctxmetric // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
 
 import (
 	"context"
@@ -10,16 +10,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
 )
 
-type MetricContext interface {
-	GetMetric() pmetric.Metric
-}
-
-func MetricPathGetSetter[K MetricContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
-		return nil, ctxerror.New("nil", "nil", ctxmetric.Name, ctxmetric.DocRef)
+		return nil, ctxerror.New("nil", "nil", Name, DocRef)
 	}
 	switch path.Name() {
 	case "name":
@@ -37,11 +32,11 @@ func MetricPathGetSetter[K MetricContext](path ottl.Path[K]) (ottl.GetSetter[K],
 	case "data_points":
 		return accessDataPoints[K](), nil
 	default:
-		return nil, ctxerror.New(path.Name(), path.String(), ctxmetric.Name, ctxmetric.DocRef)
+		return nil, ctxerror.New(path.Name(), path.String(), Name, DocRef)
 	}
 }
 
-func accessName[K MetricContext]() ottl.StandardGetSetter[K] {
+func accessName[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetMetric().Name(), nil
@@ -55,7 +50,7 @@ func accessName[K MetricContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessDescription[K MetricContext]() ottl.StandardGetSetter[K] {
+func accessDescription[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetMetric().Description(), nil
@@ -69,7 +64,7 @@ func accessDescription[K MetricContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessUnit[K MetricContext]() ottl.StandardGetSetter[K] {
+func accessUnit[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetMetric().Unit(), nil
@@ -83,7 +78,7 @@ func accessUnit[K MetricContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessType[K MetricContext]() ottl.StandardGetSetter[K] {
+func accessType[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return int64(tCtx.GetMetric().Type()), nil
@@ -96,7 +91,7 @@ func accessType[K MetricContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessAggTemporality[K MetricContext]() ottl.StandardGetSetter[K] {
+func accessAggTemporality[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			metric := tCtx.GetMetric()
@@ -127,7 +122,7 @@ func accessAggTemporality[K MetricContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessIsMonotonic[K MetricContext]() ottl.StandardGetSetter[K] {
+func accessIsMonotonic[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			metric := tCtx.GetMetric()
@@ -148,7 +143,7 @@ func accessIsMonotonic[K MetricContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessDataPoints[K MetricContext]() ottl.StandardGetSetter[K] {
+func accessDataPoints[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			metric := tCtx.GetMetric()
