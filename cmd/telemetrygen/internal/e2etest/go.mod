@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetryge
 go 1.23.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen v0.120.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen v0.120.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250224010654-18e18b21da7a
 	go.opentelemetry.io/collector/consumer/consumertest v0.120.1-0.20250224010654-18e18b21da7a
