@@ -32,6 +32,7 @@ type dQuantileValue struct {
 
 type metricModelSummary struct {
 	data []*dMetricSummary
+	lbl  string
 }
 
 func (m *metricModelSummary) metricType() pmetric.MetricType {
@@ -89,4 +90,8 @@ func (m *metricModelSummary) size() int {
 
 func (m *metricModelSummary) bytes() ([]byte, error) {
 	return toJSONLines(m.data)
+}
+
+func (m *metricModelSummary) label() string {
+	return m.lbl
 }

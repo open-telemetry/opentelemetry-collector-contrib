@@ -36,6 +36,7 @@ type dMetricExponentialHistogram struct {
 
 type metricModelExponentialHistogram struct {
 	data []*dMetricExponentialHistogram
+	lbl  string
 }
 
 func (m *metricModelExponentialHistogram) metricType() pmetric.MetricType {
@@ -118,4 +119,8 @@ func (m *metricModelExponentialHistogram) size() int {
 
 func (m *metricModelExponentialHistogram) bytes() ([]byte, error) {
 	return toJSONLines(m.data)
+}
+
+func (m *metricModelExponentialHistogram) label() string {
+	return m.lbl
 }

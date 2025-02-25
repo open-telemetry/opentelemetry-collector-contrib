@@ -16,6 +16,7 @@ import (
 )
 
 type Config struct {
+	// confighttp.ClientConfig.Headers is the headers of doris stream load.
 	confighttp.ClientConfig   `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
@@ -44,6 +45,10 @@ type Config struct {
 	TimeZone string `mapstructure:"timezone"`
 	// LogResponse is whether to log the response of doris stream load.
 	LogResponse bool `mapstructure:"log_response"`
+	// LabelPrefix is the prefix of the label in doris stream load.
+	LabelPrefix string `mapstructure:"label_prefix"`
+	// ProgressInterval is the interval of the progress reporter.
+	LogProgressInterval int `mapstructure:"log_progress_interval"`
 
 	// not in config file, will be set in Validate
 	timeLocation *time.Location `mapstructure:"-"`

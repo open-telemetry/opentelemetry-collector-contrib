@@ -12,6 +12,7 @@ type metricModel interface {
 	raw() any
 	size() int
 	bytes() ([]byte, error)
+	label() string
 }
 
 // dMetric Basic Metric

@@ -25,6 +25,7 @@ type dMetricGauge struct {
 
 type metricModelGauge struct {
 	data []*dMetricGauge
+	lbl  string
 }
 
 func (m *metricModelGauge) metricType() pmetric.MetricType {
@@ -84,4 +85,8 @@ func (m *metricModelGauge) size() int {
 
 func (m *metricModelGauge) bytes() ([]byte, error) {
 	return toJSONLines(m.data)
+}
+
+func (m *metricModelGauge) label() string {
+	return m.lbl
 }

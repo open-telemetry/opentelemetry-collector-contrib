@@ -37,6 +37,11 @@ func TestLoadConfig(t *testing.T) {
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	httpClientConfig.Timeout = 5 * time.Second
 	httpClientConfig.Endpoint = "http://localhost:8030"
+	httpClientConfig.Headers = map[string]configopaque.String{
+		"max_filter_ratio": "0.1",
+		"strict_mode":      "true",
+		"group_commit":     "async_mode",
+	}
 
 	fullCfg := &Config{
 		ClientConfig: httpClientConfig,
@@ -58,16 +63,18 @@ func TestLoadConfig(t *testing.T) {
 			Traces:  "otel_traces",
 			Metrics: "otel_metrics",
 		},
-		Database:          "otel",
-		Username:          "admin",
-		Password:          configopaque.String("admin"),
-		CreateSchema:      true,
-		MySQLEndpoint:     "localhost:9030",
-		HistoryDays:       0,
-		CreateHistoryDays: 0,
-		ReplicationNum:    2,
-		LogResponse:       true,
-		TimeZone:          "Asia/Shanghai",
+		Database:            "otel",
+		Username:            "admin",
+		Password:            configopaque.String("admin"),
+		CreateSchema:        true,
+		MySQLEndpoint:       "localhost:9030",
+		HistoryDays:         0,
+		CreateHistoryDays:   0,
+		ReplicationNum:      2,
+		TimeZone:            "Asia/Shanghai",
+		LogResponse:         true,
+		LabelPrefix:         "otel",
+		LogProgressInterval: 5,
 	}
 	err = fullCfg.Validate()
 	require.NoError(t, err)
