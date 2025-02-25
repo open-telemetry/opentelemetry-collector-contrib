@@ -42,6 +42,8 @@ type Config struct {
 	ReplicationNum int32 `mapstructure:"replication_num"`
 	// Timezone is the timezone of the doris.
 	TimeZone string `mapstructure:"timezone"`
+	// LogResponse is whether to log the response of doris stream load.
+	LogResponse bool `mapstructure:"log_response"`
 
 	// not in config file, will be set in Validate
 	timeLocation *time.Location `mapstructure:"-"`

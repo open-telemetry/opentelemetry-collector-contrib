@@ -17,6 +17,7 @@ doris/full:
   replication_num: 2
   timezone: Asia/Shanghai
   timeout: 5s
+  log_response: true
   sending_queue:
     enabled: true
     num_consumers: 10

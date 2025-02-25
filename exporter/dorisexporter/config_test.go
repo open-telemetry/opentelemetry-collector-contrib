@@ -66,6 +66,7 @@ func TestLoadConfig(t *testing.T) {
 		HistoryDays:       0,
 		CreateHistoryDays: 0,
 		ReplicationNum:    2,
+		LogResponse:       true,
 		TimeZone:          "Asia/Shanghai",
 	}
 	err = fullCfg.Validate()
