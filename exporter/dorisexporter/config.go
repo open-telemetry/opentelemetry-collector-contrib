@@ -42,6 +42,9 @@ type Config struct {
 	ReplicationNum int32 `mapstructure:"replication_num"`
 	// Timezone is the timezone of the doris.
 	TimeZone string `mapstructure:"timezone"`
+
+	// not in config file, will be set in Validate
+	timeLocation *time.Location `mapstructure:"-"`
 }
 
 type Table struct {
@@ -94,7 +97,8 @@ func (cfg *Config) Validate() (err error) {
 		err = errors.Join(err, errors.New("metrics table name must be alphanumeric and underscore"))
 	}
 
-	_, errT := cfg.timeZone()
+	var errT error
+	cfg.timeLocation, errT = time.LoadLocation(cfg.TimeZone)
 	if errT != nil {
 		err = errors.Join(err, errors.New("invalid timezone"))
 	}
