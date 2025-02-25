@@ -6,3 +6,9 @@ sigv4auth:
 sigv4auth/missing_credentials:
   region: "region"
   service: "service"
+sigv4auth/web_identity:
+  region: "region"
+  service: "service"
+  assume_role_with_web_identity:
+    arn: "arn:aws:iam::12345678910:role/my_role"
+    token_file: "my_token_file"

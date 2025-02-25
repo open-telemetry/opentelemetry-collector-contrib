@@ -17,7 +17,7 @@ import (
 )
 
 func TestNewSigv4Extension(t *testing.T) {
-	cfg := &Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}}
+	cfg := &Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{ARN: "rolearn", STSRegion: "region"}}
 
 	sa := newSigv4Extension(cfg, "awsSDKInfo", zap.NewNop())
 	assert.Equal(t, cfg.Region, sa.cfg.Region)
@@ -30,7 +30,7 @@ func TestRoundTripper(t *testing.T) {
 
 	base := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
 	awsSDKInfo := "awsSDKInfo"
-	cfg := &Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}, credsProvider: awsCredsProvider}
+	cfg := &Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{ARN: "rolearn", STSRegion: "region"}, credsProvider: awsCredsProvider}
 
 	sa := newSigv4Extension(cfg, awsSDKInfo, zap.NewNop())
 	assert.NotNil(t, sa)
@@ -47,7 +47,7 @@ func TestRoundTripper(t *testing.T) {
 }
 
 func TestPerRPCCredentials(t *testing.T) {
-	cfg := &Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}}
+	cfg := &Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{ARN: "rolearn", STSRegion: "region"}}
 	sa := newSigv4Extension(cfg, "", zap.NewNop())
 
 	rpc, err := sa.PerRPCCredentials()
@@ -65,14 +65,14 @@ func TestGetCredsProviderFromConfig(t *testing.T) {
 	}{
 		{
 			"success_case_without_role",
-			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{STSRegion: "region"}},
+			&Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{STSRegion: "region"}},
 			"AccessKeyID",
 			"SecretAccessKey",
 			false,
 		},
 		{
 			"failure_case_without_role",
-			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{STSRegion: "region"}},
+			&Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{STSRegion: "region"}},
 			"",
 			"",
 			true,
