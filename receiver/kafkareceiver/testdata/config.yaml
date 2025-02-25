@@ -35,3 +35,9 @@ kafka/logs:
     retry:
       max: 10
       backoff: 5s
+  error_backoff:
+    enabled: true
+    initial_interval: 1s
+    max_interval: 10s
+    max_elapsed_time: 1m
+    multiplier: 1.5
