@@ -10,9 +10,7 @@ import (
 	"strings"
 )
 
-var (
-	_ encoding.TextUnmarshaler = (*HashFunction)(nil)
-)
+var _ encoding.TextUnmarshaler = (*HashFunction)(nil)
 
 type HashFunction string
 
