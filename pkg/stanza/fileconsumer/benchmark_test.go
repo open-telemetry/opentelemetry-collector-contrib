@@ -187,7 +187,7 @@ func BenchmarkFileInput(b *testing.B) {
 			cfg.PollInterval = time.Microsecond
 
 			doneChan := make(chan bool, len(files))
-			callback := func(_ context.Context, tokens [][]byte, attributes map[string]any, lastRecordNumber int64) error {
+			callback := func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64) error {
 				if len(tokens) > 0 && len(tokens[len(tokens)-1]) == 0 {
 					doneChan <- true
 				}
