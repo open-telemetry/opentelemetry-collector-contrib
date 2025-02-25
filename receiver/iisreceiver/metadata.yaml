@@ -135,3 +135,9 @@ metrics:
     gauge:
       value_type: int
     enabled: true
+  iis.application_pool.state:
+    description: The current state of the application pool.
+    unit: "{state}"
+    gauge:
+      value_type: int
+    enabled: true

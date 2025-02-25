@@ -25,6 +25,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					IisApplicationPoolState:   MetricConfig{Enabled: true},
 					IisConnectionActive:       MetricConfig{Enabled: true},
 					IisConnectionAnonymous:    MetricConfig{Enabled: true},
 					IisConnectionAttemptCount: MetricConfig{Enabled: true},
@@ -48,6 +49,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					IisApplicationPoolState:   MetricConfig{Enabled: false},
 					IisConnectionActive:       MetricConfig{Enabled: false},
 					IisConnectionAnonymous:    MetricConfig{Enabled: false},
 					IisConnectionAttemptCount: MetricConfig{Enabled: false},

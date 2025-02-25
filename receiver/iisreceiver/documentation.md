@@ -12,6 +12,14 @@ metrics:
     enabled: false
 ```
 
+### iis.application_pool.state
+
+The current state of the application pool.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {state} | Gauge | Int |
+
 ### iis.connection.active
 
 Number of active connections.

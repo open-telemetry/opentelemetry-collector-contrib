@@ -70,6 +70,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordIisApplicationPoolStateDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordIisConnectionActiveDataPoint(ts, 1)
 
 			defaultMetricsCount++
@@ -141,6 +145,18 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "iis.application_pool.state":
+					assert.False(t, validatedMetrics["iis.application_pool.state"], "Found a duplicate in the metrics slice: iis.application_pool.state")
+					validatedMetrics["iis.application_pool.state"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The current state of the application pool.", ms.At(i).Description())
+					assert.Equal(t, "{state}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "iis.connection.active":
 					assert.False(t, validatedMetrics["iis.connection.active"], "Found a duplicate in the metrics slice: iis.connection.active")
 					validatedMetrics["iis.connection.active"] = true

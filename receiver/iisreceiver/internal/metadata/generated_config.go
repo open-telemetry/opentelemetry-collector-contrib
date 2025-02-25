@@ -28,6 +28,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for iis metrics.
 type MetricsConfig struct {
+	IisApplicationPoolState   MetricConfig `mapstructure:"iis.application_pool.state"`
 	IisConnectionActive       MetricConfig `mapstructure:"iis.connection.active"`
 	IisConnectionAnonymous    MetricConfig `mapstructure:"iis.connection.anonymous"`
 	IisConnectionAttemptCount MetricConfig `mapstructure:"iis.connection.attempt.count"`
@@ -44,6 +45,9 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		IisApplicationPoolState: MetricConfig{
+			Enabled: true,
+		},
 		IisConnectionActive: MetricConfig{
 			Enabled: true,
 		},
