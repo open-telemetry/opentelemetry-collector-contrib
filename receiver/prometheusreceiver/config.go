@@ -103,6 +103,15 @@ func (cfg *PromConfig) Validate() error {
 	if err != nil {
 		return err
 	}
+	// Since Prometheus 3.0, the scrape manager started to fail scrapes that don't have proper
+	// Content-Type headers, but they provided an extra configuration option to fallback to the
+	// previous behavior. We need to make sure that this option is set for all scrape configs
+	// to avoid introducing a breaking change.
+	for _, sc := range scrapeConfigs {
+		if sc.ScrapeFallbackProtocol == "" {
+			sc.ScrapeFallbackProtocol = promconfig.PrometheusText0_0_4
+		}
+	}
 
 	for _, sc := range scrapeConfigs {
 		if err := validateHTTPClientConfig(&sc.HTTPClientConfig); err != nil {

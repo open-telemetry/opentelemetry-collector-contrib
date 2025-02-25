@@ -32,25 +32,23 @@ type Manager interface {
 type manager struct {
 	log *zap.Logger
 
-	rw           sync.RWMutex
-	providers    []Provider
-	match        map[string]*Version
-	translations map[string]*translator
+	rw            sync.RWMutex
+	providers     []Provider
+	match         map[string]*Version
+	translatorMap map[string]*translator
 }
 
 var _ Manager = (*manager)(nil)
 
 // NewManager creates a manager that will allow for management
-// of schema, the options allow for additional properties to be
-// added to manager to enable additional locations of where to check
-// for translations file.
-func NewManager(targets []string, log *zap.Logger) (Manager, error) {
+// of schema
+func NewManager(targetSchemaURLS []string, log *zap.Logger) (Manager, error) {
 	if log == nil {
 		return nil, fmt.Errorf("logger: %w", errNilValueProvided)
 	}
 
-	match := make(map[string]*Version, len(targets))
-	for _, target := range targets {
+	match := make(map[string]*Version, len(targetSchemaURLS))
+	for _, target := range targetSchemaURLS {
 		family, version, err := GetFamilyAndVersion(target)
 		if err != nil {
 			return nil, err
@@ -59,31 +57,31 @@ func NewManager(targets []string, log *zap.Logger) (Manager, error) {
 	}
 
 	return &manager{
-		log:          log,
-		match:        match,
-		translations: make(map[string]*translator),
+		log:           log,
+		match:         match,
+		translatorMap: make(map[string]*translator),
 	}, nil
 }
 
 func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) Translation {
 	family, version, err := GetFamilyAndVersion(schemaURL)
 	if err != nil {
-		m.log.Debug("No valid schema url was provided, using no-op schema",
+		m.log.Error("No valid schema url was provided, using no-op schema",
 			zap.String("schema-url", schemaURL),
 		)
 		return nopTranslation{}
 	}
 
-	target, match := m.match[family]
+	targetTranslation, match := m.match[family]
 	if !match {
-		m.log.Debug("Not a known target, providing Nop Translation",
+		m.log.Warn("Not a known targetTranslation, providing Nop Translation",
 			zap.String("schema-url", schemaURL),
 		)
 		return nopTranslation{}
 	}
 
 	m.rw.RLock()
-	t, exists := m.translations[family]
+	t, exists := m.translatorMap[family]
 	m.rw.RUnlock()
 
 	if exists && t.SupportedVersion(version) {
@@ -91,20 +89,20 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) Tran
 	}
 
 	for _, p := range m.providers {
-		content, err := p.Lookup(ctx, schemaURL)
+		content, err := p.Retrieve(ctx, schemaURL)
 		if err != nil {
 			m.log.Error("Failed to lookup schemaURL",
 				zap.Error(err),
 				zap.String("schemaURL", schemaURL),
 			)
-			// todo(ankit) figure out what to do when the providers dont respond something good
+			return nopTranslation{}
 		}
-		t, err := newTranslatorFromReader(
+		t, err := newTranslator(
 			m.log.Named("translator").With(
 				zap.String("family", family),
-				zap.Stringer("target", target),
+				zap.Stringer("target", targetTranslation),
 			),
-			joinSchemaFamilyAndVersion(family, target),
+			joinSchemaFamilyAndVersion(family, targetTranslation),
 			content,
 		)
 		if err != nil {
@@ -112,7 +110,7 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) Tran
 			continue
 		}
 		m.rw.Lock()
-		m.translations[family] = t
+		m.translatorMap[family] = t
 		m.rw.Unlock()
 		return t
 	}
@@ -125,7 +123,7 @@ func (m *manager) SetProviders(providers ...Provider) error {
 		return fmt.Errorf("zero providers set: %w", errNilValueProvided)
 	}
 	m.rw.Lock()
+	defer m.rw.Unlock()
 	m.providers = append(m.providers[:0], providers...)
-	m.rw.Unlock()
 	return nil
 }

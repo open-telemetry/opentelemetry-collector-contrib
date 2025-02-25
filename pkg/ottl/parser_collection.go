@@ -156,7 +156,7 @@ func NewParserCollection[R any](
 	pc := &ParserCollection[R]{
 		Settings:                  settings,
 		contextParsers:            map[string]*parserCollectionParser{},
-		contextInferrer:           newPriorityContextInferrer(contextInferrerCandidates),
+		contextInferrer:           newPriorityContextInferrer(settings, contextInferrerCandidates),
 		contextInferrerCandidates: contextInferrerCandidates,
 		candidatesLowerContexts:   map[string][]string{},
 	}
@@ -282,7 +282,7 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter) (R, 
 	}
 
 	if inferredContext == "" {
-		return *new(R), fmt.Errorf("unable to infer context from statements %+q, path's first segment must be a valid context name: %+q", statementsValues, pc.supportedContextNames())
+		return *new(R), fmt.Errorf("unable to infer context from statements, path's first segment must be a valid context name: %+q, and at least one context must be capable of parsing all statements: %+q", pc.supportedContextNames(), statementsValues)
 	}
 
 	_, ok := pc.contextParsers[inferredContext]

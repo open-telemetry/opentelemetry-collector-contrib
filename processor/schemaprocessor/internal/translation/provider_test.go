@@ -5,10 +5,13 @@ package translation
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +25,8 @@ func TestInvalidHTTPProviderTests(t *testing.T) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		_, err := io.Copy(w, LoadTranslationVersion(t, "complex_changeset.yml"))
+		data := LoadTranslationVersion(t, "complex_changeset.yml")
+		_, err := io.Copy(w, strings.NewReader(data))
 		assert.NoError(t, err, "Must not error when trying load dataset")
 	}))
 	t.Cleanup(s.Close)
@@ -44,9 +48,33 @@ func TestInvalidHTTPProviderTests(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.scenario, func(t *testing.T) {
 			p := NewHTTPProvider(s.Client())
-			content, err := p.Lookup(context.Background(), tc.url)
-			assert.Nil(t, content, "Expected to be nil")
+			content, err := p.Retrieve(context.Background(), tc.url)
+			assert.Empty(t, content, "Expected to be empty")
 			assert.Error(t, err, "Must have errored processing request")
 		})
 	}
+}
+
+type testProvider struct {
+	fs *embed.FS
+}
+
+func NewTestProvider(fs *embed.FS) Provider {
+	return &testProvider{fs: fs}
+}
+
+func (tp testProvider) Retrieve(_ context.Context, schemaURL string) (string, error) {
+	parsedPath, err := url.Parse(schemaURL)
+	if err != nil {
+		return "", err
+	}
+	f, err := tp.fs.Open(parsedPath.Path[1:])
+	if err != nil {
+		return "", err
+	}
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }

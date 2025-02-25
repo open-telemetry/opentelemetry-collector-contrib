@@ -26,7 +26,7 @@ import (
 func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := exportertest.NewNopSettings()
+	creationParams := exportertest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
@@ -44,7 +44,7 @@ func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := exportertest.NewNopSettings()
+	creationParams := exportertest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
@@ -100,7 +100,7 @@ func TestBuildExporterConfig(t *testing.T) {
 
 func TestBuildExporterSettings(t *testing.T) {
 	// prepare
-	creationParams := exportertest.NewNopSettings()
+	creationParams := exportertest.NewNopSettings(metadata.Type)
 	testEndpoint := "the-endpoint"
 	observedZapCore, observedLogs := observer.New(zap.InfoLevel)
 	creationParams.Logger = zap.New(observedZapCore)
