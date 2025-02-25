@@ -21,6 +21,11 @@ func TestNewCommonExporter(t *testing.T) {
 
 func TestCommonExporter_FormatTime(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "http://localhost:8030"
+	cfg.CreateSchema = false
+	err := cfg.Validate()
+	require.NoError(t, err)
+
 	exporter := newExporter(nil, cfg, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, exporter)
 
@@ -62,7 +67,7 @@ func findRandomPort() (int, error) {
 	return port, nil
 }
 
-func TestToJsonLines(t *testing.T) {
+func TestToJSONLines(t *testing.T) {
 	logs, err := toJSONLines([]*dLog{
 		{}, {},
 	})
