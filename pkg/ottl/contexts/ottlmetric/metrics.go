@@ -25,7 +25,7 @@ const ContextName = ctxmetric.Name
 var (
 	_ internal.ResourceContext             = TransformContext{}
 	_ internal.InstrumentationScopeContext = TransformContext{}
-	_ internal.MetricContext               = TransformContext{}
+	_ ctxmetric.Context                    = TransformContext{}
 )
 
 type TransformContext struct {
@@ -193,7 +193,7 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 		}
 		return accessCacheKey(path.Keys()), nil
 	default:
-		return internal.MetricPathGetSetter[TransformContext](path)
+		return ctxmetric.PathGetSetter[TransformContext](path)
 	}
 }
 
