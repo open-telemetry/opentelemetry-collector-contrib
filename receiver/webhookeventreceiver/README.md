@@ -31,6 +31,7 @@ The following settings are optional:
 * `required_header` (optional):  
     * `key` (required if `required_header` config option is set): Represents the key portion of the required header.
     * `value` (required if `required_header` config option is set): Represents the value portion of the required header.
+* `split_logs_at_newline` (default: false): If true, the receiver will split logs at newlines in the incoming event body.
 
 Example:
 ```yaml
@@ -43,6 +44,7 @@ receivers:
         required_header:
             key: "required-header-key"
             value: "required-header-value"
+        split_logs_at_newline: false
 ```
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with a detailed sample configuration in [testdata/config.yaml](./testdata/config.yaml)
 
