@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
+package parser // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/parser"
 
 import (
 	"errors"
@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/lightstep/go-expohisto/structure"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -25,11 +26,7 @@ var (
 	errEmptyMetricValue = errors.New("empty metric value")
 )
 
-type (
-	MetricType   string // From the statsd line e.g., "c", "g", "h"
-	TypeName     string // How humans describe the MetricTypes ("counter", "gauge")
-	ObserverType string // How the server will aggregate histogram and timings ("gauge", "summary")
-)
+type MetricType string // From the statsd line e.g., "c", "g", "h"
 
 const (
 	tagMetricType = "metric_type"
@@ -40,46 +37,17 @@ const (
 	TimingType       MetricType = "ms"
 	DistributionType MetricType = "d"
 
-	CounterTypeName      TypeName = "counter"
-	GaugeTypeName        TypeName = "gauge"
-	HistogramTypeName    TypeName = "histogram"
-	TimingTypeName       TypeName = "timing"
-	TimingAltTypeName    TypeName = "timer"
-	DistributionTypeName TypeName = "distribution"
-
-	GaugeObserver     ObserverType = "gauge"
-	SummaryObserver   ObserverType = "summary"
-	HistogramObserver ObserverType = "histogram"
-	DisableObserver   ObserverType = "disabled"
-
-	DefaultObserverType = DisableObserver
-
 	receiverName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 )
 
-type TimerHistogramMapping struct {
-	StatsdType   TypeName        `mapstructure:"statsd_type"`
-	ObserverType ObserverType    `mapstructure:"observer_type"`
-	Histogram    HistogramConfig `mapstructure:"histogram"`
-	Summary      SummaryConfig   `mapstructure:"summary"`
-}
-
-type HistogramConfig struct {
-	MaxSize int32 `mapstructure:"max_size"`
-}
-
-type SummaryConfig struct {
-	Percentiles []float64 `mapstructure:"percentiles"`
-}
-
 type ObserverCategory struct {
-	method             ObserverType
+	method             protocol.ObserverType
 	histogramConfig    structure.Config
 	summaryPercentiles []float64
 }
 
 var defaultObserverCategory = ObserverCategory{
-	method: DefaultObserverType,
+	method: protocol.DefaultObserverType,
 }
 
 // StatsDParser supports the Parse method for parsing StatsD messages with Tags.
@@ -146,20 +114,20 @@ type statsDMetricDescription struct {
 	attrs      attribute.Set
 }
 
-func (t MetricType) FullName() TypeName {
+func (t MetricType) FullName() protocol.TypeName {
 	switch t {
 	case GaugeType:
-		return GaugeTypeName
+		return protocol.GaugeTypeName
 	case CounterType:
-		return CounterTypeName
+		return protocol.CounterTypeName
 	case TimingType:
-		return TimingTypeName
+		return protocol.TimingTypeName
 	case HistogramType:
-		return HistogramTypeName
+		return protocol.HistogramTypeName
 	case DistributionType:
-		return DistributionTypeName
+		return protocol.DistributionTypeName
 	}
-	return TypeName(fmt.Sprintf("unknown(%s)", t))
+	return protocol.TypeName(fmt.Sprintf("unknown(%s)", t))
 }
 
 func (p *StatsDParser) resetState(when time.Time) {
@@ -167,7 +135,7 @@ func (p *StatsDParser) resetState(when time.Time) {
 	p.instrumentsByAddress = make(map[netAddr]*instruments)
 }
 
-func (p *StatsDParser) Initialize(enableMetricType bool, enableSimpleTags bool, isMonotonicCounter bool, enableIPOnlyAggregation bool, sendTimerHistogram []TimerHistogramMapping) error {
+func (p *StatsDParser) Initialize(enableMetricType bool, enableSimpleTags bool, isMonotonicCounter bool, enableIPOnlyAggregation bool, sendTimerHistogram []protocol.TimerHistogramMapping) error {
 	p.resetState(timeNowFunc())
 
 	p.histogramEvents = defaultObserverCategory
@@ -180,21 +148,21 @@ func (p *StatsDParser) Initialize(enableMetricType bool, enableSimpleTags bool, 
 	// Note: validation occurs in ("../".Config).validate()
 	for _, eachMap := range sendTimerHistogram {
 		switch eachMap.StatsdType {
-		case HistogramTypeName, DistributionTypeName:
+		case protocol.HistogramTypeName, protocol.DistributionTypeName:
 			p.histogramEvents.method = eachMap.ObserverType
 			p.histogramEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 			p.histogramEvents.summaryPercentiles = eachMap.Summary.Percentiles
-		case TimingTypeName, TimingAltTypeName:
+		case protocol.TimingTypeName, protocol.TimingAltTypeName:
 			p.timerEvents.method = eachMap.ObserverType
 			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 			p.timerEvents.summaryPercentiles = eachMap.Summary.Percentiles
-		case CounterTypeName, GaugeTypeName:
+		case protocol.CounterTypeName, protocol.GaugeTypeName:
 		}
 	}
 	return nil
 }
 
-func expoHistogramConfig(opts HistogramConfig) structure.Config {
+func expoHistogramConfig(opts protocol.HistogramConfig) structure.Config {
 	var r []structure.Option
 	if opts.MaxSize >= structure.MinSize {
 		r = append(r, structure.WithMaxSize(opts.MaxSize))
@@ -331,9 +299,9 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 	case TimingType, HistogramType, DistributionType:
 		category := p.observerCategoryFor(parsedMetric.description.metricType)
 		switch category.method {
-		case GaugeObserver:
+		case protocol.GaugeObserver:
 			instrument.timersAndDistributions = append(instrument.timersAndDistributions, buildGaugeMetric(parsedMetric, timeNowFunc()))
-		case SummaryObserver:
+		case protocol.SummaryObserver:
 			raw := parsedMetric.sampleValue()
 			if existing, ok := instrument.summaries[parsedMetric.description]; !ok {
 				instrument.summaries[parsedMetric.description] = summaryMetric{
@@ -348,7 +316,7 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 					percentiles: category.summaryPercentiles,
 				}
 			}
-		case HistogramObserver:
+		case protocol.HistogramObserver:
 			raw := parsedMetric.sampleValue()
 			var agg *histogramStructure
 			if existing, ok := instrument.histograms[parsedMetric.description]; ok {
@@ -366,7 +334,7 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 				uint64(raw.count), // Note! Rounding float64 to uint64 here.
 			)
 
-		case DisableObserver:
+		case protocol.DisableObserver:
 			// No action.
 		}
 	}
