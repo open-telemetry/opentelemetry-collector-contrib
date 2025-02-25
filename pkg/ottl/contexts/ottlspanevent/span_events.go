@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
@@ -198,7 +199,7 @@ func NewConditionSequence(conditions []*ottl.Condition[TransformContext], teleme
 
 func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	if val != nil {
-		if enum, ok := internal.SpanSymbolTable[*val]; ok {
+		if enum, ok := ctxspan.SymbolTable[*val]; ok {
 			return &enum, nil
 		}
 		return nil, fmt.Errorf("enum symbol, %s, not found", *val)
@@ -259,7 +260,7 @@ func (pep *pathExpressionParser) parseHigherContextPath(context string, path ott
 	case ctxscope.LegacyName:
 		return internal.ScopePathGetSetter(ctxspanevent.Name, path)
 	case ctxspan.Name:
-		return internal.SpanPathGetSetter(ctxspanevent.Name, path)
+		return ctxspan.PathGetSetter(ctxspanevent.Name, path)
 	default:
 		var fullPath string
 		if path != nil {
@@ -286,10 +287,10 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 func accessCacheKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
-			return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key)
+			return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
-			return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key, val)
+			return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key, val)
 		},
 	}
 }
@@ -353,10 +354,10 @@ func accessSpanEventAttributes() ottl.StandardGetSetter[TransformContext] {
 func accessSpanEventAttributesKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
-			return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetSpanEvent().Attributes(), key)
+			return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetSpanEvent().Attributes(), key)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
-			return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetSpanEvent().Attributes(), key, val)
+			return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetSpanEvent().Attributes(), key, val)
 		},
 	}
 }

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package ctxspan_test
 
 import (
 	"context"
@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -605,7 +606,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := SpanPathGetSetter[*spanContext](tt.path.Context(), tt.path)
+			accessor, err := ctxspan.PathGetSetter[*spanContext](tt.path.Context(), tt.path)
 			assert.NoError(t, err)
 
 			span := createSpan()
@@ -637,7 +638,7 @@ func TestSpanPathGetSetterCacheAccessError(t *testing.T) {
 		FullPath: "span.cache[key]",
 	}
 
-	_, err := SpanPathGetSetter[*spanContext]("spanevent", path)
+	_, err := ctxspan.PathGetSetter[*spanContext]("spanevent", path)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), `replace "span.cache[key]" with "spanevent.cache[key]"`)
 }
