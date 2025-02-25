@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
@@ -180,10 +181,10 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 func accessCacheKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
-			return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key)
+			return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
-			return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key, val)
+			return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key, val)
 		},
 	}
 }

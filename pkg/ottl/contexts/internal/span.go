@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 )
 
 type SpanContext interface {
@@ -143,7 +144,7 @@ func accessStringTraceID[K SpanContext]() ottl.StandardGetSetter[K] {
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			if str, ok := val.(string); ok {
-				id, err := ParseTraceID(str)
+				id, err := ctxutil.ParseTraceID(str)
 				if err != nil {
 					return err
 				}
@@ -176,7 +177,7 @@ func accessStringSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			if str, ok := val.(string); ok {
-				id, err := ParseSpanID(str)
+				id, err := ctxutil.ParseSpanID(str)
 				if err != nil {
 					return err
 				}
@@ -261,7 +262,7 @@ func accessStringParentSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			if str, ok := val.(string); ok {
-				id, err := ParseSpanID(str)
+				id, err := ctxutil.ParseSpanID(str)
 				if err != nil {
 					return err
 				}
@@ -435,10 +436,10 @@ func accessAttributes[K SpanContext]() ottl.StandardGetSetter[K] {
 func accessAttributesKey[K SpanContext](keys []ottl.Key[K]) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
-			return GetMapValue[K](ctx, tCtx, tCtx.GetSpan().Attributes(), keys)
+			return ctxutil.GetMapValue[K](ctx, tCtx, tCtx.GetSpan().Attributes(), keys)
 		},
 		Setter: func(ctx context.Context, tCtx K, val any) error {
-			return SetMapValue[K](ctx, tCtx, tCtx.GetSpan().Attributes(), keys, val)
+			return ctxutil.SetMapValue[K](ctx, tCtx, tCtx.GetSpan().Attributes(), keys, val)
 		},
 	}
 }

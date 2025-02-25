@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
@@ -326,10 +327,10 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 func accessCacheKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
-			return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key)
+			return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
-			return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key, val)
+			return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key, val)
 		},
 	}
 }
@@ -378,26 +379,26 @@ func accessAttributesKey(key []ottl.Key[TransformContext]) ottl.StandardGetSette
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
 			switch tCtx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
-				return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.NumberDataPoint).Attributes(), key)
+				return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.NumberDataPoint).Attributes(), key)
 			case pmetric.HistogramDataPoint:
-				return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes(), key)
+				return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes(), key)
 			case pmetric.ExponentialHistogramDataPoint:
-				return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes(), key)
+				return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes(), key)
 			case pmetric.SummaryDataPoint:
-				return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes(), key)
+				return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes(), key)
 			}
 			return nil, nil
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
 			switch tCtx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
-				return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.NumberDataPoint).Attributes(), key, val)
+				return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.NumberDataPoint).Attributes(), key, val)
 			case pmetric.HistogramDataPoint:
-				return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes(), key, val)
+				return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes(), key, val)
 			case pmetric.ExponentialHistogramDataPoint:
-				return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes(), key, val)
+				return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes(), key, val)
 			case pmetric.SummaryDataPoint:
-				return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes(), key, val)
+				return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes(), key, val)
 			}
 			return nil
 		},

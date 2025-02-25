@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+package ctxutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 
 import (
 	"context"
@@ -112,7 +112,7 @@ func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, 
 	return ottlcommon.GetValue(val), nil
 }
 
-func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.Value, val any, keys []ottl.Key[K]) error {
+func SetIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.Value, val any, keys []ottl.Key[K]) error {
 	var newValue pcommon.Value
 	switch val.(type) {
 	case []string, []bool, []int64, []float64, [][]byte, []any:
