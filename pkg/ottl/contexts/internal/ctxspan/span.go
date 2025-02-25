@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+package ctxspan // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspan"
 
 import (
 	"context"
@@ -17,17 +17,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 )
 
-type SpanContext interface {
-	GetSpan() ptrace.Span
-}
-
-func SpanPathGetSetter[K SpanContext](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func PathGetSetter[K Context](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
-		return nil, ctxerror.New("nil", "nil", ctxspan.Name, ctxspan.DocRef)
+		return nil, ctxerror.New("nil", "nil", Name, DocRef)
 	}
 	switch path.Name() {
 	case "trace_id":
@@ -36,7 +31,7 @@ func SpanPathGetSetter[K SpanContext](lowerContext string, path ottl.Path[K]) (o
 			if nextPath.Name() == "string" {
 				return accessStringTraceID[K](), nil
 			}
-			return nil, ctxerror.New(nextPath.Name(), nextPath.String(), ctxspan.Name, ctxspan.DocRef)
+			return nil, ctxerror.New(nextPath.Name(), nextPath.String(), Name, DocRef)
 		}
 		return accessTraceID[K](), nil
 	case "span_id":
@@ -45,7 +40,7 @@ func SpanPathGetSetter[K SpanContext](lowerContext string, path ottl.Path[K]) (o
 			if nextPath.Name() == "string" {
 				return accessStringSpanID[K](), nil
 			}
-			return nil, ctxerror.New(nextPath.Name(), nextPath.String(), ctxspan.Name, ctxspan.DocRef)
+			return nil, ctxerror.New(nextPath.Name(), nextPath.String(), Name, DocRef)
 		}
 		return accessSpanID[K](), nil
 	case "trace_state":
@@ -60,7 +55,7 @@ func SpanPathGetSetter[K SpanContext](lowerContext string, path ottl.Path[K]) (o
 			if nextPath.Name() == "string" {
 				return accessStringParentSpanID[K](), nil
 			}
-			return nil, ctxerror.New(nextPath.Name(), nextPath.String(), ctxspan.Name, ctxspan.DocRef)
+			return nil, ctxerror.New(nextPath.Name(), nextPath.String(), Name, DocRef)
 		}
 		return accessParentSpanID[K](), nil
 	case "name":
@@ -74,7 +69,7 @@ func SpanPathGetSetter[K SpanContext](lowerContext string, path ottl.Path[K]) (o
 			case "deprecated_string":
 				return accessDeprecatedStringKind[K](), nil
 			default:
-				return nil, ctxerror.New(nextPath.Name(), nextPath.String(), ctxspan.Name, ctxspan.DocRef)
+				return nil, ctxerror.New(nextPath.Name(), nextPath.String(), Name, DocRef)
 			}
 		}
 		return accessKind[K](), nil
@@ -111,18 +106,18 @@ func SpanPathGetSetter[K SpanContext](lowerContext string, path ottl.Path[K]) (o
 			case "message":
 				return accessStatusMessage[K](), nil
 			default:
-				return nil, ctxerror.New(nextPath.Name(), nextPath.String(), ctxspan.Name, ctxspan.DocRef)
+				return nil, ctxerror.New(nextPath.Name(), nextPath.String(), Name, DocRef)
 			}
 		}
 		return accessStatus[K](), nil
 	case "cache":
 		return nil, ctxcache.NewError(lowerContext, path.Context(), path.String())
 	default:
-		return nil, ctxerror.New(path.Name(), path.String(), ctxspan.Name, ctxspan.DocRef)
+		return nil, ctxerror.New(path.Name(), path.String(), Name, DocRef)
 	}
 }
 
-func accessTraceID[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessTraceID[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetSpan().TraceID(), nil
@@ -136,7 +131,7 @@ func accessTraceID[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessStringTraceID[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessStringTraceID[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			id := tCtx.GetSpan().TraceID()
@@ -155,7 +150,7 @@ func accessStringTraceID[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessSpanID[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetSpan().SpanID(), nil
@@ -169,7 +164,7 @@ func accessSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessStringSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessStringSpanID[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			id := tCtx.GetSpan().SpanID()
@@ -188,7 +183,7 @@ func accessStringSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessTraceState[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessTraceState[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetSpan().TraceState().AsRaw(), nil
@@ -202,7 +197,7 @@ func accessTraceState[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessTraceStateKey[K SpanContext](keys []ottl.Key[K]) (ottl.StandardGetSetter[K], error) {
+func accessTraceStateKey[K Context](keys []ottl.Key[K]) (ottl.StandardGetSetter[K], error) {
 	if len(keys) != 1 {
 		return ottl.StandardGetSetter[K]{}, fmt.Errorf("must provide exactly 1 key when accessing trace_state")
 	}
@@ -240,7 +235,7 @@ func accessTraceStateKey[K SpanContext](keys []ottl.Key[K]) (ottl.StandardGetSet
 	}, nil
 }
 
-func accessParentSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessParentSpanID[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetSpan().ParentSpanID(), nil
@@ -254,7 +249,7 @@ func accessParentSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessStringParentSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessStringParentSpanID[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			id := tCtx.GetSpan().ParentSpanID()
@@ -273,7 +268,7 @@ func accessStringParentSpanID[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessSpanName[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessSpanName[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetSpan().Name(), nil
@@ -287,7 +282,7 @@ func accessSpanName[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessKind[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessKind[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return int64(tCtx.GetSpan().Kind()), nil
@@ -301,7 +296,7 @@ func accessKind[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessStringKind[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetSpan().Kind().String(), nil
@@ -332,7 +327,7 @@ func accessStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessDeprecatedStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessDeprecatedStringKind[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return traceutil.SpanKindStr(tCtx.GetSpan().Kind()), nil
@@ -363,7 +358,7 @@ func accessDeprecatedStringKind[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessStartTimeUnixNano[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessStartTimeUnixNano[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetSpan().StartTimestamp().AsTime().UnixNano(), nil
@@ -377,7 +372,7 @@ func accessStartTimeUnixNano[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessEndTimeUnixNano[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessEndTimeUnixNano[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetSpan().EndTimestamp().AsTime().UnixNano(), nil
@@ -391,7 +386,7 @@ func accessEndTimeUnixNano[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessStartTime[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessStartTime[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetSpan().StartTimestamp().AsTime(), nil
@@ -405,7 +400,7 @@ func accessStartTime[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessEndTime[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessEndTime[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetSpan().EndTimestamp().AsTime(), nil
@@ -419,7 +414,7 @@ func accessEndTime[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessAttributes[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessAttributes[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetSpan().Attributes(), nil
@@ -433,7 +428,7 @@ func accessAttributes[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessAttributesKey[K SpanContext](keys []ottl.Key[K]) ottl.StandardGetSetter[K] {
+func accessAttributesKey[K Context](keys []ottl.Key[K]) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
 			return ctxutil.GetMapValue[K](ctx, tCtx, tCtx.GetSpan().Attributes(), keys)
@@ -444,7 +439,7 @@ func accessAttributesKey[K SpanContext](keys []ottl.Key[K]) ottl.StandardGetSett
 	}
 }
 
-func accessSpanDroppedAttributesCount[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessSpanDroppedAttributesCount[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return int64(tCtx.GetSpan().DroppedAttributesCount()), nil
@@ -458,7 +453,7 @@ func accessSpanDroppedAttributesCount[K SpanContext]() ottl.StandardGetSetter[K]
 	}
 }
 
-func accessEvents[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessEvents[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetSpan().Events(), nil
@@ -475,7 +470,7 @@ func accessEvents[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessDroppedEventsCount[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessDroppedEventsCount[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return int64(tCtx.GetSpan().DroppedEventsCount()), nil
@@ -489,7 +484,7 @@ func accessDroppedEventsCount[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessLinks[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessLinks[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetSpan().Links(), nil
@@ -506,7 +501,7 @@ func accessLinks[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessDroppedLinksCount[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessDroppedLinksCount[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return int64(tCtx.GetSpan().DroppedLinksCount()), nil
@@ -520,7 +515,7 @@ func accessDroppedLinksCount[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessStatus[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessStatus[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetSpan().Status(), nil
@@ -534,7 +529,7 @@ func accessStatus[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessStatusCode[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessStatusCode[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return int64(tCtx.GetSpan().Status().Code()), nil
@@ -548,7 +543,7 @@ func accessStatusCode[K SpanContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessStatusMessage[K SpanContext]() ottl.StandardGetSetter[K] {
+func accessStatusMessage[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetSpan().Status().Message(), nil

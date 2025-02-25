@@ -199,7 +199,7 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 		}
 		return accessCacheKey(path.Keys()), nil
 	default:
-		return internal.SpanPathGetSetter[TransformContext](ctxspan.Name, path)
+		return ctxspan.PathGetSetter[TransformContext](ctxspan.Name, path)
 	}
 }
 
