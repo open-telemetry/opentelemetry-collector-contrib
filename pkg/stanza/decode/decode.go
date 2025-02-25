@@ -43,7 +43,7 @@ func (d *Decoder) Decode(msgBuf []byte) ([]byte, error) {
 	}
 }
 
-// LookupEncoding attempts to match the string name provided with a character set encoding.
+// Deprecated: [v0.120.0] no public replacement.
 func LookupEncoding(enc string) (encoding.Encoding, error) {
 	return textutils.LookupEncoding(enc)
 }
