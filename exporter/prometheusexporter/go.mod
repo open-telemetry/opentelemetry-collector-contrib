@@ -185,6 +185,7 @@ require (
 	go.opentelemetry.io/collector/pipeline v0.120.1-0.20250224010654-18e18b21da7a // indirect
 	go.opentelemetry.io/collector/receiver v0.120.1-0.20250224010654-18e18b21da7a // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.120.1-0.20250224010654-18e18b21da7a // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.56.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
