@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/distribution/reference v0.6.0
-	github.com/google/go-cmp v0.6.0
+	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.120.1

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+package ctxutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 
 import (
 	"context"
@@ -61,5 +61,5 @@ func SetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, keys []o
 		return fmt.Errorf("index %d out of bounds", idx)
 	}
 
-	return setIndexableValue[K](ctx, tCtx, s.At(idx), val, keys[1:])
+	return SetIndexableValue[K](ctx, tCtx, s.At(idx), val, keys[1:])
 }

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package ctxmetric_test
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 )
 
@@ -110,7 +111,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := MetricPathGetSetter[*metricContext](tt.path)
+			accessor, err := ctxmetric.PathGetSetter[*metricContext](tt.path)
 			assert.NoError(t, err)
 
 			metric := createMetricTelemetry()

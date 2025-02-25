@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 	common "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
@@ -186,37 +187,9 @@ func NewConditionSequence(conditions []*ottl.Condition[TransformContext], teleme
 	return c
 }
 
-var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
-	"SEVERITY_NUMBER_UNSPECIFIED": ottl.Enum(plog.SeverityNumberUnspecified),
-	"SEVERITY_NUMBER_TRACE":       ottl.Enum(plog.SeverityNumberTrace),
-	"SEVERITY_NUMBER_TRACE2":      ottl.Enum(plog.SeverityNumberTrace2),
-	"SEVERITY_NUMBER_TRACE3":      ottl.Enum(plog.SeverityNumberTrace3),
-	"SEVERITY_NUMBER_TRACE4":      ottl.Enum(plog.SeverityNumberTrace4),
-	"SEVERITY_NUMBER_DEBUG":       ottl.Enum(plog.SeverityNumberDebug),
-	"SEVERITY_NUMBER_DEBUG2":      ottl.Enum(plog.SeverityNumberDebug2),
-	"SEVERITY_NUMBER_DEBUG3":      ottl.Enum(plog.SeverityNumberDebug3),
-	"SEVERITY_NUMBER_DEBUG4":      ottl.Enum(plog.SeverityNumberDebug4),
-	"SEVERITY_NUMBER_INFO":        ottl.Enum(plog.SeverityNumberInfo),
-	"SEVERITY_NUMBER_INFO2":       ottl.Enum(plog.SeverityNumberInfo2),
-	"SEVERITY_NUMBER_INFO3":       ottl.Enum(plog.SeverityNumberInfo3),
-	"SEVERITY_NUMBER_INFO4":       ottl.Enum(plog.SeverityNumberInfo4),
-	"SEVERITY_NUMBER_WARN":        ottl.Enum(plog.SeverityNumberWarn),
-	"SEVERITY_NUMBER_WARN2":       ottl.Enum(plog.SeverityNumberWarn2),
-	"SEVERITY_NUMBER_WARN3":       ottl.Enum(plog.SeverityNumberWarn3),
-	"SEVERITY_NUMBER_WARN4":       ottl.Enum(plog.SeverityNumberWarn4),
-	"SEVERITY_NUMBER_ERROR":       ottl.Enum(plog.SeverityNumberError),
-	"SEVERITY_NUMBER_ERROR2":      ottl.Enum(plog.SeverityNumberError2),
-	"SEVERITY_NUMBER_ERROR3":      ottl.Enum(plog.SeverityNumberError3),
-	"SEVERITY_NUMBER_ERROR4":      ottl.Enum(plog.SeverityNumberError4),
-	"SEVERITY_NUMBER_FATAL":       ottl.Enum(plog.SeverityNumberFatal),
-	"SEVERITY_NUMBER_FATAL2":      ottl.Enum(plog.SeverityNumberFatal2),
-	"SEVERITY_NUMBER_FATAL3":      ottl.Enum(plog.SeverityNumberFatal3),
-	"SEVERITY_NUMBER_FATAL4":      ottl.Enum(plog.SeverityNumberFatal4),
-}
-
 func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	if val != nil {
-		if enum, ok := symbolTable[*val]; ok {
+		if enum, ok := ctxlog.SymbolTable[*val]; ok {
 			return &enum, nil
 		}
 		return nil, fmt.Errorf("enum symbol, %s, not found", *val)
@@ -335,10 +308,10 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 func accessCacheKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
-			return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key)
+			return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
-			return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key, val)
+			return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key, val)
 		},
 	}
 }
@@ -433,7 +406,7 @@ func accessBody() ottl.StandardGetSetter[TransformContext] {
 			return common.GetValue(tCtx.GetLogRecord().Body()), nil
 		},
 		Setter: func(_ context.Context, tCtx TransformContext, val any) error {
-			return internal.SetValue(tCtx.GetLogRecord().Body(), val)
+			return ctxutil.SetValue(tCtx.GetLogRecord().Body(), val)
 		},
 	}
 }
@@ -444,9 +417,9 @@ func accessBodyKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[Tran
 			body := tCtx.GetLogRecord().Body()
 			switch body.Type() {
 			case pcommon.ValueTypeMap:
-				return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Body().Map(), key)
+				return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Body().Map(), key)
 			case pcommon.ValueTypeSlice:
-				return internal.GetSliceValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Body().Slice(), key)
+				return ctxutil.GetSliceValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Body().Slice(), key)
 			default:
 				return nil, fmt.Errorf("log bodies of type %s cannot be indexed", body.Type().String())
 			}
@@ -455,9 +428,9 @@ func accessBodyKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[Tran
 			body := tCtx.GetLogRecord().Body()
 			switch body.Type() {
 			case pcommon.ValueTypeMap:
-				return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Body().Map(), key, val)
+				return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Body().Map(), key, val)
 			case pcommon.ValueTypeSlice:
-				return internal.SetSliceValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Body().Slice(), key, val)
+				return ctxutil.SetSliceValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Body().Slice(), key, val)
 			default:
 				return fmt.Errorf("log bodies of type %s cannot be indexed", body.Type().String())
 			}
@@ -496,10 +469,10 @@ func accessAttributes() ottl.StandardGetSetter[TransformContext] {
 func accessAttributesKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
-			return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Attributes(), key)
+			return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Attributes(), key)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
-			return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Attributes(), key, val)
+			return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Attributes(), key, val)
 		},
 	}
 }
@@ -554,7 +527,7 @@ func accessStringTraceID() ottl.StandardGetSetter[TransformContext] {
 		},
 		Setter: func(_ context.Context, tCtx TransformContext, val any) error {
 			if str, ok := val.(string); ok {
-				id, err := internal.ParseTraceID(str)
+				id, err := ctxutil.ParseTraceID(str)
 				if err != nil {
 					return err
 				}
@@ -587,7 +560,7 @@ func accessStringSpanID() ottl.StandardGetSetter[TransformContext] {
 		},
 		Setter: func(_ context.Context, tCtx TransformContext, val any) error {
 			if str, ok := val.(string); ok {
-				id, err := internal.ParseSpanID(str)
+				id, err := ctxutil.ParseSpanID(str)
 				if err != nil {
 					return err
 				}
