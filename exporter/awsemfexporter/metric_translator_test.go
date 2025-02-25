@@ -553,10 +553,11 @@ func TestTranslateCWMetricToEMFForEnhancedContainerInsights(t *testing.T) {
 	testCases := map[string]struct {
 		EnhancedContainerInsights bool
 		fields                    map[string]any
+		version                   string
 		measurements              []cWMeasurement
 		expectedEMFLogEvent       any
 	}{
-		"EnhancedContainerInsightsEnabled": {
+		"EnhancedContainerInsightsEnabledV0": {
 			EnhancedContainerInsights: true,
 			fields: map[string]any{
 				oTellibDimensionKey:                     "cloudwatch-otel",
@@ -566,10 +567,25 @@ func TestTranslateCWMetricToEMFForEnhancedContainerInsights(t *testing.T) {
 				"service.instance.id":                   "1.2.3.4:443",
 				"Sources":                               "[\"apiserver\"]",
 			},
+			version:             "0",
 			measurements:        nil,
 			expectedEMFLogEvent: nil,
 		},
-		"EnhancedContainerInsightsDisabled": {
+		"EnhancedContainerInsightsEnabledV1": {
+			EnhancedContainerInsights: true,
+			fields: map[string]any{
+				oTellibDimensionKey:                     "cloudwatch-otel",
+				"scrape_samples_post_metric_relabeling": "12",
+				"scrape_samples_scraped":                "34",
+				"scrape_series_added":                   "56",
+				"service.instance.id":                   "1.2.3.4:443",
+				"Sources":                               "[\"apiserver\"]",
+			},
+			version:             "1",
+			measurements:        nil,
+			expectedEMFLogEvent: nil,
+		},
+		"EnhancedContainerInsightsDisabledV0": {
 			EnhancedContainerInsights: false,
 			fields: map[string]any{
 				oTellibDimensionKey:                     "cloudwatch-otel",
@@ -579,6 +595,21 @@ func TestTranslateCWMetricToEMFForEnhancedContainerInsights(t *testing.T) {
 				"service.instance.id":                   "1.2.3.4:443",
 				"Sources":                               "[\"apiserver\"]",
 			},
+			version:             "0",
+			measurements:        nil,
+			expectedEMFLogEvent: "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"apiserver\"],\"Timestamp\":\"1596151098037\",\"Version\":\"0\",\"scrape_samples_post_metric_relabeling\":\"12\",\"scrape_samples_scraped\":\"34\",\"scrape_series_added\":\"56\",\"service.instance.id\":\"1.2.3.4:443\"}",
+		},
+		"EnhancedContainerInsightsDisabledV1": {
+			EnhancedContainerInsights: false,
+			fields: map[string]any{
+				oTellibDimensionKey:                     "cloudwatch-otel",
+				"scrape_samples_post_metric_relabeling": "12",
+				"scrape_samples_scraped":                "34",
+				"scrape_series_added":                   "56",
+				"service.instance.id":                   "1.2.3.4:443",
+				"Sources":                               "[\"apiserver\"]",
+			},
+			version:             "1",
 			measurements:        nil,
 			expectedEMFLogEvent: "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"apiserver\"],\"scrape_samples_post_metric_relabeling\":\"12\",\"scrape_samples_scraped\":\"34\",\"scrape_series_added\":\"56\",\"service.instance.id\":\"1.2.3.4:443\"}",
 		},
@@ -591,6 +622,7 @@ func TestTranslateCWMetricToEMFForEnhancedContainerInsights(t *testing.T) {
 				ParseJSONEncodedAttributeValues: []string{"Sources"},
 				EnhancedContainerInsights:       tc.EnhancedContainerInsights,
 				logger:                          zap.NewNop(),
+				Version:                         tc.version,
 			}
 
 			cloudwatchMetric := &cWMetrics{
@@ -604,6 +636,8 @@ func TestTranslateCWMetricToEMFForEnhancedContainerInsights(t *testing.T) {
 
 			if tc.expectedEMFLogEvent != nil {
 				assert.Equal(t, tc.expectedEMFLogEvent, *emfLogEvent.InputLogEvent.Message)
+			} else {
+				assert.Nil(t, emfLogEvent)
 			}
 		})
 	}

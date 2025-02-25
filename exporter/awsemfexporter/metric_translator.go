@@ -455,12 +455,7 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) (*cwlogs.Event,
 				"CloudWatchMetrics": cWMetric.measurements,
 				"Timestamp":         cWMetric.timestampMs,
 			}
-		}
-	}
-
-	if config.Version == "0" {
-		fieldMap["Timestamp"] = fmt.Sprint(cWMetric.timestampMs)
-		if len(cWMetric.measurements) > 0 {
+		} else {
 			/* 	EMF V0
 				{
 					"Version": "0",
