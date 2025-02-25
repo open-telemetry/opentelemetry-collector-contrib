@@ -260,7 +260,7 @@ func (pep *pathExpressionParser) parseHigherContextPath(context string, path ott
 	case ctxscope.LegacyName:
 		return internal.ScopePathGetSetter(ctxspanevent.Name, path)
 	case ctxspan.Name:
-		return internal.SpanPathGetSetter(ctxspanevent.Name, path)
+		return ctxspan.PathGetSetter(ctxspanevent.Name, path)
 	default:
 		var fullPath string
 		if path != nil {
