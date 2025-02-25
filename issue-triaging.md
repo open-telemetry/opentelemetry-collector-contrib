@@ -101,8 +101,8 @@ flowchart TD
     n6 -- No --> n8
     n7 -- Once PR is merged --> n10
     n8 -- When someone volunteers to provide a fix --> n11["Assign it to the person"]
-    n12 -- Any activity? --> n8
-    n8 -. Stale issue .-> n12["Issue in inactive"]
+    n12 -- Any activity on the issue --> n8
+    n8 -. Issue becomes stale due to lack of activity .-> n12["Issue is inactive"]
     n11 --> n7
     n12 -- Closed automatically after 120 days due to lack of activity --> n10
     n4 -- Once enough details are available --> n2
