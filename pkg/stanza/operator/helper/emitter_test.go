@@ -20,7 +20,7 @@ import (
 func TestLogEmitter(t *testing.T) {
 	rwMtx := &sync.RWMutex{}
 	var receivedEntries []*entry.Entry
-	emitter := NewLogEmitter(
+	emitter := NewBatchingLogEmitter(
 		componenttest.NewNopTelemetrySettings(),
 		func(_ context.Context, entries []*entry.Entry) {
 			rwMtx.Lock()
@@ -54,7 +54,7 @@ func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 	)
 	rwMtx := &sync.RWMutex{}
 	var receivedEntries []*entry.Entry
-	emitter := NewLogEmitter(
+	emitter := NewBatchingLogEmitter(
 		componenttest.NewNopTelemetrySettings(),
 		func(_ context.Context, entries []*entry.Entry) {
 			rwMtx.Lock()
@@ -90,7 +90,7 @@ func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
 	)
 	rwMtx := &sync.RWMutex{}
 	var receivedEntries []*entry.Entry
-	emitter := NewLogEmitter(
+	emitter := NewBatchingLogEmitter(
 		componenttest.NewNopTelemetrySettings(),
 		func(_ context.Context, entries []*entry.Entry) {
 			rwMtx.Lock()

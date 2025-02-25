@@ -230,7 +230,7 @@ func benchmarkReceiver(b *testing.B, logsPerIteration int) {
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	emitter := helper.NewLogEmitter(set, rcv.consumeEntries)
+	emitter := helper.NewBatchingLogEmitter(set, rcv.consumeEntries)
 	defer func() {
 		require.NoError(b, emitter.Stop())
 	}()
@@ -306,7 +306,7 @@ pipeline:
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	emitter := helper.NewLogEmitter(set, rcv.consumeEntries)
+	emitter := helper.NewBatchingLogEmitter(set, rcv.consumeEntries)
 	defer func() {
 		require.NoError(b, emitter.Stop())
 	}()
@@ -368,7 +368,7 @@ func BenchmarkParseAndMap(b *testing.B) {
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
 	set := componenttest.NewNopTelemetrySettings()
-	emitter := helper.NewLogEmitter(set, func(_ context.Context, entries []*entry.Entry) {
+	emitter := helper.NewBatchingLogEmitter(set, func(_ context.Context, entries []*entry.Entry) {
 		for _, e := range entries {
 			convert(e)
 		}
