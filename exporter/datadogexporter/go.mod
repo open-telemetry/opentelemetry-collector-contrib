@@ -90,6 +90,7 @@ require (
 )
 
 require (
+	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.64.0-rc.1
 	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.64.0-rc.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.120.1
@@ -117,7 +118,6 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.64.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/comp/def v0.64.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.64.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.64.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/comp/trace/compression/def v0.64.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.64.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.64.0-rc.1 // indirect
