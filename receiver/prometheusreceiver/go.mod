@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.120.1
-	github.com/prometheus/client_golang v1.20.5
+	github.com/prometheus/client_golang v1.21.0
 	github.com/prometheus/common v0.62.0
 	github.com/prometheus/prometheus v0.300.1
 	github.com/stretchr/testify v1.10.0
