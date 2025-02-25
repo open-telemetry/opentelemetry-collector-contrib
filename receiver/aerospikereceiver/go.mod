@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/aerospike/aerospike-client-go/v7 v7.8.0
 	github.com/docker/go-connections v0.5.0
-	github.com/google/go-cmp v0.6.0
+	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.120.1
 	github.com/stretchr/testify v1.10.0
