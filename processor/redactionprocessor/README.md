@@ -87,10 +87,6 @@ processors:
     # blocked span attributes. Values that match are not masked.
     allowed_values:
       - ".+@mycompany.com"
-    # hash_function defines the function for hashing the values instead of
-    # masking them with a fixed string. By default, no hash function is used
-    # and masking with a fixed string is performed.
-    hash_function: md5
     # summary controls the verbosity level of the diagnostic attributes that
     # the processor adds to the spans/logs/datapoints when it redacts or masks other
     # attributes. In some contexts a list of redacted attributes leaks
@@ -119,11 +115,6 @@ If the value of an allowed key matches the regular expression for an allowed val
 part of the value is not masked even if it matches the regular expression for a blocked value.
 If the value matches the regular expression for a blocked value only, the matching
 part of the value is masked with a fixed length of asterisks.
-
-`hash_function` defines the function for hashing the values (or substrings of values)
-instead of masking them with a fixed string. By default, no hash function is used
-and masking with a fixed string is performed. The supported hash functions
-are `md5`, `sha1` and `sha3`.
 
 `blocked_key_patterns` applies to the values of the keys matching one of the patterns.
 The value is then masked with a fixed length of asterisks or hashed by a function
