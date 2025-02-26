@@ -1,0 +1,179 @@
+{
+    "traces": {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [
+                        {
+                            "key": "service.name",
+                            "value": {
+                                "stringValue": "example.com"
+                            }
+                        },
+                        {
+                            "key": "telemetry.sdk.language",
+                            "value": {
+                                "stringValue": "webjs"
+                            }
+                        },
+                        {
+                            "key": "telemetry.sdk.name",
+                            "value": {
+                                "stringValue": "opentelemetry"
+                            }
+                        },
+                        {
+                            "key": "telemetry.sdk.version",
+                            "value": {
+                                "stringValue": "1.0.0"
+                            }
+                        },
+                        {
+                            "key": "service.version",
+                            "value": {
+                                "stringValue": "1.0.0"
+                            }
+                        }
+                    ],
+                    "droppedAttributesCount": 0
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {
+                            "name": "@opentelemetry/instrumentation-document-load",
+                            "version": "0.31.0"
+                        },
+                        "spans": [
+                            {
+                                "traceId": "46d38efbe623342af29992782992000a",
+                                "spanId": "562474ddde25561b",
+                                "parentSpanId": "4225823a1a95b94b",
+                                "name": "documentFetch",
+                                "kind": 1,
+                                "startTimeUnixNano": 1679565159064400000,
+                                "endTimeUnixNano": 1679565159684399900,
+                                "attributes": [
+                                    {
+                                        "key": "session_id",
+                                        "value": {
+                                            "stringValue": "ABCD1234"
+                                        }
+                                    },
+                                    {
+                                        "key": "component",
+                                        "value": {
+                                            "stringValue": "document-load"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.url",
+                                        "value": {
+                                            "stringValue": "https://example.com/"
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response_content_length",
+                                        "value": {
+                                            "intValue": 8464
+                                        }
+                                    },
+                                    {
+                                        "key": "http.response_content_length_uncompressed",
+                                        "value": {
+                                            "intValue": 31031
+                                        }
+                                    }
+                                ],
+                                "droppedAttributesCount": 0,
+                                "events": [
+                                    {
+                                        "attributes": [],
+                                        "name": "fetchStart",
+                                        "timeUnixNano": 1679565159064400000,
+                                        "droppedAttributesCount": 0
+                                    },
+                                    {
+                                        "attributes": [],
+                                        "name": "domainLookupStart",
+                                        "timeUnixNano": 1679565159064400000,
+                                        "droppedAttributesCount": 0
+                                    },
+                                    {
+                                        "attributes": [],
+                                        "name": "domainLookupEnd",
+                                        "timeUnixNano": 1679565159064400000,
+                                        "droppedAttributesCount": 0
+                                    },
+                                    {
+                                        "attributes": [],
+                                        "name": "connectStart",
+                                        "timeUnixNano": 1679565159064400000,
+                                        "droppedAttributesCount": 0
+                                    },
+                                    {
+                                        "attributes": [],
+                                        "name": "secureConnectionStart",
+                                        "timeUnixNano": 1679565159064400000,
+                                        "droppedAttributesCount": 0
+                                    },
+                                    {
+                                        "attributes": [],
+                                        "name": "connectEnd",
+                                        "timeUnixNano": 1679565159064400000,
+                                        "droppedAttributesCount": 0
+                                    },
+                                    {
+                                        "attributes": [],
+                                        "name": "requestStart",
+                                        "timeUnixNano": 1679565159069500000,
+                                        "droppedAttributesCount": 0
+                                    },
+                                    {
+                                        "attributes": [],
+                                        "name": "responseStart",
+                                        "timeUnixNano": 1679565159127900000,
+                                        "droppedAttributesCount": 0
+                                    },
+                                    {
+                                        "attributes": [],
+                                        "name": "responseEnd",
+                                        "timeUnixNano": 1679565159684399900,
+                                        "droppedAttributesCount": 0
+                                    }
+                                ],
+                                "droppedEventsCount": 0,
+                                "status": {
+                                    "code": 0
+                                },
+                                "links": [],
+                                "droppedLinksCount": 0
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "meta": {
+        "session": {
+            "id": "ABCD1234"
+        },
+        "sdk": {
+            "name": "@grafana/faro-core",
+            "version": "1.0.0",
+            "integrations": []
+        },
+        "app": {
+            "name": "example.com",
+            "version": "1.0.0",
+            "environment": "prod"
+        },
+        "view": {
+            "name": "default"
+        },
+        "browser": {},
+        "page": {
+            "url": "https://example.com/"
+        }
+    }
+}
