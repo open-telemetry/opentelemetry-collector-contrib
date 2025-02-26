@@ -646,7 +646,9 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 				transformedContainer.Ports = c.Ports
 			}
 			if rules.ContainerCPURequest {
-				transformedContainer.Resources.Requests = c.Resources.Requests
+				if _, ok := c.Resources.Requests["cpu"]; ok {
+					transformedContainer.Resources.Requests["cpu"] = c.Resources.Requests["cpu"]
+				}
 			}
 			return transformedContainer
 		}
@@ -715,12 +717,11 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 			container := &Container{}
 			if c.Rules.ContainerPorts {
 				for _, port := range spec.Ports {
-					container.ContainerPorts = append(container.ContainerPorts, port.ContainerPort)
+					container.Ports = append(container.Ports, port.ContainerPort)
 				}
 			}
 			if c.Rules.ContainerCPURequest {
-				requests := spec.Resources.Requests
-				container.ContainerCPURequest = requests.Cpu().String()
+				container.CPURequest = spec.Resources.Requests.Cpu().String()
 			}
 			name, tag, err := parseNameAndTagFromImage(spec.Image)
 			if err == nil {

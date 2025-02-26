@@ -112,7 +112,7 @@ resource_attributes:
     type: string
     enabled: true
   container.ports:
-    description: List of ports to expose from the container.
+    description: List of ports to be exposed from the container.
     type: slice
     enabled: false
   container.resources.requests.cpu:

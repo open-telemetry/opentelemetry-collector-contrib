@@ -1035,11 +1035,11 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 					Containers: kube.PodContainers{
 						ByName: map[string]*kube.Container{
 							"app": {
-								Name:                "app",
-								ImageName:           "test/app",
-								ImageTag:            "1.0.1",
-								ContainerPorts:      []int32{80, 443},
-								ContainerCPURequest: "500m",
+								Name:       "app",
+								ImageName:  "test/app",
+								ImageTag:   "1.0.1",
+								Ports:      []int32{80, 443},
+								CPURequest: "500m",
 							},
 						},
 					},

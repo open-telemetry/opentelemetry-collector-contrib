@@ -247,13 +247,13 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 	if containerSpec.ImageTag != "" {
 		setResourceAttribute(attrs, conventions.AttributeContainerImageTag, containerSpec.ImageTag)
 	}
-	if len(containerSpec.ContainerPorts) > 0 {
-		for _, containerPort := range containerSpec.ContainerPorts {
+	if len(containerSpec.Ports) > 0 {
+		for _, containerPort := range containerSpec.Ports {
 			attrs.PutEmptySlice(containerPorts).AppendEmpty().SetInt(int64(containerPort))
 		}
 	}
-	if containerSpec.ContainerCPURequest != "" {
-		setResourceAttribute(attrs, containerCPURequest, containerSpec.ContainerCPURequest)
+	if containerSpec.CPURequest != "" {
+		setResourceAttribute(attrs, containerCPURequest, containerSpec.CPURequest)
 	}
 	// attempt to get container ID from restart count
 	runID := -1
