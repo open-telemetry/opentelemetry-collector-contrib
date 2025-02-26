@@ -289,15 +289,15 @@ jobs:
         if: startsWith( matrix.go-version, '1.23' ) != true
         run: make gotest GROUP=${{ matrix.group }}
       - name: Run Unit Tests With JUnit and Coverage
-        if: startsWith( matrix.go-version, '1.23' ) # only run junit/coverage on one version
+        if: startsWith( matrix.go-version, '1.23' ) != true # only run junit/coverage on one version
         run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
       - uses: actions/upload-artifact@v4
-        if: startsWith( matrix.go-version, '1.23' ) # only upload artifact for one version
+        if: startsWith( matrix.go-version, '1.23' ) != true # only upload artifact for one version
         with:
           name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: ${{ matrix.group }}-coverage.txt
       - uses: actions/upload-artifact@v4
-        if: startsWith( matrix.go-version, '1.23' ) # only upload artifact for one version
+        if: startsWith( matrix.go-version, '1.23' ) != true # only upload artifact for one version
         with:
           name: test-results-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: internal/tools/testresults/
