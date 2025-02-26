@@ -30,7 +30,7 @@ func TestRoundTripper(t *testing.T) {
 
 	base := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
 	awsSDKInfo := "awsSDKInfo"
-	cfg := &Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{ARN: "rolearn", STSRegion: "region"}, credsProvider: awsCredsProvider}
+	cfg := &Config{Region: "region", Service: "service", AssumeRole: &AssumeRoleSettings{ARN: "rolearn", STSRegion: "region"}, credsProvider: awsCredsProvider}
 
 	sa := newSigv4Extension(cfg, awsSDKInfo, zap.NewNop())
 	assert.NotNil(t, sa)
@@ -47,7 +47,7 @@ func TestRoundTripper(t *testing.T) {
 }
 
 func TestPerRPCCredentials(t *testing.T) {
-	cfg := &Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{ARN: "rolearn", STSRegion: "region"}}
+	cfg := &Config{Region: "region", Service: "service", AssumeRole: &AssumeRoleSettings{ARN: "rolearn", STSRegion: "region"}}
 	sa := newSigv4Extension(cfg, "", zap.NewNop())
 
 	rpc, err := sa.PerRPCCredentials()
@@ -65,14 +65,14 @@ func TestGetCredsProviderFromConfig(t *testing.T) {
 	}{
 		{
 			"success_case_without_role",
-			&Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{STSRegion: "region"}},
+			&Config{Region: "region", Service: "service", AssumeRole: &AssumeRoleSettings{STSRegion: "region"}},
 			"AccessKeyID",
 			"SecretAccessKey",
 			false,
 		},
 		{
 			"failure_case_without_role",
-			&Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{STSRegion: "region"}},
+			&Config{Region: "region", Service: "service", AssumeRole: &AssumeRoleSettings{STSRegion: "region"}},
 			"",
 			"",
 			true,
@@ -109,7 +109,7 @@ func TestGetCredsProviderFromWebIdentityConfig(t *testing.T) {
 	}{
 		{
 			"success_case",
-			&Config{Region: "region", Service: "service", AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{ARN: "arn:aws:iam::913240246008:role/astro-boreal-fusion-3522", TokenFile: "testdata/token_file"}},
+			&Config{Region: "region", Service: "service", AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentitySettings{ARN: "arn:aws:iam::913240246008:role/astro-boreal-fusion-3522", TokenFile: "testdata/token_file"}},
 			false,
 		},
 	}
