@@ -118,11 +118,11 @@ func TestConfig(t *testing.T) {
 				},
 				Batcher: BatcherConfig{
 					FlushTimeout: 30 * time.Second,
-					MinSizeConfig: exporterbatcher.MinSizeConfig{ //nolint:SA1019
-						MinSizeItems: &defaultBatcherMinSizeItems, //nolint:SA1019
+					MinSizeConfig: exporterbatcher.MinSizeConfig{ //nolint:staticcheck
+						MinSizeItems: &defaultBatcherMinSizeItems,
 					},
-					MaxSizeConfig: exporterbatcher.MaxSizeConfig{ //nolint:SA1019
-						MaxSizeItems: nil, //nolint:SA1019
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{ //nolint:staticcheck
+						MaxSizeItems: nil,
 					},
 				},
 			},
@@ -192,11 +192,11 @@ func TestConfig(t *testing.T) {
 				},
 				Batcher: BatcherConfig{
 					FlushTimeout: 30 * time.Second,
-					MinSizeConfig: exporterbatcher.MinSizeConfig{ //nolint:SA1019
-						MinSizeItems: &defaultBatcherMinSizeItems, //nolint:SA1019
+					MinSizeConfig: exporterbatcher.MinSizeConfig{ //nolint:staticcheck
+						MinSizeItems: &defaultBatcherMinSizeItems,
 					},
-					MaxSizeConfig: exporterbatcher.MaxSizeConfig{ //nolint:SA1019
-						MaxSizeItems: nil, //nolint:SA1019
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{ //nolint:staticcheck
+						MaxSizeItems: nil,
 					},
 				},
 			},
@@ -266,10 +266,10 @@ func TestConfig(t *testing.T) {
 				},
 				Batcher: BatcherConfig{
 					FlushTimeout: 30 * time.Second,
-					MinSizeConfig: exporterbatcher.MinSizeConfig{
+					MinSizeConfig: exporterbatcher.MinSizeConfig{ //nolint:staticcheck
 						MinSizeItems: &defaultBatcherMinSizeItems,
 					},
-					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{ //nolint:staticcheck
 						MaxSizeItems: nil,
 					},
 				},
