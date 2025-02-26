@@ -5,7 +5,6 @@ package datadogsemanticsprocessor
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor/internal/metadata"
 	"testing"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/testutil"
@@ -19,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor/internal/metadata"
 )
 
 func newTestTracesProcessor(cfg component.Config, next consumer.Traces) (processor.Traces, error) {
