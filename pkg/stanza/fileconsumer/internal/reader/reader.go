@@ -31,8 +31,8 @@ type Metadata struct {
 	RecordNum       int64
 	FileAttributes  map[string]any
 	HeaderFinalized bool
-	FlushState      *flush.State
-	TokenLenState   *tokenlen.State
+	FlushState      flush.State
+	TokenLenState   tokenlen.State
 }
 
 // Reader manages a single file
@@ -167,7 +167,6 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 	}
 	r.headerReader = nil
 	r.HeaderFinalized = true
-	r.initialBufferSize = scanner.DefaultBufferSize
 
 	// Reset position in file to r.Offest after the header scanner might have moved it past a content token.
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {

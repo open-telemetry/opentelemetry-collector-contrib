@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 func FuzzHandleReq(f *testing.F) {
@@ -23,7 +25,7 @@ func FuzzHandleReq(f *testing.F) {
 		req.Header.Add(signatureHeaderName, payloadSigHeader)
 		consumer := &consumertest.LogsSink{}
 
-		set := receivertest.NewNopSettings()
+		set := receivertest.NewNopSettings(metadata.Type)
 		set.Logger = zaptest.NewLogger(t)
 		ar, err := newAlertsReceiver(set, &Config{Alerts: AlertConfig{Secret: "some_secret"}}, consumer)
 		if err != nil {

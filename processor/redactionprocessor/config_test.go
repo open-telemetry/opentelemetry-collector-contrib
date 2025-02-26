@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/metadata"
 )
@@ -25,11 +26,13 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				AllowAllKeys:  false,
-				AllowedKeys:   []string{"description", "group", "id", "name"},
-				IgnoredKeys:   []string{"safe_attribute"},
-				BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{14})"},
-				Summary:       debug,
+				AllowAllKeys:       false,
+				AllowedKeys:        []string{"description", "group", "id", "name"},
+				IgnoredKeys:        []string{"safe_attribute"},
+				BlockedValues:      []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{14})"},
+				BlockedKeyPatterns: []string{".*token.*", ".*api_key.*"},
+				AllowedValues:      []string{".+@mycompany.com"},
+				Summary:            debug,
 			},
 		},
 		{
@@ -50,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

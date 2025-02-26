@@ -22,7 +22,7 @@ func TestFactory(t *testing.T) {
 	// Assert defaults.
 	assert.Equal(t, "localhost:2181", cfg.(*Config).Endpoint)
 
-	r, err := f.CreateMetrics(context.Background(), scrapertest.NewNopSettings(), cfg)
+	r, err := f.CreateMetrics(context.Background(), scrapertest.NewNopSettings(metadata.Type), cfg)
 
 	require.NoError(t, err)
 	require.NotNil(t, r)
