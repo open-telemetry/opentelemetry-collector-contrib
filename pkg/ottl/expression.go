@@ -484,6 +484,26 @@ func (g StandardPMapSliceGetter[K]) Get(ctx context.Context, tCtx K) ([]pcommon.
 			result = append(result, m)
 		}
 		return result, nil
+	case pcommon.Slice:
+		result := []pcommon.Map{}
+		for _, mm := range v.AsRaw() {
+			mmm, ok := mm.(pcommon.Map)
+			if ok {
+				result = append(result, mmm)
+			} else {
+				mmm, ok := mm.(map[string]any)
+				if !ok {
+					return []pcommon.Map{}, TypeError(fmt.Sprintf("expected pcommon.Map/map[string]any but got %T", v))
+				}
+				m := pcommon.NewMap()
+				err = m.FromRaw(mmm)
+				if err != nil {
+					return []pcommon.Map{}, err
+				}
+				result = append(result, m)
+			}
+		}
+		return result, nil
 	default:
 		return []pcommon.Map{}, TypeError(fmt.Sprintf("expected []pcommon.Map but got %T", val))
 	}

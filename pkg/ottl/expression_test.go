@@ -2278,6 +2278,16 @@ func Test_StandardPMapSliceGetter(t *testing.T) {
 			valid: true,
 		},
 		{
+			name: "pcommon.Slice type",
+			getter: StandardPMapSliceGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return pcommon.NewSlice(), nil
+				},
+			},
+			want:  []pcommon.Map{},
+			valid: true,
+		},
+		{
 			name: "Incorrect type",
 			getter: StandardPMapSliceGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
