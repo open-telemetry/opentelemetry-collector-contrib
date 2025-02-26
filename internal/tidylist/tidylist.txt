@@ -1,4 +1,3 @@
-cmd/githubgen
 cmd/opampsupervisor
 cmd/telemetrygen
 internal/common
@@ -67,6 +66,7 @@ exporter/awskinesisexporter
 exporter/awss3exporter
 internal/aws/xray
 exporter/awsxrayexporter
+exporter/azureblobexporter
 exporter/azuredataexplorerexporter
 exporter/azuremonitorexporter
 exporter/bmchelixexporter

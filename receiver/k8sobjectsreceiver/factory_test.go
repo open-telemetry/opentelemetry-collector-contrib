@@ -40,7 +40,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	// Fails with bad K8s Config.
 	r, err := createLogsReceiver(
-		context.Background(), receivertest.NewNopSettings(),
+		context.Background(), receivertest.NewNopSettings(metadata.Type),
 		rCfg, consumertest.NewNop(),
 	)
 	assert.NoError(t, err)
@@ -52,7 +52,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	r, err = createLogsReceiver(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg, consumertest.NewNop(),
 	)
 	assert.NoError(t, err)

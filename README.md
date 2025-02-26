@@ -92,7 +92,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Christos Markou](https://github.com/ChrsMark), Elastic (on leave)
 - [Curtis Robert](https://github.com/crobert-1), Splunk
-- [David Ashpole](https://github.com/dashpole), Google
+- [David Ashpole](https://github.com/dashpole), Google (on leave)
 - [Matt Wear](https://github.com/mwear), Lightstep
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
