@@ -7,7 +7,7 @@ require (
 	github.com/elastic/go-docappender/v2 v2.6.0
 	github.com/elastic/go-elasticsearch/v8 v8.17.1
 	github.com/elastic/go-structform v0.0.12
-	github.com/klauspost/compress v1.17.11
+	github.com/klauspost/compress v1.18.0
 	github.com/lestrrat-go/strftime v1.1.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.120.1
