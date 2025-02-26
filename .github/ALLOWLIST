@@ -19,9 +19,27 @@ internal/common
 
 ## DEPRECATED components
 
+# Start deprecated components list
+
+
+
+# End deprecated components list
+
 ## UNMAINTAINED components
-exporter/kineticaexporter/
-exporter/opensearchexporter/
-extension/observer/ecstaskobserver/
-receiver/awscloudwatchmetricsreceiver/
-receiver/rabbitmqreceiver/
+
+# Start unmaintained components list
+
+exporter/kineticaexporter
+exporter/opensearchexporter
+extension/observer/ecstaskobserver
+receiver/awscloudwatchmetricsreceiver
+receiver/couchdbreceiver
+receiver/elasticsearchreceiver
+receiver/memcachedreceiver
+receiver/mysqlreceiver
+receiver/postgresqlreceiver
+receiver/rabbitmqreceiver
+receiver/zookeeperreceiver
+scraper/zookeeperscraper
+
+# End unmaintained components list
