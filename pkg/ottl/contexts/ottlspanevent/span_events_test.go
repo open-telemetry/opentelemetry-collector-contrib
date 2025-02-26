@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
@@ -431,13 +432,19 @@ func Test_newPathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+			pep := pathExpressionParser{
+				cacheGetSetter: ctxcache.PathExpressionParser(cacheGetter),
+			}
 			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
 			spanEvent, span, il, resource := createTelemetry()
 
-			tCtx := NewTransformContext(spanEvent, span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans(), WithEventIndex(1))
+			tCtx := NewTransformContext(spanEvent, span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans(), WithEventIndex(1), WithCache(&testCache))
 
 			got, err := accessor.Get(context.Background(), tCtx)
 			assert.NoError(t, err)
@@ -457,7 +464,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			assert.Equal(t, exSpan, span)
 			assert.Equal(t, exIl, il)
 			assert.Equal(t, exRes, resource)
-			assert.Equal(t, exCache, tCtx.getCache())
+			assert.Equal(t, exCache, testCache)
 		})
 	}
 }
@@ -589,6 +596,23 @@ func Test_setAndGetEventIndex(t *testing.T) {
 			assert.Equal(t, tt.expected, got)
 		})
 	}
+}
+
+func Test_newPathGetSetter_WithCache(t *testing.T) {
+	cacheValue := pcommon.NewMap()
+	cacheValue.PutStr("test", "pass")
+
+	tCtx := NewTransformContext(
+		ptrace.NewSpanEvent(),
+		ptrace.NewSpan(),
+		pcommon.NewInstrumentationScope(),
+		pcommon.NewResource(),
+		ptrace.NewScopeSpans(),
+		ptrace.NewResourceSpans(),
+		WithCache(&cacheValue),
+	)
+
+	assert.Equal(t, cacheValue, getCache(tCtx))
 }
 
 func createTelemetry() (ptrace.SpanEvent, ptrace.Span, pcommon.InstrumentationScope, pcommon.Resource) {
