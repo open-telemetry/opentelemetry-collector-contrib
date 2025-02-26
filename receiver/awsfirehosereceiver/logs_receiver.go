@@ -71,7 +71,7 @@ func (c *logsConsumer) Start(_ context.Context, host component.Host) error {
 	} else {
 		unmarshaler, err := loadEncodingExtension[plog.Unmarshaler](host, encoding, "logs")
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to load encoding extension: %w", err)
 		}
 		c.unmarshaler = unmarshaler
 	}
