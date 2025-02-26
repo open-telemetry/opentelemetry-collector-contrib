@@ -29,8 +29,8 @@ func (rb *ResourceBuilder) SetK8sClusterName(val string) {
 }
 
 // SetK8sClusterName sets provided value as "k8s.cluster.uid" attribute.
-func (rb *ResourceBuilder) SetK8sClusterUid(val string) {
-	if rb.config.K8sClusterUid.Enabled {
+func (rb *ResourceBuilder) SetK8sClusterUID(val string) {
+	if rb.config.K8sClusterUID.Enabled {
 		rb.res.Attributes().PutStr("k8s.cluster.uid", val)
 	}
 }

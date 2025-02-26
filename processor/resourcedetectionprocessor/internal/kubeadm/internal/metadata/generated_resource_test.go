@@ -14,7 +14,7 @@ func TestResourceBuilder(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
 			rb.SetK8sClusterName("k8s.cluster.name-val")
-			rb.SetK8sClusterUid("k8s.cluster.uid-val")
+			rb.SetK8sClusterUID("k8s.cluster.uid-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource

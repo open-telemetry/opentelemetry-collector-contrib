@@ -25,28 +25,28 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "all_set",
 			want: ResourceAttributesConfig{
 				K8sClusterName: ResourceAttributeConfig{Enabled: true},
-				K8sClusterUid:  ResourceAttributeConfig{Enabled: true},
+				K8sClusterUID:  ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
 				K8sClusterName: ResourceAttributeConfig{Enabled: false},
-				K8sClusterUid:  ResourceAttributeConfig{Enabled: false},
+				K8sClusterUID:  ResourceAttributeConfig{Enabled: false},
 			},
 		},
 		{
 			name: "name_set",
 			want: ResourceAttributesConfig{
 				K8sClusterName: ResourceAttributeConfig{Enabled: true},
-				K8sClusterUid:  ResourceAttributeConfig{Enabled: false},
+				K8sClusterUID:  ResourceAttributeConfig{Enabled: false},
 			},
 		},
 		{
 			name: "uid_set",
 			want: ResourceAttributesConfig{
 				K8sClusterName: ResourceAttributeConfig{Enabled: false},
-				K8sClusterUid:  ResourceAttributeConfig{Enabled: true},
+				K8sClusterUID:  ResourceAttributeConfig{Enabled: true},
 			},
 		},
 	}

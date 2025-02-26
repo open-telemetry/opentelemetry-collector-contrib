@@ -70,7 +70,7 @@ func TestClusterName(t *testing.T) {
 	}
 }
 
-func TestClusterUid(t *testing.T) {
+func TestClusterUID(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	err := setupNamespace(client)
 	assert.NoError(t, err)
@@ -78,13 +78,13 @@ func TestClusterUid(t *testing.T) {
 	tests := []struct {
 		testName    string
 		CMnamespace string
-		clusterUid  string
+		clusterUID  string
 		errMsg      string
 	}{
 		{
 			testName:    "valid",
 			CMnamespace: "ns",
-			clusterUid:  "uid",
+			clusterUID:  "uid",
 			errMsg:      "",
 		},
 		{
@@ -100,12 +100,12 @@ func TestClusterUid(t *testing.T) {
 				kubeadmClient:       client,
 				kubeSystemNamespace: tt.CMnamespace,
 			}
-			clusterName, err := kubeadmP.ClusterUid(context.Background())
+			clusterName, err := kubeadmP.ClusterUID(context.Background())
 			if tt.errMsg != "" {
 				assert.EqualError(t, err, tt.errMsg)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.clusterUid, clusterName)
+				assert.Equal(t, tt.clusterUID, clusterName)
 			}
 		})
 	}

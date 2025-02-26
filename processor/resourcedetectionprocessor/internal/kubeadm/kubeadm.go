@@ -57,12 +57,12 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		d.rb.SetK8sClusterName(clusterName)
 	}
 
-	if d.ra.K8sClusterUid.Enabled {
-		clusterUid, err := d.provider.ClusterUid(ctx)
+	if d.ra.K8sClusterUID.Enabled {
+		clusterUID, err := d.provider.ClusterUID(ctx)
 		if err != nil {
 			return pcommon.NewResource(), "", fmt.Errorf("failed getting k8s cluster uid: %w", err)
 		}
-		d.rb.SetK8sClusterUid(clusterUid)
+		d.rb.SetK8sClusterUID(clusterUID)
 	}
 
 	return d.rb.Emit(), conventions.SchemaURL, nil

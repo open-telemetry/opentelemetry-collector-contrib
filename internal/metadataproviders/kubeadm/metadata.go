@@ -16,13 +16,13 @@ import (
 type Provider interface {
 	// ClusterName returns the current K8S cluster name
 	ClusterName(ctx context.Context) (string, error)
-	// ClusterUid returns the current K8S cluster UID
-	ClusterUid(ctx context.Context) (string, error)
+	// ClusterUID returns the current K8S cluster UID
+	ClusterUID(ctx context.Context) (string, error)
 }
 
 type LocalCache struct {
 	ClusterName string
-	ClusterUid  string
+	ClusterUID  string
 }
 
 type kubeadmProvider struct {
@@ -58,16 +58,16 @@ func (k *kubeadmProvider) ClusterName(ctx context.Context) (string, error) {
 	return k.cache.ClusterName, nil
 }
 
-func (k *kubeadmProvider) ClusterUid(ctx context.Context) (string, error) {
-	if k.cache.ClusterUid != "" {
-		return k.cache.ClusterUid, nil
+func (k *kubeadmProvider) ClusterUID(ctx context.Context) (string, error) {
+	if k.cache.ClusterUID != "" {
+		return k.cache.ClusterUID, nil
 	}
 	ns, err := k.kubeadmClient.CoreV1().Namespaces().Get(ctx, k.kubeSystemNamespace, metav1.GetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch Namespace %s from K8s API: %w", k.kubeSystemNamespace, err)
 	}
 
-	k.cache.ClusterUid = string(ns.GetUID())
+	k.cache.ClusterUID = string(ns.GetUID())
 
-	return k.cache.ClusterUid, nil
+	return k.cache.ClusterUID, nil
 }
