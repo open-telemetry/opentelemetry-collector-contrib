@@ -5,6 +5,7 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"strconv"
 	"strings"
@@ -20,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
@@ -52,7 +54,27 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 	}
 }
 
+func (c *Config) resolveTLSConfig() (*tls.Config, error) {
+	if c.TLSConfig == nil {
+		return nil, nil
+	}
+
+	return c.TLSConfig.LoadTLSConfig(context.Background())
+}
+
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
+	tlsConfig, tlsErr := r.config.resolveTLSConfig()
+	if tlsErr != nil {
+		r.settings.Logger.Error("Failed to resolve TLS config", zap.Error(tlsErr))
+		return fmt.Errorf("failed to resolve TLS config: %w", tlsErr)
+	}
+
+	if tlsConfig == nil {
+		r.settings.Logger.Info("TLS is not enabled, running without TLS.")
+	} else {
+		r.settings.Logger.Info("TLS is enabled.")
+	}
+
 	var err error
 	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger)
 	if err != nil {
