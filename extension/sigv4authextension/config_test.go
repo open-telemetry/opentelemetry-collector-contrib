@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, &Config{
 		Region:  "region",
 		Service: "service",
-		AssumeRole: &AssumeRoleSettings{
+		AssumeRole: &AssumeRole{
 			SessionName: "role_session_name",
 			STSRegion:   "region",
 		},
@@ -64,7 +64,7 @@ func TestLoadWebIdentityConfig(t *testing.T) {
 	assert.Equal(t, &Config{
 		Region:  "region",
 		Service: "service",
-		AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentitySettings{
+		AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
 			ARN:       "arn:aws:iam::12345678910:role/my_role",
 			TokenFile: "my_token_file",
 		},

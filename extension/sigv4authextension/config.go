@@ -12,22 +12,22 @@ import (
 
 // Config stores the configuration for the Sigv4 Authenticator
 type Config struct {
-	Region                    string                             `mapstructure:"region,omitempty"`
-	Service                   string                             `mapstructure:"service,omitempty"`
-	AssumeRole                *AssumeRoleSettings                `mapstructure:"assume_role"`
-	AssumeRoleWithWebIdentity *AssumeRoleWithWebIdentitySettings `mapstructure:"assume_role_with_web_identity,omitempty"`
+	Region                    string                     `mapstructure:"region,omitempty"`
+	Service                   string                     `mapstructure:"service,omitempty"`
+	AssumeRole                *AssumeRole                `mapstructure:"assume_role"`
+	AssumeRoleWithWebIdentity *AssumeRoleWithWebIdentity `mapstructure:"assume_role_with_web_identity,omitempty"`
 	credsProvider             *aws.CredentialsProvider
 }
 
 // AssumeRole holds the configuration needed to assume a role
-type AssumeRoleSettings struct {
+type AssumeRole struct {
 	ARN         string `mapstructure:"arn,omitempty"`
 	SessionName string `mapstructure:"session_name,omitempty"`
 	STSRegion   string `mapstructure:"sts_region,omitempty"`
 }
 
 // AssumeRoleWithWebIdentity holds the configuration needed to assume a role
-type AssumeRoleWithWebIdentitySettings struct {
+type AssumeRoleWithWebIdentity struct {
 	ARN       string `mapstructure:"arn,omitempty"`
 	TokenFile string `mapstructure:"token_file"`
 	STSRegion string `mapstructure:"sts_region,omitempty"`
