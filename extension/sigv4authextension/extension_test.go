@@ -101,6 +101,39 @@ func TestGetCredsProviderFromConfig(t *testing.T) {
 	}
 }
 
+func TestGetCredsProviderFromWebIdentityConfig(t *testing.T) {
+	tests := []struct {
+		name        string
+		cfg         *Config
+		shouldError bool
+	}{
+		{
+			"success_case",
+			&Config{Region: "region", Service: "service", AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{ARN: "arn:aws:iam::913240246008:role/astro-boreal-fusion-3522", TokenFile: "testdata/token_file"}},
+			false,
+		},
+	}
+	// run tests
+	for _, testcase := range tests {
+		t.Run(testcase.name, func(t *testing.T) {
+			credsProvider, err := getCredsProviderFromWebIdentityConfig(testcase.cfg)
+
+			if testcase.shouldError {
+				assert.Error(t, err)
+				assert.Nil(t, credsProvider)
+				return
+			}
+
+			require.NoError(t, err)
+			require.NotNil(t, credsProvider)
+
+			creds, err := (*credsProvider).Retrieve(context.Background())
+			require.NoError(t, err)
+			require.NotNil(t, creds)
+		})
+	}
+}
+
 func TestCloneRequest(t *testing.T) {
 	req1, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
 	assert.NoError(t, err)

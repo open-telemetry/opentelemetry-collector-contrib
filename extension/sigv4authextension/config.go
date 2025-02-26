@@ -40,18 +40,37 @@ var _ component.Config = (*Config)(nil)
 // We aim to catch most errors here to ensure that we
 // fail early and to avoid revalidating static data.
 func (cfg *Config) Validate() error {
-	if cfg.AssumeRole.STSRegion == "" && cfg.Region != "" {
-		cfg.AssumeRole.STSRegion = cfg.Region
-	}
+	assumeRole := cfg.AssumeRole != nil
+	assumeRoleWithWebIdentity := cfg.AssumeRoleWithWebIdentity != nil
 
-	credsProvider, err := getCredsProviderFromConfig(cfg)
-	if err != nil {
-		return fmt.Errorf("could not retrieve credential provider: %w", err)
-	}
-	if credsProvider == nil {
-		return fmt.Errorf("credsProvider cannot be nil")
-	}
-	cfg.credsProvider = credsProvider
+	if !assumeRoleWithWebIdentity {
+		if cfg.AssumeRole.STSRegion == "" && cfg.Region != "" {
+			cfg.AssumeRole.STSRegion = cfg.Region
+		}
 
+		credsProvider, err := getCredsProviderFromConfig(cfg)
+		if err != nil {
+			return fmt.Errorf("could not retrieve credential provider: %w", err)
+		}
+		if credsProvider == nil {
+			return fmt.Errorf("credsProvider cannot be nil")
+		}
+		cfg.credsProvider = credsProvider
+	} else if !assumeRole && assumeRoleWithWebIdentity {
+		if cfg.AssumeRoleWithWebIdentity.STSRegion == "" && cfg.Region != "" {
+			cfg.AssumeRoleWithWebIdentity.STSRegion = cfg.Region
+		}
+
+		credsProvider, err := getCredsProviderFromWebIdentityConfig(cfg)
+		if err != nil {
+			return fmt.Errorf("could not retrieve credential provider: %w", err)
+		}
+		if credsProvider == nil {
+			return fmt.Errorf("credsProvider cannot be nil")
+		}
+		cfg.credsProvider = credsProvider
+	} else if assumeRole && assumeRoleWithWebIdentity {
+		return fmt.Errorf("both assume_role and assume_role_with_web_identity were defined in the config - only define one or the other")
+	}
 	return nil
 }

@@ -90,3 +90,33 @@ func getCredsProviderFromConfig(cfg *Config) (*aws.CredentialsProvider, error) {
 
 	return &awscfg.Credentials, nil
 }
+
+func getCredsProviderFromWebIdentityConfig(cfg *Config) (*aws.CredentialsProvider, error) {
+	token_retriever := stscreds.IdentityTokenFile(cfg.AssumeRoleWithWebIdentity.TokenFile)
+	arn := cfg.AssumeRoleWithWebIdentity.ARN
+
+	awscfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithWebIdentityRoleCredentialOptions(
+			func(options *stscreds.WebIdentityRoleOptions) {
+				options.TokenRetriever = token_retriever
+				options.RoleARN = arn
+			},
+		),
+		awsconfig.WithRegion("aws-global"),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+	stsSvc := sts.NewFromConfig(awscfg)
+
+	provider := stscreds.NewWebIdentityRoleProvider(stsSvc, arn, token_retriever)
+	awscfg.Credentials = aws.NewCredentialsCache(provider)
+
+	_, err = awscfg.Credentials.Retrieve(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	return &awscfg.Credentials, nil
+}

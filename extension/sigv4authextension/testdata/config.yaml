@@ -11,4 +11,4 @@ sigv4auth/web_identity:
   service: "service"
   assume_role_with_web_identity:
     arn: "arn:aws:iam::12345678910:role/my_role"
-    token_file: "my_token_file"
+    token_file: "test_data/token_file"
