@@ -44,5 +44,6 @@ General purpose:
 - [remove](./remove.md)
 - [retain](./retain.md)
 - [router](./router.md)
+- [strip_ansi_escape_codes](./strip_ansi_escape_codes.md)
 - [unquote](./unquote.md)
 - [assign_keys](./assign_keys.md)
