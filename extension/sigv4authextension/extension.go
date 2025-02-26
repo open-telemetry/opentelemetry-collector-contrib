@@ -92,7 +92,11 @@ func getCredsProviderFromConfig(cfg *Config) (*aws.CredentialsProvider, error) {
 }
 
 func getCredsProviderFromWebIdentityConfig(cfg *Config) (*aws.CredentialsProvider, error) {
-	tokenRetriever := stscreds.IdentityTokenFile(cfg.AssumeRoleWithWebIdentity.TokenFile)
+	tokenRetriever := stscreds.IdentityTokenRetriever(stscreds.IdentityTokenFile(cfg.AssumeRoleWithWebIdentity.TokenFile))
+	_, err := tokenRetriever.GetIdentityToken()
+	if err != nil {
+		return nil, err
+	}
 	arn := cfg.AssumeRoleWithWebIdentity.ARN
 
 	awscfg, err := awsconfig.LoadDefaultConfig(context.Background(),
@@ -112,11 +116,6 @@ func getCredsProviderFromWebIdentityConfig(cfg *Config) (*aws.CredentialsProvide
 
 	provider := stscreds.NewWebIdentityRoleProvider(stsSvc, arn, tokenRetriever)
 	awscfg.Credentials = aws.NewCredentialsCache(provider)
-
-	_, err = awscfg.Credentials.Retrieve(context.Background())
-	if err != nil {
-		return nil, err
-	}
 
 	return &awscfg.Credentials, nil
 }

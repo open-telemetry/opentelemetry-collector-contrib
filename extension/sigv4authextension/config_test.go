@@ -46,12 +46,6 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadWebIdentityConfig(t *testing.T) {
-	awsCredsProvider := mockCredentials()
-	awsCreds, _ := (*awsCredsProvider).Retrieve(context.Background())
-
-	t.Setenv("AWS_ACCESS_KEY_ID", awsCreds.AccessKeyID)
-	t.Setenv("AWS_SECRET_ACCESS_KEY", awsCreds.SecretAccessKey)
-
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -66,9 +60,9 @@ func TestLoadWebIdentityConfig(t *testing.T) {
 		Service: "service",
 		AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
 			ARN:       "arn:aws:iam::12345678910:role/my_role",
-			TokenFile: "my_token_file",
+			TokenFile: "testdata/token_file",
+			STSRegion: "region",
 		},
-		// Ensure creds are the same for load config test; tested in extension_test.go
 		credsProvider: cfg.(*Config).credsProvider,
 	}, cfg)
 }

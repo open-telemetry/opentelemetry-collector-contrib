@@ -108,9 +108,14 @@ func TestGetCredsProviderFromWebIdentityConfig(t *testing.T) {
 		shouldError bool
 	}{
 		{
-			"success_case",
-			&Config{Region: "region", Service: "service", AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{ARN: "arn:aws:iam::913240246008:role/astro-boreal-fusion-3522", TokenFile: "testdata/token_file"}},
+			"valid_token",
+			&Config{Region: "region", Service: "service", AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{ARN: "arn:aws:iam::123456789012:role/my_role", TokenFile: "testdata/token_file"}},
 			false,
+		},
+		{
+			"missing_token_file",
+			&Config{Region: "region", Service: "service", AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{ARN: "arn:aws:iam::123456789012:role/my_role", TokenFile: "testdata/no_token_file"}},
+			true,
 		},
 	}
 	// run tests
@@ -127,9 +132,9 @@ func TestGetCredsProviderFromWebIdentityConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, credsProvider)
 
-			creds, err := (*credsProvider).Retrieve(context.Background())
-			require.NoError(t, err)
-			require.NotNil(t, creds)
+			// Should always error out as we are not providing a real token.
+			_, err = (*credsProvider).Retrieve(context.Background())
+			assert.Error(t, err)
 		})
 	}
 }
