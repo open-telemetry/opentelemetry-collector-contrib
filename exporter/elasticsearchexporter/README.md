@@ -39,7 +39,7 @@ As a shortcut, the following settings are also supported:
 
 - `user` (optional): Username used for HTTP Basic Authentication.
 - `password` (optional): Password used for HTTP Basic Authentication.
-- `api_key` (optional): [Elasticsearch API Key] in "encoded" format.
+- `api_key` (optional): [Elasticsearch API Key] in "encoded" format (e.g. `VFR2WU41VUJIbG9SbGJUdVFrMFk6NVVhVDE3SDlSQS0wM1Rxb24xdXFldw==`).
 
 Example:
 
@@ -122,7 +122,7 @@ This can be customised through the following settings:
 - `logs_index`: The [index] or [data stream] name to publish events to.  The default value is `logs-generic-default`
 
 - `logs_dynamic_index` (optional): uses resource, scope, or log record attributes to dynamically construct index name.
-  - `enabled`(default=false): Enable/Disable dynamic index for log records.  If `data_stream.dataset` or `data_stream.namespace` exist in attributes (precedence: log record attribute > scope attribute > resource attribute), they will be used to dynamically construct index name in the form `logs-${data_stream.dataset}-${data_stream.namespace}`. Otherwise, if
+  - `enabled`(default=false): Enable/Disable dynamic index for log records.  If `data_stream.dataset` or `data_stream.namespace` exist in attributes (precedence: log record attribute > scope attribute > resource attribute), they will be used to dynamically construct index name in the form `logs-${data_stream.dataset}-${data_stream.namespace}`. In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`) is also supported to dynamically construct index in the form `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`. Otherwise, if
     `elasticsearch.index.prefix` or `elasticsearch.index.suffix` exist in attributes (precedence: resource attribute > scope attribute > log record attribute), they will be used to dynamically construct index name in the form `${elasticsearch.index.prefix}${logs_index}${elasticsearch.index.suffix}`. Otherwise, if scope name matches regex `/receiver/(\w*receiver)`, `data_stream.dataset` will be capture group #1. Otherwise, the index name falls back to `logs-generic-default`, and `logs_index` config will be ignored. Except for prefix/suffix attribute presence, the resulting docs will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
 
 - `metrics_index` (optional): The [index] or [data stream] name to publish metrics to. The default value is `metrics-generic-default`.
@@ -219,7 +219,7 @@ the Elasticsearch document structure.
 
 #### Default (none) mapping mode
 
-In the `none` mapping mode the Elasticsearhc Exporter produces documents with the original
+In the `none` mapping mode the Elasticsearch Exporter produces documents with the original
 field names of from the OTLP data structures.
 
 | Signal    | `none`             |
@@ -459,7 +459,7 @@ processors:
 
 Symptom: `elasticsearchexporter` logs an error "failed to index document" with `error.type` "version_conflict_engine_exception" and `error.reason` containing "version conflict, document already exists".
 
-This happens when the target data stream is a TSDB metrics data stream (e.g. using OTel mapping mode sending to a 8.16+ Elasticsearch).
+This happens when the target data stream is a TSDB metrics data stream (e.g. using OTel mapping mode sending to a 8.16+ Elasticsearch, or ECS mapping mode sending to system integration data streams).
 
 Elasticsearch [Time Series Data Streams](https://www.elastic.co/guide/en/elasticsearch/reference/current/tsds.html) requires that there must only be one document per timestamp with the same dimensions.
 The purpose is to avoid duplicate data when re-trying a batch of metrics that were previously sent but failed to be indexed.
