@@ -28,12 +28,16 @@ type Config struct {
 var (
 	_                  component.Config = (*Config)(nil)
 	errNoTokenProvided                  = errors.New("no bearer token provided")
+	errTokensAndTokenProvided           = errors.New("either tokens or token should be provided, not both")
 )
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
 	if cfg.BearerToken == "" && len(cfg.Tokens) == 0 && cfg.Filename == "" {
 		return errNoTokenProvided
+	}
+	if cfg.BearerToken != "" && len(cfg.Tokens) > 0 {
+		return errTokensAndTokenProvided
 	}
 	return nil
 }

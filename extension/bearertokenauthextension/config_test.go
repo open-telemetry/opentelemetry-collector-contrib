@@ -65,6 +65,23 @@ func TestLoadConfig(t *testing.T) {
                 Filename:    "file-containing.token",
             },
         },
+        {
+            id: component.NewIDWithName(metadata.Type, "tokensandtoken"),
+            expected: &Config{
+                Scheme:      "Bearer",
+                BearerToken: "sometoken",
+                Tokens:      []configopaque.String{"token1", "thistokenalsoworks"},
+            },
+            expectedErr: true,
+        },
+        {
+            id: component.NewIDWithName(metadata.Type, "withtokensandfilename"),
+            expected: &Config{
+                Scheme:   "Bearer",
+                Tokens:   []configopaque.String{"ignoredtoken1", "ignoredtoken2"},
+                Filename: "file-containing.token",
+            },
+        },
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {

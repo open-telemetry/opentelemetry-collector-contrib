@@ -25,7 +25,7 @@ The authenticator type has to be set to `bearertokenauth`.
 
 - `token`: Static authorization token that needs to be sent on every gRPC client call as metadata.
 
-- `tokens`: A list of static authorization tokens that needs to be sent on every gRPC client call as metadata.
+- `tokens`: A list of static authorization tokens, one of which needs to be sent on every gRPC client call as metadata.
 
 - `filename`: Name of file that contains a authorization token that needs to be sent in every client call.
 
