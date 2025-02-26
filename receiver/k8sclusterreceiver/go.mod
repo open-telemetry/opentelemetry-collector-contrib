@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclu
 go 1.23.0
 
 require (
-	github.com/google/go-cmp v0.6.0
+	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1
