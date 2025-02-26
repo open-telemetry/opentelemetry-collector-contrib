@@ -12,22 +12,22 @@ import (
 
 // Config stores the configuration for the Sigv4 Authenticator
 type Config struct {
-	Region                    string                     `mapstructure:"region,omitempty"`
-	Service                   string                     `mapstructure:"service,omitempty"`
-	AssumeRole                *AssumeRole                `mapstructure:"assume_role"`
-	AssumeRoleWithWebIdentity *AssumeRoleWithWebIdentity `mapstructure:"assume_role_with_web_identity,omitempty"`
+	Region                    string                             `mapstructure:"region,omitempty"`
+	Service                   string                             `mapstructure:"service,omitempty"`
+	AssumeRole                *AssumeRoleSettings                `mapstructure:"assume_role"`
+	AssumeRoleWithWebIdentity *AssumeRoleWithWebIdentitySettings `mapstructure:"assume_role_with_web_identity,omitempty"`
 	credsProvider             *aws.CredentialsProvider
 }
 
 // AssumeRole holds the configuration needed to assume a role
-type AssumeRole struct {
+type AssumeRoleSettings struct {
 	ARN         string `mapstructure:"arn,omitempty"`
 	SessionName string `mapstructure:"session_name,omitempty"`
 	STSRegion   string `mapstructure:"sts_region,omitempty"`
 }
 
 // AssumeRoleWithWebIdentity holds the configuration needed to assume a role
-type AssumeRoleWithWebIdentity struct {
+type AssumeRoleWithWebIdentitySettings struct {
 	ARN       string `mapstructure:"arn,omitempty"`
 	TokenFile string `mapstructure:"token_file"`
 	STSRegion string `mapstructure:"sts_region,omitempty"`
@@ -43,7 +43,8 @@ func (cfg *Config) Validate() error {
 	assumeRole := cfg.AssumeRole != nil
 	assumeRoleWithWebIdentity := cfg.AssumeRoleWithWebIdentity != nil
 
-	if !assumeRoleWithWebIdentity {
+	switch {
+	case !assumeRoleWithWebIdentity:
 		if cfg.AssumeRole.STSRegion == "" && cfg.Region != "" {
 			cfg.AssumeRole.STSRegion = cfg.Region
 		}
@@ -56,7 +57,7 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf("credsProvider cannot be nil")
 		}
 		cfg.credsProvider = credsProvider
-	} else if !assumeRole && assumeRoleWithWebIdentity {
+	case !assumeRole && assumeRoleWithWebIdentity:
 		if cfg.AssumeRoleWithWebIdentity.STSRegion == "" && cfg.Region != "" {
 			cfg.AssumeRoleWithWebIdentity.STSRegion = cfg.Region
 		}
@@ -69,7 +70,7 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf("credsProvider cannot be nil")
 		}
 		cfg.credsProvider = credsProvider
-	} else if assumeRole && assumeRoleWithWebIdentity {
+	case assumeRole && assumeRoleWithWebIdentity:
 		return fmt.Errorf("both assume_role and assume_role_with_web_identity were defined in the config - only define one or the other")
 	}
 	return nil
