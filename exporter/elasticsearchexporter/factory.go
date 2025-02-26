@@ -31,6 +31,8 @@ const (
 	defaultTracesIndex  = "traces-generic-default"
 )
 
+var defaultBatcherMinSizeItems = 5000
+
 // NewFactory creates a factory for Elastic exporter.
 func NewFactory() exporter.Factory {
 	return xexporter.NewFactory(
@@ -94,10 +96,10 @@ func createDefaultConfig() component.Config {
 		Batcher: BatcherConfig{
 			FlushTimeout: 30 * time.Second,
 			MinSizeConfig: exporterbatcher.MinSizeConfig{
-				MinSizeItems: 5000,
+				MinSizeItems: &defaultBatcherMinSizeItems,
 			},
 			MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-				MaxSizeItems: 0,
+				MaxSizeItems: nil,
 			},
 		},
 		Flush: FlushSettings{
