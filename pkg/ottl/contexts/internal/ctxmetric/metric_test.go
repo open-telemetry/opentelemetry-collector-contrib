@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package ctxmetric_test
 
 import (
 	"context"
@@ -11,11 +11,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 )
 
-func Test_MetricPathGetSetter(t *testing.T) {
-	refMetric := createMetricTelemetry()
+func TestPathGetSetter(t *testing.T) {
+	refMetric := createTelemetry()
 
 	newMetric := pmetric.NewMetric()
 	newMetric.SetName("new name")
@@ -26,14 +27,14 @@ func Test_MetricPathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     ottl.Path[*metricContext]
+		path     ottl.Path[*testContext]
 		orig     any
 		newVal   any
 		modified func(metric pmetric.Metric)
 	}{
 		{
 			name: "metric name",
-			path: &pathtest.Path[*metricContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "name",
 			},
 			orig:   "name",
@@ -44,7 +45,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric description",
-			path: &pathtest.Path[*metricContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "description",
 			},
 			orig:   "description",
@@ -55,7 +56,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric unit",
-			path: &pathtest.Path[*metricContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "unit",
 			},
 			orig:   "unit",
@@ -66,7 +67,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric type",
-			path: &pathtest.Path[*metricContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "type",
 			},
 			orig:   int64(pmetric.MetricTypeSum),
@@ -76,7 +77,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric aggregation_temporality",
-			path: &pathtest.Path[*metricContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "aggregation_temporality",
 			},
 			orig:   int64(2),
@@ -87,7 +88,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric is_monotonic",
-			path: &pathtest.Path[*metricContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "is_monotonic",
 			},
 			orig:   true,
@@ -98,7 +99,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "metric data points",
-			path: &pathtest.Path[*metricContext]{
+			path: &pathtest.Path[*testContext]{
 				N: "data_points",
 			},
 			orig:   refMetric.Sum().DataPoints(),
@@ -110,19 +111,19 @@ func Test_MetricPathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := MetricPathGetSetter[*metricContext](tt.path)
+			accessor, err := ctxmetric.PathGetSetter(tt.path)
 			assert.NoError(t, err)
 
-			metric := createMetricTelemetry()
+			metric := createTelemetry()
 
-			got, err := accessor.Get(context.Background(), newMetricContext(metric))
+			got, err := accessor.Get(context.Background(), newContext(metric))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), newMetricContext(metric), tt.newVal)
+			err = accessor.Set(context.Background(), newContext(metric), tt.newVal)
 			assert.NoError(t, err)
 
-			expectedMetric := createMetricTelemetry()
+			expectedMetric := createTelemetry()
 			tt.modified(expectedMetric)
 
 			assert.Equal(t, expectedMetric, metric)
@@ -130,7 +131,7 @@ func Test_MetricPathGetSetter(t *testing.T) {
 	}
 }
 
-func createMetricTelemetry() pmetric.Metric {
+func createTelemetry() pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName("name")
 	metric.SetDescription("description")
@@ -140,14 +141,14 @@ func createMetricTelemetry() pmetric.Metric {
 	return metric
 }
 
-type metricContext struct {
+type testContext struct {
 	metric pmetric.Metric
 }
 
-func (m *metricContext) GetMetric() pmetric.Metric {
+func (m *testContext) GetMetric() pmetric.Metric {
 	return m.metric
 }
 
-func newMetricContext(metric pmetric.Metric) *metricContext {
-	return &metricContext{metric: metric}
+func newContext(metric pmetric.Metric) *testContext {
+	return &testContext{metric: metric}
 }

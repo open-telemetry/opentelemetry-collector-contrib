@@ -75,7 +75,6 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
           - other
     runs-on: ubuntu-24.04
     needs: [setup-environment]
@@ -144,7 +143,6 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -224,7 +222,7 @@ jobs:
           git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gendistributions" and commit the changes in this PR.' && exit 1)
       - name: CodeGen
         run: |
-          make -j2 generate
+          make generate
           if [[ -n $(git status -s) ]]; then
             echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.'
             exit 1
@@ -257,7 +255,6 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
           - other
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
@@ -355,7 +352,6 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
@@ -652,3 +648,27 @@ jobs:
                 return
               }
             }
+
+  flakytests-generate-issues:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    needs: [unittest-matrix]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          pattern: test-results-*
+          path: ./internal/tools/testresults/
+      - name: Install Tools
+        run: make install-tools
+      - name: Generate Issues
+        run: |
+          # We want to start by generating issues of a single component
+          # As we mature the usage of issuegenerator, we can extend it to
+          # generate issues for multiple components.
+          #
+          # We'll start with the hostmetricsreceiver.
+          mkdir -p ./internal/tools/testresults/hostmetricsreceiver
+          mv ./internal/tools/testresults/github.com-open-telemetry-opentelemetry-collector-contrib-receiver-hostmetricsreceiver-junit.xml ./internal/tools/testresults/hostmetricsreceiver/
+          ./tools/issuegenerator -path ./internal/tools/testresults/hostmetricsreceiver/

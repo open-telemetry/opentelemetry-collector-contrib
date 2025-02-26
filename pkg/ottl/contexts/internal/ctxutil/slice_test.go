@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package ctxutil_test
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -81,14 +82,14 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 			s := pcommon.NewSlice()
 			s.AppendEmpty().SetStr("val")
 
-			_, err := GetSliceValue[any](context.Background(), nil, s, tt.keys)
+			_, err := ctxutil.GetSliceValue[any](context.Background(), nil, s, tt.keys)
 			assert.Equal(t, tt.err.Error(), err.Error())
 		})
 	}
 }
 
 func Test_GetSliceValue_NilKey(t *testing.T) {
-	_, err := GetSliceValue[any](context.Background(), nil, pcommon.NewSlice(), nil)
+	_, err := ctxutil.GetSliceValue[any](context.Background(), nil, pcommon.NewSlice(), nil)
 	assert.Error(t, err)
 }
 
@@ -157,13 +158,13 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 			s := pcommon.NewSlice()
 			s.AppendEmpty().SetStr("val")
 
-			err := SetSliceValue[any](context.Background(), nil, s, tt.keys, "value")
+			err := ctxutil.SetSliceValue[any](context.Background(), nil, s, tt.keys, "value")
 			assert.Equal(t, tt.err.Error(), err.Error())
 		})
 	}
 }
 
 func Test_SetSliceValue_NilKey(t *testing.T) {
-	err := SetSliceValue[any](context.Background(), nil, pcommon.NewSlice(), nil, "value")
+	err := ctxutil.SetSliceValue[any](context.Background(), nil, pcommon.NewSlice(), nil, "value")
 	assert.Error(t, err)
 }
