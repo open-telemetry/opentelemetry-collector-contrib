@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/build-tools/issuegenerator v0.19.0
 	go.opentelemetry.io/build-tools/multimod v0.19.0
 	go.opentelemetry.io/collector/cmd/builder v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/cmd/mdatagen v0.120.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/cmd/mdatagen v0.120.1-0.20250226120805-58f3efbc3548
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.30.0
 	golang.org/x/vuln v1.1.4
