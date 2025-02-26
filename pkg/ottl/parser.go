@@ -228,7 +228,34 @@ func (p *Parser[K]) prependContextToStatementPaths(context string, statement str
 		}
 	}
 
-	return insertContextIntoStatementOffsets(context, statement, missingContextOffsets)
+	return insertContextIntoOTTLOffsets(context, statement, missingContextOffsets)
+}
+
+// prependContextToConditionPaths changes the given OTTL statement adding the context name prefix
+// to all context-less paths. No modifications are performed for paths which [Path.Context]
+// value matches any WithPathContextNames value.
+// The context argument must be valid WithPathContextNames value, otherwise an error is returned.
+func (p *Parser[K]) prependContextToConditionPaths(context string, condition string) (string, error) {
+	if _, ok := p.pathContextNames[context]; !ok {
+		return condition, fmt.Errorf(`unknown context "%s" for parser %T, valid options are: %s`, context, p, p.buildPathContextNamesText(""))
+	}
+	parsed, err := parseCondition(condition)
+	if err != nil {
+		return "", err
+	}
+	paths := getBooleanExpressionPaths(parsed)
+	if len(paths) == 0 {
+		return condition, nil
+	}
+
+	var missingContextOffsets []int
+	for _, it := range paths {
+		if _, ok := p.pathContextNames[it.Context]; !ok {
+			missingContextOffsets = append(missingContextOffsets, it.Pos.Offset)
+		}
+	}
+
+	return insertContextIntoOTTLOffsets(context, condition, missingContextOffsets)
 }
 
 var (
@@ -276,7 +303,7 @@ func parseValueExpression(raw string) (*value, error) {
 	return parsed, nil
 }
 
-func insertContextIntoStatementOffsets(context string, statement string, offsets []int) (string, error) {
+func insertContextIntoOTTLOffsets(context string, statement string, offsets []int) (string, error) {
 	if len(offsets) == 0 {
 		return statement, nil
 	}
