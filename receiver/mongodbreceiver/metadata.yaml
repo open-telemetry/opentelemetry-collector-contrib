@@ -358,7 +358,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [ ]
-  mongodb.queries_per_sec:
+  mongodb.queries.rate:
     description: The number of queries executed per second.
     unit: "{query}/s"
     enabled: false
@@ -366,7 +366,7 @@ metrics:
       value_type: double
       aggregation_temporality: delta
       monotonic: false
-  mongodb.inserts_per_sec:
+  mongodb.inserts.rate:
     description: The number of insertions executed per second.
     unit: "{insert}/s"
     enabled: false
@@ -374,7 +374,7 @@ metrics:
       value_type: double
       aggregation_temporality: delta
       monotonic: false
-  mongodb.commands_per_sec:
+  mongodb.commands.rate:
     description: The number of commands executed per second.
     unit: "{command}/s"
     enabled: false
@@ -382,7 +382,7 @@ metrics:
       value_type: double
       aggregation_temporality: delta
       monotonic: false
-  mongodb.getmores_per_sec:
+  mongodb.getmores.rate:
     description: The number of getmores executed per second.
     unit: "{getmore}/s"
     enabled: false
@@ -390,7 +390,7 @@ metrics:
       value_type: double
       aggregation_temporality: delta
       monotonic: false
-  mongodb.deletes_per_sec:
+  mongodb.deletes.rate:
     description: The number of deletes executed per second.
     unit: "{delete}/s"
     enabled: false
@@ -398,7 +398,7 @@ metrics:
       value_type: double
       aggregation_temporality: delta
       monotonic: false 
-  mongodb.updates_per_sec:
+  mongodb.updates.rate:
     description: The number of updates executed per second.
     unit: "{update}/s"
     enabled: false
@@ -406,7 +406,7 @@ metrics:
       value_type: double
       aggregation_temporality: delta
       monotonic: false
-  mongodb.flushes_per_sec:
+  mongodb.flushes.rate:
     description: The number of flushes executed per second.
     unit: "{flush}/s"
     enabled: false
@@ -440,20 +440,6 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: true
-    attributes: []
-  mongodb.cache.dirty.percent:
-    description: The percentage of WiredTiger cache that is dirty.
-    unit: "1"
-    enabled: false
-    gauge:
-      value_type: double
-    attributes: []
-  mongodb.cache.used.percent:
-    description: The percentage of WiredTiger cache in use.
-    unit: "1"
-    enabled: false
-    gauge:
-      value_type: double
     attributes: []
   mongodb.page_faults:
     description: The number of page faults.

@@ -258,7 +258,7 @@ func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M,
 
 func (s *mongodbScraper) recordFlushesPerSecond(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	metricPath := []string{"wiredTiger", "checkpoint", "total succeed number of checkpoints"}
-	metricName := "mongodb.flushes_per_sec"
+	metricName := "mongodb.flushes.rate"
 	currentFlushes, err := collectMetric(doc, metricPath)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
@@ -271,7 +271,7 @@ func (s *mongodbScraper) recordFlushesPerSecond(now pcommon.Timestamp, doc bson.
 			if prevFlushCount := s.prevFlushCount; true {
 				delta := currentFlushes - prevFlushCount
 				flushesPerSec := float64(delta) / timeDelta
-				s.mb.RecordMongodbFlushesPerSecDataPoint(now, flushesPerSec)
+				s.mb.RecordMongodbFlushesRateDataPoint(now, flushesPerSec)
 			}
 		}
 	}
@@ -290,17 +290,17 @@ func (s *mongodbScraper) recordOperationPerSecond(now pcommon.Timestamp, operati
 
 				switch operationVal {
 				case "query":
-					s.mb.RecordMongodbQueriesPerSecDataPoint(now, queriesPerSec)
+					s.mb.RecordMongodbQueriesRateDataPoint(now, queriesPerSec)
 				case "insert":
-					s.mb.RecordMongodbInsertsPerSecDataPoint(now, queriesPerSec)
+					s.mb.RecordMongodbInsertsRateDataPoint(now, queriesPerSec)
 				case "command":
-					s.mb.RecordMongodbCommandsPerSecDataPoint(now, queriesPerSec)
+					s.mb.RecordMongodbCommandsRateDataPoint(now, queriesPerSec)
 				case "getmore":
-					s.mb.RecordMongodbGetmoresPerSecDataPoint(now, queriesPerSec)
+					s.mb.RecordMongodbGetmoresRateDataPoint(now, queriesPerSec)
 				case "delete":
-					s.mb.RecordMongodbDeletesPerSecDataPoint(now, queriesPerSec)
+					s.mb.RecordMongodbDeletesRateDataPoint(now, queriesPerSec)
 				case "update":
-					s.mb.RecordMongodbUpdatesPerSecDataPoint(now, queriesPerSec)
+					s.mb.RecordMongodbUpdatesRateDataPoint(now, queriesPerSec)
 				default:
 					fmt.Printf("Unhandled operation: %s\n", operationVal)
 				}
@@ -340,35 +340,6 @@ func (s *mongodbScraper) recordWTCacheBytes(now pcommon.Timestamp, doc bson.M, e
 		return
 	}
 	s.mb.RecordMongodbWtcacheBytesReadDataPoint(now, val)
-}
-
-func (s *mongodbScraper) recordCachePercentages(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	wt, ok := doc["wiredTiger"].(bson.M)
-	if !ok {
-		errs.AddPartial(2, errors.New("failed to find wiredTiger metrics"))
-		return
-	}
-
-	cache, ok := wt["cache"].(bson.M)
-	if !ok {
-		errs.AddPartial(2, errors.New("failed to find cache metrics"))
-		return
-	}
-
-	// Calculate dirty percentage
-	trackedDirtyBytes, err1 := collectMetric(cache, []string{"tracked dirty bytes in the cache"})
-	maxBytes, err2 := collectMetric(cache, []string{"maximum bytes configured"})
-	if err1 == nil && err2 == nil && maxBytes > 0 {
-		dirtyPercent := float64(trackedDirtyBytes) / float64(maxBytes) * 100
-		s.mb.RecordMongodbCacheDirtyPercentDataPoint(now, dirtyPercent)
-	}
-
-	// Calculate used percentage
-	bytesInUse, err3 := collectMetric(cache, []string{"bytes currently in the cache"})
-	if err3 == nil && maxBytes > 0 {
-		usedPercent := float64(bytesInUse) / float64(maxBytes) * 100
-		s.mb.RecordMongodbCacheUsedPercentDataPoint(now, usedPercent)
-	}
 }
 
 func (s *mongodbScraper) recordPageFaults(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {

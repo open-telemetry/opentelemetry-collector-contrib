@@ -5,15 +5,11 @@ all_set:
       enabled: true
     mongodb.active.writes:
       enabled: true
-    mongodb.cache.dirty.percent:
-      enabled: true
     mongodb.cache.operations:
-      enabled: true
-    mongodb.cache.used.percent:
       enabled: true
     mongodb.collection.count:
       enabled: true
-    mongodb.commands_per_sec:
+    mongodb.commands.rate:
       enabled: true
     mongodb.connection.count:
       enabled: true
@@ -25,15 +21,15 @@ all_set:
       enabled: true
     mongodb.database.count:
       enabled: true
-    mongodb.deletes_per_sec:
+    mongodb.deletes.rate:
       enabled: true
     mongodb.document.operation.count:
       enabled: true
     mongodb.extent.count:
       enabled: true
-    mongodb.flushes_per_sec:
+    mongodb.flushes.rate:
       enabled: true
-    mongodb.getmores_per_sec:
+    mongodb.getmores.rate:
       enabled: true
     mongodb.global_lock.time:
       enabled: true
@@ -45,7 +41,7 @@ all_set:
       enabled: true
     mongodb.index.size:
       enabled: true
-    mongodb.inserts_per_sec:
+    mongodb.inserts.rate:
       enabled: true
     mongodb.lock.acquire.count:
       enabled: true
@@ -75,13 +71,13 @@ all_set:
       enabled: true
     mongodb.page_faults:
       enabled: true
-    mongodb.queries_per_sec:
+    mongodb.queries.rate:
       enabled: true
     mongodb.session.count:
       enabled: true
     mongodb.storage.size:
       enabled: true
-    mongodb.updates_per_sec:
+    mongodb.updates.rate:
       enabled: true
     mongodb.uptime:
       enabled: true
@@ -100,15 +96,11 @@ none_set:
       enabled: false
     mongodb.active.writes:
       enabled: false
-    mongodb.cache.dirty.percent:
-      enabled: false
     mongodb.cache.operations:
-      enabled: false
-    mongodb.cache.used.percent:
       enabled: false
     mongodb.collection.count:
       enabled: false
-    mongodb.commands_per_sec:
+    mongodb.commands.rate:
       enabled: false
     mongodb.connection.count:
       enabled: false
@@ -120,15 +112,15 @@ none_set:
       enabled: false
     mongodb.database.count:
       enabled: false
-    mongodb.deletes_per_sec:
+    mongodb.deletes.rate:
       enabled: false
     mongodb.document.operation.count:
       enabled: false
     mongodb.extent.count:
       enabled: false
-    mongodb.flushes_per_sec:
+    mongodb.flushes.rate:
       enabled: false
-    mongodb.getmores_per_sec:
+    mongodb.getmores.rate:
       enabled: false
     mongodb.global_lock.time:
       enabled: false
@@ -140,7 +132,7 @@ none_set:
       enabled: false
     mongodb.index.size:
       enabled: false
-    mongodb.inserts_per_sec:
+    mongodb.inserts.rate:
       enabled: false
     mongodb.lock.acquire.count:
       enabled: false
@@ -170,13 +162,13 @@ none_set:
       enabled: false
     mongodb.page_faults:
       enabled: false
-    mongodb.queries_per_sec:
+    mongodb.queries.rate:
       enabled: false
     mongodb.session.count:
       enabled: false
     mongodb.storage.size:
       enabled: false
-    mongodb.updates_per_sec:
+    mongodb.updates.rate:
       enabled: false
     mongodb.uptime:
       enabled: false

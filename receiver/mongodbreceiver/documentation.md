@@ -258,23 +258,7 @@ The number of write operations currently being processed.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {writes} | Sum | Int | Cumulative | false |
 
-### mongodb.cache.dirty.percent
-
-The percentage of WiredTiger cache that is dirty.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
-### mongodb.cache.used.percent
-
-The percentage of WiredTiger cache in use.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
-### mongodb.commands_per_sec
+### mongodb.commands.rate
 
 The number of commands executed per second.
 
@@ -282,7 +266,7 @@ The number of commands executed per second.
 | ---- | ----------- | ---------- |
 | {command}/s | Gauge | Double |
 
-### mongodb.deletes_per_sec
+### mongodb.deletes.rate
 
 The number of deletes executed per second.
 
@@ -290,7 +274,7 @@ The number of deletes executed per second.
 | ---- | ----------- | ---------- |
 | {delete}/s | Gauge | Double |
 
-### mongodb.flushes_per_sec
+### mongodb.flushes.rate
 
 The number of flushes executed per second.
 
@@ -298,7 +282,7 @@ The number of flushes executed per second.
 | ---- | ----------- | ---------- |
 | {flush}/s | Gauge | Double |
 
-### mongodb.getmores_per_sec
+### mongodb.getmores.rate
 
 The number of getmores executed per second.
 
@@ -316,7 +300,7 @@ A value of '1' indicates healthy. A value of '0' indicates unhealthy.
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-### mongodb.inserts_per_sec
+### mongodb.inserts.rate
 
 The number of insertions executed per second.
 
@@ -420,7 +404,7 @@ The number of page faults.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {faults} | Sum | Int | Cumulative | true |
 
-### mongodb.queries_per_sec
+### mongodb.queries.rate
 
 The number of queries executed per second.
 
@@ -428,7 +412,7 @@ The number of queries executed per second.
 | ---- | ----------- | ---------- |
 | {query}/s | Gauge | Double |
 
-### mongodb.updates_per_sec
+### mongodb.updates.rate
 
 The number of updates executed per second.
 

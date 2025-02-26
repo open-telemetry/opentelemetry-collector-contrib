@@ -96,10 +96,9 @@ var (
 				"failed to collect metric mongodb.uptime: could not find key for metric",
 				"failed to collect metric mongodb.active.reads: could not find key for metric",
 				"failed to collect metric mongodb.active.writes: could not find key for metric",
-				"failed to collect metric mongodb.flushes_per_sec: could not find key for metric",
+				"failed to collect metric mongodb.flushes.rate: could not find key for metric",
 				"failed to collect metric mongodb.page_faults: could not find key for metric",
 				"failed to collect metric mongodb.wtcache.bytes.read: could not find key for metric",
-				"failed to find wiredTiger metrics",
 			}, "; "))
 	errAllClientFailedFetch = errors.New(
 		strings.Join(

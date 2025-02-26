@@ -218,7 +218,6 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 	s.recordActiveReads(now, document, errs)
 	s.recordFlushesPerSecond(now, document, errs)
 	s.recordWTCacheBytes(now, document, errs)
-	s.recordCachePercentages(now, document, errs)
 	s.recordPageFaults(now, document, errs)
 }
 
