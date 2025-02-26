@@ -63,6 +63,7 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("things")
 				tCtx.GetLogRecord().Attributes().Remove("conflict.conflict1")
 				tCtx.GetLogRecord().Attributes().Remove("conflict")
+				tCtx.GetLogRecord().Attributes().Remove("map_slice")
 			},
 		},
 		{
@@ -82,6 +83,12 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutInt("things.0.value", 2)
 				tCtx.GetLogRecord().Attributes().PutStr("things.1.name", "bar")
 				tCtx.GetLogRecord().Attributes().PutInt("things.1.value", 5)
+
+				tCtx.GetLogRecord().Attributes().Remove("map_slice")
+				tCtx.GetLogRecord().Attributes().PutStr("map_slice.0.foo1", "bar1")
+				tCtx.GetLogRecord().Attributes().PutStr("map_slice.0.foo2", "bar2")
+				tCtx.GetLogRecord().Attributes().PutStr("map_slice.1.total.string", "barbar1")
+
 			},
 		},
 		{
@@ -106,6 +113,10 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutInt("test.things.0.value", 2)
 				m.PutStr("test.things.1.name", "bar")
 				m.PutInt("test.things.1.value", 5)
+
+				m.PutStr("test.map_slice.0.foo1", "bar1")
+				m.PutStr("test.map_slice.0.foo2", "bar2")
+				m.PutStr("test.map_slice.1.total.string", "barbar1")
 				m.CopyTo(tCtx.GetLogRecord().Attributes())
 			},
 		},
@@ -165,6 +176,14 @@ func Test_e2e_editors(t *testing.T) {
 
 				m3 := m.PutEmptyMap("foo.nested")
 				m3.PutStr("test", "pass")
+
+				m4 := m.PutEmptyMap("map_slice.0")
+				m4.PutStr("foo1", "bar1")
+				m4.PutStr("foo2", "bar2")
+
+				m5 := m.PutEmptyMap("map_slice.1")
+				m5.PutStr("total.string", "barbar1")
+
 				m.CopyTo(tCtx.GetLogRecord().Attributes())
 			},
 		},
@@ -178,6 +197,7 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("things")
 				tCtx.GetLogRecord().Attributes().Remove("conflict.conflict1")
 				tCtx.GetLogRecord().Attributes().Remove("conflict")
+				tCtx.GetLogRecord().Attributes().Remove("map_slice")
 			},
 		},
 		{
@@ -195,6 +215,7 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("things")
 				tCtx.GetLogRecord().Attributes().Remove("conflict.conflict1")
 				tCtx.GetLogRecord().Attributes().Remove("conflict")
+				tCtx.GetLogRecord().Attributes().Remove("map_slice")
 			},
 		},
 		{
@@ -233,6 +254,40 @@ func Test_e2e_editors(t *testing.T) {
 				l := mapAttr.PutEmptySlice("list")
 				l.AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
 				l.AppendEmpty().SetStr("test")
+			},
+		},
+		{
+			statement: `merge_maps(attributes, "insert", attributes["foo"], attributes["map_slice"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("bar", "pass")
+				tCtx.GetLogRecord().Attributes().PutStr("foo1", "bar1")
+				tCtx.GetLogRecord().Attributes().PutStr("foo2", "bar2")
+				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("slice")
+				v := s.AppendEmpty()
+				v.SetStr("val")
+				m2 := tCtx.GetLogRecord().Attributes().PutEmptyMap("nested")
+				m2.PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `merge_maps(attributes, "update", attributes["foo"], attributes["map_slice"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("flags", "pass")
+				tCtx.GetLogRecord().Attributes().PutStr("total.string", "barbar1")
+			},
+		},
+		{
+			statement: `merge_maps(attributes, "upsert", attributes["foo"], attributes["map_slice"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("bar", "pass")
+				tCtx.GetLogRecord().Attributes().PutStr("foo1", "bar1")
+				tCtx.GetLogRecord().Attributes().PutStr("foo2", "bar2")
+				tCtx.GetLogRecord().Attributes().PutStr("flags", "pass")
+				tCtx.GetLogRecord().Attributes().PutStr("total.string", "barbar1")
+				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("slice")
+				v := s.AppendEmpty()
+				m2 := tCtx.GetLogRecord().Attributes().PutEmptyMap("nested")
+				m2.PutStr("test", "pass")
 			},
 		},
 		{
@@ -1715,6 +1770,12 @@ func constructLogTransformContextEditors() ottllog.TransformContext {
 	mm1.PutStr("conflict2", "pass")
 	mmm := logRecord.Attributes().PutEmptyMap("conflict.conflict1")
 	mmm.PutStr("conflict2", "nopass")
+	slice := logRecord.Attributes().PutEmptySlice("map_slice")
+	ms := slice.AppendEmpty().SetEmptyMap()
+	ms.PutStr("foo1", "bar1")
+	ms.PutStr("foo2", "bar2")
+	ms2 := slice.AppendEmpty().SetEmptyMap()
+	ms2.PutStr("total.string", "barbar1")
 	m := logRecord.Attributes().PutEmptyMap("foo")
 	m.PutStr("bar", "pass")
 	m.PutStr("flags", "pass")
