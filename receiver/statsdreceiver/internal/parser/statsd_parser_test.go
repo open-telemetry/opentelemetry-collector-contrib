@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package protocol
+package parser
 
 import (
 	"errors"
@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
 func Test_ParseMessageToMetric(t *testing.T) {
@@ -1049,7 +1050,7 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			assert.NoError(t, p.Initialize(false, false, false, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
+			assert.NoError(t, p.Initialize(false, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 			p.lastIntervalTime = time.Unix(611, 0)
 			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
 			addrKey := newNetAddr(addr)
@@ -1158,7 +1159,7 @@ func TestStatsDParser_AggregateByAddress(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &StatsDParser{}
-			assert.NoError(t, p.Initialize(true, false, false, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
+			assert.NoError(t, p.Initialize(true, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 			p.lastIntervalTime = time.Unix(611, 0)
 			for i, addr := range tt.addresses {
 				for _, line := range tt.input[i] {
@@ -1266,7 +1267,7 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			assert.NoError(t, p.Initialize(true, false, false, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
+			assert.NoError(t, p.Initialize(true, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 			p.lastIntervalTime = time.Unix(611, 0)
 			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
 			addrKey := newNetAddr(addr)
@@ -1336,7 +1337,7 @@ func TestStatsDParser_AggregateWithIsMonotonicCounter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			assert.NoError(t, p.Initialize(false, false, true, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
+			assert.NoError(t, p.Initialize(false, false, true, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 			p.lastIntervalTime = time.Unix(611, 0)
 			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
 			addrKey := newNetAddr(addr)
@@ -1463,7 +1464,7 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			assert.NoError(t, p.Initialize(false, false, false, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "summary"}, {StatsdType: "histogram", ObserverType: "summary", Summary: SummaryConfig{Percentiles: []float64{0, 95, 99}}}}))
+			assert.NoError(t, p.Initialize(false, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "summary"}, {StatsdType: "histogram", ObserverType: "summary", Summary: protocol.SummaryConfig{Percentiles: []float64{0, 95, 99}}}}))
 			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
 			addrKey := newNetAddr(addr)
 			for _, line := range tt.input {
@@ -1480,7 +1481,7 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 
 func TestStatsDParser_Initialize(t *testing.T) {
 	p := &StatsDParser{}
-	assert.NoError(t, p.Initialize(true, false, false, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
+	assert.NoError(t, p.Initialize(true, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 	teststatsdDMetricdescription := statsDMetricDescription{
 		name:       "test",
 		metricType: "g",
@@ -1493,13 +1494,13 @@ func TestStatsDParser_Initialize(t *testing.T) {
 	p.instrumentsByAddress[addrKey] = instrument
 	assert.Len(t, p.instrumentsByAddress, 1)
 	assert.Len(t, p.instrumentsByAddress[addrKey].gauges, 1)
-	assert.Equal(t, GaugeObserver, p.timerEvents.method)
-	assert.Equal(t, GaugeObserver, p.histogramEvents.method)
+	assert.Equal(t, protocol.GaugeObserver, p.timerEvents.method)
+	assert.Equal(t, protocol.GaugeObserver, p.histogramEvents.method)
 }
 
 func TestStatsDParser_GetMetricsWithMetricType(t *testing.T) {
 	p := &StatsDParser{}
-	assert.NoError(t, p.Initialize(true, false, false, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
+	assert.NoError(t, p.Initialize(true, false, false, false, []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 	instrument := newInstruments(nil)
 	instrument.gauges[testDescription("statsdTestMetric1", "g",
 		[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"})] = buildGaugeMetric(
@@ -1563,14 +1564,14 @@ func TestStatsDParser_GetMetricsWithMetricType(t *testing.T) {
 func TestStatsDParser_Mappings(t *testing.T) {
 	type testCase struct {
 		name    string
-		mapping []TimerHistogramMapping
+		mapping []protocol.TimerHistogramMapping
 		expect  map[string]string
 	}
 
 	for _, tc := range []testCase{
 		{
 			name: "timer-gauge-histo-summary",
-			mapping: []TimerHistogramMapping{
+			mapping: []protocol.TimerHistogramMapping{
 				{StatsdType: "timer", ObserverType: "gauge"},
 				{StatsdType: "histogram", ObserverType: "summary"},
 			},
@@ -1581,7 +1582,7 @@ func TestStatsDParser_Mappings(t *testing.T) {
 		},
 		{
 			name: "histo-to-summary",
-			mapping: []TimerHistogramMapping{
+			mapping: []protocol.TimerHistogramMapping{
 				{StatsdType: "histogram", ObserverType: "summary"},
 			},
 			expect: map[string]string{
@@ -1590,7 +1591,7 @@ func TestStatsDParser_Mappings(t *testing.T) {
 		},
 		{
 			name: "timer-summary-histo-gauge",
-			mapping: []TimerHistogramMapping{
+			mapping: []protocol.TimerHistogramMapping{
 				{StatsdType: "timer", ObserverType: "summary"},
 				{StatsdType: "histogram", ObserverType: "gauge"},
 			},
@@ -1601,7 +1602,7 @@ func TestStatsDParser_Mappings(t *testing.T) {
 		},
 		{
 			name: "timer-to-gauge",
-			mapping: []TimerHistogramMapping{
+			mapping: []protocol.TimerHistogramMapping{
 				{StatsdType: "timer", ObserverType: "gauge"},
 			},
 			expect: map[string]string{
@@ -1646,7 +1647,7 @@ func TestStatsDParser_ScopeIsIncluded(t *testing.T) {
 	testAddress, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
 
 	err := p.Initialize(true, false, false, false,
-		[]TimerHistogramMapping{
+		[]protocol.TimerHistogramMapping{
 			{StatsdType: "timer", ObserverType: "summary"},
 			{StatsdType: "histogram", ObserverType: "histogram"},
 		},
@@ -1685,18 +1686,18 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 	// histogram size to a small number and then setting the maximum range
 	// to test at scale 0, which is easy to reason about.  The tests use
 	// max size 10, so tests w/ a range of 2**10 appear below.
-	normalMapping := []TimerHistogramMapping{
+	normalMapping := []protocol.TimerHistogramMapping{
 		{
 			StatsdType:   "timer",
 			ObserverType: "histogram",
-			Histogram: HistogramConfig{
+			Histogram: protocol.HistogramConfig{
 				MaxSize: 10,
 			},
 		},
 		{
 			StatsdType:   "histogram",
 			ObserverType: "histogram",
-			Histogram: HistogramConfig{
+			Histogram: protocol.HistogramConfig{
 				MaxSize: 10,
 			},
 		},
@@ -1719,7 +1720,7 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 		name     string
 		input    []string
 		expected pmetric.Metrics
-		mapping  []TimerHistogramMapping
+		mapping  []protocol.TimerHistogramMapping
 	}{
 		{
 			name: "basic",
@@ -1937,7 +1938,7 @@ func TestStatsDParser_IPOnlyAggregation(t *testing.T) {
 	testAddr02, _ := net.ResolveUDPAddr("udp", "1.2.3.4:8765")
 
 	err := p.Initialize(true, false, false, true,
-		[]TimerHistogramMapping{
+		[]protocol.TimerHistogramMapping{
 			{StatsdType: "timer", ObserverType: "summary"},
 			{StatsdType: "histogram", ObserverType: "histogram"},
 		},
