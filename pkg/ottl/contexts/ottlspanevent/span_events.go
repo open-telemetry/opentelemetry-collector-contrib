@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -233,23 +232,10 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 			return accessCache(), nil
 		}
 		return accessCacheKey(path.Keys()), nil
-	case "time_unix_nano":
-		return accessSpanEventTimeUnixNano(), nil
-	case "time":
-		return accessSpanEventTime(), nil
-	case "name":
-		return accessSpanEventName(), nil
-	case "attributes":
-		if path.Keys() == nil {
-			return accessSpanEventAttributes(), nil
-		}
-		return accessSpanEventAttributesKey(path.Keys()), nil
-	case "dropped_attributes_count":
-		return accessSpanEventDroppedAttributeCount(), nil
 	case "event_index":
 		return accessSpanEventIndex(), nil
 	default:
-		return nil, ctxerror.New(path.Name(), path.String(), ctxspanevent.Name, ctxspanevent.DocRef)
+		return ctxspanevent.PathGetSetter(path)
 	}
 }
 
@@ -291,87 +277,6 @@ func accessCacheKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[Tra
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
 			return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key, val)
-		},
-	}
-}
-
-func accessSpanEventTimeUnixNano() ottl.StandardGetSetter[TransformContext] {
-	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
-			return tCtx.GetSpanEvent().Timestamp().AsTime().UnixNano(), nil
-		},
-		Setter: func(_ context.Context, tCtx TransformContext, val any) error {
-			if newTimestamp, ok := val.(int64); ok {
-				tCtx.GetSpanEvent().SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTimestamp)))
-			}
-			return nil
-		},
-	}
-}
-
-func accessSpanEventTime() ottl.StandardGetSetter[TransformContext] {
-	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
-			return tCtx.GetSpanEvent().Timestamp().AsTime(), nil
-		},
-		Setter: func(_ context.Context, tCtx TransformContext, val any) error {
-			if newTimestamp, ok := val.(time.Time); ok {
-				tCtx.GetSpanEvent().SetTimestamp(pcommon.NewTimestampFromTime(newTimestamp))
-			}
-			return nil
-		},
-	}
-}
-
-func accessSpanEventName() ottl.StandardGetSetter[TransformContext] {
-	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
-			return tCtx.GetSpanEvent().Name(), nil
-		},
-		Setter: func(_ context.Context, tCtx TransformContext, val any) error {
-			if newName, ok := val.(string); ok {
-				tCtx.GetSpanEvent().SetName(newName)
-			}
-			return nil
-		},
-	}
-}
-
-func accessSpanEventAttributes() ottl.StandardGetSetter[TransformContext] {
-	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
-			return tCtx.GetSpanEvent().Attributes(), nil
-		},
-		Setter: func(_ context.Context, tCtx TransformContext, val any) error {
-			if attrs, ok := val.(pcommon.Map); ok {
-				attrs.CopyTo(tCtx.GetSpanEvent().Attributes())
-			}
-			return nil
-		},
-	}
-}
-
-func accessSpanEventAttributesKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
-	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
-			return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetSpanEvent().Attributes(), key)
-		},
-		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
-			return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetSpanEvent().Attributes(), key, val)
-		},
-	}
-}
-
-func accessSpanEventDroppedAttributeCount() ottl.StandardGetSetter[TransformContext] {
-	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
-			return int64(tCtx.GetSpanEvent().DroppedAttributesCount()), nil
-		},
-		Setter: func(_ context.Context, tCtx TransformContext, val any) error {
-			if newCount, ok := val.(int64); ok {
-				tCtx.GetSpanEvent().SetDroppedAttributesCount(uint32(newCount))
-			}
-			return nil
 		},
 	}
 }
