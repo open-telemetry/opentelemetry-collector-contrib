@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/klauspost/compress v1.17.11
+	github.com/klauspost/compress v1.18.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.120.1
