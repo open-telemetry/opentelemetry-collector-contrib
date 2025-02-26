@@ -6,6 +6,7 @@ package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 

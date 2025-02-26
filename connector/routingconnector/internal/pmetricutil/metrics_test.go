@@ -1506,3 +1506,16 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkMoveResourcesIfMetrics(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		from := pmetricutiltest.NewGauges("AB", "CD", "EF", "GH")
+		to := pmetric.NewMetrics()
+		pmetricutil.MoveResourcesIf(from, to, func(pmetric.ResourceMetrics) bool {
+			return true
+		})
+		assert.Equal(b, 0, from.DataPointCount())
+		assert.Equal(b, 16, to.DataPointCount())
+	}
+}

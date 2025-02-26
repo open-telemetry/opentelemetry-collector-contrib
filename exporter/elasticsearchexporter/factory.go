@@ -6,6 +6,7 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"compress/gzip"
 	"context"
 	"net/http"
 	"time"
@@ -17,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
@@ -28,14 +31,17 @@ const (
 	defaultTracesIndex  = "traces-generic-default"
 )
 
+var defaultBatcherMinSizeItems = 5000
+
 // NewFactory creates a factory for Elastic exporter.
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		xexporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		xexporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
 	)
 }
 
@@ -46,6 +52,7 @@ func createDefaultConfig() component.Config {
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	httpClientConfig.Timeout = 90 * time.Second
 	httpClientConfig.Compression = configcompression.TypeGzip
+	httpClientConfig.CompressionParams.Level = gzip.BestSpeed
 
 	return &Config{
 		QueueSettings: qs,
@@ -75,8 +82,7 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Mapping: MappingsSettings{
-			Mode:  "none",
-			Dedot: true,
+			Mode: "none",
 		},
 		LogstashFormat: LogstashFormatSettings{
 			Enabled:         false,
@@ -89,11 +95,11 @@ func createDefaultConfig() component.Config {
 		},
 		Batcher: BatcherConfig{
 			FlushTimeout: 30 * time.Second,
-			MinSizeConfig: exporterbatcher.MinSizeConfig{
-				MinSizeItems: 5000,
+			MinSizeConfig: exporterbatcher.MinSizeConfig{ //nolint:staticcheck
+				MinSizeItems: &defaultBatcherMinSizeItems,
 			},
-			MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-				MaxSizeItems: 0,
+			MaxSizeConfig: exporterbatcher.MaxSizeConfig{ //nolint:staticcheck
+				MaxSizeItems: nil,
 			},
 		},
 		Flush: FlushSettings{
@@ -159,6 +165,29 @@ func createTracesExporter(ctx context.Context,
 		set,
 		cfg,
 		exporter.pushTraceData,
+		exporterhelperOptions(cf, exporter.Start, exporter.Shutdown)...,
+	)
+}
+
+// createProfilesExporter creates a new exporter for profiles.
+//
+// Profiles are directly indexed into Elasticsearch.
+func createProfilesExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (xexporter.Profiles, error) {
+	cf := cfg.(*Config)
+
+	handleDeprecatedConfig(cf, set.Logger)
+
+	exporter := newExporter(cf, set, "", false)
+
+	return xexporterhelper.NewProfilesExporter(
+		ctx,
+		set,
+		cfg,
+		exporter.pushProfilesData,
 		exporterhelperOptions(cf, exporter.Start, exporter.Shutdown)...,
 	)
 }

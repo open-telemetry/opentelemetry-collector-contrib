@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/unmarshalertest"
 )
@@ -76,7 +77,7 @@ func TestMetricsReceiver_Start(t *testing.T) {
 			cfg.RecordType = testCase.recordType
 			got, err := newMetricsReceiver(
 				cfg,
-				receivertest.NewNopSettings(),
+				receivertest.NewNopSettings(metadata.Type),
 				consumertest.NewNop(),
 			)
 			require.NoError(t, err)

@@ -18,8 +18,8 @@ import (
 	"testing"
 	"time"
 
-	gokitlog "github.com/go-kit/log"
 	"github.com/gogo/protobuf/proto"
+	"github.com/prometheus/common/promslog"
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
@@ -36,6 +36,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 type mockPrometheusResponse struct {
@@ -163,7 +164,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *PromConfig, error)
 	for _, t := range tds {
 		t.attributes = internal.CreateResource(t.name, u.Host, labels.New(l...)).Attributes()
 	}
-	pCfg, err := promcfg.Load(string(cfg), false, gokitlog.NewNopLogger())
+	pCfg, err := promcfg.Load(string(cfg), promslog.NewNopLogger())
 	return mp, (*PromConfig)(pCfg), err
 }
 
@@ -695,7 +696,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	}
 
 	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(receivertest.NewNopSettings(), config, cms)
+	receiver := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), config, cms)
 	receiver.skipOffsetting = true
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))

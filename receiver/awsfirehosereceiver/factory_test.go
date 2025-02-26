@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 )
 
 func TestValidConfig(t *testing.T) {
@@ -21,7 +23,7 @@ func TestValidConfig(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	r, err := createMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)
@@ -32,7 +34,7 @@ func TestCreateMetrics(t *testing.T) {
 func TestCreateLogsReceiver(t *testing.T) {
 	r, err := createLogsReceiver(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)

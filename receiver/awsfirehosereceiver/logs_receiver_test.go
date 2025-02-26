@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/unmarshalertest"
 )
@@ -63,11 +64,11 @@ func TestLogsReceiver_Start(t *testing.T) {
 		},
 		"WithUnknownEncoding": {
 			encoding: "invalid",
-			wantErr:  "unknown encoding extension \"invalid\"",
+			wantErr:  "failed to load encoding extension: unknown encoding extension \"invalid\"",
 		},
 		"WithNonLogUnmarshalerExtension": {
 			encoding: "otlp_metrics",
-			wantErr:  `extension "otlp_metrics" is not a logs unmarshaler`,
+			wantErr:  `failed to load encoding extension: extension "otlp_metrics" is not a logs unmarshaler`,
 		},
 	}
 	for name, testCase := range testCases {
@@ -77,7 +78,7 @@ func TestLogsReceiver_Start(t *testing.T) {
 			cfg.RecordType = testCase.recordType
 			got, err := newLogsReceiver(
 				cfg,
-				receivertest.NewNopSettings(),
+				receivertest.NewNopSettings(metadata.Type),
 				consumertest.NewNop(),
 			)
 			require.NoError(t, err)
