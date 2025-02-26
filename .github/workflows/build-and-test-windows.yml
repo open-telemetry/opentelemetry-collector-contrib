@@ -79,13 +79,6 @@ jobs:
         run: make "$(${PWD} -replace '\\', '/')/.tools/gotestsum"
       - name: Run Unit tests
         run: make -j2 gotest GROUP=${{ matrix.group }}
-      - name: Run Unit Tests With JUnit and Coverage
-        run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
-      - uses: actions/upload-artifact@v4
-        with:
-          name: test-results-${{ runner.os }}-${{ matrix.group }}
-          path: internal/tools/testresults/
-          retention-days: 4
   windows-unittest:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     runs-on: windows-latest
@@ -103,27 +96,3 @@ jobs:
             echo "One or more matrix jobs failed."
             false
           fi
-
-  windows-flakytests-generate-issues:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
-    needs: [windows-unittest-matrix]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          pattern: test-results-*
-          path: ./internal/tools/testresults/
-      - name: Install Tools
-        run: make install-tools
-      - name: Generate Issues
-        run: |
-          # We want to start by generating issues of a single component
-          # As we mature the usage of issuegenerator, we can extend it to
-          # generate issues for multiple components.
-          #
-          # We'll start with the hostmetricsreceiver.
-          mkdir -p ./internal/tools/testresults/hostmetricsreceiver
-          mv ./internal/tools/testresults/github.com-open-telemetry-opentelemetry-collector-contrib-receiver-hostmetricsreceiver-junit.xml ./internal/tools/testresults/hostmetricsreceiver/
-          ./tools/issuegenerator -path ./internal/tools/testresults/hostmetricsreceiver/
