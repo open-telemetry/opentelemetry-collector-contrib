@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.120.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.120.1
@@ -236,7 +236,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
 	github.com/karrick/godirwalk v1.17.0 // indirect
-	github.com/klauspost/compress v1.17.11 // indirect
+	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.2 // indirect
@@ -345,7 +345,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exportertest v0.120.1-0.20250226024140-8099e51f9a77 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.120.1-0.20250226024140-8099e51f9a77 // indirect
 	go.opentelemetry.io/collector/extension v0.120.1-0.20250226024140-8099e51f9a77 // indirect
-	go.opentelemetry.io/collector/extension/auth v0.120.1-0.20250226024140-8099e51f9a77 // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v0.120.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.120.1-0.20250226024140-8099e51f9a77 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.120.1-0.20250226024140-8099e51f9a77 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.120.1-0.20250226024140-8099e51f9a77 // indirect
@@ -366,6 +366,7 @@ require (
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.120.1-0.20250226024140-8099e51f9a77 // indirect
 	go.opentelemetry.io/collector/semconv v0.120.1-0.20250226024140-8099e51f9a77 // indirect
 	go.opentelemetry.io/collector/service v0.120.1-0.20250226024140-8099e51f9a77 // indirect
+	go.opentelemetry.io/collector/service/hostcapabilities v0.120.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.9.0 // indirect
 	go.opentelemetry.io/contrib/config v0.14.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0 // indirect
@@ -404,7 +405,7 @@ require (
 	gonum.org/v1/gonum v0.15.1 // indirect
 	google.golang.org/api v0.199.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250212204824-5a70512c5d8b // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250224174004-546df14abb99 // indirect
 	google.golang.org/grpc v1.70.0 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
@@ -498,3 +499,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog =>
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils => ../../../pkg/core/xidutils
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../../internal/datadog
+
+replace go.opentelemetry.io/collector/extension/extensionauth => go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250226024140-8099e51f9a77
+
+replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250226024140-8099e51f9a77
+
+replace go.opentelemetry.io/collector/service/hostcapabilities => go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250226024140-8099e51f9a77

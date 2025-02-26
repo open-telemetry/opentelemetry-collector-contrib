@@ -28,7 +28,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+require (
+	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250226024140-8099e51f9a77 // indirect
+)
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -70,3 +73,9 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages => ../opampcustommessages
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status => ../../pkg/status
+
+replace go.opentelemetry.io/collector/extension/extensionauth => go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250226024140-8099e51f9a77
+
+replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250226024140-8099e51f9a77
+
+replace go.opentelemetry.io/collector/service/hostcapabilities => go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250226024140-8099e51f9a77
