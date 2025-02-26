@@ -15,7 +15,6 @@ require (
 	go.opentelemetry.io/collector/processor v0.120.1-0.20250224010654-18e18b21da7a
 	go.opentelemetry.io/collector/processor/processortest v0.120.1-0.20250224010654-18e18b21da7a
 	go.opentelemetry.io/collector/semconv v0.120.1-0.20250224010654-18e18b21da7a
-	go.uber.org/goleak v1.3.0
 )
 
 require (
