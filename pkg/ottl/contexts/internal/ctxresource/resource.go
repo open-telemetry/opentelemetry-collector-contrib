@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+package ctxresource // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 
 import (
 	"context"
@@ -11,18 +11,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 )
 
-type ResourceContext interface {
-	GetResource() pcommon.Resource
-	GetResourceSchemaURLItem() SchemaURLItem
-}
-
-func ResourcePathGetSetter[K ResourceContext](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func PathGetSetter[K Context](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
-		return nil, ctxerror.New("nil", "nil", ctxresource.Name, ctxresource.DocRef)
+		return nil, ctxerror.New("nil", "nil", Name, DocRef)
 	}
 	switch path.Name() {
 	case "attributes":
@@ -37,11 +31,11 @@ func ResourcePathGetSetter[K ResourceContext](lowerContext string, path ottl.Pat
 	case "cache":
 		return nil, ctxcache.NewError(lowerContext, path.Context(), path.String())
 	default:
-		return nil, ctxerror.New(path.Name(), path.String(), ctxresource.Name, ctxresource.DocRef)
+		return nil, ctxerror.New(path.Name(), path.String(), Name, DocRef)
 	}
 }
 
-func accessResourceAttributes[K ResourceContext]() ottl.StandardGetSetter[K] {
+func accessResourceAttributes[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetResource().Attributes(), nil
@@ -55,7 +49,7 @@ func accessResourceAttributes[K ResourceContext]() ottl.StandardGetSetter[K] {
 	}
 }
 
-func accessResourceAttributesKey[K ResourceContext](keys []ottl.Key[K]) ottl.StandardGetSetter[K] {
+func accessResourceAttributesKey[K Context](keys []ottl.Key[K]) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
 			return ctxutil.GetMapValue[K](ctx, tCtx, tCtx.GetResource().Attributes(), keys)
@@ -66,7 +60,7 @@ func accessResourceAttributesKey[K ResourceContext](keys []ottl.Key[K]) ottl.Sta
 	}
 }
 
-func accessResourceDroppedAttributesCount[K ResourceContext]() ottl.StandardGetSetter[K] {
+func accessResourceDroppedAttributesCount[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return int64(tCtx.GetResource().DroppedAttributesCount()), nil
@@ -80,7 +74,7 @@ func accessResourceDroppedAttributesCount[K ResourceContext]() ottl.StandardGetS
 	}
 }
 
-func accessResourceSchemaURLItem[K ResourceContext]() ottl.StandardGetSetter[K] {
+func accessResourceSchemaURLItem[K Context]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetResourceSchemaURLItem().SchemaUrl(), nil
