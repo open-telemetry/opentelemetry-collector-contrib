@@ -607,6 +607,7 @@ func TestExtraDimensionsLabels(t *testing.T) {
 		Dimensions:              extraDimensions,
 		LatencyHistogramBuckets: []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))},
 		Store:                   StoreConfig{MaxItems: 10},
+		MetricsFlushInterval:    &[]time.Duration{0}[0],
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
@@ -648,7 +649,7 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 		Store:                     StoreConfig{MaxItems: 10},
 		VirtualNodePeerAttributes: virtualNodeDimensions,
 		VirtualNodeExtraLabel:     true,
-		MetricsFlushInterval:      time.Millisecond,
+		MetricsFlushInterval:      &[]time.Duration{time.Millisecond}[0],
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
@@ -696,7 +697,7 @@ func TestVirtualNodeClientLabels(t *testing.T) {
 		Store:                     StoreConfig{MaxItems: 10},
 		VirtualNodePeerAttributes: virtualNodeDimensions,
 		VirtualNodeExtraLabel:     true,
-		MetricsFlushInterval:      time.Millisecond,
+		MetricsFlushInterval:      &[]time.Duration{time.Millisecond}[0],
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
