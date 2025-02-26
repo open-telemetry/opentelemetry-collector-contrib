@@ -14,7 +14,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
@@ -27,9 +26,10 @@ import (
 const ContextName = ctxspan.Name
 
 var (
-	_ internal.ResourceContext             = (*TransformContext)(nil)
-	_ internal.InstrumentationScopeContext = (*TransformContext)(nil)
-	_ zapcore.ObjectMarshaler              = (*TransformContext)(nil)
+	_ ctxresource.Context     = (*TransformContext)(nil)
+	_ ctxscope.Context        = (*TransformContext)(nil)
+	_ ctxspan.Context         = (*TransformContext)(nil)
+	_ zapcore.ObjectMarshaler = (*TransformContext)(nil)
 )
 
 type TransformContext struct {
@@ -93,11 +93,11 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
+func (tCtx TransformContext) GetResourceSchemaURLItem() ctxutil.SchemaURLItem {
 	return tCtx.resourceSpans
 }
 
-func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
+func (tCtx TransformContext) GetScopeSchemaURLItem() ctxutil.SchemaURLItem {
 	return tCtx.scopeSpans
 }
 
@@ -206,9 +206,9 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	switch context {
 	case ctxresource.Name:
-		return internal.ResourcePathGetSetter[TransformContext](ctxspan.Name, path)
+		return ctxresource.PathGetSetter[TransformContext](ctxspan.Name, path)
 	case ctxscope.LegacyName:
-		return internal.ScopePathGetSetter[TransformContext](ctxspan.Name, path)
+		return ctxscope.PathGetSetter[TransformContext](ctxspan.Name, path)
 	default:
 		var fullPath string
 		if path != nil {
