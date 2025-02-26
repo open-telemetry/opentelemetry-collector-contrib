@@ -73,6 +73,11 @@ processors:
     # Any keys in this list are allowed so they don't need to be in both lists.
     ignored_keys:
       - safe_attribute
+    # blocked_key_patterns is a list of blocked span attribute key patterns. Span attributes
+    # matching the regexes on the list are masked.
+    blocked_key_patterns:
+      - ".*token.*"
+      - ".*api_key.*"
     # blocked_values is a list of regular expressions for blocking values of
     # allowed span attributes. Values that match are masked
     blocked_values:
@@ -110,6 +115,9 @@ If the value of an allowed key matches the regular expression for an allowed val
 part of the value is not masked even if it matches the regular expression for a blocked value.
 If the value matches the regular expression for a blocked value only, the matching
 part of the value is masked with a fixed length of asterisks.
+
+`blocked_key_patterns` applies to the values of the keys matching one of the patterns.
+The value is then masked according to the configuration.
 
 For example, if `notes` is on the list of allowed keys, then the `notes`
 attribute is retained. However, if there is a value such as a credit card
