@@ -7,3 +7,7 @@ resource_attributes:
     description: The Kubernetes cluster name
     type: string
     enabled: true
+  k8s.cluster.uid:
+    description: The Kubernetes cluster UID
+    type: string
+    enabled: true

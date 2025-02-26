@@ -6,7 +6,6 @@ package ottllog
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"slices"
 	"testing"
 	"time"
@@ -17,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -180,9 +180,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: newBodySlice,
 			modified: func(log plog.LogRecord, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
-				fmt.Println(log.Body().Slice().At(0).AsString())
 				newBodySlice.CopyTo(log.Body().Slice())
-				fmt.Println(log.Body().Slice().At(0).AsString())
 			},
 			bodyType: "slice",
 		},
@@ -605,7 +603,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		testWithContext := tt
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*pathtest.Path[TransformContext])
-		pathWithContext.C = ContextName
+		pathWithContext.C = ctxlog.Name
 		testWithContext.path = &pathWithContext
 		tests = append(tests, testWithContext)
 	}
