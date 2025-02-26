@@ -82,7 +82,8 @@ var podContainerEndpointWithHints = observer.Endpoint{
 	ID:     "namespace/pod-2-UID/redis(6379)",
 	Target: "1.2.3.4:6379",
 	Details: &observer.PodContainer{
-		Name: "redis", Pod: observer.Pod{
+		Image: "redis",
+		Name:  "redis", Pod: observer.Pod{
 			Name:      "pod-2",
 			Namespace: "default",
 			UID:       "pod-2-UID",

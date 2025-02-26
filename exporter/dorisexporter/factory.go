@@ -39,12 +39,15 @@ func createDefaultConfig() component.Config {
 			Traces:  "otel_traces",
 			Metrics: "otel_metrics",
 		},
-		Database:          "otel",
-		CreateSchema:      true,
-		HistoryDays:       0,
-		CreateHistoryDays: 0,
-		ReplicationNum:    1,
-		TimeZone:          time.Local.String(),
+		Database:            "otel",
+		CreateSchema:        true,
+		HistoryDays:         0,
+		CreateHistoryDays:   0,
+		ReplicationNum:      1,
+		TimeZone:            time.Local.String(),
+		LogResponse:         false,
+		LabelPrefix:         "open_telemetry",
+		LogProgressInterval: 10,
 	}
 }
 

@@ -32,14 +32,12 @@ func (e *textExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 }
 
 func (e *textExtension) Start(_ context.Context, _ component.Host) error {
-	encCfg := textutils.NewEncodingConfig()
-	encCfg.Encoding = e.config.Encoding
-	enc, err := encCfg.Build()
+	enc, err := textutils.LookupEncoding(e.config.Encoding)
 	if err != nil {
 		return err
 	}
 	e.textEncoder = &textLogCodec{
-		enc: &enc,
+		decoder: enc.NewDecoder(),
 	}
 
 	return err

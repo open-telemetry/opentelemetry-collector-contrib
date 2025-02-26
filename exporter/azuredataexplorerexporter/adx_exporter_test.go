@@ -6,7 +6,7 @@ package azuredataexplorerexporter // import "github.com/open-telemetry/opentelem
 import (
 	"context"
 	"io"
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 	"testing"
 	"time"
@@ -164,9 +164,7 @@ func TestIngestedDataRecordCount(t *testing.T) {
 		ingestOptions: ingestOptions,
 		logger:        logger,
 	}
-	source := rand.NewSource(time.Now().UTC().UnixNano())
-	genRand := rand.New(source)
-	recordstoingest := genRand.Intn(20)
+	recordstoingest := rand.IntN(20)
 	err := adxDataProducer.metricsDataPusher(context.Background(), createMetricsData(recordstoingest))
 	ingestedrecordsactual := ingestor.Records()
 	assert.Len(t, ingestedrecordsactual, recordstoingest, "Number of metrics created should match number of records ingested")

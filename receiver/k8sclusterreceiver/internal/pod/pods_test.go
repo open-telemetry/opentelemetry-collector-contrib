@@ -40,11 +40,11 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	pod := testutils.NewPodWithContainer(
 		"1",
 		testutils.NewPodSpecWithContainer("container-name"),
-		testutils.NewPodStatusWithContainer("container-name", containerIDWithPreifx("container-id")),
+		testutils.NewPodStatusWithContainer("container-name", containerIDWithPrefix("container-id")),
 	)
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(zap.NewNop(), mb, pod, ts)
 	m := mb.Emit()
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
@@ -63,7 +63,7 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	pod := testutils.NewPodWithContainer(
 		"1",
 		testutils.NewPodSpecWithContainer("container-name"),
-		testutils.NewEvictedTerminatedPodStatusWithContainer("container-name", containerIDWithPreifx("container-id")),
+		testutils.NewEvictedTerminatedPodStatusWithContainer("container-name", containerIDWithPrefix("container-id")),
 	)
 
 	mbc := metadata.DefaultMetricsBuilderConfig()
@@ -71,7 +71,7 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	mbc.ResourceAttributes.K8sPodQosClass.Enabled = true
 	mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.Enabled = true
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings())
+	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(zap.NewNop(), mb, pod, ts)
 	m := mb.Emit()
 
@@ -87,7 +87,7 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	)
 }
 
-var containerIDWithPreifx = func(containerID string) string {
+var containerIDWithPrefix = func(containerID string) string {
 	return "docker://" + containerID
 }
 

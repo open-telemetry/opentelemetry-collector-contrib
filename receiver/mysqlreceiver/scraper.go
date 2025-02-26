@@ -102,7 +102,7 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// collect global status metrics.
 	m.scrapeGlobalStats(now, errs)
 
-	// colect replicas status metrics.
+	// collect replicas status metrics.
 	m.scrapeReplicaStatusStats(now)
 
 	rb := m.mb.NewResourceBuilder()

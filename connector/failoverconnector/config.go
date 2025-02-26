@@ -12,7 +12,7 @@ import (
 
 var (
 	errNoPipelinePriority    = errors.New("No pipelines are defined in the priority list")
-	errInvalidRetryIntervals = errors.New("Retry interval must be positive, and retry_interval must be greater than retry_gap times the length of the priority list")
+	errInvalidRetryIntervals = errors.New("Retry interval must be positive")
 )
 
 type Config struct {
@@ -28,11 +28,11 @@ type Config struct {
 	// RetryGap is how much time will pass between trying two separate priority levels in a single RetryInterval
 	// If the priority list has 3 levels, the RetryInterval is 5m, and the retryGap is 1m, within the 5m RetryInterval,
 	// the connector will only try one level every 1m, and will return to the stable level in the interim
-	RetryGap time.Duration `mapstructure:"retry_gap"`
+	RetryGap time.Duration `mapstructure:"retry_gap"` // **Deprecated**
 
 	// MaxRetry is the maximum retries per level, once this limit is hit for a level, even if the next pipeline level fails,
 	// it will not try to recover the level that exceeded the maximum retries
-	MaxRetries int `mapstructure:"max_retries"`
+	MaxRetries int `mapstructure:"max_retries"` // **Deprecated**
 }
 
 // Validate needs to ensure RetryInterval > # elements in PriorityList * RetryGap
@@ -40,8 +40,7 @@ func (c *Config) Validate() error {
 	if len(c.PipelinePriority) == 0 {
 		return errNoPipelinePriority
 	}
-	retryTime := c.RetryGap * time.Duration(len(c.PipelinePriority))
-	if c.RetryGap <= 0 || c.RetryInterval <= 0 || c.RetryInterval <= retryTime {
+	if c.RetryInterval <= 0 {
 		return errInvalidRetryIntervals
 	}
 	return nil

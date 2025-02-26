@@ -51,11 +51,12 @@ func (e *ec2ClientBuilder) buildClient(ctx context.Context, region string, clien
 }
 
 type Detector struct {
-	metadataProvider ec2provider.Provider
-	tagKeyRegexes    []*regexp.Regexp
-	logger           *zap.Logger
-	rb               *metadata.ResourceBuilder
-	ec2ClientBuilder ec2ifaceBuilder
+	metadataProvider      ec2provider.Provider
+	tagKeyRegexes         []*regexp.Regexp
+	logger                *zap.Logger
+	rb                    *metadata.ResourceBuilder
+	ec2ClientBuilder      ec2ifaceBuilder
+	failOnMissingMetadata bool
 }
 
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
@@ -76,17 +77,21 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 	}
 
 	return &Detector{
-		metadataProvider: ec2provider.NewProvider(awsConfig),
-		tagKeyRegexes:    tagKeyRegexes,
-		logger:           set.Logger,
-		rb:               metadata.NewResourceBuilder(cfg.ResourceAttributes),
-		ec2ClientBuilder: &ec2ClientBuilder{},
+		metadataProvider:      ec2provider.NewProvider(awsConfig),
+		tagKeyRegexes:         tagKeyRegexes,
+		logger:                set.Logger,
+		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		ec2ClientBuilder:      &ec2ClientBuilder{},
+		failOnMissingMetadata: cfg.FailOnMissingMetadata,
 	}, nil
 }
 
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	if _, err = d.metadataProvider.InstanceID(ctx); err != nil {
 		d.logger.Debug("EC2 metadata unavailable", zap.Error(err))
+		if d.failOnMissingMetadata {
+			return pcommon.NewResource(), "", err
+		}
 		return pcommon.NewResource(), "", nil
 	}
 

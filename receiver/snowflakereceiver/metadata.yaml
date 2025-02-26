@@ -17,7 +17,7 @@ resource_attributes:
 
 attributes:
   service_type:
-    description: Service type associateed with metric query.
+    description: Service type associated with metric query.
     type: string
   error_message:
     description: Error message reported by query if present.

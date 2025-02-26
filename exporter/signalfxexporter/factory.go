@@ -52,9 +52,9 @@ func createDefaultConfig() component.Config {
 	timeout := 10 * time.Second
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = defaultHTTPTimeout
-	clientConfig.MaxIdleConns = &maxConnCount
-	clientConfig.MaxIdleConnsPerHost = &maxConnCount
-	clientConfig.IdleConnTimeout = &idleConnTimeout
+	clientConfig.MaxIdleConns = maxConnCount
+	clientConfig.MaxIdleConnsPerHost = maxConnCount
+	clientConfig.IdleConnTimeout = idleConnTimeout
 	clientConfig.HTTP2ReadIdleTimeout = defaultHTTP2ReadIdleTimeout
 	clientConfig.HTTP2PingTimeout = defaultHTTP2PingTimeout
 

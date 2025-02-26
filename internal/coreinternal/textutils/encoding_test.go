@@ -12,6 +12,7 @@ import (
 	"golang.org/x/text/encoding/korean"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
 )
 
 func TestUTF8Encoding(t *testing.T) {
@@ -43,11 +44,45 @@ func TestUTF8Encoding(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			encCfg := NewEncodingConfig()
-			encCfg.Encoding = test.encodingName
-			enc, err := encCfg.Build()
+			enc, err := LookupEncoding(test.encodingName)
 			assert.NoError(t, err)
-			assert.Equal(t, test.encoding, enc.Encoding)
+			assert.Equal(t, test.encoding, enc)
+		})
+	}
+}
+
+func TestDecodeAsString(t *testing.T) {
+	tests := []struct {
+		name     string
+		decoder  *encoding.Decoder
+		input    []byte
+		expected string
+	}{
+		{
+			name:     "nil",
+			decoder:  &encoding.Decoder{Transformer: transform.Nop},
+			input:    nil,
+			expected: "",
+		},
+		{
+			name:     "empty",
+			decoder:  &encoding.Decoder{Transformer: transform.Nop},
+			input:    []byte{},
+			expected: "",
+		},
+		{
+			name:     "empty",
+			decoder:  &encoding.Decoder{Transformer: transform.Nop},
+			input:    []byte("test"),
+			expected: "test",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			enc, err := DecodeAsString(test.decoder, test.input)
+			assert.NoError(t, err)
+			assert.Equal(t, test.expected, enc)
 		})
 	}
 }

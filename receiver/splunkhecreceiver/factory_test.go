@@ -27,12 +27,12 @@ func TestCreateReceiver(t *testing.T) {
 	cfg.Endpoint = "localhost:1" // Endpoint is required, not going to be used here.
 
 	mockLogsConsumer := consumertest.NewNop()
-	lReceiver, err := createLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockLogsConsumer)
+	lReceiver, err := createLogsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, mockLogsConsumer)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, lReceiver, "receiver creation failed")
 
 	mockMetricsConsumer := consumertest.NewNop()
-	mReceiver, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockMetricsConsumer)
+	mReceiver, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, mockMetricsConsumer)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 }
@@ -45,8 +45,8 @@ func TestMultipleLogsReceivers(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1"
 	mockLogsConsumer := consumertest.NewNop()
-	mReceiver, _ := createLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockLogsConsumer)
-	mReceiver2, _ := createLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockLogsConsumer)
+	mReceiver, _ := createLogsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, mockLogsConsumer)
+	mReceiver2, _ := createLogsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, mockLogsConsumer)
 	assert.Equal(t, mReceiver, mReceiver2)
 }
 
@@ -54,8 +54,8 @@ func TestMultipleMetricsReceivers(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1"
 	mockMetricsConsumer := consumertest.NewNop()
-	mReceiver, _ := createLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockMetricsConsumer)
-	mReceiver2, _ := createLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockMetricsConsumer)
+	mReceiver, _ := createLogsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, mockMetricsConsumer)
+	mReceiver2, _ := createLogsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, mockMetricsConsumer)
 	assert.Equal(t, mReceiver, mReceiver2)
 }
 
@@ -63,8 +63,8 @@ func TestReuseLogsAndMetricsReceivers(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1"
 	mockMetricsConsumer := consumertest.NewNop()
-	mReceiver, _ := createLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockMetricsConsumer)
-	mReceiver2, _ := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mockMetricsConsumer)
+	mReceiver, _ := createLogsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, mockMetricsConsumer)
+	mReceiver2, _ := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, mockMetricsConsumer)
 	assert.Equal(t, mReceiver, mReceiver2)
 	assert.NotNil(t, mReceiver.(*sharedcomponent.SharedComponent).Component.(*splunkReceiver).metricsConsumer)
 	assert.NotNil(t, mReceiver.(*sharedcomponent.SharedComponent).Component.(*splunkReceiver).logsConsumer)

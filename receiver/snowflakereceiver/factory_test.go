@@ -8,27 +8,27 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver/internal/metadata"
 )
 
-func TestFacoryCreate(t *testing.T) {
+func TestFactoryCreate(t *testing.T) {
 	factory := NewFactory()
 	require.EqualValues(t, metadata.Type, factory.Type())
 }
 
 func TestDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	require.Error(t, component.ValidateConfig(cfg), "Validation succeeded on invalid cfg")
+	require.Error(t, xconfmap.Validate(cfg), "Validation succeeded on invalid cfg")
 
 	cfg.Account = "account"
 	cfg.Username = "uname"
 	cfg.Password = "pwd"
 	cfg.Warehouse = "warehouse"
-	require.NoError(t, component.ValidateConfig(cfg), "Failed to validate valid cfg")
+	require.NoError(t, xconfmap.Validate(cfg), "Failed to validate valid cfg")
 
 	require.EqualValues(t, defaultDB, cfg.Database)
 	require.EqualValues(t, defaultRole, cfg.Role)
@@ -54,7 +54,7 @@ func TestCreateMetrics(t *testing.T) {
 
 				_, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopSettings(),
+					receivertest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),
 				)

@@ -157,7 +157,7 @@ include the following:
 
 - `container.id` - to augment metrics with Container ID label obtained from container statuses exposed via `/pods`.
 - `k8s.volume.type` - to collect volume type from the Pod spec exposed via `/pods` and have it as a label on volume metrics.
-If there's more information available from the endpoint than just volume type, those are sycned as well depending on
+If there's more information available from the endpoint than just volume type, those are synced as well depending on
 the available fields and the type of volume. For example, `aws.volume.id` would be synced from `awsElasticBlockStore`
 and `gcp.pd.name` is synced for `gcePersistentDisk`.
 
@@ -263,8 +263,8 @@ The following parameters can also be specified:
 - `collection_interval` (default = `10s`): The interval at which to collect data.
 - `insecure_skip_verify` (default = `false`): Whether or not to skip certificate verification.
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 ### Role-based access control
 

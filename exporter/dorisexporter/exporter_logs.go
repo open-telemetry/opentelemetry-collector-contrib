@@ -42,7 +42,7 @@ type logsExporter struct {
 
 func newLogsExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings) *logsExporter {
 	return &logsExporter{
-		commonExporter: newExporter(logger, cfg, set),
+		commonExporter: newExporter(logger, cfg, set, "LOG"),
 	}
 }
 
@@ -53,24 +53,27 @@ func (e *logsExporter) start(ctx context.Context, host component.Host) error {
 	}
 	e.client = client
 
-	if !e.cfg.CreateSchema {
-		return nil
+	if e.cfg.CreateSchema {
+		conn, err := createDorisMySQLClient(e.cfg)
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+
+		err = createAndUseDatabase(ctx, conn, e.cfg)
+		if err != nil {
+			return err
+		}
+
+		ddl := fmt.Sprintf(logsDDL, e.cfg.Table.Logs, e.cfg.propertiesStr())
+		_, err = conn.ExecContext(ctx, ddl)
+		if err != nil {
+			return err
+		}
 	}
 
-	conn, err := createDorisMySQLClient(e.cfg)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	err = createAndUseDatabase(ctx, conn, e.cfg)
-	if err != nil {
-		return err
-	}
-
-	ddl := fmt.Sprintf(logsDDL, e.cfg.Table.Logs, e.cfg.propertiesStr())
-	_, err = conn.ExecContext(ctx, ddl)
-	return err
+	go e.reporter.report()
+	return nil
 }
 
 func (e *logsExporter) shutdown(_ context.Context) error {
@@ -81,6 +84,7 @@ func (e *logsExporter) shutdown(_ context.Context) error {
 }
 
 func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
+	label := generateLabel(e.cfg, e.cfg.Table.Logs)
 	logs := make([]*dLog, 0, ld.LogRecordCount())
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
@@ -118,16 +122,16 @@ func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 		}
 	}
 
-	return e.pushLogDataInternal(ctx, logs)
+	return e.pushLogDataInternal(ctx, logs, label)
 }
 
-func (e *logsExporter) pushLogDataInternal(ctx context.Context, logs []*dLog) error {
+func (e *logsExporter) pushLogDataInternal(ctx context.Context, logs []*dLog, label string) error {
 	marshal, err := toJSONLines(logs)
 	if err != nil {
 		return err
 	}
 
-	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Table.Logs, marshal)
+	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Table.Logs, marshal, label)
 	if err != nil {
 		return err
 	}
@@ -149,9 +153,21 @@ func (e *logsExporter) pushLogDataInternal(ctx context.Context, logs []*dLog) er
 		return err
 	}
 
-	if !response.success() {
-		return fmt.Errorf("failed to push log data: %s", response.Message)
+	if response.success() {
+		e.reporter.incrTotalRows(int64(len(logs)))
+		e.reporter.incrTotalBytes(int64(len(marshal)))
+
+		if response.duplication() {
+			e.logger.Warn("label already exists", zap.String("label", label), zap.Int("skipped", len(logs)))
+		}
+
+		if e.cfg.LogResponse {
+			e.logger.Info("log response:\n" + string(body))
+		} else {
+			e.logger.Debug("log response:\n" + string(body))
+		}
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("failed to push log data, response:%s", string(body))
 }

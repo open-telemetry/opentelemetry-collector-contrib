@@ -27,7 +27,7 @@ func TestCreateExporter(t *testing.T) {
 
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 
 	te, err := factory.CreateTraces(context.Background(), params, eCfg)
 	assert.NoError(t, err)

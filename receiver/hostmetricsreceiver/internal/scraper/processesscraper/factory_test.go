@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -21,7 +23,7 @@ func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{}
 
-	scraper, err := factory.CreateMetrics(context.Background(), scrapertest.NewNopSettings(), cfg)
+	scraper, err := factory.CreateMetrics(context.Background(), scrapertest.NewNopSettings(metadata.Type), cfg)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, scraper)

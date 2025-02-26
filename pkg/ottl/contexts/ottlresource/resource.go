@@ -14,13 +14,14 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
-const (
-	// Experimental: *NOTE* this constant is subject to change or removal in the future.
-	ContextName = internal.ResourceContextName
-)
+// Experimental: *NOTE* this constant is subject to change or removal in the future.
+const ContextName = ctxresource.Name
 
 var (
 	_ internal.ResourceContext = (*TransformContext)(nil)
@@ -149,7 +150,7 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 		return nil, fmt.Errorf("path cannot be nil")
 	}
 	if path.Context() != "" && path.Context() != ContextName {
-		return nil, internal.FormatDefaultErrorMessage(path.Context(), path.String(), "Resource", internal.ResourceContextRef)
+		return nil, ctxerror.New(path.Context(), path.String(), ctxresource.Name, ctxresource.DocRef)
 	}
 
 	switch path.Name() {
@@ -180,10 +181,10 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 func accessCacheKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
-			return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key)
+			return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
-			return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key, val)
+			return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key, val)
 		},
 	}
 }

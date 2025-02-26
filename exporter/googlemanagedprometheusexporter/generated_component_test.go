@@ -19,8 +19,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+var typ = component.MustNewType("googlemanagedprometheus")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "googlemanagedprometheus", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -52,7 +54,7 @@ func TestComponentLifecycle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name+"-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)

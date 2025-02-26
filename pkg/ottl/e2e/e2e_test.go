@@ -15,8 +15,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
@@ -302,19 +304,18 @@ func Test_e2e_editors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
-			settings := componenttest.NewNopTelemetrySettings()
-			logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
-			assert.NoError(t, err)
-			logStatements, err := logParser.ParseStatement(tt.statement)
+			logStatements, err := parseStatementWithAndWithoutPathContext(tt.statement)
 			assert.NoError(t, err)
 
-			tCtx := constructLogTransformContextEditors()
-			_, _, _ = logStatements.Execute(context.Background(), tCtx)
+			for _, statement := range logStatements {
+				tCtx := constructLogTransformContextEditors()
+				_, _, _ = statement.Execute(context.Background(), tCtx)
 
-			exTCtx := constructLogTransformContextEditors()
-			tt.want(exTCtx)
+				exTCtx := constructLogTransformContextEditors()
+				tt.want(exTCtx)
 
-			assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+				assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+			}
 		})
 	}
 }
@@ -334,7 +335,7 @@ func Test_e2e_converters(t *testing.T) {
 		{
 			statement: `set(attributes["array"][0.0], "bar")`,
 			want:      func(_ ottllog.TransformContext) {},
-			errMsg:    "unable to resolve an integer index in slice: invalid key type",
+			errMsg:    "unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got 'float64'",
 		},
 		{
 			statement: `set(attributes["array"][ConvertCase(attributes["A|B|C"], "upper")], "bar")`,
@@ -363,6 +364,24 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes[attributes[attributes["flags"]]], "something2")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("something", "something2")
+			},
+		},
+		{
+			statement: `set(body, attributes["things"][Len(attributes["things"]) - 1]["name"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("bar")
+			},
+		},
+		{
+			statement: `set(body, attributes["things"][attributes["int_value"] + 1]["name"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("bar")
+			},
+		},
+		{
+			statement: `set(body, attributes[attributes["foo"][attributes["slice"]][attributes["int_value"] + 1 - 1]])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("val2")
 			},
 		},
 		{
@@ -445,6 +464,30 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["test"], ConvertCase("foo_bar", "camel"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "FooBar")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ToCamelCase("foo_bar"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "FooBar")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ToSnakeCase("fooBar"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "foo_bar")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ToUpperCase(attributes["http.method"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", http.MethodGet)
+			},
+		},
+		{
+			statement: `set(attributes["test"], ToLowerCase("PASS"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
 		},
 		{
@@ -1045,24 +1088,23 @@ func Test_e2e_converters(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
-			settings := componenttest.NewNopTelemetrySettings()
-			logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
-			assert.NoError(t, err)
-			logStatements, err := logParser.ParseStatement(tt.statement)
+			logStatements, err := parseStatementWithAndWithoutPathContext(tt.statement)
 			assert.NoError(t, err)
 
-			tCtx := constructLogTransformContext()
-			_, _, err = logStatements.Execute(context.Background(), tCtx)
-			if tt.errMsg == "" {
-				assert.NoError(t, err)
-			} else {
-				assert.Contains(t, err.Error(), tt.errMsg)
+			for _, statement := range logStatements {
+				tCtx := constructLogTransformContext()
+				_, _, err = statement.Execute(context.Background(), tCtx)
+				if tt.errMsg == "" {
+					assert.NoError(t, err)
+				} else {
+					assert.Contains(t, err.Error(), tt.errMsg)
+				}
+
+				exTCtx := constructLogTransformContext()
+				tt.want(exTCtx)
+
+				assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
 			}
-
-			exTCtx := constructLogTransformContext()
-			tt.want(exTCtx)
-
-			assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
 		})
 	}
 }
@@ -1169,19 +1211,18 @@ func Test_e2e_ottl_features(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.statement, func(t *testing.T) {
-			settings := componenttest.NewNopTelemetrySettings()
-			logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
-			assert.NoError(t, err)
-			logStatements, err := logParser.ParseStatement(tt.statement)
+			logStatements, err := parseStatementWithAndWithoutPathContext(tt.statement)
 			assert.NoError(t, err)
 
-			tCtx := constructLogTransformContext()
-			_, _, _ = logStatements.Execute(context.Background(), tCtx)
+			for _, statement := range logStatements {
+				tCtx := constructLogTransformContext()
+				_, _, _ = statement.Execute(context.Background(), tCtx)
 
-			exTCtx := constructLogTransformContext()
-			tt.want(exTCtx)
+				exTCtx := constructLogTransformContext()
+				tt.want(exTCtx)
 
-			assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+				assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+			}
 		})
 	}
 }
@@ -1274,6 +1315,76 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			assert.NoError(t, ptracetest.CompareResourceSpans(newResourceSpans(exTCtx), newResourceSpans(tCtx)))
 		})
 	}
+}
+
+func Test_ProcessSpanEvents(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(_ ottlspanevent.TransformContext)
+	}{
+		{
+			statement: `set(attributes["index"], event_index)`,
+			want: func(tCtx ottlspanevent.TransformContext) {
+				tCtx.GetSpanEvent().Attributes().PutInt("index", 0)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			settings := componenttest.NewNopTelemetrySettings()
+			funcs := ottlfuncs.StandardFuncs[ottlspanevent.TransformContext]()
+
+			spanEventParser, err := ottlspanevent.NewParser(funcs, settings)
+			assert.NoError(t, err)
+			spanStatements, err := spanEventParser.ParseStatement(tt.statement)
+			assert.NoError(t, err)
+
+			tCtx := constructSpanEventTransformContext()
+			_, _, _ = spanStatements.Execute(context.Background(), tCtx)
+
+			exTCtx := constructSpanEventTransformContext()
+			tt.want(exTCtx)
+
+			assert.NoError(t, ptracetest.CompareSpanEvent(newSpanEvent(exTCtx), newSpanEvent(tCtx)))
+		})
+	}
+}
+
+func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statement[ottllog.TransformContext], error) {
+	settings := componenttest.NewNopTelemetrySettings()
+	parserWithoutPathCtx, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
+	if err != nil {
+		return nil, err
+	}
+
+	withoutPathCtxResult, err := parserWithoutPathCtx.ParseStatement(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	parserWithPathCtx, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings, ottllog.EnablePathContextNames())
+	if err != nil {
+		return nil, err
+	}
+
+	pc, err := ottl.NewParserCollection(settings,
+		ottl.WithParserCollectionContext[ottllog.TransformContext, *ottl.Statement[ottllog.TransformContext]](
+			ottllog.ContextName,
+			&parserWithPathCtx,
+			func(_ *ottl.ParserCollection[*ottl.Statement[ottllog.TransformContext]], _ *ottl.Parser[ottllog.TransformContext], _ string, _ ottl.StatementsGetter, parsedStatements []*ottl.Statement[ottllog.TransformContext]) (*ottl.Statement[ottllog.TransformContext], error) {
+				return parsedStatements[0], nil
+			}))
+	if err != nil {
+		return nil, err
+	}
+
+	withPathCtxResult, err := pc.ParseStatementsWithContext(ottllog.ContextName, ottl.NewStatementsGetter([]string{statement}), true)
+	if err != nil {
+		return nil, err
+	}
+
+	return []*ottl.Statement[ottllog.TransformContext]{withoutPathCtxResult, withPathCtxResult}, nil
 }
 
 func constructLogTransformContext() ottllog.TransformContext {
@@ -1381,6 +1492,21 @@ func constructSpanTransformContext() ottlspan.TransformContext {
 	return ottlspan.NewTransformContext(td, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
 }
 
+func constructSpanEventTransformContext() ottlspanevent.TransformContext {
+	resource := pcommon.NewResource()
+
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("scope")
+
+	span := ptrace.NewSpan()
+	fillSpanOne(span)
+
+	ev1 := span.Events().AppendEmpty()
+	ev1.SetName("event-1")
+
+	return ottlspanevent.NewTransformContext(ev1, span, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans(), ottlspanevent.WithEventIndex(0))
+}
+
 func newResourceLogs(tCtx ottllog.TransformContext) plog.ResourceLogs {
 	rl := plog.NewResourceLogs()
 	tCtx.GetResource().CopyTo(rl.Resource())
@@ -1399,6 +1525,12 @@ func newResourceSpans(tCtx ottlspan.TransformContext) ptrace.ResourceSpans {
 	l := sl.Spans().AppendEmpty()
 	tCtx.GetSpan().CopyTo(l)
 	return rl
+}
+
+func newSpanEvent(tCtx ottlspanevent.TransformContext) ptrace.SpanEvent {
+	dst := ptrace.NewSpanEvent()
+	tCtx.GetSpanEvent().CopyTo(dst)
+	return dst
 }
 
 func fillSpanOne(span ptrace.Span) {

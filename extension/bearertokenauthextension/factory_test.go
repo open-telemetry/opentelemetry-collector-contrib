@@ -22,7 +22,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 func TestFactory_Create(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.BearerToken = "somerandometoken"
-	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }

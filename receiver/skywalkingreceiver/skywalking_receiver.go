@@ -39,7 +39,7 @@ type configuration struct {
 	CollectorGRPCServerSettings configgrpc.ServerConfig
 }
 
-// Receiver type is used to receive spans that were originally intended to be sent to Skywaking.
+// Receiver type is used to receive spans that were originally intended to be sent to Skywalking.
 // This receiver is basically a Skywalking collector.
 type swReceiver struct {
 	config *configuration

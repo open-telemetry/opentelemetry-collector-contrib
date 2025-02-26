@@ -19,6 +19,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/metadata"
 )
 
 // Logs
@@ -95,7 +97,7 @@ func TestSetTimeStamp(t *testing.T) {
 		ClientConfig: clientConfig,
 	}
 	var err error
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := createLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	err = exporter.Start(context.Background(), componenttest.NewNopHost())

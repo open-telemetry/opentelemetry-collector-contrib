@@ -26,7 +26,9 @@ The default timeout is `1s`.
 
 `fsync` when set, will force the database to perform an fsync after each write.  This helps to ensure database integrity if there is an interruption to the database process, but at the cost of performance.  See [DB.NoSync](https://pkg.go.dev/go.etcd.io/bbolt#DB) for more information.
 
-`create_directory` when set, will create the data storage and compaction directory if it does not already exist. The directory will be created with `0750 (rwxr-x--)` permissions, by default. Use `directory_permissions` to customize directory creation permissions.
+`create_directory` when set, will create the data storage and compaction directories if they do not already exist.
+By default, the directories will be created with `0750 (rwxr-x---)` permissions, minus the process umask.
+Use `directory_permissions` to customize directory creation permissions, minus the process umask.
 
 
 ## Compaction
@@ -73,10 +75,9 @@ y ├─────XXXXXXXXXXXXXXXXXXXXX..──────────── 
  . - claimed but no longer used space
 ```
 
-
 ## Example
 
-```
+```yaml
 extensions:
   file_storage:
   file_storage/all_settings:
@@ -93,13 +94,10 @@ service:
   pipelines:
     traces:
       receivers: [nop]
-      processors: [nop]
       exporters: [nop]
 
 # Data pipeline is required to load the config.
 receivers:
-  nop:
-processors:
   nop:
 exporters:
   nop:

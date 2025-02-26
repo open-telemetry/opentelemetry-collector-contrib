@@ -19,6 +19,43 @@ import (
 )
 
 func TestIntegrationInternalMetrics(t *testing.T) {
+	expectedMetrics := map[string]struct{}{
+		// Datadog internal metrics on trace and stats writers
+		"datadog.otlp_translator.resources.missing_source": {},
+		"datadog.trace_agent.stats_writer.bytes":           {},
+		"datadog.trace_agent.stats_writer.retries":         {},
+		"datadog.trace_agent.stats_writer.stats_buckets":   {},
+		"datadog.trace_agent.stats_writer.stats_entries":   {},
+		"datadog.trace_agent.stats_writer.payloads":        {},
+		"datadog.trace_agent.stats_writer.client_payloads": {},
+		"datadog.trace_agent.stats_writer.errors":          {},
+		"datadog.trace_agent.stats_writer.splits":          {},
+		"datadog.trace_agent.trace_writer.bytes":           {},
+		"datadog.trace_agent.trace_writer.retries":         {},
+		"datadog.trace_agent.trace_writer.spans":           {},
+		"datadog.trace_agent.trace_writer.traces":          {},
+		"datadog.trace_agent.trace_writer.payloads":        {},
+		"datadog.trace_agent.trace_writer.errors":          {},
+		"datadog.trace_agent.trace_writer.events":          {},
+
+		// OTel collector internal metrics
+		"otelcol_process_memory_rss":                     {},
+		"otelcol_process_runtime_total_sys_memory_bytes": {},
+		"otelcol_process_uptime":                         {},
+		"otelcol_process_cpu_seconds":                    {},
+		"otelcol_process_runtime_heap_alloc_bytes":       {},
+		"otelcol_process_runtime_total_alloc_bytes":      {},
+		"otelcol_receiver_accepted_metric_points":        {},
+		"otelcol_receiver_accepted_spans":                {},
+		"otelcol_exporter_queue_capacity":                {},
+		"otelcol_exporter_queue_size":                    {},
+		"otelcol_exporter_sent_spans":                    {},
+		"otelcol_exporter_sent_metric_points":            {},
+	}
+	testIntegrationInternalMetrics(t, expectedMetrics)
+}
+
+func testIntegrationInternalMetrics(t *testing.T, expectedMetrics map[string]struct{}) {
 	if runtime.GOOS == "windows" {
 		t.Skip("flaky test on windows https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34836")
 	}
@@ -47,40 +84,6 @@ func TestIntegrationInternalMetrics(t *testing.T) {
 	sendTraces(t, otlpGRPCEndpoint)
 
 	// 4. Validate Datadog trace agent & OTel internal metrics are sent to the mock server
-	expectedMetrics := map[string]struct{}{
-		// Datadog internal metrics on trace and stats writers
-		"otelcol_datadog_otlp_translator_resources_missing_source": {},
-		"otelcol_datadog_trace_agent_stats_writer_bytes":           {},
-		"otelcol_datadog_trace_agent_stats_writer_retries":         {},
-		"otelcol_datadog_trace_agent_stats_writer_stats_buckets":   {},
-		"otelcol_datadog_trace_agent_stats_writer_stats_entries":   {},
-		"otelcol_datadog_trace_agent_stats_writer_payloads":        {},
-		"otelcol_datadog_trace_agent_stats_writer_client_payloads": {},
-		"otelcol_datadog_trace_agent_stats_writer_errors":          {},
-		"otelcol_datadog_trace_agent_stats_writer_splits":          {},
-		"otelcol_datadog_trace_agent_trace_writer_bytes":           {},
-		"otelcol_datadog_trace_agent_trace_writer_retries":         {},
-		"otelcol_datadog_trace_agent_trace_writer_spans":           {},
-		"otelcol_datadog_trace_agent_trace_writer_traces":          {},
-		"otelcol_datadog_trace_agent_trace_writer_payloads":        {},
-		"otelcol_datadog_trace_agent_trace_writer_errors":          {},
-		"otelcol_datadog_trace_agent_trace_writer_events":          {},
-
-		// OTel collector internal metrics
-		"otelcol_process_memory_rss":                     {},
-		"otelcol_process_runtime_total_sys_memory_bytes": {},
-		"otelcol_process_uptime":                         {},
-		"otelcol_process_cpu_seconds":                    {},
-		"otelcol_process_runtime_heap_alloc_bytes":       {},
-		"otelcol_process_runtime_total_alloc_bytes":      {},
-		"otelcol_receiver_accepted_metric_points":        {},
-		"otelcol_receiver_accepted_spans":                {},
-		"otelcol_exporter_queue_capacity":                {},
-		"otelcol_exporter_queue_size":                    {},
-		"otelcol_exporter_sent_spans":                    {},
-		"otelcol_exporter_sent_metric_points":            {},
-	}
-
 	metricMap := make(map[string]series)
 	for len(metricMap) < len(expectedMetrics) {
 		select {

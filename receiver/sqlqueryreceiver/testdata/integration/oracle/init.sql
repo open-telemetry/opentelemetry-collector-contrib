@@ -1,10 +1,9 @@
 /* The alter session command is required to enable user creation in an Oracle docker container
    This command shouldn't be used outside of test environments. */
 alter session set "_ORACLE_SCRIPT"=true;
-CREATE USER OTEL IDENTIFIED BY "p@ssw%rd";
-GRANT CREATE SESSION TO OTEL;
-GRANT ALL PRIVILEGES TO OTEL;
-ALTER USER OTEL QUOTA UNLIMITED ON USERS;
+ALTER SESSION SET CONTAINER=FREEPDB1;
+CREATE USER OTEL IDENTIFIED BY otel QUOTA UNLIMITED ON USERS
+GRANT CONNECT, RESOURCE TO OTEL;
 -- Switch to the OTEL schema
 ALTER SESSION SET CURRENT_SCHEMA = OTEL;
       
@@ -30,7 +29,7 @@ values ('Mission Impossible', 'Action', 7.1);
 create table simple_logs
 (
     id number primary key,
-    insert_time timestamp with time zone,
+    insert_time timestamp with time zone default SYSTIMESTAMP,
     body varchar2(4000),
     attribute varchar2(100)
 );

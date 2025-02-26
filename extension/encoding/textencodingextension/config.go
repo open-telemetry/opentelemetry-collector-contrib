@@ -20,9 +20,7 @@ func (c *Config) Validate() error {
 			return err
 		}
 	}
-	encCfg := textutils.NewEncodingConfig()
-	encCfg.Encoding = c.Encoding
-	_, err := encCfg.Build()
+	_, err := textutils.LookupEncoding(c.Encoding)
 	if err != nil {
 		return err
 	}

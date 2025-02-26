@@ -1,0 +1,29 @@
+
+receivers:
+  hostmetrics:
+    collection_interval: 2s
+    scrapers:
+      load:
+      memory:
+
+exporters:
+  datadog:
+    api:
+      key: "aaa"
+    tls:
+      insecure_skip_verify: true
+    host_metadata:
+      enabled: false
+    metrics:
+      endpoint: ${env:SERVER_URL}
+      sums:
+        cumulative_monotonic_mode: raw_value
+
+service:
+  telemetry:
+    metrics:
+      level: none
+  pipelines:
+    metrics:
+      receivers: [hostmetrics]
+      exporters: [datadog]

@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
 func TestPushMetricData(t *testing.T) {
@@ -28,7 +29,7 @@ func TestPushMetricData(t *testing.T) {
 	err = config.Validate()
 	require.NoError(t, err)
 
-	exporter := newMetricsExporter(nil, config, componenttest.NewNopTelemetrySettings())
+	exporter := newMetricsExporter(zap.NewNop(), config, componenttest.NewNopTelemetrySettings())
 
 	ctx := context.Background()
 

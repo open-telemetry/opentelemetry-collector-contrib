@@ -34,6 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 var testPayloads = []string{
@@ -57,7 +58,7 @@ func TestAlertsReceiver(t *testing.T) {
 
 			recv, err := fact.CreateLogs(
 				context.Background(),
-				receivertest.NewNopSettings(),
+				receivertest.NewNopSettings(metadata.Type),
 				&Config{
 					Alerts: AlertConfig{
 						Enabled:  true,
@@ -122,7 +123,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 
 			recv, err := fact.CreateLogs(
 				context.Background(),
-				receivertest.NewNopSettings(),
+				receivertest.NewNopSettings(metadata.Type),
 				&Config{
 					Alerts: AlertConfig{
 						Enabled:  true,
@@ -210,7 +211,7 @@ func TestAtlasPoll(t *testing.T) {
 
 	recv, err := fact.CreateLogs(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			Alerts: AlertConfig{
 				Enabled: true,
@@ -278,7 +279,7 @@ func clientWithCert(path string) (*http.Client, error) {
 	roots := x509.NewCertPool()
 	ok := roots.AppendCertsFromPEM(b)
 	if !ok {
-		return nil, errors.New("failed to append certficate as root certificate")
+		return nil, errors.New("failed to append certificate as root certificate")
 	}
 
 	return &http.Client{

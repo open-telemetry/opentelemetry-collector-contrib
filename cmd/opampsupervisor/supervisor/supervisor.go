@@ -669,7 +669,8 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 			newServerConfig.TLSSetting.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
 		}
 	} else {
-		newServerConfig.TLSSetting = configtls.ClientConfig{Insecure: true}
+		newServerConfig.TLSSetting = configtls.NewDefaultClientConfig()
+		newServerConfig.TLSSetting.InsecureSkipVerify = true
 	}
 
 	if err := newServerConfig.Validate(); err != nil {

@@ -21,7 +21,7 @@ values ('Mission Impossible', 'Action', 7.1);
 create table simple_logs
 (
     id integer,
-    insert_time timestamp,
+    insert_time timestamp default now(),
     body text,
     attribute text,
     primary key (id)

@@ -9,11 +9,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-)
-
-const (
-	InstrumentationScopeContextName = "instrumentation_scope"
-	ScopeContextName                = "scope"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 )
 
 type InstrumentationScopeContext interface {
@@ -23,7 +22,7 @@ type InstrumentationScopeContext interface {
 
 func ScopePathGetSetter[K InstrumentationScopeContext](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
-		return nil, FormatDefaultErrorMessage(InstrumentationScopeContextName, InstrumentationScopeContextName, "Instrumentation Scope", InstrumentationScopeRef)
+		return nil, ctxerror.New("nil", "nil", ctxscope.Name, ctxscope.DocRef)
 	}
 	switch path.Name() {
 	case "name":
@@ -41,9 +40,9 @@ func ScopePathGetSetter[K InstrumentationScopeContext](lowerContext string, path
 	case "schema_url":
 		return accessInstrumentationScopeSchemaURLItem[K](), nil
 	case "cache":
-		return nil, FormatCacheErrorMessage(lowerContext, path.Context(), path.String())
+		return nil, ctxcache.NewError(lowerContext, path.Context(), path.String())
 	default:
-		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Instrumentation Scope", InstrumentationScopeRef)
+		return nil, ctxerror.New(path.Name(), path.String(), ctxscope.Name, ctxscope.DocRef)
 	}
 }
 
@@ -64,10 +63,10 @@ func accessInstrumentationScopeAttributes[K InstrumentationScopeContext]() ottl.
 func accessInstrumentationScopeAttributesKey[K InstrumentationScopeContext](keys []ottl.Key[K]) ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
-			return GetMapValue[K](ctx, tCtx, tCtx.GetInstrumentationScope().Attributes(), keys)
+			return ctxutil.GetMapValue[K](ctx, tCtx, tCtx.GetInstrumentationScope().Attributes(), keys)
 		},
 		Setter: func(ctx context.Context, tCtx K, val any) error {
-			return SetMapValue[K](ctx, tCtx, tCtx.GetInstrumentationScope().Attributes(), keys, val)
+			return ctxutil.SetMapValue[K](ctx, tCtx, tCtx.GetInstrumentationScope().Attributes(), keys, val)
 		},
 	}
 }

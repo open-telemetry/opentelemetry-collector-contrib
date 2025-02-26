@@ -83,13 +83,13 @@ func (r *Receiver) CollectInSync(ctx context.Context, segments *agent.SegmentCol
 	for _, segment := range segments.Segments {
 		marshaledSegment, err := proto.Marshal(segment)
 		if err != nil {
-			fmt.Printf("cannot marshal segemnt from sync, %v", err)
+			fmt.Printf("cannot marshal segment from sync, %v", err)
 		}
 		err = consumeTraces(ctx, segment, r.nextConsumer)
 		if err != nil {
 			fmt.Printf("cannot consume traces, %v", err)
 		}
-		fmt.Printf("receivec data:%s", marshaledSegment)
+		fmt.Printf("received data:%s", marshaledSegment)
 	}
 	return &common.Commands{}, nil
 }

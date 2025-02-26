@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
@@ -129,7 +130,7 @@ func TestConnectorWithLogs(t *testing.T) {
 
 func BenchmarkConnectorWithTraces(b *testing.B) {
 	factory := NewFactory()
-	settings := connectortest.NewNopSettings()
+	settings := connectortest.NewNopSettings(metadata.Type)
 	settings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
 	next, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error {
 		return nil
@@ -155,7 +156,7 @@ func BenchmarkConnectorWithTraces(b *testing.B) {
 
 func BenchmarkConnectorWithMetrics(b *testing.B) {
 	factory := NewFactory()
-	settings := connectortest.NewNopSettings()
+	settings := connectortest.NewNopSettings(metadata.Type)
 	settings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
 	next, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error {
 		return nil
@@ -181,7 +182,7 @@ func BenchmarkConnectorWithMetrics(b *testing.B) {
 
 func BenchmarkConnectorWithLogs(b *testing.B) {
 	factory := NewFactory()
-	settings := connectortest.NewNopSettings()
+	settings := connectortest.NewNopSettings(metadata.Type)
 	settings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zapcore.DebugLevel))
 	next, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error {
 		return nil
@@ -287,7 +288,7 @@ func setupConnector(
 ) (connector.Factory, connector.Settings, component.Config) {
 	t.Helper()
 	factory := NewFactory()
-	settings := connectortest.NewNopSettings()
+	settings := connectortest.NewNopSettings(metadata.Type)
 	telemetryResource(t).CopyTo(settings.TelemetrySettings.Resource)
 	settings.TelemetrySettings.Logger = zaptest.NewLogger(t, zaptest.Level(zapcore.DebugLevel))
 
@@ -297,7 +298,7 @@ func setupConnector(
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(&cfg))
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 
 	return factory, settings, cfg
 }

@@ -31,6 +31,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
 const (
@@ -196,7 +197,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) (net.Addr, *trac
 	telset := componenttest.NewNopTelemetrySettings()
 	telset.TracerProvider = tp
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.TelemetrySettings = telset
 
 	set.ID = component.NewIDWithName(component.MustNewType("otlp"), "trace")

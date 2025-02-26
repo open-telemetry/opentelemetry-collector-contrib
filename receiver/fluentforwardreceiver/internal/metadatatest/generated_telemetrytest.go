@@ -3,7 +3,6 @@
 package metadatatest
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,35 +14,14 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
-type Telemetry struct {
-	componenttest.Telemetry
-}
-
-func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
-	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
-}
-
-func (tt *Telemetry) NewSettings() receiver.Settings {
-	set := receivertest.NewNopSettings()
+func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
+	set := receivertest.NewNopSettings(receivertest.NopType)
 	set.ID = component.NewID(component.MustNewType("fluentforward"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
 
-func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	// ensure all required metrics are present
-	for _, want := range expected {
-		got := getMetricFromResource(want.Name, md)
-		metricdatatest.AssertEqual(t, want, got, opts...)
-	}
-
-	// ensure no additional metrics are emitted
-	require.Equal(t, len(expected), lenMetrics(md))
-}
-
-func AssertEqualFluentClosedConnections(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualFluentClosedConnections(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_fluent_closed_connections",
 		Description: "Number of connections closed to the fluentforward receiver",
@@ -54,11 +32,12 @@ func AssertEqualFluentClosedConnections(t *testing.T, tt componenttest.Telemetry
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_fluent_closed_connections")
+	got, err := tt.GetMetric("otelcol_fluent_closed_connections")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualFluentEventsParsed(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualFluentEventsParsed(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_fluent_events_parsed",
 		Description: "Number of Fluent events parsed successfully",
@@ -69,11 +48,12 @@ func AssertEqualFluentEventsParsed(t *testing.T, tt componenttest.Telemetry, dps
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_fluent_events_parsed")
+	got, err := tt.GetMetric("otelcol_fluent_events_parsed")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualFluentOpenedConnections(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualFluentOpenedConnections(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_fluent_opened_connections",
 		Description: "Number of connections opened to the fluentforward receiver",
@@ -84,11 +64,12 @@ func AssertEqualFluentOpenedConnections(t *testing.T, tt componenttest.Telemetry
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_fluent_opened_connections")
+	got, err := tt.GetMetric("otelcol_fluent_opened_connections")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualFluentParseFailures(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualFluentParseFailures(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_fluent_parse_failures",
 		Description: "Number of times Fluent messages failed to be decoded",
@@ -99,11 +80,12 @@ func AssertEqualFluentParseFailures(t *testing.T, tt componenttest.Telemetry, dp
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_fluent_parse_failures")
+	got, err := tt.GetMetric("otelcol_fluent_parse_failures")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualFluentRecordsGenerated(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualFluentRecordsGenerated(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_fluent_records_generated",
 		Description: "Number of log records generated from Fluent forward input",
@@ -114,33 +96,7 @@ func AssertEqualFluentRecordsGenerated(t *testing.T, tt componenttest.Telemetry,
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_fluent_records_generated")
+	got, err := tt.GetMetric("otelcol_fluent_records_generated")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
-}
-
-func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
-	for _, sm := range got.ScopeMetrics {
-		for _, m := range sm.Metrics {
-			if m.Name == name {
-				return m
-			}
-		}
-	}
-
-	return metricdata.Metrics{}
-}
-
-func lenMetrics(got metricdata.ResourceMetrics) int {
-	metricsCount := 0
-	for _, sm := range got.ScopeMetrics {
-		metricsCount += len(sm.Metrics)
-	}
-
-	return metricsCount
 }

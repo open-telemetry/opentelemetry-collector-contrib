@@ -67,14 +67,9 @@ func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[s
 		return err
 	}
 
-	// Do not drain the response when 429 or 502 status code is returned.
-	// HTTP client will not reuse the same connection unless it is drained.
-	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18281 for more details.
-	if resp.StatusCode != http.StatusTooManyRequests && resp.StatusCode != http.StatusBadGateway {
-		if _, errCopy := io.Copy(io.Discard, resp.Body); errCopy != nil {
-			return errCopy
-		}
-	}
+	// Drain the response body to avoid leaking connections.
+	_, _ = io.Copy(io.Discard, resp.Body)
+
 	return nil
 }
 

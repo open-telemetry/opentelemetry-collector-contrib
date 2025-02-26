@@ -16,18 +16,22 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxdatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
-const (
-	// Experimental: *NOTE* this constant is subject to change or removal in the future.
-	ContextName            = "datapoint"
-	contextNameDescription = "DataPoint"
-)
+// Experimental: *NOTE* this constant is subject to change or removal in the future.
+const ContextName = ctxdatapoint.Name
 
 var (
 	_ internal.ResourceContext             = (*TransformContext)(nil)
 	_ internal.InstrumentationScopeContext = (*TransformContext)(nil)
+	_ ctxmetric.Context                    = (*TransformContext)(nil)
 	_ zapcore.ObjectMarshaler              = (*TransformContext)(nil)
 )
 
@@ -149,10 +153,10 @@ func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySet
 func EnablePathContextNames() Option {
 	return func(p *ottl.Parser[TransformContext]) {
 		ottl.WithPathContextNames[TransformContext]([]string{
-			ContextName,
-			internal.ResourceContextName,
-			internal.InstrumentationScopeContextName,
-			internal.MetricContextName,
+			ctxdatapoint.Name,
+			ctxresource.Name,
+			ctxscope.LegacyName,
+			ctxmetric.Name,
 		})(p)
 	}
 }
@@ -189,20 +193,9 @@ func NewConditionSequence(conditions []*ottl.Condition[TransformContext], teleme
 	return c
 }
 
-var symbolTable = map[ottl.EnumSymbol]ottl.Enum{
-	"FLAG_NONE":              0,
-	"FLAG_NO_RECORDED_VALUE": 1,
-}
-
-func init() {
-	for k, v := range internal.MetricSymbolTable {
-		symbolTable[k] = v
-	}
-}
-
 func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	if val != nil {
-		if enum, ok := symbolTable[*val]; ok {
+		if enum, ok := ctxdatapoint.SymbolTable[*val]; ok {
 			return &enum, nil
 		}
 		return nil, fmt.Errorf("enum symbol, %s, not found", *val)
@@ -216,16 +209,16 @@ type pathExpressionParser struct {
 
 func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	if path == nil {
-		return nil, fmt.Errorf("path cannot be nil")
+		return nil, ctxerror.New("nil", "nil", ctxdatapoint.Name, ctxdatapoint.DocRef)
 	}
 	// Higher contexts parsing
-	if path.Context() != "" && path.Context() != ContextName {
+	if path.Context() != "" && path.Context() != ctxdatapoint.Name {
 		return pep.parseHigherContextPath(path.Context(), path)
 	}
 	// Backward compatibility with paths without context
-	if path.Context() == "" && (path.Name() == internal.ResourceContextName ||
-		path.Name() == internal.InstrumentationScopeContextName ||
-		path.Name() == internal.MetricContextName) {
+	if path.Context() == "" && (path.Name() == ctxresource.Name ||
+		path.Name() == ctxscope.LegacyName ||
+		path.Name() == ctxmetric.Name) {
 		return pep.parseHigherContextPath(path.Name(), path.Next())
 	}
 
@@ -277,7 +270,7 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 			case "bucket_counts":
 				return accessPositiveBucketCounts(), nil
 			default:
-				return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), path.String(), contextNameDescription, internal.DataPointRef)
+				return nil, ctxerror.New(nextPath.Name(), path.String(), ctxdatapoint.Name, ctxdatapoint.DocRef)
 			}
 		}
 		return accessPositive(), nil
@@ -290,31 +283,31 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 			case "bucket_counts":
 				return accessNegativeBucketCounts(), nil
 			default:
-				return nil, internal.FormatDefaultErrorMessage(nextPath.Name(), path.String(), contextNameDescription, internal.DataPointRef)
+				return nil, ctxerror.New(nextPath.Name(), path.String(), ctxdatapoint.Name, ctxdatapoint.DocRef)
 			}
 		}
 		return accessNegative(), nil
 	case "quantile_values":
 		return accessQuantileValues(), nil
 	default:
-		return nil, internal.FormatDefaultErrorMessage(path.Name(), path.String(), contextNameDescription, internal.DataPointRef)
+		return nil, ctxerror.New(path.Name(), path.String(), ctxdatapoint.Name, ctxdatapoint.DocRef)
 	}
 }
 
 func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	switch context {
-	case internal.ResourceContextName:
-		return internal.ResourcePathGetSetter(ContextName, path)
-	case internal.InstrumentationScopeContextName:
-		return internal.ScopePathGetSetter(ContextName, path)
-	case internal.MetricContextName:
-		return internal.MetricPathGetSetter(path)
+	case ctxresource.Name:
+		return internal.ResourcePathGetSetter(ctxdatapoint.Name, path)
+	case ctxscope.LegacyName:
+		return internal.ScopePathGetSetter(ctxdatapoint.Name, path)
+	case ctxmetric.Name:
+		return ctxmetric.PathGetSetter(path)
 	default:
 		var fullPath string
 		if path != nil {
 			fullPath = path.String()
 		}
-		return nil, internal.FormatDefaultErrorMessage(context, fullPath, contextNameDescription, internal.DataPointRef)
+		return nil, ctxerror.New(context, fullPath, ctxdatapoint.Name, ctxdatapoint.DocRef)
 	}
 }
 
@@ -335,10 +328,10 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 func accessCacheKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
-			return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key)
+			return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key)
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
-			return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key, val)
+			return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key, val)
 		},
 	}
 }
@@ -387,26 +380,26 @@ func accessAttributesKey(key []ottl.Key[TransformContext]) ottl.StandardGetSette
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
 			switch tCtx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
-				return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.NumberDataPoint).Attributes(), key)
+				return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.NumberDataPoint).Attributes(), key)
 			case pmetric.HistogramDataPoint:
-				return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes(), key)
+				return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes(), key)
 			case pmetric.ExponentialHistogramDataPoint:
-				return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes(), key)
+				return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes(), key)
 			case pmetric.SummaryDataPoint:
-				return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes(), key)
+				return ctxutil.GetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes(), key)
 			}
 			return nil, nil
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
 			switch tCtx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
-				return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.NumberDataPoint).Attributes(), key, val)
+				return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.NumberDataPoint).Attributes(), key, val)
 			case pmetric.HistogramDataPoint:
-				return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes(), key, val)
+				return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes(), key, val)
 			case pmetric.ExponentialHistogramDataPoint:
-				return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes(), key, val)
+				return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes(), key, val)
 			case pmetric.SummaryDataPoint:
-				return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes(), key, val)
+				return ctxutil.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes(), key, val)
 			}
 			return nil
 		},

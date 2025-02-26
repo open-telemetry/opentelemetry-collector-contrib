@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutiltest"
 )
 
@@ -50,7 +51,7 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
@@ -117,7 +118,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -221,7 +222,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -356,7 +357,7 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -407,7 +408,7 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopSettings(),
+		connectortest.NewNopSettings(metadata.Type),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -858,7 +859,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 
 			conn, err := NewFactory().CreateLogsToLogs(
 				context.Background(),
-				connectortest.NewNopSettings(),
+				connectortest.NewNopSettings(metadata.Type),
 				tt.cfg,
 				router.(consumer.Logs),
 			)
