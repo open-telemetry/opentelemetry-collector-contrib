@@ -118,19 +118,19 @@ var (
 // its processing.
 func (fmr *firehoseReceiver) Start(ctx context.Context, host component.Host) error {
 	if err := fmr.consumer.Start(ctx, host); err != nil {
-		return err
+		return fmt.Errorf("failed to start consumer: %w", err)
 	}
 
 	var err error
 	fmr.server, err = fmr.config.ServerConfig.ToServer(ctx, host, fmr.settings.TelemetrySettings, fmr)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to initialize HTTP server: %w", err)
 	}
 
 	var listener net.Listener
 	listener, err = fmr.config.ServerConfig.ToListener(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to start listening for HTTP requests: %w", err)
 	}
 	fmr.shutdownWG.Add(1)
 	go func() {

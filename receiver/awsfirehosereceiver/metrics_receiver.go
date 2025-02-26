@@ -6,6 +6,7 @@ package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -73,7 +74,7 @@ func (c *metricsConsumer) Start(_ context.Context, host component.Host) error {
 	default:
 		unmarshaler, err := loadEncodingExtension[pmetric.Unmarshaler](host, encoding, "metrics")
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to load encoding extension: %w", err)
 		}
 		c.unmarshaler = unmarshaler
 	}

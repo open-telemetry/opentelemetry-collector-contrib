@@ -64,11 +64,11 @@ func TestLogsReceiver_Start(t *testing.T) {
 		},
 		"WithUnknownEncoding": {
 			encoding: "invalid",
-			wantErr:  "failed to load encoding extension: unknown encoding extension \"invalid\"",
+			wantErr:  "failed to start consumer: failed to load encoding extension: unknown encoding extension \"invalid\"",
 		},
 		"WithNonLogUnmarshalerExtension": {
 			encoding: "otlp_metrics",
-			wantErr:  `failed to load encoding extension: extension "otlp_metrics" is not a logs unmarshaler`,
+			wantErr:  `failed to start consumer: failed to load encoding extension: extension "otlp_metrics" is not a logs unmarshaler`,
 		},
 	}
 	for name, testCase := range testCases {
