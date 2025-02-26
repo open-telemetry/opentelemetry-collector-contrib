@@ -109,6 +109,8 @@ components:
         - sumologic
         - tail_sampling
         - transform
+    provider:
+        - s3
     receiver:
         - active_directory_ds
         - aerospike
