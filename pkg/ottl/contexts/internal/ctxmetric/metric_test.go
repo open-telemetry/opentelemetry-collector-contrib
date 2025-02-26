@@ -116,11 +116,11 @@ func TestPathGetSetter(t *testing.T) {
 
 			metric := createTelemetry()
 
-			got, err := accessor.Get(context.Background(), newContext(metric))
+			got, err := accessor.Get(context.Background(), newTestContext(metric))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), newContext(metric), tt.newVal)
+			err = accessor.Set(context.Background(), newTestContext(metric), tt.newVal)
 			assert.NoError(t, err)
 
 			expectedMetric := createTelemetry()
@@ -149,6 +149,6 @@ func (m *testContext) GetMetric() pmetric.Metric {
 	return m.metric
 }
 
-func newContext(metric pmetric.Metric) *testContext {
+func newTestContext(metric pmetric.Metric) *testContext {
 	return &testContext{metric: metric}
 }
