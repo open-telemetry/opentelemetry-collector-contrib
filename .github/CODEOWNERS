@@ -18,7 +18,6 @@
 
 # Start components list
 
-cmd/githubgen/                                                   @open-telemetry/collector-contrib-approvers @atoulme
 cmd/opampsupervisor/                                             @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan
 cmd/otelcontribcol/                                              @open-telemetry/collector-contrib-approvers
 cmd/oteltestbedcol/                                              @open-telemetry/collector-contrib-approvers
@@ -53,7 +52,7 @@ exporter/bmchelixexporter/                                       @open-telemetry
 exporter/carbonexporter/                                         @open-telemetry/collector-contrib-approvers @aboguszewski-sumo
 exporter/cassandraexporter/                                      @open-telemetry/collector-contrib-approvers @atoulme @emreyalvac
 exporter/clickhouseexporter/                                     @open-telemetry/collector-contrib-approvers @hanjm @dmitryax @Frapschen @SpencerTorres
-exporter/coralogixexporter/                                      @open-telemetry/collector-contrib-approvers @povilasv @iblancasa
+exporter/coralogixexporter/                                      @open-telemetry/collector-contrib-approvers @povilasv @iblancasa @douglascamata
 exporter/datadogexporter/                                        @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96 @jade-guiton-dd @IbraheemA
 exporter/datasetexporter/                                        @open-telemetry/collector-contrib-approvers @atoulme @martin-majlis-s1 @zdaratom-s1 @tomaz-s1
 exporter/dorisexporter/                                          @open-telemetry/collector-contrib-approvers @atoulme @joker-star-l
