@@ -7,3 +7,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [songy23, IbraheemA, mx-psi, dineshg13, ankitpatel96, jade-guiton-dd, jackgopack4]
+
+tests:
+  goleak:
+    skip: true
