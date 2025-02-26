@@ -285,11 +285,6 @@ jobs:
         with:
           path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
-      - name: Debug startsWith condition
-        run: |
-          echo "go-version: ${{ matrix.go-version }}"
-          echo "startsWith(matrix.go-version, '1.23') result: ${{ startsWith(matrix.go-version, '1.23') }}"
-          echo "startsWith(matrix.go-version, '~1.23') result: ${{ startsWith(matrix.go-version, '~1.23') }}"
       - name: Run Unit Tests
         if: startsWith( matrix.go-version, '1.23' ) != true
         run: make gotest GROUP=${{ matrix.group }}
