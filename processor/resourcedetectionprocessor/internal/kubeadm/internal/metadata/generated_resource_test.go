@@ -24,10 +24,6 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, 2, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 2, res.Attributes().Len())
-			case "name_set":
-				assert.Equal(t, 1, res.Attributes().Len())
-			case "uid_set":
-				assert.Equal(t, 2, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -40,7 +36,6 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "k8s.cluster.name-val", val.Str())
 			}
-
 			val, ok = res.Attributes().Get("k8s.cluster.uid")
 			assert.True(t, ok)
 			if ok {

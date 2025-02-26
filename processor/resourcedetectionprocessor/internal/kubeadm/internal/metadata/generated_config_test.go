@@ -35,20 +35,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sClusterUID:  ResourceAttributeConfig{Enabled: false},
 			},
 		},
-		{
-			name: "name_set",
-			want: ResourceAttributesConfig{
-				K8sClusterName: ResourceAttributeConfig{Enabled: true},
-				K8sClusterUID:  ResourceAttributeConfig{Enabled: false},
-			},
-		},
-		{
-			name: "uid_set",
-			want: ResourceAttributesConfig{
-				K8sClusterName: ResourceAttributeConfig{Enabled: false},
-				K8sClusterUID:  ResourceAttributeConfig{Enabled: true},
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
