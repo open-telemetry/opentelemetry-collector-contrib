@@ -120,8 +120,8 @@ go.opentelemetry.io/collector/config/configretry v1.26.1-0.20250226024140-8099e5
 go.opentelemetry.io/collector/config/configretry v1.26.1-0.20250226024140-8099e51f9a77/go.mod h1:8gzFQ0qzKLYvzP2sNPwsB9gwzKSEls649yANmt/d6yE=
 go.opentelemetry.io/collector/config/configtls v1.26.1-0.20250226024140-8099e51f9a77 h1:oswhYK9bSbWWkomj2D7Xzd1/hdD7fv3W9Ax/JnM+Irc=
 go.opentelemetry.io/collector/config/configtls v1.26.1-0.20250226024140-8099e51f9a77/go.mod h1:ppoLSWiwovldy4R9KCs6+XCWhvvBaF8eBhkUL460lxw=
-go.opentelemetry.io/collector/confmap v1.26.0 h1:+EVk0RaCBHs+7dYTwawd5n5tJiiUtErIy3YS3NIFP8o=
-go.opentelemetry.io/collector/confmap v1.26.0/go.mod h1:tmOa6iw3FJsEgfBHKALqvcdfRtf71JZGor0wSM5MoH8=
+go.opentelemetry.io/collector/confmap v1.26.1-0.20250226024140-8099e51f9a77 h1:Ze7lsTgLI/Xll8VirdlYj3BJftGSH0bre+vX8g1+HZI=
+go.opentelemetry.io/collector/confmap v1.26.1-0.20250226024140-8099e51f9a77/go.mod h1:tmOa6iw3FJsEgfBHKALqvcdfRtf71JZGor0wSM5MoH8=
 go.opentelemetry.io/collector/consumer v1.26.1-0.20250226024140-8099e51f9a77 h1:LJg9pj6cHc1LfA/N63XxsbYblR8XqX7o2rluYDiBWkY=
 go.opentelemetry.io/collector/consumer v1.26.1-0.20250226024140-8099e51f9a77/go.mod h1:I/ZwlWM0sbFLhbStpDOeimjtMbWpMFSoGdVmzYxLGDg=
 go.opentelemetry.io/collector/consumer/consumererror v0.120.1-0.20250226024140-8099e51f9a77 h1:qmGQmyappsgnc6tAD8ffN0LyE43kKTIHmThgSwEZavQ=
