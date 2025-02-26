@@ -21,10 +21,14 @@ import (
 //go:embed sql/traces_ddl.sql
 var tracesDDL string
 
+//go:embed sql/traces_view.sql
+var tracesView string
+
 // dTrace Trace to Doris
 type dTrace struct {
 	ServiceName        string         `json:"service_name"`
 	Timestamp          string         `json:"timestamp"`
+	ServiceInstanceID  string         `json:"service_instance_id"`
 	TraceID            string         `json:"trace_id"`
 	SpanID             string         `json:"span_id"`
 	TraceState         string         `json:"trace_state"`
@@ -75,7 +79,7 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
 	}
 	e.client = client
 
-	if !e.cfg.CreateSchema {
+	if e.cfg.CreateSchema {
 		conn, err := createDorisMySQLClient(e.cfg)
 		if err != nil {
 			return err
@@ -91,6 +95,12 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
 		_, err = conn.ExecContext(ctx, ddl)
 		if err != nil {
 			return err
+		}
+
+		view := fmt.Sprintf(tracesView, e.cfg.Table.Traces, e.cfg.Table.Traces)
+		_, err = conn.ExecContext(ctx, view)
+		if err != nil {
+			e.logger.Warn("failed to create materialized view", zap.Error(err))
 		}
 	}
 
@@ -117,6 +127,11 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		v, ok := resourceAttributes.Get(semconv.AttributeServiceName)
 		if ok {
 			serviceName = v.AsString()
+		}
+		serviceInstance := ""
+		v, ok = resourceAttributes.Get(semconv.AttributeServiceInstanceID)
+		if ok {
+			serviceInstance = v.AsString()
 		}
 
 		for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
@@ -157,6 +172,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 				trace := &dTrace{
 					ServiceName:        serviceName,
 					Timestamp:          e.formatTime(span.StartTimestamp().AsTime()),
+					ServiceInstanceID:  serviceInstance,
 					TraceID:            traceutil.TraceIDToHexOrEmptyString(span.TraceID()),
 					SpanID:             traceutil.SpanIDToHexOrEmptyString(span.SpanID()),
 					TraceState:         span.TraceState().AsRaw(),
