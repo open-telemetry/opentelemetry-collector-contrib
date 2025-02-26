@@ -6,10 +6,10 @@ require (
 	github.com/aws/aws-sdk-go v1.55.6
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.120.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/component v0.120.1-0.20250226024140-8099e51f9a77
 	go.opentelemetry.io/collector/component/componentstatus v0.120.1-0.20250224010654-18e18b21da7a
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/confmap v1.26.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/confmap v1.26.1-0.20250226024140-8099e51f9a77
 	go.opentelemetry.io/collector/confmap/xconfmap v0.120.1-0.20250224010654-18e18b21da7a
 	go.opentelemetry.io/collector/extension v0.120.1-0.20250224010654-18e18b21da7a
 	go.opentelemetry.io/collector/extension/extensiontest v0.120.1-0.20250224010654-18e18b21da7a
@@ -34,7 +34,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.26.1-0.20250224010654-18e18b21da7a // indirect
+	go.opentelemetry.io/collector/pdata v1.26.1-0.20250226024140-8099e51f9a77 // indirect
 	go.opentelemetry.io/collector/pipeline v0.120.1-0.20250224010654-18e18b21da7a // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
