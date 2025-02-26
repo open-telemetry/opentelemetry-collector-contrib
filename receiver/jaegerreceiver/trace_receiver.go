@@ -20,10 +20,7 @@ import (
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/agent"
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/jaeger"
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/zipkincore"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/processors"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/servers"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
-	"github.com/jaegertracing/jaeger/pkg/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/processor"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
@@ -47,7 +44,7 @@ type jReceiver struct {
 	grpc            *grpc.Server
 	collectorServer *http.Server
 
-	agentProcessors []processors.Processor
+	agentProcessors []processor.Processor
 	agentServer     *http.Server
 
 	goroutines sync.WaitGroup
@@ -125,7 +122,9 @@ func (jr *jReceiver) Shutdown(ctx context.Context) error {
 		}
 	}
 	for _, processor := range jr.agentProcessors {
-		processor.Stop()
+		if err := processor.Stop(); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 
 	if jr.collectorServer != nil {
@@ -210,68 +209,43 @@ func (jr *jReceiver) startAgent() error {
 			nextConsumer: jr.nextConsumer,
 			obsrecv:      obsrecv,
 		}
-		processor, err := jr.buildProcessor(jr.config.ThriftBinaryUDP.Endpoint, jr.config.ThriftBinaryUDP.ServerConfigUDP, apacheThrift.NewTBinaryProtocolFactoryConf(nil), h)
+
+		p, err := processor.NewThriftProcessor(
+			jr.config.ThriftBinaryUDP.Endpoint,
+			jr.config.ThriftBinaryUDP.ServerConfigUDP.MaxPacketSize,
+			apacheThrift.NewTBinaryProtocolFactoryConf(nil),
+			h,
+			jr.settings.Logger,
+		)
 		if err != nil {
 			return err
 		}
-		jr.agentProcessors = append(jr.agentProcessors, processor)
+		jr.agentProcessors = append(jr.agentProcessors, p)
 
 		jr.settings.Logger.Info("Starting UDP server for Binary Thrift", zap.String("endpoint", jr.config.ThriftBinaryUDP.Endpoint))
 	}
 
-	if jr.config.ThriftCompactUDP != nil {
-		obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-			ReceiverID:             jr.id,
-			Transport:              agentTransportCompact,
-			ReceiverCreateSettings: jr.settings,
-		})
-		if err != nil {
+	for _, p := range jr.agentProcessors {
+		if err := p.Start(); err != nil {
 			return err
 		}
-		h := &agentHandler{
-			nextConsumer: jr.nextConsumer,
-			obsrecv:      obsrecv,
-		}
-		processor, err := jr.buildProcessor(jr.config.ThriftCompactUDP.Endpoint, jr.config.ThriftCompactUDP.ServerConfigUDP, apacheThrift.NewTCompactProtocolFactoryConf(nil), h)
-		if err != nil {
-			return err
-		}
-		jr.agentProcessors = append(jr.agentProcessors, processor)
+	}
 
-		jr.settings.Logger.Info("Starting UDP server for Compact Thrift", zap.String("endpoint", jr.config.ThriftCompactUDP.Endpoint))
+	for _, p := range jr.agentProcessors {
+		if err := p.Start(); err != nil {
+			return err
+		}
 	}
 
 	jr.goroutines.Add(len(jr.agentProcessors))
-	for _, processor := range jr.agentProcessors {
-		go func(p processors.Processor) {
+	for _, p := range jr.agentProcessors {
+		go func(p processor.Processor) {
 			defer jr.goroutines.Done()
-			p.Serve()
-		}(processor)
+			<-p.Done()
+		}(p)
 	}
 
 	return nil
-}
-
-func (jr *jReceiver) buildProcessor(address string, cfg ServerConfigUDP, factory apacheThrift.TProtocolFactory, a agent.Agent) (processors.Processor, error) {
-	handler := agent.NewAgentProcessor(a)
-	transport, err := thriftudp.NewTUDPServerTransport(address)
-	if err != nil {
-		return nil, err
-	}
-	if cfg.SocketBufferSize > 0 {
-		if err = transport.SetSocketBufferSize(cfg.SocketBufferSize); err != nil {
-			return nil, err
-		}
-	}
-	server, err := servers.NewTBufferedServer(transport, cfg.QueueSize, cfg.MaxPacketSize, metrics.NullFactory)
-	if err != nil {
-		return nil, err
-	}
-	processor, err := processors.NewThriftProcessor(server, cfg.Workers, metrics.NullFactory, factory, handler, jr.settings.Logger)
-	if err != nil {
-		return nil, err
-	}
-	return processor, nil
 }
 
 func (jr *jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *httpError) {
