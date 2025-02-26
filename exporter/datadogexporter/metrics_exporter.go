@@ -31,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
 	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	datadogapikey "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/apikey"
 )
 
 type metricsExporter struct {
@@ -94,27 +95,25 @@ func newMetricsExporter(
 		metadataReporter: metadataReporter,
 		gatewayUsage:     gatewayUsage,
 	}
+	// Call Full API Key validation in pkg/datadog/apikey to validate API key and create API client
 	errchan := make(chan error)
-	if isMetricExportV2Enabled() {
-		apiClient := clientutil.CreateAPIClient(
-			params.BuildInfo,
-			cfg.Metrics.TCPAddrConfig.Endpoint,
-			cfg.ClientConfig)
-		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
-		exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
-	} else {
-		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
-		client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
-		client.HttpClient = clientutil.NewHTTPClient(cfg.ClientConfig)
-		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
-		exporter.client = client
+	metricsAPI, client, err := datadogapikey.FullAPIKeyCheck(
+		ctx,
+		string(cfg.API.Key),
+		&errchan,
+		params.BuildInfo,
+		isMetricExportV2Enabled(),
+		cfg.API.FailOnInvalidKey,
+		cfg.Metrics.TCPAddrConfig.Endpoint,
+		params.Logger,
+		cfg.ClientConfig,
+	)
+	if err != nil {
+		return nil, err
 	}
-	if cfg.API.FailOnInvalidKey {
-		err = <-errchan
-		if err != nil {
-			return nil, err
-		}
-	}
+	exporter.metricsAPI = metricsAPI
+	exporter.client = client
+
 	return exporter, nil
 }
 

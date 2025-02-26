@@ -32,7 +32,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	datadogapikey "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/apikey"
 )
 
 var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -82,23 +83,23 @@ func newTracesExporter(
 	}
 	// client to send running metric to the backend & perform API key validation
 	errchan := make(chan error)
-	if isMetricExportV2Enabled() {
-		apiClient := clientutil.CreateAPIClient(
-			params.BuildInfo,
-			cfg.Metrics.TCPAddrConfig.Endpoint,
-			cfg.ClientConfig)
-		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
-		exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
-	} else {
-		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
-		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
-		exp.client = client
+	metricsAPI, client, err := datadogapikey.FullAPIKeyCheck(
+		ctx,
+		string(cfg.API.Key),
+		&errchan,
+		params.BuildInfo,
+		isMetricExportV2Enabled(),
+		cfg.API.FailOnInvalidKey,
+		cfg.Metrics.TCPAddrConfig.Endpoint,
+		params.Logger,
+		cfg.ClientConfig,
+	)
+	if err != nil {
+		return nil, err
 	}
-	if cfg.API.FailOnInvalidKey {
-		if err := <-errchan; err != nil {
-			return nil, err
-		}
-	}
+	exp.metricsAPI = metricsAPI
+	exp.client = client
+
 	return exp, nil
 }
 
@@ -234,7 +235,7 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 			return clientutil.NewHTTPClient(cfg.ClientConfig)
 		}
 	}
-	if datadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
+	if pkgdatadog.OperationAndResourceNameV2FeatureGate.IsEnabled() {
 		acfg.Features["enable_operation_and_resource_name_logic_v2"] = struct{}{}
 	} else {
 		params.Logger.Info("Please enable feature gate datadog.EnableOperationAndResourceNameV2 for improved operation and resource name logic. This feature will be enabled by default in the future - if you have Datadog monitors or alerts set on operation/resource names, you may need to migrate them to the new convention.")
@@ -251,9 +252,9 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 	if cfg.Traces.ComputeTopLevelBySpanKind {
 		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
 	}
-	if !datadog.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
+	if !pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled() {
 		acfg.Features["disable_receive_resource_spans_v2"] = struct{}{}
 	}
-	tracelog.SetLogger(&datadog.Zaplogger{Logger: params.Logger}) // TODO: This shouldn't be a singleton
+	tracelog.SetLogger(&pkgdatadog.Zaplogger{Logger: params.Logger}) // TODO: This shouldn't be a singleton
 	return acfg, nil
 }
