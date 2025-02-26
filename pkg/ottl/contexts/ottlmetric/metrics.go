@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
@@ -24,9 +23,9 @@ import (
 const ContextName = ctxmetric.Name
 
 var (
-	_ internal.ResourceContext             = TransformContext{}
-	_ internal.InstrumentationScopeContext = TransformContext{}
-	_ ctxmetric.Context                    = TransformContext{}
+	_ ctxresource.Context = TransformContext{}
+	_ ctxscope.Context    = TransformContext{}
+	_ ctxmetric.Context   = TransformContext{}
 )
 
 type TransformContext struct {
@@ -88,11 +87,11 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
+func (tCtx TransformContext) GetScopeSchemaURLItem() ctxutil.SchemaURLItem {
 	return tCtx.scopeMetrics
 }
 
-func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
+func (tCtx TransformContext) GetResourceSchemaURLItem() ctxutil.SchemaURLItem {
 	return tCtx.resourceMetrics
 }
 
@@ -201,9 +200,9 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	switch context {
 	case ctxresource.Name:
-		return internal.ResourcePathGetSetter(ctxmetric.Name, path)
+		return ctxresource.PathGetSetter(ctxmetric.Name, path)
 	case ctxscope.LegacyName:
-		return internal.ScopePathGetSetter(ctxmetric.Name, path)
+		return ctxscope.PathGetSetter(ctxmetric.Name, path)
 	default:
 		var fullPath string
 		if path != nil {
