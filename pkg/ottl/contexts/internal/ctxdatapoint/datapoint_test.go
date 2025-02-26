@@ -430,7 +430,7 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 
 			numberDataPoint := createNumberDataPoint(tt.valueType)
 
-			ctx := newContext(numberDataPoint)
+			ctx := newTestContext(numberDataPoint)
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
@@ -896,7 +896,7 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 
 			histogramDataPoint := createHistogramDataPointTelemetry()
 
-			ctx := newContext(histogramDataPoint)
+			ctx := newTestContext(histogramDataPoint)
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
@@ -1446,7 +1446,7 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 			expoHistogramDataPoint := createExpoHistogramDataPointTelemetry()
 
-			ctx := newContext(expoHistogramDataPoint)
+			ctx := newTestContext(expoHistogramDataPoint)
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
@@ -1896,7 +1896,7 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 			summaryDataPoint := createSummaryDataPointTelemetry()
 
-			ctx := newContext(summaryDataPoint)
+			ctx := newTestContext(summaryDataPoint)
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
@@ -1984,6 +1984,6 @@ func (m *testContext) GetDataPoint() any {
 	return m.dataPoint
 }
 
-func newContext(dataPoint any) *testContext {
+func newTestContext(dataPoint any) *testContext {
 	return &testContext{dataPoint: dataPoint}
 }

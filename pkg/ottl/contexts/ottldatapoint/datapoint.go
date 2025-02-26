@@ -14,7 +14,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxdatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
@@ -28,10 +27,10 @@ import (
 const ContextName = ctxdatapoint.Name
 
 var (
-	_ internal.ResourceContext             = (*TransformContext)(nil)
-	_ internal.InstrumentationScopeContext = (*TransformContext)(nil)
-	_ ctxmetric.Context                    = (*TransformContext)(nil)
-	_ zapcore.ObjectMarshaler              = (*TransformContext)(nil)
+	_ ctxresource.Context     = (*TransformContext)(nil)
+	_ ctxscope.Context        = (*TransformContext)(nil)
+	_ ctxmetric.Context       = (*TransformContext)(nil)
+	_ zapcore.ObjectMarshaler = (*TransformContext)(nil)
 )
 
 type TransformContext struct {
@@ -119,11 +118,11 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
+func (tCtx TransformContext) GetScopeSchemaURLItem() ctxutil.SchemaURLItem {
 	return tCtx.scopeMetrics
 }
 
-func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
+func (tCtx TransformContext) GetResourceSchemaURLItem() ctxutil.SchemaURLItem {
 	return tCtx.resourceMetrics
 }
 
@@ -235,9 +234,9 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	switch context {
 	case ctxresource.Name:
-		return internal.ResourcePathGetSetter(ctxdatapoint.Name, path)
+		return ctxresource.PathGetSetter(ctxdatapoint.Name, path)
 	case ctxscope.LegacyName:
-		return internal.ScopePathGetSetter(ctxdatapoint.Name, path)
+		return ctxscope.PathGetSetter(ctxdatapoint.Name, path)
 	case ctxmetric.Name:
 		return ctxmetric.PathGetSetter(path)
 	default:
