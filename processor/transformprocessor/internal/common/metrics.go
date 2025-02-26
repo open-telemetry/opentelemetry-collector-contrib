@@ -220,7 +220,7 @@ func convertMetricStatements(pc *ottl.ParserCollection[MetricsConsumer], _ *ottl
 	if contextStatements.ErrorMode != "" {
 		errorMode = contextStatements.ErrorMode
 	}
-	var parserOptions []ottlmetric.Option
+	var parserOptions []ottl.Option[ottlmetric.TransformContext]
 	if contextStatements.Context == "" {
 		parserOptions = append(parserOptions, ottlmetric.EnablePathContextNames())
 	}
@@ -241,7 +241,7 @@ func convertDataPointStatements(pc *ottl.ParserCollection[MetricsConsumer], _ *o
 	if contextStatements.ErrorMode != "" {
 		errorMode = contextStatements.ErrorMode
 	}
-	var parserOptions []ottldatapoint.Option
+	var parserOptions []ottl.Option[ottldatapoint.TransformContext]
 	if contextStatements.Context == "" {
 		parserOptions = append(parserOptions, ottldatapoint.EnablePathContextNames())
 	}

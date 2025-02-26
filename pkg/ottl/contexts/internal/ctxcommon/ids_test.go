@@ -1,14 +1,14 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ctxutil_test
+package ctxcommon_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 )
 
 func TestParseSpanIDError(t *testing.T) {
@@ -30,7 +30,7 @@ func TestParseSpanIDError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ctxutil.ParseSpanID(tt.input)
+			_, err := ctxcommon.ParseSpanID(tt.input)
 			assert.EqualError(t, err, tt.wantErr)
 		})
 	}
@@ -55,7 +55,7 @@ func TestParseTraceIDError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ctxutil.ParseTraceID(tt.input)
+			_, err := ctxcommon.ParseTraceID(tt.input)
 			assert.EqualError(t, err, tt.wantErr)
 		})
 	}
