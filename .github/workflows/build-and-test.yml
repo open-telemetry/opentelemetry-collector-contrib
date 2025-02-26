@@ -289,7 +289,9 @@ jobs:
         if: startsWith( matrix.go-version, '1.23' ) != true
         run: make gotest GROUP=${{ matrix.group }}
       - name: Run Unit Tests With JUnit and Coverage
+        id: tests-with-junit
         if: startsWith( matrix.go-version, '~1.23' ) # only run junit/coverage on one version
+        continue-on-error: true # Allow uploading artifacts even if the test fails
         run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
       - uses: actions/upload-artifact@v4
         if: startsWith( matrix.go-version, '~1.23' ) # only upload artifact for one version
@@ -302,6 +304,12 @@ jobs:
           name: test-results-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: internal/tools/testresults/
           retention-days: 4
+      - name: Fail workflow if tests fails
+        if: steps.tests-with-junit.outcome != 'success'
+        run: |
+          echo "Tests failed. Failing workflow."
+          exit 1
+          
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-24.04
