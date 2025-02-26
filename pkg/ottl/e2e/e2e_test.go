@@ -88,7 +88,6 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("map_slice.0.foo1", "bar1")
 				tCtx.GetLogRecord().Attributes().PutStr("map_slice.0.foo2", "bar2")
 				tCtx.GetLogRecord().Attributes().PutStr("map_slice.1.total.string", "barbar1")
-
 			},
 		},
 		{
