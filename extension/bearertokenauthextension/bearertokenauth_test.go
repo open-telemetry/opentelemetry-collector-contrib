@@ -287,56 +287,56 @@ func TestBearerServerAuthenticate(t *testing.T) {
 }
 
 func TestBearerTokenMultipleTokens(t *testing.T) {
-    cfg := createDefaultConfig().(*Config)
-    cfg.Scheme = "Bearer"
-    cfg.Tokens = []configopaque.String{"token1", "token2"}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Scheme = "Bearer"
+	cfg.Tokens = []configopaque.String{"token1", "token2"}
 
-    bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
-    assert.NotNil(t, bauth)
+	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	assert.NotNil(t, bauth)
 
-    assert.NoError(t, bauth.Start(context.Background(), componenttest.NewNopHost()))
-    credential, err := bauth.PerRPCCredentials()
-    assert.NoError(t, err)
-    assert.NotNil(t, credential)
+	assert.NoError(t, bauth.Start(context.Background(), componenttest.NewNopHost()))
+	credential, err := bauth.PerRPCCredentials()
+	assert.NoError(t, err)
+	assert.NotNil(t, credential)
 
-    md, err := credential.GetRequestMetadata(context.Background())
-    expectedMd := map[string]string{
-        "authorization": "Bearer token1",
-    }
-    assert.Equal(t, expectedMd, md)
-    assert.NoError(t, err)
-    assert.True(t, credential.RequireTransportSecurity())
+	md, err := credential.GetRequestMetadata(context.Background())
+	expectedMd := map[string]string{
+		"authorization": "Bearer token1",
+	}
+	assert.Equal(t, expectedMd, md)
+	assert.NoError(t, err)
+	assert.True(t, credential.RequireTransportSecurity())
 
-    // Test Authenticate with multiple tokens
-    headers := map[string][]string{
-        "authorization": {"Bearer token1"},
-    }
-    ctx := context.Background()
-    newCtx, err := bauth.Authenticate(ctx, headers)
-    assert.NoError(t, err)
-    assert.Equal(t, ctx, newCtx)
+	// Test Authenticate with multiple tokens
+	headers := map[string][]string{
+		"authorization": {"Bearer token1"},
+	}
+	ctx := context.Background()
+	newCtx, err := bauth.Authenticate(ctx, headers)
+	assert.NoError(t, err)
+	assert.Equal(t, ctx, newCtx)
 
-    headers = map[string][]string{
-        "authorization": {"Bearer token2"},
-    }
-    newCtx, err = bauth.Authenticate(ctx, headers)
-    assert.NoError(t, err)
-    assert.Equal(t, ctx, newCtx)
+	headers = map[string][]string{
+		"authorization": {"Bearer token2"},
+	}
+	newCtx, err = bauth.Authenticate(ctx, headers)
+	assert.NoError(t, err)
+	assert.Equal(t, ctx, newCtx)
 
-    headers = map[string][]string{
-        "authorization": {"Bearer invalidtoken"},
-    }
-    _, err = bauth.Authenticate(ctx, headers)
-    assert.Error(t, err)
+	headers = map[string][]string{
+		"authorization": {"Bearer invalidtoken"},
+	}
+	_, err = bauth.Authenticate(ctx, headers)
+	assert.Error(t, err)
 
-    assert.NoError(t, bauth.Shutdown(context.Background()))
+	assert.NoError(t, bauth.Shutdown(context.Background()))
 }
 
 func TestBearerTokenMultipleTokensInFile(t *testing.T) {
 	scheme := "Bearer"
 	filename := filepath.Join("testdata", t.Name()+".tokens")
 	fileContent := "token1\ntoken2"
-	err := os.WriteFile(filename, []byte(fileContent), 0600)
+	err := os.WriteFile(filename, []byte(fileContent), 0o600)
 	assert.NoError(t, err)
 	defer os.Remove(filename)
 

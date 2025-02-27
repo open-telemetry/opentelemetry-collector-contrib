@@ -44,44 +44,44 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-            id: component.NewIDWithName(metadata.Type, "multipletokens"),
-            expected: &Config{
-                Scheme: "Bearer",
-                Tokens: []configopaque.String{"token1", "thistokenalsoworks"},
-            },
-        },
-        {
-            id: component.NewIDWithName(metadata.Type, "withfilename"),
-            expected: &Config{
-                Scheme:   "Bearer",
-                Filename: "file-containing.token",
-            },
-        },
-        {
-            id: component.NewIDWithName(metadata.Type, "both"),
-            expected: &Config{
-                Scheme:      "Bearer",
-                BearerToken: "ignoredtoken",
-                Filename:    "file-containing.token",
-            },
-        },
-        {
-            id: component.NewIDWithName(metadata.Type, "tokensandtoken"),
-            expected: &Config{
-                Scheme:      "Bearer",
-                BearerToken: "sometoken",
-                Tokens:      []configopaque.String{"token1", "thistokenalsoworks"},
-            },
-            expectedErr: true,
-        },
-        {
-            id: component.NewIDWithName(metadata.Type, "withtokensandfilename"),
-            expected: &Config{
-                Scheme:   "Bearer",
-                Tokens:   []configopaque.String{"ignoredtoken1", "ignoredtoken2"},
-                Filename: "file-containing.token",
-            },
-        },
+			id: component.NewIDWithName(metadata.Type, "multipletokens"),
+			expected: &Config{
+				Scheme: "Bearer",
+				Tokens: []configopaque.String{"token1", "thistokenalsoworks"},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "withfilename"),
+			expected: &Config{
+				Scheme:   "Bearer",
+				Filename: "file-containing.token",
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "both"),
+			expected: &Config{
+				Scheme:      "Bearer",
+				BearerToken: "ignoredtoken",
+				Filename:    "file-containing.token",
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "tokensandtoken"),
+			expected: &Config{
+				Scheme:      "Bearer",
+				BearerToken: "sometoken",
+				Tokens:      []configopaque.String{"token1", "thistokenalsoworks"},
+			},
+			expectedErr: true,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "withtokensandfilename"),
+			expected: &Config{
+				Scheme:   "Bearer",
+				Tokens:   []configopaque.String{"ignoredtoken1", "ignoredtoken2"},
+				Filename: "file-containing.token",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {

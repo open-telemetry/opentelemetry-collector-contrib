@@ -64,15 +64,16 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 		filename: cfg.Filename,
 		logger:   logger,
 	}
-	if len(cfg.Tokens) > 0 {
+	switch {
+	case len(cfg.Tokens) > 0:
 		tokens := make([]string, len(cfg.Tokens))
 		for i, token := range cfg.Tokens {
 			tokens[i] = string(token)
 		}
 		a.setAuthorizationValues(tokens) // Store tokens
-	} else if cfg.BearerToken != "" {
+	case cfg.BearerToken != "":
 		a.setAuthorizationValues([]string{string(cfg.BearerToken)}) // Store token
-	} else if cfg.Filename != "" {
+	case cfg.Filename != "":
 		a.refreshToken() // Load tokens from file
 	}
 	return a
