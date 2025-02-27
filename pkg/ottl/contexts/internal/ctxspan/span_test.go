@@ -611,11 +611,11 @@ func TestPathGetSetter(t *testing.T) {
 
 			span := createTelemetry()
 
-			got, err := accessor.Get(context.Background(), newSpanContext(span))
+			got, err := accessor.Get(context.Background(), newTestContext(span))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), newSpanContext(span), tt.newVal)
+			err = accessor.Set(context.Background(), newTestContext(span), tt.newVal)
 			assert.NoError(t, err)
 
 			expectedSpan := createTelemetry()
@@ -706,6 +706,6 @@ func (r *testContext) GetSpan() ptrace.Span {
 	return r.span
 }
 
-func newSpanContext(span ptrace.Span) *testContext {
+func newTestContext(span ptrace.Span) *testContext {
 	return &testContext{span: span}
 }

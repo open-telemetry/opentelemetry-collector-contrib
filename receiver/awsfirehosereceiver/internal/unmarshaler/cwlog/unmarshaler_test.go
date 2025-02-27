@@ -64,8 +64,8 @@ func TestUnmarshal(t *testing.T) {
 			filename:               "multiple_resources",
 			wantResourceCount:      3,
 			wantLogCount:           6,
-			wantResourceLogGroups:  [][]string{{"test"}, {"test2"}, {"test2"}},
-			wantResourceLogStreams: [][]string{{"test"}, {"test1"}, {"test2"}},
+			wantResourceLogGroups:  nil, // not checking log group names because logs are unordered
+			wantResourceLogStreams: nil, // not checking log stream names because logs are unordered
 		},
 	}
 	for name, testCase := range testCases {
@@ -91,8 +91,12 @@ func TestUnmarshal(t *testing.T) {
 					attrs := rm.Resource().Attributes()
 					assertString(t, attrs, conventions.AttributeCloudProvider, "aws")
 					assertString(t, attrs, conventions.AttributeCloudAccountID, "123")
-					assertStringArray(t, attrs, conventions.AttributeAWSLogGroupNames, testCase.wantResourceLogGroups[i])
-					assertStringArray(t, attrs, conventions.AttributeAWSLogStreamNames, testCase.wantResourceLogStreams[i])
+					if testCase.wantResourceLogGroups != nil {
+						assertStringArray(t, attrs, conventions.AttributeAWSLogGroupNames, testCase.wantResourceLogGroups[i])
+					}
+					if testCase.wantResourceLogStreams != nil {
+						assertStringArray(t, attrs, conventions.AttributeAWSLogStreamNames, testCase.wantResourceLogStreams[i])
+					}
 					ilm := rm.ScopeLogs().At(0)
 					assert.Equal(t, metadata.ScopeName, ilm.Scope().Name())
 					assert.Equal(t, component.NewDefaultBuildInfo().Version, ilm.Scope().Version())
