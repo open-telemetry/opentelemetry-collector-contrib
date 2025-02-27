@@ -52,7 +52,7 @@ require (
 	go.opentelemetry.io/collector/client v1.26.1-0.20250227192306-0faea294d693 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.120.1-0.20250227192306-0faea294d693 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.26.1-0.20250227192306-0faea294d693 // indirect
-	go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250227192306-0faea294d693 // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v0.120.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.26.1-0.20250227192306-0faea294d693 // indirect
 	go.opentelemetry.io/collector/pipeline v0.120.1-0.20250227192306-0faea294d693 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0 // indirect

@@ -279,7 +279,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.120.1-0.20250227192306-0faea294d693 // indirect
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.120.1-0.20250227192306-0faea294d693 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.120.1-0.20250227192306-0faea294d693 // indirect
-	go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250227192306-0faea294d693 // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v0.120.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.120.1-0.20250227192306-0faea294d693 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.120.1-0.20250227192306-0faea294d693 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.120.1-0.20250227192306-0faea294d693 // indirect
@@ -291,6 +291,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.120.1-0.20250227192306-0faea294d693 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.120.1-0.20250227192306-0faea294d693 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.120.1-0.20250227192306-0faea294d693 // indirect
+	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.120.0 // indirect
 	go.opentelemetry.io/collector/processor/processortest v0.120.1-0.20250227192306-0faea294d693 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.120.1-0.20250227192306-0faea294d693 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.120.1-0.20250227192306-0faea294d693 // indirect
