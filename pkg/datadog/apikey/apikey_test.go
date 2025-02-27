@@ -82,77 +82,83 @@ func TestStaticAPIKeyCheck(t *testing.T) {
 
 func TestFullAPIKeyCheck(t *testing.T) {
 	tests := []struct {
-		name                  string
-		mockServerEndpoint    testutil.OverwriteHandleFunc
-		isMetricExportV2      bool
-		failOnInvalidKey      bool
-		expectedError         string
-		expectedAPIClient     bool
-		expectedZorkianClient bool
+		name                      string
+		apiKeyValidServerResponse bool
+		isMetricExportV2          bool
+		failOnInvalidKey          bool
+		expectedError             string
+		expectedAPIClient         bool
+		expectedZorkianClient     bool
 	}{
 		{
-			name:                  "Valid API key with V2 enabled",
-			mockServerEndpoint:    ValidateAPIKeyEndpointValid,
-			isMetricExportV2:      true,
-			failOnInvalidKey:      true,
-			expectedError:         "",
-			expectedAPIClient:     true,
-			expectedZorkianClient: false,
+			name:                      "Valid API key with V2 enabled",
+			apiKeyValidServerResponse: true,
+			isMetricExportV2:          true,
+			failOnInvalidKey:          true,
+			expectedError:             "",
+			expectedAPIClient:         true,
+			expectedZorkianClient:     false,
 		},
 		{
-			name:                  "Invalid API key with V2 enabled",
-			mockServerEndpoint:    testutil.ValidateAPIKeyEndpointInvalid,
-			isMetricExportV2:      true,
-			failOnInvalidKey:      true,
-			expectedError:         "API Key validation failed",
-			expectedAPIClient:     false,
-			expectedZorkianClient: false,
+			name:                      "Invalid API key with V2 enabled",
+			apiKeyValidServerResponse: false,
+			isMetricExportV2:          true,
+			failOnInvalidKey:          true,
+			expectedError:             "API Key validation failed",
+			expectedAPIClient:         false,
+			expectedZorkianClient:     false,
 		},
 		{
-			name:                  "Valid API key with V2 disabled",
-			mockServerEndpoint:    ValidateAPIKeyEndpointValid,
-			isMetricExportV2:      false,
-			failOnInvalidKey:      true,
-			expectedError:         "",
-			expectedAPIClient:     false,
-			expectedZorkianClient: true,
+			name:                      "Valid API key with V2 disabled",
+			apiKeyValidServerResponse: true,
+			isMetricExportV2:          false,
+			failOnInvalidKey:          true,
+			expectedError:             "",
+			expectedAPIClient:         false,
+			expectedZorkianClient:     true,
 		},
 		{
-			name:                  "Invalid API key with V2 disabled",
-			mockServerEndpoint:    testutil.ValidateAPIKeyEndpointInvalid,
-			isMetricExportV2:      false,
-			failOnInvalidKey:      true,
-			expectedError:         "API Key validation failed",
-			expectedAPIClient:     false,
-			expectedZorkianClient: false,
+			name:                      "Invalid API key with V2 disabled",
+			apiKeyValidServerResponse: false,
+			isMetricExportV2:          false,
+			failOnInvalidKey:          true,
+			expectedError:             "API Key validation failed",
+			expectedAPIClient:         false,
+			expectedZorkianClient:     false,
 		},
 		{
-			name:                  "Valid API key with failOnInvalidKey false",
-			mockServerEndpoint:    ValidateAPIKeyEndpointValid,
-			isMetricExportV2:      true,
-			failOnInvalidKey:      false,
-			expectedError:         "",
-			expectedAPIClient:     true,
-			expectedZorkianClient: false,
+			name:                      "Valid API key with failOnInvalidKey false",
+			apiKeyValidServerResponse: true,
+			isMetricExportV2:          true,
+			failOnInvalidKey:          false,
+			expectedError:             "",
+			expectedAPIClient:         true,
+			expectedZorkianClient:     false,
 		},
 		{
-			name:                  "Invalid API key with failOnInvalidKey false",
-			mockServerEndpoint:    testutil.ValidateAPIKeyEndpointInvalid,
-			isMetricExportV2:      true,
-			failOnInvalidKey:      false,
-			expectedError:         "",
-			expectedAPIClient:     true,
-			expectedZorkianClient: false,
+			name:                      "Invalid API key with failOnInvalidKey false",
+			apiKeyValidServerResponse: false,
+			isMetricExportV2:          true,
+			failOnInvalidKey:          false,
+			expectedError:             "",
+			expectedAPIClient:         true,
+			expectedZorkianClient:     false,
 		},
 	}
-
+	validServer := testutil.DatadogServerMock(ValidateAPIKeyEndpointValid)
+	defer validServer.Close()
+	invalidServer := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
+	defer invalidServer.Close()
+	errchan := make(chan error, 1)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := testutil.DatadogServerMock(tt.mockServerEndpoint)
-			defer server.Close()
-
+			var server *testutil.DatadogServer
+			if tt.apiKeyValidServerResponse {
+				server = validServer
+			} else {
+				server = invalidServer
+			}
 			ctx := context.Background()
-			errchan := make(chan error, 1)
 			logger := zaptest.NewLogger(t)
 			buildInfo := component.BuildInfo{
 				Command:     "otelcol",
@@ -189,6 +195,10 @@ func TestFullAPIKeyCheck(t *testing.T) {
 				assert.NotNil(t, zorkianClient)
 			} else {
 				assert.Nil(t, zorkianClient)
+			}
+
+			if !tt.failOnInvalidKey {
+				<-errchan
 			}
 		})
 	}
