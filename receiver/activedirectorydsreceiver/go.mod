@@ -9,16 +9,16 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.120.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.120.1-0.20250227192306-0faea294d693
-	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250226024140-8099e51f9a77
+	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250227192306-0faea294d693
 	go.opentelemetry.io/collector/confmap v1.26.1-0.20250227192306-0faea294d693
-	go.opentelemetry.io/collector/confmap/xconfmap v0.120.1-0.20250226024140-8099e51f9a77
+	go.opentelemetry.io/collector/confmap/xconfmap v0.120.1-0.20250227192306-0faea294d693
 	go.opentelemetry.io/collector/consumer v1.26.1-0.20250227192306-0faea294d693
-	go.opentelemetry.io/collector/consumer/consumertest v0.120.1-0.20250226024140-8099e51f9a77
+	go.opentelemetry.io/collector/consumer/consumertest v0.120.1-0.20250227192306-0faea294d693
 	go.opentelemetry.io/collector/pdata v1.26.1-0.20250227192306-0faea294d693
-	go.opentelemetry.io/collector/receiver v0.120.1-0.20250226024140-8099e51f9a77
-	go.opentelemetry.io/collector/receiver/receivertest v0.120.1-0.20250226024140-8099e51f9a77
-	go.opentelemetry.io/collector/scraper v0.120.1-0.20250226024140-8099e51f9a77
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.120.1-0.20250226024140-8099e51f9a77
+	go.opentelemetry.io/collector/receiver v0.120.1-0.20250227192306-0faea294d693
+	go.opentelemetry.io/collector/receiver/receivertest v0.120.1-0.20250227192306-0faea294d693
+	go.opentelemetry.io/collector/scraper v0.120.1-0.20250227192306-0faea294d693
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.120.1-0.20250227192306-0faea294d693
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -43,11 +43,11 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.120.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.120.1-0.20250226024140-8099e51f9a77 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.120.1-0.20250226024140-8099e51f9a77 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.120.1-0.20250226024140-8099e51f9a77 // indirect
-	go.opentelemetry.io/collector/pipeline v0.120.1-0.20250226024140-8099e51f9a77 // indirect
-	go.opentelemetry.io/collector/receiver/xreceiver v0.120.1-0.20250226024140-8099e51f9a77 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.120.1-0.20250227192306-0faea294d693 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.120.1-0.20250227192306-0faea294d693 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.120.1-0.20250227192306-0faea294d693 // indirect
+	go.opentelemetry.io/collector/pipeline v0.120.1-0.20250227192306-0faea294d693 // indirect
+	go.opentelemetry.io/collector/receiver/xreceiver v0.120.1-0.20250227192306-0faea294d693 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
@@ -76,8 +76,8 @@ retract (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
-replace go.opentelemetry.io/collector/extension/extensionauth => go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250226024140-8099e51f9a77
+replace go.opentelemetry.io/collector/extension/extensionauth => go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250227192306-0faea294d693
 
-replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250226024140-8099e51f9a77
+replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250227192306-0faea294d693
 
-replace go.opentelemetry.io/collector/service/hostcapabilities => go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250226024140-8099e51f9a77
+replace go.opentelemetry.io/collector/service/hostcapabilities => go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250227192306-0faea294d693

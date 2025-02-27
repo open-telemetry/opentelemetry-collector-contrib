@@ -16,9 +16,9 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6
 	go.opentelemetry.io/collector/component v0.120.1-0.20250227192306-0faea294d693
-	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250226024140-8099e51f9a77
+	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250227192306-0faea294d693
 	go.opentelemetry.io/collector/pdata v1.26.1-0.20250227192306-0faea294d693
-	go.opentelemetry.io/collector/semconv v0.120.1-0.20250226024140-8099e51f9a77
+	go.opentelemetry.io/collector/semconv v0.120.1-0.20250227192306-0faea294d693
 	go.opentelemetry.io/otel/trace v1.34.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -70,8 +70,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../golden
 
-replace go.opentelemetry.io/collector/extension/extensionauth => go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250226024140-8099e51f9a77
+replace go.opentelemetry.io/collector/extension/extensionauth => go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250227192306-0faea294d693
 
-replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250226024140-8099e51f9a77
+replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250227192306-0faea294d693
 
-replace go.opentelemetry.io/collector/service/hostcapabilities => go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250226024140-8099e51f9a77
+replace go.opentelemetry.io/collector/service/hostcapabilities => go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250227192306-0faea294d693
