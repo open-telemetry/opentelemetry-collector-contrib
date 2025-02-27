@@ -50,8 +50,9 @@ type opampAgent struct {
 	cfg    *Config
 	logger *zap.Logger
 
-	agentType    string
-	agentVersion string
+	agentType      string
+	agentVersion   string
+	agentNamespace string
 
 	instanceID uuid.UUID
 
@@ -262,6 +263,13 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		agentVersion = sv.AsString()
 	}
 
+	agentNamespace := set.BuildInfo.Namespace
+
+	sb, ok := set.Resource.Attributes().Get(semconv.AttributeServiceNamespace)
+	if ok {
+		agentNamespace = sb.AsString()
+	}
+
 	uid, err := uuid.NewV7()
 	if err != nil {
 		return nil, fmt.Errorf("could not generate uuidv7: %w", err)
@@ -288,6 +296,7 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		logger:                   set.Logger,
 		agentType:                agentType,
 		agentVersion:             agentVersion,
+		agentNamespace:           agentNamespace,
 		instanceID:               uid,
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
@@ -340,6 +349,7 @@ func (o *opampAgent) createAgentDescription() error {
 		stringKeyValue(semconv.AttributeServiceInstanceID, o.instanceID.String()),
 		stringKeyValue(semconv.AttributeServiceName, o.agentType),
 		stringKeyValue(semconv.AttributeServiceVersion, o.agentVersion),
+		stringKeyValue(semconv.AttributeServiceNamespace, o.agentNamespace),
 	}
 
 	// Initially construct using a map to properly deduplicate any keys that
