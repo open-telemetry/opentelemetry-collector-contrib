@@ -108,7 +108,6 @@ func getCredsProviderFromWebIdentityConfig(cfg *Config) (*aws.CredentialsProvide
 		),
 		awsconfig.WithRegion("aws-global"),
 	)
-
 	if err != nil {
 		return nil, err
 	}
