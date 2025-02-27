@@ -34,6 +34,7 @@ func (m *metricModelCommon[T]) label() string {
 // dMetric Basic Metric
 type dMetric struct {
 	ServiceName        string         `json:"service_name"`
+	ServiceInstanceID  string         `json:"service_instance_id"`
 	MetricName         string         `json:"metric_name"`
 	MetricDescription  string         `json:"metric_description"`
 	MetricUnit         string         `json:"metric_unit"`
