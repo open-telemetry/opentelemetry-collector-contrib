@@ -286,7 +286,6 @@ jobs:
           path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
-        if: startsWith( matrix.go-version, '1.23' ) != true
         run: make gotest GROUP=${{ matrix.group }}
       - name: Run Unit Tests With JUnit and Coverage
         id: tests-with-junit
