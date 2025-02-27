@@ -49,7 +49,7 @@ func TestCacheableProvider(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a new cacheable provider
-			provider := NewCacheableProvider(&firstErrorProvider{}, time.Nanosecond, tt.limit)
+			provider := NewCacheableProvider(&firstErrorProvider{},0* time.Nanosecond, tt.limit)
 
 			var p string
 			var err error
