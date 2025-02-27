@@ -305,7 +305,7 @@ jobs:
           path: internal/tools/testresults/
           retention-days: 4
       - name: Fail workflow if tests fails
-        if: steps.tests-with-junit.outcome != 'success'
+        if: steps.tests-with-junit.outcome == 'failure'
         run: |
           echo "Tests failed. Failing workflow."
           exit 1
