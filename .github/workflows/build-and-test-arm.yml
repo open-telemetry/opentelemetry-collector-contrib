@@ -42,7 +42,6 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
           - other
     timeout-minutes: 30
     runs-on: ubuntu-22.04-arm
