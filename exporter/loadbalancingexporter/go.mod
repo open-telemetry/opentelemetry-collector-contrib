@@ -131,7 +131,7 @@ require (
 	go.opentelemetry.io/collector/exporter/xexporter v0.120.1-0.20250227134758-6a98ee8b14a2 // indirect
 	go.opentelemetry.io/collector/extension v0.120.1-0.20250227134758-6a98ee8b14a2 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.120.1-0.20250227134758-6a98ee8b14a2 // indirect
-	go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250227125643-49a6e963bf87 // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v0.120.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.120.1-0.20250227134758-6a98ee8b14a2 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.120.1-0.20250227134758-6a98ee8b14a2 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.120.1-0.20250227134758-6a98ee8b14a2 // indirect
@@ -150,7 +150,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.120.1-0.20250227134758-6a98ee8b14a2 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.120.1-0.20250227134758-6a98ee8b14a2 // indirect
 	go.opentelemetry.io/collector/service v0.120.1-0.20250227143715-273742a419e2 // indirect
-	go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250227134758-6a98ee8b14a2 // indirect
+	go.opentelemetry.io/collector/service/hostcapabilities v0.120.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.9.0 // indirect
 	go.opentelemetry.io/contrib/config v0.14.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0 // indirect
