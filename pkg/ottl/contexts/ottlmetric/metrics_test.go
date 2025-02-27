@@ -155,8 +155,13 @@ func Test_newPathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
+			// Create a controlled test cache
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+
+			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
 			metric := createTelemetry()
@@ -175,7 +180,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			tt.modified(exMetric, exCache)
 
 			assert.Equal(t, exMetric, metric)
-			assert.Equal(t, exCache, ctx.getCache())
+			assert.Equal(t, exCache, testCache)
 		})
 	}
 }
@@ -227,10 +232,9 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 	}
 
-	pep := pathExpressionParser{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := pep.parsePath(tt.path)
+			accessor, err := pathExpressionParser(getCache)(tt.path)
 			require.NoError(t, err)
 
 			got, err := accessor.Get(context.Background(), ctx)
@@ -244,7 +248,7 @@ func Test_newPathGetSetter_WithCache(t *testing.T) {
 	cacheValue := pcommon.NewMap()
 	cacheValue.PutStr("test", "pass")
 
-	ctx := NewTransformContext(
+	tCtx := NewTransformContext(
 		pmetric.NewMetric(),
 		pmetric.NewMetricSlice(),
 		pcommon.NewInstrumentationScope(),
@@ -254,7 +258,7 @@ func Test_newPathGetSetter_WithCache(t *testing.T) {
 		WithCache(&cacheValue),
 	)
 
-	assert.Equal(t, cacheValue, ctx.getCache())
+	assert.Equal(t, cacheValue, getCache(tCtx))
 }
 
 func createTelemetry() pmetric.Metric {
