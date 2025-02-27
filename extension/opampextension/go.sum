@@ -206,8 +206,8 @@ go.opentelemetry.io/collector/receiver/xreceiver v0.120.1-0.20250226024140-8099e
 go.opentelemetry.io/collector/receiver/xreceiver v0.120.1-0.20250226024140-8099e51f9a77/go.mod h1:dkHpL1QqLi/G+60VZnfFpZQf9qoxDVnp6G9FuAcMgfk=
 go.opentelemetry.io/collector/semconv v0.120.1-0.20250226024140-8099e51f9a77 h1:bN9FsO04IkO+I3oeH9RSqOOJztj0HUugwuCPXyA0xfU=
 go.opentelemetry.io/collector/semconv v0.120.1-0.20250226024140-8099e51f9a77/go.mod h1:te6VQ4zZJO5Lp8dM2XIhDxDiL45mwX0YAQQWRQ0Qr9U=
-go.opentelemetry.io/collector/service v0.120.1-0.20250226024140-8099e51f9a77 h1:9E5Y/3fzDoyQpfc++hyPr0sRlzkhTKoYKrNxk8cji+A=
-go.opentelemetry.io/collector/service v0.120.1-0.20250226024140-8099e51f9a77/go.mod h1:hGHeu3gu/GrDu6dfAnXEN45NiwUxlSYt08v/Ccv8SUQ=
+go.opentelemetry.io/collector/service v0.0.0-20250226024140-8099e51f9a77 h1:TGL2huIXldBTmza9PgzBUoTYBIsp8PtLH+CIzCOvEPk=
+go.opentelemetry.io/collector/service v0.0.0-20250226024140-8099e51f9a77/go.mod h1:hGHeu3gu/GrDu6dfAnXEN45NiwUxlSYt08v/Ccv8SUQ=
 go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250226024140-8099e51f9a77 h1:1o3AnF3XX8RdIVzgk6fzSACFJDg0sv0zHgcXmWH76v0=
 go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250226024140-8099e51f9a77/go.mod h1:CZAPVihLlwm4z4pbECmUkjtWxkZFmQVcrRGbh63S0ZI=
 go.opentelemetry.io/contrib/bridges/otelzap v0.9.0 h1:f+xpAfhQTjR8beiSMe1bnT/25PkeyWmOcI+SjXWguNw=
