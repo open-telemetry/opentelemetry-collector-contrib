@@ -38,31 +38,50 @@ func TestRequestTranslation(t *testing.T) {
 	m, err := NewManager(
 		[]string{schemaURL},
 		zaptest.NewLogger(t),
+		NewHTTPProvider(s.Client()),
 	)
 	require.NoError(t, err, "Must not error when created manager")
-	require.NoError(t, m.SetProviders(NewHTTPProvider(s.Client())), "Must have no issues trying to set providers")
 
-	nop, ok := m.RequestTranslation(context.Background(), "/not/a/valid/schema/URL").(nopTranslation)
-	require.True(t, ok, "Must return a NoopTranslation if no valid schema URL is provided")
-	require.NotNil(t, nop, "Must have a valid translation")
+	tr, err := m.RequestTranslation(context.Background(), "/not/a/valid/schema/URL")
+	assert.Error(t, err, "Must error when requesting an invalid schema URL")
+	assert.Nil(t, tr, "Must not return a translation")
 
-	tn, ok := m.RequestTranslation(context.Background(), schemaURL).(*translator)
-	require.True(t, ok, "Can cast to the concrete type")
-	require.NotNil(t, tn, "Must have a valid translation")
+	tn, err := m.RequestTranslation(context.Background(), schemaURL)
+	require.NoError(t, err, "Must not error when requesting a valid schema URL")
+	require.NotNil(t, tn, "Must return a translation")
 
 	assert.True(t, tn.SupportedVersion(&Version{1, 0, 0}), "Must have the version listed as supported")
+	trs, ok := tn.(*translator)
+	require.True(t, ok, "Can cast to the concrete type")
 
 	count := 0
 	prevRev := &Version{1, 0, 0}
-	it, status := tn.iterator(prevRev)
+	it, status := trs.iterator(prevRev)
 	assert.Equal(t, Update, status, "Must return a status of update")
 	for currRev, more := it(); more; currRev, more = it() {
 		assert.True(t, prevRev.LessThan(currRev.Version()))
 		prevRev = currRev.Version()
 		count++
 	}
+}
 
-	tn, ok = m.RequestTranslation(context.Background(), schemaURL).(*translator)
-	require.True(t, ok, "Can cast to the concrete type")
-	require.NotNil(t, tn, "Must have a valid translation")
+type errorProvider struct{}
+
+func (p *errorProvider) Retrieve(_ context.Context, _ string) (string, error) {
+	return "", fmt.Errorf("error")
+}
+
+func TestManagerError(t *testing.T) {
+	t.Parallel()
+
+	m, err := NewManager(
+		[]string{"http://localhost/1.1.0"},
+		zaptest.NewLogger(t),
+		&errorProvider{},
+	)
+	require.NoError(t, err, "Must not error when created manager")
+
+	tr, err := m.RequestTranslation(context.Background(), "http://localhost/1.1.0")
+	assert.Error(t, err, "Must error when provider errors")
+	assert.Nil(t, tr, "Must not return a translation")
 }
