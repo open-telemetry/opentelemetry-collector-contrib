@@ -38,12 +38,12 @@ func TestCacheableProvider(t *testing.T) {
 		{
 			name:  "limit 1",
 			limit: 1,
-			retry: 2,
+			retry: 4,
 		},
 		{
 			name:  "limit 0",
 			limit: 0,
-			retry: 3,
+			retry: 4,
 		},
 	}
 	for _, tt := range tests {
