@@ -8,6 +8,8 @@ import (
 	"embed"
 	_ "embed"
 	"fmt"
+	"io"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -96,9 +98,34 @@ func buildTestProcessor(t *testing.T, targetURL string) *schemaprocessor {
 		},
 	})
 	require.NoError(t, err, "Must not error when creating schemaprocessor")
-	err = processor.manager.SetProviders(translation.NewTestProvider(&f))
+	m, err := translation.NewManager([]string{targetURL}, zaptest.NewLogger(t), NewTestProvider(&f))
 	require.NoError(t, err)
+	processor.manager = m
 	return processor
+}
+
+type testProvider struct {
+	fs *embed.FS
+}
+
+func NewTestProvider(fs *embed.FS) translation.Provider {
+	return &testProvider{fs: fs}
+}
+
+func (tp testProvider) Retrieve(_ context.Context, schemaURL string) (string, error) {
+	parsedPath, err := url.Parse(schemaURL)
+	if err != nil {
+		return "", err
+	}
+	f, err := tp.fs.Open(parsedPath.Path[1:])
+	if err != nil {
+		return "", err
+	}
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
 
 func TestProcessorSchemaBySections(t *testing.T) {
@@ -306,8 +333,7 @@ func TestProcessorScopeLogSchemaPrecedence(t *testing.T) {
 		{
 			name: "resourceunsetscopeunset",
 			input: func() plog.Logs {
-				log := generateLogForTest()
-				return log
+				return generateLogForTest()
 			},
 			// want: "https://example.com/testdata/testschemas/schemaprecedence/1.0.0",
 			whichSchemaUsed: NoopSchemaUsed,
@@ -316,6 +342,7 @@ func TestProcessorScopeLogSchemaPrecedence(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			fmt.Printf("#### test: %v\n", tt.name)
 			defaultConfig := newDefaultConfiguration()
 			castedConfig := defaultConfig.(*Config)
 			castedConfig.Targets = []string{"https://example.com/testdata/testschemas/schemaprecedence/1.2.0"}
@@ -326,8 +353,9 @@ func TestProcessorScopeLogSchemaPrecedence(t *testing.T) {
 			})
 			require.NoError(t, err, "Must not error when creating schemaprocessor")
 
-			err = processor.manager.SetProviders(translation.NewTestProvider(&testdataFiles))
+			m, err := translation.NewManager(castedConfig.Targets, zaptest.NewLogger(t), NewTestProvider(&testdataFiles))
 			require.NoError(t, err)
+			processor.manager = m
 			got, err := processor.processLogs(context.Background(), tt.input())
 			if !tt.wantErr(t, err, fmt.Sprintf("processLogs(%v)", tt.input())) {
 				return
@@ -341,8 +369,10 @@ func TestProcessorScopeLogSchemaPrecedence(t *testing.T) {
 			case ResourceSchemaVersionUsed:
 				assert.True(t, usedResource, "processLogs(%v) not using correct schema,, attributes present: %v", tt.name, targetLog.Attributes().AsRaw())
 			case ScopeSchemaVersionUsed:
+				fmt.Printf("#### attributes: %v\n", targetLog.Attributes().AsRaw())
 				assert.True(t, usedScope, "processLogs(%v) not using correct schema, attributes present: %v", tt.name, targetLog.Attributes().AsRaw())
 			case NoopSchemaUsed:
+				fmt.Printf("attributes: %v\n", targetLog.Attributes().AsRaw())
 				assert.True(t, usedNoop, "processLogs(%v) not using correct schema,, attributes present: %v", tt.name, targetLog.Attributes().AsRaw())
 			}
 		})
@@ -427,8 +457,9 @@ func TestProcessorScopeTraceSchemaPrecedence(t *testing.T) {
 			})
 			require.NoError(t, err, "Must not error when creating schemaprocessor")
 
-			err = processor.manager.SetProviders(translation.NewTestProvider(&testdataFiles))
+			m, err := translation.NewManager(castedConfig.Targets, zaptest.NewLogger(t), NewTestProvider(&testdataFiles))
 			require.NoError(t, err)
+			processor.manager = m
 			got, err := processor.processTraces(context.Background(), tt.input())
 			if !tt.wantErr(t, err, fmt.Sprintf("processTraces(%v)", tt.input())) {
 				return
@@ -527,8 +558,9 @@ func TestProcessorScopeMetricSchemaPrecedence(t *testing.T) {
 			})
 			require.NoError(t, err, "Must not error when creating schemaprocessor")
 
-			err = processor.manager.SetProviders(translation.NewTestProvider(&testdataFiles))
+			m, err := translation.NewManager(castedConfig.Targets, zaptest.NewLogger(t), NewTestProvider(&testdataFiles))
 			require.NoError(t, err)
+			processor.manager = m
 			got, err := processor.processMetrics(context.Background(), tt.input())
 			if !tt.wantErr(t, err, fmt.Sprintf("processMetrics(%v)", tt.input())) {
 				return

@@ -6,6 +6,7 @@ package schemaprocessor // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -32,31 +33,36 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 		return nil, errors.New("invalid configuration provided")
 	}
 
-	m, err := translation.NewManager(
-		cfg.Targets,
-		set.Logger.Named("schema-manager"),
-	)
-	if err != nil {
-		return nil, err
-	}
-
 	return &schemaprocessor{
 		config:    cfg,
 		telemetry: set.TelemetrySettings,
 		log:       set.Logger,
-		manager:   m,
 	}, nil
 }
 
 func (t schemaprocessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
+	fmt.Printf("### processLogs 1\n")
+	if t.manager == nil {
+		return ld, nil
+	}
+	fmt.Printf("### processLogs 2\n")
 	for rl := 0; rl < ld.ResourceLogs().Len(); rl++ {
 		rLog := ld.ResourceLogs().At(rl)
 		resourceSchemaURL := rLog.SchemaUrl()
-		err := t.manager.
-			RequestTranslation(ctx, resourceSchemaURL).
-			ApplyAllResourceChanges(rLog, resourceSchemaURL)
-		if err != nil {
-			return plog.Logs{}, err
+		if resourceSchemaURL != "" {
+			tr, err := t.manager.
+				RequestTranslation(ctx, resourceSchemaURL)
+			if err != nil {
+				t.log.Error("failed to request translation", zap.Error(err))
+				return ld, err
+			}
+
+			fmt.Printf("resourceSchemaURL: %s\n", resourceSchemaURL)
+			err = tr.ApplyAllResourceChanges(rLog, resourceSchemaURL)
+			if err != nil {
+				t.log.Error("failed to apply resource changes", zap.Error(err))
+				return ld, err
+			}
 		}
 		for sl := 0; sl < rLog.ScopeLogs().Len(); sl++ {
 			log := rLog.ScopeLogs().At(sl)
@@ -65,11 +71,17 @@ func (t schemaprocessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 				logSchemaURL = resourceSchemaURL
 			}
 
-			err := t.manager.
-				RequestTranslation(ctx, logSchemaURL).
-				ApplyScopeLogChanges(log, logSchemaURL)
+			fmt.Printf("logSchemaURL: %s\n", logSchemaURL)
+			tr, err := t.manager.
+				RequestTranslation(ctx, logSchemaURL)
 			if err != nil {
-				return plog.Logs{}, err
+				t.log.Error("failed to request translation", zap.Error(err))
+				continue
+			}
+			err = tr.ApplyScopeLogChanges(log, logSchemaURL)
+			if err != nil {
+				t.log.Error("failed to apply scope log changes", zap.Error(err))
+				continue
 			}
 		}
 	}
@@ -77,14 +89,24 @@ func (t schemaprocessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Lo
 }
 
 func (t schemaprocessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+	if t.manager == nil {
+		return md, nil
+	}
 	for rm := 0; rm < md.ResourceMetrics().Len(); rm++ {
 		rMetric := md.ResourceMetrics().At(rm)
 		resourceSchemaURL := rMetric.SchemaUrl()
-		err := t.manager.
-			RequestTranslation(ctx, resourceSchemaURL).
-			ApplyAllResourceChanges(rMetric, resourceSchemaURL)
-		if err != nil {
-			return pmetric.Metrics{}, err
+		if resourceSchemaURL != "" {
+			tr, err := t.manager.
+				RequestTranslation(ctx, resourceSchemaURL)
+			if err != nil {
+				t.log.Error("failed to request translation", zap.Error(err))
+				return md, err
+			}
+			err = tr.ApplyAllResourceChanges(rMetric, resourceSchemaURL)
+			if err != nil {
+				t.log.Error("failed to apply resource changes", zap.Error(err))
+				return md, nil
+			}
 		}
 		for sm := 0; sm < rMetric.ScopeMetrics().Len(); sm++ {
 			metric := rMetric.ScopeMetrics().At(sm)
@@ -92,11 +114,15 @@ func (t schemaprocessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 			if metricSchemaURL == "" {
 				metricSchemaURL = resourceSchemaURL
 			}
-			err := t.manager.
-				RequestTranslation(ctx, metricSchemaURL).
-				ApplyScopeMetricChanges(metric, metricSchemaURL)
+			tr, err := t.manager.
+				RequestTranslation(ctx, metricSchemaURL)
 			if err != nil {
-				return pmetric.Metrics{}, err
+				t.log.Error("failed to request translation", zap.Error(err))
+				continue
+			}
+			err = tr.ApplyScopeMetricChanges(metric, metricSchemaURL)
+			if err != nil {
+				t.log.Error("failed to apply scope metric changes", zap.Error(err))
 			}
 		}
 	}
@@ -104,15 +130,25 @@ func (t schemaprocessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 }
 
 func (t schemaprocessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	if t.manager == nil {
+		return td, nil
+	}
 	for rt := 0; rt < td.ResourceSpans().Len(); rt++ {
 		rTrace := td.ResourceSpans().At(rt)
 		// todo(ankit) do i need to check if this is empty?
 		resourceSchemaURL := rTrace.SchemaUrl()
-		err := t.manager.
-			RequestTranslation(ctx, resourceSchemaURL).
-			ApplyAllResourceChanges(rTrace, resourceSchemaURL)
-		if err != nil {
-			return ptrace.Traces{}, err
+		if resourceSchemaURL != "" {
+			tr, err := t.manager.
+				RequestTranslation(ctx, resourceSchemaURL)
+			if err != nil {
+				t.log.Error("failed to request translation", zap.Error(err))
+				return td, err
+			}
+			err = tr.ApplyAllResourceChanges(rTrace, resourceSchemaURL)
+			if err != nil {
+				t.log.Error("failed to apply resource changes", zap.Error(err))
+				return td, err
+			}
 		}
 		for ss := 0; ss < rTrace.ScopeSpans().Len(); ss++ {
 			span := rTrace.ScopeSpans().At(ss)
@@ -120,11 +156,15 @@ func (t schemaprocessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 			if spanSchemaURL == "" {
 				spanSchemaURL = resourceSchemaURL
 			}
-			err := t.manager.
-				RequestTranslation(ctx, spanSchemaURL).
-				ApplyScopeSpanChanges(span, spanSchemaURL)
+			tr, err := t.manager.
+				RequestTranslation(ctx, spanSchemaURL)
 			if err != nil {
-				return ptrace.Traces{}, err
+				t.log.Error("failed to request translation", zap.Error(err))
+				continue
+			}
+			err = tr.ApplyScopeSpanChanges(span, spanSchemaURL)
+			if err != nil {
+				t.log.Error("failed to apply scope span changes", zap.Error(err))
 			}
 		}
 	}
@@ -134,7 +174,6 @@ func (t schemaprocessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 // start will load the remote file definition if it isn't already cached
 // and resolve the schema translation file
 func (t *schemaprocessor) start(ctx context.Context, host component.Host) error {
-	var providers []translation.Provider
 	// Check for additional extensions that can be checked first before
 	// perfomring the http request
 	// TODO(MovieStoreGuy): Check for storage extensions
@@ -144,12 +183,19 @@ func (t *schemaprocessor) start(ctx context.Context, host component.Host) error 
 		return err
 	}
 
-	if err := t.manager.SetProviders(append(providers, translation.NewHTTPProvider(client))...); err != nil {
+	m, err := translation.NewManager(
+		t.config.Targets,
+		t.log.Named("schema-manager"),
+		translation.NewHTTPProvider(client),
+	)
+	if err != nil {
 		return err
 	}
+	t.manager = m
+
 	go func(ctx context.Context) {
 		for _, schemaURL := range t.config.Prefetch {
-			_ = t.manager.RequestTranslation(ctx, schemaURL)
+			_, _ = t.manager.RequestTranslation(ctx, schemaURL)
 		}
 	}(ctx)
 

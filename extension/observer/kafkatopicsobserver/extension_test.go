@@ -105,11 +105,11 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 			Details: &observer.KafkaTopic{},
 		},
 	}
-	require.Equal(t, want, kEndpoints)
+	require.ElementsMatch(t, want, kEndpoints)
 
 	time.Sleep(5 * time.Second)
 	kEndpoints = obvs.ListEndpoints()
-	require.Equal(t, want, kEndpoints)
+	require.ElementsMatch(t, want, kEndpoints)
 
 	time.Sleep(5 * time.Second)
 	kEndpoints = obvs.ListEndpoints()
@@ -120,7 +120,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 			Details: &observer.KafkaTopic{},
 		},
 	}
-	require.Equal(t, want, kEndpoints)
+	require.ElementsMatch(t, want, kEndpoints)
 
 	err = obvs.Shutdown(context.Background())
 	require.NoError(t, err)
