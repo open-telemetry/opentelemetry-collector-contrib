@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxdatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
@@ -72,13 +73,19 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+			pep := pathExpressionParser{
+				cacheGetSetter: ctxcache.PathExpressionParser(cacheGetter),
+			}
 			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 
-			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics(), WithCache(&testCache))
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
@@ -90,7 +97,7 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 			exCache := pcommon.NewMap()
 			tt.modified(exCache)
 
-			assert.Equal(t, exCache, ctx.getCache())
+			assert.Equal(t, exCache, testCache)
 		})
 	}
 }
@@ -99,7 +106,7 @@ func Test_newPathGetSetter_WithCache(t *testing.T) {
 	cacheValue := pcommon.NewMap()
 	cacheValue.PutStr("test", "pass")
 
-	ctx := NewTransformContext(
+	tCtx := NewTransformContext(
 		pmetric.NewNumberDataPoint(),
 		pmetric.NewMetric(),
 		pmetric.NewMetricSlice(),
@@ -110,7 +117,7 @@ func Test_newPathGetSetter_WithCache(t *testing.T) {
 		WithCache(&cacheValue),
 	)
 
-	assert.Equal(t, cacheValue, ctx.getCache())
+	assert.Equal(t, cacheValue, getCache(tCtx))
 }
 
 func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
@@ -518,13 +525,19 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+			pep := pathExpressionParser{
+				cacheGetSetter: ctxcache.PathExpressionParser(cacheGetter),
+			}
 			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 
-			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics(), WithCache(&testCache))
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
@@ -962,13 +975,19 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+			pep := pathExpressionParser{
+				cacheGetSetter: ctxcache.PathExpressionParser(cacheGetter),
+			}
 			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
 			histogramDataPoint := createHistogramDataPointTelemetry()
 
-			ctx := NewTransformContext(histogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := NewTransformContext(histogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics(), WithCache(&testCache))
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
@@ -1490,13 +1509,19 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+			pep := pathExpressionParser{
+				cacheGetSetter: ctxcache.PathExpressionParser(cacheGetter),
+			}
 			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
 			expoHistogramDataPoint := createExpoHistogramDataPointTelemetry()
 
-			ctx := NewTransformContext(expoHistogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := NewTransformContext(expoHistogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics(), WithCache(&testCache))
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
@@ -1919,13 +1944,19 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+			pep := pathExpressionParser{
+				cacheGetSetter: ctxcache.PathExpressionParser(cacheGetter),
+			}
 			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
 			summaryDataPoint := createSummaryDataPointTelemetry()
 
-			ctx := NewTransformContext(summaryDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+			ctx := NewTransformContext(summaryDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics(), WithCache(&testCache))
 
 			got, err := accessor.Get(context.Background(), ctx)
 			assert.NoError(t, err)
