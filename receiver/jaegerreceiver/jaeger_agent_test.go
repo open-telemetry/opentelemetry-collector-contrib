@@ -13,7 +13,7 @@ import (
 	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/agent"
 	jaegerthrift "github.com/jaegertracing/jaeger-idl/thrift-gen/jaeger"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/cmd/servers/thriftudp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
