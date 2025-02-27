@@ -7,7 +7,7 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [StefanKurek, gudecatch, sincejune]
+    active: [StefanKurek, cuichenli, sincejune]
     seeking_new: true
 
 resource_attributes:
