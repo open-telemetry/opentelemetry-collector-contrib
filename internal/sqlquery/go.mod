@@ -11,9 +11,9 @@ require (
 	github.com/snowflakedb/gosnowflake v1.12.0
 	github.com/stretchr/testify v1.10.0
 	github.com/thda/tds v0.1.7
-	go.opentelemetry.io/collector/component v0.120.1-0.20250226024140-8099e51f9a77
+	go.opentelemetry.io/collector/component v0.120.1-0.20250227134758-6a98ee8b14a2
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250226024140-8099e51f9a77
-	go.opentelemetry.io/collector/pdata v1.26.1-0.20250226024140-8099e51f9a77
+	go.opentelemetry.io/collector/pdata v1.26.1-0.20250227134758-6a98ee8b14a2
 	go.opentelemetry.io/collector/scraper v0.120.1-0.20250226024140-8099e51f9a77
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.120.1-0.20250226024140-8099e51f9a77
 	go.uber.org/multierr v1.11.0
@@ -78,7 +78,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/consumer v1.26.1-0.20250226024140-8099e51f9a77 // indirect
+	go.opentelemetry.io/collector/consumer v1.26.1-0.20250227134758-6a98ee8b14a2 // indirect
 	go.opentelemetry.io/collector/pipeline v0.120.1-0.20250226024140-8099e51f9a77 // indirect
 	go.opentelemetry.io/collector/receiver v0.120.1-0.20250226024140-8099e51f9a77 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
