@@ -4995,7 +4995,7 @@ type Issue implements Node & Assignable & Closable & Comment & Deletable & Updat
   projectV2("The project number." number: Int!): ProjectV2
   "A list of projects under the owner."
   projectsV2(
-    "A project to search for under the the owner."
+    "A project to search for under the owner."
     query: String
     "How to order the returned projects."
     orderBy: ProjectV2Order = { field: NUMBER, direction: DESC }
@@ -8917,7 +8917,7 @@ type Organization implements Node & Actor & PackageOwner & ProjectOwner & Projec
   projectsUrl: URI!
   "A list of projects under the owner."
   projectsV2(
-    "A project to search for under the the owner."
+    "A project to search for under the owner."
     query: String
     "How to order the returned projects."
     orderBy: ProjectV2Order = { field: NUMBER, direction: DESC }
@@ -11120,7 +11120,7 @@ type PullRequest implements Node & Assignable & Closable & Comment & Updatable &
   projectV2("The project number." number: Int!): ProjectV2
   "A list of projects under the owner."
   projectsV2(
-    "A project to search for under the the owner."
+    "A project to search for under the owner."
     query: String
     "How to order the returned projects."
     orderBy: ProjectV2Order = { field: NUMBER, direction: DESC }
@@ -17778,7 +17778,7 @@ type User implements Node & Actor & PackageOwner & ProjectOwner & ProjectV2Owner
   projectsUrl: URI!
   "A list of projects under the owner."
   projectsV2(
-    "A project to search for under the the owner."
+    "A project to search for under the owner."
     query: String
     "How to order the returned projects."
     orderBy: ProjectV2Order = { field: NUMBER, direction: DESC }
@@ -18867,7 +18867,7 @@ interface ProjectV2Owner {
   projectV2("The project number." number: Int!): ProjectV2
   "A list of projects under the owner."
   projectsV2(
-    "A project to search for under the the owner."
+    "A project to search for under the owner."
     query: String
     "How to order the returned projects."
     orderBy: ProjectV2Order = { field: NUMBER, direction: DESC }
@@ -23948,7 +23948,7 @@ with a newline.
 
 ### Modeling file changes
 
-Each of the the five types of conceptual changes that can be made in a
+Each of the five types of conceptual changes that can be made in a
 git commit can be described using the `FileChanges` type as follows:
 
 1. New file addition: create file `hello world\n` at path `docs/README.txt`:

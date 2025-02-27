@@ -56,6 +56,7 @@ components:
         - sentry
         - signalfx
         - splunk_hec
+        - stef
         - sumologic
         - syslog
         - tencentcloud_logservice
@@ -108,6 +109,8 @@ components:
         - sumologic
         - tail_sampling
         - transform
+    provider:
+        - s3
     receiver:
         - active_directory_ds
         - aerospike
@@ -132,6 +135,7 @@ components:
         - datadog
         - docker_stats
         - elasticsearch
+        - envoyals
         - expvar
         - filelog
         - filestats

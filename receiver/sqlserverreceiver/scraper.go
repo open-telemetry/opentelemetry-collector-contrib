@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
-	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
@@ -29,9 +29,8 @@ const (
 
 type sqlServerScraperHelper struct {
 	id                 component.ID
+	config             *Config
 	sqlQuery           string
-	instanceName       string
-	scrapeCfg          scraperhelper.ControllerConfig
 	clientProviderFunc sqlquery.ClientProviderFunc
 	dbProviderFunc     sqlquery.DbProviderFunc
 	logger             *zap.Logger
@@ -45,24 +44,21 @@ var _ scraper.Metrics = (*sqlServerScraperHelper)(nil)
 
 func newSQLServerScraper(id component.ID,
 	query string,
-	instanceName string,
-	scrapeCfg scraperhelper.ControllerConfig,
-	logger *zap.Logger,
 	telemetry sqlquery.TelemetryConfig,
 	dbProviderFunc sqlquery.DbProviderFunc,
 	clientProviderFunc sqlquery.ClientProviderFunc,
-	mb *metadata.MetricsBuilder,
+	params receiver.Settings,
+	cfg *Config,
 ) *sqlServerScraperHelper {
 	return &sqlServerScraperHelper{
 		id:                 id,
+		config:             cfg,
 		sqlQuery:           query,
-		instanceName:       instanceName,
-		scrapeCfg:          scrapeCfg,
-		logger:             logger,
+		logger:             params.Logger,
 		telemetry:          telemetry,
 		dbProviderFunc:     dbProviderFunc,
 		clientProviderFunc: clientProviderFunc,
-		mb:                 mb,
+		mb:                 metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
 	}
 }
 
@@ -85,11 +81,11 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 	var err error
 
 	switch s.sqlQuery {
-	case getSQLServerDatabaseIOQuery(s.instanceName):
+	case getSQLServerDatabaseIOQuery(s.config.InstanceName):
 		err = s.recordDatabaseIOMetrics(ctx)
-	case getSQLServerPerformanceCounterQuery(s.instanceName):
+	case getSQLServerPerformanceCounterQuery(s.config.InstanceName):
 		err = s.recordDatabasePerfCounterMetrics(ctx)
-	case getSQLServerPropertiesQuery(s.instanceName):
+	case getSQLServerPropertiesQuery(s.config.InstanceName):
 		err = s.recordDatabaseStatusMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
@@ -123,11 +119,10 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
-		if errors.Is(err, sqlquery.ErrNullValueWarning) {
-			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
-		} else {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return fmt.Errorf("sqlServerScraperHelper: %w", err)
 		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
 	}
 
 	var errs []error
@@ -138,6 +133,8 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) er
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverDatabaseName(row[databaseNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
+		rb.SetServerAddress(s.config.Server)
+		rb.SetServerPort(int64(s.config.Port))
 
 		val, err = strconv.ParseFloat(row[readLatencyMsKey], 64)
 		if err != nil {
@@ -186,11 +183,10 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
-		if errors.Is(err, sqlquery.ErrNullValueWarning) {
-			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
-		} else {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return fmt.Errorf("sqlServerScraperHelper: %w", err)
 		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
 	}
 
 	var errs []error
@@ -199,6 +195,8 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
+		rb.SetServerAddress(s.config.Server)
+		rb.SetServerPort(int64(s.config.Port))
 
 		switch row[counterKey] {
 		case batchRequestRate:
@@ -274,11 +272,10 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
-		if errors.Is(err, sqlquery.ErrNullValueWarning) {
-			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
-		} else {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return fmt.Errorf("sqlServerScraperHelper failed getting metric rows: %w", err)
 		}
+		s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
 	}
 
 	var errs []error
@@ -287,6 +284,8 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		rb := s.mb.NewResourceBuilder()
 		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
+		rb.SetServerAddress(s.config.Server)
+		rb.SetServerPort(int64(s.config.Port))
 
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring))

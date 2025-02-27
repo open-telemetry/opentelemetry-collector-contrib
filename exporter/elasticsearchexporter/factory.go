@@ -6,6 +6,7 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"compress/gzip"
 	"context"
 	"net/http"
 	"time"
@@ -30,6 +31,8 @@ const (
 	defaultTracesIndex  = "traces-generic-default"
 )
 
+var defaultBatcherMinSizeItems = 5000
+
 // NewFactory creates a factory for Elastic exporter.
 func NewFactory() exporter.Factory {
 	return xexporter.NewFactory(
@@ -49,6 +52,7 @@ func createDefaultConfig() component.Config {
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	httpClientConfig.Timeout = 90 * time.Second
 	httpClientConfig.Compression = configcompression.TypeGzip
+	httpClientConfig.CompressionParams.Level = gzip.BestSpeed
 
 	return &Config{
 		QueueSettings: qs,
@@ -91,11 +95,11 @@ func createDefaultConfig() component.Config {
 		},
 		Batcher: BatcherConfig{
 			FlushTimeout: 30 * time.Second,
-			MinSizeConfig: exporterbatcher.MinSizeConfig{
-				MinSizeItems: 5000,
+			MinSizeConfig: exporterbatcher.MinSizeConfig{ //nolint:staticcheck
+				MinSizeItems: &defaultBatcherMinSizeItems,
 			},
-			MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-				MaxSizeItems: 0,
+			MaxSizeConfig: exporterbatcher.MaxSizeConfig{ //nolint:staticcheck
+				MaxSizeItems: nil,
 			},
 		},
 		Flush: FlushSettings{
