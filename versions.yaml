@@ -3,10 +3,9 @@
 
 module-sets:
   contrib-base:
-    version: v0.119.0
+    version: v0.120.1
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
-      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider
@@ -33,6 +32,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/bmchelixexporter

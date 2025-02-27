@@ -31,6 +31,8 @@ import (
 	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 )
 
 func TestNewExporter(t *testing.T) {
@@ -66,7 +68,7 @@ func TestNewExporter(t *testing.T) {
 	}
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -391,7 +393,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
-				exportertest.NewNopSettings(),
+				exportertest.NewNopSettings(metadata.Type),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,
@@ -401,20 +403,18 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				nil,
 				gatewayUsage,
 			)
-			if tt.expectedErr == nil {
-				assert.NoError(t, err, "unexpected error")
-			} else {
+			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
 			}
+			assert.NoError(t, err, "unexpected error")
 			exp.getPushTime = func() uint64 { return 0 }
 			err = exp.PushMetricsData(context.Background(), tt.metrics)
-			if tt.expectedErr == nil {
-				assert.NoError(t, err, "unexpected error")
-			} else {
+			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
 			}
+			assert.NoError(t, err, "unexpected error")
 			if len(tt.expectedSeries) == 0 {
 				assert.Nil(t, seriesRecorder.ByteBody)
 			} else {
@@ -476,7 +476,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 			HostnameSource: HostnameSourceFirstResource,
 		},
 	}
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -837,7 +837,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
-				exportertest.NewNopSettings(),
+				exportertest.NewNopSettings(metadata.Type),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,
@@ -847,20 +847,18 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				nil,
 				gatewayUsage,
 			)
-			if tt.expectedErr == nil {
-				assert.NoError(t, err, "unexpected error")
-			} else {
+			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
 			}
+			assert.NoError(t, err, "unexpected error")
 			exp.getPushTime = func() uint64 { return 0 }
 			err = exp.PushMetricsData(context.Background(), tt.metrics)
-			if tt.expectedErr == nil {
-				assert.NoError(t, err, "unexpected error")
-			} else {
+			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
 			}
+			assert.NoError(t, err, "unexpected error")
 			if len(tt.expectedSeries) == 0 {
 				assert.Nil(t, seriesRecorder.ByteBody)
 			} else {

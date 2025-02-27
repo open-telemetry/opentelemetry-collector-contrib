@@ -25,11 +25,13 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter/internal/metadata"
 )
 
 func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 	const maxDelay = 200 * time.Millisecond
-	createSettings := exportertest.NewNopSettings()
+	createSettings := exportertest.NewNopSettings(metadata.Type)
 
 	const maxBatchCount = 20
 	const logsPerBatch = 10000

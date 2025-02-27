@@ -4,7 +4,6 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
-	"compress/gzip"
 	"context"
 	"errors"
 	"io"
@@ -56,7 +55,7 @@ type bulkIndexerSession interface {
 const defaultMaxRetries = 2
 
 func newBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) (bulkIndexer, error) {
-	if config.Batcher.Enabled != nil {
+	if config.Batcher.enabledSet {
 		return newSyncBulkIndexer(logger, client, config, requireDataStream), nil
 	}
 	return newAsyncBulkIndexer(logger, client, config, requireDataStream)
@@ -72,7 +71,7 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 	}
 	var compressionLevel int
 	if config.Compression == configcompression.TypeGzip {
-		compressionLevel = gzip.BestSpeed
+		compressionLevel = int(config.CompressionParams.Level)
 	}
 	return docappender.BulkIndexerConfig{
 		Client:                client,
