@@ -48,7 +48,7 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
@@ -117,7 +117,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeDirectionSent, AttributeValueTypeDistingushedNames)
+			mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeDirectionSent, AttributeValueTypeDistinguishedNames)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -385,7 +385,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.EqualValues(t, "sent", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "distingushed_names", attrVal.Str())
+					assert.EqualValues(t, "distinguished_names", attrVal.Str())
 				case "active_directory.ds.security_descriptor_propagations_event.queued":
 					assert.False(t, validatedMetrics["active_directory.ds.security_descriptor_propagations_event.queued"], "Found a duplicate in the metrics slice: active_directory.ds.security_descriptor_propagations_event.queued")
 					validatedMetrics["active_directory.ds.security_descriptor_propagations_event.queued"] = true

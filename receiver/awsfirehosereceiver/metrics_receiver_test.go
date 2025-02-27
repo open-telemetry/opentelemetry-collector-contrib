@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -18,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/unmarshalertest"
 )
@@ -38,45 +40,70 @@ func (rc *metricsRecordConsumer) Capabilities() consumer.Capabilities {
 }
 
 func TestMetricsReceiver_Start(t *testing.T) {
-	unmarshalers := map[string]pmetric.Unmarshaler{
-		"cwmetrics":    &cwmetricstream.Unmarshaler{},
-		"otlp_metrics": &pmetric.ProtoUnmarshaler{},
-	}
-
 	testCases := map[string]struct {
+		encoding            string
 		recordType          string
 		wantUnmarshalerType pmetric.Unmarshaler
 		wantErr             string
 	}{
-		"WithDefaultRecordType": {
+		"WithDefaultEncoding": {
 			wantUnmarshalerType: &cwmetricstream.Unmarshaler{},
 		},
-		"WithSpecifiedRecordType": {
-			recordType:          "otlp_metrics",
-			wantUnmarshalerType: &pmetric.ProtoUnmarshaler{},
+		"WithBuiltinEncoding": {
+			encoding:            "cwmetrics",
+			wantUnmarshalerType: &cwmetricstream.Unmarshaler{},
 		},
-		"WithUnknownRecordType": {
-			recordType: "invalid",
-			wantErr:    errUnrecognizedRecordType.Error() + ": recordType = invalid",
+		"WithExtensionEncoding": {
+			encoding:            "otlp_metrics",
+			wantUnmarshalerType: pmetricUnmarshalerExtension{},
+		},
+		"WithDeprecatedRecordType": {
+			recordType:          "otlp_metrics",
+			wantUnmarshalerType: pmetricUnmarshalerExtension{},
+		},
+		"WithUnknownEncoding": {
+			encoding: "invalid",
+			wantErr:  `failed to start consumer: failed to load encoding extension: unknown encoding extension "invalid"`,
+		},
+		"WithNonLogUnmarshalerExtension": {
+			encoding: "otlp_logs",
+			wantErr:  `failed to start consumer: failed to load encoding extension: extension "otlp_logs" is not a metrics unmarshaler`,
 		},
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
+			cfg.Encoding = testCase.encoding
 			cfg.RecordType = testCase.recordType
 			got, err := newMetricsReceiver(
 				cfg,
-				receivertest.NewNopSettings(),
-				unmarshalers,
+				receivertest.NewNopSettings(metadata.Type),
 				consumertest.NewNop(),
 			)
+			require.NoError(t, err)
+			require.NotNil(t, got)
+			t.Cleanup(func() {
+				require.NoError(t, got.Shutdown(context.Background()))
+			})
+
+			host := hostWithExtensions{
+				extensions: map[component.ID]component.Component{
+					component.MustNewID("otlp_logs"):    plogUnmarshalerExtension{},
+					component.MustNewID("otlp_metrics"): pmetricUnmarshalerExtension{},
+				},
+			}
+
+			err = got.Start(context.Background(), host)
 			if testCase.wantErr != "" {
 				require.EqualError(t, err, testCase.wantErr)
-				require.Nil(t, got)
 			} else {
 				require.NoError(t, err)
-				require.NotNil(t, got)
 			}
+
+			assert.IsType(t,
+				testCase.wantUnmarshalerType,
+				got.(*firehoseReceiver).consumer.(*metricsConsumer).unmarshaler,
+			)
 		})
 	}
 }
