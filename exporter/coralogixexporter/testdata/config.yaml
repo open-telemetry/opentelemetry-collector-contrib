@@ -40,7 +40,7 @@ coralogix/all:
   batcher:
     enabled: true
     flush_timeout: 3s
-    min_size_items: 8888
+    min_size: 8888
 
 
 coralogix/domain:
