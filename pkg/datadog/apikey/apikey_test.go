@@ -88,7 +88,6 @@ func TestFullAPIKeyCheck(t *testing.T) {
 		failOnInvalidKey          bool
 		expectedError             string
 		expectedAPIClient         bool
-		expectedZorkianClient     bool
 	}{
 		{
 			name:                      "Valid API key with V2 enabled",
@@ -97,7 +96,6 @@ func TestFullAPIKeyCheck(t *testing.T) {
 			failOnInvalidKey:          true,
 			expectedError:             "",
 			expectedAPIClient:         true,
-			expectedZorkianClient:     false,
 		},
 		{
 			name:                      "Invalid API key with V2 enabled",
@@ -106,7 +104,6 @@ func TestFullAPIKeyCheck(t *testing.T) {
 			failOnInvalidKey:          true,
 			expectedError:             "API Key validation failed",
 			expectedAPIClient:         false,
-			expectedZorkianClient:     false,
 		},
 		{
 			name:                      "Valid API key with V2 disabled",
@@ -115,7 +112,6 @@ func TestFullAPIKeyCheck(t *testing.T) {
 			failOnInvalidKey:          true,
 			expectedError:             "",
 			expectedAPIClient:         false,
-			expectedZorkianClient:     true,
 		},
 		{
 			name:                      "Invalid API key with V2 disabled",
@@ -124,7 +120,6 @@ func TestFullAPIKeyCheck(t *testing.T) {
 			failOnInvalidKey:          true,
 			expectedError:             "API Key validation failed",
 			expectedAPIClient:         false,
-			expectedZorkianClient:     false,
 		},
 		{
 			name:                      "Valid API key with failOnInvalidKey false",
@@ -133,7 +128,6 @@ func TestFullAPIKeyCheck(t *testing.T) {
 			failOnInvalidKey:          false,
 			expectedError:             "",
 			expectedAPIClient:         true,
-			expectedZorkianClient:     false,
 		},
 		{
 			name:                      "Invalid API key with failOnInvalidKey false",
@@ -142,7 +136,6 @@ func TestFullAPIKeyCheck(t *testing.T) {
 			failOnInvalidKey:          false,
 			expectedError:             "",
 			expectedAPIClient:         true,
-			expectedZorkianClient:     false,
 		},
 	}
 	validServer := testutil.DatadogServerMock(ValidateAPIKeyEndpointValid)
@@ -167,7 +160,7 @@ func TestFullAPIKeyCheck(t *testing.T) {
 			}
 			clientConfig := confighttp.ClientConfig{}
 
-			apiClient, zorkianClient, err := FullAPIKeyCheck(
+			apiClient, err := FullAPIKeyCheck(
 				ctx,
 				"test-api-key",
 				&errchan,
@@ -189,12 +182,6 @@ func TestFullAPIKeyCheck(t *testing.T) {
 				assert.NotNil(t, apiClient)
 			} else {
 				assert.Nil(t, apiClient)
-			}
-
-			if tt.expectedZorkianClient {
-				assert.NotNil(t, zorkianClient)
-			} else {
-				assert.Nil(t, zorkianClient)
 			}
 
 			if !tt.failOnInvalidKey {

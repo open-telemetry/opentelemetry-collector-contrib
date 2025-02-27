@@ -97,12 +97,13 @@ func newMetricsExporter(
 	}
 	// Call Full API Key validation in pkg/datadog/apikey to validate API key and create API client
 	errchan := make(chan error)
-	metricsAPI, client, err := datadogapikey.FullAPIKeyCheck(
+	metricExportV2Enabled := isMetricExportV2Enabled()
+	metricsAPI, err := datadogapikey.FullAPIKeyCheck(
 		ctx,
 		string(cfg.API.Key),
 		&errchan,
 		params.BuildInfo,
-		isMetricExportV2Enabled(),
+		metricExportV2Enabled,
 		cfg.API.FailOnInvalidKey,
 		cfg.Metrics.TCPAddrConfig.Endpoint,
 		params.Logger,
@@ -112,7 +113,11 @@ func newMetricsExporter(
 		return nil, err
 	}
 	exporter.metricsAPI = metricsAPI
-	exporter.client = client
+	if metricExportV2Enabled {
+		exporter.client = clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
+	} else {
+		exporter.client = nil
+	}
 
 	return exporter, nil
 }

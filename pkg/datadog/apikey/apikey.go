@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
-	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 )
@@ -59,7 +58,7 @@ func FullAPIKeyCheck(
 	endpoint string,
 	logger *zap.Logger,
 	clientConfig confighttp.ClientConfig,
-) (apiClient *datadogV2.MetricsApi, zorkianClient *zorkian.Client, err error) {
+) (apiClient *datadogV2.MetricsApi, err error) {
 	if isMetricExportV2Enabled {
 		client := clientutil.CreateAPIClient(
 			buildInfo,
@@ -68,9 +67,8 @@ func FullAPIKeyCheck(
 		)
 		go func() { *errchan <- clientutil.ValidateAPIKey(ctx, apiKey, logger, client) }()
 		apiClient = datadogV2.NewMetricsApi(client)
-		zorkianClient = nil
 	} else {
-		zorkianClient = clientutil.CreateZorkianClient(apiKey, endpoint)
+		zorkianClient := clientutil.CreateZorkianClient(apiKey, endpoint)
 		go func() { *errchan <- clientutil.ValidateAPIKeyZorkian(logger, zorkianClient) }()
 		apiClient = nil
 	}
@@ -78,8 +76,8 @@ func FullAPIKeyCheck(
 	if failOnInvalidKey {
 		err = <-*errchan
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	}
-	return apiClient, zorkianClient, nil
+	return apiClient, nil
 }

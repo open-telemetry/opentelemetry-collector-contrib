@@ -83,12 +83,13 @@ func newTracesExporter(
 	}
 	// client to send running metric to the backend & perform API key validation
 	errchan := make(chan error)
-	metricsAPI, client, err := datadogapikey.FullAPIKeyCheck(
+	metricExportV2Enabled := isMetricExportV2Enabled()
+	metricsAPI, err := datadogapikey.FullAPIKeyCheck(
 		ctx,
 		string(cfg.API.Key),
 		&errchan,
 		params.BuildInfo,
-		isMetricExportV2Enabled(),
+		metricExportV2Enabled,
 		cfg.API.FailOnInvalidKey,
 		cfg.Metrics.TCPAddrConfig.Endpoint,
 		params.Logger,
@@ -98,7 +99,11 @@ func newTracesExporter(
 		return nil, err
 	}
 	exp.metricsAPI = metricsAPI
-	exp.client = client
+	if metricExportV2Enabled {
+		exp.client = clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
+	} else {
+		exp.client = nil
+	}
 
 	return exp, nil
 }

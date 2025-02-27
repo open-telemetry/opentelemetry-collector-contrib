@@ -70,7 +70,7 @@ func newLogsExporter(
 	// create Datadog client
 	// validation endpoint is provided by Metrics
 	errchan := make(chan error)
-	metricsAPI, _, err := datadogapikey.FullAPIKeyCheck(
+	metricsAPI, err := datadogapikey.FullAPIKeyCheck(
 		ctx,
 		string(cfg.API.Key),
 		&errchan,
