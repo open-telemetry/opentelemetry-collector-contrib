@@ -42,4 +42,3 @@ windowsservice:
     ...
 ```
 
-### Notes
