@@ -425,16 +425,6 @@ func TestConfig_Validate(t *testing.T) {
 			}),
 			err: `must not specify both retry::max_requests and retry::max_retries`,
 		},
-		"batcher max_size_items less than min_size_items": {
-			config: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoints = []string{"http://test:9200"}
-				cfg.Batcher.MaxSizeItems = 1000
-				cfg.Batcher.MinSizeItems = 2000
-				enableBatcher := true
-				cfg.Batcher.Enabled = &enableBatcher
-			}),
-			err: `max_size_items must be greater than or equal to min_size_items`,
-		},
 	}
 
 	for name, tt := range tests {

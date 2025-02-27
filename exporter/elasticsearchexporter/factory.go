@@ -203,8 +203,14 @@ func exporterhelperOptions(
 		exporterhelper.WithShutdown(shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 	}
-	if batcherCfg, ok := cfg.exporterbatcherConfig(); ok {
-		opts = append(opts, exporterhelper.WithBatcher(batcherCfg))
+	if cfg.Batcher.Enabled != nil {
+		batcherConfig := exporterbatcher.Config{
+			Enabled:       *cfg.Batcher.Enabled,
+			FlushTimeout:  cfg.Batcher.FlushTimeout,
+			MinSizeConfig: cfg.Batcher.MinSizeConfig,
+			MaxSizeConfig: cfg.Batcher.MaxSizeConfig,
+		}
+		opts = append(opts, exporterhelper.WithBatcher(batcherConfig))
 
 		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
 		//

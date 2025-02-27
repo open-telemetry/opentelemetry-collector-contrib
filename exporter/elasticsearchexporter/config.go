@@ -274,11 +274,6 @@ func (cfg *Config) Validate() error {
 	if cfg.Retry.MaxRetries < 0 {
 		return errors.New("retry::max_retries should be non-negative")
 	}
-	if batcherCfg, ok := cfg.exporterbatcherConfig(); ok {
-		if err := batcherCfg.Validate(); err != nil {
-			return fmt.Errorf("invalid batcher config: %w", err)
-		}
-	}
 
 	return nil
 }
@@ -317,18 +312,6 @@ func (cfg *Config) endpoints() ([]string, error) {
 		return nil, errConfigEndpointRequired
 	}
 	return endpoints, nil
-}
-
-func (cfg *Config) exporterbatcherConfig() (exporterbatcher.Config, bool) {
-	if cfg.Batcher.Enabled == nil {
-		return exporterbatcher.Config{}, false
-	}
-	return exporterbatcher.Config{
-		Enabled:       *cfg.Batcher.Enabled,
-		FlushTimeout:  cfg.Batcher.FlushTimeout,
-		MinSizeConfig: cfg.Batcher.MinSizeConfig,
-		MaxSizeConfig: cfg.Batcher.MaxSizeConfig,
-	}, true
 }
 
 func validateEndpoint(endpoint string) error {
