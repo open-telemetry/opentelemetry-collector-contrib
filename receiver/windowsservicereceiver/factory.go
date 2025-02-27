@@ -26,7 +26,7 @@ func NewFactory() receiver.Factory {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.Settings,
+	_ receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -35,7 +35,7 @@ func createMetricsReceiver(
 	return rcvr, nil
 }
 
-func newMetricsReceiver(cfg *Config, consumer consumer.Metrics) *windowsServiceReceiver {
+func newMetricsReceiver(_ *Config, _ consumer.Metrics) *windowsServiceReceiver {
 	return &windowsServiceReceiver{}
 }
 
@@ -45,6 +45,6 @@ func (r *windowsServiceReceiver) Start(_ context.Context, _ component.Host) erro
 	return nil
 }
 
-func (r *windowsServiceReceiver) Shutdown(ctx context.Context) error {
+func (r *windowsServiceReceiver) Shutdown(_ context.Context) error {
 	return nil
 }
