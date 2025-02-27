@@ -87,7 +87,6 @@ const (
 	AttributeCICDPipelineTaskRunStatusSuccess      = "success"
 	AttributeCICDPipelineTaskRunStatusFailure      = "failure"
 	AttributeCICDPipelineTaskRunStatusCancellation = "cancellation"
-	AttributeCICDPipelineTaskRunStatusError        = "error"
 	AttributeCICDPipelineTaskRunStatusSkip         = "skip"
 
 	// The following attributes are not part of the semantic conventions yet.
@@ -95,6 +94,12 @@ const (
 	AttributeCICDPipelineTaskRunSenderLogin     = "cicd.pipeline.task.run.sender.login" // GitHub's Task Sender Login
 	AttributeCICDPipelineFilePath               = "cicd.pipeline.file.path"             // GitHub's Path in workflow_run
 	AttributeCICDPipelinePreviousAttemptURLFull = "cicd.pipeline.run.previous_attempt.url.full"
+	AttributeCICDPipelineWorkerID               = "cicd.pipeline.worker.id"         // GitHub's Runner ID
+	AttributeCICDPipelineWorkerGroupID          = "cicd.pipeline.worker.group.id"   // GitHub's Runner Group ID
+	AttributeCICDPipelineWorkerName             = "cicd.pipeline.worker.name"       // GitHub's Runner Name
+	AttributeCICDPipelineWorkerGroupName        = "cicd.pipeline.worker.group.name" // GitHub's Runner Group Name
+	AttributeCICDPipelineWorkerNodeID           = "cicd.pipeline.worker.node.id"    // GitHub's Runner Node ID
+	AttributeCICDPipelineWorkerLabels           = "cicd.pipeline.worker.labels"     // GitHub's Runner Labels
 
 	// The following attributes are exclusive to GitHub but not listed under
 	// Vendor Extensions within Semantic Conventions yet.
@@ -127,10 +132,10 @@ const (
 	AttributeVCSVendorName                 = "vcs.vendor.name"                    // GitHub
 )
 
-// getWorkflowAttrs returns a pcommon.Map of attributes for the Workflow Run
+// getWorkflowRunAttrs returns a pcommon.Map of attributes for the Workflow Run
 // GitHub event type and an error if one occurs. The attributes are associated
 // with the originally provided resource.
-func (gtr *githubTracesReceiver) getWorkflowAttrs(resource pcommon.Resource, e *github.WorkflowRunEvent) error {
+func (gtr *githubTracesReceiver) getWorkflowRunAttrs(resource pcommon.Resource, e *github.WorkflowRunEvent) error {
 	attrs := resource.Attributes()
 	var err error
 
@@ -195,6 +200,67 @@ func (gtr *githubTracesReceiver) getWorkflowAttrs(resource pcommon.Resource, e *
 			attrs.PutStr(revAttr, w.GetSHA())
 			attrs.PutStr(versionAttr, w.GetRef())
 		}
+	}
+
+	return err
+}
+
+// getWorkflowJobAttrs returns a pcommon.Map of attributes for the Workflow Job
+// GitHub event type and an error if one occurs. The attributes are associated
+// with the originally provided resource.
+func (gtr *githubTracesReceiver) getWorkflowJobAttrs(resource pcommon.Resource, e *github.WorkflowJobEvent) error {
+	attrs := resource.Attributes()
+	var err error
+
+	svc, err := gtr.getServiceName(e.GetRepo().CustomProperties["service_name"], e.GetRepo().GetName())
+	if err != nil {
+		err = errors.New("failed to get service.name")
+	}
+
+	attrs.PutStr(semconv.AttributeServiceName, svc)
+
+	// VCS Attributes
+	attrs.PutStr(AttributeVCSRepositoryName, e.GetRepo().GetName())
+	attrs.PutStr(AttributeVCSVendorName, "github")
+	attrs.PutStr(AttributeVCSRefHead, e.GetWorkflowJob().GetHeadBranch())
+	attrs.PutStr(AttributeVCSRefHeadType, AttributeVCSRefHeadTypeBranch)
+	attrs.PutStr(AttributeVCSRefHeadRevision, e.GetWorkflowJob().GetHeadSHA())
+
+	// CICD Worker (GitHub Runner) Attributes
+	attrs.PutInt(AttributeCICDPipelineWorkerID, e.GetWorkflowJob().GetRunnerID())
+	attrs.PutInt(AttributeCICDPipelineWorkerGroupID, e.GetWorkflowJob().GetRunnerGroupID())
+	attrs.PutStr(AttributeCICDPipelineWorkerName, e.GetWorkflowJob().GetRunnerName())
+	attrs.PutStr(AttributeCICDPipelineWorkerGroupName, e.GetWorkflowJob().GetRunnerGroupName())
+	attrs.PutStr(AttributeCICDPipelineWorkerNodeID, e.GetWorkflowJob().GetNodeID())
+
+	if len(e.GetWorkflowJob().Labels) > 0 {
+		labels := attrs.PutEmptySlice(AttributeCICDPipelineWorkerLabels)
+		labels.EnsureCapacity(len(e.GetWorkflowJob().Labels))
+		for _, label := range e.GetWorkflowJob().Labels {
+			l := strings.ToLower(label)
+			labels.AppendEmpty().SetStr(l)
+		}
+	}
+
+	// CICD Attributes
+	attrs.PutStr(semconv.AttributeCicdPipelineName, e.GetWorkflowJob().GetName())
+	attrs.PutStr(AttributeCICDPipelineTaskRunSenderLogin, e.GetSender().GetLogin())
+	attrs.PutStr(semconv.AttributeCicdPipelineTaskRunURLFull, e.GetWorkflowJob().GetHTMLURL())
+	attrs.PutInt(semconv.AttributeCicdPipelineTaskRunID, e.GetWorkflowJob().GetID())
+	switch status := strings.ToLower(e.GetWorkflowJob().GetConclusion()); status {
+	case "success":
+		attrs.PutStr(AttributeCICDPipelineTaskRunStatus, AttributeCICDPipelineTaskRunStatusSuccess)
+	case "failure":
+		attrs.PutStr(AttributeCICDPipelineTaskRunStatus, AttributeCICDPipelineTaskRunStatusFailure)
+	case "skipped":
+		attrs.PutStr(AttributeCICDPipelineTaskRunStatus, AttributeCICDPipelineTaskRunStatusSkip)
+	case "cancelled":
+		attrs.PutStr(AttributeCICDPipelineTaskRunStatus, AttributeCICDPipelineTaskRunStatusCancellation)
+	// Default sets to whatever is provided by the event. GitHub provides the
+	// following additional values: neutral, timed_out, action_required, stale,
+	// and null.
+	default:
+		attrs.PutStr(AttributeCICDPipelineRunStatus, status)
 	}
 
 	return err
