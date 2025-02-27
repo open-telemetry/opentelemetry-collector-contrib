@@ -14,7 +14,7 @@ import (
 type Config struct {
 	Region                    string                     `mapstructure:"region,omitempty"`
 	Service                   string                     `mapstructure:"service,omitempty"`
-	AssumeRole                *AssumeRole                `mapstructure:"assume_role"`
+	AssumeRole                *AssumeRole                `mapstructure:"assume_role,omitempty"`
 	AssumeRoleWithWebIdentity *AssumeRoleWithWebIdentity `mapstructure:"assume_role_with_web_identity,omitempty"`
 	credsProvider             *aws.CredentialsProvider
 }
@@ -28,7 +28,7 @@ type AssumeRole struct {
 
 // AssumeRoleWithWebIdentity holds the configuration needed to assume a role
 type AssumeRoleWithWebIdentity struct {
-	ARN       string `mapstructure:"arn,omitempty"`
+	ARN       string `mapstructure:"arn"`
 	TokenFile string `mapstructure:"token_file"`
 	STSRegion string `mapstructure:"sts_region,omitempty"`
 }
@@ -44,8 +44,8 @@ func (cfg *Config) Validate() error {
 	assumeRoleWithWebIdentity := cfg.AssumeRoleWithWebIdentity != nil
 
 	switch {
-	case !assumeRoleWithWebIdentity:
-		if cfg.AssumeRole.STSRegion == "" && cfg.Region != "" {
+	case !assumeRoleWithWebIdentity && assumeRole:
+		if cfg.Region != "" && cfg.AssumeRole.STSRegion == "" {
 			cfg.AssumeRole.STSRegion = cfg.Region
 		}
 
@@ -70,8 +70,8 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf("credsProvider cannot be nil")
 		}
 		cfg.credsProvider = credsProvider
-	case assumeRole && assumeRoleWithWebIdentity:
-		return fmt.Errorf("both assume_role and assume_role_with_web_identity were defined in the config - only define one or the other")
+	default:
+		return fmt.Errorf("either define assume_role or assume_role_with_web_identity in the sigv4auth extension config")
 	}
 	return nil
 }
