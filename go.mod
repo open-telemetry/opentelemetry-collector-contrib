@@ -22,3 +22,5 @@ replace go.opentelemetry.io/collector/extension/extensionauth => go.opentelemetr
 replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250226024140-8099e51f9a77
 
 replace go.opentelemetry.io/collector/service/hostcapabilities => go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250226024140-8099e51f9a77
+
+replace go.opentelemetry.io/collector/service => go.opentelemetry.io/collector/service v0.0.0-20250226024140-8099e51f9a77
