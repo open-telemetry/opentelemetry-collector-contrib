@@ -24,7 +24,6 @@ require (
 	go.opentelemetry.io/collector/exporter v0.120.1-0.20250226024140-8099e51f9a77
 	go.opentelemetry.io/collector/featuregate v1.26.1-0.20250226024140-8099e51f9a77
 	go.uber.org/zap v1.27.0
-	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
 )
 
 require (
@@ -180,6 +179,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0 // indirect
 	k8s.io/api v0.32.2 // indirect
 	k8s.io/apimachinery v0.32.2 // indirect
 	k8s.io/client-go v0.32.2 // indirect
