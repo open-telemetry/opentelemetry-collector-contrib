@@ -36,10 +36,15 @@ func NewCacheableProvider(provider Provider, cooldown time.Duration, limit int) 
 }
 
 func (p *CacheableProvider) Retrieve(ctx context.Context, key string) (string, error) {
+	// Check if the key is in the cache.
+	if value, found := p.cache.Get(key); found {
+		return value.(string), nil
+	}
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	// Check if the key is in the cache.
+	// Check if the key is in the cache again in case it was added while waiting for the lock.
 	if value, found := p.cache.Get(key); found {
 		return value.(string), nil
 	}
