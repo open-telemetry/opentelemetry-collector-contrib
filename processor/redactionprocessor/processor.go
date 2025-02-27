@@ -28,6 +28,8 @@ type redaction struct {
 	blockRegexList map[string]*regexp.Regexp
 	// Attribute values allowed in a span
 	allowRegexList map[string]*regexp.Regexp
+	// Attribute keys blocked in a span
+	blockKeyRegexList map[string]*regexp.Regexp
 	// Redaction processor configuration
 	config *Config
 	// Logger
@@ -43,6 +45,11 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 		// TODO: Placeholder for an error metric in the next PR
 		return nil, fmt.Errorf("failed to process block list: %w", err)
 	}
+	blockKeysRegexList, err := makeRegexList(ctx, config.BlockedKeyPatterns)
+	if err != nil {
+		// TODO: Placeholder for an error metric in the next PR
+		return nil, fmt.Errorf("failed to process block keys list: %w", err)
+	}
 
 	allowRegexList, err := makeRegexList(ctx, config.AllowedValues)
 	if err != nil {
@@ -51,12 +58,13 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 	}
 
 	return &redaction{
-		allowList:      allowList,
-		ignoreList:     ignoreList,
-		blockRegexList: blockRegexList,
-		allowRegexList: allowRegexList,
-		config:         config,
-		logger:         logger,
+		allowList:         allowList,
+		ignoreList:        ignoreList,
+		blockRegexList:    blockRegexList,
+		allowRegexList:    allowRegexList,
+		blockKeyRegexList: blockKeysRegexList,
+		config:            config,
+		logger:            logger,
 	}, nil
 }
 
@@ -197,7 +205,6 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 		}
 
 		strVal := value.Str()
-
 		// Allow any values matching the allowed list regex
 		for _, compiledRE := range s.allowRegexList {
 			if match := compiledRE.MatchString(strVal); match {
@@ -206,11 +213,20 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 			}
 		}
 
+		// Mask any blocked keys for the other attributes
+		for _, compiledRE := range s.blockKeyRegexList {
+			if match := compiledRE.MatchString(k); match {
+				toBlock = append(toBlock, k)
+				maskedValue := compiledRE.ReplaceAllString(strVal, "****")
+				value.SetStr(maskedValue)
+				return true
+			}
+		}
+
 		// Mask any blocked values for the other attributes
 		var matched bool
 		for _, compiledRE := range s.blockRegexList {
-			match := compiledRE.MatchString(strVal)
-			if match {
+			if match := compiledRE.MatchString(strVal); match {
 				if !matched {
 					matched = true
 					toBlock = append(toBlock, k)

@@ -7,3 +7,7 @@ const (
 	Name   = "datapoint"
 	DocRef = "https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottldatapoint"
 )
+
+type Context interface {
+	GetDataPoint() any
+}

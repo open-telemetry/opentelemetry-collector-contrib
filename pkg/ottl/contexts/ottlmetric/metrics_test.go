@@ -20,7 +20,7 @@ import (
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-	refMetric := createMetricTelemetry()
+	refMetric := createTelemetry()
 
 	newCache := pcommon.NewMap()
 	newCache.PutStr("temp", "value")
@@ -159,7 +159,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
-			metric := createMetricTelemetry()
+			metric := createTelemetry()
 
 			ctx := NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
@@ -170,7 +170,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			err = accessor.Set(context.Background(), ctx, tt.newVal)
 			assert.NoError(t, err)
 
-			exMetric := createMetricTelemetry()
+			exMetric := createTelemetry()
 			exCache := pcommon.NewMap()
 			tt.modified(exMetric, exCache)
 
@@ -257,7 +257,7 @@ func Test_newPathGetSetter_WithCache(t *testing.T) {
 	assert.Equal(t, cacheValue, ctx.getCache())
 }
 
-func createMetricTelemetry() pmetric.Metric {
+func createTelemetry() pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName("name")
 	metric.SetDescription("description")

@@ -16,6 +16,11 @@ redaction:
   # Any keys in this list are allowed so they don't need to be in both lists.
   ignored_keys:
     - safe_attribute
+  # blocked_key_patterns is a list of blocked span attribute key patterns. Span attributes
+  # matching the regexes on the list are masked.
+  blocked_key_patterns:
+    - ".*token.*"
+    - ".*api_key.*"
   # BlockedValues is a list of regular expressions for blocking values of
   # allowed span attributes. Values that match are masked.
   blocked_values:
