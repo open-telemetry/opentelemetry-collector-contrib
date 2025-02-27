@@ -336,7 +336,7 @@ func TestBearerTokenMultipleTokensInFile(t *testing.T) {
 	scheme := "Bearer"
 	filename := filepath.Join("testdata", t.Name()+".tokens")
 	fileContent := "token1\ntoken2"
-	err := os.WriteFile(filename, []byte(fileContent), 0644)
+	err := os.WriteFile(filename, []byte(fileContent), 0600)
 	assert.NoError(t, err)
 	defer os.Remove(filename)
 
