@@ -25,7 +25,7 @@ type Config struct {
 	// RecordType is an alias for Encoding for backwards compatibility.
 	// It is an error to specify both encoding and record_type.
 	//
-	// Deprecated: use Encoding instead.
+	// Deprecated: [v0.121.0] use Encoding instead.
 	RecordType string `mapstructure:"record_type"`
 	// AccessKey is checked against the one received with each request.
 	// This can be set when creating or updating the Firehose delivery
