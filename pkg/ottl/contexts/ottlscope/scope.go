@@ -13,7 +13,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
@@ -25,16 +24,16 @@ import (
 const ContextName = ctxscope.Name
 
 var (
-	_ internal.ResourceContext             = (*TransformContext)(nil)
-	_ internal.InstrumentationScopeContext = (*TransformContext)(nil)
-	_ zapcore.ObjectMarshaler              = (*TransformContext)(nil)
+	_ ctxresource.Context     = (*TransformContext)(nil)
+	_ ctxscope.Context        = (*TransformContext)(nil)
+	_ zapcore.ObjectMarshaler = (*TransformContext)(nil)
 )
 
 type TransformContext struct {
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
 	cache                pcommon.Map
-	schemaURLItem        internal.SchemaURLItem
+	schemaURLItem        ctxutil.SchemaURLItem
 }
 
 func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
@@ -48,7 +47,7 @@ type Option func(*ottl.Parser[TransformContext])
 
 type TransformContextOption func(*TransformContext)
 
-func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, schemaURLItem internal.SchemaURLItem, options ...TransformContextOption) TransformContext {
+func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, schemaURLItem ctxutil.SchemaURLItem, options ...TransformContextOption) TransformContext {
 	tc := TransformContext{
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
@@ -82,11 +81,11 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
+func (tCtx TransformContext) GetScopeSchemaURLItem() ctxutil.SchemaURLItem {
 	return tCtx.schemaURLItem
 }
 
-func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
+func (tCtx TransformContext) GetResourceSchemaURLItem() ctxutil.SchemaURLItem {
 	return tCtx.schemaURLItem
 }
 
@@ -181,14 +180,14 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 		}
 		return accessCacheKey(path.Keys()), nil
 	default:
-		return internal.ScopePathGetSetter[TransformContext](ContextName, path)
+		return ctxscope.PathGetSetter[TransformContext](ContextName, path)
 	}
 }
 
 func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	switch context {
 	case ctxresource.Name:
-		return internal.ResourcePathGetSetter[TransformContext](ContextName, path)
+		return ctxresource.PathGetSetter[TransformContext](ContextName, path)
 	default:
 		var fullPath string
 		if path != nil {

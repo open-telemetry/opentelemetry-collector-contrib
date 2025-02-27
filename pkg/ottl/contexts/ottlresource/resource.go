@@ -13,7 +13,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
@@ -24,14 +23,14 @@ import (
 const ContextName = ctxresource.Name
 
 var (
-	_ internal.ResourceContext = (*TransformContext)(nil)
-	_ zapcore.ObjectMarshaler  = (*TransformContext)(nil)
+	_ ctxresource.Context     = (*TransformContext)(nil)
+	_ zapcore.ObjectMarshaler = (*TransformContext)(nil)
 )
 
 type TransformContext struct {
 	resource      pcommon.Resource
 	cache         pcommon.Map
-	schemaURLItem internal.SchemaURLItem
+	schemaURLItem ctxutil.SchemaURLItem
 }
 
 func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
@@ -44,7 +43,7 @@ type Option func(*ottl.Parser[TransformContext])
 
 type TransformContextOption func(*TransformContext)
 
-func NewTransformContext(resource pcommon.Resource, schemaURLItem internal.SchemaURLItem, options ...TransformContextOption) TransformContext {
+func NewTransformContext(resource pcommon.Resource, schemaURLItem ctxutil.SchemaURLItem, options ...TransformContextOption) TransformContext {
 	tc := TransformContext{
 		resource:      resource,
 		cache:         pcommon.NewMap(),
@@ -73,7 +72,7 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
+func (tCtx TransformContext) GetResourceSchemaURLItem() ctxutil.SchemaURLItem {
 	return tCtx.schemaURLItem
 }
 
@@ -160,7 +159,7 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 		}
 		return accessCacheKey(path.Keys()), nil
 	default:
-		return internal.ResourcePathGetSetter[TransformContext](ContextName, path)
+		return ctxresource.PathGetSetter[TransformContext](ContextName, path)
 	}
 }
 
