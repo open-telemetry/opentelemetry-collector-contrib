@@ -110,6 +110,7 @@ components:
         - tail_sampling
         - transform
     provider:
+        - aes
         - s3
     receiver:
         - active_directory_ds
