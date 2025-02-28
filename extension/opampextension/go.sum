@@ -44,6 +44,8 @@ github.com/mitchellh/copystructure v1.2.0 h1:vpKXTN4ewci03Vljg/q9QvCGUDttBOGBIa1
 github.com/mitchellh/copystructure v1.2.0/go.mod h1:qLl+cE2AmVv+CoeAwDPye/v+N2HKCj9FbZEVFJRxO9s=
 github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
+github.com/observIQ/opentelemetry-collector/component v0.0.0-20250227184409-742e731ecbde h1:VlvEpcBMW1OlpNYEUsBaLVjMzFXOfdJF7YLT8diMEqU=
+github.com/observIQ/opentelemetry-collector/component v0.0.0-20250227184409-742e731ecbde/go.mod h1:Ya5O+5NWG9XdhJPnOVhKtBrNXHN3hweQbB98HH4KPNU=
 github.com/oklog/ulid/v2 v2.1.0 h1:+9lhoxAP56we25tyYETBBY1YLA2SaoLvUFgrP2miPJU=
 github.com/oklog/ulid/v2 v2.1.0/go.mod h1:rcEKHmBBKfef9DhnvX7y1HZBYxjXb0cP5ExxNsTT1QQ=
 github.com/open-telemetry/opamp-go v0.18.0 h1:sNHsrBvGU2CMxCB1TRJXncDARrmxDEebx8dsEIawqA4=
@@ -71,8 +73,6 @@ github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
-go.opentelemetry.io/collector/component v0.120.1-0.20250226024140-8099e51f9a77 h1:yz63enLYYcZkHQ+5GZKL2YUf1fqrwb0OKBQMdIRMF48=
-go.opentelemetry.io/collector/component v0.120.1-0.20250226024140-8099e51f9a77/go.mod h1:Ya5O+5NWG9XdhJPnOVhKtBrNXHN3hweQbB98HH4KPNU=
 go.opentelemetry.io/collector/component/componentstatus v0.120.1-0.20250226024140-8099e51f9a77 h1:VqZscK/gQc2thbK/FIoLX5ZPvxq/Tufo3FDWFKFf0l8=
 go.opentelemetry.io/collector/component/componentstatus v0.120.1-0.20250226024140-8099e51f9a77/go.mod h1:kbuAEddxvcyjGLXGmys3nckAj4jTGC0IqDIEXAOr3Ag=
 go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250226024140-8099e51f9a77 h1:acRutss2nHDMMJBG1rgNq/Gc0QvntS4ERonMxqsAyN8=

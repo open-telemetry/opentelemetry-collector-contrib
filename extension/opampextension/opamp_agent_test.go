@@ -34,11 +34,12 @@ import (
 func TestNewOpampAgent(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopSettings(extensiontest.NopType)
-	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
+	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest", Namespace: "opentelemetry-test"}
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 	assert.Equal(t, "otelcoltest", o.agentType)
 	assert.Equal(t, "test version", o.agentVersion)
+	assert.Equal(t, "opentelemetry-test", o.agentNamespace)
 	assert.NotEmpty(t, o.instanceID.String())
 	assert.True(t, o.capabilities.ReportsEffectiveConfig)
 	assert.True(t, o.capabilities.ReportsHealth)
@@ -54,10 +55,12 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 	set.Resource.Attributes().PutStr(semconv.AttributeServiceName, "otelcol-distro")
 	set.Resource.Attributes().PutStr(semconv.AttributeServiceVersion, "distro.0")
 	set.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, "f8999bc1-4c9b-4619-9bae-7f009d2411ec")
+	set.Resource.Attributes().PutStr(semconv.AttributeServiceNamespace, "opentelemetry-test")
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 	assert.Equal(t, "otelcol-distro", o.agentType)
 	assert.Equal(t, "distro.0", o.agentVersion)
+	assert.Equal(t, "opentelemetry-test", o.agentNamespace)
 	assert.Equal(t, "f8999bc1-4c9b-4619-9bae-7f009d2411ec", o.instanceID.String())
 	assert.NoError(t, o.Shutdown(context.Background()))
 }
@@ -70,6 +73,7 @@ func TestCreateAgentDescription(t *testing.T) {
 	serviceName := "otelcol-distrot"
 	serviceVersion := "distro.0"
 	serviceInstanceUUID := "f8999bc1-4c9b-4619-9bae-7f009d2411ec"
+	serviceNamespace := "opentelemetry-test"
 
 	testCases := []struct {
 		name string
@@ -85,6 +89,7 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
 					stringKeyValue(semconv.AttributeServiceName, serviceName),
 					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
+					stringKeyValue(semconv.AttributeServiceNamespace, serviceNamespace),
 				},
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
 					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
@@ -107,6 +112,7 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
 					stringKeyValue(semconv.AttributeServiceName, serviceName),
 					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
+					stringKeyValue(semconv.AttributeServiceNamespace, serviceNamespace),
 				},
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
 					stringKeyValue("env", "prod"),
@@ -130,6 +136,7 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
 					stringKeyValue(semconv.AttributeServiceName, serviceName),
 					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
+					stringKeyValue(semconv.AttributeServiceNamespace, serviceNamespace),
 				},
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
 					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
@@ -150,6 +157,7 @@ func TestCreateAgentDescription(t *testing.T) {
 			set.Resource.Attributes().PutStr(semconv.AttributeServiceName, serviceName)
 			set.Resource.Attributes().PutStr(semconv.AttributeServiceVersion, serviceVersion)
 			set.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, serviceInstanceUUID)
+			set.Resource.Attributes().PutStr(semconv.AttributeServiceNamespace, serviceNamespace)
 
 			o, err := newOpampAgent(cfg, set)
 			require.NoError(t, err)
