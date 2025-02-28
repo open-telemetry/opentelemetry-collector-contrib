@@ -302,6 +302,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	done := make(chan error, 1)
 	var connected atomic.Bool
+	var doneReported atomic.Bool
 
 	// Start a one-shot server to get the Collector's agent description
 	// and available components using the Collector's OpAMP extension.
@@ -349,6 +350,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 				return response
 			}
 
+			// if available components have not been reported, agent description is sufficient to continue
 			availableComponents, availableComponentsOk := s.availableComponents.Load().(*protobufs.AvailableComponents)
 			if availableComponentsOk {
 				// must have a full list of components if available components have been reported
@@ -361,8 +363,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 				return response
 			}
 
-			// if available components have not been reported, agent description is sufficient
-			done <- nil
+			// need to only report done once, not on each message - otherwise, we get a hung thread
+			if !doneReported.Load() {
+				done <- nil
+				doneReported.Store(true)
+			}
+
 			return response
 		},
 	}.toServerSettings())
