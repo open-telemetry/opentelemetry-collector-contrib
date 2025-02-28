@@ -306,6 +306,7 @@ body:
       - receiver/statsd
       - receiver/syslog
       - receiver/systemd
+      - receiver/tcpcheck
       - receiver/tcplog
       - receiver/tlscheck
       - receiver/udplog
