@@ -222,7 +222,7 @@ func (p *Parser[K]) prependContextToPaths(context string, ottl string, pathsForO
 		}
 	}
 
-	return insertContextIntoOTTLOffsets(context, ottl, missingContextOffsets)
+	return insertContextIntoPathsOffsets(context, ottl, missingContextOffsets)
 }
 
 // prependContextToStatementPaths changes the given OTTL statement adding the context name prefix
@@ -298,7 +298,7 @@ func parseValueExpression(raw string) (*value, error) {
 	return parsed, nil
 }
 
-func insertContextIntoOTTLOffsets(context string, statement string, offsets []int) (string, error) {
+func insertContextIntoPathsOffsets(context string, statement string, offsets []int) (string, error) {
 	if len(offsets) == 0 {
 		return statement, nil
 	}

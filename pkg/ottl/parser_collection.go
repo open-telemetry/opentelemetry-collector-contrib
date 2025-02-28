@@ -10,22 +10,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// Safeguard to statically ensure the Parser.ParseStatements method can be reflectively
-// invoked by the ottlParserWrapper.parseStatements
-var _ interface {
-	ParseStatements(statements []string) ([]*Statement[any], error)
-} = (*Parser[any])(nil)
-
-// Safeguard to statically ensure any ParsedStatementConverter method can be reflectively
-// invoked by the statementsConverterWrapper.call
-var _ ParsedStatementConverter[any, any] = func(
-	_ *ParserCollection[any],
-	_ StatementsGetter,
-	_ []*Statement[any],
-) (any, error) {
-	return nil, nil
-}
-
 // StatementsGetter represents a set of statements to be parsed.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
@@ -34,33 +18,11 @@ type StatementsGetter interface {
 	GetStatements() []string
 }
 
-type defaultStatementsGetter []string
-
-func (d defaultStatementsGetter) GetStatements() []string {
-	return d
-}
-
 // NewStatementsGetter creates a new StatementsGetter.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 func NewStatementsGetter(statements []string) StatementsGetter {
-	return defaultStatementsGetter(statements)
-}
-
-// Safeguard to statically ensure the Parser.ParseConditions method can be reflectively
-// invoked by the ottlParserWrapper.parseConditions
-var _ interface {
-	ParseConditions(conditions []string) ([]*Condition[any], error)
-} = (*Parser[any])(nil)
-
-// Safeguard to statically ensure any ParsedConditionConverter method can be reflectively
-// invoked by the conditionsConverterWrapper.call
-var _ ParsedConditionConverter[any, any] = func(
-	_ *ParserCollection[any],
-	_ ConditionsGetter,
-	_ []*Condition[any],
-) (any, error) {
-	return nil, nil
+	return defaultGetter(statements)
 }
 
 // ConditionsGetter represents a set of conditions to be parsed.
@@ -71,17 +33,21 @@ type ConditionsGetter interface {
 	GetConditions() []string
 }
 
-type defaultConditionsGetter []string
-
-func (d defaultConditionsGetter) GetConditions() []string {
-	return d
-}
-
 // NewConditionsGetter creates a new ConditionsGetter.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 func NewConditionsGetter(statements []string) ConditionsGetter {
-	return defaultConditionsGetter(statements)
+	return defaultGetter(statements)
+}
+
+type defaultGetter []string
+
+func (d defaultGetter) GetStatements() []string {
+	return d
+}
+
+func (d defaultGetter) GetConditions() []string {
+	return d
 }
 
 // ParserCollection is a configurable set of ottl.Parser that can handle multiple OTTL contexts
@@ -164,12 +130,14 @@ func newNopParsedStatementConverter[K any]() ParsedStatementConverter[K, any] {
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 type ParserCollectionContextOption[K, R any] func(*ParserCollectionConverter[R], *Parser[K])
 
-type ParseConditionsWithContext[R any] func(collection *ParserCollection[R], context string, conditions ConditionsGetter, prependPathsContext bool) (R, error)
-type ParseStatementsWithContext[R any] func(collection *ParserCollection[R], context string, statements StatementsGetter, prependPathsContext bool) (R, error)
-type ParserCollectionConverter[R any] struct {
-	statementsConverter ParseStatementsWithContext[R]
-	conditionsConverter ParseConditionsWithContext[R]
-}
+type (
+	ParseConditionsWithContext[R any] func(collection *ParserCollection[R], context string, conditions ConditionsGetter, prependPathsContext bool) (R, error)
+	ParseStatementsWithContext[R any] func(collection *ParserCollection[R], context string, statements StatementsGetter, prependPathsContext bool) (R, error)
+	ParserCollectionConverter[R any]  struct {
+		statementsConverter ParseStatementsWithContext[R]
+		conditionsConverter ParseConditionsWithContext[R]
+	}
+)
 
 func WithConditionConverter[K any, R any](converter ParsedConditionConverter[K, R]) ParserCollectionContextOption[K, R] {
 	return func(pcp *ParserCollectionConverter[R], parser *Parser[K]) {
