@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter/internal/metadata"
 )
 
 func createSimpleLogData(numberOfLogs int) plog.Logs {
@@ -40,7 +42,7 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 }
 
 func TestNewLogsExporter(t *testing.T) {
-	got, err := newLogsExporter(exportertest.NewNopSettings(), &Config{
+	got, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), &Config{
 		Endpoint: "us-west-1.log.aliyuncs.com",
 		Project:  "demo-project",
 		Logstore: "demo-logstore",
@@ -55,7 +57,7 @@ func TestNewLogsExporter(t *testing.T) {
 }
 
 func TestSTSTokenExporter(t *testing.T) {
-	got, err := newLogsExporter(exportertest.NewNopSettings(), &Config{
+	got, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), &Config{
 		Endpoint:      "us-west-1.log.aliyuncs.com",
 		Project:       "demo-project",
 		Logstore:      "demo-logstore",
@@ -66,7 +68,7 @@ func TestSTSTokenExporter(t *testing.T) {
 }
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {
-	got, err := newLogsExporter(exportertest.NewNopSettings(), &Config{})
+	got, err := newLogsExporter(exportertest.NewNopSettings(metadata.Type), &Config{})
 	assert.Error(t, err)
 	require.Nil(t, got)
 }

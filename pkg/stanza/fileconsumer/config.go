@@ -59,6 +59,7 @@ func NewConfig() *Config {
 		MaxConcurrentFiles: defaultMaxConcurrentFiles,
 		StartAt:            "end",
 		FingerprintSize:    fingerprint.DefaultSize,
+		InitialBufferSize:  scanner.DefaultBufferSize,
 		MaxLogSize:         reader.DefaultMaxLogSize,
 		Encoding:           defaultEncoding,
 		FlushPeriod:        reader.DefaultFlushPeriod,
@@ -77,6 +78,7 @@ type Config struct {
 	MaxBatches              int             `mapstructure:"max_batches,omitempty"`
 	StartAt                 string          `mapstructure:"start_at,omitempty"`
 	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
+	InitialBufferSize       helper.ByteSize `mapstructure:"initial_buffer_size,omitempty"`
 	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
 	Encoding                string          `mapstructure:"encoding,omitempty"`
 	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
@@ -154,7 +156,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		TelemetrySettings:       set,
 		FromBeginning:           startAtBeginning,
 		FingerprintSize:         int(c.FingerprintSize),
-		InitialBufferSize:       scanner.DefaultBufferSize,
+		InitialBufferSize:       int(c.InitialBufferSize),
 		MaxLogSize:              int(c.MaxLogSize),
 		Encoding:                enc,
 		SplitFunc:               splitFunc,

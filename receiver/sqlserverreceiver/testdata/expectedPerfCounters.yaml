@@ -4,6 +4,12 @@ resourceMetrics:
         - key: sqlserver.instance.name
           value:
             stringValue: 8cac97ac9b8f
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: Pages found in the buffer pool without having to read from disk.
@@ -22,6 +28,12 @@ resourceMetrics:
         - key: sqlserver.instance.name
           value:
             stringValue: 8cac97ac9b8f
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: The number of processes that are currently blocked
@@ -40,6 +52,12 @@ resourceMetrics:
         - key: sqlserver.instance.name
           value:
             stringValue: 8cac97ac9b8f
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: Number of users connected to the SQL Server.
@@ -58,6 +76,12 @@ resourceMetrics:
         - key: sqlserver.instance.name
           value:
             stringValue: 8cac97ac9b8f
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: Number of lock requests resulting in a wait.
@@ -76,6 +100,12 @@ resourceMetrics:
         - key: sqlserver.instance.name
           value:
             stringValue: 8cac97ac9b8f
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: The number of read operations that were throttled in the last second
@@ -94,6 +124,12 @@ resourceMetrics:
         - key: sqlserver.instance.name
           value:
             stringValue: 8cac97ac9b8f
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: The number of write operations that were throttled in the last second
@@ -112,6 +148,12 @@ resourceMetrics:
         - key: sqlserver.instance.name
           value:
             stringValue: 8cac97ac9b8f
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: The number of write operations that were throttled in the last second
@@ -130,6 +172,12 @@ resourceMetrics:
         - key: sqlserver.instance.name
           value:
             stringValue: 8cac97ac9b8f
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: The number of read operations that were throttled in the last second
@@ -148,6 +196,12 @@ resourceMetrics:
         - key: sqlserver.instance.name
           value:
             stringValue: 8cac97ac9b8f
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: Number of batch requests received by SQL Server.
@@ -166,6 +220,12 @@ resourceMetrics:
         - key: sqlserver.instance.name
           value:
             stringValue: 8cac97ac9b8f
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: Number of SQL compilations needed.
@@ -184,6 +244,12 @@ resourceMetrics:
         - key: sqlserver.instance.name
           value:
             stringValue: 8cac97ac9b8f
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: Number of SQL recompilations needed.

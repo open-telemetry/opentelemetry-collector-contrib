@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -88,16 +89,20 @@ type Config struct {
 // This is a slightly modified version of exporterbatcher.Config,
 // to enable tri-state Enabled: unset, false, true.
 type BatcherConfig struct {
-	// Enabled indicates whether to enqueue batches before sending
-	// to the exporter. If Enabled is specified (non-nil),
-	// then the exporter will not perform any buffering itself.
-	Enabled *bool `mapstructure:"enabled"`
+	exporterbatcher.Config `mapstructure:",squash"`
 
-	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
-	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
+	// enabledSet tracks whether Enabled has been specified.
+	// If enabledSet is false, the exporter will perform its
+	// own buffering.
+	enabledSet bool `mapstructure:"-"`
+}
 
-	exporterbatcher.MinSizeConfig `mapstructure:",squash"`
-	exporterbatcher.MaxSizeConfig `mapstructure:",squash"`
+func (c *BatcherConfig) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(c); err != nil {
+		return err
+	}
+	c.enabledSet = conf.IsSet("enabled")
+	return nil
 }
 
 type TelemetrySettings struct {
@@ -189,11 +194,6 @@ type RetrySettings struct {
 type MappingsSettings struct {
 	// Mode configures the field mappings.
 	Mode string `mapstructure:"mode"`
-
-	// Deprecated: [v0.104.0] dedotting will always be applied for ECS mode
-	// in future, and never for other modes. Elasticsearch's "dot_expander"
-	// Ingest processor may be used as an alternative for non-ECS modes.
-	Dedot bool `mapstructure:"dedot"`
 }
 
 type MappingMode int
@@ -363,9 +363,6 @@ func (cfg *Config) MappingMode() MappingMode {
 }
 
 func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
-	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS || !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
-		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")
-	}
 	if cfg.Retry.MaxRequests != 0 {
 		cfg.Retry.MaxRetries = cfg.Retry.MaxRequests - 1
 		// Do not set cfg.Retry.Enabled = false if cfg.Retry.MaxRequest = 1 to avoid breaking change on behavior

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -28,7 +28,7 @@ func TestValidConfig(t *testing.T) {
 	cfg.Password = "otel"
 
 	require.EqualValues(t, defaultEndpoint, cfg.Endpoint)
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 }
 
 func TestCreateMetrics(t *testing.T) {
@@ -43,7 +43,7 @@ func TestCreateMetrics(t *testing.T) {
 
 				_, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopSettings(),
+					receivertest.NewNopSettings(metadata.Type),
 					createDefaultConfig(),
 					consumertest.NewNop(),
 				)

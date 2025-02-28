@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter/internal/metadata"
 )
 
 func Test_createDefaultConfig(t *testing.T) {
@@ -39,7 +41,7 @@ func TestWithTracesMarshalers_err(t *testing.T) {
 
 	tracesMarshaler := &customTraceMarshaler{encoding: "unknown"}
 	f := NewFactory(withTracesMarshalers(tracesMarshaler))
-	r, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
+	r, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	// no available broker
@@ -51,7 +53,7 @@ func TestCreateTraces_err(t *testing.T) {
 	cfg.Endpoint = ""
 
 	f := pulsarExporterFactory{tracesMarshalers: tracesMarshalers()}
-	r, err := f.createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	r, err := f.createTracesExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	// no available broker
@@ -63,7 +65,7 @@ func TestCreateMetrics_err(t *testing.T) {
 	cfg.Endpoint = ""
 
 	mf := pulsarExporterFactory{metricsMarshalers: metricsMarshalers()}
-	r, err := mf.createMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	r, err := mf.createMetricsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -74,7 +76,7 @@ func TestCreateLogs_err(t *testing.T) {
 	cfg.Endpoint = ""
 
 	mf := pulsarExporterFactory{logsMarshalers: logsMarshalers()}
-	r, err := mf.createLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	r, err := mf.createLogsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)

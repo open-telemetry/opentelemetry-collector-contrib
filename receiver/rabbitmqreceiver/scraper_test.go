@@ -21,14 +21,15 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/models"
 )
 
 func TestScraperStart(t *testing.T) {
-	clientConfigNonExistandCA := confighttp.NewDefaultClientConfig()
-	clientConfigNonExistandCA.Endpoint = defaultEndpoint
-	clientConfigNonExistandCA.TLSSetting = configtls.ClientConfig{
+	clientConfigNonexistentCA := confighttp.NewDefaultClientConfig()
+	clientConfigNonexistentCA.Endpoint = defaultEndpoint
+	clientConfigNonexistentCA.TLSSetting = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: "/non/existent",
 		},
@@ -46,7 +47,7 @@ func TestScraperStart(t *testing.T) {
 			desc: "Bad Config",
 			scraper: &rabbitmqScraper{
 				cfg: &Config{
-					ClientConfig: clientConfigNonExistandCA,
+					ClientConfig: clientConfigNonexistentCA,
 				},
 				settings: componenttest.NewNopTelemetrySettings(),
 			},
@@ -130,7 +131,7 @@ func TestScraperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config), receivertest.NewNopSettings())
+			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config), receivertest.NewNopSettings(metadata.Type))
 			scraper.client = tc.setupMockClient(t)
 
 			actualMetrics, err := scraper.scrape(context.Background())

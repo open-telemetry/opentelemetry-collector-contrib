@@ -57,11 +57,19 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+			if tt.resAttrsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `server.address`: This attribute will be enabled by default starting in release v0.121.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.resAttrsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `server.port`: This attribute will be enabled by default starting in release v0.121.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -170,6 +178,8 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverUserConnectionCountDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
+			rb.SetServerAddress("server.address-val")
+			rb.SetServerPort(11)
 			rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
 			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")

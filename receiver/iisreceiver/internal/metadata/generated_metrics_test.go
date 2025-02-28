@@ -57,7 +57,7 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
@@ -67,6 +67,12 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
+
+			allMetricsCount++
+			mb.RecordIisApplicationPoolStateDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordIisApplicationPoolUptimeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -141,6 +147,30 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "iis.application_pool.state":
+					assert.False(t, validatedMetrics["iis.application_pool.state"], "Found a duplicate in the metrics slice: iis.application_pool.state")
+					validatedMetrics["iis.application_pool.state"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)", ms.At(i).Description())
+					assert.Equal(t, "{state}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "iis.application_pool.uptime":
+					assert.False(t, validatedMetrics["iis.application_pool.uptime"], "Found a duplicate in the metrics slice: iis.application_pool.uptime")
+					validatedMetrics["iis.application_pool.uptime"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The application pools uptime period since the last restart.", ms.At(i).Description())
+					assert.Equal(t, "{ms}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "iis.connection.active":
 					assert.False(t, validatedMetrics["iis.connection.active"], "Found a duplicate in the metrics slice: iis.connection.active")
 					validatedMetrics["iis.connection.active"] = true

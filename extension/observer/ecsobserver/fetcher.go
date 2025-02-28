@@ -69,7 +69,7 @@ type taskFetcherOptions struct {
 func newTaskFetcherFromConfig(cfg Config, logger *zap.Logger) (*taskFetcher, error) {
 	svcNameFilter, err := serviceConfigsToFilter(cfg.Services)
 	if err != nil {
-		return nil, fmt.Errorf("init serivce name filter failed: %w", err)
+		return nil, fmt.Errorf("init service name filter failed: %w", err)
 	}
 	return newTaskFetcher(taskFetcherOptions{
 		Logger:            logger,
@@ -275,7 +275,7 @@ func (f *taskFetcher) attachContainerInstance(ctx context.Context, tasks []*task
 		containerInstance := aws.StringValue(t.Task.ContainerInstanceArn)
 		ec2Info, ok := ciToEC2[containerInstance]
 		if !ok {
-			return fmt.Errorf("container instance ec2 info not found containerInstnace=%q", containerInstance)
+			return fmt.Errorf("container instance ec2 info not found containerInstance=%q", containerInstance)
 		}
 		t.EC2 = ec2Info
 	}
@@ -341,7 +341,7 @@ type serviceNameFilter func(name string) bool
 func (f *taskFetcher) getAllServices(ctx context.Context) ([]*ecs.Service, error) {
 	svc := f.ecs
 	cluster := aws.String(f.cluster)
-	// List and filter out services we need to desribe.
+	// List and filter out services we need to describe.
 	listReq := ecs.ListServicesInput{Cluster: cluster}
 	var servicesToDescribe []*string
 	for {
@@ -396,7 +396,7 @@ func (f *taskFetcher) attachService(tasks []*taskAnnotated, services []*ecs.Serv
 
 	// Attach service to task
 	for _, t := range tasks {
-		// taskAnnotated is created using RunTask i.e. not manged by a service.
+		// taskAnnotated is created using RunTask i.e. not managed by a service.
 		if t.Task.StartedBy == nil {
 			continue
 		}

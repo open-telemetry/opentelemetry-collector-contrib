@@ -8,7 +8,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
+	"github.com/jaegertracing/jaeger-idl/proto-gen/api_v2"
 	"google.golang.org/grpc"
 )
 

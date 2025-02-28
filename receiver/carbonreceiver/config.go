@@ -7,13 +7,13 @@ import (
 	"errors"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
 
-var _ component.ConfigValidator = (*Config)(nil)
+var _ xconfmap.Validator = (*Config)(nil)
 
 // Config defines configuration for the Carbon receiver.
 type Config struct {

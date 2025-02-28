@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -88,11 +89,10 @@ func TestUnmarshalConfig(t *testing.T) {
 			BatcherConfig: exporterbatcher.Config{
 				Enabled:      true,
 				FlushTimeout: 200 * time.Millisecond,
-				MinSizeConfig: exporterbatcher.MinSizeConfig{
-					MinSizeItems: 1000,
-				},
-				MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-					MaxSizeItems: 10000,
+				SizeConfig: exporterbatcher.SizeConfig{
+					Sizer:   exporterbatcher.SizerTypeItems,
+					MinSize: 1000,
+					MaxSize: 10000,
 				},
 			},
 			Arrow: ArrowConfig{
@@ -138,7 +138,7 @@ func TestDefaultConfigValid(t *testing.T) {
 	// this must be set by the user and config
 	// validation always checks that a value is set.
 	cfg.(*Config).Arrow.MaxStreamLifetime = 2 * time.Second
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 }
 
 func TestArrowConfigPayloadCompressionZstd(t *testing.T) {

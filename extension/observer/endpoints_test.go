@@ -282,6 +282,20 @@ func TestEndpointEnv(t *testing.T) {
 				"host":      "192.68.73.2",
 			},
 		},
+		{
+			name: "Kafka topic",
+			endpoint: Endpoint{
+				ID:      EndpointID("topic1"),
+				Target:  "topic1",
+				Details: &KafkaTopic{},
+			},
+			want: EndpointEnv{
+				"id":       "topic1",
+				"type":     "kafka.topics",
+				"host":     "topic1",
+				"endpoint": "topic1",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

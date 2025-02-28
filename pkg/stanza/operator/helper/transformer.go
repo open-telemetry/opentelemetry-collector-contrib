@@ -94,10 +94,23 @@ func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entr
 
 // HandleEntryError will handle an entry error using the on_error strategy.
 func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry.Entry, err error) error {
+	if entry == nil {
+		return fmt.Errorf("got a nil entry, this should not happen and is potentially a bug")
+	}
+
+	logFields := []zap.Field{
+		zap.Any("error", err),
+		zap.Any("action", t.OnError),
+		zap.Any("entry.timestamp", entry.Timestamp),
+	}
+	for attrName, attrValue := range entry.Attributes {
+		logFields = append(logFields, zap.Any(attrName, attrValue))
+	}
+
 	if t.OnError == SendOnErrorQuiet || t.OnError == DropOnErrorQuiet {
-		t.Logger().Debug("Failed to process entry", zap.Any("error", err), zap.Any("action", t.OnError))
+		t.Logger().Debug("Failed to process entry", logFields...)
 	} else {
-		t.Logger().Error("Failed to process entry", zap.Any("error", err), zap.Any("action", t.OnError))
+		t.Logger().Error("Failed to process entry", logFields...)
 	}
 	if t.OnError == SendOnError || t.OnError == SendOnErrorQuiet {
 		writeErr := t.Write(ctx, entry)

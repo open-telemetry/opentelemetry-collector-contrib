@@ -14,13 +14,15 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 )
 
 func TestTrackerAddSpans(t *testing.T) {
 	tracker := NewTracker(
 		DefaultConfig(),
 		"abcd",
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 	)
 
 	err := tracker.Start(context.Background(), componenttest.NewNopHost())
@@ -72,7 +74,7 @@ func TestTrackerStart(t *testing.T) {
 			tracker := NewTracker(
 				tt.config,
 				"abcd",
-				exportertest.NewNopSettings(),
+				exportertest.NewNopSettings(metadata.Type),
 			)
 
 			err := tracker.Start(context.Background(), componenttest.NewNopHost())

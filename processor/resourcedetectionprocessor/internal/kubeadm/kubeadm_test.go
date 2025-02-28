@@ -28,16 +28,22 @@ func (m *mockMetadata) ClusterName(_ context.Context) (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func (m *mockMetadata) ClusterUID(_ context.Context) (string, error) {
+	args := m.MethodCalled("ClusterUID")
+	return args.String(0), args.Error(1)
+}
+
 func TestDetect(t *testing.T) {
 	md := &mockMetadata{}
 	md.On("ClusterName").Return("cluster-1", nil)
+	md.On("ClusterUID").Return("uid-1", nil)
 	cfg := CreateDefaultConfig()
 	// set k8s cluster env variables and auth type to create a dummy API client
 	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(context.Background())
@@ -47,6 +53,7 @@ func TestDetect(t *testing.T) {
 
 	expected := map[string]any{
 		conventions.AttributeK8SClusterName: "cluster-1",
+		"k8s.cluster.uid":                   "uid-1",
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -56,12 +63,13 @@ func TestDetectDisabledResourceAttributes(t *testing.T) {
 	md := &mockMetadata{}
 	cfg := CreateDefaultConfig()
 	cfg.ResourceAttributes.K8sClusterName.Enabled = false
+	cfg.ResourceAttributes.K8sClusterUID.Enabled = false
 	// set k8s cluster env variables and auth type to create a dummy API client
 	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
 	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
 	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
 
-	k8sDetector, err := NewDetector(processortest.NewNopSettings(), cfg)
+	k8sDetector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), cfg)
 	require.NoError(t, err)
 	k8sDetector.(*detector).provider = md
 	res, schemaURL, err := k8sDetector.Detect(context.Background())

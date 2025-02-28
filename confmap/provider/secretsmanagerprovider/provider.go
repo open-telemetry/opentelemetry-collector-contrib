@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package secretsmanagerprovider // import "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider"
 
 import (
@@ -36,16 +38,6 @@ func NewFactory() confmap.ProviderFactory {
 }
 
 func newWithSettings(_ confmap.ProviderSettings) confmap.Provider {
-	return &provider{client: nil}
-}
-
-// New returns a new confmap.Provider that reads the configuration from the given AWS Secrets Manager Name or ARN.
-//
-// This Provider supports "secretsmanager" scheme, and can be called with a selector:
-// `secretsmanager:NAME_OR_ARN`
-//
-// Deprecated: [v0.100.0] Use NewFactory() instead.
-func New() confmap.Provider {
 	return &provider{client: nil}
 }
 

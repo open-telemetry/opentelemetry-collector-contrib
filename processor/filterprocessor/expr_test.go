@@ -19,6 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
 const (
@@ -130,7 +131,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (processor.
 	next := &consumertest.MetricsSink{}
 	proc, err := factory.CreateMetrics(
 		ctx,
-		processortest.NewNopSettings(),
+		processortest.NewNopSettings(metadata.Type),
 		cfg,
 		next,
 	)

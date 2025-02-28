@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector/internal/metadata"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -23,8 +25,6 @@ func TestNewFactory(t *testing.T) {
 	cfg := &Config{
 		PipelinePriority: [][]pipeline.ID{{traces0, traces1}, {traces2}},
 		RetryInterval:    5 * time.Minute,
-		RetryGap:         10 * time.Second,
-		MaxRetries:       5,
 	}
 
 	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
@@ -34,7 +34,7 @@ func TestNewFactory(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettings(), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 	defer func() {
 		assert.NoError(t, conn.Shutdown(context.Background()))
 	}()
