@@ -8,7 +8,9 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"compress/gzip"
 	"context"
+	"maps"
 	"net/http"
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -82,7 +84,8 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Mapping: MappingsSettings{
-			Mode: "none",
+			Mode:         "none",
+			AllowedModes: slices.Sorted(maps.Keys(canonicalMappingModes)),
 		},
 		LogstashFormat: LogstashFormatSettings{
 			Enabled:         false,
@@ -94,12 +97,12 @@ func createDefaultConfig() component.Config {
 			LogResponseBody: false,
 		},
 		Batcher: BatcherConfig{
-			FlushTimeout: 30 * time.Second,
-			MinSizeConfig: exporterbatcher.MinSizeConfig{ //nolint:staticcheck
-				MinSizeItems: &defaultBatcherMinSizeItems,
-			},
-			MaxSizeConfig: exporterbatcher.MaxSizeConfig{ //nolint:staticcheck
-				MaxSizeItems: nil,
+			Config: exporterbatcher.Config{
+				FlushTimeout: 30 * time.Second,
+				SizeConfig: exporterbatcher.SizeConfig{
+					Sizer:   exporterbatcher.SizerTypeItems,
+					MinSize: defaultBatcherMinSizeItems,
+				},
 			},
 		},
 		Flush: FlushSettings{
@@ -203,8 +206,8 @@ func exporterhelperOptions(
 		exporterhelper.WithShutdown(shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 	}
-	if batcherCfg, ok := cfg.exporterbatcherConfig(); ok {
-		opts = append(opts, exporterhelper.WithBatcher(batcherCfg))
+	if cfg.Batcher.enabledSet {
+		opts = append(opts, exporterhelper.WithBatcher(cfg.Batcher.Config))
 
 		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
 		//
