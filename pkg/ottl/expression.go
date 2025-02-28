@@ -193,11 +193,10 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 			evaluated[k] = t
 		}
 	}
-	result := pcommon.NewMap()
-	if err := result.FromRaw(evaluated); err != nil {
-		return nil, err
-	}
-	return result, nil
+	// return the raw map instead of creating a pcommon.Map,
+	// otherwise map structures cannot be used within slices, as the Slice.FromRaw() method
+	// only supports raw types for its items
+	return evaluated, nil
 }
 
 // TypeError represents that a value was not an expected type.
