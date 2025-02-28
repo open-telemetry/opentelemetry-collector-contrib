@@ -89,7 +89,6 @@ Emeritus Triagers:
 
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
-- [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Christos Markou](https://github.com/ChrsMark), Elastic (on leave)
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google (on leave)
@@ -108,6 +107,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 
 - [Alex Boten](https://github.com/codeboten), Honeycomb
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
+- [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
