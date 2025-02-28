@@ -55,7 +55,13 @@ func (r *metricsReceiver) Start(ctx context.Context, host component.Host) error 
 		},
 	}
 
-	carbonReceiver, err := fact.CreateMetrics(ctx, r.set, carbonCfg, r.nextConsumer)
+	carbonSettings := receiver.Settings{
+		ID:                component.MustNewIDWithName("carbon", r.set.ID.Name()),
+		TelemetrySettings: r.set.TelemetrySettings,
+		BuildInfo:         r.set.BuildInfo,
+	}
+
+	carbonReceiver, err := fact.CreateMetrics(ctx, carbonSettings, carbonCfg, r.nextConsumer)
 	if err != nil {
 		return err
 	}
