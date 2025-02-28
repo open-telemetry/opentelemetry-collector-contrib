@@ -668,6 +668,11 @@ func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {
 			return false
 		}
 
+		require.Len(t, ac.GetComponents(), 5) // connectors, exporters, extensions, processors, receivers
+		require.NotNil(t, ac.GetComponents()["extensions"])
+		require.NotNil(t, ac.GetComponents()["extensions"].GetSubComponentMap())
+		require.NotNil(t, ac.GetComponents()["extensions"].GetSubComponentMap()["opamp"])
+
 		ad, ok := agentDescription.Load().(*protobufs.AgentDescription)
 		if !ok {
 			return false
