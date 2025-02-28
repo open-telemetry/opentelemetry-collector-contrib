@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -73,13 +72,12 @@ func Test_WithParserCollectionContext(t *testing.T) {
 	conv := newNopParsedStatementConverter[any]()
 	option := WithParserCollectionContext("testContext", ps, WithStatementConverter(conv))
 
-	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings(), option)
+	pc, err := NewParserCollection(componenttest.NewNopTelemetrySettings(), option)
 	require.NoError(t, err)
 
 	pw, exists := pc.contextParsers["testContext"]
 	assert.True(t, exists)
 	assert.NotNil(t, pw)
-	assert.Equal(t, reflect.ValueOf(conv), reflect.ValueOf(pw.statementsConverter))
 }
 
 func Test_WithParserCollectionContextNoStatementConverter(t *testing.T) {

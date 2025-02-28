@@ -212,7 +212,7 @@ func (p *Parser[K]) prependContextToPaths(context string, ottl string, pathsForO
 	if err != nil {
 		return "", err
 	} else if len(paths) == 0 {
-		return "", nil
+		return ottl, nil
 	}
 
 	var missingContextOffsets []int

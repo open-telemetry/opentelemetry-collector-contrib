@@ -146,7 +146,7 @@ func WithConditionConverter[K any, R any](converter ParsedConditionConverter[K, 
 			var parsingConditions []string
 			if prependPathsContext {
 				originalConditions := conditions.GetConditions()
-				parsingConditions := make([]string, 0, len(originalConditions))
+				parsingConditions = make([]string, 0, len(originalConditions))
 				for _, cond := range originalConditions {
 					prependedCondition, prependErr := parser.prependContextToConditionPaths(context, cond)
 					if prependErr != nil {
@@ -184,7 +184,7 @@ func WithStatementConverter[K any, R any](converter ParsedStatementConverter[K, 
 			var parsingStatements []string
 			if prependPathsContext {
 				originalStatements := statements.GetStatements()
-				parsingStatements := make([]string, 0, len(originalStatements))
+				parsingStatements = make([]string, 0, len(originalStatements))
 				for _, cond := range originalStatements {
 					prependedStatement, prependErr := parser.prependContextToStatementPaths(context, cond)
 					if prependErr != nil {
