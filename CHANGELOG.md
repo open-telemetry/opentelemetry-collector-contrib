@@ -17,6 +17,8 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 ### 🛑 Breaking changes 🛑
 
+- `receiver/prometheus`: Prometheus receiver now uses scrapers in Prometheus 3.0. (#36873)
+  There are a number of breaking changes in Prometheus 3.0. Learn more about those changes and migration guide on https://prometheus.io/docs/prometheus/latest/migration/.
 - `all`: Added support for go1.24, bumped minimum version to 1.23 (#37875)
 - `elasticsearchexporter`: Use go-elasticsearch/v8, require minimum version of ES 7.17.x or 8.x (#32454)
 - `elasticsearchexporter`: Remove dedot config. ECS mode now always dedots, no others dedot at all. (#33772)

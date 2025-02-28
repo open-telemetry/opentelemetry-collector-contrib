@@ -198,7 +198,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 	r, err := NewFactory().CreateTraces(
 		context.Background(),
-		receivertest.NewNopSettingsWithType(componentmetadata.Type),
+		receivertest.NewNopSettings(componentmetadata.Type),
 		cfg,
 		consumertest.NewNop())
 
@@ -259,7 +259,7 @@ func newGRPCReceiver(t *testing.T, endpoint string, settings component.Telemetry
 }
 
 func newReceiver(t *testing.T, factory receiver.Factory, settings component.TelemetrySettings, cfg *Config, id component.ID, tc consumer.Traces, mc consumer.Metrics) component.Component {
-	set := receivertest.NewNopSettingsWithType(componentmetadata.Type)
+	set := receivertest.NewNopSettings(componentmetadata.Type)
 	set.TelemetrySettings = settings
 	set.ID = id
 	var r component.Component
@@ -286,7 +286,7 @@ func TestStandardShutdown(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-	set := receivertest.NewNopSettingsWithType(componentmetadata.Type)
+	set := receivertest.NewNopSettings(componentmetadata.Type)
 	set.ID = testReceiverID
 	r, err := NewFactory().CreateTraces(
 		context.Background(),
@@ -363,7 +363,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 				cfg.GRPC.Keepalive.ServerParameters.MaxConnectionAgeGrace = 5 * time.Second
 			}
 			cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-			set := receivertest.NewNopSettingsWithType(componentmetadata.Type)
+			set := receivertest.NewNopSettings(componentmetadata.Type)
 			core, obslogs := observer.New(zapcore.DebugLevel)
 			set.TelemetrySettings.Logger = zap.New(core)
 
@@ -582,7 +582,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.GRPC.IncludeMetadata = true
-	id := component.NewID(component.MustNewType("arrow"))
+	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
 
@@ -695,7 +695,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 	cfg.GRPC.Auth = &configauth.Authentication{
 		AuthenticatorID: authID,
 	}
-	id := component.NewID(component.MustNewType("arrow"))
+	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
 
@@ -762,7 +762,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.GRPC.IncludeMetadata = true
-	id := component.NewID(component.MustNewType("arrow"))
+	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
 
@@ -860,7 +860,7 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 	}
 	// No keepalive parameters are set
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-	set := receivertest.NewNopSettingsWithType(componentmetadata.Type)
+	set := receivertest.NewNopSettings(componentmetadata.Type)
 
 	set.ID = testReceiverID
 	r, err := NewFactory().CreateTraces(

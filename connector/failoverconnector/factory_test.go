@@ -34,7 +34,7 @@ func TestNewFactory(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettings(metadata.Type), cfg, router.(consumer.Traces))
 	defer func() {
 		assert.NoError(t, conn.Shutdown(context.Background()))
 	}()
