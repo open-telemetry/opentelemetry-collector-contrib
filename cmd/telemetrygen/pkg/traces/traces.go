@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 
@@ -80,8 +80,6 @@ func Start(cfg *Config) error {
 	}
 
 	var attributes []attribute.KeyValue
-	// may be overridden by `--otlp-attributes service.name="foo"`
-	attributes = append(attributes, semconv.ServiceNameKey.String(cfg.ServiceName))
 	attributes = append(attributes, cfg.GetAttributes()...)
 
 	tracerProvider := sdktrace.NewTracerProvider(

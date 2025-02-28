@@ -34,7 +34,7 @@ import (
 // sending the data itself.
 type stefExporter struct {
 	set         component.TelemetrySettings
-	cfg         *Config
+	cfg         Config
 	compression stefpkg.Compression
 
 	// connMutex is taken when connecting, disconnecting or checking connection status.
@@ -43,6 +43,7 @@ type stefExporter struct {
 	connID      uint64
 	grpcConn    *grpc.ClientConn
 	client      *stefgrpc.Client
+	connCancel  context.CancelFunc
 
 	// The STEF writer we write metrics to and which in turns sends them over gRPC.
 	stefWriter      *oteltef.MetricsWriter
@@ -69,14 +70,16 @@ func (w *loggerWrapper) Errorf(_ context.Context, format string, v ...any) {
 func newStefExporter(set component.TelemetrySettings, cfg *Config) *stefExporter {
 	exp := &stefExporter{
 		set:     set,
-		cfg:     cfg,
+		cfg:     *cfg,
 		ackCond: internal.NewCancellableCond(),
 	}
 
 	exp.compression = stefpkg.CompressionNone
-	if cfg.Compression == "zstd" {
+	if exp.cfg.Compression == "zstd" {
 		exp.compression = stefpkg.CompressionZstd
 	}
+	// Disable built-in grpc compression. STEF has its own zstd compression support.
+	exp.cfg.Compression = ""
 	return exp
 }
 
@@ -147,8 +150,39 @@ func (s *stefExporter) ensureConnected(ctx context.Context) error {
 	}
 	s.client = stefgrpc.NewClient(settings)
 
-	grpcWriter, opts, err := s.client.Connect(ctx)
+	s.connCancel = nil
+	connCtx, connCancel := context.WithCancel(context.Background())
+
+	connectionAttemptDone := make(chan struct{})
+	defer close(connectionAttemptDone)
+
+	// Start a goroutine that waits for success, failure or cancellation of
+	// the connection attempt.
+	go func() {
+		// Wait for either connection attempt to be done or for the caller
+		// of ensureConnected() to give up.
+		select {
+		case <-ctx.Done():
+			// The caller of ensureConnected() cancelled while we are waiting
+			// for connection to be established. We have to cancel the
+			// connection attempt (and the whole connection if it raced us and
+			// managed to connect - we will reconnect later again in that case).
+			s.set.Logger.Debug("Canceling connection context because ensureConnected() caller cancelled.")
+			connCancel()
+		case <-connectionAttemptDone:
+			// Connection attempt finished (successfully or no). No need to wait for the
+			// previous case, calling connCancel() is not needed anymore now. It will be
+			// called later, when disconnecting.
+			// From this moment we are essentially detaching from the Context
+			// that passed to ensureConnected() since we wanted to honor it only
+			// for the duration of the connection attempt, but not for the duration
+			// of the entire existence of the connection.
+		}
+	}()
+
+	grpcWriter, opts, err := s.client.Connect(connCtx)
 	if err != nil {
+		connCancel()
 		return fmt.Errorf("failed to connect to destination: %w", err)
 	}
 
@@ -157,10 +191,17 @@ func (s *stefExporter) ensureConnected(ctx context.Context) error {
 	// Create STEF record writer over gRPC.
 	s.stefWriter, err = oteltef.NewMetricsWriter(grpcWriter, opts)
 	if err != nil {
+		connCancel()
 		return err
 	}
 
+	// From this point on we consider the connection successfully established.
 	s.isConnected = true
+
+	// We need to call the cancel func when this connection is over so that we don't
+	// leak the Context we just created. This will be done in disconnect().
+	s.connCancel = connCancel
+
 	s.set.Logger.Debug("Connected to destination", zap.String("endpoint", s.cfg.Endpoint))
 
 	return nil
@@ -172,6 +213,12 @@ func (s *stefExporter) disconnect(ctx context.Context) {
 
 	if !s.isConnected {
 		return
+	}
+
+	if s.connCancel != nil {
+		s.set.Logger.Debug("Calling cancel on connection context to avoid leaks")
+		s.connCancel()
+		s.connCancel = nil
 	}
 
 	if err := s.client.Disconnect(ctx); err != nil {
@@ -194,6 +241,8 @@ func (s *stefExporter) exportMetrics(ctx context.Context, md pmetric.Metrics) er
 	converter := stefpdatametrics.OtlpToSTEFUnsorted{}
 	err := converter.WriteMetrics(md, s.stefWriter)
 	if err != nil {
+		s.set.Logger.Debug("WriteMetrics failed", zap.Error(err))
+
 		// Error to write to STEF stream typically indicates either:
 		// 1) A problem with the connection. We need to reconnect.
 		// 2) Encoding failure, possibly due to encoder bug. In this case
@@ -221,6 +270,8 @@ func (s *stefExporter) exportMetrics(ctx context.Context, md pmetric.Metrics) er
 	// data is sent to network. This is necessary so that the server receives it and
 	// sends an acknowledgement back.
 	if err = s.stefWriter.Flush(); err != nil {
+		s.set.Logger.Debug("Flush failed", zap.Error(err))
+
 		// Failure to write the gRPC stream normally means something is
 		// wrong with the connection. We need to reconnect. Disconnect here
 		// and the next exportMetrics() call will connect again.
