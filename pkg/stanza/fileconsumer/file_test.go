@@ -1670,7 +1670,7 @@ func TestArchive(t *testing.T) {
 	filetest.WriteString(t, temp, "testlog1\n")
 
 	operator, sink := testManager(t, cfg)
-	operator.Start(persister)
+	require.NoError(t, operator.Start(persister))
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
