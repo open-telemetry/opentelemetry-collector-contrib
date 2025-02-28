@@ -785,10 +785,13 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 			return p.newGetterFromConverter(*eL.Converter)
 		}
 	}
-
-	if val.List != nil {
-		lg := listGetter[K]{slice: make([]Getter[K], len(val.List.Values))}
-		for i, v := range val.List.Values {
+	if val.List != nil && val.List.Comprehension != nil {
+		// We need to construct a new parser for the list.
+		return newListComprehensionGetter(p, val.List.Comprehension)
+	}
+	if val.List != nil && val.List.List != nil {
+		lg := listGetter[K]{slice: make([]Getter[K], len(val.List.List.Values))}
+		for i, v := range val.List.List.Values {
 			getter, err := p.newGetter(v)
 			if err != nil {
 				return nil, err

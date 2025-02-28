@@ -435,6 +435,9 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 }
 
 func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, error) {
+	if argVal.List != nil && argVal.List.Comprehension != nil {
+		return p.buildComprehensionSliceArg(argVal.List.Comprehension, argType)
+	}
 	name := argType.Elem().Name()
 	switch {
 	case name == reflect.Uint8.String():
@@ -664,21 +667,24 @@ func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc
 		return nil, fmt.Errorf("must be a list of type %v", name)
 	}
 
+	// We don't allow list comprehensions to get here.
 	vals := []T{}
-	values := argVal.List.Values
-	for j := 0; j < len(values); j++ {
-		untypedVal, err := buildArg(values[j], argType.Elem())
-		if err != nil {
-			return nil, fmt.Errorf("error while parsing list argument at index %v: %w", j, err)
+	if argVal.List.List != nil {
+		values := argVal.List.List.Values
+		for j := 0; j < len(values); j++ {
+			untypedVal, err := buildArg(values[j], argType.Elem())
+			if err != nil {
+				return nil, fmt.Errorf("error while parsing list argument at index %v: %w", j, err)
+			}
+
+			val, ok := untypedVal.(T)
+
+			if !ok {
+				return nil, fmt.Errorf("invalid element type at list index %v, must be of type %v", j, name)
+			}
+
+			vals = append(vals, val)
 		}
-
-		val, ok := untypedVal.(T)
-
-		if !ok {
-			return nil, fmt.Errorf("invalid element type at list index %v, must be of type %v", j, name)
-		}
-
-		vals = append(vals, val)
 	}
 
 	return vals, nil

@@ -231,13 +231,16 @@ type priorityContextInferrerHintsVisitor struct {
 	paths        []path
 	functions    map[string]struct{}
 	enumsSymbols map[enumSymbol]struct{}
+	// A stack of loop variables.
+	loopVariables []string
 }
 
 func newGrammarContextInferrerVisitor() priorityContextInferrerHintsVisitor {
 	return priorityContextInferrerHintsVisitor{
-		paths:        []path{},
-		functions:    make(map[string]struct{}),
-		enumsSymbols: make(map[enumSymbol]struct{}),
+		paths:         []path{},
+		functions:     make(map[string]struct{}),
+		enumsSymbols:  make(map[enumSymbol]struct{}),
+		loopVariables: []string{},
 	}
 }
 
@@ -258,5 +261,24 @@ func (v *priorityContextInferrerHintsVisitor) visitValue(va *value) {
 }
 
 func (v *priorityContextInferrerHintsVisitor) visitPath(value *path) {
+	if value.Context == "" && len(value.Fields) == 1 {
+		for _, lv := range v.loopVariables {
+			if lv == value.Fields[0].Name {
+				// Skip loop variables.
+				return
+			}
+		}
+	}
 	v.paths = append(v.paths, *value)
+}
+
+func (v *priorityContextInferrerHintsVisitor) visitListComprehension(comp *listComprehension) {
+	// THIS IS A HACK: Ignore loop variables here.
+	// We visit list with no additional context.
+	comp.List.accept(v)
+	// We need to wrap our context for the loop context.
+	prev := v.loopVariables
+	v.loopVariables = append(v.loopVariables, comp.Ident)
+	comp.Cond.accept(v)
+	v.loopVariables = prev
 }
