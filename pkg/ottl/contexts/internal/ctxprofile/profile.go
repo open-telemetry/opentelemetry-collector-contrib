@@ -14,10 +14,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 )
 
-const (
-	ProfileContextName = "profile"
-)
-
 type ProfileContext interface {
 	GetProfile() pprofile.Profile
 }
