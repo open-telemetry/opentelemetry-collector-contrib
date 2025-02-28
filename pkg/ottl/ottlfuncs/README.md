@@ -2282,7 +2282,7 @@ The `UUID` function generates a v4 uuid string.
 
 `Weekday(value)`
 
-The `Weekday` Converter returns the day component from the specified time using the Go stdlib [`time.Weekday` function](https://pkg.go.dev/time#Time.Weekday).
+The `Weekday` Converter returns the day of the week component from the specified time using the Go stdlib [`time.Weekday` function](https://pkg.go.dev/time#Time.Weekday).
 
 `value` is a `time.Time`. If `value` is another type, an error is returned.
 
