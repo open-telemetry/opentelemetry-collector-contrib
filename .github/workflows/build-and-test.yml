@@ -675,7 +675,7 @@ jobs:
             }
 
   flakytests-generate-issues:
-    if: ${{ needs.unittest-matrix.result == 'failure' }} # github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ always() }} # github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     needs: [unittest-matrix]
     steps:
