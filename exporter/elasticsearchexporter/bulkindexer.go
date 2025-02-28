@@ -55,7 +55,7 @@ type bulkIndexerSession interface {
 const defaultMaxRetries = 2
 
 func newBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) (bulkIndexer, error) {
-	if config.Batcher.Enabled != nil {
+	if config.Batcher.enabledSet {
 		return newSyncBulkIndexer(logger, client, config, requireDataStream), nil
 	}
 	return newAsyncBulkIndexer(logger, client, config, requireDataStream)
