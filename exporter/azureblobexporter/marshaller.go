@@ -33,32 +33,49 @@ type marshaller struct {
 	tracesMarshaler  ptrace.Marshaler
 	metricsMarshaler pmetric.Marshaler
 	logsMarshaler    plog.Marshaler
-
-	formatType string
 }
 
 func newMarshaller(config *Config, host component.Host) (*marshaller, error) {
-	if config.Encoding != nil {
-		encoding := host.GetExtensions()[*config.Encoding]
-		if encoding == nil {
-			return nil, fmt.Errorf("unknown encoding %q", config.Encoding)
-		}
-		// cast with ok to avoid panics.
-		tm, _ := encoding.(ptrace.Marshaler)
-		pm, _ := encoding.(pmetric.Marshaler)
-		lm, _ := encoding.(plog.Marshaler)
-		return &marshaller{
-			tracesMarshaler:  tm,
-			metricsMarshaler: pm,
-			logsMarshaler:    lm,
-		}, nil
+	if config.FormatType != formatTypeJSON && config.FormatType != formatTypeProto {
+		return nil, fmt.Errorf("unsupported format type %q", config.FormatType)
 	}
-	return &marshaller{
-		formatType:       config.FormatType,
+	marshaller := &marshaller{
 		tracesMarshaler:  tracesMarshalers[config.FormatType],
 		metricsMarshaler: metricsMarshalers[config.FormatType],
 		logsMarshaler:    logsMarshalers[config.FormatType],
-	}, nil
+	}
+
+	if config.Encodings.Logs != nil {
+		encoding := host.GetExtensions()[*config.Encodings.Logs]
+		if encoding == nil {
+			return nil, fmt.Errorf("unknown encoding %q", config.Encodings.Logs)
+		}
+		// cast with ok to avoid panics.
+		lm, _ := encoding.(plog.Marshaler)
+		marshaller.logsMarshaler = lm
+	}
+
+	if config.Encodings.Metrics != nil {
+		encoding := host.GetExtensions()[*config.Encodings.Metrics]
+		if encoding == nil {
+			return nil, fmt.Errorf("unknown encoding %q", config.Encodings.Metrics)
+		}
+		// cast with ok to avoid panics.
+		mm, _ := encoding.(pmetric.Marshaler)
+		marshaller.metricsMarshaler = mm
+	}
+
+	if config.Encodings.Traces != nil {
+		encoding := host.GetExtensions()[*config.Encodings.Traces]
+		if encoding == nil {
+			return nil, fmt.Errorf("unknown encoding %q", config.Encodings.Traces)
+		}
+		// cast with ok to avoid panics.
+		tm, _ := encoding.(ptrace.Marshaler)
+		marshaller.tracesMarshaler = tm
+	}
+
+	return marshaller, nil
 }
 
 func (m *marshaller) marshalTraces(td ptrace.Traces) ([]byte, error) {

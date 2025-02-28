@@ -42,13 +42,14 @@ func createDefaultConfig() component.Config {
 			Traces:  "traces",
 		},
 		BlobNameFormat: &BlobNameFormat{
-			MetricsFormat:  "2006/01/02/metrics_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
-			LogsFormat:     "2006/01/02/logs_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
-			TracesFormat:   "2006/01/02/traces_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+			MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
+			LogsFormat:     "2006/01/02/logs_15_04_05.json",
+			TracesFormat:   "2006/01/02/traces_15_04_05.json",
 			SerialNumRange: 10000,
 			Params:         map[string]string{},
 		},
 		FormatType: "json",
+		Encodings:  &Encodings{},
 	}
 }
 

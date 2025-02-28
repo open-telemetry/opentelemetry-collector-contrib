@@ -36,18 +36,33 @@ The following settings can be optionally configured and have default values:
   - traces_format (default `2006/01/02/traces_15_04_05_{{.SerialNum}}.{{.FileExtension}}`): blob name format.
   - serial_num_range (default `10000`): a range of random number for SerialNum.
 - format (default `json`): `json` or `proto`. which present otel json or otel protobuf format, the file extension will be `json` or `pb`.
-- encoding (default none): if specified, uses an encoding extension to encode telemetry data. Overrides format.
+- encodings (default using encoding specified in `format`, which is `json`): if specified, uses the encoding extension to encode telemetry data. Overrides format.
+  - logs (default `nil`): encoding component id.
+  - metrics (default `nil`): encoding component id.
+  - traces (default `nil`): encoding component id.
 
 An example configuration is provided as follows:
 
 ```yaml
-azureblobexporter:
-  url: "https://<your-account>.blob.core.windows.net/"
-  container:
-    logs: "logs"
-    metrics: "metrics"
-    traces: "traces"
-  auth:
-    type: "connection_string"
-    connection_string: "DefaultEndpointsProtocol=https;AccountName=<your-acount>;AccountKey=<account-key>;EndpointSuffix=core.windows.net"
+extensions:
+  zpages:
+    endpoint: localhost:55679
+  text_encoding:
+    encoding: utf8
+    marshaling_separator: "\n"
+    unmarshaling_separator: "\r?\n"
+
+exporter:
+  azureblob/1:
+    url: "https://<your-account>.blob.core.windows.net/"
+    container:
+      logs: "logs"
+      metrics: "metrics"
+      traces: "traces"
+    auth:
+      type: "connection_string"
+      connection_string: "DefaultEndpointsProtocol=https;AccountName=<your-acount>;AccountKey=<account-key>;EndpointSuffix=core.windows.net"
+          traces: "test"
+    encodings:
+      logs: text_encoding
 ```
