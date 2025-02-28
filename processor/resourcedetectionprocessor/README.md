@@ -479,6 +479,10 @@ rules:
     resources: ["configmaps"]
     resourceNames: ["kubeadm-config"]
     verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    resourceNames: ["kube-system"]
+    verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

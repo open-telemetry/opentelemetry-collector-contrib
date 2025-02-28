@@ -50,6 +50,21 @@ func (m *mockExporter) Shutdown(_ context.Context) error {
 	return nil
 }
 
+func checkMetricTemporality(t *testing.T, ms metricdata.Metrics, metricType MetricType, expectedAggregationTemporality metricdata.Temporality) {
+	switch metricType {
+	case MetricTypeSum:
+		sumData, ok := ms.Data.(metricdata.Sum[int64])
+		require.True(t, ok, "expected Sum data type")
+		assert.Equal(t, expectedAggregationTemporality, sumData.Temporality)
+	case MetricTypeHistogram:
+		histogramData, ok := ms.Data.(metricdata.Histogram[int64])
+		require.True(t, ok, "expected Histogram data type")
+		assert.Equal(t, expectedAggregationTemporality, histogramData.Temporality)
+	default:
+		t.Fatalf("unsupported metric type: %v", metricType)
+	}
+}
+
 func TestFixedNumberOfMetrics(t *testing.T) {
 	// arrange
 	cfg := &Config{
@@ -96,6 +111,72 @@ func TestRateOfMetrics(t *testing.T) {
 	assert.GreaterOrEqual(t, len(m.rms), 6, "there should have been more than 6 metrics, had %d", len(m.rms))
 	// the maximum acceptable number of metrics for the rate of 10/sec for half a second
 	assert.LessOrEqual(t, len(m.rms), 20, "there should have been less than 20 metrics, had %d", len(m.rms))
+}
+
+func TestMetricsWithTemporality(t *testing.T) {
+	tests := []struct {
+		name                           string
+		metricType                     MetricType
+		aggregationTemporality         AggregationTemporality
+		expectedAggregationTemporality metricdata.Temporality
+	}{
+		{
+			name:                           "Sum: delta temporality",
+			metricType:                     MetricTypeSum,
+			aggregationTemporality:         AggregationTemporality(metricdata.DeltaTemporality),
+			expectedAggregationTemporality: metricdata.DeltaTemporality,
+		},
+		{
+			name:                           "Sum: cumulative temporality",
+			metricType:                     MetricTypeSum,
+			aggregationTemporality:         AggregationTemporality(metricdata.CumulativeTemporality),
+			expectedAggregationTemporality: metricdata.CumulativeTemporality,
+		},
+		{
+			name:                           "Histogram: delta temporality",
+			metricType:                     MetricTypeHistogram,
+			aggregationTemporality:         AggregationTemporality(metricdata.DeltaTemporality),
+			expectedAggregationTemporality: metricdata.DeltaTemporality,
+		},
+		{
+			name:                           "Histogram: cumulative temporality",
+			metricType:                     MetricTypeHistogram,
+			aggregationTemporality:         AggregationTemporality(metricdata.CumulativeTemporality),
+			expectedAggregationTemporality: metricdata.CumulativeTemporality,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// arrange
+			cfg := &Config{
+				Config: common.Config{
+					WorkerCount: 1,
+				},
+				NumMetrics:             1,
+				MetricName:             "test",
+				MetricType:             tt.metricType,
+				AggregationTemporality: tt.aggregationTemporality,
+			}
+			m := &mockExporter{}
+			expFunc := func() (sdkmetric.Exporter, error) {
+				return m, nil
+			}
+
+			// act
+			logger, _ := zap.NewDevelopment()
+			require.NoError(t, run(cfg, expFunc, logger))
+
+			time.Sleep(1 * time.Second)
+
+			// assert
+			require.Len(t, m.rms, 1)
+			ms := m.rms[0].ScopeMetrics[0].Metrics[0]
+			assert.Equal(t, "test", ms.Name)
+
+			checkMetricTemporality(t, ms, tt.metricType, tt.expectedAggregationTemporality)
+		})
+	}
 }
 
 func TestUnthrottled(t *testing.T) {
