@@ -6,13 +6,14 @@ package azureblobexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestNewMarshaller(t *testing.T) {
@@ -87,8 +88,7 @@ func TestMarshalTraces(t *testing.T) {
 
 			data, err := m.marshalTraces(tt.traces)
 			assert.NoError(t, err)
-			assert.NotNil(t, data)
-			assert.Greater(t, len(data), 0)
+			assert.NotEmpty(t, data)
 		})
 	}
 }
@@ -119,8 +119,7 @@ func TestMarshalMetrics(t *testing.T) {
 
 			data, err := m.marshalMetrics(tt.metrics)
 			assert.NoError(t, err)
-			assert.NotNil(t, data)
-			assert.Greater(t, len(data), 0)
+			assert.NotEmpty(t, data)
 		})
 	}
 }
@@ -151,8 +150,7 @@ func TestMarshalLogs(t *testing.T) {
 
 			data, err := m.marshalLogs(tt.logs)
 			assert.NoError(t, err)
-			assert.NotNil(t, data)
-			assert.Greater(t, len(data), 0)
+			assert.NotEmpty(t, data)
 		})
 	}
 }

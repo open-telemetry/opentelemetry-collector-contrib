@@ -74,7 +74,7 @@ type Config struct {
 	// FormatType is the format of encoded telemetry data. Supported values are json and proto.
 	FormatType string `mapstructure:"format"`
 
-	// Encoding extention to apply for logs/metrics/traces. If present, overrides the marshaler configuration option and format.
+	// Encoding extension to apply for logs/metrics/traces. If present, overrides the marshaler configuration option and format.
 	Encodings *Encodings `mapstructure:"encodings"`
 }
 

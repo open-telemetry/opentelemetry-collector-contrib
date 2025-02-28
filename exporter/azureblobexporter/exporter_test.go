@@ -12,8 +12,6 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/tj/assert"
@@ -22,6 +20,9 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestNewExporter(t *testing.T) {
@@ -94,7 +95,7 @@ func TestExporterConsumeMetrics(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 			azureBlobExporter := newAzureBlobExporter(cfg.(*Config), zaptest.NewLogger(t), pipeline.SignalMetrics)
-			azureBlobExporter.start(context.Background(), componenttest.NewNopHost())
+			assert.NoError(t, azureBlobExporter.start(context.Background(), componenttest.NewNopHost()))
 			azureBlobExporter.client = getMockAzBlobClient()
 
 			metrics := testdata.GenerateMetricsTwoMetrics()
@@ -108,7 +109,7 @@ func TestExporterConsumeMetrics(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 			azureBlobExporter := newAzureBlobExporter(cfg.(*Config), zaptest.NewLogger(t), pipeline.SignalMetrics)
-			azureBlobExporter.start(context.Background(), componenttest.NewNopHost())
+			assert.NoError(t, azureBlobExporter.start(context.Background(), componenttest.NewNopHost()))
 			azureBlobExporter.client = getMockAzBlobClient()
 
 			logs := testdata.GenerateLogsTwoLogRecordsSameResource()
@@ -122,7 +123,7 @@ func TestExporterConsumeMetrics(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 			azureBlobExporter := newAzureBlobExporter(cfg.(*Config), zaptest.NewLogger(t), pipeline.SignalMetrics)
-			azureBlobExporter.start(context.Background(), componenttest.NewNopHost())
+			assert.NoError(t, azureBlobExporter.start(context.Background(), componenttest.NewNopHost()))
 			azureBlobExporter.client = getMockAzBlobClient()
 
 			traces := testdata.GenerateTracesTwoSpansSameResource()
