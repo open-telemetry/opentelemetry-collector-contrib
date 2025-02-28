@@ -6,7 +6,6 @@ package ottllog
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"slices"
 	"testing"
 	"time"
@@ -17,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -180,9 +181,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: newBodySlice,
 			modified: func(log plog.LogRecord, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
-				fmt.Println(log.Body().Slice().At(0).AsString())
 				newBodySlice.CopyTo(log.Body().Slice())
-				fmt.Println(log.Body().Slice().At(0).AsString())
 			},
 			bodyType: "slice",
 		},
@@ -605,25 +604,31 @@ func Test_newPathGetSetter(t *testing.T) {
 		testWithContext := tt
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*pathtest.Path[TransformContext])
-		pathWithContext.C = ContextName
+		pathWithContext.C = ctxlog.Name
 		testWithContext.path = &pathWithContext
 		tests = append(tests, testWithContext)
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+			pep := pathExpressionParser{
+				cacheGetSetter: ctxcache.PathExpressionParser(cacheGetter),
+			}
 			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
 			log, il, resource := createTelemetry(tt.bodyType)
 
-			tCtx := NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
+			tCtx := NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs(), WithCache(&testCache))
 			got, err := accessor.Get(context.Background(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			tCtx = NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
+			tCtx = NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs(), WithCache(&testCache))
 			err = accessor.Set(context.Background(), tCtx, tt.newVal)
 			assert.NoError(t, err)
 
@@ -634,7 +639,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			assert.Equal(t, exLog, log)
 			assert.Equal(t, exIl, il)
 			assert.Equal(t, exRes, resource)
-			assert.Equal(t, exCache, tCtx.getCache())
+			assert.Equal(t, exCache, testCache)
 		})
 	}
 }
@@ -698,7 +703,7 @@ func Test_newPathGetSetter_WithCache(t *testing.T) {
 	cacheValue := pcommon.NewMap()
 	cacheValue.PutStr("test", "pass")
 
-	ctx := NewTransformContext(
+	tCtx := NewTransformContext(
 		plog.NewLogRecord(),
 		pcommon.NewInstrumentationScope(),
 		pcommon.NewResource(),
@@ -707,7 +712,7 @@ func Test_newPathGetSetter_WithCache(t *testing.T) {
 		WithCache(&cacheValue),
 	)
 
-	assert.Equal(t, cacheValue, ctx.getCache())
+	assert.Equal(t, cacheValue, getCache(tCtx))
 }
 
 func createTelemetry(bodyType string) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
