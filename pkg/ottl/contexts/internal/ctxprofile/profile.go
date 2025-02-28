@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+package ctxprofile // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofile"
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofile"
 )
 
 const (
@@ -25,7 +24,7 @@ type ProfileContext interface {
 
 func ProfilePathGetSetter[K ProfileContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
-		return nil, ctxerror.New("nil", "nil", ctxprofile.Name, ctxprofile.DocRef)
+		return nil, ctxerror.New("nil", "nil", Name, DocRef)
 	}
 	switch path.Name() {
 	case "sample_type":
@@ -73,7 +72,7 @@ func ProfilePathGetSetter[K ProfileContext](path ottl.Path[K]) (ottl.GetSetter[K
 	case "original_payload":
 		return accessOriginalPayload[K](), nil
 	default:
-		return nil, ctxerror.New(path.Name(), path.String(), ctxprofile.Name, ctxprofile.DocRef)
+		return nil, ctxerror.New(path.Name(), path.String(), Name, DocRef)
 	}
 }
 
