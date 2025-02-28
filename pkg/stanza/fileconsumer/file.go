@@ -263,7 +263,7 @@ func (m *Manager) createReader(file *os.File, fp *fingerprint.Fingerprint, metad
 }
 
 func (m *Manager) excludeDuplicate(fp *fingerprint.Fingerprint, file *os.File) bool {
-	// shouldExclude return true if duplicate path is found with the same content and closes the duplicate.
+	// excludeDuplicate return true if duplicate path is found with the same content and closes the duplicate.
 	// This can happen when files are being rotated with copy/truncate strategy. (After copy, prior to truncate.)
 	if r := m.tracker.GetCurrentFile(fp); r != nil {
 		m.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))

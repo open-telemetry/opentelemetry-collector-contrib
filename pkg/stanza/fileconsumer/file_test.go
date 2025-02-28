@@ -1657,6 +1657,8 @@ func TestIncludeFileRecordNumberWithHeaderConfiguredButMissing(t *testing.T) {
 }
 
 func TestArchive(t *testing.T) {
+	t.Skip("Time sensitive tests disabled for now on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32715#issuecomment-2107737828")
+
 	t.Parallel()
 	persister := testutil.NewUnscopedMockPersister()
 
