@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.29.7
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.77.1
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/confmap v1.26.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/confmap v1.26.1-0.20250226024140-8099e51f9a77
 	go.uber.org/goleak v1.3.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -46,3 +46,9 @@ retract (
 	v0.76.1
 	v0.65.0
 )
+
+replace go.opentelemetry.io/collector/extension/extensionauth => go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250226024140-8099e51f9a77
+
+replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250226024140-8099e51f9a77
+
+replace go.opentelemetry.io/collector/service/hostcapabilities => go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250226024140-8099e51f9a77

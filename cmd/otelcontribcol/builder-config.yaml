@@ -252,9 +252,14 @@ providers:
   - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.26.1-0.20250224010654-18e18b21da7a
   - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.26.1-0.20250224010654-18e18b21da7a
   - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.26.1-0.20250224010654-18e18b21da7a
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider v0.120.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.120.1
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider v0.120.1
 
 # When using `make genotelcontribcol`, a `replaces` section is appended to this
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
+replaces:
+  - go.opentelemetry.io/collector/extension/extensionauth => go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250226024140-8099e51f9a77
+  - go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250226024140-8099e51f9a77
+  - go.opentelemetry.io/collector/service/hostcapabilities => go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250226024140-8099e51f9a77
