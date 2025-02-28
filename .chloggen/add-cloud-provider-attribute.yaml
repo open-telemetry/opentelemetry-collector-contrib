@@ -7,7 +7,7 @@ change_type: enhancement
 component: awsfirehosereceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `cloud.provider`, `aws.log.group.names` and `aws.log.stream.names` attributes to logs and set scope name and version of logs and metrics ingested by awsfirehosereceiver.
+note: Add `cloud.provider`, `aws.log.group.names` and `aws.log.stream.names` resource attributes to logs and set scope name and version of logs and metrics ingested by awsfirehosereceiver.
 
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
