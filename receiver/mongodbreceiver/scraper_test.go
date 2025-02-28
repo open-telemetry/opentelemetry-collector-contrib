@@ -49,7 +49,7 @@ func TestScraperLifecycle(t *testing.T) {
 	*/
 	cfg.DirectConnection = true
 
-	scraper := newMongodbScraper(receivertest.NewNopSettings(), cfg)
+	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, scraper.shutdown(context.Background()))
 
