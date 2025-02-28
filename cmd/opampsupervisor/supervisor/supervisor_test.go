@@ -1040,6 +1040,10 @@ func (m mockOpAMPClient) SendCustomMessage(message *protobufs.CustomMessage) (me
 
 func (m mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) {}
 
+func (m mockOpAMPClient) SetAvailableComponents(_ *protobufs.AvailableComponents) error {
+	return nil
+}
+
 type mockConn struct {
 	sendFunc func(ctx context.Context, message *protobufs.ServerToAgent) error
 }
