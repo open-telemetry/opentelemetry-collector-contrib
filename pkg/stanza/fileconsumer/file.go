@@ -197,6 +197,9 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 		}
 		return nil, nil
 	}
+	if m.excludeDuplicate(fp, file) {
+		return nil, nil
+	}
 	return fp, file
 }
 
@@ -209,7 +212,7 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 
 	for _, path := range paths {
 		fp, file := m.makeFingerprint(path)
-		if fp == nil || m.excludeDuplicate(fp, file) {
+		if fp == nil {
 			continue
 		}
 
@@ -220,7 +223,6 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 		}
 
 		if r != nil {
-			m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
 			m.tracker.Add(r)
 			continue
 		}
@@ -246,7 +248,6 @@ func (m *Manager) processUnmatchedFiles(ctx context.Context, files []*os.File, f
 			m.set.Logger.Error("Failed to create reader", zap.Error(err))
 			continue
 		}
-
 		m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
 		m.tracker.Add(r)
 	}
