@@ -6,6 +6,7 @@ package file
 import (
 	"context"
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -20,35 +21,10 @@ import (
 )
 
 func BenchmarkReadExistingLogs(b *testing.B) {
-	testCases := []struct {
-		numLines int
-	}{
-		{
-			numLines: 0,
-		},
-		{
-			numLines: 1,
-		},
-		{
-			numLines: 2,
-		},
-		{
-			numLines: 10,
-		},
-		{
-			numLines: 20,
-		},
-		{
-			numLines: 100,
-		},
-		{
-			numLines: 1000,
-		},
-	}
-
-	for _, tc := range testCases {
-		b.Run(fmt.Sprintf("%d-lines", tc.numLines), func(b *testing.B) {
-			benchmarkReadExistingLogs(b, tc.numLines)
+	for n := range 6 { // powers of 10
+		numLines := int(math.Pow(10, float64(n)))
+		b.Run(fmt.Sprintf("%d-lines", numLines), func(b *testing.B) {
+			benchmarkReadExistingLogs(b, numLines)
 		})
 	}
 }

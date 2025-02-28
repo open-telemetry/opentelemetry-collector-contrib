@@ -31,6 +31,8 @@ const (
 	defaultTracesIndex  = "traces-generic-default"
 )
 
+var defaultBatcherMinSizeItems = 5000
+
 // NewFactory creates a factory for Elastic exporter.
 func NewFactory() exporter.Factory {
 	return xexporter.NewFactory(
@@ -92,12 +94,12 @@ func createDefaultConfig() component.Config {
 			LogResponseBody: false,
 		},
 		Batcher: BatcherConfig{
-			FlushTimeout: 30 * time.Second,
-			MinSizeConfig: exporterbatcher.MinSizeConfig{
-				MinSizeItems: 5000,
-			},
-			MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-				MaxSizeItems: 0,
+			Config: exporterbatcher.Config{
+				FlushTimeout: 30 * time.Second,
+				SizeConfig: exporterbatcher.SizeConfig{
+					Sizer:   exporterbatcher.SizerTypeItems,
+					MinSize: defaultBatcherMinSizeItems,
+				},
 			},
 		},
 		Flush: FlushSettings{
@@ -201,14 +203,8 @@ func exporterhelperOptions(
 		exporterhelper.WithShutdown(shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 	}
-	if cfg.Batcher.Enabled != nil {
-		batcherConfig := exporterbatcher.Config{
-			Enabled:       *cfg.Batcher.Enabled,
-			FlushTimeout:  cfg.Batcher.FlushTimeout,
-			MinSizeConfig: cfg.Batcher.MinSizeConfig,
-			MaxSizeConfig: cfg.Batcher.MaxSizeConfig,
-		}
-		opts = append(opts, exporterhelper.WithBatcher(batcherConfig))
+	if cfg.Batcher.enabledSet {
+		opts = append(opts, exporterhelper.WithBatcher(cfg.Batcher.Config))
 
 		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
 		//
