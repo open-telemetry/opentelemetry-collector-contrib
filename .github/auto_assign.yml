@@ -11,7 +11,6 @@ useAssigneeGroups: true
 assigneeGroups:
   approvers_maintainers:
     # Approvers
-    - atoulme
     # - ChrsMark on leave
     - crobert-1
     # - dashpole on leave
@@ -21,6 +20,7 @@ assigneeGroups:
     - fatsheep9146
     # Maintainers
     - andrzej-stencel
+    - atoulme
     - bogdandrutu
     - codeboten
     - djaglowski
