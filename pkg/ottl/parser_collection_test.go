@@ -91,7 +91,7 @@ func Test_WithParserCollectionContextNoStatementConverter(t *testing.T) {
 	assert.True(t, exists)
 	assert.NotNil(t, pw)
 	_, parseErr := pc.ParseStatementsWithContext("testContext", mockStatementsGetter{[]string{`set(testContext.attributes["foo"], "foo")`}}, true)
-	assert.NotNil(t, parseErr)
+	assert.Error(t, parseErr)
 	assert.Contains(t, parseErr.Error(), "no statements converter")
 }
 
