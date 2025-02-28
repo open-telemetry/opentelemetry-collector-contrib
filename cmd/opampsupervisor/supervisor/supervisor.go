@@ -58,6 +58,8 @@ var (
 
 	lastRecvRemoteConfigFile     = "last_recv_remote_config.dat"
 	lastRecvOwnMetricsConfigFile = "last_recv_own_metrics_config.dat"
+
+	errNonMatchingInstanceUID = errors.New("received collector instance UID does not match expected UID set by the supervisor")
 )
 
 const (
@@ -317,13 +319,13 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 				for _, attr := range identAttr {
 					if attr.Key == semconv.AttributeServiceInstanceID {
-						// TODO: Consider whether to attempt restarting the Collector.
-						// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29864
 						if attr.Value.GetStringValue() != s.persistentState.InstanceID.String() {
 							done <- fmt.Errorf(
-								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s)",
+								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s): %w",
 								attr.Value.GetStringValue(),
-								s.persistentState.InstanceID.String())
+								s.persistentState.InstanceID.String(),
+								errNonMatchingInstanceUID,
+							)
 							return
 						}
 						instanceIDSeen = true
@@ -369,15 +371,30 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		}
 	}()
 
-	select {
-	case <-time.After(s.config.Agent.BootstrapTimeout):
-		if connected.Load() {
-			return errors.New("collector connected but never responded with an AgentDescription message")
-		} else {
-			return errors.New("collector's OpAMP client never connected to the Supervisor")
+	maxRestarts := 3
+	restartCount := 0
+	for {
+		select {
+		case <-time.After(s.config.Agent.BootstrapTimeout):
+			if connected.Load() {
+				return errors.New("collector connected but never responded with an AgentDescription message")
+			} else {
+				return errors.New("collector's OpAMP client never connected to the Supervisor")
+			}
+		case err = <-done:
+			if errors.Is(err, errNonMatchingInstanceUID) {
+				if restartCount > maxRestarts {
+					return err
+				}
+				// attempt to restart the collector in case of a UID mismatch
+				if err := cmd.Restart(context.Background()); err != nil {
+					return err
+				}
+				restartCount++
+				continue
+			}
+			return err
 		}
-	case err = <-done:
-		return err
 	}
 }
 
