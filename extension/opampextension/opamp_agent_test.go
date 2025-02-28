@@ -658,6 +658,10 @@ func (m mockOpAMPClient) SendCustomMessage(_ *protobufs.CustomMessage) (messageS
 
 func (m mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) {}
 
+func (m mockOpAMPClient) SetAvailableComponents(_ *protobufs.AvailableComponents) error {
+	return nil
+}
+
 type mockStatusEvent struct {
 	status    componentstatus.Status
 	err       error
