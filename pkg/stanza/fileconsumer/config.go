@@ -63,6 +63,7 @@ func NewConfig() *Config {
 		MaxLogSize:         reader.DefaultMaxLogSize,
 		Encoding:           defaultEncoding,
 		FlushPeriod:        reader.DefaultFlushPeriod,
+		PollsToArchive:     0,
 		Resolver: attrs.Resolver{
 			IncludeFileName: true,
 		},
@@ -184,6 +185,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		maxBatches:       c.MaxBatches,
 		telemetryBuilder: telemetryBuilder,
 		noTracking:       o.noTracking,
+		pollsToArchive:   c.PollsToArchive,
 	}, nil
 }
 

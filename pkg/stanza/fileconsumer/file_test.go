@@ -1655,3 +1655,54 @@ func TestIncludeFileRecordNumberWithHeaderConfiguredButMissing(t *testing.T) {
 		attrs.LogFileRecordNumber: int64(1),
 	})
 }
+
+func TestArchive(t *testing.T) {
+	t.Parallel()
+	persister := testutil.NewUnscopedMockPersister()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.PollsToArchive = 100
+	cfg.PollInterval = 100 * time.Millisecond
+
+	temp := filetest.OpenTempWithPattern(t, tempDir, "file.log")
+	filetest.WriteString(t, temp, "testlog1\n")
+
+	operator, sink := testManager(t, cfg)
+	operator.Start(persister)
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	sink.ExpectCall(t, []byte("testlog1"), map[string]any{
+		attrs.LogFileName: filepath.Base(temp.Name()),
+	})
+
+	os.Remove(temp.Name())
+
+	time.Sleep(500 * time.Millisecond)
+
+	temp = filetest.OpenTempWithPattern(t, tempDir, "file.log")
+	filetest.WriteString(t, temp, "testlog1\n")
+	filetest.WriteString(t, temp, "testlog2\n")
+
+	sink.ExpectCall(t, []byte("testlog2"), map[string]any{
+		attrs.LogFileName: filepath.Base(temp.Name()),
+	})
+
+	os.Remove(temp.Name())
+
+	time.Sleep(500 * time.Millisecond)
+
+	temp = filetest.OpenTempWithPattern(t, tempDir, "file.log")
+	filetest.WriteString(t, temp, "testlog1\n")
+	filetest.WriteString(t, temp, "testlog2\n")
+	filetest.WriteString(t, temp, "testlog3\n")
+	filetest.WriteString(t, temp, "testlog4\n")
+
+	log3 := emit.Token{Body: []byte("testlog3"), Attributes: map[string]any{attrs.LogFileName: filepath.Base(temp.Name())}}
+	log4 := emit.Token{Body: []byte("testlog4"), Attributes: map[string]any{attrs.LogFileName: filepath.Base(temp.Name())}}
+
+	sink.ExpectCalls(t, log3, log4)
+}
