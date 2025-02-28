@@ -4,6 +4,7 @@
 package ottlprofile // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -43,7 +44,8 @@ func (p profile) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	joinedErr = errors.Join(joinedErr, err)
 	encoder.AddString("default_sample_type", dst)
 
-	encoder.AddString("profile_id", pp.ProfileID().String())
+	pid := pp.ProfileID()
+	encoder.AddString("profile_id", hex.EncodeToString(pid[:]))
 	encoder.AddUint32("dropped_attributes_count", pp.DroppedAttributesCount())
 	encoder.AddString("original_payload_format", pp.OriginalPayloadFormat())
 	encoder.AddByteString("original_payload", pp.OriginalPayload().AsRaw())
@@ -324,9 +326,9 @@ type link struct {
 //nolint:unused
 func (m link) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	traceID := m.TraceID()
-	encoder.AddByteString("trace_id", traceID[:])
+	encoder.AddString("trace_id", hex.EncodeToString(traceID[:]))
 	spanID := m.SpanID()
-	encoder.AddByteString("span_id", spanID[:])
+	encoder.AddString("span_id", hex.EncodeToString(spanID[:]))
 	return nil
 }
 
