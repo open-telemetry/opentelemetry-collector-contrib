@@ -292,8 +292,9 @@ func TestConfig_Validate(t *testing.T) {
 
 func TestCapabilities_toAgentCapabilities(t *testing.T) {
 	type fields struct {
-		ReportsEffectiveConfig bool
-		ReportsHealth          bool
+		ReportsEffectiveConfig     bool
+		ReportsHealth              bool
+		ReportsAvailableComponents bool
 	}
 	tests := []struct {
 		name   string
@@ -303,25 +304,28 @@ func TestCapabilities_toAgentCapabilities(t *testing.T) {
 		{
 			name: "default capabilities",
 			fields: fields{
-				ReportsEffectiveConfig: false,
-				ReportsHealth:          false,
+				ReportsEffectiveConfig:     false,
+				ReportsHealth:              false,
+				ReportsAvailableComponents: false,
 			},
 			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
 		},
 		{
 			name: "all supported capabilities enabled",
 			fields: fields{
-				ReportsEffectiveConfig: true,
-				ReportsHealth:          true,
+				ReportsEffectiveConfig:     true,
+				ReportsHealth:              true,
+				ReportsAvailableComponents: true,
 			},
-			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus | protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig | protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth,
+			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus | protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig | protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth | protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			caps := Capabilities{
-				ReportsEffectiveConfig: tt.fields.ReportsEffectiveConfig,
-				ReportsHealth:          tt.fields.ReportsHealth,
+				ReportsEffectiveConfig:     tt.fields.ReportsEffectiveConfig,
+				ReportsHealth:              tt.fields.ReportsHealth,
+				ReportsAvailableComponents: tt.fields.ReportsEffectiveConfig,
 			}
 			assert.Equalf(t, tt.want, caps.toAgentCapabilities(), "toAgentCapabilities()")
 		})
