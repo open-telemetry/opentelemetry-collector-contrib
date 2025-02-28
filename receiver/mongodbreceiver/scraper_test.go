@@ -41,7 +41,8 @@ func TestScraperLifecycle(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	/*	NOTE:
+	/*
+		NOTE:
 		setting direct connection to true because originally, the scraper tests only ONE mongodb instance.
 		added in routing logic to detect multiple mongodb instances which takes longer than 2 milliseconds.
 		since this test is testing for lifecycle (start and shutting down ONE instance).
