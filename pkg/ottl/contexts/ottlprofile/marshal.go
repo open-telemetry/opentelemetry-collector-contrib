@@ -82,7 +82,6 @@ func (p profile) getMapping(idx int32) (mapping, error) {
 	return newMapping(p, mTable.At(int(idx)))
 }
 
-//nolint:unused
 func (p profile) getLink(idx int32) (link, error) {
 	pp := pprofile.Profile(p)
 	lTable := pp.LinkTable()
@@ -150,7 +149,7 @@ type sample struct {
 	attributes attributes
 	locations  locations
 	values     values
-	link       *link //nolint:unused
+	link       *link
 }
 
 func newSample(p profile, ps pprofile.Sample) (sample, error) {
@@ -163,12 +162,11 @@ func newSample(p profile, ps pprofile.Sample) (sample, error) {
 	joinedErr = errors.Join(joinedErr, err)
 	s.locations, err = p.getLocations(ps.LocationsStartIndex(), ps.LocationsLength())
 	joinedErr = errors.Join(joinedErr, err)
-	// TODO: remove comments for v1.121.0, which introduces LinkIndex()
-	//	if ps.LinkIndex() != 0 { // optional
-	//		l, err = p.getLink(p, ps.LinkIndex())
-	//		joinedErr = errors.Join(joinedErr, err)
-	//		s.link = &l
-	//	}
+	if ps.LinkIndex() != 0 { // optional
+		l, err := p.getLink(ps.LinkIndex())
+		joinedErr = errors.Join(joinedErr, err)
+		s.link = &l
+	}
 
 	return s, joinedErr
 }
@@ -177,7 +175,11 @@ func (s sample) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	err := encoder.AddArray("timestamps_unix_nano", s.timestamps)
 	err = errors.Join(err, encoder.AddArray("attributes", s.attributes))
 	err = errors.Join(err, encoder.AddArray("locations", s.locations))
-	return errors.Join(err, encoder.AddArray("values", s.values))
+	err = errors.Join(err, encoder.AddArray("values", s.values))
+	if s.link != nil {
+		err = errors.Join(err, encoder.AddObject("link", *s.link))
+	}
+	return err
 }
 
 type valueTypes []valueType
@@ -315,7 +317,6 @@ func (m mapping) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	return nil
 }
 
-//nolint:unused
 type link struct {
 	pprofile.Link
 }
