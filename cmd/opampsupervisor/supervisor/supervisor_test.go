@@ -381,6 +381,8 @@ func Test_onMessage(t *testing.T) {
     health_check:
         endpoint: localhost:8000
     opamp:
+        capabilities:
+            reports_available_components: false
         instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
         ppid: 88888
         ppid_poll_interval: 5s
@@ -479,6 +481,8 @@ service:
     health_check:
         endpoint: localhost:8000
     opamp:
+        capabilities:
+            reports_available_components: false
         instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
         ppid: 88888
         ppid_poll_interval: 5s
@@ -1044,10 +1048,6 @@ func (m mockOpAMPClient) SetAvailableComponents(_ *protobufs.AvailableComponents
 
 func (m mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) {}
 
-func (m mockOpAMPClient) SetAvailableComponents(_ *protobufs.AvailableComponents) error {
-	return nil
-}
-
 type mockConn struct {
 	sendFunc func(ctx context.Context, message *protobufs.ServerToAgent) error
 }
@@ -1224,6 +1224,8 @@ func TestSupervisor_loadAndWriteInitialMergedConfig(t *testing.T) {
     health_check:
         endpoint: ""
     opamp:
+        capabilities:
+            reports_available_components: false
         instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
         ppid: 1234
         ppid_poll_interval: 5s
@@ -1329,6 +1331,8 @@ func TestSupervisor_composeNoopConfig(t *testing.T) {
     nop: null
 extensions:
     opamp:
+        capabilities:
+            reports_available_components: false
         instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
         ppid: 1234
         ppid_poll_interval: 5s
@@ -1354,6 +1358,54 @@ service:
 			InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb"),
 		},
 		pidProvider: staticPIDProvider(1234),
+	}
+
+	require.NoError(t, s.createTemplates())
+
+	noopConfigBytes, err := s.composeNoopConfig()
+	noopConfig := strings.ReplaceAll(string(noopConfigBytes), "\r\n", "\n")
+
+	require.NoError(t, err)
+	require.Equal(t, expectedConfig, noopConfig)
+}
+
+func TestSupervisor_composeNoopConfigReportAvailableComponents(t *testing.T) {
+	const expectedConfig = `exporters:
+    nop: null
+extensions:
+    opamp:
+        capabilities:
+            reports_available_components: true
+        instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
+        ppid: 1234
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
+receivers:
+    nop: null
+service:
+    extensions:
+        - opamp
+    pipelines:
+        traces:
+            exporters:
+                - nop
+            receivers:
+                - nop
+`
+	s := Supervisor{
+		persistentState: &persistentState{
+			InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb"),
+		},
+		pidProvider: staticPIDProvider(1234),
+		config: config.Supervisor{
+			Capabilities: config.Capabilities{
+				ReportsAvailableComponents: true,
+			},
+		},
 	}
 
 	require.NoError(t, s.createTemplates())

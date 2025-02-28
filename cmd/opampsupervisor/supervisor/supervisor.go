@@ -355,7 +355,10 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 			if availableComponentsOk {
 				// must have a full list of components if available components have been reported
 				if availableComponents.GetComponents() != nil {
-					done <- nil
+					if !doneReported.Load() {
+						done <- nil
+						doneReported.Store(true)
+					}
 				} else {
 					// if we don't have a full component list, ask for it
 					response.Flags = uint64(protobufs.ServerToAgentFlags_ServerToAgentFlags_ReportAvailableComponents)
@@ -812,10 +815,11 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 
 	var cfg bytes.Buffer
 	tplVars := map[string]any{
-		"InstanceUid":      s.persistentState.InstanceID.String(),
-		"SupervisorPort":   s.opampServerPort,
-		"PID":              s.pidProvider.PID(),
-		"PPIDPollInterval": orphanPollInterval,
+		"InstanceUid":                s.persistentState.InstanceID.String(),
+		"SupervisorPort":             s.opampServerPort,
+		"PID":                        s.pidProvider.PID(),
+		"PPIDPollInterval":           orphanPollInterval,
+		"ReportsAvailableComponents": s.config.Capabilities.ReportsAvailableComponents,
 	}
 	err := s.opampextensionTemplate.Execute(
 		&cfg,

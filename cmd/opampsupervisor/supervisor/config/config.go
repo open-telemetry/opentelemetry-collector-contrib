@@ -250,6 +250,7 @@ func DefaultSupervisor() Supervisor {
 			ReportsOwnMetrics:              true,
 			ReportsHealth:                  true,
 			ReportsRemoteConfig:            false,
+			ReportsAvailableComponents:     false,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,
