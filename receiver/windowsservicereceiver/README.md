@@ -41,4 +41,3 @@ windowsservice:
     - service3
     ...
 ```
-
