@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottlprofile // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
+package logprofile // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 
 import (
 	"encoding/hex"
@@ -13,9 +13,9 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-type profile pprofile.Profile
+type Profile pprofile.Profile
 
-func (p profile) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
+func (p Profile) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	pp := pprofile.Profile(p)
 	var joinedErr error
 
@@ -57,7 +57,7 @@ func (p profile) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	return joinedErr
 }
 
-func (p profile) getString(idx int32) (string, error) {
+func (p Profile) getString(idx int32) (string, error) {
 	pp := pprofile.Profile(p)
 	strTable := pp.StringTable()
 	if idx >= int32(strTable.Len()) {
@@ -66,7 +66,7 @@ func (p profile) getString(idx int32) (string, error) {
 	return strTable.At(int(idx)), nil
 }
 
-func (p profile) getFunction(idx int32) (function, error) {
+func (p Profile) getFunction(idx int32) (function, error) {
 	pp := pprofile.Profile(p)
 	fnTable := pp.FunctionTable()
 	if idx >= int32(fnTable.Len()) {
@@ -75,7 +75,7 @@ func (p profile) getFunction(idx int32) (function, error) {
 	return newFunction(p, fnTable.At(int(idx)))
 }
 
-func (p profile) getMapping(idx int32) (mapping, error) {
+func (p Profile) getMapping(idx int32) (mapping, error) {
 	pp := pprofile.Profile(p)
 	mTable := pp.MappingTable()
 	if idx >= int32(mTable.Len()) {
@@ -85,7 +85,7 @@ func (p profile) getMapping(idx int32) (mapping, error) {
 }
 
 //nolint:unused
-func (p profile) getLink(idx int32) (link, error) {
+func (p Profile) getLink(idx int32) (link, error) {
 	pp := pprofile.Profile(p)
 	lTable := pp.LinkTable()
 	if idx >= int32(lTable.Len()) {
@@ -94,7 +94,7 @@ func (p profile) getLink(idx int32) (link, error) {
 	return link{lTable.At(int(idx))}, nil
 }
 
-func (p profile) getLocations(start, length int32) (locations, error) {
+func (p Profile) getLocations(start, length int32) (locations, error) {
 	pp := pprofile.Profile(p)
 	locTable := pp.LocationTable()
 	if start >= int32(locTable.Len()) {
@@ -115,7 +115,7 @@ func (p profile) getLocations(start, length int32) (locations, error) {
 	return ls, joinedErr
 }
 
-func (p profile) getAttribute(idx int32) (attribut, error) {
+func (p Profile) getAttribute(idx int32) (attribut, error) {
 	pp := pprofile.Profile(p)
 	attrTable := pp.AttributeTable()
 	if idx >= int32(attrTable.Len()) {
@@ -136,7 +136,7 @@ func (ss samples) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	return joinedErr
 }
 
-func newSamples(p profile, sampleSlice pprofile.SampleSlice) (samples, error) {
+func newSamples(p Profile, sampleSlice pprofile.SampleSlice) (samples, error) {
 	var joinedErr error
 	ss := make(samples, 0, sampleSlice.Len())
 	for i := range sampleSlice.Len() {
@@ -155,7 +155,7 @@ type sample struct {
 	link       *link //nolint:unused
 }
 
-func newSample(p profile, ps pprofile.Sample) (sample, error) {
+func newSample(p Profile, ps pprofile.Sample) (sample, error) {
 	var s sample
 	var err, joinedErr error
 
@@ -192,7 +192,7 @@ func (s valueTypes) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	return err
 }
 
-func newValueTypes(p profile, sampleTypes pprofile.ValueTypeSlice) (valueTypes, error) {
+func newValueTypes(p Profile, sampleTypes pprofile.ValueTypeSlice) (valueTypes, error) {
 	var joinedErr error
 
 	vts := make(valueTypes, 0, sampleTypes.Len())
@@ -211,7 +211,7 @@ type valueType struct {
 	aggregationTemporality int32
 }
 
-func newValueType(p profile, vt pprofile.ValueType) (valueType, error) {
+func newValueType(p Profile, vt pprofile.ValueType) (valueType, error) {
 	var result valueType
 	var err, joinedErr error
 
@@ -249,7 +249,7 @@ type location struct {
 	attributes attributes
 }
 
-func newLocation(p profile, pl pprofile.Location) (location, error) {
+func newLocation(p Profile, pl pprofile.Location) (location, error) {
 	var l location
 	var err, joinedErr error
 
@@ -289,7 +289,7 @@ type mapping struct {
 	hasInlineFrames bool
 }
 
-func newMapping(p profile, pm pprofile.Mapping) (mapping, error) {
+func newMapping(p Profile, pm pprofile.Mapping) (mapping, error) {
 	var m mapping
 	var err error
 
@@ -343,7 +343,7 @@ func (s attributes) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	return joinedErr
 }
 
-func newAttributes(p profile, pattrs pcommon.Int32Slice) (attributes, error) {
+func newAttributes(p Profile, pattrs pcommon.Int32Slice) (attributes, error) {
 	var joinedErr error
 	as := make(attributes, 0, pattrs.Len())
 	for i := range pattrs.Len() {
@@ -379,7 +379,7 @@ func (s lines) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	return joinedErr
 }
 
-func newLines(p profile, plines pprofile.LineSlice) (lines, error) {
+func newLines(p Profile, plines pprofile.LineSlice) (lines, error) {
 	var joinedErr error
 	ls := make(lines, 0, plines.Len())
 	for i := range plines.Len() {
@@ -398,7 +398,7 @@ type line struct {
 	column   int64
 }
 
-func newLine(p profile, pl pprofile.Line) (line, error) {
+func newLine(p Profile, pl pprofile.Line) (line, error) {
 	var l line
 	var err, joinedErr error
 
@@ -424,7 +424,7 @@ type function struct {
 	startLine  int64
 }
 
-func newFunction(p profile, pf pprofile.Function) (function, error) {
+func newFunction(p Profile, pf pprofile.Function) (function, error) {
 	var f function
 	var err, joinedErr error
 
@@ -506,7 +506,7 @@ func (v value) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 
 type comments []string
 
-func (p profile) getComments() (comments, error) {
+func (p Profile) getComments() (comments, error) {
 	var joinedErr error
 	pp := pprofile.Profile(p)
 	l := pp.CommentStrindices().Len()

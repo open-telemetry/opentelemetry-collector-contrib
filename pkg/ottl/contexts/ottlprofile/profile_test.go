@@ -219,6 +219,5 @@ func createProfileTelemetry() pprofile.Profile {
 	profile := pprofile.NewProfile()
 	profile.SetProfileID(profileID)
 	profile.SetTime(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
-	//	profile.SetDuration(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 	return profile
 }

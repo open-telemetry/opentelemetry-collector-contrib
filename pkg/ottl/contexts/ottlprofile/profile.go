@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logprofile"
 )
 
 var (
@@ -32,7 +33,7 @@ var (
 func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	err := encoder.AddObject("resource", logging.Resource(tCtx.resource))
 	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
-	err = errors.Join(err, encoder.AddObject("profile", profile(tCtx.profile)))
+	err = errors.Join(err, encoder.AddObject("profile", logprofile.Profile(tCtx.profile)))
 	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
 	return err
 }
