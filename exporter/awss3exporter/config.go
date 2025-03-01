@@ -20,9 +20,8 @@ type S3UploaderConfig struct {
 	S3Bucket string `mapstructure:"s3_bucket"`
 	// S3Prefix is the key (directory) prefix to written to inside the bucket
 	S3Prefix string `mapstructure:"s3_prefix"`
-	// S3Partition is used to provide the rollup on how data is written.
-	// Valid values are: [hour,minute]
-	S3Partition string `mapstructure:"s3_partition"`
+	// S3PartitionFormat is used to provide the rollup on how data is written. Uses [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) formatting.
+	S3PartitionFormat string `mapstructure:"s3_partition_format"`
 	// FilePrefix is the filename prefix used for the file to avoid any potential collisions.
 	FilePrefix string `mapstructure:"file_prefix"`
 	// Endpoint is the URL used for communicated with S3.
