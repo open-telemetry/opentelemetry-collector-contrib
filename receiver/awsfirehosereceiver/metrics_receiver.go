@@ -67,10 +67,10 @@ func (c *metricsConsumer) Start(_ context.Context, host component.Host) error {
 	switch encoding {
 	case cwmetricstream.TypeStr:
 		// TODO: make cwmetrics an encoding extension
-		c.unmarshaler = cwmetricstream.NewUnmarshaler(c.settings.Logger)
+		c.unmarshaler = cwmetricstream.NewUnmarshaler(c.settings.Logger, c.settings.BuildInfo)
 	case otlpmetricstream.TypeStr:
 		// TODO: make otlp_v1 an encoding extension
-		c.unmarshaler = otlpmetricstream.NewUnmarshaler(c.settings.Logger)
+		c.unmarshaler = otlpmetricstream.NewUnmarshaler(c.settings.Logger, c.settings.BuildInfo)
 	default:
 		unmarshaler, err := loadEncodingExtension[pmetric.Unmarshaler](host, encoding, "metrics")
 		if err != nil {
