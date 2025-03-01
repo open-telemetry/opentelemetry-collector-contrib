@@ -582,7 +582,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.GRPC.IncludeMetadata = true
-	id := component.NewID(component.MustNewType("arrow"))
+	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
 
@@ -695,7 +695,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 	cfg.GRPC.Auth = &configauth.Authentication{
 		AuthenticatorID: authID,
 	}
-	id := component.NewID(component.MustNewType("arrow"))
+	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
 
@@ -762,7 +762,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.GRPC.IncludeMetadata = true
-	id := component.NewID(component.MustNewType("arrow"))
+	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
 

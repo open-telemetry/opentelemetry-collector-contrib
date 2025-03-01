@@ -12,11 +12,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 )
 
 // Experimental: *NOTE* this constant is subject to change or removal in the future.
@@ -83,11 +83,11 @@ func (tCtx TransformContext) GetResource() pcommon.Resource {
 	return tCtx.resource
 }
 
-func (tCtx TransformContext) GetScopeSchemaURLItem() ctxutil.SchemaURLItem {
+func (tCtx TransformContext) GetScopeSchemaURLItem() ctxcommon.SchemaURLItem {
 	return tCtx.scopeMetrics
 }
 
-func (tCtx TransformContext) GetResourceSchemaURLItem() ctxutil.SchemaURLItem {
+func (tCtx TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem {
 	return tCtx.resourceMetrics
 }
 

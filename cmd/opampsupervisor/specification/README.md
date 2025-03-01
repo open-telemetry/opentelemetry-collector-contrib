@@ -462,7 +462,7 @@ extensions:
 The extension uses an OpAMP connection to the Supervisor when used with
 the Supervisor model.
 
-The extensions' configuration cannot be overridden by the remote
+The extension's configuration cannot be overridden by the remote
 configuration.
 
 The same extension can be used to connect directly to the OpAMP Server,

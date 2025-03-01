@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -409,7 +409,7 @@ func (t *TestResourceSchemaURLItem) SetSchemaUrl(v string) {
 
 //revive:enable:var-naming
 
-func createResourceSchemaURLItem() ctxutil.SchemaURLItem {
+func createResourceSchemaURLItem() ctxcommon.SchemaURLItem {
 	return &TestResourceSchemaURLItem{
 		schemaURL: "schema_url",
 	}
@@ -417,14 +417,14 @@ func createResourceSchemaURLItem() ctxutil.SchemaURLItem {
 
 type testContext struct {
 	resource      pcommon.Resource
-	schemaURLItem ctxutil.SchemaURLItem
+	schemaURLItem ctxcommon.SchemaURLItem
 }
 
 func (r *testContext) GetResource() pcommon.Resource {
 	return r.resource
 }
 
-func (r *testContext) GetResourceSchemaURLItem() ctxutil.SchemaURLItem {
+func (r *testContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem {
 	return r.schemaURLItem
 }
 

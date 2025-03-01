@@ -13,10 +13,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
@@ -33,7 +33,7 @@ type TransformContext struct {
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
 	cache                pcommon.Map
-	schemaURLItem        ctxutil.SchemaURLItem
+	schemaURLItem        ctxcommon.SchemaURLItem
 }
 
 func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
@@ -47,7 +47,7 @@ type Option func(*ottl.Parser[TransformContext])
 
 type TransformContextOption func(*TransformContext)
 
-func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, schemaURLItem ctxutil.SchemaURLItem, options ...TransformContextOption) TransformContext {
+func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, schemaURLItem ctxcommon.SchemaURLItem, options ...TransformContextOption) TransformContext {
 	tc := TransformContext{
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
@@ -77,11 +77,11 @@ func (tCtx TransformContext) GetResource() pcommon.Resource {
 	return tCtx.resource
 }
 
-func (tCtx TransformContext) GetScopeSchemaURLItem() ctxutil.SchemaURLItem {
+func (tCtx TransformContext) GetScopeSchemaURLItem() ctxcommon.SchemaURLItem {
 	return tCtx.schemaURLItem
 }
 
-func (tCtx TransformContext) GetResourceSchemaURLItem() ctxutil.SchemaURLItem {
+func (tCtx TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem {
 	return tCtx.schemaURLItem
 }
 
