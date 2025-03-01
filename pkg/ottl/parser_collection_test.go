@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -71,7 +70,19 @@ func Test_NewParserCollection_OptionError(t *testing.T) {
 func Test_WithParserCollectionContext(t *testing.T) {
 	ps := mockParser(t, WithPathContextNames[any]([]string{"testContext"}))
 	conv := newNopParsedStatementConverter[any]()
-	option := WithParserCollectionContext("testContext", ps, conv)
+	option := WithParserCollectionContext("testContext", ps, WithStatementConverter(conv))
+
+	pc, err := NewParserCollection(componenttest.NewNopTelemetrySettings(), option)
+	require.NoError(t, err)
+
+	pw, exists := pc.contextParsers["testContext"]
+	assert.True(t, exists)
+	assert.NotNil(t, pw)
+}
+
+func Test_WithParserCollectionContextNoStatementConverter(t *testing.T) {
+	ps := mockParser(t, WithPathContextNames[any]([]string{"testContext"}))
+	option := WithParserCollectionContext[any, any]("testContext", ps)
 
 	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings(), option)
 	require.NoError(t, err)
@@ -79,14 +90,15 @@ func Test_WithParserCollectionContext(t *testing.T) {
 	pw, exists := pc.contextParsers["testContext"]
 	assert.True(t, exists)
 	assert.NotNil(t, pw)
-	assert.Equal(t, reflect.ValueOf(ps), pw.ottlParser.parser)
-	assert.Equal(t, reflect.ValueOf(conv), reflect.Value(pw.statementsConverter))
+	_, parseErr := pc.ParseStatementsWithContext("testContext", mockStatementsGetter{[]string{`set(testContext.attributes["foo"], "foo")`}}, true)
+	assert.Error(t, parseErr)
+	assert.Contains(t, parseErr.Error(), "no statements converter")
 }
 
 func Test_WithParserCollectionContext_UnsupportedContext(t *testing.T) {
 	ps := mockParser(t, WithPathContextNames[any]([]string{"foo"}))
 	conv := newNopParsedStatementConverter[any]()
-	option := WithParserCollectionContext("bar", ps, conv)
+	option := WithParserCollectionContext("bar", ps, WithStatementConverter(conv))
 
 	_, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings(), option)
 
@@ -95,8 +107,8 @@ func Test_WithParserCollectionContext_UnsupportedContext(t *testing.T) {
 
 func Test_WithParserCollectionContext_contextInferrerCandidates(t *testing.T) {
 	pc, err := NewParserCollection[any](component.TelemetrySettings{},
-		WithParserCollectionContext("foo", mockParser(t, WithPathContextNames[any]([]string{"foo", "bar"})), newNopParsedStatementConverter[any]()),
-		WithParserCollectionContext("bar", mockParser(t, WithPathContextNames[any]([]string{"bar"})), newNopParsedStatementConverter[any]()),
+		WithParserCollectionContext("foo", mockParser(t, WithPathContextNames[any]([]string{"foo", "bar"})), WithStatementConverter(newNopParsedStatementConverter[any]())),
+		WithParserCollectionContext("bar", mockParser(t, WithPathContextNames[any]([]string{"bar"})), WithStatementConverter(newNopParsedStatementConverter[any]())),
 	)
 	require.NoError(t, err)
 	require.NotNil(t, pc.contextInferrer)
@@ -141,7 +153,7 @@ func Test_EnableParserCollectionModifiedStatementLogging_True(t *testing.T) {
 
 	pc, err := NewParserCollection(
 		telemetrySettings,
-		WithParserCollectionContext("dummy", ps, newNopParsedStatementConverter[any]()),
+		WithParserCollectionContext("dummy", ps, WithStatementConverter(newNopParsedStatementConverter[any]())),
 		EnableParserCollectionModifiedStatementLogging[any](true),
 	)
 	require.NoError(t, err)
@@ -180,7 +192,7 @@ func Test_EnableParserCollectionModifiedStatementLogging_False(t *testing.T) {
 
 	pc, err := NewParserCollection(
 		telemetrySettings,
-		WithParserCollectionContext("dummy", ps, newNopParsedStatementConverter[any]()),
+		WithParserCollectionContext("dummy", ps, WithStatementConverter(newNopParsedStatementConverter[any]())),
 		EnableParserCollectionModifiedStatementLogging[any](false),
 	)
 	require.NoError(t, err)
@@ -195,7 +207,7 @@ func Test_NopParsedStatementConverter(t *testing.T) {
 
 	noop := newNopParsedStatementConverter[dummyContext]()
 	parsedStatements := []*Statement[dummyContext]{{}}
-	convertedStatements, err := noop(nil, nil, "", mockStatementsGetter{values: []string{}}, parsedStatements)
+	convertedStatements, err := noop(nil, mockStatementsGetter{values: []string{}}, parsedStatements)
 
 	require.NoError(t, err)
 	require.NotNil(t, convertedStatements)
@@ -214,7 +226,7 @@ func Test_ParseStatements_Success(t *testing.T) {
 
 	pc, err := NewParserCollection(
 		component.TelemetrySettings{},
-		WithParserCollectionContext("foo", ps, newNopParsedStatementConverter[any]()),
+		WithParserCollectionContext("foo", ps, WithStatementConverter(newNopParsedStatementConverter[any]())),
 	)
 	require.NoError(t, err)
 	pc.contextInferrer = &mockStaticContextInferrer{"foo"}
@@ -233,8 +245,6 @@ func Test_ParseStatements_MultipleContexts_Success(t *testing.T) {
 	barParser := mockParser(t, WithPathContextNames[any]([]string{"bar"}))
 	failingConverter := func(
 		_ *ParserCollection[any],
-		_ *Parser[any],
-		_ string,
 		_ StatementsGetter,
 		_ []*Statement[any],
 	) (any, error) {
@@ -243,8 +253,8 @@ func Test_ParseStatements_MultipleContexts_Success(t *testing.T) {
 
 	pc, err := NewParserCollection(
 		component.TelemetrySettings{},
-		WithParserCollectionContext("foo", fooParser, failingConverter),
-		WithParserCollectionContext("bar", barParser, newNopParsedStatementConverter[any]()),
+		WithParserCollectionContext("foo", fooParser, WithStatementConverter(failingConverter)),
+		WithParserCollectionContext("bar", barParser, WithStatementConverter(newNopParsedStatementConverter[any]())),
 	)
 	require.NoError(t, err)
 	pc.contextInferrer = &mockStaticContextInferrer{"bar"}
@@ -283,8 +293,8 @@ func Test_ParseStatements_ContextInferenceError(t *testing.T) {
 
 func Test_ParseStatements_UnknownContextError(t *testing.T) {
 	pc, err := NewParserCollection[any](component.TelemetrySettings{},
-		WithParserCollectionContext("bar", mockParser(t, WithPathContextNames[any]([]string{"bar"})), newNopParsedStatementConverter[any]()),
-		WithParserCollectionContext("te", mockParser(t, WithPathContextNames[any]([]string{"te"})), newNopParsedStatementConverter[any]()),
+		WithParserCollectionContext("bar", mockParser(t, WithPathContextNames[any]([]string{"bar"})), WithStatementConverter(newNopParsedStatementConverter[any]())),
+		WithParserCollectionContext("te", mockParser(t, WithPathContextNames[any]([]string{"te"})), WithStatementConverter(newNopParsedStatementConverter[any]())),
 	)
 	require.NoError(t, err)
 	pc.contextInferrer = &mockStaticContextInferrer{"foo"}
@@ -304,7 +314,7 @@ func Test_ParseStatements_ParseStatementsError(t *testing.T) {
 
 	pc, err := NewParserCollection(
 		component.TelemetrySettings{},
-		WithParserCollectionContext("foo", ps, newNopParsedStatementConverter[any]()),
+		WithParserCollectionContext("foo", ps, WithStatementConverter(newNopParsedStatementConverter[any]())),
 	)
 	require.NoError(t, err)
 	pc.contextInferrer = &mockStaticContextInferrer{"foo"}
@@ -316,13 +326,13 @@ func Test_ParseStatements_ParseStatementsError(t *testing.T) {
 
 func Test_ParseStatements_ConverterError(t *testing.T) {
 	ps := mockParser(t, WithPathContextNames[any]([]string{"dummy"}))
-	conv := func(_ *ParserCollection[any], _ *Parser[any], _ string, _ StatementsGetter, _ []*Statement[any]) (any, error) {
+	conv := func(_ *ParserCollection[any], _ StatementsGetter, _ []*Statement[any]) (any, error) {
 		return nil, errors.New("converter error")
 	}
 
 	pc, err := NewParserCollection(
 		component.TelemetrySettings{},
-		WithParserCollectionContext("dummy", ps, conv),
+		WithParserCollectionContext("dummy", ps, WithStatementConverter(conv)),
 	)
 	require.NoError(t, err)
 	pc.contextInferrer = &mockStaticContextInferrer{"dummy"}
@@ -335,13 +345,13 @@ func Test_ParseStatements_ConverterError(t *testing.T) {
 
 func Test_ParseStatements_ConverterNilReturn(t *testing.T) {
 	ps := mockParser(t, WithPathContextNames[any]([]string{"dummy"}))
-	conv := func(_ *ParserCollection[any], _ *Parser[any], _ string, _ StatementsGetter, _ []*Statement[any]) (any, error) {
+	conv := func(_ *ParserCollection[any], _ StatementsGetter, _ []*Statement[any]) (any, error) {
 		return nil, nil
 	}
 
 	pc, err := NewParserCollection(
 		component.TelemetrySettings{},
-		WithParserCollectionContext("dummy", ps, conv),
+		WithParserCollectionContext("dummy", ps, WithStatementConverter(conv)),
 	)
 	require.NoError(t, err)
 	pc.contextInferrer = &mockStaticContextInferrer{"dummy"}
@@ -355,7 +365,7 @@ func Test_ParseStatements_ConverterNilReturn(t *testing.T) {
 func Test_ParseStatements_StatementsConverterGetterType(t *testing.T) {
 	ps := mockParser(t, WithPathContextNames[any]([]string{"dummy"}))
 	statements := mockStatementsGetter{values: []string{`set(dummy.attributes["bar"], "foo")`}}
-	conv := func(_ *ParserCollection[any], _ *Parser[any], _ string, statementsGetter StatementsGetter, _ []*Statement[any]) (any, error) {
+	conv := func(_ *ParserCollection[any], statementsGetter StatementsGetter, _ []*Statement[any]) (any, error) {
 		switch statementsGetter.(type) {
 		case mockStatementsGetter:
 			return statements, nil
@@ -364,7 +374,7 @@ func Test_ParseStatements_StatementsConverterGetterType(t *testing.T) {
 		}
 	}
 
-	pc, err := NewParserCollection(component.TelemetrySettings{}, WithParserCollectionContext("dummy", ps, conv))
+	pc, err := NewParserCollection(component.TelemetrySettings{}, WithParserCollectionContext("dummy", ps, WithStatementConverter(conv)))
 	require.NoError(t, err)
 	pc.contextInferrer = &mockStaticContextInferrer{"dummy"}
 
@@ -386,7 +396,7 @@ func Test_ParseStatementsWithContext_PrependPathContext(t *testing.T) {
 	ps := mockParser(t, WithPathContextNames[any]([]string{"dummy"}))
 	pc, err := NewParserCollection(
 		component.TelemetrySettings{},
-		WithParserCollectionContext("dummy", ps, newNopParsedStatementConverter[any]()),
+		WithParserCollectionContext("dummy", ps, WithStatementConverter(newNopParsedStatementConverter[any]())),
 	)
 	require.NoError(t, err)
 
