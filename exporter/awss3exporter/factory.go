@@ -35,6 +35,7 @@ func createDefaultConfig() component.Config {
 			Region:       "us-east-1",
 			S3Partition:  "minute",
 			StorageClass: "STANDARD",
+			ACL:          "private",
 		},
 		MarshalerName: "otlp_json",
 	}
