@@ -272,42 +272,35 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 			}
 
 			attrs := logRecord.Attributes()
-			if len(l.cfg.Attributes) != 0 {
-				for field, attribute := range l.cfg.Attributes {
-					if v, ok := log[field]; ok {
-						switch v := v.(type) {
-						case string:
-							attrs.PutStr(attribute, v)
-						case int:
-							attrs.PutInt(attribute, int64(v))
-						case int64:
-							attrs.PutInt(attribute, v)
-						case float64:
-							attrs.PutDouble(attribute, v)
-						case bool:
-							attrs.PutBool(attribute, v)
-						default:
-							l.logger.Warn("unable to translate field to attribute, unsupported type", zap.String("field", field), zap.Any("value", v), zap.String("type", fmt.Sprintf("%T", v)))
-						}
+			for field, v := range log {
+				attrName := field
+				if len(l.cfg.Attributes) != 0 {
+					// Only process fields that are in the config mapping
+					if mappedAttr, ok := l.cfg.Attributes[field]; ok {
+						attrName = mappedAttr
+					} else {
+						// Skip fields not in mapping when we have a config
+						continue
 					}
 				}
-			// If no attributes were specified, receive them all
-			} else {
-				for field, v := range log {
-					switch v := v.(type) {
-					case string:
-						attrs.PutStr(field, v)
-					case int:
-						attrs.PutInt(field, int64(v))
-					case int64:
-						attrs.PutInt(field, v)
-					case float64:
-						attrs.PutDouble(field, v)
-					case bool:
-						attrs.PutBool(field, v)
-					default:
-						l.logger.Warn("unable to translate field to attribute, unsupported type", zap.String("field", field), zap.Any("value", v), zap.String("type", fmt.Sprintf("%T", v)))
-					}
+				// else if l.cfg.Attributes is empty, default to processing all fields with no renaming
+
+				switch v := v.(type) {
+				case string:
+					attrs.PutStr(attrName, v)
+				case int:
+					attrs.PutInt(attrName, int64(v))
+				case int64:
+					attrs.PutInt(attrName, v)
+				case float64:
+					attrs.PutDouble(attrName, v)
+				case bool:
+					attrs.PutBool(attrName, v)
+				default:
+					l.logger.Warn("unable to translate field to attribute, unsupported type", 
+						zap.String("field", field), 
+						zap.Any("value", v), 
+						zap.String("type", fmt.Sprintf("%T", v)))
 				}
 			}
 
