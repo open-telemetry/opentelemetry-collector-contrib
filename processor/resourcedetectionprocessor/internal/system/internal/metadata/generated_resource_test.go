@@ -26,15 +26,16 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetHostName("host.name-val")
 			rb.SetOsDescription("os.description-val")
 			rb.SetOsType("os.type-val")
+			rb.SetOsVersion("os.version-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 13, res.Attributes().Len())
+				assert.Equal(t, 14, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -106,6 +107,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "os.type-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("os.version")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "os.version-val", val.Str())
 			}
 		})
 	}
