@@ -3,7 +3,7 @@
 
 //go:build !windows
 
-package handlecount
+package wmiprocinfo // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/wmiprocinfo"
 
 import (
 	"testing"
@@ -15,8 +15,8 @@ func TestUnsupportedManager(t *testing.T) {
 	m := NewManager()
 
 	err := m.Refresh()
-	assert.ErrorIs(t, err, ErrHandlesPlatformSupport)
+	assert.ErrorIs(t, err, ErrPlatformSupport)
 
 	_, err = m.GetProcessHandleCount(0)
-	assert.ErrorIs(t, err, ErrHandlesPlatformSupport)
+	assert.ErrorIs(t, err, ErrPlatformSupport)
 }
