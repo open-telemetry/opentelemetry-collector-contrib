@@ -480,6 +480,7 @@ Available Converters:
 - [UnixSeconds](#unixseconds)
 - [UserAgent](#useragent)
 - [UUID](#UUID)
+- [Weekday](#weekday)
 - [Year](#year)
 
 ### Base64Decode (Deprecated)
@@ -2276,6 +2277,22 @@ results in
 `UUID()`
 
 The `UUID` function generates a v4 uuid string.
+
+### Weekday
+
+`Weekday(value)`
+
+The `Weekday` Converter returns the day of the week component from the specified time using the Go stdlib [`time.Weekday` function](https://pkg.go.dev/time#Time.Weekday).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+The returned range is 0-6 (Sun-Sat)
+
+Examples:
+
+- `Weekday(Now())`
 
 ### Year
 
