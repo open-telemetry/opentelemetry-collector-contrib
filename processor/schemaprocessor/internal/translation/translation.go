@@ -4,8 +4,8 @@
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 
 import (
-	"io"
 	"sort"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -107,8 +107,8 @@ func newTranslatorFromSchema(log *zap.Logger, targetSchemaURL string, schemaFile
 	return t, nil
 }
 
-func newTranslatorFromReader(log *zap.Logger, targetSchemaURL string, content io.Reader) (*translator, error) {
-	schemaFileSchema, err := encoder.Parse(content)
+func newTranslator(log *zap.Logger, targetSchemaURL string, schema string) (*translator, error) {
+	schemaFileSchema, err := encoder.Parse(strings.NewReader(schema))
 	if err != nil {
 		return nil, err
 	}
