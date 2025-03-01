@@ -20,10 +20,10 @@ import (
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/agent"
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/jaeger"
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/zipkincore"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/processor"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/multierr"
@@ -44,8 +44,9 @@ type jReceiver struct {
 	grpc            *grpc.Server
 	collectorServer *http.Server
 
-	agentProcessors []processor.Processor
-	agentServer     *http.Server
+	binaryUDPServer  *UDPServer
+	compactUDPServer *UDPServer
+	agentServer      *http.Server
 
 	goroutines sync.WaitGroup
 
@@ -53,6 +54,12 @@ type jReceiver struct {
 
 	grpcObsrecv *receiverhelper.ObsReport
 	httpObsrecv *receiverhelper.ObsReport
+}
+
+type obsReportingConsumer struct {
+	nextConsumer consumer.Traces
+	obsrecv      *receiverhelper.ObsReport
+	format       string
 }
 
 const (
@@ -105,6 +112,17 @@ func newJaegerReceiver(
 	}, nil
 }
 
+func (oc *obsReportingConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	ctx = oc.obsrecv.StartTracesOp(ctx)
+	err := oc.nextConsumer.ConsumeTraces(ctx, td)
+	oc.obsrecv.EndTracesOp(ctx, oc.format, td.SpanCount(), err)
+	return err
+}
+
+func (oc *obsReportingConsumer) Capabilities() consumer.Capabilities {
+	return oc.nextConsumer.Capabilities()
+}
+
 func (jr *jReceiver) Start(ctx context.Context, host component.Host) error {
 	if err := jr.startAgent(); err != nil {
 		return err
@@ -121,10 +139,17 @@ func (jr *jReceiver) Shutdown(ctx context.Context) error {
 			errs = multierr.Append(errs, aerr)
 		}
 	}
-	for _, processor := range jr.agentProcessors {
-		if err := processor.Stop(); err != nil {
+	if jr.binaryUDPServer != nil {
+		if err := jr.binaryUDPServer.Stop(); err != nil {
 			errs = multierr.Append(errs, err)
 		}
+	}
+
+	if jr.compactUDPServer != nil {
+		if err := jr.compactUDPServer.Stop(); err != nil {
+			errs = multierr.Append(errs, err)
+		}
+
 	}
 
 	if jr.collectorServer != nil {
@@ -205,44 +230,84 @@ func (jr *jReceiver) startAgent() error {
 			return err
 		}
 
-		h := &agentHandler{
+		wrappedConsumer := &obsReportingConsumer{
 			nextConsumer: jr.nextConsumer,
 			obsrecv:      obsrecv,
+			format:       thriftFormat,
 		}
 
-		p, err := processor.NewThriftProcessor(
+		udpServer, err := NewUDPServer(
 			jr.config.ThriftBinaryUDP.Endpoint,
 			jr.config.ThriftBinaryUDP.ServerConfigUDP.MaxPacketSize,
+			wrappedConsumer,
 			apacheThrift.NewTBinaryProtocolFactoryConf(nil),
-			h,
 			jr.settings.Logger,
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create Binary Thrift UDP server: %w", err)
 		}
-		jr.agentProcessors = append(jr.agentProcessors, p)
+
+		if err = udpServer.Start(); err != nil {
+			return fmt.Errorf("failed to start Binary Thrift UDP server: %w", err)
+		}
+
+		jr.binaryUDPServer = udpServer
 
 		jr.settings.Logger.Info("Starting UDP server for Binary Thrift", zap.String("endpoint", jr.config.ThriftBinaryUDP.Endpoint))
 	}
 
-	for _, p := range jr.agentProcessors {
-		if err := p.Start(); err != nil {
+	if jr.config.ThriftCompactUDP != nil {
+		obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+			ReceiverID:             jr.id,
+			Transport:              agentTransportCompact,
+			ReceiverCreateSettings: jr.settings,
+		})
+		if err != nil {
 			return err
 		}
-	}
-
-	for _, p := range jr.agentProcessors {
-		if err := p.Start(); err != nil {
-			return err
+		// Create a wrapped consumer that includes the metrics
+		wrappedConsumer := &obsReportingConsumer{
+			nextConsumer: jr.nextConsumer,
+			obsrecv:      obsrecv,
+			format:       thriftFormat,
 		}
+
+		// Create and start the UDP server for Compact Thrift
+		udpServer, err := NewUDPServer(
+			jr.config.ThriftCompactUDP.Endpoint,
+			jr.config.ThriftCompactUDP.ServerConfigUDP.MaxPacketSize,
+			wrappedConsumer,
+			apacheThrift.NewTCompactProtocolFactoryConf(nil),
+			jr.settings.Logger,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create Compact Thrift UDP server: %w", err)
+		}
+
+		if err = udpServer.Start(); err != nil {
+			return fmt.Errorf("failed to start Compact Thrift UDP server: %w", err)
+		}
+
+		jr.compactUDPServer = udpServer
+		jr.settings.Logger.Info("Started UDP server for Compact Thrift", zap.String("endpoint", jr.config.ThriftCompactUDP.Endpoint))
 	}
 
-	jr.goroutines.Add(len(jr.agentProcessors))
-	for _, p := range jr.agentProcessors {
-		go func(p processor.Processor) {
+	if jr.binaryUDPServer != nil {
+		jr.goroutines.Add(1)
+		go func() {
 			defer jr.goroutines.Done()
-			<-p.Done()
-		}(p)
+			<-jr.binaryUDPServer.Done()
+		}()
+	}
+
+	if jr.compactUDPServer != nil {
+		jr.goroutines.Add(1)
+		go func() {
+
+			defer jr.goroutines.Done()
+			<-jr.compactUDPServer.Done()
+		}()
+
 	}
 
 	return nil
