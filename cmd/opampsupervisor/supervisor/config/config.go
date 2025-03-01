@@ -25,10 +25,10 @@ import (
 // Supervisor is the Supervisor config file format.
 type Supervisor struct {
 	Server       OpAMPServer  `mapstructure:"server"`
-	Agent        Agent        `mapstructure:"agent"`
-	Capabilities Capabilities `mapstructure:"capabilities"`
 	Storage      Storage      `mapstructure:"storage"`
 	Telemetry    Telemetry    `mapstructure:"telemetry"`
+	Agent        Agent        `mapstructure:"agent"`
+	Capabilities Capabilities `mapstructure:"capabilities"`
 }
 
 // Load loads the Supervisor config from a file.
@@ -167,9 +167,9 @@ func (o OpAMPServer) Validate() error {
 }
 
 type Agent struct {
+	Description             AgentDescription `mapstructure:"description"`
 	Executable              string           `mapstructure:"executable"`
 	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
-	Description             AgentDescription `mapstructure:"description"`
 	ConfigApplyTimeout      time.Duration    `mapstructure:"config_apply_timeout"`
 	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
 	HealthCheckPort         int              `mapstructure:"health_check_port"`
@@ -222,8 +222,8 @@ type Telemetry struct {
 }
 
 type Logs struct {
-	Level       zapcore.Level `mapstructure:"level"`
 	OutputPaths []string      `mapstructure:"output_paths"`
+	Level       zapcore.Level `mapstructure:"level"`
 }
 
 // DefaultSupervisor returns the default supervisor config
