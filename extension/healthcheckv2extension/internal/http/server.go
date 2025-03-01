@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -32,7 +33,7 @@ type Server struct {
 	colconf        atomic.Value
 	aggregator     *status.Aggregator
 	startTimestamp time.Time
-	doneCh         chan struct{}
+	doneWg         sync.WaitGroup
 }
 
 var (
@@ -52,7 +53,6 @@ func NewServer(
 		telemetry:  telemetry,
 		mux:        http.NewServeMux(),
 		aggregator: aggregator,
-		doneCh:     make(chan struct{}),
 	}
 
 	if legacyConfig.UseV2 {
@@ -96,8 +96,10 @@ func (s *Server) Start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("failed to bind to address %s: %w", s.httpConfig.Endpoint, err)
 	}
 
+	s.doneWg.Add(1)
 	go func() {
-		defer close(s.doneCh)
+		defer s.doneWg.Done()
+
 		if err = s.httpServer.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewPermanentErrorEvent(err))
 		}
@@ -112,7 +114,7 @@ func (s *Server) Shutdown(context.Context) error {
 		return nil
 	}
 	s.httpServer.Close()
-	<-s.doneCh
+	s.doneWg.Wait()
 	return nil
 }
 
