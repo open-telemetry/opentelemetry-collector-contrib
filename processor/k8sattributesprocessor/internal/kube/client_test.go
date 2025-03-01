@@ -702,15 +702,27 @@ func TestExtractionRules(t *testing.T) {
 		},
 	}
 
+	operatorRules := ExtractionRules{
+		OperatorRules: OperatorRules{
+			Enabled: true,
+			Labels:  true,
+		},
+		Annotations: []FieldExtractionRule{OperatorAnnotationRule},
+		Labels:      OperatorLabelRules,
+	}
+
 	testCases := []struct {
-		name       string
-		rules      ExtractionRules
-		attributes map[string]string
+		name                  string
+		rules                 ExtractionRules
+		additionalAnnotations map[string]string
+		additionalLabels      map[string]string
+		attributes            map[string]string
+		serviceName           string
 	}{
 		{
 			name:       "no-rules",
 			rules:      ExtractionRules{},
-			attributes: nil,
+			attributes: map[string]string{},
 		},
 		{
 			name: "deployment",
@@ -962,6 +974,44 @@ func TestExtractionRules(t *testing.T) {
 				"prefix-annotation1": "av1",
 			},
 		},
+		{
+			name:       "operator-rules-builtin",
+			rules:      operatorRules,
+			attributes: map[string]string{
+				// tested in operator-container-level-attributes below
+			},
+			serviceName: "auth-service",
+		},
+		{
+			name:  "operator-rules-label-values",
+			rules: operatorRules,
+			additionalLabels: map[string]string{
+				"app.kubernetes.io/name":    "label-service",
+				"app.kubernetes.io/version": "label-version",
+				"app.kubernetes.io/part-of": "label-namespace",
+			},
+			attributes: map[string]string{
+				"service.name":      "label-service",
+				"service.version":   "label-version",
+				"service.namespace": "label-namespace",
+			},
+		},
+		{
+			name:  "operator-rules-annotation-override",
+			rules: operatorRules,
+			additionalAnnotations: map[string]string{
+				"resource.opentelemetry.io/service.instance.id": "annotation-id",
+				"resource.opentelemetry.io/service.version":     "annotation-version",
+				"resource.opentelemetry.io/service.name":        "annotation-service",
+				"resource.opentelemetry.io/service.namespace":   "annotation-namespace",
+			},
+			attributes: map[string]string{
+				"service.instance.id": "annotation-id",
+				"service.name":        "annotation-service",
+				"service.version":     "annotation-version",
+				"service.namespace":   "annotation-namespace",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -969,18 +1019,23 @@ func TestExtractionRules(t *testing.T) {
 
 			// manually call the data removal functions here
 			// normally the informer does this, but fully emulating the informer in this test is annoying
-			transformedPod := removeUnnecessaryPodData(pod, c.Rules)
+			podCopy := pod.DeepCopy()
+			for k, v := range tc.additionalAnnotations {
+				podCopy.Annotations[k] = v
+			}
+			for k, v := range tc.additionalLabels {
+				podCopy.Labels[k] = v
+			}
+			transformedPod := removeUnnecessaryPodData(podCopy, c.Rules)
 			transformedReplicaset := removeUnnecessaryReplicaSetData(replicaset)
 			c.handleReplicaSetAdd(transformedReplicaset)
 			c.handlePodAdd(transformedPod)
-			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
+			p, ok := c.GetPod(newPodIdentifier("connection", "", podCopy.Status.PodIP))
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(p.Attributes))
-			for k, v := range tc.attributes {
-				got, ok := p.Attributes[k]
-				assert.True(t, ok)
-				assert.Equal(t, v, got)
+			assert.Equal(t, tc.attributes, p.Attributes)
+			if tc.serviceName != "" {
+				assert.Equal(t, tc.serviceName, OperatorServiceName("containerName", p.ServiceNames))
 			}
 		})
 	}
@@ -1040,7 +1095,7 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 		{
 			name:       "no-rules",
 			rules:      ExtractionRules{},
-			attributes: nil,
+			attributes: map[string]string{},
 		}, {
 			name: "one_deployment_is_controller",
 			ownerReferences: []meta_v1.OwnerReference{
@@ -1132,12 +1187,7 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(p.Attributes))
-			for k, v := range tc.attributes {
-				got, ok := p.Attributes[k]
-				assert.True(t, ok)
-				assert.Equal(t, v, got)
-			}
+			assert.Equal(t, tc.attributes, p.Attributes)
 		})
 	}
 }
@@ -1489,6 +1539,10 @@ func TestPodIgnorePatterns(t *testing.T) {
 
 func Test_extractPodContainersAttributes(t *testing.T) {
 	pod := api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      "test-pod",
+			Namespace: "test-namespace",
+		},
 		Spec: api_v1.PodSpec{
 			Containers: []api_v1.Container{
 				{
@@ -1563,6 +1617,27 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			rules: ExtractionRules{},
 			pod:   &pod,
 			want:  PodContainers{ByID: map[string]*Container{}, ByName: map[string]*Container{}},
+		},
+		{
+			name: "operator-container-level-attributes",
+			rules: ExtractionRules{
+				OperatorRules: OperatorRules{Enabled: true},
+			},
+			pod: &pod,
+			want: PodContainers{
+				ByID: map[string]*Container{
+					"container1-id-123":     {ServiceName: "container1", ServiceInstanceID: "test-namespace.test-pod.container1", ServiceVersion: "0.1.0"},
+					"container2-id-456":     {ServiceName: "container2", ServiceInstanceID: "test-namespace.test-pod.container2"},
+					"container3-id-abc":     {ServiceName: "container3", ServiceInstanceID: "test-namespace.test-pod.container3", ServiceVersion: "1.0"},
+					"init-container-id-789": {ServiceName: "init_container", ServiceInstanceID: "test-namespace.test-pod.init_container", ServiceVersion: "latest"},
+				},
+				ByName: map[string]*Container{
+					"container1":     {ServiceName: "container1", ServiceInstanceID: "test-namespace.test-pod.container1", ServiceVersion: "0.1.0"},
+					"container2":     {ServiceName: "container2", ServiceInstanceID: "test-namespace.test-pod.container2"},
+					"container3":     {ServiceName: "container3", ServiceInstanceID: "test-namespace.test-pod.container3", ServiceVersion: "1.0"},
+					"init_container": {ServiceName: "init_container", ServiceInstanceID: "test-namespace.test-pod.init_container", ServiceVersion: "latest"},
+				},
+			},
 		},
 		{
 			name: "image-name-only",
