@@ -38,8 +38,6 @@ type TransformContext struct {
 	resourceMetrics      pmetric.ResourceMetrics
 }
 
-type Option func(*ottl.Parser[TransformContext])
-
 type TransformContextOption func(*TransformContext)
 
 func NewTransformContext(metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics, options ...TransformContextOption) TransformContext {
@@ -100,7 +98,7 @@ type pathExpressionParser struct {
 	cacheGetSetter    ottl.PathExpressionParser[TransformContext]
 }
 
-func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
+func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...ottl.Option[TransformContext]) (ottl.Parser[TransformContext], error) {
 	pep := pathExpressionParser{
 		telemetrySettings: telemetrySettings,
 		cacheGetSetter:    ctxcache.PathExpressionParser(getCache),
@@ -125,7 +123,7 @@ func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySet
 // otherwise an error is reported.
 //
 // Experimental: *NOTE* this option is subject to change or removal in the future.
-func EnablePathContextNames() Option {
+func EnablePathContextNames() ottl.Option[TransformContext] {
 	return func(p *ottl.Parser[TransformContext]) {
 		ottl.WithPathContextNames[TransformContext]([]string{
 			ctxmetric.Name,
