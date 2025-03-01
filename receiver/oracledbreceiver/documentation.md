@@ -132,6 +132,14 @@ Number of physical reads
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {reads} | Sum | Int | Cumulative | true |
 
+### oracledb.physical_writes
+
+Number of physical writes
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {writes} | Sum | Int | Cumulative | true |
+
 ### oracledb.processes.limit
 
 Maximum limit of active processes, -1 if unlimited.
@@ -256,6 +264,38 @@ Number of times a current block was requested from the buffer cache.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {gets} | Sum | Int | Cumulative | true |
+
+### oracledb.physical_read_io_requests
+
+Number of read requests for application activity
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {requests} | Sum | Int | Cumulative | true |
+
+### oracledb.physical_reads_direct
+
+Number of reads directly from disk, bypassing the buffer cache
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {reads} | Sum | Int | Cumulative | true |
+
+### oracledb.physical_write_io_requests
+
+Number of write requests for application activity
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {requests} | Sum | Int | Cumulative | true |
+
+### oracledb.physical_writes_direct
+
+Number of writes directly from disk, bypassing the buffer cache
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {writes} | Sum | Int | Cumulative | true |
 
 ## Resource Attributes
 
