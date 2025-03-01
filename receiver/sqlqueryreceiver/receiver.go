@@ -45,7 +45,15 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 			}
 			id := component.MustNewIDWithName("sqlqueryreceiver", fmt.Sprintf("query-%d: %s", i, query.SQL))
 			dbProviderFunc := func() (*sql.DB, error) {
-				return sqlOpenerFunc(sqlCfg.Driver, sqlCfg.DataSource)
+				dbPool, err := sqlOpenerFunc(sqlCfg.Driver, sqlCfg.DataSource)
+				if err != nil {
+					return nil, err
+				}
+
+				if dbPool != nil {
+					dbPool.SetMaxOpenConns(sqlCfg.MaxOpenConn)
+				}
+				return dbPool, nil
 			}
 			scope := pcommon.NewInstrumentationScope()
 			scope.SetName(metadata.ScopeName)
