@@ -315,6 +315,7 @@ body:
       - receiver/webhookevent
       - receiver/windowseventlog
       - receiver/windowsperfcounters
+      - receiver/windowsservice
       - receiver/zipkin
       - receiver/zookeeper
       - scraper/zookeeperscraper
