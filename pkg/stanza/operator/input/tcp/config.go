@@ -6,6 +6,7 @@ package tcp // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -48,6 +49,7 @@ func NewConfigWithID(operatorID string) *Config {
 	return &Config{
 		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
+			MaxLogSize:      DefaultMaxLogSize,
 			OneLogPerPacket: false,
 			Encoding:        "utf-8",
 		},
@@ -75,33 +77,15 @@ type BaseConfig struct {
 
 type SplitFuncBuilder func(enc encoding.Encoding) (bufio.SplitFunc, error)
 
-func (c Config) defaultSplitFuncBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
+func (c *Config) defaultSplitFuncBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
 	return c.SplitConfig.Func(enc, true, int(c.MaxLogSize))
 }
 
 // Build will build a tcp input operator.
-func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
+func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(set)
 	if err != nil {
 		return nil, err
-	}
-
-	// If MaxLogSize not set, set sane default
-	if c.MaxLogSize == 0 {
-		c.MaxLogSize = DefaultMaxLogSize
-	}
-
-	if c.MaxLogSize < minMaxLogSize {
-		return nil, fmt.Errorf("invalid value for parameter 'max_log_size', must be equal to or greater than %d bytes", minMaxLogSize)
-	}
-
-	if c.ListenAddress == "" {
-		return nil, fmt.Errorf("missing required parameter 'listen_address'")
-	}
-
-	// validate the input address
-	if _, err = net.ResolveTCPAddr("tcp", c.ListenAddress); err != nil {
-		return nil, fmt.Errorf("failed to resolve listen_address: %w", err)
 	}
 
 	enc, err := textutils.LookupEncoding(c.Encoding)
@@ -147,4 +131,21 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	return tcpInput, nil
+}
+
+func (c *BaseConfig) Validate() error {
+	if c.MaxLogSize < minMaxLogSize {
+		return fmt.Errorf("invalid value for parameter 'max_log_size', must be equal to or greater than %d bytes", minMaxLogSize)
+	}
+
+	if c.ListenAddress == "" {
+		return errors.New("missing required parameter 'listen_address'")
+	}
+
+	// validate the input address
+	if _, err := net.ResolveTCPAddr("tcp", c.ListenAddress); err != nil {
+		return fmt.Errorf("failed to resolve listen_address: %w", err)
+	}
+
+	return nil
 }
