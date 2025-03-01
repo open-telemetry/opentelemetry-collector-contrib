@@ -84,11 +84,11 @@ func TestConfig(t *testing.T) {
 			},
 		},
 		{
-			path: "invalid_ottl_statements",
+			path: "invalid_ottl_value_expression",
 			errorMsgs: []string{
-				fullErrorForSignal(t, "spans", "failed to parse OTTL statements"),
-				fullErrorForSignal(t, "datapoints", "failed to parse OTTL statements"),
-				fullErrorForSignal(t, "logs", "failed to parse OTTL statements"),
+				fullErrorForSignal(t, "spans", "failed to parse value OTTL expression"),
+				fullErrorForSignal(t, "datapoints", "failed to parse value OTTL expression"),
+				fullErrorForSignal(t, "logs", "failed to parse value OTTL expression"),
 			},
 		},
 		{
