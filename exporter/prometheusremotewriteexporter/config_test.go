@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -81,7 +82,8 @@ func TestLoadConfig(t *testing.T) {
 				TargetInfo: &TargetInfo{
 					Enabled: true,
 				},
-				CreatedMetric: &CreatedMetric{Enabled: true},
+				CreatedMetric:       &CreatedMetric{Enabled: true},
+				RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
 			},
 		},
 		{
