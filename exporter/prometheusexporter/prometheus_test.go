@@ -468,3 +468,9 @@ func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 
 	return md
 }
+
+func TestFailure(t *testing.T) {
+	// This test should always fail.
+	// This is being used to test the flakytest-generate-issues workflow.
+	require.Fail(t, "This test should always fail")
+}
