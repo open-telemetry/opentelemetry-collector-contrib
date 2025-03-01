@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	datadogapikey "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/apikey"
 )
 
 func TestValidate(t *testing.T) {
@@ -43,14 +45,14 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
-			err: ErrUnsetAPIKey.Error(),
+			err: datadogapikey.ErrUnsetAPIKey.Error(),
 		},
 		{
 			name: "invalid format api::key",
 			cfg: &Config{
 				API: APIConfig{Key: "'aaaaaaa"},
 			},
-			err: ErrAPIKeyFormat.Error(),
+			err: datadogapikey.ErrAPIKeyFormat.Error(),
 		},
 		{
 			name: "invalid hostname",

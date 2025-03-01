@@ -6,7 +6,6 @@ package config // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -19,26 +18,20 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+
+	datadogapikey "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/apikey"
 )
 
 var (
-	// ErrUnsetAPIKey is returned when the API key is not set.
-	ErrUnsetAPIKey = errors.New("api.key is not set")
 	// ErrNoMetadata is returned when only_metadata is enabled but host metadata is disabled or hostname_source is not first_resource.
 	ErrNoMetadata = errors.New("only_metadata can't be enabled when host_metadata::enabled = false or host_metadata::hostname_source != first_resource")
 	// ErrInvalidHostname is returned when the hostname is invalid.
 	ErrEmptyEndpoint = errors.New("endpoint cannot be empty")
-	// ErrAPIKeyFormat is returned if API key contains invalid characters
-	ErrAPIKeyFormat = errors.New("api::key contains invalid characters")
-	// NonHexRegex is a regex of characters that are always invalid in a Datadog API key
-	NonHexRegex = regexp.MustCompile(NonHexChars)
 )
 
 const (
 	// DefaultSite is the default site of the Datadog intake to send data to
 	DefaultSite = "datadoghq.com"
-	// NonHexChars is a regex of characters that are always invalid in a Datadog API key
-	NonHexChars = "[^0-9a-fA-F]"
 )
 
 // APIConfig defines the API configuration options
@@ -127,7 +120,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("hostname field is invalid: %w", err)
 	}
 
-	if err := StaticAPIKeyCheck(string(c.API.Key)); err != nil {
+	if err := datadogapikey.StaticAPIKeyCheck(string(c.API.Key)); err != nil {
 		return err
 	}
 
@@ -144,19 +137,6 @@ func (c *Config) Validate() error {
 		return errors.New("reporter_period must be 5 minutes or higher")
 	}
 
-	return nil
-}
-
-// StaticAPIKey Check checks if api::key is either empty or contains invalid (non-hex) characters
-// It does not validate online; this is handled on startup.
-func StaticAPIKeyCheck(key string) error {
-	if key == "" {
-		return ErrUnsetAPIKey
-	}
-	invalidAPIKeyChars := NonHexRegex.FindAllString(key, -1)
-	if len(invalidAPIKeyChars) > 0 {
-		return fmt.Errorf("%w: invalid characters: %s", ErrAPIKeyFormat, strings.Join(invalidAPIKeyChars, ", "))
-	}
 	return nil
 }
 
