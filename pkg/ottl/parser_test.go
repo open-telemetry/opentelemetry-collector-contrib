@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -2209,11 +2208,9 @@ func Test_parseValueExpression_full(t *testing.T) {
 			name:            "map",
 			valueExpression: `{"map": 1}`,
 			expected: func() any {
-				m := pcommon.NewMap()
-				_ = m.FromRaw(map[string]any{
-					"map": 1,
-				})
-				return m
+				return map[string]any{
+					"map": int64(1),
+				}
 			},
 		},
 		{
@@ -2221,6 +2218,24 @@ func Test_parseValueExpression_full(t *testing.T) {
 			valueExpression: `["list", "of", "strings"]`,
 			expected: func() any {
 				return []any{"list", "of", "strings"}
+			},
+		},
+		{
+			name:            "nested list",
+			valueExpression: `[{"list":[{"foo":"bar"}]}, {"bar":"baz"}]`,
+			expected: func() any {
+				return []any{
+					map[string]any{
+						"list": []any{
+							map[string]any{
+								"foo": "bar",
+							},
+						},
+					},
+					map[string]any{
+						"bar": "baz",
+					},
+				}
 			},
 		},
 	}
