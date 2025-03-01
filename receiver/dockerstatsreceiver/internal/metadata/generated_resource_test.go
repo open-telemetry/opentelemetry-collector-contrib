@@ -18,6 +18,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetContainerID("container.id-val")
 			rb.SetContainerImageID("container.image.id-val")
 			rb.SetContainerImageName("container.image.name-val")
+			rb.SetContainerLabels(map[string]any{"key1": "container.labels-val1", "key2": "container.labels-val2"})
 			rb.SetContainerName("container.name-val")
 			rb.SetContainerRuntime("container.runtime-val")
 
@@ -26,9 +27,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 5, res.Attributes().Len())
+				assert.Equal(t, 6, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 7, res.Attributes().Len())
+				assert.Equal(t, 8, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -60,6 +61,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "container.image.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("container.labels")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, map[string]any{"key1": "container.labels-val1", "key2": "container.labels-val2"}, val.Map().AsRaw())
 			}
 			val, ok = res.Attributes().Get("container.name")
 			assert.True(t, ok)

@@ -42,6 +42,10 @@ resource_attributes:
     description: "The hostname of the container."
     type: string
     enabled: true
+  container.labels:
+    description: "The labels attached to the container."
+    type: map
+    enabled: true
   container.image.id:
     description: "The ID of the container image."
     type: string
