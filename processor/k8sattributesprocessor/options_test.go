@@ -89,16 +89,14 @@ func TestWithExtractAnnotations(t *testing.T) {
 				{
 					TagName: "tag1",
 					Key:     "key1",
-					Regex:   "field=(?P<value>.+)",
 					From:    kube.MetadataFromPod,
 				},
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name:  "tag1",
-					Key:   "key1",
-					Regex: regexp.MustCompile(`field=(?P<value>.+)`),
-					From:  kube.MetadataFromPod,
+					Name: "tag1",
+					Key:  "key1",
+					From: kube.MetadataFromPod,
 				},
 			},
 			"",
@@ -228,16 +226,14 @@ func TestWithExtractLabels(t *testing.T) {
 				{
 					TagName: "tag1",
 					Key:     "key1",
-					Regex:   "field=(?P<value>.+)",
 					From:    kube.MetadataFromPod,
 				},
 			},
 			[]kube.FieldExtractionRule{
 				{
-					Name:  "tag1",
-					Key:   "key1",
-					Regex: regexp.MustCompile(`field=(?P<value>.+)`),
-					From:  kube.MetadataFromPod,
+					Name: "tag1",
+					Key:  "key1",
+					From: kube.MetadataFromPod,
 				},
 			},
 			"",
@@ -372,7 +368,7 @@ func TestWithFilterLabels(t *testing.T) {
 	tests := []struct {
 		name  string
 		args  []FieldFilterConfig
-		want  []kube.FieldFilter
+		want  []kube.LabelFilter
 		error string
 	}{
 		{
@@ -389,7 +385,7 @@ func TestWithFilterLabels(t *testing.T) {
 					Value: "v1",
 				},
 			},
-			[]kube.FieldFilter{
+			[]kube.LabelFilter{
 				{
 					Key:   "k1",
 					Value: "v1",
@@ -407,7 +403,7 @@ func TestWithFilterLabels(t *testing.T) {
 					Op:    "equals",
 				},
 			},
-			[]kube.FieldFilter{
+			[]kube.LabelFilter{
 				{
 					Key:   "k1",
 					Value: "v1",
@@ -425,7 +421,7 @@ func TestWithFilterLabels(t *testing.T) {
 					Op:    "not-equals",
 				},
 			},
-			[]kube.FieldFilter{
+			[]kube.LabelFilter{
 				{
 					Key:   "k1",
 					Value: "v1",
@@ -442,7 +438,7 @@ func TestWithFilterLabels(t *testing.T) {
 					Op:  "exists",
 				},
 			},
-			[]kube.FieldFilter{
+			[]kube.LabelFilter{
 				{
 					Key: "k1",
 					Op:  selection.Exists,
@@ -458,7 +454,7 @@ func TestWithFilterLabels(t *testing.T) {
 					Op:  "does-not-exist",
 				},
 			},
-			[]kube.FieldFilter{
+			[]kube.LabelFilter{
 				{
 					Key: "k1",
 					Op:  selection.DoesNotExist,
@@ -609,18 +605,6 @@ func Test_extractFieldRules(t *testing.T) {
 					From: kube.MetadataFromPod,
 				},
 			},
-		},
-		{
-			name: "badregex",
-			args: args{"field", []FieldExtractConfig{
-				{
-					TagName: "name",
-					Key:     "key",
-					Regex:   "[",
-					From:    kube.MetadataFromPod,
-				},
-			}},
-			wantErr: true,
 		},
 		{
 			name: "keyregex-capture-group",

@@ -5,10 +5,12 @@ package traces
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -1001,6 +1003,117 @@ func Test_ProcessTraces_ErrorMode(t *testing.T) {
 	}
 }
 
+func Test_ProcessTraces_StatementsErrorMode(t *testing.T) {
+	tests := []struct {
+		name          string
+		errorMode     ottl.ErrorMode
+		statements    []common.ContextStatements
+		want          func(td ptrace.Traces)
+		wantErrorWith string
+	}{
+		{
+			name:      "span: statements group with error mode",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(span.attributes["test"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(span.attributes["test"], "pass") where span.name == "operationA" `}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "span: statements group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(span.attributes["test"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(span.attributes["test"], ParseJSON(true))`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+		{
+			name:      "spanevent: statements group with error mode",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(spanevent.attributes["test"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(spanevent.attributes["test"], "pass") where spanevent.name == "eventA" `}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "spanevent: statements group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(spanevent.attributes["test"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(spanevent.attributes["test"], ParseJSON(true))`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+		{
+			name:      "resource: statements group with error mode",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(resource.attributes["test"], "pass")`}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).Resource().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "resource: statements group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(resource.attributes["pass"], ParseJSON(true))`}},
+			},
+			wantErrorWith: "expected string but got bool",
+		},
+		{
+			name:      "scope: statements group with error mode",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(scope.attributes["test"], "pass")`}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name:      "scope: statements group error mode does not affect default",
+			errorMode: ottl.PropagateError,
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(1))`}, ErrorMode: ottl.IgnoreError},
+				{Statements: []string{`set(scope.attributes["pass"], ParseJSON(true))`}},
+			},
+			wantErrorWith: `expected string but got bool`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructTraces()
+			processor, err := NewProcessor(tt.statements, tt.errorMode, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+			_, err = processor.ProcessTraces(context.Background(), td)
+			if tt.wantErrorWith != "" {
+				if err == nil {
+					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+				}
+				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				return
+			}
+			assert.NoError(t, err)
+			exTd := constructTraces()
+			tt.want(exTd)
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func Test_ProcessTraces_CacheAccess(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -1115,7 +1228,7 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 						`set(span.cache["shared"], "fail")`,
 					},
 					Conditions: []string{
-						`name == "operationA"`,
+						`span.name == "operationA"`,
 					},
 				},
 				{
@@ -1134,7 +1247,7 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 					Statements:  []string{`set(span.attributes["test"], "pass") where span.cache["shared"] == "pass"`},
 					SharedCache: true,
 					Conditions: []string{
-						`name == "operationA"`,
+						`span.name == "operationA"`,
 					},
 				},
 			},
@@ -1157,6 +1270,78 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 			tt.want(exTd)
 
 			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_NewProcessor_ConditionsParse(t *testing.T) {
+	type testCase struct {
+		name          string
+		statements    []common.ContextStatements
+		wantErrorWith string
+	}
+
+	contextsTests := map[string][]testCase{"span": nil, "spanevent": nil, "resource": nil, "scope": nil}
+	for ctx := range contextsTests {
+		contextsTests[ctx] = []testCase{
+			{
+				name: "inferred: condition with context",
+				statements: []common.ContextStatements{
+					{
+						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
+						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
+					},
+				},
+			},
+			{
+				name: "inferred: condition without context",
+				statements: []common.ContextStatements{
+					{
+						Statements: []string{fmt.Sprintf(`set(%s.cache["test"], "pass")`, ctx)},
+						Conditions: []string{`cache["test"] == ""`},
+					},
+				},
+				wantErrorWith: `missing context name for path "cache[test]"`,
+			},
+			{
+				name: "context defined: condition without context",
+				statements: []common.ContextStatements{
+					{
+						Context:    common.ContextID(ctx),
+						Statements: []string{`set(cache["test"], "pass")`},
+						Conditions: []string{`cache["test"] == ""`},
+					},
+				},
+			},
+			{
+				name: "context defined: condition with context",
+				statements: []common.ContextStatements{
+					{
+						Context:    common.ContextID(ctx),
+						Statements: []string{`set(cache["test"], "pass")`},
+						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
+					},
+				},
+				wantErrorWith: fmt.Sprintf(`segment "%s" from path "%[1]s.cache[test]" is not a valid path`, ctx),
+			},
+		}
+	}
+
+	for ctx, tests := range contextsTests {
+		t.Run(ctx, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					_, err := NewProcessor(tt.statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+					if tt.wantErrorWith != "" {
+						if err == nil {
+							t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+						}
+						assert.Contains(t, err.Error(), tt.wantErrorWith)
+						return
+					}
+					require.NoError(t, err)
+				})
+			}
 		})
 	}
 }

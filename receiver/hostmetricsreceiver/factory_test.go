@@ -14,9 +14,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 )
 
-var creationSet = receivertest.NewNopSettings()
+var creationSet = receivertest.NewNopSettings(metadata.Type)
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()

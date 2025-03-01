@@ -216,11 +216,19 @@ func convertMetricStatements(pc *ottl.ParserCollection[MetricsConsumer], _ *ottl
 	if err != nil {
 		return nil, err
 	}
-	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForMetric, contextStatements.Conditions, pc.ErrorMode, pc.Settings, filterottl.StandardMetricFuncs())
+	errorMode := pc.ErrorMode
+	if contextStatements.ErrorMode != "" {
+		errorMode = contextStatements.ErrorMode
+	}
+	var parserOptions []ottlmetric.Option
+	if contextStatements.Context == "" {
+		parserOptions = append(parserOptions, ottlmetric.EnablePathContextNames())
+	}
+	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForMetricWithOptions, contextStatements.Conditions, errorMode, pc.Settings, filterottl.StandardMetricFuncs(), parserOptions)
 	if errGlobalBoolExpr != nil {
 		return nil, errGlobalBoolExpr
 	}
-	mStatements := ottlmetric.NewStatementSequence(parsedStatements, pc.Settings, ottlmetric.WithStatementSequenceErrorMode(pc.ErrorMode))
+	mStatements := ottlmetric.NewStatementSequence(parsedStatements, pc.Settings, ottlmetric.WithStatementSequenceErrorMode(errorMode))
 	return metricStatements{mStatements, globalExpr}, nil
 }
 
@@ -229,11 +237,19 @@ func convertDataPointStatements(pc *ottl.ParserCollection[MetricsConsumer], _ *o
 	if err != nil {
 		return nil, err
 	}
-	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForDataPoint, contextStatements.Conditions, pc.ErrorMode, pc.Settings, filterottl.StandardDataPointFuncs())
+	errorMode := pc.ErrorMode
+	if contextStatements.ErrorMode != "" {
+		errorMode = contextStatements.ErrorMode
+	}
+	var parserOptions []ottldatapoint.Option
+	if contextStatements.Context == "" {
+		parserOptions = append(parserOptions, ottldatapoint.EnablePathContextNames())
+	}
+	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForDataPointWithOptions, contextStatements.Conditions, errorMode, pc.Settings, filterottl.StandardDataPointFuncs(), parserOptions)
 	if errGlobalBoolExpr != nil {
 		return nil, errGlobalBoolExpr
 	}
-	dpStatements := ottldatapoint.NewStatementSequence(parsedStatements, pc.Settings, ottldatapoint.WithStatementSequenceErrorMode(pc.ErrorMode))
+	dpStatements := ottldatapoint.NewStatementSequence(parsedStatements, pc.Settings, ottldatapoint.WithStatementSequenceErrorMode(errorMode))
 	return dataPointStatements{dpStatements, globalExpr}, nil
 }
 

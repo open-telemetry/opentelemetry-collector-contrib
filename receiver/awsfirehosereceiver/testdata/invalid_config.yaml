@@ -1,3 +1,4 @@
 awsfirehose:
   endpoint: 0.0.0.0:4433
-  record_type: invalid
+  encoding: can't have
+  record_type: both
