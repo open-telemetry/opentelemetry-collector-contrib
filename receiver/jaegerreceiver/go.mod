@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaeger
 go 1.23.0
 
 require (
+	github.com/HdrHistogram/hdrhistogram-go v1.1.2
 	github.com/apache/thrift v0.21.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jaegertracing/jaeger v1.66.0
@@ -11,7 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.120.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.120.1-0.20250226024140-8099e51f9a77
-	go.opentelemetry.io/collector/component/componentstatus v0.120.1-0.20250226024140-8099e51f9a77
+	go.opentelemetry.io/collector/component/componentstatus v0.119.0
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250226024140-8099e51f9a77
 	go.opentelemetry.io/collector/config/configgrpc v0.120.1-0.20250226024140-8099e51f9a77
 	go.opentelemetry.io/collector/config/confighttp v0.120.1-0.20250226024140-8099e51f9a77
