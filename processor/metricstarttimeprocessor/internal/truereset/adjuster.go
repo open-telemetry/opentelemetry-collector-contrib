@@ -42,7 +42,7 @@ func NewAdjuster(set component.TelemetrySettings, gcInterval time.Duration) *Adj
 func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
-		// TODO: Produce a hash of all resource attributes, rather than just job + instance.
+		// TODO(#38286): Produce a hash of all resource attributes, rather than just job + instance.
 		job, _ := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
 		instance, _ := rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
 		tsm := a.jobsMap.get(job.Str(), instance.Str())
