@@ -55,6 +55,12 @@ type MetricsConfig struct {
 	MongodbOperationLatencyTime   MetricConfig `mapstructure:"mongodb.operation.latency.time"`
 	MongodbOperationReplCount     MetricConfig `mapstructure:"mongodb.operation.repl.count"`
 	MongodbOperationTime          MetricConfig `mapstructure:"mongodb.operation.time"`
+	MongodbReplCommandsPerSec     MetricConfig `mapstructure:"mongodb.repl_commands_per_sec"`
+	MongodbReplDeletesPerSec      MetricConfig `mapstructure:"mongodb.repl_deletes_per_sec"`
+	MongodbReplGetmoresPerSec     MetricConfig `mapstructure:"mongodb.repl_getmores_per_sec"`
+	MongodbReplInsertsPerSec      MetricConfig `mapstructure:"mongodb.repl_inserts_per_sec"`
+	MongodbReplQueriesPerSec      MetricConfig `mapstructure:"mongodb.repl_queries_per_sec"`
+	MongodbReplUpdatesPerSec      MetricConfig `mapstructure:"mongodb.repl_updates_per_sec"`
 	MongodbSessionCount           MetricConfig `mapstructure:"mongodb.session.count"`
 	MongodbStorageSize            MetricConfig `mapstructure:"mongodb.storage.size"`
 	MongodbUptime                 MetricConfig `mapstructure:"mongodb.uptime"`
@@ -142,6 +148,24 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MongodbOperationTime: MetricConfig{
 			Enabled: true,
+		},
+		MongodbReplCommandsPerSec: MetricConfig{
+			Enabled: false,
+		},
+		MongodbReplDeletesPerSec: MetricConfig{
+			Enabled: false,
+		},
+		MongodbReplGetmoresPerSec: MetricConfig{
+			Enabled: false,
+		},
+		MongodbReplInsertsPerSec: MetricConfig{
+			Enabled: false,
+		},
+		MongodbReplQueriesPerSec: MetricConfig{
+			Enabled: false,
+		},
+		MongodbReplUpdatesPerSec: MetricConfig{
+			Enabled: false,
 		},
 		MongodbSessionCount: MetricConfig{
 			Enabled: true,
