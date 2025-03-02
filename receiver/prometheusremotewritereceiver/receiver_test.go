@@ -127,6 +127,10 @@ func TestTranslateV2(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
+	// We'll grab the receiver's current build info for checking fallback.
+	otelCollectorBuildName := prwReceiver.settings.BuildInfo.Description
+	otelCollectorBuildVersion := prwReceiver.settings.BuildInfo.Version
+
 	for _, tc := range []struct {
 		name            string
 		request         *writev2.Request
@@ -134,6 +138,158 @@ func TestTranslateV2(t *testing.T) {
 		expectedMetrics pmetric.Metrics
 		expectedStats   remote.WriteResponseStats
 	}{
+		{
+			name: "missing metric name",
+			request: &writev2.Request{
+				Symbols: []string{"", "foo", "bar"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "missing metric name in labels",
+		},
+		{
+			name: "duplicate label",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						LabelsRefs: []uint32{1, 2, 1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: `duplicate label "__name__" in labels`,
+		},
+		{
+			name:    "valid request",
+			request: writeV2RequestFixture,
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm1 := expected.ResourceMetrics().AppendEmpty()
+				rm1.Resource().Attributes().PutStr("service.namespace", "service-x")
+				rm1.Resource().Attributes().PutStr("service.name", "test")
+				rm1.Resource().Attributes().PutStr("service.instance.id", "107cn001")
+
+				sm1 := rm1.ScopeMetrics().AppendEmpty()
+				sm1.Scope().SetName(otelCollectorBuildName) // fallback is the receiver's build info if no explicit scope
+				sm1.Scope().SetVersion(otelCollectorBuildVersion)
+
+				dp1 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp1.SetDoubleValue(1.0)
+				dp1.Attributes().PutStr("d", "e")
+				dp1.Attributes().PutStr("foo", "bar")
+
+				dp2 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				dp2.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+				dp2.SetDoubleValue(2.0)
+				dp2.Attributes().PutStr("d", "e")
+				dp2.Attributes().PutStr("foo", "bar")
+
+				rm2 := expected.ResourceMetrics().AppendEmpty()
+				rm2.Resource().Attributes().PutStr("service.name", "foo")
+				rm2.Resource().Attributes().PutStr("service.instance.id", "bar")
+
+				sm2 := rm2.ScopeMetrics().AppendEmpty()
+				sm2.Scope().SetName(otelCollectorBuildName)
+				sm2.Scope().SetVersion(otelCollectorBuildVersion)
+
+				dp3 := sm2.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				dp3.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+				dp3.SetDoubleValue(2.0)
+				dp3.Attributes().PutStr("d", "e")
+				dp3.Attributes().PutStr("foo", "bar")
+
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{},
+		},
+		// If otel_scope_name/version are missing, we fall back to prwReceiver.settings.BuildInfo
+		{
+			name: "missing otel_scope_name/version falls back to BuildInfo",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "metric_no_scope",
+					"job", "service-z/xyz",
+					"instance", "inst-42",
+					"d", "e",
+					"foo", "bar",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+						Samples:    []writev2.Sample{{Value: 5, Timestamp: 50}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.namespace", "service-z")
+				rm.Resource().Attributes().PutStr("service.name", "xyz")
+				rm.Resource().Attributes().PutStr("service.instance.id", "inst-42")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName(otelCollectorBuildName) // Fallback to build info
+				sm.Scope().SetVersion(otelCollectorBuildVersion)
+
+				m := sm.Metrics().AppendEmpty().SetEmptyGauge()
+				dp := m.DataPoints().AppendEmpty()
+				dp.Attributes().PutStr("d", "e")
+				dp.Attributes().PutStr("foo", "bar")
+				dp.SetTimestamp(pcommon.Timestamp(50 * int64(time.Millisecond)))
+				dp.SetDoubleValue(5.0)
+
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{},
+		},
+		{
+			name: "provided otel_scope_name and otel_scope_version",
+			request: &writev2.Request{
+				Symbols: []string{
+					"", "__name__", "metric_with_scope",
+					"otel_scope_name", "custom_scope",
+					"otel_scope_version", "v1.0",
+					"job", "service-y/custom",
+					"instance", "instance-1",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+						Samples:    []writev2.Sample{{Value: 10, Timestamp: 100}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.namespace", "service-y")
+				rm.Resource().Attributes().PutStr("service.name", "custom")
+				rm.Resource().Attributes().PutStr("service.instance.id", "instance-1")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("custom_scope")
+				sm.Scope().SetVersion("v1.0")
+
+				m := sm.Metrics().AppendEmpty().SetEmptyGauge()
+				dp := m.DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(100 * int64(time.Millisecond)))
+				dp.SetDoubleValue(10.0)
+
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{},
+		},
 		{
 			name: "duplicated scope name and version",
 			request: &writev2.Request{
@@ -170,10 +326,9 @@ func TestTranslateV2(t *testing.T) {
 			expectedMetrics: func() pmetric.Metrics {
 				expected := pmetric.NewMetrics()
 				rm1 := expected.ResourceMetrics().AppendEmpty()
-				rmAttributes1 := rm1.Resource().Attributes()
-				rmAttributes1.PutStr("service.namespace", "service-x")
-				rmAttributes1.PutStr("service.name", "test")
-				rmAttributes1.PutStr("service.instance.id", "107cn001")
+				rm1.Resource().Attributes().PutStr("service.namespace", "service-x")
+				rm1.Resource().Attributes().PutStr("service.name", "test")
+				rm1.Resource().Attributes().PutStr("service.instance.id", "107cn001")
 
 				sm1 := rm1.ScopeMetrics().AppendEmpty()
 				sm1.Scope().SetName("scope1")
@@ -196,71 +351,6 @@ func TestTranslateV2(t *testing.T) {
 				dp3 := sm2.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
 				dp3.SetTimestamp(pcommon.Timestamp(3 * int64(time.Millisecond)))
 				dp3.SetDoubleValue(3.0)
-				dp3.Attributes().PutStr("foo", "bar")
-
-				return expected
-			}(),
-			expectedStats: remote.WriteResponseStats{},
-		},
-		{
-			name: "missing metric name",
-			request: &writev2.Request{
-				Symbols: []string{"", "foo", "bar"},
-				Timeseries: []writev2.TimeSeries{
-					{
-						LabelsRefs: []uint32{1, 2},
-						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
-					},
-				},
-			},
-			expectError: "missing metric name in labels",
-		},
-		{
-			name: "duplicate label",
-			request: &writev2.Request{
-				Symbols: []string{"", "__name__", "test"},
-				Timeseries: []writev2.TimeSeries{
-					{
-						LabelsRefs: []uint32{1, 2, 1, 2},
-						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
-					},
-				},
-			},
-			expectError: `duplicate label "__name__" in labels`,
-		},
-		{
-			name:    "valid request",
-			request: writeV2RequestFixture,
-			expectedMetrics: func() pmetric.Metrics {
-				expected := pmetric.NewMetrics()
-				rm1 := expected.ResourceMetrics().AppendEmpty()
-				rmAttributes1 := rm1.Resource().Attributes()
-				rmAttributes1.PutStr("service.namespace", "service-x")
-				rmAttributes1.PutStr("service.name", "test")
-				rmAttributes1.PutStr("service.instance.id", "107cn001")
-
-				sm1 := rm1.ScopeMetrics().AppendEmpty()
-				dp1 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
-				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				dp1.SetDoubleValue(1.0)
-				dp1.Attributes().PutStr("d", "e")
-				dp1.Attributes().PutStr("foo", "bar")
-
-				dp2 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
-				dp2.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
-				dp2.SetDoubleValue(2.0)
-				dp2.Attributes().PutStr("d", "e")
-				dp2.Attributes().PutStr("foo", "bar")
-
-				rm2 := expected.ResourceMetrics().AppendEmpty()
-				rmAttributes2 := rm2.Resource().Attributes()
-				rmAttributes2.PutStr("service.name", "foo")
-				rmAttributes2.PutStr("service.instance.id", "bar")
-
-				dp3 := rm2.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
-				dp3.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
-				dp3.SetDoubleValue(2.0)
-				dp3.Attributes().PutStr("d", "e")
 				dp3.Attributes().PutStr("foo", "bar")
 
 				return expected
