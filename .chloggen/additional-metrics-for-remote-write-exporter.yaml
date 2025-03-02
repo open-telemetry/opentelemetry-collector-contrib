@@ -9,8 +9,8 @@ component: prometheusremotewriteexproter
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: |
     Adds additional metrics to the Prometheus Remote Write Exporter. The new metrics are:
-    - `otelcol_exporter_prometeusremotewrite_sent_batch`: The total number of batches sent to the remote write endpoint.
-    - `otelcol_exporter_prometeusremotewrite_consumers`: The total number of consumers that are currently sending data to the remote write endpoint.
+    - `otelcol_exporter_prometheusremotewrite_sent_batches`: The total number of batches sent to the remote write endpoint.
+    - `otelcol_exporter_prometheusremotewrite_consumers`: The total number of consumers that are currently sending data to the remote write endpoint.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [37912]
