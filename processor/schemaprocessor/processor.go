@@ -33,19 +33,25 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 		return nil, errors.New("invalid configuration provided")
 	}
 
+	m, err := translation.NewManager(
+		cfg.Targets,
+		set.Logger.Named("schema-manager"),
+	)
+	if err != nil {
+		return nil, err
+	}
 	return &schemaprocessor{
 		config:    cfg,
 		telemetry: set.TelemetrySettings,
 		log:       set.Logger,
+		manager:   m,
 	}, nil
 }
 
 func (t schemaprocessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
-	fmt.Printf("### processLogs 1\n")
 	if t.manager == nil {
 		return ld, nil
 	}
-	fmt.Printf("### processLogs 2\n")
 	for rl := 0; rl < ld.ResourceLogs().Len(); rl++ {
 		rLog := ld.ResourceLogs().At(rl)
 		resourceSchemaURL := rLog.SchemaUrl()
@@ -129,7 +135,8 @@ func (t schemaprocessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 	return md, nil
 }
 
-func (t schemaprocessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+func (t *schemaprocessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	t.log.Info("processing traces")
 	if t.manager == nil {
 		return td, nil
 	}
@@ -138,6 +145,7 @@ func (t schemaprocessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 		// todo(ankit) do i need to check if this is empty?
 		resourceSchemaURL := rTrace.SchemaUrl()
 		if resourceSchemaURL != "" {
+			t.log.Info("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
 			tr, err := t.manager.
 				RequestTranslation(ctx, resourceSchemaURL)
 			if err != nil {
@@ -182,19 +190,11 @@ func (t *schemaprocessor) start(ctx context.Context, host component.Host) error 
 	if err != nil {
 		return err
 	}
-
-	m, err := translation.NewManager(
-		t.config.Targets,
-		t.log.Named("schema-manager"),
-		translation.NewHTTPProvider(client),
-	)
-	if err != nil {
-		return err
-	}
-	t.manager = m
+	t.manager.AddProvider(translation.NewHTTPProvider(client))
 
 	go func(ctx context.Context) {
 		for _, schemaURL := range t.config.Prefetch {
+			t.log.Info("prefetching schema", zap.String("url", schemaURL))
 			_, _ = t.manager.RequestTranslation(ctx, schemaURL)
 		}
 	}(ctx)

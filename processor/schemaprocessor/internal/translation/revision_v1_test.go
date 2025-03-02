@@ -6,8 +6,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"go.opentelemetry.io/otel/schema/v1.0/ast"
+	ast10 "go.opentelemetry.io/otel/schema/v1.0/ast"
 	"go.opentelemetry.io/otel/schema/v1.0/types"
+	ast11 "go.opentelemetry.io/otel/schema/v1.1/ast"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/changelist"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
@@ -20,13 +21,13 @@ func TestNewRevisionV1(t *testing.T) {
 	for _, tc := range []struct {
 		name         string
 		inVersion    *Version
-		inDefinition ast.VersionDef
+		inDefinition ast11.VersionDef
 		expect       *RevisionV1
 	}{
 		{
 			name:         "no definition defined",
 			inVersion:    &Version{1, 1, 1},
-			inDefinition: ast.VersionDef{},
+			inDefinition: ast11.VersionDef{},
 			expect: &RevisionV1{
 				ver:        &Version{1, 1, 1},
 				all:        &changelist.ChangeList{Migrators: make([]migrate.Migrator, 0)},
@@ -40,105 +41,105 @@ func TestNewRevisionV1(t *testing.T) {
 		{
 			name:      "complete version definition used",
 			inVersion: &Version{1, 0, 0},
-			inDefinition: ast.VersionDef{
-				All: ast.Attributes{
-					Changes: []ast.AttributeChange{
+			inDefinition: ast11.VersionDef{
+				All: ast10.Attributes{
+					Changes: []ast10.AttributeChange{
 						{
-							RenameAttributes: &ast.RenameAttributes{
-								AttributeMap: ast.AttributeMap{
+							RenameAttributes: &ast10.RenameAttributes{
+								AttributeMap: ast10.AttributeMap{
 									"state": "status",
 								},
 							},
 						},
 						{
-							RenameAttributes: &ast.RenameAttributes{
-								AttributeMap: ast.AttributeMap{
+							RenameAttributes: &ast10.RenameAttributes{
+								AttributeMap: ast10.AttributeMap{
 									"status": "state",
 								},
 							},
 						},
 					},
 				},
-				Resources: ast.Attributes{
-					Changes: []ast.AttributeChange{
+				Resources: ast10.Attributes{
+					Changes: []ast10.AttributeChange{
 						{
-							RenameAttributes: &ast.RenameAttributes{
-								AttributeMap: ast.AttributeMap{
+							RenameAttributes: &ast10.RenameAttributes{
+								AttributeMap: ast10.AttributeMap{
 									"service_name": "service.name",
 								},
 							},
 						},
 					},
 				},
-				Spans: ast.Spans{
-					Changes: []ast.SpansChange{
+				Spans: ast10.Spans{
+					Changes: []ast10.SpansChange{
 						{
-							RenameAttributes: &ast.AttributeMapForSpans{
+							RenameAttributes: &ast10.AttributeMapForSpans{
 								ApplyToSpans: []types.SpanName{
 									"application start",
 								},
-								AttributeMap: ast.AttributeMap{
+								AttributeMap: ast10.AttributeMap{
 									"service_version": "service.version",
 								},
 							},
 						},
 						{
-							RenameAttributes: &ast.AttributeMapForSpans{
-								AttributeMap: ast.AttributeMap{
+							RenameAttributes: &ast10.AttributeMapForSpans{
+								AttributeMap: ast10.AttributeMap{
 									"deployment.environment": "service.deployment.environment",
 								},
 							},
 						},
 					},
 				},
-				SpanEvents: ast.SpanEvents{
-					Changes: []ast.SpanEventsChange{
+				SpanEvents: ast10.SpanEvents{
+					Changes: []ast10.SpanEventsChange{
 						{
-							RenameEvents: &ast.RenameSpanEvents{
+							RenameEvents: &ast10.RenameSpanEvents{
 								EventNameMap: map[string]string{
 									"started": "application started",
 								},
 							},
 						},
 						{
-							RenameAttributes: &ast.RenameSpanEventAttributes{
+							RenameAttributes: &ast10.RenameSpanEventAttributes{
 								ApplyToSpans: []types.SpanName{
 									"service running",
 								},
 								ApplyToEvents: []types.EventName{
 									"service errored",
 								},
-								AttributeMap: ast.AttributeMap{
+								AttributeMap: ast10.AttributeMap{
 									"service.app.name": "service.name",
 								},
 							},
 						},
 					},
 				},
-				Logs: ast.Logs{
-					Changes: []ast.LogsChange{
+				Logs: ast10.Logs{
+					Changes: []ast10.LogsChange{
 						{
-							RenameAttributes: &ast.RenameAttributes{
-								AttributeMap: ast.AttributeMap{
+							RenameAttributes: &ast10.RenameAttributes{
+								AttributeMap: ast10.AttributeMap{
 									"ERROR": "error",
 								},
 							},
 						},
 					},
 				},
-				Metrics: ast.Metrics{
-					Changes: []ast.MetricsChange{
+				Metrics: ast11.Metrics{
+					Changes: []ast11.MetricsChange{
 						{
 							RenameMetrics: map[types.MetricName]types.MetricName{
 								"service.computed.uptime": "service.uptime",
 							},
 						},
 						{
-							RenameAttributes: &ast.AttributeMapForMetrics{
+							RenameAttributes: &ast10.AttributeMapForMetrics{
 								ApplyToMetrics: []types.MetricName{
 									"service.runtime",
 								},
-								AttributeMap: ast.AttributeMap{
+								AttributeMap: ast10.AttributeMap{
 									"runtime": "service.language",
 								},
 							},

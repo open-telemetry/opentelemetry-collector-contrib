@@ -331,10 +331,8 @@ func TestProcessorScopeLogSchemaPrecedence(t *testing.T) {
 			wantErr:         assert.NoError,
 		},
 		{
-			name: "resourceunsetscopeunset",
-			input: func() plog.Logs {
-				return generateLogForTest()
-			},
+			name:  "resourceunsetscopeunset",
+			input: generateLogForTest,
 			// want: "https://example.com/testdata/testschemas/schemaprecedence/1.0.0",
 			whichSchemaUsed: NoopSchemaUsed,
 			wantErr:         assert.NoError,
@@ -342,7 +340,6 @@ func TestProcessorScopeLogSchemaPrecedence(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fmt.Printf("#### test: %v\n", tt.name)
 			defaultConfig := newDefaultConfiguration()
 			castedConfig := defaultConfig.(*Config)
 			castedConfig.Targets = []string{"https://example.com/testdata/testschemas/schemaprecedence/1.2.0"}
