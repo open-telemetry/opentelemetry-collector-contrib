@@ -1,0 +1,123 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "host.name",
+            "value": {
+              "stringValue": "testHost"
+            }
+          },
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "testService"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "spans": [
+            {
+              "name": "testSpan1",
+              "attributes": [
+                {
+                  "key": "string",
+                  "value": {
+                    "stringValue": "value"
+                  }
+                },
+                {
+                  "key": "double",
+                  "value": {
+                    "doubleValue": 1.1
+                  }
+                }
+              ],
+              "events": [
+                {
+                  "timeUnixNano": "1684620382541971000",
+                  "name": "testEventOne",
+                  "attributes": [
+                    {
+                      "key": "string",
+                      "value": {
+                        "stringValue": "value"
+                      }
+                    },
+                    {
+                      "key": "bool",
+                      "value": {
+                        "boolValue": true
+                      }
+                    }
+                  ],
+                  "droppedAttributesCount": 1
+                },
+                {
+                  "timeUnixNano": "1684620382541971000",
+                  "name": "testEventTwo",
+                  "attributes": [
+                    {
+                      "key": "string",
+                      "value": {
+                        "stringValue": "value"
+                      }
+                    },
+                    {
+                      "key": "bool",
+                      "value": {
+                        "boolValue": true
+                      }
+                    }
+                  ],
+                  "droppedAttributesCount": 1
+                },
+                {
+                  "timeUnixNano": "1684620382541971000",
+                  "name": "testEventThree",
+                  "attributes": [
+                    {
+                      "key": "string",
+                      "value": {
+                        "stringValue": "value"
+                      }
+                    },
+                    {
+                      "key": "bool",
+                      "value": {
+                        "boolValue": true
+                      }
+                    }
+                  ],
+                  "droppedAttributesCount": 1
+                }
+              ]
+            },
+            {
+              "name": "testSpan2",
+              "attributes": [
+                {
+                  "key": "string",
+                  "value": {
+                    "stringValue": "value"
+                  }
+                },
+                {
+                  "key": "double",
+                  "value": {
+                    "doubleValue": 1.1
+                  }
+                }
+              ]
+            }
+          ],
+          "schemaUrl": "https://example.com/testdata/schema_sections/span_events_rename_spans/1.1.0"
+        }
+      ],
+      "schemaUrl": "https://example.com/testdata/schema_sections/span_events_rename_spans/1.1.0"
+    }
+  ]
+}

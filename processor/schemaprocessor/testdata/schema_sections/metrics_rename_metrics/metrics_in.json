@@ -1,0 +1,59 @@
+{
+  "resourceMetrics": [
+    {
+      "scopeMetrics": [
+        {
+          "scope": {
+            "name": "instrumentation name",
+            "version": "instrumentation version",
+            "attributes": [
+              {
+                "key": "instrumentation.attribute",
+                "value": {
+                  "stringValue": "test"
+                }
+              }
+            ]
+          },
+          "metrics": [
+            {
+              "name": "testMetricOne",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "timeUnixNano": "1725146753842860000",
+                    "asInt": "100"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "testMetricTwo",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "timeUnixNano": "1725146753842860000",
+                    "asInt": "100"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "testMetricThree",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "timeUnixNano": "1725146753842860000",
+                    "asInt": "100"
+                  }
+                ]
+              }
+            }
+          ],
+          "schemaUrl": "https://example.com/testdata/schema_sections/metrics_rename_metrics/1.1.0"
+        }
+      ],
+      "schemaUrl": "https://example.com/testdata/schema_sections/metrics_rename_metrics/1.1.0"
+    }
+  ]
+}

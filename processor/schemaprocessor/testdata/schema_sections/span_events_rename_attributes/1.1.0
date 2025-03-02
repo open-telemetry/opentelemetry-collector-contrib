@@ -1,0 +1,35 @@
+file_format: 1.0.0
+
+schema_url: https://example.com/testdata/schema_sections/spans/1.1.0
+
+# rename attributes with no conditions, with apply to spans, with apply to events, with BOTH apply to spans and apply to events
+
+versions:
+  1.1.0:
+    span_events:
+      changes:
+        - rename_attributes:
+            attribute_map:
+              kubernetes.cluster.name: koobernetes.cluster.name
+        - rename_attributes:
+            attribute_map:
+              koobernetes.cluster.name: k8s.cluster.name
+        - rename_attributes:
+            attribute_map:
+              docker.image.name: d4r.image.name
+            apply_to_spans:
+              - testSpan1
+        - rename_attributes:
+            attribute_map:
+              cloud.provider: provider
+            apply_to_events:
+              - testEventOne
+        - rename_attributes:
+            attribute_map:
+              db.cassandra.keyspace: db.name
+            apply_to_spans:
+              - testSpan2
+            apply_to_events:
+              - testEventTwo
+  #  #  this has to be here
+  1.0.0:
