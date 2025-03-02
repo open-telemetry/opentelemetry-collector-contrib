@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -445,7 +445,7 @@ func (t *TestSchemaURLItem) SetSchemaUrl(v string) {
 
 //revive:enable:var-naming
 
-func createSchemaURLItem() ctxutil.SchemaURLItem {
+func createSchemaURLItem() ctxcommon.SchemaURLItem {
 	return &TestSchemaURLItem{
 		schemaURL: "schema_url",
 	}
@@ -453,14 +453,14 @@ func createSchemaURLItem() ctxutil.SchemaURLItem {
 
 type testContext struct {
 	is            pcommon.InstrumentationScope
-	schemaURLItem ctxutil.SchemaURLItem
+	schemaURLItem ctxcommon.SchemaURLItem
 }
 
 func (r *testContext) GetInstrumentationScope() pcommon.InstrumentationScope {
 	return r.is
 }
 
-func (r *testContext) GetScopeSchemaURLItem() ctxutil.SchemaURLItem {
+func (r *testContext) GetScopeSchemaURLItem() ctxcommon.SchemaURLItem {
 	return r.schemaURLItem
 }
 
