@@ -357,9 +357,9 @@ func TestEmptyAttributes(t *testing.T) {
 	now := time.Time{}
 
 	testCases := []struct {
-		name         string
-		payload      string
-		attributes	map[string]string
+		name       string
+		payload    string
+		attributes map[string]string
 	}{
 		{
 			name: "Empty Attributes Map",
@@ -385,15 +385,15 @@ func TestEmptyAttributes(t *testing.T) {
 			lr := sl.LogRecords().AppendEmpty()
 
 			require.NoError(t, lr.Attributes().FromRaw(map[string]any{
-				"ClientIP": fmt.Sprintf("89.163.253.%d", 200+idx),
-				"ClientRequestHost": fmt.Sprintf("www.theburritobot%d.com", idx),
+				"ClientIP":            fmt.Sprintf("89.163.253.%d", 200+idx),
+				"ClientRequestHost":   fmt.Sprintf("www.theburritobot%d.com", idx),
 				"ClientRequestMethod": "GET",
-				"ClientRequestURI": "/static/img/testimonial-hipster.png",
-				"EdgeEndTimestamp": "2023-03-03T05:30:05Z",
-				"EdgeResponseBytes": "69045",
-				"EdgeResponseStatus": "200",
-				"EdgeStartTimestamp": "2023-03-03T05:29:05Z",
-				"RayID": "3a6050bcbe121a87",
+				"ClientRequestURI":    "/static/img/testimonial-hipster.png",
+				"EdgeEndTimestamp":    "2023-03-03T05:30:05Z",
+				"EdgeResponseBytes":   "69045",
+				"EdgeResponseStatus":  "200",
+				"EdgeStartTimestamp":  "2023-03-03T05:29:05Z",
+				"RayID":               "3a6050bcbe121a87",
 			}))
 
 			lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
@@ -420,7 +420,7 @@ func TestEmptyAttributes(t *testing.T) {
 					Endpoint:       "localhost:0",
 					TLS:            &configtls.ServerConfig{},
 					TimestampField: "EdgeStartTimestamp",
-					Attributes: tc.attributes,
+					Attributes:     tc.attributes,
 				},
 			},
 				&consumertest.LogsSink{},

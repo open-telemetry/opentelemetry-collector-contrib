@@ -297,9 +297,9 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 				case bool:
 					attrs.PutBool(attrName, v)
 				default:
-					l.logger.Warn("unable to translate field to attribute, unsupported type", 
-						zap.String("field", field), 
-						zap.Any("value", v), 
+					l.logger.Warn("unable to translate field to attribute, unsupported type",
+						zap.String("field", field),
+						zap.Any("value", v),
 						zap.String("type", fmt.Sprintf("%T", v)))
 				}
 			}
