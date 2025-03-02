@@ -8,10 +8,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"runtime"
-	"sync"
 
 	"github.com/elastic/go-docappender/v2"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -28,28 +27,15 @@ import (
 )
 
 type elasticsearchExporter struct {
-	component.TelemetrySettings
-	userAgent string
-
-	config         *Config
-	index          string
-	dynamicIndex   bool
-	logstashFormat LogstashFormatSettings
-
-	wg          sync.WaitGroup // active sessions
-	bulkIndexer bulkIndexer
-
-	// Profiles requires multiple bulk indexers depending on the data type
-	// Bulk indexer for profiling-events-*
-	biEvents bulkIndexer
-	// Bulk indexer for profiling-stacktraces
-	biStackTraces bulkIndexer
-	// Bulk indexer for profiling-stackframes
-	biStackFrames bulkIndexer
-	// Bulk indexer for profiling-executables
-	biExecutables bulkIndexer
-
-	bufferPool *pool.BufferPool
+	set                 exporter.Settings
+	config              *Config
+	index               string
+	dynamicIndex        bool
+	logstashFormat      LogstashFormatSettings
+	defaultMappingMode  MappingMode
+	allowedMappingModes map[string]MappingMode
+	bulkIndexers        bulkIndexers
+	bufferPool          *pool.BufferPool
 }
 
 func newExporter(
@@ -58,112 +44,46 @@ func newExporter(
 	index string,
 	dynamicIndex bool,
 ) *elasticsearchExporter {
-	userAgent := fmt.Sprintf(
-		"%s/%s (%s/%s)",
-		set.BuildInfo.Description,
-		set.BuildInfo.Version,
-		runtime.GOOS,
-		runtime.GOARCH,
-	)
-
+	allowedMappingModes := cfg.allowedMappingModes()
+	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
 	return &elasticsearchExporter{
-		TelemetrySettings: set.TelemetrySettings,
-		userAgent:         userAgent,
-
-		config:         cfg,
-		index:          index,
-		dynamicIndex:   dynamicIndex,
-		logstashFormat: cfg.LogstashFormat,
-		bufferPool:     pool.NewBufferPool(),
+		set:                 set,
+		config:              cfg,
+		index:               index,
+		dynamicIndex:        dynamicIndex,
+		logstashFormat:      cfg.LogstashFormat,
+		allowedMappingModes: allowedMappingModes,
+		defaultMappingMode:  defaultMappingMode,
+		bufferPool:          pool.NewBufferPool(),
 	}
 }
 
 func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) error {
-	client, err := newElasticsearchClient(ctx, e.config, host, e.TelemetrySettings, e.userAgent)
-	if err != nil {
-		return err
+	if err := e.bulkIndexers.start(ctx, e.config, e.set, host, e.allowedMappingModes); err != nil {
+		return fmt.Errorf("error starting bulk indexers: %w", err)
 	}
-	bulkIndexer, err := newBulkIndexer(e.Logger, client, e.config, e.config.MappingMode() == MappingOTel)
-	if err != nil {
-		return err
-	}
-	e.bulkIndexer = bulkIndexer
-	biEvents, err := newBulkIndexer(e.Logger, client, e.config, true)
-	if err != nil {
-		return err
-	}
-	e.biEvents = biEvents
-	biStackTraces, err := newBulkIndexer(e.Logger, client, e.config, false)
-	if err != nil {
-		return err
-	}
-	e.biStackTraces = biStackTraces
-	biStackFrames, err := newBulkIndexer(e.Logger, client, e.config, false)
-	if err != nil {
-		return err
-	}
-	e.biStackFrames = biStackFrames
-	biExecutables, err := newBulkIndexer(e.Logger, client, e.config, false)
-	if err != nil {
-		return err
-	}
-	e.biExecutables = biExecutables
-
 	return nil
 }
 
 func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
-	if e.bulkIndexer != nil {
-		if err := e.bulkIndexer.Close(ctx); err != nil {
-			return err
-		}
+	if err := e.bulkIndexers.shutdown(ctx); err != nil {
+		return fmt.Errorf("error shutting down bulk indexers: %w", err)
 	}
-	if e.biEvents != nil {
-		if err := e.biEvents.Close(ctx); err != nil {
-			return err
-		}
-	}
-	if e.biStackTraces != nil {
-		if err := e.biStackTraces.Close(ctx); err != nil {
-			return err
-		}
-	}
-	if e.biStackFrames != nil {
-		if err := e.biStackFrames.Close(ctx); err != nil {
-			return err
-		}
-	}
-	if e.biExecutables != nil {
-		if err := e.biExecutables.Close(ctx); err != nil {
-			return err
-		}
-	}
-
-	doneCh := make(chan struct{})
-	go func() {
-		e.wg.Wait()
-		close(doneCh)
-	}()
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-doneCh:
-		return nil
-	}
+	return nil
 }
 
 func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
-	mappingMode := e.config.MappingMode()
+	mappingMode, err := e.getMappingMode(ctx)
+	if err != nil {
+		return err
+	}
 	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
 
-	e.wg.Add(1)
-	defer e.wg.Done()
-
-	session, err := e.bulkIndexer.StartSession(ctx)
+	session, err := e.bulkIndexers.modes[mappingMode].StartSession(ctx)
 	if err != nil {
 		return err
 	}
@@ -193,7 +113,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 					}
 
 					if errors.Is(err, ErrInvalidTypeForBodyMapMode) {
-						e.Logger.Warn("dropping log record", zap.Error(err))
+						e.set.Logger.Warn("dropping log record", zap.Error(err))
 						continue
 					}
 
@@ -252,7 +172,10 @@ func (e *elasticsearchExporter) pushMetricsData(
 	ctx context.Context,
 	metrics pmetric.Metrics,
 ) error {
-	mappingMode := e.config.MappingMode()
+	mappingMode, err := e.getMappingMode(ctx)
+	if err != nil {
+		return err
+	}
 	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
 	hasher := newDataPointHasher(mappingMode)
 	encoder, err := newEncoder(mappingMode)
@@ -260,10 +183,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 		return err
 	}
 
-	e.wg.Add(1)
-	defer e.wg.Done()
-
-	session, err := e.bulkIndexer.StartSession(ctx)
+	session, err := e.bulkIndexers.modes[mappingMode].StartSession(ctx)
 	if err != nil {
 		return err
 	}
@@ -399,7 +319,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 		}
 	}
 	if len(validationErrs) > 0 {
-		e.Logger.Warn("validation errors", zap.Error(errors.Join(validationErrs...)))
+		e.set.Logger.Warn("validation errors", zap.Error(errors.Join(validationErrs...)))
 	}
 
 	if err := session.Flush(ctx); err != nil {
@@ -415,17 +335,17 @@ func (e *elasticsearchExporter) pushTraceData(
 	ctx context.Context,
 	td ptrace.Traces,
 ) error {
-	mappingMode := e.config.MappingMode()
+	mappingMode, err := e.getMappingMode(ctx)
+	if err != nil {
+		return err
+	}
 	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
 
-	e.wg.Add(1)
-	defer e.wg.Done()
-
-	session, err := e.bulkIndexer.StartSession(ctx)
+	session, err := e.bulkIndexers.modes[mappingMode].StartSession(ctx)
 	if err != nil {
 		return err
 	}
@@ -534,36 +454,36 @@ func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string
 
 func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofile.Profiles) error {
 	// TODO add support for routing profiles to different data_stream.namespaces?
-	mappingMode := e.config.MappingMode()
+	mappingMode, err := e.getMappingMode(ctx)
+	if err != nil {
+		return err
+	}
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
 
-	e.wg.Add(1)
-	defer e.wg.Done()
-
-	defaultSession, err := e.bulkIndexer.StartSession(ctx)
+	defaultSession, err := e.bulkIndexers.modes[mappingMode].StartSession(ctx)
 	if err != nil {
 		return err
 	}
 	defer defaultSession.End()
-	eventsSession, err := e.biEvents.StartSession(ctx)
+	eventsSession, err := e.bulkIndexers.profilingEvents.StartSession(ctx)
 	if err != nil {
 		return err
 	}
 	defer eventsSession.End()
-	stackTracesSession, err := e.biStackTraces.StartSession(ctx)
+	stackTracesSession, err := e.bulkIndexers.profilingStackTraces.StartSession(ctx)
 	if err != nil {
 		return err
 	}
 	defer stackTracesSession.End()
-	stackFramesSession, err := e.biStackFrames.StartSession(ctx)
+	stackFramesSession, err := e.bulkIndexers.profilingStackFrames.StartSession(ctx)
 	if err != nil {
 		return err
 	}
 	defer stackFramesSession.End()
-	executablesSession, err := e.biExecutables.StartSession(ctx)
+	executablesSession, err := e.bulkIndexers.profilingExecutables.StartSession(ctx)
 	if err != nil {
 		return err
 	}
@@ -595,7 +515,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 					}
 
 					if errors.Is(err, ErrInvalidTypeForBodyMapMode) {
-						e.Logger.Warn("dropping profile record", zap.Error(err))
+						e.set.Logger.Warn("dropping profile record", zap.Error(err))
 						continue
 					}
 
@@ -660,4 +580,26 @@ func (e *elasticsearchExporter) pushProfileRecord(
 			return defaultSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
 		}
 	})
+}
+
+func (e *elasticsearchExporter) getMappingMode(ctx context.Context) (MappingMode, error) {
+	const metadataKey = "x-elastic-mapping-mode"
+
+	values := client.FromContext(ctx).Metadata.Get(metadataKey)
+	switch n := len(values); n {
+	case 0:
+		return e.defaultMappingMode, nil
+	case 1:
+		name := values[0]
+		mode, ok := e.allowedMappingModes[canonicalMappingModeName(name)]
+		if !ok {
+			return -1, fmt.Errorf(
+				"unsupported mapping mode %q, expected one of %q",
+				name, e.config.Mapping.AllowedModes,
+			)
+		}
+		return mode, nil
+	default:
+		return -1, fmt.Errorf("expected one value for %s, got %d", metadataKey, n)
+	}
 }
