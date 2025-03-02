@@ -276,12 +276,12 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 				attrName := field
 				if len(l.cfg.Attributes) != 0 {
 					// Only process fields that are in the config mapping
-					if mappedAttr, ok := l.cfg.Attributes[field]; ok {
-						attrName = mappedAttr
-					} else {
+					mappedAttr, ok := l.cfg.Attributes[field]
+					if !ok {
 						// Skip fields not in mapping when we have a config
 						continue
 					}
+					attrName = mappedAttr
 				}
 				// else if l.cfg.Attributes is empty, default to processing all fields with no renaming
 
