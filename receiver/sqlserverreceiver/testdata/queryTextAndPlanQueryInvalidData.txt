@@ -1,0 +1,19 @@
+[
+	{
+		"sql_instance": "sqlserver",
+		"computer_name": "DESKTOP-GHAEGRD",
+		"query_plan_handle": "0x06000100E2B3C02AA042A7001000000001000000000000000000000000000000000000000000000000000000",
+		"query_hash": "0x37849E874171E3F3",
+		"query_plan_hash": "0xD3112909429A1B50",
+		"execution_count": "6A",
+		"total_elapsed_time": "3846",
+		"total_worker_time": "3845A",
+		"total_logical_reads": "3A",
+		"total_physical_reads": "5A",
+		"total_logical_writes": "4A",
+		"total_rows": "2A",
+		"total_grant_kb": "3096A",
+		"query_text": "[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]/(10000)*(3600)+[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]%(10000)/(100)*(60)+[msdb].[dbo].[sysjobhistory].[run_duration] as [sjh].[run_duration]%(100)",
+		"query_plan": "<ShowPlanXML"
+	}
+]
