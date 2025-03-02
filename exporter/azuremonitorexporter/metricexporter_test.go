@@ -11,6 +11,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,11 +23,11 @@ import (
 // Test onMetricData callback for the test metrics data
 func TestExporterMetricDataCallback(t *testing.T) {
 	mockTransportChannel := getMockTransportChannel()
-	exporter := getMetricExporter(defaultConfig, mockTransportChannel)
+	exporter := getAzureMonitorExporter(defaultConfig, mockTransportChannel)
 
 	metrics := getTestMetrics()
 
-	assert.NoError(t, exporter.onMetricData(context.Background(), metrics))
+	assert.NoError(t, exporter.consumeMetrics(context.Background(), metrics))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 5)
 }
@@ -137,8 +138,8 @@ func getDataPoint(tb testing.TB, metric pmetric.Metric) *contracts.DataPoint {
 	return dataPoint
 }
 
-func getMetricExporter(config *Config, transportChannel transportChannel) *metricExporter {
-	return &metricExporter{
+func getAzureMonitorExporter(config *Config, transportChannel appinsights.TelemetryChannel) *azureMonitorExporter {
+	return &azureMonitorExporter{
 		config,
 		transportChannel,
 		zap.NewNop(),

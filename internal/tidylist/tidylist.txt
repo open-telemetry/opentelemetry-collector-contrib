@@ -68,6 +68,7 @@ internal/aws/xray
 exporter/awsxrayexporter
 exporter/azureblobexporter
 exporter/azuredataexplorerexporter
+internal/sharedcomponent
 exporter/azuremonitorexporter
 exporter/bmchelixexporter
 exporter/carbonexporter
@@ -79,7 +80,6 @@ exporter/datasetexporter
 exporter/dorisexporter
 exporter/elasticsearchexporter
 extension/storage/filestorage
-internal/sharedcomponent
 pkg/translator/opencensus
 receiver/opencensusreceiver
 exporter/opencensusexporter
