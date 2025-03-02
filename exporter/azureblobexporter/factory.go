@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pipeline"
@@ -48,8 +49,9 @@ func createDefaultConfig() component.Config {
 			SerialNumRange: 10000,
 			Params:         map[string]string{},
 		},
-		FormatType: "json",
-		Encodings:  &Encodings{},
+		FormatType:    "json",
+		Encodings:     &Encodings{},
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 	}
 }
 
@@ -57,35 +59,41 @@ func createLogsExporter(ctx context.Context,
 	params exporter.Settings,
 	config component.Config,
 ) (exporter.Logs, error) {
-	azBlobExporter := newAzureBlobExporter(config.(*Config), params.Logger, pipeline.SignalLogs)
+	cfg := config.(*Config)
+	azBlobExporter := newAzureBlobExporter(cfg, params.Logger, pipeline.SignalLogs)
 
 	return exporterhelper.NewLogs(ctx, params,
 		config,
 		azBlobExporter.ConsumeLogs,
-		exporterhelper.WithStart(azBlobExporter.start))
+		exporterhelper.WithStart(azBlobExporter.start),
+		exporterhelper.WithRetry(cfg.BackOffConfig))
 }
 
 func createMetricsExporter(ctx context.Context,
 	params exporter.Settings,
 	config component.Config,
 ) (exporter.Metrics, error) {
-	azBlobExporter := newAzureBlobExporter(config.(*Config), params.Logger, pipeline.SignalMetrics)
+	cfg := config.(*Config)
+	azBlobExporter := newAzureBlobExporter(cfg, params.Logger, pipeline.SignalMetrics)
 
 	return exporterhelper.NewMetrics(ctx, params,
 		config,
 		azBlobExporter.ConsumeMetrics,
-		exporterhelper.WithStart(azBlobExporter.start))
+		exporterhelper.WithStart(azBlobExporter.start),
+		exporterhelper.WithRetry(cfg.BackOffConfig))
 }
 
 func createTracesExporter(ctx context.Context,
 	params exporter.Settings,
 	config component.Config,
 ) (exporter.Traces, error) {
-	azBlobExporter := newAzureBlobExporter(config.(*Config), params.Logger, pipeline.SignalTraces)
+	cfg := config.(*Config)
+	azBlobExporter := newAzureBlobExporter(cfg, params.Logger, pipeline.SignalTraces)
 
 	return exporterhelper.NewTraces(ctx,
 		params,
 		config,
 		azBlobExporter.ConsumeTraces,
-		exporterhelper.WithStart(azBlobExporter.start))
+		exporterhelper.WithStart(azBlobExporter.start),
+		exporterhelper.WithRetry(cfg.BackOffConfig))
 }

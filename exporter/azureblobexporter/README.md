@@ -40,6 +40,11 @@ The following settings can be optionally configured and have default values:
   - logs (default `nil`): encoding component id.
   - metrics (default `nil`): encoding component id.
   - traces (default `nil`): encoding component id.
+- `retry_on_failure`
+  - `enabled` (default = true)
+  - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
+  - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
+  - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
 
 An example configuration is provided as follows:
 

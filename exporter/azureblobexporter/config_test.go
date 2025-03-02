@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
@@ -49,8 +50,9 @@ func TestLoadConfig(t *testing.T) {
 					SerialNumRange: 10000,
 					Params:         map[string]string{},
 				},
-				FormatType: "json",
-				Encodings:  &Encodings{},
+				FormatType:    "json",
+				Encodings:     &Encodings{},
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 			},
 		},
 		{
@@ -72,8 +74,9 @@ func TestLoadConfig(t *testing.T) {
 					SerialNumRange: 10000,
 					Params:         map[string]string{},
 				},
-				FormatType: "proto",
-				Encodings:  &Encodings{},
+				FormatType:    "proto",
+				Encodings:     &Encodings{},
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 			},
 		},
 		{
@@ -96,8 +99,9 @@ func TestLoadConfig(t *testing.T) {
 					SerialNumRange: 10000,
 					Params:         map[string]string{},
 				},
-				FormatType: "json",
-				Encodings:  &Encodings{},
+				FormatType:    "json",
+				Encodings:     &Encodings{},
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 			},
 		},
 		{
@@ -119,8 +123,9 @@ func TestLoadConfig(t *testing.T) {
 					SerialNumRange: 10000,
 					Params:         map[string]string{},
 				},
-				FormatType: "json",
-				Encodings:  &Encodings{},
+				FormatType:    "json",
+				Encodings:     &Encodings{},
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 			},
 		},
 		{
