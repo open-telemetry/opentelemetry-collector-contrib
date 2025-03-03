@@ -50,6 +50,10 @@ func (o *UnstartableOperator) Start(_ operator.Persister) error {
 	return errors.New("something very unusual happened")
 }
 
+func (o *UnstartableOperator) ProcessBatch(_ context.Context, _ []*entry.Entry) error {
+	return nil
+}
+
 // Process will return nil
 func (o *UnstartableOperator) Process(_ context.Context, _ *entry.Entry) error {
 	return nil

@@ -27,6 +27,9 @@ https://github.com/memcached/memcached/blob/master/doc/protocol.txt#L1159.
 The following settings are required:
 
 - `endpoint` (default: `localhost:11211`): The hostname/IP address and port or, unix socket file path of the memcached instance
+- `transport` (default: no default): Known protocols are "tcp", "tcp4" (IPv4-only), "tcp6"
+  (IPv6-only), "udp", "udp4" (IPv4-only), "udp6" (IPv6-only), "ip", "ip4"
+  (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".
 
 The following settings are optional:
 
@@ -45,6 +48,7 @@ receivers:
   memcached:
     endpoint: "localhost:11211"
     collection_interval: 10s
+    transport: tcp
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)

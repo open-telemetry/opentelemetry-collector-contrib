@@ -339,11 +339,11 @@ func TestPathGetSetter(t *testing.T) {
 
 			log := createTelemetry(tt.bodyType)
 
-			got, err := accessor.Get(context.Background(), newtestContext(log))
+			got, err := accessor.Get(context.Background(), newTestContext(log))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), newtestContext(log), tt.newVal)
+			err = accessor.Set(context.Background(), newTestContext(log), tt.newVal)
 			assert.NoError(t, err)
 
 			expectedLog := createTelemetry(tt.bodyType)
@@ -424,6 +424,6 @@ func (l *testContext) GetLogRecord() plog.LogRecord {
 	return l.log
 }
 
-func newtestContext(log plog.LogRecord) *testContext {
+func newTestContext(log plog.LogRecord) *testContext {
 	return &testContext{log: log}
 }
