@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadatatest"
 )
 
@@ -135,7 +136,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 			factory := NewFactory()
 			fmp, err := factory.CreateTraces(
 				ctx,
-				processortest.NewNopSettings(),
+				processortest.NewNopSettings(metadata.Type),
 				cfg,
 				next,
 			)
@@ -268,7 +269,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterSpansProcessor(processortest.NewNopSettings(), &Config{Traces: tt.conditions, ErrorMode: tt.errorMode})
+			processor, err := newFilterSpansProcessor(processortest.NewNopSettings(metadata.Type), &Config{Traces: tt.conditions, ErrorMode: tt.errorMode})
 			assert.NoError(t, err)
 
 			got, err := processor.processTraces(context.Background(), constructTraces())

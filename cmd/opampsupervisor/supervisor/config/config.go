@@ -95,6 +95,7 @@ type Capabilities struct {
 	ReportsOwnMetrics              bool `mapstructure:"reports_own_metrics"`
 	ReportsHealth                  bool `mapstructure:"reports_health"`
 	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
+	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -126,6 +127,10 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 
 	if c.AcceptsOpAMPConnectionSettings {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
+	}
+
+	if c.ReportsAvailableComponents {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents
 	}
 
 	return supportedCapabilities
@@ -162,14 +167,17 @@ func (o OpAMPServer) Validate() error {
 }
 
 type Agent struct {
-	Executable              string           `mapstructure:"executable"`
-	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
-	Description             AgentDescription `mapstructure:"description"`
-	ConfigApplyTimeout      time.Duration    `mapstructure:"config_apply_timeout"`
-	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
-	HealthCheckPort         int              `mapstructure:"health_check_port"`
-	OpAMPServerPort         int              `mapstructure:"opamp_server_port"`
-	PassthroughLogs         bool             `mapstructure:"passthrough_logs"`
+	Executable              string            `mapstructure:"executable"`
+	OrphanDetectionInterval time.Duration     `mapstructure:"orphan_detection_interval"`
+	Description             AgentDescription  `mapstructure:"description"`
+	ConfigApplyTimeout      time.Duration     `mapstructure:"config_apply_timeout"`
+	BootstrapTimeout        time.Duration     `mapstructure:"bootstrap_timeout"`
+	HealthCheckPort         int               `mapstructure:"health_check_port"`
+	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
+	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
+	ConfigFiles             []string          `mapstructure:"config_files"`
+	Arguments               []string          `mapstructure:"args"`
+	Env                     map[string]string `mapstructure:"env"`
 }
 
 func (a Agent) Validate() error {
@@ -245,6 +253,7 @@ func DefaultSupervisor() Supervisor {
 			ReportsOwnMetrics:              true,
 			ReportsHealth:                  true,
 			ReportsRemoteConfig:            false,
+			ReportsAvailableComponents:     false,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,

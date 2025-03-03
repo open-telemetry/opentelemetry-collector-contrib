@@ -20,7 +20,7 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 )
 
@@ -45,7 +45,7 @@ var (
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
 )
 
-func newExtension(cfg *Config, logger *zap.Logger) auth.Server {
+func newExtension(cfg *Config, logger *zap.Logger) (extensionauth.Server, error) {
 	if cfg.Attribute == "" {
 		cfg.Attribute = defaultAttribute
 	}
@@ -54,10 +54,10 @@ func newExtension(cfg *Config, logger *zap.Logger) auth.Server {
 		cfg:    cfg,
 		logger: logger,
 	}
-	return auth.NewServer(
-		auth.WithServerStart(oe.start),
-		auth.WithServerAuthenticate(oe.authenticate),
-		auth.WithServerShutdown(oe.shutdown),
+	return extensionauth.NewServer(
+		extensionauth.WithServerStart(oe.start),
+		extensionauth.WithServerAuthenticate(oe.authenticate),
+		extensionauth.WithServerShutdown(oe.shutdown),
 	)
 }
 
@@ -114,7 +114,7 @@ func (e *oidcExtension) authenticate(ctx context.Context, headers map[string][]s
 		// will already attempt to parse the payload as a json and set it as the claims
 		// for the token. As we are using a map to hold the claims, there's no way to fail
 		// to read the claims. It could fail if we were using a custom struct. Instead of
-		// swalling the error, it's better to make this future-proof, in case the underlying
+		// swallowing the error, it's better to make this future-proof, in case the underlying
 		// code changes
 		return ctx, errFailedToObtainClaimsFromToken
 	}

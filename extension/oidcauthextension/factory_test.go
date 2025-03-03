@@ -31,7 +31,7 @@ func TestCreate(t *testing.T) {
 	cfg.Audience = "collector"
 	cfg.IssuerURL = "https://auth.example.com"
 
-	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
 }

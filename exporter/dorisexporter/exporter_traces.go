@@ -64,7 +64,7 @@ type tracesExporter struct {
 
 func newTracesExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings) *tracesExporter {
 	return &tracesExporter{
-		commonExporter: newExporter(logger, cfg, set),
+		commonExporter: newExporter(logger, cfg, set, "TRACE"),
 	}
 }
 
@@ -76,23 +76,26 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
 	e.client = client
 
 	if !e.cfg.CreateSchema {
-		return nil
+		conn, err := createDorisMySQLClient(e.cfg)
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+
+		err = createAndUseDatabase(ctx, conn, e.cfg)
+		if err != nil {
+			return err
+		}
+
+		ddl := fmt.Sprintf(tracesDDL, e.cfg.Table.Traces, e.cfg.propertiesStr())
+		_, err = conn.ExecContext(ctx, ddl)
+		if err != nil {
+			return err
+		}
 	}
 
-	conn, err := createDorisMySQLClient(e.cfg)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	err = createAndUseDatabase(ctx, conn, e.cfg)
-	if err != nil {
-		return err
-	}
-
-	ddl := fmt.Sprintf(tracesDDL, e.cfg.Table.Traces, e.cfg.propertiesStr())
-	_, err = conn.ExecContext(ctx, ddl)
-	return err
+	go e.reporter.report()
+	return nil
 }
 
 func (e *tracesExporter) shutdown(_ context.Context) error {
@@ -103,6 +106,7 @@ func (e *tracesExporter) shutdown(_ context.Context) error {
 }
 
 func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
+	label := generateLabel(e.cfg, e.cfg.Table.Traces)
 	traces := make([]*dTrace, 0, td.SpanCount())
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
@@ -176,16 +180,16 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		}
 	}
 
-	return e.pushTraceDataInternal(ctx, traces)
+	return e.pushTraceDataInternal(ctx, traces, label)
 }
 
-func (e *tracesExporter) pushTraceDataInternal(ctx context.Context, traces []*dTrace) error {
+func (e *tracesExporter) pushTraceDataInternal(ctx context.Context, traces []*dTrace, label string) error {
 	marshal, err := toJSONLines(traces)
 	if err != nil {
 		return err
 	}
 
-	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Table.Traces, marshal)
+	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Table.Traces, marshal, label)
 	if err != nil {
 		return err
 	}
@@ -207,9 +211,21 @@ func (e *tracesExporter) pushTraceDataInternal(ctx context.Context, traces []*dT
 		return err
 	}
 
-	if !response.success() {
-		return fmt.Errorf("failed to push trace data: %s", response.Message)
+	if response.success() {
+		e.reporter.incrTotalRows(int64(len(traces)))
+		e.reporter.incrTotalBytes(int64(len(marshal)))
+
+		if response.duplication() {
+			e.logger.Warn("label already exists", zap.String("label", label), zap.Int("skipped", len(traces)))
+		}
+
+		if e.cfg.LogResponse {
+			e.logger.Info("trace response:\n" + string(body))
+		} else {
+			e.logger.Debug("trace response:\n" + string(body))
+		}
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("failed to push trace data, response:%s", string(body))
 }

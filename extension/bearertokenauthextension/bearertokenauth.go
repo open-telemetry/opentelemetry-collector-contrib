@@ -14,7 +14,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
 )
@@ -23,12 +23,12 @@ var _ credentials.PerRPCCredentials = (*PerRPCAuth)(nil)
 
 // PerRPCAuth is a gRPC credentials.PerRPCCredentials implementation that returns an 'authorization' header.
 type PerRPCAuth struct {
-	metadata map[string]string
+	auth *BearerTokenAuth
 }
 
 // GetRequestMetadata returns the request metadata to be used with the RPC.
 func (c *PerRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
-	return c.metadata, nil
+	return map[string]string{"authorization": c.auth.authorizationValue()}, nil
 }
 
 // RequireTransportSecurity always returns true for this implementation. Passing bearer tokens in plain-text connections is a bad idea.
@@ -37,11 +37,11 @@ func (c *PerRPCAuth) RequireTransportSecurity() bool {
 }
 
 var (
-	_ auth.Server = (*BearerTokenAuth)(nil)
-	_ auth.Client = (*BearerTokenAuth)(nil)
+	_ extensionauth.Server = (*BearerTokenAuth)(nil)
+	_ extensionauth.Client = (*BearerTokenAuth)(nil)
 )
 
-// BearerTokenAuth is an implementation of auth.Client. It embeds a static authorization "bearer" token in every rpc call.
+// BearerTokenAuth is an implementation of extensionauth.Client. It embeds a static authorization "bearer" token in every rpc call.
 type BearerTokenAuth struct {
 	scheme                   string
 	authorizationValueAtomic atomic.Value
@@ -52,7 +52,7 @@ type BearerTokenAuth struct {
 	logger   *zap.Logger
 }
 
-var _ auth.Client = (*BearerTokenAuth)(nil)
+var _ extensionauth.Client = (*BearerTokenAuth)(nil)
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 	if cfg.Filename != "" && cfg.BearerToken != "" {
@@ -171,7 +171,7 @@ func (b *BearerTokenAuth) Shutdown(_ context.Context) error {
 // PerRPCCredentials returns PerRPCAuth an implementation of credentials.PerRPCCredentials that
 func (b *BearerTokenAuth) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	return &PerRPCAuth{
-		metadata: map[string]string{"authorization": b.authorizationValue()},
+		auth: b,
 	}, nil
 }
 
