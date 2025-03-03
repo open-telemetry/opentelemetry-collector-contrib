@@ -133,3 +133,12 @@ func (o *benchmarkOutput) Process(_ context.Context, _ *entry.Entry) error {
 	}
 	return nil
 }
+
+func (o *benchmarkOutput) ProcessBatch(_ context.Context, entries []*entry.Entry) error {
+	o.logsReceived += len(entries)
+	if o.logsReceived >= o.totalLogs {
+		o.doneChan <- struct{}{}
+		o.logsReceived = 0
+	}
+	return nil
+}

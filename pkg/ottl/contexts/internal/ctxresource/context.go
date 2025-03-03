@@ -6,7 +6,7 @@ package ctxresource // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 )
 
 const (
@@ -16,5 +16,5 @@ const (
 
 type Context interface {
 	GetResource() pcommon.Resource
-	GetResourceSchemaURLItem() ctxutil.SchemaURLItem
+	GetResourceSchemaURLItem() ctxcommon.SchemaURLItem
 }
