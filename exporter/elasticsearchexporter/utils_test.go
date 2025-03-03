@@ -128,12 +128,13 @@ func (r *bulkRecorder) Record(bulk []itemRequest) {
 	r.cond.Broadcast()
 }
 
-func (r *bulkRecorder) WaitItems(n int) {
+func (r *bulkRecorder) WaitItems(n int) []itemRequest {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for n > r.countItems() {
 		r.cond.Wait()
 	}
+	return r.items()
 }
 
 func (r *bulkRecorder) Requests() [][]itemRequest {
@@ -143,7 +144,13 @@ func (r *bulkRecorder) Requests() [][]itemRequest {
 }
 
 func (r *bulkRecorder) Items() (docs []itemRequest) {
-	for _, rec := range r.Requests() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.items()
+}
+
+func (r *bulkRecorder) items() (docs []itemRequest) {
+	for _, rec := range r.recordings {
 		docs = append(docs, rec...)
 	}
 	return docs

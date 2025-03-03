@@ -19,6 +19,29 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 - `receiver/prometheus`: Prometheus receiver now uses scrapers in Prometheus 3.0. (#36873)
   There are a number of breaking changes in Prometheus 3.0. Learn more about those changes and migration guide on https://prometheus.io/docs/prometheus/latest/migration/.
+  As a result of [adding support for UTF-8 names](https://prometheus.io/docs/prometheus/latest/migration/#utf-8-names),
+  the metrics and labels containing UTF-8 characters are no longer escaped. Consequently, the dots (.) in internal
+  collector metrics and resource attributes scraped by Prometheus are no longer replaced with underscores (_).
+    - The `service_name`, `service_instance_id`, and `service_version` resource attributes are now scraped as 
+      `service.name`, `service.instance.id`, and `service.version`, respectively.
+    - The following metrics containing dots reported by several components are no longer escaped:
+      - `filter` processor:
+        - `processor_filter_datapoints_filtered` -> `processor_filter_datapoints.filtered`
+        - `processor_filter_logs_filtered` -> `processor_filter_logs.filtered`
+        - `processor_filter_spans_filtered` -> `processor_filter_spans.filtered`
+      - `deltatocumulative` processor:
+        - `deltatocumulative_streams_tracked` -> `deltatocumulative.streams.tracked`
+        - `deltatocumulative_streams_tracked_linear` -> `deltatocumulative.streams.tracked.linear`
+        - `deltatocumulative_streams_limit` -> `deltatocumulative.streams.limit`
+        - `deltatocumulative_streams_evicted` -> `deltatocumulative.streams.evicted`
+        - `deltatocumulative_streams_max_stale` -> `deltatocumulative.streams.max_stale`
+        - `deltatocumulative_datapoints_processed` -> `deltatocumulative.datapoints.processed`
+        - `deltatocumulative_datapoints_dropped` -> `deltatocumulative.datapoints.dropped`
+        - `deltatocumulative_datapoints_linear` -> `deltatocumulative.datapoints.linear`
+        - `deltatocumulative_gaps_length` -> `deltatocumulative.gaps.length`
+      - `googlecloudpubsub` receiver:
+        - `receiver_googlecloudpubsub_stream_restarts` -> `receiver.googlecloudpubsub.stream_restarts`
+
 - `all`: Added support for go1.24, bumped minimum version to 1.23 (#37875)
 - `elasticsearchexporter`: Use go-elasticsearch/v8, require minimum version of ES 7.17.x or 8.x (#32454)
 - `elasticsearchexporter`: Remove dedot config. ECS mode now always dedots, no others dedot at all. (#33772)
