@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.23.0
 
 require (
+	github.com/DataDog/agent-payload/v5 v5.0.144
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.64.0-rc.6
 	github.com/DataDog/datadog-agent/pkg/proto v0.64.0-rc.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.120.0
@@ -48,7 +49,6 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.144 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.64.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.64.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/types v0.64.0-rc.6 // indirect
