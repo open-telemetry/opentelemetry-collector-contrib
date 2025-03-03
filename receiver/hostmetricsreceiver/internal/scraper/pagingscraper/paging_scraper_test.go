@@ -83,11 +83,6 @@ func TestScrape(t *testing.T) {
 				expectedMetrics = 3
 			}
 
-			// linux + ARM runner has no swap
-			if runtime.GOOS == "linux" && runtime.GOARCH == "arm64" {
-				expectedMetrics = 2
-			}
-
 			assert.Equal(t, expectedMetrics, md.MetricCount())
 
 			startIndex := 0
@@ -102,12 +97,10 @@ func TestScrape(t *testing.T) {
 			internal.AssertSameTimeStampForMetrics(t, metrics, 0, metrics.Len()-2)
 			startIndex++
 
-			if !(runtime.GOOS == "linux" && runtime.GOARCH == "arm64") {
-				assertPagingUsageMetricValid(t, metrics.At(startIndex))
-				internal.AssertSameTimeStampForMetrics(t, metrics, startIndex, metrics.Len())
-				startIndex++
-				assertPagingUtilizationMetricValid(t, metrics.At(startIndex))
-			}
+			assertPagingUsageMetricValid(t, metrics.At(startIndex))
+			internal.AssertSameTimeStampForMetrics(t, metrics, startIndex, metrics.Len())
+			startIndex++
+			assertPagingUtilizationMetricValid(t, metrics.At(startIndex))
 		})
 	}
 }
