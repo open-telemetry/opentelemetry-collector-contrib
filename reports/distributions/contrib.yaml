@@ -110,7 +110,9 @@ components:
         - tail_sampling
         - transform
     provider:
+        - aes
         - s3
+        - secretsmanager
     receiver:
         - active_directory_ds
         - aerospike
@@ -166,6 +168,7 @@ components:
         - mongodbatlas
         - mysql
         - namedpipe
+        - netflow
         - nginx
         - nsxt
         - ntp
