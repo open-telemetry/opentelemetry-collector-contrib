@@ -68,7 +68,7 @@ func (c *logsConsumer) Start(_ context.Context, host component.Host) error {
 	}
 	if encoding == cwlog.TypeStr {
 		// TODO: make cwlogs an encoding extension
-		c.unmarshaler = cwlog.NewUnmarshaler(c.settings.Logger)
+		c.unmarshaler = cwlog.NewUnmarshaler(c.settings.Logger, c.settings.BuildInfo)
 	} else {
 		unmarshaler, err := loadEncodingExtension[plog.Unmarshaler](host, encoding, "logs")
 		if err != nil {
