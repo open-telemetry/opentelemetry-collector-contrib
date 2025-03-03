@@ -99,6 +99,31 @@ func (e *LogEmitter) Stop() error {
 	return nil
 }
 
+// ProcessBatch emits the entries to the consumerFunc
+func (e *LogEmitter) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	if oldBatch := e.appendEntries(entries); len(oldBatch) > 0 {
+		e.consumerFunc(ctx, oldBatch)
+	}
+
+	return nil
+}
+
+// appendEntries appends the entry to the current batch. If maxBatchSize is reached, a new batch will be made, and the old batch
+// (which should be flushed) will be returned
+func (e *LogEmitter) appendEntries(entries []*entry.Entry) []*entry.Entry {
+	e.batchMux.Lock()
+	defer e.batchMux.Unlock()
+
+	e.batch = append(e.batch, entries...)
+	if uint(len(e.batch)) >= e.maxBatchSize {
+		var oldBatch []*entry.Entry
+		oldBatch, e.batch = e.batch, make([]*entry.Entry, 0, e.maxBatchSize)
+		return oldBatch
+	}
+
+	return nil
+}
+
 // Process will emit an entry to the output channel
 func (e *LogEmitter) Process(ctx context.Context, ent *entry.Entry) error {
 	if oldBatch := e.appendEntry(ent); len(oldBatch) > 0 {
