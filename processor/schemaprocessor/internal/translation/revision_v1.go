@@ -32,12 +32,6 @@ type RevisionV1 struct {
 // Generics would be handy here.
 // todo(ankit) investigate using generics
 func NewRevision(ver *Version, def ast11.VersionDef) *RevisionV1 {
-	// todo(ankit) change logs to be an ast.Attributes type so I dont have to change this
-	var logChanges ast10.Attributes
-	for _, change := range def.Logs.Changes {
-		//nolint:gosimple
-		logChanges.Changes = append(logChanges.Changes, ast10.AttributeChange{RenameAttributes: change.RenameAttributes})
-	}
 	return &RevisionV1{
 		ver:        ver,
 		all:        newAllChangeList(def.All),

@@ -136,7 +136,7 @@ func (t schemaprocessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 }
 
 func (t *schemaprocessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	t.log.Info("processing traces")
+	t.log.Debug("processing traces")
 	if t.manager == nil {
 		return td, nil
 	}
@@ -145,7 +145,7 @@ func (t *schemaprocessor) processTraces(ctx context.Context, td ptrace.Traces) (
 		// todo(ankit) do i need to check if this is empty?
 		resourceSchemaURL := rTrace.SchemaUrl()
 		if resourceSchemaURL != "" {
-			t.log.Info("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
+			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
 			tr, err := t.manager.
 				RequestTranslation(ctx, resourceSchemaURL)
 			if err != nil {
