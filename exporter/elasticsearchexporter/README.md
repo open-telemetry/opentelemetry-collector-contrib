@@ -39,7 +39,7 @@ As a shortcut, the following settings are also supported:
 
 - `user` (optional): Username used for HTTP Basic Authentication.
 - `password` (optional): Password used for HTTP Basic Authentication.
-- `api_key` (optional): [Elasticsearch API Key] in "encoded" format.
+- `api_key` (optional): [Elasticsearch API Key] in "encoded" format (e.g. `VFR2WU41VUJIbG9SbGJUdVFrMFk6NVVhVDE3SDlSQS0wM1Rxb24xdXFldw==`).
 
 Example:
 
@@ -94,8 +94,11 @@ The Elasticsearch exporter supports the [common `batcher` settings](https://gith
 
 - `batcher`:
   - `enabled` (default=unset): Enable batching of requests into 1 or more bulk requests. On a batcher flush, it is possible for a batched request to be translated to more than 1 bulk request due to `flush::bytes`.
-  - `min_size_items` (default=5000): Minimum number of log records / spans / data points in the batched request to immediately trigger a batcher flush.
-  - `max_size_items` (default=0): Maximum number of log records / spans / data points in a batched request. To limit bulk request size, configure `flush::bytes` instead. :warning: It is recommended to keep `max_size_items` as 0 as a non-zero value may lead to broken metrics grouping and indexing rejections.
+  - `sizer` (default=items): Unit of `min_size` and `max_size`. Currently supports only "items", in the future will also support "bytes".
+  - `min_size` (default=5000): Minimum batch size to be exported to Elasticsearch, measured in units according to `batcher::sizer`.
+  - `max_size` (default=0): Maximum batch size to be exported to Elasticsearch, measured in units according to `batcher::sizer`. To limit bulk request size, configure `flush::bytes` instead. :warning: It is recommended to keep `max_size` as 0 as a non-zero value may lead to broken metrics grouping and indexing rejections.
+  - `min_size_items` (DEPRECATED, use `batcher::min_size` instead): Minimum number of log records / spans / data points in the batched request to immediately trigger a batcher flush.
+  - `max_size_items` (DEPRECATED, use `batcher::max_size` instead): Maximum number of log records / spans / data points in a batched request.
   - `flush_timeout` (default=30s): Maximum time of the oldest item spent inside the batcher buffer, aka "max age of batcher buffer". A batcher flush will happen regardless of the size of content in batcher buffer.
 
 By default, the exporter will perform its own buffering and batching, as configured through the
@@ -122,7 +125,7 @@ This can be customised through the following settings:
 - `logs_index`: The [index] or [data stream] name to publish events to.  The default value is `logs-generic-default`
 
 - `logs_dynamic_index` (optional): uses resource, scope, or log record attributes to dynamically construct index name.
-  - `enabled`(default=false): Enable/Disable dynamic index for log records.  If `data_stream.dataset` or `data_stream.namespace` exist in attributes (precedence: log record attribute > scope attribute > resource attribute), they will be used to dynamically construct index name in the form `logs-${data_stream.dataset}-${data_stream.namespace}`. Otherwise, if
+  - `enabled`(default=false): Enable/Disable dynamic index for log records.  If `data_stream.dataset` or `data_stream.namespace` exist in attributes (precedence: log record attribute > scope attribute > resource attribute), they will be used to dynamically construct index name in the form `logs-${data_stream.dataset}-${data_stream.namespace}`. In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`) is also supported to dynamically construct index in the form `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`. Otherwise, if
     `elasticsearch.index.prefix` or `elasticsearch.index.suffix` exist in attributes (precedence: resource attribute > scope attribute > log record attribute), they will be used to dynamically construct index name in the form `${elasticsearch.index.prefix}${logs_index}${elasticsearch.index.suffix}`. Otherwise, if scope name matches regex `/receiver/(\w*receiver)`, `data_stream.dataset` will be capture group #1. Otherwise, the index name falls back to `logs-generic-default`, and `logs_index` config will be ignored. Except for prefix/suffix attribute presence, the resulting docs will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
 
 - `metrics_index` (optional): The [index] or [data stream] name to publish metrics to. The default value is `metrics-generic-default`.
@@ -154,28 +157,41 @@ This can be customised through the following settings:
 The Elasticsearch exporter supports several document schemas and preprocessing
 behaviours, which may be configured through the following settings:
 
-- `mapping`: Events are encoded to JSON. The `mapping` allows users to
-  configure additional mapping rules.
-  - `mode` (default=none): The fields naming mode. valid modes are:
-    - `none`: Use original fields and event structure from the OTLP event.
-    - `ecs`: Try to map fields to [Elastic Common Schema (ECS)][ECS]
-    - `otel`: Elastic's preferred "OTel-native" mapping mode. Uses original fields and event structure from the OTLP event.
-      - There's a special treatment for the following attributes: `data_stream.type`, `data_stream.dataset`, `data_stream.namespace`. Instead of serializing these values under the `*attributes.*` namespace, they're put at the root of the document, to conform with the conventions of the data stream naming scheme that maps these as `constant_keyword` fields.
-      - `data_stream.dataset` will always be appended with `.otel`. It is recommended to use with `*_dynamic_index.enabled: true` to route documents to data stream `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`.
-      - Span events are stored in separate documents. They will be routed with `data_stream.type` set to `logs` if `traces_dynamic_index::enabled` is `true`.
+- `mapping`:
+  - `mode` (default=none): The default mapping mode. Valid modes are:
+    - `none`
+    - `ecs`
+    - `otel`
+    - `raw`
+    - `bodymap`
+  - `allowed_modes` (defaults to all mapping modes): A list of allowed mapping modes.
 
-    - `raw`: Omit the `Attributes.` string prefixed to field names for log and
-             span attributes as well as omit the `Events.` string prefixed to
-             field names for span events.
-    - `bodymap`: Provides fine-grained control over the final documents to be ingested.
-            :warning: This mode's behavior is unstable, it is currently experimental and undergoing changes.
-            It works only for logs where the log record body is a map. Each LogRecord
-            body is serialized to JSON as-is and becomes a separate document for ingestion.
-            If the log record body is not a map, the exporter will log a warning and drop the log record.
+The mapping mode can also be controlled via the client metadata key `X-Elastic-Mapping-Mode`,
+e.g. via HTTP headers, gRPC metadata. This will override the configured `mapping::mode`.
+It is possible to restrict which mapping modes may be requested by configuring
+`mapping::allowed_modes`, which defaults to all mapping modes. Keep in mind that not all
+processors or exporter configurations will maintain client
+metadata.
+
+See below for a description of each mapping mode.
 
 #### OTel mapping mode
 
-In `otel` mapping mode, the Elasticsearch Exporter stores documents in an OTel-native schema.
+In `otel` mapping mode, the Elasticsearch Exporter stores documents in Elastic's preferred
+"OTel-native" schema. In this mapping mode, documents use the original attribute names and
+closely follows the event structure from the OTLP events.
+
+There is special treatment for the following attributes: `data_stream.type`, `data_stream.dataset`,
+and `data_stream.namespace`. Instead of serializing these values under the `*attributes.*` namespace,
+they are put at the root of the document, to conform with the conventions of the data stream naming
+scheme that maps these as `constant_keyword` fields.
+
+`data_stream.dataset` will always be appended with `.otel`. It is recommended to use with
+`*_dynamic_index::enabled: true` (e.g. `logs_dynamic_index::enabled`) to route documents to data stream
+`${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`.
+
+Span events are stored in separate documents. They will be routed with `data_stream.type` set to
+`logs` if `traces_dynamic_index::enabled` is `true`.
 
 | Signal    | Supported          |
 | --------- | ------------------ |
@@ -219,7 +235,7 @@ the Elasticsearch document structure.
 
 #### Default (none) mapping mode
 
-In the `none` mapping mode the Elasticsearhc Exporter produces documents with the original
+In the `none` mapping mode the Elasticsearch Exporter produces documents with the original
 field names of from the OTLP data structures.
 
 | Signal    | `none`             |
@@ -459,7 +475,7 @@ processors:
 
 Symptom: `elasticsearchexporter` logs an error "failed to index document" with `error.type` "version_conflict_engine_exception" and `error.reason` containing "version conflict, document already exists".
 
-This happens when the target data stream is a TSDB metrics data stream (e.g. using OTel mapping mode sending to a 8.16+ Elasticsearch).
+This happens when the target data stream is a TSDB metrics data stream (e.g. using OTel mapping mode sending to a 8.16+ Elasticsearch, or ECS mapping mode sending to system integration data streams).
 
 Elasticsearch [Time Series Data Streams](https://www.elastic.co/guide/en/elasticsearch/reference/current/tsds.html) requires that there must only be one document per timestamp with the same dimensions.
 The purpose is to avoid duplicate data when re-trying a batch of metrics that were previously sent but failed to be indexed.
