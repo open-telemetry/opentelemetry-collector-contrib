@@ -16,7 +16,7 @@ import (
 
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 
-// NewFactory returns a new factory for the k8s processor.
+// NewFactory returns a new factory for the Datadog semantics processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		metadata.Type,
