@@ -183,6 +183,7 @@ require (
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
 	go.opentelemetry.io/collector/processor/batchprocessor v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
+	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.120.0 // indirect
 	go.opentelemetry.io/collector/processor/processortest v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
