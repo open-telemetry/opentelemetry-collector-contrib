@@ -13,9 +13,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
@@ -30,7 +30,7 @@ var (
 type TransformContext struct {
 	resource      pcommon.Resource
 	cache         pcommon.Map
-	schemaURLItem ctxutil.SchemaURLItem
+	schemaURLItem ctxcommon.SchemaURLItem
 }
 
 func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
@@ -43,7 +43,7 @@ type Option func(*ottl.Parser[TransformContext])
 
 type TransformContextOption func(*TransformContext)
 
-func NewTransformContext(resource pcommon.Resource, schemaURLItem ctxutil.SchemaURLItem, options ...TransformContextOption) TransformContext {
+func NewTransformContext(resource pcommon.Resource, schemaURLItem ctxcommon.SchemaURLItem, options ...TransformContextOption) TransformContext {
 	tc := TransformContext{
 		resource:      resource,
 		cache:         pcommon.NewMap(),
@@ -68,7 +68,7 @@ func (tCtx TransformContext) GetResource() pcommon.Resource {
 	return tCtx.resource
 }
 
-func (tCtx TransformContext) GetResourceSchemaURLItem() ctxutil.SchemaURLItem {
+func (tCtx TransformContext) GetResourceSchemaURLItem() ctxcommon.SchemaURLItem {
 	return tCtx.schemaURLItem
 }
 

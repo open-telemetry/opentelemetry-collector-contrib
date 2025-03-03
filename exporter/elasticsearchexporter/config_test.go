@@ -109,7 +109,8 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode: "none",
+					Mode:         "none",
+					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -183,7 +184,8 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode: "none",
+					Mode:         "none",
+					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -257,7 +259,8 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode: "none",
+					Mode:         "none",
+					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -432,7 +435,22 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Endpoints = []string{"http://test:9200"}
 				cfg.Mapping.Mode = "invalid"
 			}),
-			err: `unknown mapping mode "invalid"`,
+			err: `invalid or disallowed default mapping mode "invalid"`,
+		},
+		"invalid allowed mapping modes": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"http://test:9200"}
+				cfg.Mapping.AllowedModes = []string{"foo"}
+			}),
+			err: `unknown allowed mapping mode name "foo"`,
+		},
+		"disallowed mapping mode": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"http://test:9200"}
+				cfg.Mapping.Mode = "otel"
+				cfg.Mapping.AllowedModes = []string{"raw"}
+			}),
+			err: `invalid or disallowed default mapping mode "otel"`,
 		},
 		"invalid scheme": {
 			config: withDefaultConfig(func(cfg *Config) {
