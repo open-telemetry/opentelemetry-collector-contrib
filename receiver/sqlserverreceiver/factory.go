@@ -23,6 +23,18 @@ import (
 
 var errConfigNotSQLServer = errors.New("config was not a sqlserver receiver config")
 
+// newCache creates a new cache with the given size.
+// If the size is less or equal to 0, it will be set to 1.
+// It will never return an error.
+func newCache(size int) *lru.Cache[string, int64] {
+	if size <= 0 {
+		size = 1
+	}
+	// lru will only returns error when the size is less than 0
+	cache, _ := lru.New[string, int64](size)
+	return cache
+}
+
 // NewFactory creates a factory for SQL Server receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -123,7 +135,8 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 	for i, query := range queries {
 		id := component.NewIDWithName(metadata.Type, fmt.Sprintf("query-%d: %s", i, query))
 
-		var cache *lru.Cache[string, int64]
+		// lru only returns error when the size is less than 0
+		cache := newCache(1)
 
 		sqlServerScraper := newSQLServerScraper(id, query,
 			sqlquery.TelemetryConfig{},
@@ -173,22 +186,11 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 	for i, query := range queries {
 		id := component.NewIDWithName(metadata.Type, fmt.Sprintf("logs-query-%d: %s", i, query))
 
-		var cache *lru.Cache[string, int64]
+		cache := newCache(1)
 
 		if query == queryTextAndPlanQuery {
 			// we have 8 metrics in this query and multiple 2 to allow to cache more queries.
-			cache, err = lru.New[string, int64](int(cfg.MaxQuerySampleCount * 8 * 2))
-			if err != nil {
-				params.Logger.Error("Failed to create LRU cache, skipping the current scraper", zap.Error(err))
-				continue
-			}
-		} else {
-			// fallback to a single query cache
-			cache, err = lru.New[string, int64](1)
-			if err != nil {
-				params.Logger.Error("Failed to create LRU cache, skipping the current scraper", zap.Error(err))
-				continue
-			}
+			cache = newCache(int(cfg.MaxQuerySampleCount * 8 * 2))
 		}
 
 		sqlServerScraper := newSQLServerScraper(id, query,

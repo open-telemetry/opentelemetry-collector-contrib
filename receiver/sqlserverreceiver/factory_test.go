@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -232,4 +233,18 @@ func TestFactory(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, tc.testFunc)
 	}
+}
+
+func TestNewCache(t *testing.T) {
+	var cache *lru.Cache[string, int64]
+	// even when size is less than 0, cache should be created with size 1.
+	// Also noticed that the cache returned would never be nil, only
+	// cache.lru could be nil, which is invisible to us. So we can
+	// test the cache.Values() method to check if the cache is created.
+	cache = newCache(10)
+	require.NotNil(t, cache.Values())
+	cache = newCache(-1)
+	require.NotNil(t, cache.Values())
+	cache = newCache(0)
+	require.NotNil(t, cache.Values())
 }
