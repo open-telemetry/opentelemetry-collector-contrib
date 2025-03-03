@@ -5,7 +5,7 @@ ADD . /src
 
 RUN make otelcontribcol
 
-FROM alpine:latest as certs
+FROM alpine:latest AS certs
 RUN apk --update add ca-certificates
 
 FROM scratch
