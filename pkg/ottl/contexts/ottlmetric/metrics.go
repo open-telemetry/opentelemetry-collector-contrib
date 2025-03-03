@@ -46,9 +46,7 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
 	err = errors.Join(err, encoder.AddObject("metric", logging.Metric(tCtx.metric)))
 	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
-	if tCtx.metrics.Len() > 0 {
-		err = errors.Join(err, encoder.AddArray("metricSlice", logging.MetricSlice(tCtx.metrics)))
-	}
+
 	return err
 }
 
