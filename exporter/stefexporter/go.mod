@@ -4,10 +4,10 @@ go 1.23.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1
-	github.com/splunk/stef/go/grpc v0.0.3
-	github.com/splunk/stef/go/otel v0.0.3
-	github.com/splunk/stef/go/pdata v0.0.3
-	github.com/splunk/stef/go/pkg v0.0.3
+	github.com/splunk/stef/go/grpc v0.0.4
+	github.com/splunk/stef/go/otel v0.0.4
+	github.com/splunk/stef/go/pdata v0.0.4
+	github.com/splunk/stef/go/pkg v0.0.4
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.120.1-0.20250226024140-8099e51f9a77
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250226024140-8099e51f9a77
