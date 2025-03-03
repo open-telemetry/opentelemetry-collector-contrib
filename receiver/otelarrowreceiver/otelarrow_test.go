@@ -51,12 +51,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow/mock"
-	componentMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
+	componentmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
 const otlpReceiverName = "receiver_test"
 
-var testReceiverID = component.NewIDWithName(componentMetadata.Type, otlpReceiverName)
+var testReceiverID = component.NewIDWithName(componentmetadata.Type, otlpReceiverName)
 
 func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
@@ -103,13 +103,12 @@ func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	td := testdata.GenerateTraces(1)
 
-	tt, err := componenttest.SetupTelemetry(testReceiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
-	ocr := newGRPCReceiver(t, addr, tt.TelemetrySettings(), sink, nil)
+	ocr := newGRPCReceiver(t, addr, tt.NewTelemetrySettings(), sink, nil)
 	require.NotNil(t, ocr)
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
@@ -199,7 +198,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 	r, err := NewFactory().CreateTraces(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(componentmetadata.Type),
 		cfg,
 		consumertest.NewNop())
 
@@ -260,7 +259,7 @@ func newGRPCReceiver(t *testing.T, endpoint string, settings component.Telemetry
 }
 
 func newReceiver(t *testing.T, factory receiver.Factory, settings component.TelemetrySettings, cfg *Config, id component.ID, tc consumer.Traces, mc consumer.Metrics) component.Component {
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(componentmetadata.Type)
 	set.TelemetrySettings = settings
 	set.ID = id
 	var r component.Component
@@ -287,7 +286,7 @@ func TestStandardShutdown(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(componentmetadata.Type)
 	set.ID = testReceiverID
 	r, err := NewFactory().CreateTraces(
 		context.Background(),
@@ -364,7 +363,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 				cfg.GRPC.Keepalive.ServerParameters.MaxConnectionAgeGrace = 5 * time.Second
 			}
 			cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-			set := receivertest.NewNopSettings()
+			set := receivertest.NewNopSettings(componentmetadata.Type)
 			core, obslogs := observer.New(zapcore.DebugLevel)
 			set.TelemetrySettings.Logger = zap.New(core)
 
@@ -583,7 +582,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.GRPC.IncludeMetadata = true
-	id := component.NewID(component.MustNewType("arrow"))
+	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
 
@@ -696,7 +695,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 	cfg.GRPC.Auth = &configauth.Authentication{
 		AuthenticatorID: authID,
 	}
-	id := component.NewID(component.MustNewType("arrow"))
+	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
 
@@ -763,7 +762,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.GRPC.IncludeMetadata = true
-	id := component.NewID(component.MustNewType("arrow"))
+	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
 
@@ -861,7 +860,7 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 	}
 	// No keepalive parameters are set
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(componentmetadata.Type)
 
 	set.ID = testReceiverID
 	r, err := NewFactory().CreateTraces(

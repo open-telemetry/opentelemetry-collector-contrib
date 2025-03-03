@@ -33,6 +33,7 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	integrationtestutils "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/integrationtestutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -236,7 +237,7 @@ type testCfg struct {
 }
 
 func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
-	settings := exportertest.NewNopSettings()
+	settings := exportertest.NewNopSettings(metadata.Type)
 	c := newLogsClient(settings, config)
 	var logs plog.Logs
 	if test.config.index != "main" {
@@ -264,7 +265,7 @@ func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 }
 
 func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
-	settings := exportertest.NewNopSettings()
+	settings := exportertest.NewNopSettings(metadata.Type)
 	c := newMetricsClient(settings, config)
 	metricData := prepareMetricsData(test.config.event)
 
@@ -280,7 +281,7 @@ func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 }
 
 func tracesTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
-	settings := exportertest.NewNopSettings()
+	settings := exportertest.NewNopSettings(metadata.Type)
 	c := newTracesClient(settings, config)
 	tracesData := prepareTracesData(test.config.index, test.config.source, test.config.sourcetype)
 
