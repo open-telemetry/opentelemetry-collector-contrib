@@ -6,12 +6,12 @@ require (
 	bitbucket.org/atlassian/go-asap/v2 v2.9.0
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.120.1-0.20250226024140-8099e51f9a77
+	go.opentelemetry.io/collector/component v0.120.1-0.20250303102058-a9bca17f1a4c
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250226024140-8099e51f9a77
-	go.opentelemetry.io/collector/config/configopaque v1.26.1-0.20250226024140-8099e51f9a77
-	go.opentelemetry.io/collector/confmap v1.26.1-0.20250226024140-8099e51f9a77
+	go.opentelemetry.io/collector/config/configopaque v1.26.1-0.20250303102058-a9bca17f1a4c
+	go.opentelemetry.io/collector/confmap v1.26.1-0.20250303102058-a9bca17f1a4c
 	go.opentelemetry.io/collector/confmap/xconfmap v0.120.1-0.20250226024140-8099e51f9a77
-	go.opentelemetry.io/collector/extension v0.120.1-0.20250226024140-8099e51f9a77
+	go.opentelemetry.io/collector/extension v0.120.1-0.20250303102058-a9bca17f1a4c
 	go.opentelemetry.io/collector/extension/auth v0.120.1-0.20250226024140-8099e51f9a77
 	go.opentelemetry.io/collector/extension/extensiontest v0.120.1-0.20250226024140-8099e51f9a77
 	go.uber.org/multierr v1.11.0
@@ -35,7 +35,7 @@ require (
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250226024140-8099e51f9a77 // indirect
-	go.opentelemetry.io/collector/pdata v1.26.1-0.20250226024140-8099e51f9a77 // indirect
+	go.opentelemetry.io/collector/pdata v1.26.1-0.20250303102058-a9bca17f1a4c // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
