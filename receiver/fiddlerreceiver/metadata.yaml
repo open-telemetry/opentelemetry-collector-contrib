@@ -1,0 +1,7 @@
+   type: fiddler
+   status:
+     class: receiver
+     stability:
+       development: [metrics]
+     codeowners:
+       active: [samikshan-fiddler]
