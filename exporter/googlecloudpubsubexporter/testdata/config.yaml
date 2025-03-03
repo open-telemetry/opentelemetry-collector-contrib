@@ -8,3 +8,7 @@ googlecloudpubsub/customname:
   watermark:
     behavior: earliest
     allowed_drift: 1h
+  ordering:
+    enabled: true
+    from_resource_attribute: ordering_key
+    remove_resource_attribute: true

@@ -95,6 +95,7 @@ type Capabilities struct {
 	ReportsOwnMetrics              bool `mapstructure:"reports_own_metrics"`
 	ReportsHealth                  bool `mapstructure:"reports_health"`
 	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
+	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -126,6 +127,10 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 
 	if c.AcceptsOpAMPConnectionSettings {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
+	}
+
+	if c.ReportsAvailableComponents {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents
 	}
 
 	return supportedCapabilities
@@ -245,6 +250,7 @@ func DefaultSupervisor() Supervisor {
 			ReportsOwnMetrics:              true,
 			ReportsHealth:                  true,
 			ReportsRemoteConfig:            false,
+			ReportsAvailableComponents:     false,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,

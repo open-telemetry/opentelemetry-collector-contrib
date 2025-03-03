@@ -26,12 +26,13 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				AllowAllKeys:  false,
-				AllowedKeys:   []string{"description", "group", "id", "name"},
-				IgnoredKeys:   []string{"safe_attribute"},
-				BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{14})"},
-				AllowedValues: []string{".+@mycompany.com"},
-				Summary:       debug,
+				AllowAllKeys:       false,
+				AllowedKeys:        []string{"description", "group", "id", "name"},
+				IgnoredKeys:        []string{"safe_attribute"},
+				BlockedValues:      []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{14})"},
+				BlockedKeyPatterns: []string{".*token.*", ".*api_key.*"},
+				AllowedValues:      []string{".+@mycompany.com"},
+				Summary:            debug,
 			},
 		},
 		{

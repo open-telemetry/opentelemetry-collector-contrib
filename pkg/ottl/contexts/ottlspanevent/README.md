@@ -30,6 +30,7 @@ The following paths are supported.
 | spanevent.time                         | time of the span event being processed                                                                                                                                        | `time.Time`                                                             |
 | spanevent.name                         | name of the span event being processed                                                                                                                                        | string                                                                  |
 | spanevent.dropped_attributes_count     | dropped_attributes_count of the span event being processed                                                                                                                    | int64                                                                   |
+| spanevent.event_index                  | index of the span event within the span                                                                                                                                       | int64                                                                   |
 
 ## Enums
 
