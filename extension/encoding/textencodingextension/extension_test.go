@@ -23,7 +23,7 @@ func TestExtension_Start(t *testing.T) {
 			name: "text",
 			getExtension: func() (extension.Extension, error) {
 				factory := NewFactory()
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(), factory.CreateDefaultConfig())
+				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), factory.CreateDefaultConfig())
 			},
 		},
 		{
@@ -32,7 +32,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Encoding = "gbk"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 		},
 		{
@@ -41,7 +41,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Encoding = "blabla"
-				return factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+				return factory.Create(context.Background(), extensiontest.NewNopSettings(factory.Type()), cfg)
 			},
 			expectedErr: "unsupported encoding 'blabla'",
 		},
