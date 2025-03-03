@@ -174,7 +174,7 @@ func (gtr *githubTracesReceiver) createParentSpan(
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
 
-	parentSpanID, err := newParentSpanID(event.GetWorkflowJob().GetID(), int(event.GetWorkflowJob().GetRunAttempt()))
+	parentSpanID, err := newParentSpanID(event.GetWorkflowJob().GetRunID(), int(event.GetWorkflowJob().GetRunAttempt()))
 	if err != nil {
 		return pcommon.SpanID{}, fmt.Errorf("failed to generate parent span ID: %w", err)
 	}
