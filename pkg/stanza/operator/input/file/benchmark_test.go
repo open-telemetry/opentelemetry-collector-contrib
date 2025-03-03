@@ -6,6 +6,7 @@ package file
 import (
 	"context"
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -20,35 +21,10 @@ import (
 )
 
 func BenchmarkReadExistingLogs(b *testing.B) {
-	testCases := []struct {
-		numLines int
-	}{
-		{
-			numLines: 0,
-		},
-		{
-			numLines: 1,
-		},
-		{
-			numLines: 2,
-		},
-		{
-			numLines: 10,
-		},
-		{
-			numLines: 20,
-		},
-		{
-			numLines: 100,
-		},
-		{
-			numLines: 1000,
-		},
-	}
-
-	for _, tc := range testCases {
-		b.Run(fmt.Sprintf("%d-lines", tc.numLines), func(b *testing.B) {
-			benchmarkReadExistingLogs(b, tc.numLines)
+	for n := range 6 { // powers of 10
+		numLines := int(math.Pow(10, float64(n)))
+		b.Run(fmt.Sprintf("%d-lines", numLines), func(b *testing.B) {
+			benchmarkReadExistingLogs(b, numLines)
 		})
 	}
 }
@@ -152,6 +128,15 @@ func (o *benchmarkOutput) Type() string { return "benchmark_output" }
 func (o *benchmarkOutput) Process(_ context.Context, _ *entry.Entry) error {
 	o.logsReceived++
 	if o.logsReceived == o.totalLogs {
+		o.doneChan <- struct{}{}
+		o.logsReceived = 0
+	}
+	return nil
+}
+
+func (o *benchmarkOutput) ProcessBatch(_ context.Context, entries []*entry.Entry) error {
+	o.logsReceived += len(entries)
+	if o.logsReceived >= o.totalLogs {
 		o.doneChan <- struct{}{}
 		o.logsReceived = 0
 	}
