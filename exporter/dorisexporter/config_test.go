@@ -31,10 +31,53 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoint = "http://localhost:8030"
 	defaultCfg.(*Config).MySQLEndpoint = "localhost:9030"
+	err = defaultCfg.(*Config).Validate()
+	require.NoError(t, err)
 
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	httpClientConfig.Timeout = 5 * time.Second
 	httpClientConfig.Endpoint = "http://localhost:8030"
+	httpClientConfig.Headers = map[string]configopaque.String{
+		"max_filter_ratio": "0.1",
+		"strict_mode":      "true",
+		"group_commit":     "async_mode",
+	}
+
+	fullCfg := &Config{
+		ClientConfig: httpClientConfig,
+		BackOffConfig: configretry.BackOffConfig{
+			Enabled:             true,
+			InitialInterval:     5 * time.Second,
+			MaxInterval:         30 * time.Second,
+			MaxElapsedTime:      300 * time.Second,
+			RandomizationFactor: backoff.DefaultRandomizationFactor,
+			Multiplier:          backoff.DefaultMultiplier,
+		},
+		QueueSettings: exporterhelper.QueueConfig{
+			Enabled:      true,
+			NumConsumers: 10,
+			QueueSize:    1000,
+		},
+		Table: Table{
+			Logs:    "otel_logs",
+			Traces:  "otel_traces",
+			Metrics: "otel_metrics",
+		},
+		Database:            "otel",
+		Username:            "admin",
+		Password:            configopaque.String("admin"),
+		CreateSchema:        true,
+		MySQLEndpoint:       "localhost:9030",
+		HistoryDays:         0,
+		CreateHistoryDays:   0,
+		ReplicationNum:      2,
+		TimeZone:            "Asia/Shanghai",
+		LogResponse:         true,
+		LabelPrefix:         "otel",
+		LogProgressInterval: 5,
+	}
+	err = fullCfg.Validate()
+	require.NoError(t, err)
 
 	tests := []struct {
 		id       component.ID
@@ -45,37 +88,8 @@ func TestLoadConfig(t *testing.T) {
 			expected: defaultCfg,
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "full"),
-			expected: &Config{
-				ClientConfig: httpClientConfig,
-				BackOffConfig: configretry.BackOffConfig{
-					Enabled:             true,
-					InitialInterval:     5 * time.Second,
-					MaxInterval:         30 * time.Second,
-					MaxElapsedTime:      300 * time.Second,
-					RandomizationFactor: backoff.DefaultRandomizationFactor,
-					Multiplier:          backoff.DefaultMultiplier,
-				},
-				QueueSettings: exporterhelper.QueueConfig{
-					Enabled:      true,
-					NumConsumers: 10,
-					QueueSize:    1000,
-				},
-				Table: Table{
-					Logs:    "otel_logs",
-					Traces:  "otel_traces",
-					Metrics: "otel_metrics",
-				},
-				Database:          "otel",
-				Username:          "admin",
-				Password:          configopaque.String("admin"),
-				CreateSchema:      true,
-				MySQLEndpoint:     "localhost:9030",
-				HistoryDays:       0,
-				CreateHistoryDays: 0,
-				ReplicationNum:    2,
-				TimeZone:          "Asia/Shanghai",
-			},
+			id:       component.NewIDWithName(metadata.Type, "full"),
+			expected: fullCfg,
 		},
 	}
 

@@ -42,8 +42,7 @@ EXTENSION_MODS := $(shell find ./extension/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR
 CONNECTOR_MODS := $(shell find ./connector/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 INTERNAL_MODS := $(shell find ./internal/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 PKG_MODS := $(shell find ./pkg/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-CMD_MODS_0 := $(shell find ./cmd/[a-m]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-CMD_MODS_1 := $(shell find ./cmd/[n-z]* $(FIND_MOD_ARGS) -not -path "./cmd/otel*col/*" -exec $(TO_MOD_DIR) )
+CMD_MODS_0 := $(shell find ./cmd/[a-z]* $(FIND_MOD_ARGS) -not -path "./cmd/otel*col/*" -exec $(TO_MOD_DIR) )
 CMD_MODS := $(CMD_MODS_0) $(CMD_MODS_1)
 OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(EX_PKG) $(EX_CMD) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) $(ROOT_DIR)
 ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(CONNECTOR_MODS) $(INTERNAL_MODS) $(PKG_MODS) $(CMD_MODS) $(OTHER_MODS)
@@ -84,7 +83,6 @@ all-groups:
 	@echo -e "\ninternal: $(INTERNAL_MODS)"
 	@echo -e "\npkg: $(PKG_MODS)"
 	@echo -e "\ncmd-0: $(CMD_MODS_0)"
-	@echo -e "\ncmd-1: $(CMD_MODS_1)"
 	@echo -e "\ncmd: $(CMD_MODS)"
 	@echo -e "\nother: $(OTHER_MODS)"
 	@echo -e "\nintegration: $(INTEGRATION_MODS)"
@@ -154,7 +152,7 @@ gotest:
 gotest-with-cover:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-cover"
 	$(GOCMD) tool covdata textfmt -i=./coverage/unit -o ./$(GROUP)-coverage.txt
-	
+
 .PHONY: gotest-with-junit
 gotest-with-junit:
 	@$(MAKE) for-all-target TARGET="test-with-junit"
@@ -292,9 +290,6 @@ for-cmd-target: $(CMD_MODS)
 
 .PHONY: for-cmd-0-target
 for-cmd-0-target: $(CMD_MODS_0)
-
-.PHONY: for-cmd-1-target
-for-cmd-1-target: $(CMD_MODS_1)
 
 .PHONY: for-other-target
 for-other-target: $(OTHER_MODS)
