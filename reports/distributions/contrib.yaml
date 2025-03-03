@@ -169,6 +169,7 @@ components:
         - mongodbatlas
         - mysql
         - namedpipe
+        - netflow
         - nginx
         - nsxt
         - ntp
