@@ -191,6 +191,18 @@ func (m Metric) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	return err
 }
 
+type MetricSlice pmetric.MetricSlice
+
+func (m MetricSlice) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
+	ms := pmetric.MetricSlice(m)
+	var err error
+	for i := 0; i < ms.Len(); i++ {
+		err = errors.Join(err, encoder.AppendObject(Metric(ms.At(i))))
+	}
+
+	return err
+}
+
 type NumberDataPointSlice pmetric.NumberDataPointSlice
 
 func (n NumberDataPointSlice) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
