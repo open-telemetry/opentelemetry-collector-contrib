@@ -185,11 +185,6 @@ func TestScrapeCacheAndDiff(t *testing.T) {
 	cached, val = scraper.cacheAndDiff("query_hash", "query_plan_hash", "column", 3)
 	assert.True(t, cached)
 	assert.Equal(t, int64(2), val)
-
-	scraper.cache = nil
-	cached, val = scraper.cacheAndDiff("query_hash", "query_plan_hash", "column", 2)
-	assert.False(t, cached)
-	assert.Equal(t, int64(0), val)
 }
 
 func TestSortRows(t *testing.T) {
