@@ -451,6 +451,9 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 	isResourceX := `attributes["resourceName"] == "resourceX"`
 	isResourceY := `attributes["resourceName"] == "resourceY"`
 
+	isResourceString := `IsString(attributes["resourceName"]) == true`
+	isAttributesMap := `IsMap(attributes) == true`
+
 	isMetricE := `name == "metricE"`
 	isMetricF := `name == "metricF"`
 	isMetricX := `name == "metricX"`
@@ -656,6 +659,26 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
 			expectSink0: pmetric.Metrics{},
 			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "resource/with_is_string_condition",
+			cfg: testConfig(
+				withRoute("resource", isResourceString, idSink0),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "resource/with_is_map_condition",
+			cfg: testConfig(
+				withRoute("resource", isAttributesMap, idSink0),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
 			expectSinkD: pmetric.Metrics{},
 		},
 		{

@@ -19,6 +19,8 @@ func createRouteFunction[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.
 func Functions[K any]() map[string]ottl.Factory[K] {
 	return ottl.CreateFactoryMap(
 		ottlfuncs.NewIsMatchFactory[K](),
+		ottlfuncs.NewIsMapFactory[K](),
+		ottlfuncs.NewIsStringFactory[K](),
 		ottlfuncs.NewDeleteKeyFactory[K](),
 		ottlfuncs.NewDeleteMatchingKeysFactory[K](),
 		// noop function, it is required since the parsing of conditions is not implemented yet,
