@@ -7,7 +7,8 @@ change_type: bug_fix
 component: elasticsearchexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fixes the getLocations() function.
+note: Fixes the getLocations() function. It only worked with a location start of 0, which is very unlikely when a
+profile contains more than one sample.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [38274]
