@@ -8,9 +8,12 @@ import (
 	"fmt"
 
 	"github.com/gogo/protobuf/proto"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 )
 
 const (
@@ -25,14 +28,15 @@ var errInvalidOTLPFormatStart = errors.New("unable to decode data length from me
 // More details can be found at:
 // https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-opentelemetry-100.html
 type Unmarshaler struct {
-	logger *zap.Logger
+	logger    *zap.Logger
+	buildInfo component.BuildInfo
 }
 
 var _ pmetric.Unmarshaler = (*Unmarshaler)(nil)
 
 // NewUnmarshaler creates a new instance of the Unmarshaler.
-func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
-	return &Unmarshaler{logger}
+func NewUnmarshaler(logger *zap.Logger, buildInfo component.BuildInfo) *Unmarshaler {
+	return &Unmarshaler{logger, buildInfo}
 }
 
 // UnmarshalMetrics deserializes the recordsas a length-delimited sequence of
@@ -51,6 +55,14 @@ func (u Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 		pos += int(n)
 		if err != nil {
 			return pmetric.Metrics{}, fmt.Errorf("unable to unmarshal input: %w", err)
+		}
+		for i := 0; i < req.Metrics().ResourceMetrics().Len(); i++ {
+			rm := req.Metrics().ResourceMetrics().At(i)
+			for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+				sm := rm.ScopeMetrics().At(j)
+				sm.Scope().SetName(metadata.ScopeName)
+				sm.Scope().SetVersion(u.buildInfo.Version)
+			}
 		}
 		req.Metrics().ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
 	}
