@@ -37,7 +37,7 @@ func (g *LogFileGenerator) generateLogLines(numLines, lineLength int) (logLines 
 	return logLines
 }
 
-func (g *LogFileGenerator) GenerateLogFile(numLines, lineLength int) (logFilePath string) {
+func (g *LogFileGenerator) GenerateLogFile(numLines int) (logFilePath string) {
 	f, err := os.CreateTemp(g.tb.TempDir(), "")
 	require.NoError(g.tb, err)
 	g.tb.Cleanup(func() { _ = f.Close() })

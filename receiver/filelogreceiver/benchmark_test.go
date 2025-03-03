@@ -9,13 +9,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver/internal/testutil"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver/internal/testutil"
 )
 
 func BenchmarkReadSingleStaticFile(b *testing.B) {
@@ -57,7 +58,7 @@ func BenchmarkReadSingleStaticFile(b *testing.B) {
 
 func benchmarkReadSingleStaticFile(b *testing.B, numLines int) {
 	logFileGenerator := testutil.NewLogFileGenerator(b)
-	logFilePath := logFileGenerator.GenerateLogFile(numLines, 999)
+	logFilePath := logFileGenerator.GenerateLogFile(numLines)
 
 	cfg := &FileLogConfig{
 		InputConfig: func() file.Config {
@@ -73,7 +74,7 @@ func benchmarkReadSingleStaticFile(b *testing.B, numLines int) {
 
 	b.ResetTimer()
 	for range b.N {
-		rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, sink)
+		rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 		require.NoError(b, err)
 		require.NoError(b, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
