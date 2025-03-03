@@ -14,6 +14,7 @@ import (
 	stefgrpc "github.com/splunk/stef/go/grpc"
 	"github.com/splunk/stef/go/grpc/stef_proto"
 	"github.com/splunk/stef/go/otel/oteltef"
+	"github.com/splunk/stef/go/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -102,7 +103,7 @@ func (m *mockMetricDestServer) onStream(grpcReader stefgrpc.GrpcReader, ackFunc 
 	}
 
 	for {
-		_, err = reader.Read()
+		err = reader.Read(pkg.ReadOptions{})
 		if err != nil {
 			m.logger.Error("Error reading from connection", zap.Error(err))
 			return err
@@ -147,7 +148,7 @@ func runTest(
 	// Make retries quick. We will be testing failure modes and don't want test to take too long.
 	cfg.RetryConfig.InitialInterval = 10 * time.Millisecond
 
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.TelemetrySettings.Logger = logger
 
 	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
@@ -314,7 +315,7 @@ func TestStartServerAfterClient(t *testing.T) {
 		TLSSetting: configtls.ClientConfig{Insecure: true},
 	}
 
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.TelemetrySettings.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
@@ -370,7 +371,7 @@ func TestCancelBlockedExport(t *testing.T) {
 		TLSSetting: configtls.ClientConfig{Insecure: true},
 	}
 
-	set := exportertest.NewNopSettingsWithType(exportertest.NopType)
+	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.TelemetrySettings.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
@@ -424,7 +425,7 @@ func TestCancelAfterExport(t *testing.T) {
 		TLSSetting: configtls.ClientConfig{Insecure: true},
 	}
 
-	set := exportertest.NewNopSettingsWithType(exportertest.NopType)
+	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.TelemetrySettings.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)

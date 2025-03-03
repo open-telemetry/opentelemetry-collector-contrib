@@ -88,7 +88,7 @@ func withBatcherEnabled(enabled bool) dataReceiverOption {
 
 func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
 	factory := receiver.NewFactory(
-		component.MustNewType("mockelasticsearch"),
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
 		receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
@@ -102,7 +102,7 @@ func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc cons
 	cfg.ServerConfig.Endpoint = esURL.Host
 	cfg.DecodeBulkRequests = es.decodeBulkRequest
 
-	set := receivertest.NewNopSettingsWithType(metadata.Type)
+	set := receivertest.NewNopSettings(metadata.Type)
 	// Use an actual logger to log errors.
 	set.Logger = zap.Must(zap.NewDevelopment())
 	logsReceiver, err := factory.CreateLogs(context.Background(), set, cfg, lc)

@@ -143,7 +143,7 @@ func TestLogsTransformProcessor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tln := new(consumertest.LogsSink)
 			factory := NewFactory()
-			ltp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), tt.config, tln)
+			ltp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), tt.config, tln)
 			require.NoError(t, err)
 			assert.True(t, ltp.Capabilities().MutatesData)
 
@@ -261,7 +261,7 @@ func TestProcessorShutdownWithSlowOperator(t *testing.T) {
 
 	tln := new(consumertest.LogsSink)
 	factory := NewFactory()
-	ltp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), config, tln)
+	ltp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), config, tln)
 	require.NoError(t, err)
 	assert.True(t, ltp.Capabilities().MutatesData)
 

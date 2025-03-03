@@ -43,3 +43,25 @@ service:
 | **lease_duration**  | The duration of the lease.                                                    | 15s             |
 | **renew_deadline**  | The deadline for renewing the lease. It must be less than the lease duration. | 10s             |
 | **retry_period**    | The period for retrying the leader election.                                  | 2s              |
+
+### Suggested RBAC
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: my-lease
+  namespace: default
+rules:
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+```
