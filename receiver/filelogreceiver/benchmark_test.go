@@ -6,6 +6,7 @@ package filelogreceiver
 import (
 	"context"
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -20,38 +21,10 @@ import (
 )
 
 func BenchmarkReadSingleStaticFile(b *testing.B) {
-	testCases := []struct {
-		numLines int
-	}{
-		{
-			numLines: 0,
-		},
-		{
-			numLines: 1,
-		},
-		{
-			numLines: 10,
-		},
-		{
-			numLines: 20,
-		},
-		{
-			numLines: 100,
-		},
-		{
-			numLines: 200,
-		},
-		{
-			numLines: 1_000,
-		},
-		{
-			numLines: 10_000,
-		},
-	}
-
-	for _, tc := range testCases {
-		b.Run(fmt.Sprintf("%d-lines", tc.numLines), func(b *testing.B) {
-			benchmarkReadSingleStaticFile(b, tc.numLines)
+	for n := range 6 {
+		numLines := int(math.Pow(10, float64(n)))
+		b.Run(fmt.Sprintf("%d-lines", numLines), func(b *testing.B) {
+			benchmarkReadSingleStaticFile(b, numLines)
 		})
 	}
 }
