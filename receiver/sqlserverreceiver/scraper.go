@@ -509,11 +509,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 // (1) returns true if the key is cached before
 // (2) returns positive value if the value is larger than the cached value
 func (s *sqlServerScraperHelper) cacheAndDiff(queryHash string, queryPlanHash string, column string, val int64) (bool, int64) {
-	if s.cache == nil {
-		s.logger.Error("LRU cache is not successfully initialized, skipping caching and diffing")
-		return false, 0
-	}
-
 	if val < 0 {
 		return false, 0
 	}
