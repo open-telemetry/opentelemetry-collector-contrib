@@ -55,8 +55,6 @@ go.opentelemetry.io/collector/confmap/xconfmap v0.120.1-0.20250303102058-a9bca17
 go.opentelemetry.io/collector/confmap/xconfmap v0.120.1-0.20250303102058-a9bca17f1a4c/go.mod h1:wkzt6fVdLqBP+ZvbJWCLbo68nedvmoK09wFpR17awgs=
 go.opentelemetry.io/collector/extension v0.120.1-0.20250303102058-a9bca17f1a4c h1:pAc8NWgFS7a+kV4vq8oMZvEE515+pR+2rwk7Q88g47k=
 go.opentelemetry.io/collector/extension v0.120.1-0.20250303102058-a9bca17f1a4c/go.mod h1:o2/Kk61I1G9XOdD8W4Tbrg05jD4P/QF0ecxYTcT8OZ8=
-go.opentelemetry.io/collector/extension/auth v0.120.1-0.20250303102058-a9bca17f1a4c h1:MSZyfNEEhYhz3ZvXYd/e9LXWsyc9Eq7L7O/hQWfnFBQ=
-go.opentelemetry.io/collector/extension/auth v0.120.1-0.20250303102058-a9bca17f1a4c/go.mod h1:tYAxnDfQfuaDctONV7cVsQJiYYNimMuD9J8UXyfGiEQ=
 go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250303102058-a9bca17f1a4c h1:oEMkxXiYhYgMixie9HX8wrNrHSm0ltrjkt/bNGpqouY=
 go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250303102058-a9bca17f1a4c/go.mod h1:LGgYWKt7fuTR8iHbioI6huT1EiC04I8hbZCz/ODDrkw=
 go.opentelemetry.io/collector/extension/extensiontest v0.120.1-0.20250303102058-a9bca17f1a4c h1:1fjf4TLrBOszZEbISTRgXGC3poqoANGevRT+NmNW0QM=
