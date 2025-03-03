@@ -4,6 +4,7 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
+	"container/heap"
 	"context"
 	"database/sql"
 	"encoding/hex"
@@ -533,36 +534,70 @@ func (s *sqlServerScraperHelper) cacheAndDiff(queryHash string, queryPlanHash st
 	return true, 0
 }
 
+type Item struct {
+	row      sqlquery.StringMap
+	priority int64
+	index    int
+}
+
+// reference: https://pkg.go.dev/container/heap#example-package-priorityQueue
+type priorityQueue []*Item
+
+func (pq priorityQueue) Len() int { return len(pq) }
+
+func (pq priorityQueue) Less(i, j int) bool {
+	return pq[i].priority > pq[j].priority
+}
+
+func (pq priorityQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+	pq[i].index = i
+	pq[j].index = j
+}
+
+func (pq *priorityQueue) Push(x any) {
+	n := len(*pq)
+	item := x.(*Item)
+	item.index = n
+	*pq = append(*pq, item)
+}
+
+func (pq *priorityQueue) Pop() any {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	old[n-1] = nil  // don't stop the GC from reclaiming the item eventually
+	item.index = -1 // for safety
+	*pq = old[0 : n-1]
+	return item
+}
+
 // sortRows sorts the rows based on the `values` slice in descending order and return the first M(M=maximum) rows
 // Input: (row: [row1, row2, row3], values: [100, 10, 1000], maximum: 2
 // Expected Output: (row: [row3, row1]
 func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquery.StringMap {
+	results := make([]sqlquery.StringMap, 0)
+
 	if len(rows) == 0 ||
 		len(values) == 0 ||
 		len(rows) != len(values) ||
 		maximum <= 0 {
 		return []sqlquery.StringMap{}
 	}
-
-	// Create an index slice to track the original indices of rows
-	indices := make([]int, len(values))
-	for i := range indices {
-		indices[i] = i
-	}
-
-	// Sort the indices based on the values slice
-	sort.Slice(indices, func(i, j int) bool {
-		return values[indices[i]] > values[indices[j]]
-	})
-
-	// Create a new sorted slice for rows based on the sorted indices
-	sorted := make([]sqlquery.StringMap, min(len(rows), int(maximum)))
-	for i, idx := range indices {
-		if i > int(maximum) {
-			break
+	pq := make(priorityQueue, len(rows))
+	for i, row := range rows {
+		value := values[i]
+		pq[i] = &Item{
+			row:      row,
+			priority: value,
+			index:    i,
 		}
-		sorted[i] = rows[idx]
 	}
+	heap.Init(&pq)
 
-	return sorted
+	for pq.Len() > 0 && len(results) < int(maximum) {
+		item := heap.Pop(&pq).(*Item)
+		results = append(results, item.row)
+	}
+	return results
 }
