@@ -125,20 +125,50 @@ func newNopParsedStatementConverter[K any]() ParsedStatementConverter[K, any] {
 	}
 }
 
-// ParserCollectionContextOption is a configurable ParserCollectionContext option.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
-type ParserCollectionContextOption[K, R any] func(*ParserCollectionConverter[R], *Parser[K])
+func newNopParsedConditionConverter[K any]() ParsedConditionConverter[K, any] {
+	return func(
+		_ *ParserCollection[any],
+		_ ConditionsGetter,
+		parsedConditions []*Condition[K],
+	) (any, error) {
+		return parsedConditions, nil
+	}
+}
 
 type (
+	// ParserCollectionContextOption is a configurable ParserCollectionContext option.
+	//
+	// Experimental: *NOTE* this API is subject to change or removal in the future.
+	ParserCollectionContextOption[K, R any] func(*ParserCollectionConverter[R], *Parser[K])
+	// ParseConditionsWithContext parses the given conditions into type [R] using the specified context's OTTL parser.
+	// The provided context must be supported by the ParserCollection, otherwise an error is returned.
+	// If the condition's Path does not provide their Path.Context value, the prependPathsContext argument should be set to true,
+	// so it rewrites the conditions prepending the missing paths contexts.
+	//
+	// Experimental: *NOTE* this API is subject to change or removal in the future.
 	ParseConditionsWithContext[R any] func(collection *ParserCollection[R], context string, conditions ConditionsGetter, prependPathsContext bool) (R, error)
+	// ParseStatementsWithContext parses the given statements into type [R] using the specified context's OTTL parser.
+	// The provided context must be supported by the ParserCollection, otherwise an error is returned.
+	// If the statement's Path does not provide their Path.Context value, the prependPathsContext argument should be set to true,
+	// so it rewrites the statements prepending the missing paths contexts.
+	//
+	// Experimental: *NOTE* this API is subject to change or removal in the future.
 	ParseStatementsWithContext[R any] func(collection *ParserCollection[R], context string, statements StatementsGetter, prependPathsContext bool) (R, error)
-	ParserCollectionConverter[R any]  struct {
+	// ParserCollectionConverter is a struct that holds the converters for parsing statements and conditions
+	// into a common representation of type [R].
+	//
+	// Experimental: *NOTE* this API is subject to change or removal in the future.
+	ParserCollectionConverter[R any] struct {
 		statementsConverter ParseStatementsWithContext[R]
 		conditionsConverter ParseConditionsWithContext[R]
 	}
 )
 
+// WithConditionConverter sets the condition converter for the given context.
+// The provided converter function will be used to convert parsed OTTL conditions into a common representation of type R.
+// The context's OTTL parser will parse the conditions, and the converter function will transform the parsed conditions into the desired representation.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func WithConditionConverter[K any, R any](converter ParsedConditionConverter[K, R]) ParserCollectionContextOption[K, R] {
 	return func(pcp *ParserCollectionConverter[R], parser *Parser[K]) {
 		pcp.conditionsConverter = func(pc *ParserCollection[R], context string, conditions ConditionsGetter, prependPathsContext bool) (R, error) {
@@ -177,6 +207,11 @@ func WithConditionConverter[K any, R any](converter ParsedConditionConverter[K, 
 	}
 }
 
+// WithStatementConverter sets the statement converter for the given context.
+// The provided converter function will be used to convert parsed OTTL statements into a common representation of type R.
+// The context's OTTL parser will parse the statements, and the converter function will transform the parsed statements into the desired representation.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func WithStatementConverter[K any, R any](converter ParsedStatementConverter[K, R]) ParserCollectionContextOption[K, R] {
 	return func(pcp *ParserCollectionConverter[R], parser *Parser[K]) {
 		pcp.statementsConverter = func(pc *ParserCollection[R], context string, statements StatementsGetter, prependPathsContext bool) (R, error) {
