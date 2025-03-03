@@ -130,7 +130,7 @@ var (
 	ErrInvalidLogField            = errors.New("services, span_names, span_kinds and metric_names are not valid for log records")
 	ErrMissingRequiredLogField    = errors.New(`at least one of "attributes", "libraries", "span_kinds", "resources", "log_bodies", "log_severity_texts" or "log_severity_number" field must be specified`)
 	ErrMissingRequiredMetricField = errors.New(`at least one of "metric_names" or "resources" field must be specified`)
-	ErrInvalidMetricField         = errors.New("span_names, span_kinds, resources, log_bodies, log_severity_texts, log_severity_number, services, attributes and libraries are not valid for metrics")
+	ErrInvalidMetricField         = errors.New(`"span_names", "span_kinds", "log_bodies", "log_severity_texts", "log_severity_number", "services", "attributes" and "libraries" are not valid for metrics`)
 
 	spanKinds = map[string]bool{
 		traceutil.SpanKindStr(ptrace.SpanKindInternal): true,

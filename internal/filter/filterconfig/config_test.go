@@ -161,13 +161,101 @@ func Test_CreateMetricMatchPropertiesFromDefault(t *testing.T) {
 			want:    nil,
 		},
 		{
-			name: "invalid",
+			name: "invalid log bodies",
 			config: &MatchProperties{
 				MetricNames: []string{"kind"},
 				Config: filterset.Config{
 					MatchType: filterset.Regexp,
 				},
 				LogBodies: []string{"body"},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid log severity texts",
+			config: &MatchProperties{
+				MetricNames: []string{"kind"},
+				Config: filterset.Config{
+					MatchType: filterset.Regexp,
+				},
+				LogSeverityTexts: []string{"text"},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid log severity number",
+			config: &MatchProperties{
+				MetricNames: []string{"kind"},
+				Config: filterset.Config{
+					MatchType: filterset.Regexp,
+				},
+				LogSeverityNumber: &LogSeverityNumberMatchProperties{},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid span names",
+			config: &MatchProperties{
+				MetricNames: []string{"kind"},
+				Config: filterset.Config{
+					MatchType: filterset.Regexp,
+				},
+				SpanNames: []string{"text"},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid span kinds",
+			config: &MatchProperties{
+				MetricNames: []string{"kind"},
+				Config: filterset.Config{
+					MatchType: filterset.Regexp,
+				},
+				SpanKinds: []string{"text"},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid services",
+			config: &MatchProperties{
+				MetricNames: []string{"kind"},
+				Config: filterset.Config{
+					MatchType: filterset.Regexp,
+				},
+				Services: []string{"text"},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid attributes",
+			config: &MatchProperties{
+				MetricNames: []string{"kind"},
+				Config: filterset.Config{
+					MatchType: filterset.Regexp,
+				},
+				Attributes: []Attribute{
+					{Key: "key", Value: "val"},
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "invalid span kinds",
+			config: &MatchProperties{
+				MetricNames: []string{"kind"},
+				Config: filterset.Config{
+					MatchType: filterset.Regexp,
+				},
+				Libraries: []InstrumentationLibrary{
+					{Name: "name"},
+				},
 			},
 			want:    nil,
 			wantErr: true,
