@@ -40,6 +40,10 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 
+	if cfg.MaxQuerySampleCount > 10000 {
+		return errors.New("`max_query_sample_count` must be between 0 and 10000")
+	}
+
 	if !directDBConnectionEnabled(cfg) {
 		if cfg.Server != "" || cfg.Username != "" || string(cfg.Password) != "" {
 			return errors.New("Found one or more of the following configuration options set: [server, port, username, password]. " +
