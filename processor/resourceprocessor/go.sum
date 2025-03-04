@@ -64,8 +64,8 @@ go.opentelemetry.io/collector/component/componenttest v0.121.0 h1:4q1/7WnP9LPKaY
 go.opentelemetry.io/collector/component/componenttest v0.121.0/go.mod h1:H7bEXDPMYNeWcHal0xyKlVfRPByVxale7hCJ+Myjq3Q=
 go.opentelemetry.io/collector/confmap v1.27.0 h1:OIjPcjij1NxkVQsQVmHro4+t1eYNFiUGib9+J9YBZhM=
 go.opentelemetry.io/collector/confmap v1.27.0/go.mod h1:tmOa6iw3FJsEgfBHKALqvcdfRtf71JZGor0wSM5MoH8=
-go.opentelemetry.io/collector/confmap/xconfmap v0.121.0 h1:pZ7SOl/i3kUIPdUwIeHHsYqzOHNLCwiyXZnwQ7rLO3E=
-go.opentelemetry.io/collector/confmap/xconfmap v0.121.0/go.mod h1:YI1Sp8mbYro/H3rqH4csTq68VUuie5WVb7LI1o5+tVc=
+go.opentelemetry.io/collector/confmap/xconfmap v0.120.0 h1:wt+9H/TLXhY6q40AVx+fn2XK/FhjXuwInwFq9X9+aik=
+go.opentelemetry.io/collector/confmap/xconfmap v0.120.0/go.mod h1:wkzt6fVdLqBP+ZvbJWCLbo68nedvmoK09wFpR17awgs=
 go.opentelemetry.io/collector/consumer v1.27.0 h1:JoXdoCeFDJG3d9TYrKHvTT4eBhzKXDVTkWW5mDfnLiY=
 go.opentelemetry.io/collector/consumer v1.27.0/go.mod h1:1B/+kTDUI6u3mCIOAkm5ityIpv5uC0Ll78IA50SNZ24=
 go.opentelemetry.io/collector/consumer/consumertest v0.121.0 h1:EIJPAXQY0w9j1k/e5OzJqOYVEr6WljKpJBjgkkp/hWw=
@@ -82,6 +82,8 @@ go.opentelemetry.io/collector/pipeline v0.121.0 h1:SOiocdyWCJCjWAb96HIxsy9enp2qy
 go.opentelemetry.io/collector/pipeline v0.121.0/go.mod h1:TO02zju/K6E+oFIOdi372Wk0MXd+Szy72zcTsFQwXl4=
 go.opentelemetry.io/collector/processor v0.121.0 h1:OcLrJ2F17cU0oDtXEYbGvL8vbku/kRQgAafSZ3+8jLY=
 go.opentelemetry.io/collector/processor v0.121.0/go.mod h1:BoFEMvPn5/p53eWz+R9cibIxCXzaRZ/RtcBPtvqXNaQ=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.121.0 h1:O4CzvJCV1soQOoHSew+FEGhbhXWPxJGB7pYYkAhdEUU=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.121.0/go.mod h1:CUuVIwN4uAJzuAEr3hYaQXmc865eS37eJl5jQ2LgbWc=
 go.opentelemetry.io/collector/processor/processortest v0.121.0 h1:1c3mEABELrxdC1obSQjIlfh5jZljJlzUravmzy1Mofo=
 go.opentelemetry.io/collector/processor/processortest v0.121.0/go.mod h1:oL4S/eguZ6XTK6IxAQXhXD9yWuRrG5/Maiskbf9HL0o=
 go.opentelemetry.io/collector/processor/xprocessor v0.121.0 h1:AiqDKzpEYZpiP9y3RRp4G9ym6fG2f9HByu3yWkSdd2E=

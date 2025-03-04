@@ -40,11 +40,11 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
 
-	lp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	lp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
 
-	pp, err := factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	pp, err := factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, pp)
 }
@@ -63,9 +63,9 @@ func TestInvalidAttributeActions(t *testing.T) {
 	_, err = factory.CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nil)
 	assert.Error(t, err)
 
-	_, err = factory.CreateLogs(context.Background(), processortest.NewNopSettings(), cfg, nil)
+	_, err = factory.CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nil)
 	assert.Error(t, err)
 
-	_, err = factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), cfg, nil)
+	_, err = factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, nil)
 	assert.Error(t, err)
 }
