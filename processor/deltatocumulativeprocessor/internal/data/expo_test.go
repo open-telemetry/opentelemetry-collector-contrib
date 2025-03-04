@@ -187,20 +187,18 @@ func TestExpoAdd(t *testing.T) {
 	for _, cs := range cases {
 		run := func(dp, in, want expdp) func(t *testing.T) {
 			return func(t *testing.T) {
+				var add Adder
 				is := datatest.New(t)
 
 				var (
-					dp   = ExpHistogram{dp.Into()}
-					in   = ExpHistogram{in.Into()}
-					want = ExpHistogram{want.Into()}
+					dp   = dp.Into()
+					in   = in.Into()
+					want = want.Into()
 				)
 
-				dp.SetTimestamp(0)
-				in.SetTimestamp(1)
-				want.SetTimestamp(1)
-
-				got := dp.Add(in)
-				is.Equal(want.DataPoint, got.DataPoint)
+				err := add.Exponential(dp, in)
+				is.Equal(nil, err)
+				is.Equal(want, dp)
 			}
 		}
 

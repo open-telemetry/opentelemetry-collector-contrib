@@ -444,8 +444,8 @@ github.com/rs/cors v1.11.1/go.mod h1:XyqrcTp5zjWr1wsJ8PIRZssZ8b/WMcMf71DJnit4EMU
 github.com/ryanuber/columnize v0.0.0-20160712163229-9b3edd62028f/go.mod h1:sm1tb6uqfes/u+d4ooFouqFdy9/2g9QGwK3SQygK0Ts=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 h1:nn5Wsu0esKSJiIVhscUtVbo7ada43DJhG55ua/hjS5I=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg65j358z/aeFdxmN0P9QXhEzd20vsDc=
-github.com/shirou/gopsutil/v4 v4.25.1 h1:QSWkTc+fu9LTAWfkZwZ6j8MSUk4A2LV7rbH0ZqmLjXs=
-github.com/shirou/gopsutil/v4 v4.25.1/go.mod h1:RoUCUpndaJFtT+2zsZzzmhvbfGoDCJ7nFXKJf8GqJbI=
+github.com/shirou/gopsutil/v4 v4.25.2 h1:NMscG3l2CqtWFS86kj3vP7soOczqrQYIEhO/pMvvQkk=
+github.com/shirou/gopsutil/v4 v4.25.2/go.mod h1:34gBYJzyqCDT11b6bMHP0XCvWeU3J61XRT7a2EmCRTA=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
@@ -521,8 +521,8 @@ go.opentelemetry.io/collector/extension v0.120.1-0.20250303102058-a9bca17f1a4c h
 go.opentelemetry.io/collector/extension v0.120.1-0.20250303102058-a9bca17f1a4c/go.mod h1:o2/Kk61I1G9XOdD8W4Tbrg05jD4P/QF0ecxYTcT8OZ8=
 go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250303102058-a9bca17f1a4c h1:oEMkxXiYhYgMixie9HX8wrNrHSm0ltrjkt/bNGpqouY=
 go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250303102058-a9bca17f1a4c/go.mod h1:LGgYWKt7fuTR8iHbioI6huT1EiC04I8hbZCz/ODDrkw=
-go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250303102058-a9bca17f1a4c h1:iD7x/vLxAIMaJjtd7C3ja3g9f63hDZxE7386S4fKN4Y=
-go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250303102058-a9bca17f1a4c/go.mod h1:KDcvx46GJ0CjNP84hZJ7AXqarsdzWhiIs78BZzcwyrU=
+go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250227134758-6a98ee8b14a2 h1:i/2MhYs0BNgJe30wXeX54/NZ9uQWes0WRxukor4lY0I=
+go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250227134758-6a98ee8b14a2/go.mod h1:FJZfAx6zs6ShjqrugPOAPFCkXyjYxfP93tFYw/KGOqE=
 go.opentelemetry.io/collector/featuregate v1.26.1-0.20250303102058-a9bca17f1a4c h1:GuoIWvJh11xT9ZkDtDw5+IvOKu4ntfkl3b097RJBGZ4=
 go.opentelemetry.io/collector/featuregate v1.26.1-0.20250303102058-a9bca17f1a4c/go.mod h1:Y/KsHbvREENKvvN9RlpiWk/IGBK+CATBYzIIpU7nccc=
 go.opentelemetry.io/collector/pdata v1.26.1-0.20250303102058-a9bca17f1a4c h1:Nz5tj0LMv2hah7NJspyNTSaebkpDb+FmPW8wrDJKRxs=
