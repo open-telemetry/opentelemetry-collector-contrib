@@ -79,6 +79,8 @@ github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKe
 github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
+github.com/itchyny/timefmt-go v0.1.6 h1:ia3s54iciXDdzWzwaVKXZPbiXzxxnv1SPGFfM/myJ5Q=
+github.com/itchyny/timefmt-go v0.1.6/go.mod h1:RRDZYC5s9ErkjQvTvvU7keJjxUYzIISJGxm9/mAERQg=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
@@ -211,8 +213,8 @@ go.opentelemetry.io/collector/extension v0.120.1-0.20250303102058-a9bca17f1a4c h
 go.opentelemetry.io/collector/extension v0.120.1-0.20250303102058-a9bca17f1a4c/go.mod h1:o2/Kk61I1G9XOdD8W4Tbrg05jD4P/QF0ecxYTcT8OZ8=
 go.opentelemetry.io/collector/extension/auth v0.120.1-0.20250303102058-a9bca17f1a4c h1:MSZyfNEEhYhz3ZvXYd/e9LXWsyc9Eq7L7O/hQWfnFBQ=
 go.opentelemetry.io/collector/extension/auth v0.120.1-0.20250303102058-a9bca17f1a4c/go.mod h1:tYAxnDfQfuaDctONV7cVsQJiYYNimMuD9J8UXyfGiEQ=
-go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250303102058-a9bca17f1a4c h1:oEMkxXiYhYgMixie9HX8wrNrHSm0ltrjkt/bNGpqouY=
-go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250303102058-a9bca17f1a4c/go.mod h1:LGgYWKt7fuTR8iHbioI6huT1EiC04I8hbZCz/ODDrkw=
+go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250227134758-6a98ee8b14a2 h1:5q7MmNczGWqmbWyJPx7xI6ZBn7ZXonOwJpSeQYRE1Bc=
+go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250227134758-6a98ee8b14a2/go.mod h1:LGgYWKt7fuTR8iHbioI6huT1EiC04I8hbZCz/ODDrkw=
 go.opentelemetry.io/collector/extension/extensioncapabilities v0.120.1-0.20250303102058-a9bca17f1a4c h1:wvFwhuYUc+6Wz8PeFL+Ch9ennBF3f1jA/mq9Brav5A0=
 go.opentelemetry.io/collector/extension/extensioncapabilities v0.120.1-0.20250303102058-a9bca17f1a4c/go.mod h1:3PBL7XUwQIzEhnMn12w6XC7sSh9JRUvmdlWs3KJ9KLc=
 go.opentelemetry.io/collector/extension/extensiontest v0.120.1-0.20250303102058-a9bca17f1a4c h1:1fjf4TLrBOszZEbISTRgXGC3poqoANGevRT+NmNW0QM=
