@@ -6,7 +6,6 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
-
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.121.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.121.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.121.0
@@ -39,6 +38,8 @@ require (
 )
 
 require github.com/fsnotify/fsnotify v1.8.0 // indirect
+
+require github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.121.0
 
 require (
 	cloud.google.com/go/auth v0.9.5 // indirect
@@ -109,6 +110,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.121.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.121.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.121.0 // indirect
+	golang.org/x/crypto v0.35.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
