@@ -1,0 +1,107 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: db_name
+                value:
+                  stringValue: master
+              - key: client_address
+                value:
+                  stringValue: "172.19.0.1"
+              - key: client_port
+                value:
+                  intValue: 0
+              - key: query_start
+                value:
+                  stringValue: 2025-02-12T16:37:54.843+08:00
+              - key: session_id
+                value:
+                  intValue: 0
+              - key: session_status
+                value:
+                  stringValue: running
+              - key: request_status
+                value:
+                  stringValue: running
+              - key: host_name
+                value:
+                  stringValue: DESKTOP-GHAEGRD
+              - key: command
+                value:
+                  stringValue: SELECT
+              - key: statement_text
+                value:
+                  stringValue: "SELECT DB_NAME ( r.database_id ), ISNULL ( c.client_net_address, ? ), ISNULL ( c.client_tcp_port, ? ), CONVERT ( NVARCHAR, TODATETIMEOFFSET ( r.start_time, DATEPART ( TZOFFSET, SYSDATETIMEOFFSET ( ) ) ), ? ), s.session_id, s.STATUS, r.STATUS, ISNULL ( s.host_name, ? ), r.command, SUBSTRING ( o.TEXT, ( r.statement_start_offset / ? ) + ? ( ( CASE r.statement_end_offset WHEN - ? THEN DATALENGTH ( o.TEXT ) ELSE r.statement_end_offset END - r.statement_start_offset ) / ? ) + ? ), r.blocking_session_id, ISNULL ( r.wait_type, ? ), r.wait_time, r.wait_resource, r.open_transaction_count, r.transaction_id, r.percent_complete, r.estimated_completion_time, r.cpu_time, r.total_elapsed_time, r.reads, r.writes, r.logical_reads, r.transaction_isolation_level, r.LOCK_TIMEOUT, r.DEADLOCK_PRIORITY, r.row_count, r.query_hash, r.query_plan_hash, ISNULL ( r.context_info, CONVERT ( VARBINARY, ? ) ), s.login_name FROM sys.dm_exec_requests r INNER JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id INNER JOIN sys.dm_exec_connections c ON s.session_id = c.session_id CROSS APPLY sys.dm_exec_sql_text ( r.plan_handle )"
+              - key: blocking_session_id
+                value:
+                  intValue: 0
+              - key: wait_type
+                value:
+                  stringValue: ""
+              - key: wait_time
+                value:
+                  intValue: 0
+              - key: wait_resource
+                value:
+                  stringValue: ""
+              - key: open_transaction_count
+                value:
+                  intValue: 0
+              - key: transaction_id
+                value:
+                  intValue: 0
+              - key: percent_complete
+                value:
+                  doubleValue: 0
+              - key: estimated_completion_time
+                value:
+                  doubleValue: 0
+              - key: cpu_time
+                value:
+                  intValue: 0
+              - key: total_elapsed_time
+                value:
+                  intValue: 0
+              - key: reads
+                value:
+                  intValue: 0
+              - key: writes
+                value:
+                  intValue: 0
+              - key: logical_reads
+                value:
+                  intValue: 0
+              - key: transaction_isolation_level
+                value:
+                  intValue: 0
+              - key: lock_timeout
+                value:
+                  intValue: 0
+              - key: deadlock_priority
+                value:
+                  intValue: 0
+              - key: row_count
+                value:
+                  intValue: 0
+              - key: query_hash
+                value:
+                  stringValue: "307837304133423133304231303438443444"
+              - key: query_plan_hash
+                value:
+                  stringValue: "307831343032313046363442373838434239"
+              - key: context_info
+                value:
+                  stringValue: ""
+              - key: username
+                value:
+                  stringValue: sa
+              - key: wait_code
+                value:
+                  intValue: 0
+              - key: wait_category
+                value:
+                  stringValue: Unknown
+            body:
+              stringValue: sample
+        scope: {}
