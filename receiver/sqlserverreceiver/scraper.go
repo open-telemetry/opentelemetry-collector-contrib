@@ -494,6 +494,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 }
 
 func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (plog.Logs, error) {
+	// Constants are the column names of the database status
 	const DBName = "db_name"
 	const clientAddress = "client_address"
 	const clientPort = "client_port"
@@ -539,6 +540,12 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	var errs []error
 	logs := plog.NewLogs()
 
+	resourceLog := logs.ResourceLogs().AppendEmpty()
+	resourceLog.Resource().Attributes().PutStr("db.system.type", "microsoft.sql_server")
+
+	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
+	scopedLog.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver")
+	scopedLog.Scope().SetVersion("v0.0.1")
 	for _, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
@@ -637,8 +644,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				s.logger.Error(fmt.Sprintf("failed to obfuscate SQL statement value: %s err: %s", row[statementText], err))
 			}
 
-			// TODO: report this value
-			record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+			record := scopedLog.LogRecords().AppendEmpty()
 			record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 			record.Attributes().PutStr(DBName, row[DBName])
 			record.Attributes().PutStr(clientAddress, row[clientAddress])
