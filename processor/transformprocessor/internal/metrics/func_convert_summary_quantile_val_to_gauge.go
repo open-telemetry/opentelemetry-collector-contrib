@@ -11,18 +11,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
 type convertSummaryQuantileValToGaugeArguments struct {
 	AttributeKey ottl.Optional[string]
 }
 
-func newConvertSummaryQuantileValToGaugeFactory() ottl.Factory[ottldatapoint.TransformContext] {
+func newConvertSummaryQuantileValToGaugeFactory() ottl.Factory[ottlmetric.TransformContext] {
 	return ottl.NewFactory("convert_summary_quantile_val_to_gauge", &convertSummaryQuantileValToGaugeArguments{}, createConvertSummaryQuantileValToGaugeFunction)
 }
 
-func createConvertSummaryQuantileValToGaugeFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+func createConvertSummaryQuantileValToGaugeFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	args, ok := oArgs.(*convertSummaryQuantileValToGaugeArguments)
 
 	if !ok {
@@ -32,12 +32,12 @@ func createConvertSummaryQuantileValToGaugeFunction(_ ottl.FunctionContext, oArg
 	return convertSummaryQuantileValToGauge(args.AttributeKey)
 }
 
-func convertSummaryQuantileValToGauge(attrKey ottl.Optional[string]) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+func convertSummaryQuantileValToGauge(attrKey ottl.Optional[string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	attributeKey := "quantile"
 	if !attrKey.IsEmpty() {
 		attributeKey = attrKey.Get()
 	}
-	return func(_ context.Context, tCtx ottldatapoint.TransformContext) (any, error) {
+	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 		if metric.Type() != pmetric.MetricTypeSummary {
 			return nil, nil
