@@ -42,7 +42,7 @@ type S3UploaderConfig struct {
 	Compression configcompression.Type `mapstructure:"compression"`
 }
 
-type MarshalerType string  
+type MarshalerType string
 
 const (
 	OtlpProtobuf MarshalerType = "otlp_proto"
