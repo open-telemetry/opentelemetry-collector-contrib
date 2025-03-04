@@ -297,6 +297,7 @@ receiver/sqlserverreceiver
 receiver/sshcheckreceiver
 receiver/statsdreceiver
 receiver/systemdreceiver
+receiver/tcpcheckreceiver
 receiver/tcplogreceiver
 receiver/tlscheckreceiver
 receiver/udplogreceiver
@@ -305,5 +306,6 @@ receiver/wavefrontreceiver
 receiver/webhookeventreceiver
 receiver/windowseventlogreceiver
 receiver/windowsperfcountersreceiver
+receiver/windowsservicereceiver
 scraper/zookeeperscraper
 receiver/zookeeperreceiver
