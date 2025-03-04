@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
@@ -32,7 +31,7 @@ func TestCreateTraces(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = component.MustNewIDWithName("solace", "factory")
 	receiver, err := factory.CreateTraces(
 		context.Background(),
@@ -48,7 +47,7 @@ func TestCreateTraces(t *testing.T) {
 
 func TestCreateTracesWrongConfig(t *testing.T) {
 	factory := NewFactory()
-	_, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(), nil, nil)
+	_, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), nil, nil)
 	assert.Equal(t, pipeline.ErrSignalNotSupported, err)
 }
 
@@ -56,7 +55,7 @@ func TestCreateTracesBadConfigNoAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "some-queue"
 	factory := NewFactory()
-	_, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	_, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.Equal(t, errMissingAuthDetails, err)
 }
 
@@ -65,12 +64,12 @@ func TestCreateTracesBadConfigIncompleteAuth(t *testing.T) {
 	cfg.Queue = "some-queue"
 	cfg.Auth = Authentication{PlainText: &SaslPlainTextConfig{Username: "someUsername"}} // missing password
 	factory := NewFactory()
-	_, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	_, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.Equal(t, errMissingPlainTextParams, err)
 }
 
 func TestCreateTracesBadMetrics(t *testing.T) {
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = component.MustNewIDWithName("solace", "factory")
 	// the code here sets up a custom meter provider
 	// to trigger the error condition required for this test
@@ -91,7 +90,6 @@ func TestCreateTracesBadMetrics(t *testing.T) {
 		require.NoError(t, provider.Shutdown(context.Background()))
 	}()
 	set.MeterProvider = provider
-	set.MetricsLevel = configtelemetry.LevelDetailed
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()

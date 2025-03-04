@@ -11,12 +11,13 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 )
 
 type textLogCodec struct {
-	enc                   *textutils.Encoding
+	decoder               *encoding.Decoder
 	marshalingSeparator   string
 	unmarshalingSeparator *regexp.Regexp
 }
@@ -50,11 +51,11 @@ func (r *textLogCodec) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	for s.Scan() {
 		l := p.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		l.SetObservedTimestamp(now)
-		decoded, err := r.enc.Decode(s.Bytes())
+		decoded, err := textutils.DecodeAsString(r.decoder, s.Bytes())
 		if err != nil {
 			return p, err
 		}
-		l.Body().SetStr(string(decoded))
+		l.Body().SetStr(decoded)
 	}
 
 	return p, nil

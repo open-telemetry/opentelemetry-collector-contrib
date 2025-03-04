@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
 )
 
 func TestCreateNewLogReceiver(t *testing.T) {
@@ -59,7 +61,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			rec, err := newLogsReceiver(receivertest.NewNopSettings(), test.cfg, test.consumer)
+			rec, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), test.cfg, test.consumer)
 			if test.err == nil {
 				require.NotNil(t, rec)
 			} else {
@@ -121,7 +123,7 @@ func TestHandleReq(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			consumer := consumertest.NewNop()
-			receiver, err := newLogsReceiver(receivertest.NewNopSettings(), test.cfg, consumer)
+			receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), test.cfg, consumer)
 			require.NoError(t, err, "Failed to create receiver")
 
 			r := receiver.(*eventReceiver)
@@ -203,7 +205,7 @@ func TestFailedReq(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			consumer := consumertest.NewNop()
-			receiver, err := newLogsReceiver(receivertest.NewNopSettings(), test.cfg, consumer)
+			receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), test.cfg, consumer)
 			require.NoError(t, err, "Failed to create receiver")
 
 			r := receiver.(*eventReceiver)
@@ -225,13 +227,13 @@ func TestHealthCheck(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	defaultConfig.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
-	receiver, err := newLogsReceiver(receivertest.NewNopSettings(), *defaultConfig, consumer)
+	receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), *defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
 
 	r := receiver.(*eventReceiver)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "failed to start receiver")
 	defer func() {
-		require.NoError(t, r.Shutdown(context.Background()), "failed to shutdown revceiver")
+		require.NoError(t, r.Shutdown(context.Background()), "failed to shutdown receiver")
 	}()
 
 	w := httptest.NewRecorder()

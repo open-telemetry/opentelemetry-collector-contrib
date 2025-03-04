@@ -820,6 +820,23 @@ Total memory  capacity of the host system.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MiBy | Sum | Double | Cumulative | false |
 
+### vcenter.vm.cpu.time
+
+CPU time spent in idle, ready or wait state.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| cpu_state | CPU time spent in idle, ready or idle state. | Str: ``idle``, ``ready``, ``wait`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
+
 ### vcenter.vm.memory.granted
 
 The amount of memory that is granted to a VM.
@@ -827,6 +844,40 @@ The amount of memory that is granted to a VM.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.vm.network.broadcast.packet.rate
+
+The rate of broadcast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {packets/s} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
+
+### vcenter.vm.network.multicast.packet.rate
+
+The rate of multicast packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {packets/s} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ## Resource Attributes
 

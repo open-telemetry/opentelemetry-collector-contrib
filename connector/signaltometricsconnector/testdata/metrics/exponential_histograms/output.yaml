@@ -15,7 +15,7 @@ resourceMetrics:
             stringValue: test
     scopeMetrics:
       - metrics:
-          - description: An exponential histogram created from gague values
+          - description: An exponential histogram created from gauge values
             exponentialHistogram:
               aggregationTemporality: 1
               dataPoints:

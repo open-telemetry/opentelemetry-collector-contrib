@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
 )
 
 func TestPayloadToLogRecord(t *testing.T) {
@@ -352,6 +353,90 @@ func TestHandleRequest(t *testing.T) {
 	}
 }
 
+func TestEmptyAttributes(t *testing.T) {
+	now := time.Time{}
+
+	testCases := []struct {
+		name       string
+		payload    string
+		attributes map[string]string
+	}{
+		{
+			name: "Empty Attributes Map",
+			payload: `{ "ClientIP": "89.163.253.200", "ClientRequestHost": "www.theburritobot0.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87" }
+{ "ClientIP" : "89.163.253.201", "ClientRequestHost": "www.theburritobot1.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87" }`,
+			attributes: map[string]string{},
+		},
+		{
+			name: "nil Attributes",
+			payload: `{ "ClientIP": "89.163.253.200", "ClientRequestHost": "www.theburritobot0.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87" }
+{ "ClientIP" : "89.163.253.201", "ClientRequestHost": "www.theburritobot1.com", "ClientRequestMethod": "GET", "ClientRequestURI": "/static/img/testimonial-hipster.png", "EdgeEndTimestamp": "2023-03-03T05:30:05Z", "EdgeResponseBytes": "69045", "EdgeResponseStatus": "200", "EdgeStartTimestamp": "2023-03-03T05:29:05Z", "RayID": "3a6050bcbe121a87" }`,
+			attributes: nil,
+		},
+	}
+
+	expectedLogs := func(t *testing.T, payload string) plog.Logs {
+		logs := plog.NewLogs()
+		rl := logs.ResourceLogs().AppendEmpty()
+		sl := rl.ScopeLogs().AppendEmpty()
+		sl.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver")
+
+		for idx, line := range strings.Split(payload, "\n") {
+			lr := sl.LogRecords().AppendEmpty()
+
+			require.NoError(t, lr.Attributes().FromRaw(map[string]any{
+				"ClientIP":            fmt.Sprintf("89.163.253.%d", 200+idx),
+				"ClientRequestHost":   fmt.Sprintf("www.theburritobot%d.com", idx),
+				"ClientRequestMethod": "GET",
+				"ClientRequestURI":    "/static/img/testimonial-hipster.png",
+				"EdgeEndTimestamp":    "2023-03-03T05:30:05Z",
+				"EdgeResponseBytes":   "69045",
+				"EdgeResponseStatus":  "200",
+				"EdgeStartTimestamp":  "2023-03-03T05:29:05Z",
+				"RayID":               "3a6050bcbe121a87",
+			}))
+
+			lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
+			ts, err := time.Parse(time.RFC3339, "2023-03-03T05:29:05Z")
+			require.NoError(t, err)
+			lr.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+			lr.SetSeverityNumber(plog.SeverityNumberInfo)
+			lr.SetSeverityText(plog.SeverityNumberInfo.String())
+
+			var log map[string]any
+			err = json.Unmarshal([]byte(line), &log)
+			require.NoError(t, err)
+
+			payloadToExpectedBody(t, line, lr)
+		}
+
+		return logs
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			recv := newReceiver(t, &Config{
+				Logs: LogsConfig{
+					Endpoint:       "localhost:0",
+					TLS:            &configtls.ServerConfig{},
+					TimestampField: "EdgeStartTimestamp",
+					Attributes:     tc.attributes,
+				},
+			},
+				&consumertest.LogsSink{},
+			)
+			var logs plog.Logs
+			rawLogs, err := parsePayload([]byte(tc.payload))
+			if err == nil {
+				logs = recv.processLogs(pcommon.NewTimestampFromTime(time.Now()), rawLogs)
+			}
+			require.NoError(t, err)
+			require.NotNil(t, logs)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs(t, tc.payload), logs, plogtest.IgnoreObservedTimestamp()))
+		})
+	}
+}
+
 func gzippedMessage(message string) string {
 	var b bytes.Buffer
 	w := gzip.NewWriter(&b)
@@ -364,7 +449,7 @@ func gzippedMessage(message string) string {
 }
 
 func newReceiver(t *testing.T, cfg *Config, nextConsumer consumer.Logs) *logsReceiver {
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.Logger = zaptest.NewLogger(t)
 	r, err := newLogsReceiver(set, cfg, nextConsumer)
 	require.NoError(t, err)

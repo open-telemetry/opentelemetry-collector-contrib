@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector/internal/metadata"
@@ -40,9 +41,14 @@ type connectorImp struct {
 
 func newConnector(logger *zap.Logger, set component.TelemetrySettings, config component.Config) (*connectorImp, error) {
 	hm := newHostMetrics()
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(set,
-		metadata.WithGrafanacloudHostCountCallback(func() int64 { return int64(hm.count()) }),
-	)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
+	if err != nil {
+		return nil, err
+	}
+	err = telemetryBuilder.RegisterGrafanacloudHostCountCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(int64(hm.count()))
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}

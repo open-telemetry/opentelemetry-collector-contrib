@@ -7,58 +7,35 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector/internal/metadata"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestSetupTelemetry(t *testing.T) {
-	testTel := SetupTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(
-		testTel.NewTelemetrySettings(),
-		metadata.WithGrafanacloudHostCountCallback(func() int64 { return 1 }),
-	)
+	testTel := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
-	require.NotNil(t, tb)
+	defer tb.Shutdown()
+	require.NoError(t, tb.RegisterGrafanacloudHostCountCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(1)
+		return nil
+	}))
 	tb.GrafanacloudDatapointCount.Add(context.Background(), 1)
 	tb.GrafanacloudFlushCount.Add(context.Background(), 1)
+	AssertEqualGrafanacloudDatapointCount(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualGrafanacloudFlushCount(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualGrafanacloudHostCount(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 
-	testTel.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_grafanacloud_datapoint_count",
-			Description: "Number of datapoints sent to Grafana Cloud",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_grafanacloud_flush_count",
-			Description: "Number of metrics flushes",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_grafanacloud_host_count",
-			Description: "Number of unique hosts",
-			Unit:        "1",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }

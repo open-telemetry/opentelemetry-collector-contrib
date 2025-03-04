@@ -17,6 +17,13 @@ doris/full:
   replication_num: 2
   timezone: Asia/Shanghai
   timeout: 5s
+  label_prefix: otel
+  log_response: true
+  headers:
+    max_filter_ratio: "0.1"
+    strict_mode: "true"
+    group_commit: "async_mode"
+  log_progress_interval: 5
   sending_queue:
     enabled: true
     num_consumers: 10

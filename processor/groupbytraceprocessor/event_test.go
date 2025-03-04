@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -28,7 +27,7 @@ import (
 )
 
 func TestEventCallback(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 
 	for _, tt := range []struct {
@@ -110,7 +109,7 @@ func TestEventCallback(t *testing.T) {
 }
 
 func TestEventCallbackNotSet(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	for _, tt := range []struct {
 		casename string
@@ -159,7 +158,7 @@ func TestEventCallbackNotSet(t *testing.T) {
 }
 
 func TestEventInvalidPayload(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	for _, tt := range []struct {
 		casename         string
@@ -230,7 +229,7 @@ func TestEventInvalidPayload(t *testing.T) {
 }
 
 func TestEventUnknownType(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	// prepare
 	logger, err := zap.NewDevelopment()
@@ -255,7 +254,7 @@ func TestEventUnknownType(t *testing.T) {
 }
 
 func TestEventTracePerWorker(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	for _, tt := range []struct {
 		casename  string
@@ -360,7 +359,7 @@ func TestEventConsumeConsistency(t *testing.T) {
 }
 
 func TestEventShutdown(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	// prepare
 	wg := sync.WaitGroup{}
@@ -488,7 +487,7 @@ func TestPeriodicMetrics(t *testing.T) {
 }
 
 func TestForceShutdown(t *testing.T) {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	// prepare
 	em := newEventMachine(zap.NewNop(), 50, 1, 1_000, tel)
@@ -567,7 +566,6 @@ func setupTestTelemetry() testTelemetry {
 func (tt *testTelemetry) newTelemetrySettings() component.TelemetrySettings {
 	set := componenttest.NewNopTelemetrySettings()
 	set.MeterProvider = tt.meterProvider
-	set.MetricsLevel = configtelemetry.LevelDetailed
 	return set
 }
 

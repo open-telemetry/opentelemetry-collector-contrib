@@ -5,7 +5,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"bytes"
-	"context"
 	"encoding/hex"
 	stdjson "encoding/json"
 	"errors"
@@ -20,7 +19,6 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/api/monitoredres"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -113,7 +111,7 @@ func getLogEntryDescriptor() protoreflect.MessageDescriptor {
 // schema; this ensures that a numeric value in the input is correctly
 // translated to either an integer or a double in the output. It falls back to
 // plain JSON decoding if payload type is not available in the proto registry.
-func TranslateLogEntry(_ context.Context, _ *zap.Logger, data []byte) (pcommon.Resource, plog.LogRecord, error) {
+func TranslateLogEntry(data []byte) (pcommon.Resource, plog.LogRecord, error) {
 	lr := plog.NewLogRecord()
 	res := pcommon.NewResource()
 

@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"github.com/klauspost/compress/zstd"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/signalfx/sapm-proto/sapmprotocol"
@@ -34,6 +34,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver/internal/metadata"
 )
 
 func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
@@ -245,7 +246,7 @@ func compressZstd(reqBytes []byte) ([]byte, error) {
 }
 
 func setupReceiver(t *testing.T, config *Config, sink consumer.Traces) receiver.Traces {
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 	sr, err := newReceiver(params, config, sink)
 	assert.NoError(t, err, "should not have failed to create the SAPM receiver")
 	t.Log("Starting")
@@ -370,12 +371,12 @@ func TestStatusCode(t *testing.T) {
 	}{
 		{
 			name:           "non-permanent error",
-			err:            errors.New("non-permanenet error"),
+			err:            errors.New("non-permanent error"),
 			expectedStatus: http.StatusServiceUnavailable,
 		},
 		{
 			name:           "permanent error",
-			err:            consumererror.NewPermanent(errors.New("non-permanenet error")),
+			err:            consumererror.NewPermanent(errors.New("non-permanent error")),
 			expectedStatus: http.StatusBadRequest,
 		},
 	}

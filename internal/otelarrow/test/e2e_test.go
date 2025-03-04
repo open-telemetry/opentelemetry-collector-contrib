@@ -7,7 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"regexp"
 	"strings"
 	"sync"
@@ -169,13 +169,13 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 	}
 
 	receiver, err := rfact.CreateTraces(ctx, receiver.Settings{
-		ID:                component.MustNewID("otelarrowreceiver"),
+		ID:                component.NewID(rfact.Type()),
 		TelemetrySettings: recvTset,
 	}, receiverCfg, testCon)
 	require.NoError(t, err)
 
 	exporter, err := efact.CreateTraces(ctx, exporter.Settings{
-		ID:                component.MustNewID("otelarrowexporter"),
+		ID:                component.NewID(efact.Type()),
 		TelemetrySettings: expTset,
 	}, exporterCfg)
 	require.NoError(t, err)
@@ -281,7 +281,7 @@ func makeTestTraces(i int) ptrace.Traces {
 
 func bulkyGenFunc() MkGen {
 	return func() GenFunc {
-		entropy := datagen.NewTestEntropy(int64(rand.Uint64())) //nolint:gosec // only used for testing
+		entropy := datagen.NewTestEntropy(int64(rand.Uint64()))
 
 		tracesGen := datagen.NewTracesGenerator(
 			entropy,
@@ -558,7 +558,7 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 
 	// Number of export requests: exact match.  This is the
 	// exporterhelper's base span.
-	require.Equal(t, total, expOps["exporter/otelarrowexporter/traces/Unset"])
+	require.Equal(t, total, expOps["exporter/otelarrow/traces/Unset"])
 
 	// Number of export requests: exact match.  This span covers
 	// handling one request in the Arrow exporter.
@@ -585,7 +585,7 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 	require.Equal(t, total, recvOps["otel_arrow_stream_recv/Unset"])
 
 	// This is in request context, the receiverhelper's per-request span.
-	require.Equal(t, total, recvOps["receiver/otelarrowreceiver/TraceDataReceived/Unset"])
+	require.Equal(t, total, recvOps["receiver/otelarrow/TraceDataReceived/Unset"])
 
 	// Exporter and Receiver stream span counts match:
 	require.Equal(t, expStreamsUnset+expStreamsError, recvStreamsUnset+recvStreamsError)
@@ -627,7 +627,7 @@ func nearLimitGenFunc() MkGen {
 	const hardLimit = 1 << 20   // 1 MiB
 
 	return func() GenFunc {
-		entropy := datagen.NewTestEntropy(int64(rand.Uint64())) //nolint:gosec // only used for testing
+		entropy := datagen.NewTestEntropy(int64(rand.Uint64()))
 
 		tracesGen := datagen.NewTracesGenerator(
 			entropy,

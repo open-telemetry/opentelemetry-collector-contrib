@@ -25,11 +25,15 @@ The SQL Query Receiver uses custom SQL queries to generate metrics from a databa
 The configuration supports the following top-level fields:
 
 - `driver`(required): The name of the database driver: one of _postgres_, _mysql_, _snowflake_, _sqlserver_, _hdb_ (SAP
-  HANA), or _oracle_ (Oracle DB).
+  HANA), _oracle_ (Oracle DB),  _tds_ (SapASE/Sybase).
 - `datasource`(required): The datasource value passed to [sql.Open](https://pkg.go.dev/database/sql#Open). This is
   a driver-specific string usually consisting of at least a database name and connection information. This is sometimes
-  referred to as the "connection string" in driver documentation.
-  e.g. _host=localhost port=5432 user=me password=s3cr3t sslmode=disable_
+  referred to as the "connection string" in driver documentation. Examples:
+  - [postgres](https://github.com/lib/pq) - `host=localhost port=5432 user=username password=user_password sslmode=disable`
+  - [mysql](https://github.com/go-sql-driver/mysql) - `username:user_password@tcp(localhost:3306)/db_name`
+  - [oracle](https://github.com/sijms/go-ora) - `oracle://username:user_password@localhost:1521/FREEPDB1`
+  - [sqlserver](https://github.com/go-sql-driver/mysql) - `sqlserver://username:user_password@localhost:1433?database=db_name`
+  - [sapAse](https://github.com/thda/tds) - `tds://username:user_password@localhost:5000/db_name`
 - `queries`(required): A list of queries, where a query is a sql statement and one or more `logs` and/or `metrics` sections (details below).
 - `collection_interval`(optional): The time interval between query executions. Defaults to _10s_.
 - `storage` (optional, default `""`): The ID of a [storage][storage_extension] extension to be used to [track processed results](#tracking-processed-results).

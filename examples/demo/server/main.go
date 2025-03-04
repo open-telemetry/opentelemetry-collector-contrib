@@ -8,7 +8,7 @@ package main
 import (
 	"context"
 	"log"
-	"math/rand"
+	"math/rand/v2"
 	"net/http"
 	"os"
 	"time"
@@ -25,11 +25,9 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.opentelemetry.io/otel/trace"
 )
-
-var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 // Initializes an OTLP exporter, and configures the corresponding trace and
 // metric providers.
@@ -125,15 +123,15 @@ func main() {
 
 		switch modulus := time.Now().Unix() % 5; modulus {
 		case 0:
-			sleep = rng.Int63n(2000)
+			sleep = rand.Int64N(2000)
 		case 1:
-			sleep = rng.Int63n(15)
+			sleep = rand.Int64N(15)
 		case 2:
-			sleep = rng.Int63n(917)
+			sleep = rand.Int64N(917)
 		case 3:
-			sleep = rng.Int63n(87)
+			sleep = rand.Int64N(87)
 		case 4:
-			sleep = rng.Int63n(1173)
+			sleep = rand.Int64N(1173)
 		}
 		time.Sleep(time.Duration(sleep) * time.Millisecond)
 		ctx := req.Context()

@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 var defaultDummyPriorityContextInferrerCandidate = &priorityContextInferrerCandidate{
@@ -141,6 +142,7 @@ func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			inferrer := newPriorityContextInferrer(
+				componenttest.NewNopTelemetrySettings(),
 				tt.candidates,
 				withContextInferrerPriorities(tt.priority),
 			)
@@ -152,7 +154,7 @@ func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 }
 
 func Test_NewPriorityContextInferrer_InvalidStatement(t *testing.T) {
-	inferrer := newPriorityContextInferrer(map[string]*priorityContextInferrerCandidate{})
+	inferrer := newPriorityContextInferrer(componenttest.NewNopTelemetrySettings(), map[string]*priorityContextInferrerCandidate{})
 	statements := []string{"set(foo.field,"}
 	_, err := inferrer.infer(statements)
 	require.ErrorContains(t, err, "unexpected token")
@@ -170,7 +172,7 @@ func Test_DefaultPriorityContextInferrer(t *testing.T) {
 		"instrumentation_scope",
 	}
 
-	inferrer := newPriorityContextInferrer(map[string]*priorityContextInferrerCandidate{}).(*priorityContextInferrer)
+	inferrer := newPriorityContextInferrer(componenttest.NewNopTelemetrySettings(), map[string]*priorityContextInferrerCandidate{}).(*priorityContextInferrer)
 	require.NotNil(t, inferrer)
 
 	for pri, ctx := range expectedPriority {

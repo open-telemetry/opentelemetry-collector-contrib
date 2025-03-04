@@ -23,10 +23,10 @@ import (
 )
 
 type prometheusReceiverWrapper struct {
-	params            receiver.Settings
-	config            *Config
-	consumer          consumer.Metrics
-	prometheusRecever receiver.Metrics
+	params             receiver.Settings
+	config             *Config
+	consumer           consumer.Metrics
+	prometheusReceiver receiver.Metrics
 }
 
 // newPrometheusReceiverWrapper returns a prometheusReceiverWrapper
@@ -43,13 +43,18 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 		return fmt.Errorf("failed to create prometheus receiver config: %w", err)
 	}
 
-	pr, err := pFactory.CreateMetrics(ctx, prw.params, pConfig, prw.consumer)
+	params := receiver.Settings{
+		ID:                component.NewIDWithName(pFactory.Type(), prw.params.ID.String()),
+		TelemetrySettings: prw.params.TelemetrySettings,
+		BuildInfo:         prw.params.BuildInfo,
+	}
+	pr, err := pFactory.CreateMetrics(ctx, params, pConfig, prw.consumer)
 	if err != nil {
 		return fmt.Errorf("failed to create prometheus receiver: %w", err)
 	}
 
-	prw.prometheusRecever = pr
-	return prw.prometheusRecever.Start(ctx, host)
+	prw.prometheusReceiver = pr
+	return prw.prometheusReceiver.Start(ctx, host)
 }
 
 // Deprecated: [v0.55.0] Use getPrometheusConfig instead.
@@ -145,8 +150,8 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 
 // Shutdown stops the underlying Prometheus receiver.
 func (prw *prometheusReceiverWrapper) Shutdown(ctx context.Context) error {
-	if prw.prometheusRecever == nil {
+	if prw.prometheusReceiver == nil {
 		return nil
 	}
-	return prw.prometheusRecever.Shutdown(ctx)
+	return prw.prometheusReceiver.Shutdown(ctx)
 }

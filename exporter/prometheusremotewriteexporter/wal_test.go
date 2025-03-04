@@ -5,13 +5,24 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"sort"
 	"testing"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
+	"github.com/golang/snappy"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 )
 
 func doNothingExportSink(_ context.Context, reqL []*prompb.WriteRequest) error {
@@ -148,4 +159,63 @@ func TestWAL_persist(t *testing.T) {
 	orderByLabelValueForEach(reqLFromWAL)
 	require.Equal(t, reqLFromWAL[0], reqL[0])
 	require.Equal(t, reqLFromWAL[1], reqL[1])
+}
+
+func TestExportWithWALEnabled(t *testing.T) {
+	cfg := &Config{
+		WAL: &WALConfig{
+			Directory: t.TempDir(),
+		},
+		TargetInfo:    &TargetInfo{},    // Declared just to avoid nil pointer dereference.
+		CreatedMetric: &CreatedMetric{}, // Declared just to avoid nil pointer dereference.
+	}
+	buildInfo := component.BuildInfo{
+		Description: "OpenTelemetry Collector",
+		Version:     "1.0",
+	}
+	set := exportertest.NewNopSettings(metadata.Type)
+	set.BuildInfo = buildInfo
+
+	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		assert.NoError(t, err)
+		assert.NotNil(t, body)
+		// Receives the http requests and unzip, unmarshalls, and extracts TimeSeries
+		writeReq := &prompb.WriteRequest{}
+		var unzipped []byte
+
+		dest, err := snappy.Decode(unzipped, body)
+		assert.NoError(t, err)
+
+		ok := proto.Unmarshal(dest, writeReq)
+		assert.NoError(t, ok)
+
+		assert.Len(t, writeReq.Timeseries, 1)
+	}))
+	defer server.Close()
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	cfg.ClientConfig = clientConfig
+
+	prwe, err := newPRWExporter(cfg, set)
+	assert.NoError(t, err)
+	assert.NotNil(t, prwe)
+	err = prwe.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	assert.NotNil(t, prwe.client)
+
+	metrics := map[string]*prompb.TimeSeries{
+		"test_metric": {
+			Labels:  []prompb.Label{{Name: "__name__", Value: "test_metric"}},
+			Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
+		},
+	}
+	err = prwe.handleExport(context.Background(), metrics, nil)
+	assert.NoError(t, err)
+
+	// While on Unix systems, t.TempDir() would easily close the WAL files,
+	// on Windows, it doesn't. So we need to close it manually to avoid flaky tests.
+	err = prwe.Shutdown(context.Background())
+	assert.NoError(t, err)
 }

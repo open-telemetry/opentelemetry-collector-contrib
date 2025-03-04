@@ -3,6 +3,10 @@
 
 package cwmetricstream // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
 
+import (
+	jsoniter "github.com/json-iterator/go"
+)
+
 // The cWMetric is the format for the CloudWatch metric stream records.
 //
 // More details can be found at:
@@ -26,7 +30,7 @@ type cWMetric struct {
 	Timestamp int64 `json:"timestamp"`
 	// Value is the cWMetricValue, which has the min, max,
 	// sum, and count.
-	Value *cWMetricValue `json:"value"`
+	Value cWMetricValue `json:"value"`
 	// Unit is the unit for the metric.
 	//
 	// More details can be found at:
@@ -36,6 +40,8 @@ type cWMetric struct {
 
 // The cWMetricValue is the actual values of the CloudWatch metric.
 type cWMetricValue struct {
+	isSet bool
+
 	// Max is the highest value observed.
 	Max float64 `json:"max"`
 	// Min is the lowest value observed.
@@ -44,4 +50,13 @@ type cWMetricValue struct {
 	Sum float64 `json:"sum"`
 	// Count is the number of data points.
 	Count float64 `json:"count"`
+}
+
+func (v *cWMetricValue) UnmarshalJSON(data []byte) error {
+	type valueType cWMetricValue
+	if err := jsoniter.ConfigFastest.Unmarshal(data, (*valueType)(v)); err != nil {
+		return err
+	}
+	v.isSet = true
+	return nil
 }

@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
 
@@ -99,11 +100,11 @@ func TestLoadConfig(t *testing.T) {
 			err = sub.Unmarshal(cfg)
 
 			if tt.expected == nil {
-				err = multierr.Append(err, component.ValidateConfig(cfg))
+				err = multierr.Append(err, xconfmap.Validate(cfg))
 				assert.ErrorContains(t, err, tt.errorMessage)
 				return
 			}
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -124,7 +125,7 @@ func TestRetentionValidateCorrect(t *testing.T) {
 			QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 		},
 	}
-	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.NoError(t, xconfmap.Validate(cfg))
 }
 
 func TestRetentionValidateWrong(t *testing.T) {
@@ -141,7 +142,7 @@ func TestRetentionValidateWrong(t *testing.T) {
 			QueueSize: exporterhelper.NewDefaultQueueConfig().QueueSize,
 		},
 	}
-	assert.Error(t, component.ValidateConfig(wrongcfg))
+	assert.Error(t, xconfmap.Validate(wrongcfg))
 }
 
 func TestValidateTags(t *testing.T) {
@@ -226,10 +227,10 @@ func TestValidateTags(t *testing.T) {
 				},
 			}
 			if tt.errorMessage != "" {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 		})
 	}
 }

@@ -41,7 +41,7 @@ func (zs *zipkinDataSender) Start() error {
 	cfg.BackOffConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueSettings.Enabled = false
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(factory.Type())
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateTraces(context.Background(), params, cfg)

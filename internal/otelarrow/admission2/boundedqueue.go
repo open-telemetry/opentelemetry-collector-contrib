@@ -58,10 +58,21 @@ func NewBoundedQueue(id component.ID, ts component.TelemetrySettings, maxLimitAd
 		tracer:        ts.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow"),
 	}
 	attr := metric.WithAttributes(attribute.String(netstats.ReceiverKey, id.String()))
-	telemetryBuilder, err := internalmetadata.NewTelemetryBuilder(ts,
-		internalmetadata.WithOtelarrowAdmissionInFlightBytesCallback(bq.inFlightCB, attr),
-		internalmetadata.WithOtelarrowAdmissionWaitingBytesCallback(bq.waitingCB, attr),
-	)
+	telemetryBuilder, err := internalmetadata.NewTelemetryBuilder(ts)
+	if err != nil {
+		return nil, err
+	}
+	err = telemetryBuilder.RegisterOtelarrowAdmissionInFlightBytesCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(bq.inFlightCB(), attr)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = telemetryBuilder.RegisterOtelarrowAdmissionWaitingBytesCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(bq.waitingCB(), attr)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	// default value for max unaked messages
-	defaultMaxUnaked int32 = 1000
+	// default value for max unacked messages
+	defaultMaxUnacked int32 = 1000
 	// default value for host
 	defaultHost string = "localhost:5671"
 )
@@ -36,7 +36,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Broker:     []string{defaultHost},
-		MaxUnacked: defaultMaxUnaked,
+		MaxUnacked: defaultMaxUnacked,
 		Auth:       Authentication{},
 		TLS: configtls.ClientConfig{
 			InsecureSkipVerify: false,

@@ -33,7 +33,7 @@ func TestEndToEnd(t *testing.T) {
 	cfg.BenchOpConfig.NumHosts = numHosts
 	sink := new(consumertest.LogsSink)
 
-	rcvr, err := f.CreateLogs(ctx, receivertest.NewNopSettings(), cfg, sink)
+	rcvr, err := f.CreateLogs(ctx, receivertest.NewNopSettings(f.Type()), cfg, sink)
 	require.NoError(t, err)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
@@ -46,7 +46,6 @@ func TestEndToEnd(t *testing.T) {
 }
 
 type benchCase struct {
-	workerCount   int
 	maxBatchSize  uint
 	flushInterval time.Duration
 }
@@ -55,14 +54,13 @@ func (bc benchCase) run(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		f := NewFactory(BenchReceiverType{}, component.StabilityLevelUndefined)
 		cfg := f.CreateDefaultConfig().(*BenchConfig)
-		cfg.BaseConfig.numWorkers = bc.workerCount
 		cfg.BaseConfig.maxBatchSize = bc.maxBatchSize
 		cfg.BaseConfig.flushInterval = bc.flushInterval
 		cfg.BenchOpConfig.NumEntries = numEntries
 		cfg.BenchOpConfig.NumHosts = numHosts
 		sink := new(consumertest.LogsSink)
 
-		rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+		rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, sink)
 		require.NoError(b, err)
 
 		b.ReportAllocs()
@@ -89,21 +87,16 @@ func BenchmarkEndToEnd(b *testing.B) {
 	// These values may have meaningful performance implications, so benchmarks
 	// should cover a variety of values in order to highlight impacts.
 	var (
-		// converter
-		workerCounts = []int{1, 2, 4, 8, 16}
-
 		// emitter
 		maxBatchSizes  = []uint{1, 10, 100, 1000, 10_000}
 		flushIntervals = []time.Duration{10 * time.Millisecond, 100 * time.Millisecond}
 	)
 
-	for _, wc := range workerCounts {
-		for _, bs := range maxBatchSizes {
-			for _, fi := range flushIntervals {
-				name := fmt.Sprintf("workerCount=%d,maxBatchSize=%d,flushInterval=%s", wc, bs, fi)
-				bc := benchCase{workerCount: wc, maxBatchSize: bs, flushInterval: fi}
-				b.Run(name, bc.run)
-			}
+	for _, bs := range maxBatchSizes {
+		for _, fi := range flushIntervals {
+			name := fmt.Sprintf("maxBatchSize=%d,flushInterval=%s", bs, fi)
+			bc := benchCase{maxBatchSize: bs, flushInterval: fi}
+			b.Run(name, bc.run)
 		}
 	}
 }

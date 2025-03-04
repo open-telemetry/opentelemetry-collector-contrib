@@ -1,7 +1,7 @@
 signaltometrics:
   datapoints:
     - name: gauge.to.histogram
-      description: A histogram created from gague values
+      description: A histogram created from gauge values
       include_resource_attributes:
         - key: resource.foo
       attributes:

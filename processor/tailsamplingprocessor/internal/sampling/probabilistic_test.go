@@ -6,7 +6,7 @@ package sampling
 import (
 	"context"
 	"encoding/binary"
-	"math/rand"
+	"math/rand/v2"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -91,7 +91,10 @@ func TestProbabilisticSampling(t *testing.T) {
 }
 
 func genRandomTraceIDs(num int) (ids []pcommon.TraceID) {
-	r := rand.New(rand.NewSource(1))
+	// NOTE: using a fixed seed is intentional here,
+	// as otherwise the delta in the tests above will
+	// be unpredictable.
+	r := rand.New(rand.NewPCG(123, 456))
 	ids = make([]pcommon.TraceID, 0, num)
 	for i := 0; i < num; i++ {
 		traceID := [16]byte{}

@@ -623,7 +623,7 @@ func TestStart(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	createParams := connectortest.NewNopSettings()
+	createParams := connectortest.NewNopSettings(factory.Type())
 	conn, err := factory.CreateTracesToMetrics(context.Background(), createParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
@@ -1872,6 +1872,6 @@ func newAlwaysIncreasingClock() alwaysIncreasingClock {
 }
 
 func (c alwaysIncreasingClock) Now() time.Time {
-	c.Clock.(clockwork.FakeClock).Advance(time.Millisecond)
+	c.Clock.(*clockwork.FakeClock).Advance(time.Millisecond)
 	return c.Clock.Now()
 }

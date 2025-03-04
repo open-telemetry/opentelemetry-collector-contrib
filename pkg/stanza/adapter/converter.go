@@ -54,13 +54,6 @@ func ConvertEntries(entries []*entry.Entry) plog.Logs {
 	return pLogs
 }
 
-// convert converts one entry.Entry into plog.LogRecord allocating it.
-func convert(ent *entry.Entry) plog.LogRecord {
-	dest := plog.NewLogRecord()
-	convertInto(ent, dest)
-	return dest
-}
-
 // convertInto converts entry.Entry into provided plog.LogRecord.
 func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 	if !ent.Timestamp.IsZero() {
@@ -274,7 +267,7 @@ func HashResource(resource map[string]any) uint64 {
 		case []byte:
 			hw.h.Write(t) //nolint:errcheck
 		case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-			binary.Write(hw.h, binary.BigEndian, t) // nolint - nothing to do about it
+			binary.Write(hw.h, binary.BigEndian, t) //nolint:errcheck // nothing to do about it
 		default:
 			b, _ := json.Marshal(t)
 			hw.h.Write(b) //nolint:errcheck

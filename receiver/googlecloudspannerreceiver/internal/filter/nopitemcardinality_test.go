@@ -14,9 +14,8 @@ func TestNopItemCardinalityFilter_Filter(t *testing.T) {
 	filter := NewNopItemCardinalityFilter()
 	sourceItems := []*Item{{}}
 
-	filteredItems, err := filter.Filter(sourceItems)
+	filteredItems := filter.Filter(sourceItems)
 
-	require.NoError(t, err)
 	assert.Equal(t, sourceItems, filteredItems)
 }
 

@@ -34,11 +34,6 @@ func newTracesConnector(
 	traces consumer.Traces,
 ) (*tracesConnector, error) {
 	cfg := config.(*Config)
-
-	if cfg.MatchOnce != nil {
-		set.Logger.Error("The 'match_once' field has been deprecated and no longer has any effect. It will be removed in v0.120.0.")
-	}
-
 	tr, ok := traces.(connector.TracesRouterAndConsumer)
 	if !ok {
 		return nil, errUnexpectedConsumer

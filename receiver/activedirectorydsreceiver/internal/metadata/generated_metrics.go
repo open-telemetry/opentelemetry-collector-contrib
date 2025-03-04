@@ -180,15 +180,15 @@ type AttributeValueType int
 
 const (
 	_ AttributeValueType = iota
-	AttributeValueTypeDistingushedNames
+	AttributeValueTypeDistinguishedNames
 	AttributeValueTypeOther
 )
 
 // String returns the string representation of the AttributeValueType.
 func (av AttributeValueType) String() string {
 	switch av {
-	case AttributeValueTypeDistingushedNames:
-		return "distingushed_names"
+	case AttributeValueTypeDistinguishedNames:
+		return "distinguished_names"
 	case AttributeValueTypeOther:
 		return "other"
 	}
@@ -197,8 +197,8 @@ func (av AttributeValueType) String() string {
 
 // MapAttributeValueType is a helper map of string to AttributeValueType attribute value.
 var MapAttributeValueType = map[string]AttributeValueType{
-	"distingushed_names": AttributeValueTypeDistingushedNames,
-	"other":              AttributeValueTypeOther,
+	"distinguished_names": AttributeValueTypeDistinguishedNames,
+	"other":               AttributeValueTypeOther,
 }
 
 type metricActiveDirectoryDsBindRate struct {
@@ -1264,7 +1264,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricActiveDirectoryDsBindRate.emit(ils.Metrics())

@@ -3,95 +3,220 @@
 package metadatatest
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	"go.uber.org/multierr"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
-type Telemetry struct {
-	Reader       *sdkmetric.ManualReader
-	SpanRecorder *tracetest.SpanRecorder
-
-	meterProvider *sdkmetric.MeterProvider
-	traceProvider *sdktrace.TracerProvider
-}
-
-func SetupTelemetry() Telemetry {
-	reader := sdkmetric.NewManualReader()
-	spanRecorder := new(tracetest.SpanRecorder)
-	return Telemetry{
-		Reader:       reader,
-		SpanRecorder: spanRecorder,
-
-		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
-		traceProvider: sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder)),
-	}
-}
-func (tt *Telemetry) NewSettings() receiver.Settings {
-	set := receivertest.NewNopSettings()
+func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
+	set := receivertest.NewNopSettings(receivertest.NopType)
 	set.ID = component.NewID(component.MustNewType("solace"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
 
-func (tt *Telemetry) NewTelemetrySettings() component.TelemetrySettings {
-	set := componenttest.NewNopTelemetrySettings()
-	set.MeterProvider = tt.meterProvider
-	set.MetricsLevel = configtelemetry.LevelDetailed
-	set.TracerProvider = tt.traceProvider
-	return set
-}
-
-func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	// ensure all required metrics are present
-	for _, want := range expected {
-		got := getMetric(want.Name, md)
-		metricdatatest.AssertEqual(t, want, got, opts...)
+func AssertEqualSolacereceiverDroppedEgressSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_solacereceiver_dropped_egress_spans",
+		Description: "Number of dropped egress spans",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
 	}
-
-	// ensure no additional metrics are emitted
-	require.Equal(t, len(expected), lenMetrics(md))
+	got, err := tt.GetMetric("otelcol_solacereceiver_dropped_egress_spans")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func (tt *Telemetry) Shutdown(ctx context.Context) error {
-	return multierr.Combine(
-		tt.meterProvider.Shutdown(ctx),
-		tt.traceProvider.Shutdown(ctx),
-	)
-}
-
-func getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
-	for _, sm := range got.ScopeMetrics {
-		for _, m := range sm.Metrics {
-			if m.Name == name {
-				return m
-			}
-		}
+func AssertEqualSolacereceiverDroppedSpanMessages(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_solacereceiver_dropped_span_messages",
+		Description: "Number of dropped span messages",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
 	}
-
-	return metricdata.Metrics{}
+	got, err := tt.GetMetric("otelcol_solacereceiver_dropped_span_messages")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func lenMetrics(got metricdata.ResourceMetrics) int {
-	metricsCount := 0
-	for _, sm := range got.ScopeMetrics {
-		metricsCount += len(sm.Metrics)
+func AssertEqualSolacereceiverFailedReconnections(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_solacereceiver_failed_reconnections",
+		Description: "Number of failed broker reconnections",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
 	}
+	got, err := tt.GetMetric("otelcol_solacereceiver_failed_reconnections")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
 
-	return metricsCount
+func AssertEqualSolacereceiverFatalUnmarshallingErrors(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_solacereceiver_fatal_unmarshalling_errors",
+		Description: "Number of fatal message unmarshalling errors",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_solacereceiver_fatal_unmarshalling_errors")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualSolacereceiverNeedUpgrade(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_solacereceiver_need_upgrade",
+		Description: "Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker",
+		Unit:        "1",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_solacereceiver_need_upgrade")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualSolacereceiverReceivedSpanMessages(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_solacereceiver_received_span_messages",
+		Description: "Number of received span messages",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_solacereceiver_received_span_messages")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualSolacereceiverReceiverFlowControlRecentRetries(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
+		Description: "Most recent/current retry count when flow controlled",
+		Unit:        "1",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_solacereceiver_receiver_flow_control_recent_retries")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualSolacereceiverReceiverFlowControlStatus(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_solacereceiver_receiver_flow_control_status",
+		Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
+		Unit:        "1",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_solacereceiver_receiver_flow_control_status")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualSolacereceiverReceiverFlowControlTotal(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_solacereceiver_receiver_flow_control_total",
+		Description: "Number of times the receiver instance became flow controlled",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_solacereceiver_receiver_flow_control_total")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualSolacereceiverReceiverFlowControlWithSingleSuccessfulRetry(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_solacereceiver_receiver_flow_control_with_single_successful_retry",
+		Description: "Number of times the receiver instance became flow controlled and resolved situations after the first retry",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_solacereceiver_receiver_flow_control_with_single_successful_retry")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualSolacereceiverReceiverStatus(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_solacereceiver_receiver_status",
+		Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
+		Unit:        "1",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_solacereceiver_receiver_status")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualSolacereceiverRecoverableUnmarshallingErrors(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
+		Description: "Number of recoverable message unmarshalling errors",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_solacereceiver_recoverable_unmarshalling_errors")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualSolacereceiverReportedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_solacereceiver_reported_spans",
+		Description: "Number of reported spans",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_solacereceiver_reported_spans")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
 }

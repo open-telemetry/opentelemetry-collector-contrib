@@ -30,7 +30,7 @@ type dMetricHistogram struct {
 }
 
 type metricModelHistogram struct {
-	data []*dMetricHistogram
+	metricModelCommon[dMetricHistogram]
 }
 
 func (m *metricModelHistogram) metricType() pmetric.MetricType {
@@ -96,16 +96,4 @@ func (m *metricModelHistogram) add(pm pmetric.Metric, dm *dMetric, e *metricsExp
 	}
 
 	return nil
-}
-
-func (m *metricModelHistogram) raw() any {
-	return m.data
-}
-
-func (m *metricModelHistogram) size() int {
-	return len(m.data)
-}
-
-func (m *metricModelHistogram) bytes() ([]byte, error) {
-	return toJSONLines(m.data)
 }

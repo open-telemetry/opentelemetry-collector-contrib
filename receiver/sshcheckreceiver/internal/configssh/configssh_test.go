@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -24,7 +24,7 @@ type mockHost struct {
 func TestAllSSHClientSettings(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]extension.Extension{
-			component.MustNewID("testauth"): &authtest.MockClient{},
+			component.MustNewID("testauth"): &extensionauthtest.MockClient{},
 		},
 	}
 
@@ -92,7 +92,7 @@ func TestAllSSHClientSettings(t *testing.T) {
 			shouldError: false,
 		},
 		{
-			name: "invalid_settings_non-existent_keyfile_path",
+			name: "invalid_settings_nonexistent_keyfile_path",
 			settings: SSHClientSettings{
 				Endpoint: endpoint,
 				Timeout:  timeout,
@@ -127,7 +127,7 @@ func TestAllSSHClientSettings(t *testing.T) {
 func Test_Client_Dial(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]extension.Extension{
-			component.MustNewID("testauth"): &authtest.MockClient{},
+			component.MustNewID("testauth"): &extensionauthtest.MockClient{},
 		},
 	}
 
@@ -201,7 +201,7 @@ func Test_Client_Dial(t *testing.T) {
 func Test_Client_ToSFTPClient(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]extension.Extension{
-			component.MustNewID("testauth"): &authtest.MockClient{},
+			component.MustNewID("testauth"): &extensionauthtest.MockClient{},
 		},
 	}
 

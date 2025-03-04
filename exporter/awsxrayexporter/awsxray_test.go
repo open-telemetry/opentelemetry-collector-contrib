@@ -22,6 +22,7 @@ import (
 	conventionsv112 "go.opentelemetry.io/collector/semconv/v1.12.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry/telemetrytest"
@@ -70,7 +71,7 @@ func TestTelemetryEnabled(t *testing.T) {
 	registry := telemetry.NewRegistry()
 	sink := telemetrytest.NewSenderSink()
 	// preload the sender that the exporter will use
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	sender, loaded := registry.LoadOrStore(set.ID, sink)
 	require.False(t, loaded)
 	require.NotNil(t, sender)
@@ -108,7 +109,7 @@ func BenchmarkForTracesExporter(b *testing.B) {
 func initializeTracesExporter(tb testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
 	tb.Helper()
 	mconn := new(awsutil.Conn)
-	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopSettings(), mconn, registry)
+	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopSettings(metadata.Type), mconn, registry)
 	if err != nil {
 		panic(err)
 	}

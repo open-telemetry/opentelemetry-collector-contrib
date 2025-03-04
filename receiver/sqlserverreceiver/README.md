@@ -66,9 +66,16 @@ Example with named instance:
             enabled: true
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)
 
+## Known issues
+SQL Server docker users may run into an issue that the collector fails to parse certificate from server due to `x509: negative serial number`. That's because we adopted Go `1.23` starting from contrib `v0.121.0`:
+> Before Go 1.23, ParseCertificate accepted certificates with negative serial numbers.
+> This behavior can be restored by including "x509negativeserial=1" in the GODEBUG environment variable.
+references:
+1. https://pkg.go.dev/crypto/x509#ParseCertificate
+2. https://github.com/microsoft/mssql-docker/issues/895

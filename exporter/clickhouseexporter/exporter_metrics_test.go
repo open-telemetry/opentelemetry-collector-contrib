@@ -518,7 +518,6 @@ func mustPushMetricsData(t *testing.T, exporter *metricsExporter, md pmetric.Met
 	require.NoError(t, err)
 }
 
-// nolint:unparam // not need to check this func
 func newTestMetricsExporter(t *testing.T, dsn string, fns ...func(*Config)) *metricsExporter {
 	exporter, err := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)

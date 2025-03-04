@@ -3,95 +3,84 @@
 package metadatatest
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	"go.uber.org/multierr"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
-type Telemetry struct {
-	Reader       *sdkmetric.ManualReader
-	SpanRecorder *tracetest.SpanRecorder
-
-	meterProvider *sdkmetric.MeterProvider
-	traceProvider *sdktrace.TracerProvider
-}
-
-func SetupTelemetry() Telemetry {
-	reader := sdkmetric.NewManualReader()
-	spanRecorder := new(tracetest.SpanRecorder)
-	return Telemetry{
-		Reader:       reader,
-		SpanRecorder: spanRecorder,
-
-		meterProvider: sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)),
-		traceProvider: sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(spanRecorder)),
-	}
-}
-func (tt *Telemetry) NewSettings() exporter.Settings {
-	set := exportertest.NewNopSettings()
+func NewSettings(tt *componenttest.Telemetry) exporter.Settings {
+	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.ID = component.NewID(component.MustNewType("prometheusremotewrite"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
 
-func (tt *Telemetry) NewTelemetrySettings() component.TelemetrySettings {
-	set := componenttest.NewNopTelemetrySettings()
-	set.MeterProvider = tt.meterProvider
-	set.MetricsLevel = configtelemetry.LevelDetailed
-	set.TracerProvider = tt.traceProvider
-	return set
-}
-
-func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	// ensure all required metrics are present
-	for _, want := range expected {
-		got := getMetric(want.Name, md)
-		metricdatatest.AssertEqual(t, want, got, opts...)
+func AssertEqualExporterPrometheusremotewriteConsumers(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_prometheusremotewrite_consumers",
+		Description: "Number of configured workers to use to fan out the outgoing requests",
+		Unit:        "{consumer}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: false,
+			DataPoints:  dps,
+		},
 	}
-
-	// ensure no additional metrics are emitted
-	require.Equal(t, len(expected), lenMetrics(md))
+	got, err := tt.GetMetric("otelcol_exporter_prometheusremotewrite_consumers")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func (tt *Telemetry) Shutdown(ctx context.Context) error {
-	return multierr.Combine(
-		tt.meterProvider.Shutdown(ctx),
-		tt.traceProvider.Shutdown(ctx),
-	)
-}
-
-func getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
-	for _, sm := range got.ScopeMetrics {
-		for _, m := range sm.Metrics {
-			if m.Name == name {
-				return m
-			}
-		}
+func AssertEqualExporterPrometheusremotewriteFailedTranslations(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_prometheusremotewrite_failed_translations",
+		Description: "Number of translation operations that failed to translate metrics from Otel to Prometheus",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
 	}
-
-	return metricdata.Metrics{}
+	got, err := tt.GetMetric("otelcol_exporter_prometheusremotewrite_failed_translations")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func lenMetrics(got metricdata.ResourceMetrics) int {
-	metricsCount := 0
-	for _, sm := range got.ScopeMetrics {
-		metricsCount += len(sm.Metrics)
+func AssertEqualExporterPrometheusremotewriteSentBatches(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_prometheusremotewrite_sent_batches",
+		Description: "Number of remote write request batches sent to the remote write endpoint regardless of success or failure",
+		Unit:        "{batch}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
 	}
+	got, err := tt.GetMetric("otelcol_exporter_prometheusremotewrite_sent_batches")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
 
-	return metricsCount
+func AssertEqualExporterPrometheusremotewriteTranslatedTimeSeries(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_prometheusremotewrite_translated_time_series",
+		Description: "Number of Prometheus time series that were translated from OTel metrics",
+		Unit:        "1",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_prometheusremotewrite_translated_time_series")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
 }

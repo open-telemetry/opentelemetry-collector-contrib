@@ -31,8 +31,38 @@ The following settings are optional:
 * `required_header` (optional):  
     * `key` (required if `required_header` config option is set): Represents the key portion of the required header.
     * `value` (required if `required_header` config option is set): Represents the value portion of the required header.
+* `split_logs_at_newline` (default: false): If true, the receiver will create a separate log record for each line in the request body.
 
-Example:
+### Split logs at newline example
+
+If the setting is unconfigured or set to `false`, the receiver will create a single log record with the entire request body as the "body" of that record.
+
+If the webhook body looks like the following, use `split_logs_at_newline: false`: 
+
+```yaml
+{
+"name": "francis",
+"city": "newyork"
+}
+a fifth line
+```
+
+A single log record will be created with the multi-line JSON object as the "body" of that record, even the "fifth line" outside the JSON object will be included.
+
+If the body looks like the following, use `split_logs_at_newline: true`:
+
+```yaml
+{ "name": "francis", "city": "newyork" }
+{ "name": "john", "city": "paris" }
+a third line
+```
+
+Three log records will be created from this example. The first two are JSON body objects and the third is just the string "a third line".
+
+This receiver does not attempt to marshal the body into a structured format as it is received so it cannot make a more intelligent determination about where the split records. 
+
+### Configuration Example
+
 ```yaml
 receivers:
     webhookevent:
@@ -43,6 +73,8 @@ receivers:
         required_header:
             key: "required-header-key"
             value: "required-header-value"
+        split_logs_at_newline: false
 ```
-The full list of settings exposed for this receiver are documented [here](./config.go) with a detailed sample configuration [here](./testdata/config.yaml)
+
+The full list of settings exposed for this receiver are documented in [config.go](./config.go) with a detailed sample configuration in [testdata/config.yaml](./testdata/config.yaml)
 

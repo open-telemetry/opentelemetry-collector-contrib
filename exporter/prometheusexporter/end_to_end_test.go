@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"gopkg.in/yaml.v2"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
@@ -63,7 +64,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		MetricExpiration: 2 * time.Hour,
 	}
 	exporterFactory := NewFactory()
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := exporterFactory.CreateMetrics(ctx, set, exporterCfg)
 	require.NoError(t, err)
 	require.NoError(t, exporter.Start(ctx, nil), "Failed to start the Prometheus exporter")
@@ -86,7 +87,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	require.NoError(t, yaml.Unmarshal(yamlConfig, receiverConfig))
 
 	receiverFactory := prometheusreceiver.NewFactory()
-	receiverCreateSet := receivertest.NewNopSettings()
+	receiverCreateSet := receivertest.NewNopSettings(metadata.Type)
 	rcvCfg := &prometheusreceiver.Config{
 		PrometheusConfig: receiverConfig,
 	}
@@ -158,8 +159,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	require.Empty(t, prometheusExporterScrape, "Left-over unmatched Prometheus scrape content: %q\n", prometheusExporterScrape)
 }
 
-// the following triggers G101: Potential hardcoded credentials
-// nolint:gosec
+//nolint:gosec // the following triggers G101: Potential hardcoded credentials
 const dropWizardResponse = `
 # HELP jvm_memory_pool_bytes_used Used bytes of a given JVM memory pool.
 # TYPE jvm_memory_pool_bytes_used gauge

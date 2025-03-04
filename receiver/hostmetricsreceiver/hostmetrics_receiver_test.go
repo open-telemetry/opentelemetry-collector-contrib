@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
@@ -52,6 +53,7 @@ var allMetrics = []string{
 	"system.network.io",
 	"system.network.packets",
 	"system.paging.operations",
+	"system.paging.usage",
 }
 
 var resourceMetrics = []string{
@@ -137,9 +139,6 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 
 	// verify the expected list of metrics returned (os/arch dependent)
 	expectedMetrics := allMetrics
-	if !(runtime.GOOS == "linux" && runtime.GOARCH == "arm64") {
-		expectedMetrics = append(expectedMetrics, "system.paging.usage")
-	}
 
 	expectedMetrics = append(expectedMetrics, systemSpecificMetrics[runtime.GOOS]...)
 	assert.Equal(t, len(expectedMetrics), len(returnedMetrics))
@@ -243,7 +242,7 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 	require.NoError(b, err)
 	options = append(options, scraperhelper.WithTickerChannel(tickerCh))
 
-	receiver, err := scraperhelper.NewMetricsController(&cfg.ControllerConfig, receivertest.NewNopSettings(), sink, options...)
+	receiver, err := scraperhelper.NewMetricsController(&cfg.ControllerConfig, receivertest.NewNopSettings(metadata.Type), sink, options...)
 	require.NoError(b, err)
 
 	require.NoError(b, receiver.Start(context.Background(), componenttest.NewNopHost()))

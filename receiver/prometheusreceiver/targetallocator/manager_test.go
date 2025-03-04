@@ -18,10 +18,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/common/promslog"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
@@ -33,6 +33,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
 
 type MockTargetAllocator struct {
@@ -729,7 +731,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
 			baseCfg := promconfig.Config{GlobalConfig: promconfig.DefaultGlobalConfig}
-			manager := NewManager(receivertest.NewNopSettings(), tc.cfg, &baseCfg, false)
+			manager := NewManager(receivertest.NewNopSettings(metadata.Type), tc.cfg, &baseCfg, false)
 			require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 			allocator.wg.Wait()
@@ -912,7 +914,7 @@ func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
 	scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
 	baseCfg := promconfig.Config{GlobalConfig: promconfig.DefaultGlobalConfig, ScrapeConfigs: initialScrapeConfigs}
-	manager := NewManager(receivertest.NewNopSettings(), cfg, &baseCfg, false)
+	manager := NewManager(receivertest.NewNopSettings(metadata.Type), cfg, &baseCfg, false)
 	require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 	allocator.wg.Wait()
@@ -930,14 +932,14 @@ func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
 }
 
 func initPrometheusManagers(ctx context.Context, t *testing.T) (*scrape.Manager, *discovery.Manager) {
-	logger := log.NewNopLogger()
+	logger := promslog.NewNopLogger()
 	reg := prometheus.NewRegistry()
 	sdMetrics, err := discovery.RegisterSDMetrics(reg, discovery.NewRefreshMetrics(reg))
 	require.NoError(t, err)
 	discoveryManager := discovery.NewManager(ctx, logger, reg, sdMetrics)
 	require.NotNil(t, discoveryManager)
 
-	scrapeManager, err := scrape.NewManager(&scrape.Options{}, logger, nil, reg)
+	scrapeManager, err := scrape.NewManager(&scrape.Options{}, logger, nil, nil, reg)
 	require.NoError(t, err)
 	return scrapeManager, discoveryManager
 }

@@ -36,6 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
 func assertHecSuccessResponse(t *testing.T, resp *http.Response, body any) {
@@ -94,7 +95,7 @@ func Test_splunkhecreceiver_NewReceiver(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newReceiver(receivertest.NewNopSettings(), tt.args.config)
+			got, err := newReceiver(receivertest.NewNopSettings(metadata.Type), tt.args.config)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				assert.NotNil(t, got)
@@ -309,9 +310,9 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			metricsSink := new(consumertest.MetricsSink)
 			f := NewFactory()
 
-			_, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), config, sink)
+			_, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), config, sink)
 			assert.NoError(t, err)
-			rcv, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(), config, metricsSink)
+			rcv, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), config, metricsSink)
 			assert.NoError(t, err)
 
 			r := rcv.(*sharedcomponent.SharedComponent).Component.(*splunkReceiver)
@@ -343,7 +344,7 @@ func Test_consumer_err(t *testing.T) {
 	splunkMsg := buildSplunkHecMsg(currentTime, 5)
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
-	rcv, err := newReceiver(receivertest.NewNopSettings(), *config)
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 	assert.NoError(t, err)
 	rcv.logsConsumer = consumertest.NewErr(errors.New("bad consumer"))
 
@@ -371,7 +372,7 @@ func Test_consumer_err_metrics(t *testing.T) {
 	assert.True(t, splunkMsg.IsMetric())
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint\
-	rcv, err := newReceiver(receivertest.NewNopSettings(), *config)
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 	assert.NoError(t, err)
 	rcv.metricsConsumer = consumertest.NewErr(errors.New("bad consumer"))
 
@@ -404,7 +405,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 		},
 	}
 	sink := new(consumertest.LogsSink)
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	r, err := newReceiver(set, *cfg)
 	require.NoError(t, err)
 	r.logsConsumer = sink
@@ -589,13 +590,13 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			}()
 
 			if tt.metric {
-				exporter, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), exporterConfig)
+				exporter, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
 				assert.NoError(t, exporter.Start(context.Background(), nil))
 				defer func() {
 					require.NoError(t, exporter.Shutdown(context.Background()))
 				}()
 				assert.NoError(t, err)
-				rcv, err := newReceiver(receivertest.NewNopSettings(), *config)
+				rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 				assert.NoError(t, err)
 				rcv.metricsConsumer = exporter
 				w := httptest.NewRecorder()
@@ -605,13 +606,13 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 				_, err = io.ReadAll(resp.Body)
 				assert.NoError(t, err)
 			} else {
-				exporter, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(), exporterConfig)
+				exporter, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
 				assert.NoError(t, exporter.Start(context.Background(), nil))
 				defer func() {
 					require.NoError(t, exporter.Shutdown(context.Background()))
 				}()
 				assert.NoError(t, err)
-				rcv, err := newReceiver(receivertest.NewNopSettings(), *config)
+				rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 				assert.NoError(t, err)
 				rcv.logsConsumer = exporter
 				w := httptest.NewRecorder()
@@ -673,13 +674,13 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.Index = "defaultindex"
 			exporterConfig.DisableCompression = true
 			exporterConfig.Endpoint = endServer.URL
-			exporter, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(), exporterConfig)
+			exporter, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
 			assert.NoError(t, exporter.Start(context.Background(), nil))
 			assert.NoError(t, err)
 			defer func() {
 				require.NoError(t, exporter.Shutdown(context.Background()))
 			}()
-			rcv, err := newReceiver(receivertest.NewNopSettings(), *cfg)
+			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *cfg)
 			assert.NoError(t, err)
 			rcv.logsConsumer = exporter
 
@@ -774,13 +775,13 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.DisableCompression = true
 			exporterConfig.Endpoint = endServer.URL
 
-			exporter, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), exporterConfig)
+			exporter, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), exporterConfig)
 			assert.NoError(t, exporter.Start(context.Background(), nil))
 			defer func() {
 				require.NoError(t, exporter.Shutdown(context.Background()))
 			}()
 			assert.NoError(t, err)
-			rcv, err := newReceiver(receivertest.NewNopSettings(), *cfg)
+			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *cfg)
 			assert.NoError(t, err)
 			rcv.metricsConsumer = exporter
 
@@ -1046,7 +1047,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newReceiver(receivertest.NewNopSettings(), *config)
+			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 			assert.NoError(t, err)
 			rcv.logsConsumer = sink
 
@@ -1099,7 +1100,7 @@ func Test_splunkhecReceiver_Start(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newReceiver(receivertest.NewNopSettings(), *tt.getConfig())
+			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *tt.getConfig())
 			assert.NoError(t, err)
 			rcv.logsConsumer = sink
 
@@ -1314,7 +1315,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newReceiver(receivertest.NewNopSettings(), *config)
+			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 			assert.NoError(t, err)
 			rcv.logsConsumer = sink
 
@@ -1481,7 +1482,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newReceiver(receivertest.NewNopSettings(), *config)
+			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 			assert.NoError(t, err)
 			rcv.logsConsumer = sink
 
@@ -1665,7 +1666,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newReceiver(receivertest.NewNopSettings(), *config)
+			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 			assert.NoError(t, err)
 			rcv.logsConsumer = sink
 
@@ -1701,7 +1702,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	sink := new(consumertest.LogsSink)
-	rcv, err := newReceiver(receivertest.NewNopSettings(), *config)
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 	assert.NoError(t, err)
 	rcv.logsConsumer = sink
 
@@ -1762,7 +1763,7 @@ func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config := createDefaultConfig().(*Config)
 			sink := new(consumertest.LogsSink)
-			rcv, err := newReceiver(receivertest.NewNopSettings(), *config)
+			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 			assert.NoError(t, err)
 			rcv.logsConsumer = sink
 
@@ -1888,7 +1889,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newReceiver(receivertest.NewNopSettings(), *config)
+			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 			assert.NoError(t, err)
 			rcv.logsConsumer = sink
 
@@ -1913,7 +1914,7 @@ func BenchmarkHandleReq(b *testing.B) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0"
 	sink := new(consumertest.LogsSink)
-	rcv, err := newReceiver(receivertest.NewNopSettings(), *config)
+	rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 	assert.NoError(b, err)
 	rcv.logsConsumer = sink
 
@@ -1989,7 +1990,7 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newReceiver(receivertest.NewNopSettings(), *config)
+			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 			assert.NoError(t, err)
 			rcv.logsConsumer = sink
 

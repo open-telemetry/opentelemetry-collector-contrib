@@ -1,6 +1,10 @@
 default:
 all_set:
   metrics:
+    iis.application_pool.state:
+      enabled: true
+    iis.application_pool.uptime:
+      enabled: true
     iis.connection.active:
       enabled: true
     iis.connection.anonymous:
@@ -32,6 +36,10 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    iis.application_pool.state:
+      enabled: false
+    iis.application_pool.uptime:
+      enabled: false
     iis.connection.active:
       enabled: false
     iis.connection.anonymous:

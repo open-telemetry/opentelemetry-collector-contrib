@@ -9,7 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -25,11 +25,13 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter/internal/metadata"
 )
 
 func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 	const maxDelay = 200 * time.Millisecond
-	createSettings := exportertest.NewNopSettings()
+	createSettings := exportertest.NewNopSettings(metadata.Type)
 
 	const maxBatchCount = 20
 	const logsPerBatch = 10000
@@ -111,7 +113,7 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 				log.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 				log.Body().SetStr(key)
 				log.Attributes().PutStr("key", key)
-				log.Attributes().PutStr("p1", strings.Repeat("A", rand.Intn(2000)))
+				log.Attributes().PutStr("p1", strings.Repeat("A", rand.IntN(2000)))
 				expectedKeys[key] = 1
 			}
 			err = logs.ConsumeLogs(context.Background(), batch)

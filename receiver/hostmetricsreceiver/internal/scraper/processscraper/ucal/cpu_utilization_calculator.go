@@ -8,20 +8,8 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v4/cpu"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
-
-func init() {
-	_ = featuregate.GlobalRegistry().MustRegister(
-		"receiver.hostmetrics.normalizeProcessCPUUtilization",
-		featuregate.StageStable,
-		featuregate.WithRegisterDescription("When enabled, normalizes the process.cpu.utilization metric onto the interval [0-1] by dividing the value by the number of logical processors."),
-		featuregate.WithRegisterFromVersion("v0.97.0"),
-		featuregate.WithRegisterToVersion("v0.112.0"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31368"),
-	)
-}
 
 // CPUUtilization stores the utilization percents [0-1] for the different cpu states
 type CPUUtilization struct {

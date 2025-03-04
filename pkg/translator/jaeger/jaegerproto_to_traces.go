@@ -11,14 +11,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.16.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 )
 
 var blankJaegerProtoSpan = new(model.Span)

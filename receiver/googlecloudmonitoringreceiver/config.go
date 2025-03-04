@@ -26,6 +26,9 @@ type Config struct {
 
 type MetricConfig struct {
 	MetricName string `mapstructure:"metric_name"`
+	// Filter for listing metric descriptors. Only support `project` and `metric.type` as filter objects.
+	// See https://cloud.google.com/monitoring/api/v3/filters#metric-descriptor-filter for more details.
+	MetricDescriptorFilter string `mapstructure:"metric_descriptor_filter"`
 }
 
 func (config *Config) Validate() error {
@@ -47,8 +50,12 @@ func (config *Config) Validate() error {
 }
 
 func (metric MetricConfig) Validate() error {
-	if metric.MetricName == "" {
-		return errors.New("field \"metric_name\" is required and cannot be empty for metric configuration")
+	if metric.MetricName != "" && metric.MetricDescriptorFilter != "" {
+		return errors.New("fields \"metric_name\" and \"metric_descriptor_filter\" cannot both have value")
+	}
+
+	if metric.MetricName == "" && metric.MetricDescriptorFilter == "" {
+		return errors.New("fields \"metric_name\" and \"metric_descriptor_filter\" cannot both be empty")
 	}
 
 	return nil

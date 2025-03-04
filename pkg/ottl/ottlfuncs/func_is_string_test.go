@@ -59,7 +59,7 @@ func Test_IsString(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_IsString_Error(t *testing.T) {
 	exprFunc := isString[any](&ottl.StandardStringGetter[any]{
 		Getter: func(context.Context, any) (any, error) {

@@ -27,9 +27,9 @@ import (
 )
 
 func TestScraperStart(t *testing.T) {
-	clientConfigNonExistandCA := confighttp.NewDefaultClientConfig()
-	clientConfigNonExistandCA.Endpoint = defaultEndpoint
-	clientConfigNonExistandCA.TLSSetting = configtls.ClientConfig{
+	clientConfigNonexistentCA := confighttp.NewDefaultClientConfig()
+	clientConfigNonexistentCA.Endpoint = defaultEndpoint
+	clientConfigNonexistentCA.TLSSetting = configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: "/non/existent",
 		},
@@ -47,7 +47,7 @@ func TestScraperStart(t *testing.T) {
 			desc: "Bad Config",
 			scraper: &riakScraper{
 				cfg: &Config{
-					ClientConfig: clientConfigNonExistandCA,
+					ClientConfig: clientConfigNonexistentCA,
 				},
 				settings: componenttest.NewNopTelemetrySettings(),
 			},
@@ -78,7 +78,7 @@ func TestScraperStart(t *testing.T) {
 	}
 }
 
-func TestScaperScrape(t *testing.T) {
+func TestScraperScrape(t *testing.T) {
 	testCases := []struct {
 		desc              string
 		setupMockClient   func(t *testing.T) client
@@ -187,7 +187,7 @@ func TestScaperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newScraper(zap.NewNop(), tc.setupCfg(), receivertest.NewNopSettings())
+			scraper := newScraper(zap.NewNop(), tc.setupCfg(), receivertest.NewNopSettings(metadata.Type))
 			scraper.client = tc.setupMockClient(t)
 			actualMetrics, err := scraper.scrape(context.Background())
 			if tc.expectedErr == nil {
