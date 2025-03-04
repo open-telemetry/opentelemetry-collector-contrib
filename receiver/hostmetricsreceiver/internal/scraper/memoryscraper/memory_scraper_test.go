@@ -87,7 +87,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newMemoryScraper(context.Background(), scrapertest.NewNopSettings(), test.config)
+			scraper := newMemoryScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), test.config)
 			if test.virtualMemoryFunc != nil {
 				scraper.virtualMemory = test.virtualMemoryFunc
 			}
@@ -165,7 +165,7 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 			scraperConfig := Config{
 				MetricsBuilderConfig: mbc,
 			}
-			scraper := newMemoryScraper(context.Background(), scrapertest.NewNopSettings(), &scraperConfig)
+			scraper := newMemoryScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &scraperConfig)
 			if test.virtualMemoryFunc != nil {
 				scraper.virtualMemory = test.virtualMemoryFunc
 			}
