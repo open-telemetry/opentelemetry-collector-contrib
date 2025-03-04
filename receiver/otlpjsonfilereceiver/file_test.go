@@ -324,7 +324,7 @@ func TestEmptyLine(t *testing.T) {
 		err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), []byte{'\n', '\n'}, 0o600)
 		assert.NoError(t, err)
 		time.Sleep(1 * time.Second)
-		require.Len(t, ms.AllMetrics(), 0)
+		require.Empty(t, ms.AllMetrics())
 	})
 
 	t.Run("trace receiver", func(t *testing.T) {
@@ -339,7 +339,7 @@ func TestEmptyLine(t *testing.T) {
 		err = os.WriteFile(filepath.Join(tempFolder, "traces.json"), []byte{'\n', '\n'}, 0o600)
 		assert.NoError(t, err)
 		time.Sleep(1 * time.Second)
-		require.Len(t, ts.AllTraces(), 0)
+		require.Empty(t, ts.AllTraces())
 	})
 
 	t.Run("log receiver", func(t *testing.T) {
@@ -354,6 +354,6 @@ func TestEmptyLine(t *testing.T) {
 		err = os.WriteFile(filepath.Join(tempFolder, "logs.json"), []byte{'\n', '\n'}, 0o600)
 		assert.NoError(t, err)
 		time.Sleep(1 * time.Second)
-		require.Len(t, ls.AllLogs(), 0)
+		require.Empty(t, ls.AllLogs())
 	})
 }
