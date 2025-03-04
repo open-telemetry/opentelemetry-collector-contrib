@@ -41,18 +41,18 @@ require (
 	github.com/aws/aws-sdk-go v1.55.6 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.120.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.120.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.120.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.121.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.121.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.121.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.27.0
 	go.opentelemetry.io/collector/config/configauth v0.121.0 // indirect
@@ -91,9 +91,9 @@ require (
 require (
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.64.0-rc.3
 	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.64.0-rc.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.121.0
 	go.opentelemetry.io/collector/component/componenttest v0.121.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.121.0
 	golang.org/x/net v0.35.0
@@ -293,17 +293,17 @@ require (
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.120.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.120.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.120.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.120.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.120.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.120.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.120.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.120.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.120.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.120.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.121.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.121.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.121.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.121.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.121.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.121.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.121.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.121.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling v0.121.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.121.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.121.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/opencontainers/runtime-spec v1.2.0 // indirect
