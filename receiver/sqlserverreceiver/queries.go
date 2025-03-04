@@ -4,6 +4,7 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
+	_ "embed"
 	"fmt"
 	"strings"
 )
@@ -335,4 +336,11 @@ func getSQLServerPropertiesQuery(instanceName string) string {
 	}
 
 	return fmt.Sprintf(sqlServerProperties, "")
+}
+
+//go:embed templates/sqlServerQuerySample.tmpl
+var sqlServerQuerySamples string
+
+func getSQLServerQuerySamplesQuery() string {
+	return sqlServerQuerySamples
 }
