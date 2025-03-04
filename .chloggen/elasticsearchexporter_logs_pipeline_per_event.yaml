@@ -7,7 +7,7 @@ change_type: enhancement
 component: elasticsearchexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add config `dynamic_pipeline` to dynamically set the document pipeline to the value of the attribute `elasticsearch.document_pipeline`, this only applies to Logs, Metrics and Traces.
+note: Add config `dynamic_pipeline` to dynamically set the document pipeline to the value of the attribute `elasticsearch.document_pipeline`, this only applies to logs, metrics and traces.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [37419]
