@@ -106,8 +106,6 @@ github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelin
 github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.64.0-rc.6/go.mod h1:XV1M8/YB8qUsS4tKB8dR+8trxZTCPOx7biqPzhZZnXk=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.64.0-devel.0.20250218192636-64fdfe7ec366 h1:1+lRg2/KCDv+7PsXxzwGWmAiXUImxZcUY3mTLuKIUVI=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.64.0-devel.0.20250218192636-64fdfe7ec366/go.mod h1:3U34arhVlaZiDNQRPACnyYkjSc9Q1pa6OxXn0FrPKzg=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.63.2 h1:UkscMYFYm05Vbu5eQh8IWbhBWjFRg1+yDH8odip6nwA=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.63.2/go.mod h1:TjeFVmXhuMvQTVj07pp26ihR03ZJ1WAFpDbjT6Gbvl4=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.65.0-devel.0.20250304124125-23a109221842 h1:XYAUP8hT2Lee2KraGKKyipewbLkhPTlNdGDFTJnhmTo=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.65.0-devel.0.20250304124125-23a109221842/go.mod h1:csWGZ9A5/eOqvXeC0yl2oJvj4nrY/1sUOwKDGJhRuho=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.64.0-rc.6 h1:AssWSr461U1r1hFnCCRMF/IRI6xqR/Wl5LI8xg52BkE=
