@@ -34,7 +34,7 @@ func TestExtension(t *testing.T) {
 
 	ctx := context.TODO()
 	fakeClient := fake.NewClientset()
-	config.makeClient = func(apiConfig k8sconfig.APIConfig) (kubernetes.Interface, error) {
+	config.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 		return fakeClient, nil
 	}
 
@@ -48,7 +48,7 @@ func TestExtension(t *testing.T) {
 	}
 
 	leaderElection.SetCallBackFuncs(
-		func(ctx context.Context) {
+		func(_ context.Context) {
 			iamInvokedOnLeading = true
 			fmt.Printf("LeaderElection started leading")
 		},

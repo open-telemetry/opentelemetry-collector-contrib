@@ -5,6 +5,7 @@ package k8sleaderelector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -37,6 +38,7 @@ type leaderElectionExtension struct {
 	logger        *zap.Logger
 	leaseHolderID string
 	cancel        context.CancelFunc
+	waitGroup     sync.WaitGroup
 
 	onStartedLeading []StartCallback
 	onStoppedLeading []StopCallback
@@ -62,17 +64,17 @@ func (lee *leaderElectionExtension) Start(_ context.Context, _ component.Host) e
 
 	ctx := context.Background()
 	ctx, lee.cancel = context.WithCancel(ctx)
-
 	// Create the K8s leader elector
 	leaderElector, err := newK8sLeaderElector(lee.config, lee.client, lee.startedLeading, lee.stoppedLeading, lee.leaseHolderID)
 	if err != nil {
 		lee.logger.Error("Failed to create k8s leader elector", zap.Error(err))
 		return err
 	}
-
+	lee.waitGroup.Add(1)
 	go func() {
 		// Leader election loop stops if context is canceled or the leader elector loses the lease.
 		// The loop allows continued participation in leader election, even if the lease is lost.
+		defer lee.waitGroup.Done()
 		for {
 			leaderElector.Run(ctx)
 
@@ -93,5 +95,6 @@ func (lee *leaderElectionExtension) Shutdown(context.Context) error {
 	if lee.cancel != nil {
 		lee.cancel()
 	}
+	lee.waitGroup.Wait()
 	return nil
 }

@@ -21,7 +21,7 @@ func TestScrape(t *testing.T) {
 	ctx := context.Background()
 	fakeDate := time.Date(2006, 0o1, 0o2, 0o3, 0o4, 0o5, 0, time.UTC)
 
-	s := newUptimeScraper(ctx, scrapertest.NewNopSettings(), &Config{
+	s := newUptimeScraper(ctx, scrapertest.NewNopSettings(metadata.Type), &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	})
 

@@ -3,10 +3,11 @@ type: mysql
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski]
+    seeking_new: true
+    emeritus: [djaglowski]
 
 resource_attributes:
   mysql.instance.endpoint:
