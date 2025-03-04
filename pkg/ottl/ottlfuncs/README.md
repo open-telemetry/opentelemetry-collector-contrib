@@ -1211,6 +1211,21 @@ Examples:
 
 - `Int(Log(span.attributes["duration_ms"])`
 
+### Luhn
+
+`Luhn(value)`
+
+The `Luhn` converter returns a `boolean` value that indicates whether the value is a valid identification number,
+such as a credit card number according to the [Luhn algorithm](https://en.wikipedia.org/wiki/Luhn_algorithm).
+
+The value must either be a `string` consisting of digits only, or an integer number. If it is neither, an error will be returned.
+
+Examples:
+
+- `Luhn(span.attributes["credit_card_number"])`
+
+- `Luhn("17893729974")`
+
 ### MD5
 
 `MD5(value)`
