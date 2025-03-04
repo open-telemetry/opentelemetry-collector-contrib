@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.63
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.77.1
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.15
+	github.com/itchyny/timefmt-go v0.1.6
 	github.com/stretchr/testify v1.10.0
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector/component v0.120.1-0.20250303102058-a9bca17f1a4c
