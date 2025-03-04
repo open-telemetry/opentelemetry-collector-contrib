@@ -69,6 +69,10 @@ type Parser struct {
 	timeLayout              string
 }
 
+func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	return p.ProcessBatchWith(ctx, entries, p.Process)
+}
+
 // Process will parse an entry of Container logs
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 	format := p.format

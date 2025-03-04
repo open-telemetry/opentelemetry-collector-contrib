@@ -567,6 +567,45 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 	assert.Equal(t, int64(2), val.Int())
 }
 
+func TestSpanEventRedacted(t *testing.T) {
+	inBatch := ptrace.NewTraces()
+	rs := inBatch.ResourceSpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
+
+	library := ils.Scope()
+	library.SetName("first-library")
+	span := ils.Spans().AppendEmpty()
+	span.SetName("first-batch-first-span")
+	span.SetTraceID([16]byte{1, 2, 3, 4})
+
+	event := span.Events().AppendEmpty()
+	event.SetName("event-one")
+
+	event.Attributes().PutStr("password", "xyzxyz")
+	event.Attributes().PutStr("username", "foobar")
+
+	config := &Config{
+		AllowAllKeys:  true,
+		BlockedValues: []string{"xyzxyz"},
+		Summary:       "debug",
+	}
+	processor, err := newRedaction(context.TODO(), config, zaptest.NewLogger(t))
+	require.NoError(t, err)
+
+	outTraces, err := processor.processTraces(context.TODO(), inBatch)
+	require.NoError(t, err)
+
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0).Attributes()
+
+	val, ok := attr.Get("password")
+	require.True(t, ok)
+	assert.Equal(t, "****", val.Str())
+
+	val, ok = attr.Get("username")
+	require.True(t, ok)
+	require.Equal(t, "foobar", val.Str())
+}
+
 // runTest transforms the test input data and passes it through the processor
 func runTest(
 	t *testing.T,

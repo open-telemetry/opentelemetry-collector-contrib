@@ -6,7 +6,7 @@ exporters:
         s3uploader:
             s3_bucket: 'foo'
             s3_prefix: 'bar'
-            s3_partition: 'minute'
+            s3_partition_format: 'year=%Y/month=%m/day=%d/hour=%H/minute=%M'
             endpoint: "alternative-s3-system.example.com"
             s3_force_path_style: true
             disable_ssl: true

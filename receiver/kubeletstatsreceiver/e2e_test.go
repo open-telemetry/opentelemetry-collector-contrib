@@ -23,7 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	k8stest "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
@@ -72,9 +71,9 @@ func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
 	cfg.HTTP = nil
 	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
 
-	rcvr, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, mc)
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	rcvr, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, mc)
 	require.NoError(t, err, "failed creating metrics receiver")
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	return func() {
 		assert.NoError(t, rcvr.Shutdown(context.Background()))
 	}

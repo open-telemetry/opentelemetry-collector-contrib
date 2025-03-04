@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
-	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -2086,7 +2086,7 @@ func TestExporterAuth(t *testing.T) {
 	})
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{
-			testauthID: &authtest.MockClient{
+			testauthID: &extensionauthtest.MockClient{
 				ResultRoundTripper: roundTripperFunc(func(*http.Request) (*http.Response, error) {
 					select {
 					case done <- struct{}{}:
@@ -2120,7 +2120,7 @@ func TestExporterBatcher(t *testing.T) {
 	})
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{
-			testauthID: &authtest.MockClient{
+			testauthID: &extensionauthtest.MockClient{
 				ResultRoundTripper: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
 					requests = append(requests, req)
 					return nil, errors.New("nope")
