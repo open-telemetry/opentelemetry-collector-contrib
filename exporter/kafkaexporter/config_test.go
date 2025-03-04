@@ -308,7 +308,7 @@ func TestValidate_sasl_iam(t *testing.T) {
 	}
 
 	err := config.Validate()
-	assert.Equal(t, err, nil)
+	assert.NoError(t, err)
 }
 
 func Test_saramaProducerCompressionCodec(t *testing.T) {
