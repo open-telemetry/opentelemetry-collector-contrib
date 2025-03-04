@@ -260,7 +260,6 @@ body:
       - receiver/kafkametrics
       - receiver/kubeletstats
       - receiver/libhoney
-      - receiver/loki
       - receiver/memcached
       - receiver/mongodb
       - receiver/mongodbatlas

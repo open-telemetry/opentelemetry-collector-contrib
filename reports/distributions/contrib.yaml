@@ -162,7 +162,6 @@ components:
         - kafkametrics
         - kubeletstats
         - libhoney
-        - loki
         - memcached
         - mongodb
         - mongodbatlas
