@@ -38,6 +38,10 @@ Windows-specific options:
 - `computer_name` (optional): The computer name identifies the SQL Server name or IP address of the computer being monitored.
   If specified, `instance_name` is also required to be defined. This option is ignored in non-Windows environments.
 
+Query sample related options (only useful when query sample is enabled)
+- `max_query_sample_count`: it is mainly used to configure the cache size for the reported samples. 
+It would report the sample only if the query (identified by queryHash and queryPlanHash) is not in the cache
+
 Example:
 
 ```yaml
@@ -70,6 +74,21 @@ Example with named instance:
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
+Query sample enabled:
+```
+    receivers:
+      sqlserver:
+        collection_interval: 5s
+        username: sa
+        password: securepassword
+        server: 0.0.0.0
+        port: 1433
+        max_sample_query_count: 1000
+        logs:
+          enable_query_sample: true
+```
+```
+```
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)
