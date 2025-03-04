@@ -47,7 +47,7 @@ func TestClientReadDB(t *testing.T) {
 
 	client := snowflakeClient{
 		client: db,
-		logger: receivertest.NewNopSettingsWithType(metadata.Type).Logger,
+		logger: receivertest.NewNopSettings(metadata.Type).Logger,
 	}
 
 	ctx := context.Background()
@@ -271,7 +271,7 @@ func TestMetricQueries(t *testing.T) {
 
 			client := snowflakeClient{
 				client: db,
-				logger: receivertest.NewNopSettingsWithType(metadata.Type).Logger,
+				logger: receivertest.NewNopSettings(metadata.Type).Logger,
 			}
 			ctx := context.Background()
 

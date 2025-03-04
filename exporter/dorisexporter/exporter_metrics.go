@@ -5,6 +5,7 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	_ "embed" // for SQL file embedding
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,25 +26,8 @@ var ddls = []string{
 	metricsSummaryDDL,
 }
 
-func initMetricMap(maxLen int) map[pmetric.MetricType]metricModel {
-	return map[pmetric.MetricType]metricModel{
-		pmetric.MetricTypeGauge: &metricModelGauge{
-			data: make([]*dMetricGauge, 0, maxLen),
-		},
-		pmetric.MetricTypeSum: &metricModelSum{
-			data: make([]*dMetricSum, 0, maxLen),
-		},
-		pmetric.MetricTypeHistogram: &metricModelHistogram{
-			data: make([]*dMetricHistogram, 0, maxLen),
-		},
-		pmetric.MetricTypeExponentialHistogram: &metricModelExponentialHistogram{
-			data: make([]*dMetricExponentialHistogram, 0, maxLen),
-		},
-		pmetric.MetricTypeSummary: &metricModelSummary{
-			data: make([]*dMetricSummary, 0, maxLen),
-		},
-	}
-}
+//go:embed sql/metrics_view.sql
+var metricsView string
 
 type metricsExporter struct {
 	*commonExporter
@@ -51,7 +35,7 @@ type metricsExporter struct {
 
 func newMetricsExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings) *metricsExporter {
 	return &metricsExporter{
-		commonExporter: newExporter(logger, cfg, set),
+		commonExporter: newExporter(logger, cfg, set, "METRIC"),
 	}
 }
 
@@ -62,29 +46,45 @@ func (e *metricsExporter) start(ctx context.Context, host component.Host) error 
 	}
 	e.client = client
 
-	if !e.cfg.CreateSchema {
-		return nil
-	}
-
-	conn, err := createDorisMySQLClient(e.cfg)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	err = createAndUseDatabase(ctx, conn, e.cfg)
-	if err != nil {
-		return err
-	}
-
-	for _, ddlTemplate := range ddls {
-		ddl := fmt.Sprintf(ddlTemplate, e.cfg.Table.Metrics, e.cfg.propertiesStr())
-		_, err = conn.ExecContext(ctx, ddl)
+	if e.cfg.CreateSchema {
+		conn, err := createDorisMySQLClient(e.cfg)
 		if err != nil {
 			return err
 		}
+		defer conn.Close()
+
+		err = createAndUseDatabase(ctx, conn, e.cfg)
+		if err != nil {
+			return err
+		}
+
+		for _, ddlTemplate := range ddls {
+			ddl := fmt.Sprintf(ddlTemplate, e.cfg.Table.Metrics, e.cfg.propertiesStr())
+			_, err = conn.ExecContext(ctx, ddl)
+			if err != nil {
+				return err
+			}
+		}
+
+		models := []metricModel{
+			&metricModelGauge{},
+			&metricModelSum{},
+			&metricModelHistogram{},
+			&metricModelExponentialHistogram{},
+			&metricModelSummary{},
+		}
+
+		for _, model := range models {
+			table := e.cfg.Table.Metrics + model.tableSuffix()
+			view := fmt.Sprintf(metricsView, table, table)
+			_, err = conn.ExecContext(ctx, view)
+			if err != nil {
+				e.logger.Warn("failed to create materialized view", zap.Error(err))
+			}
+		}
 	}
 
+	go e.reporter.report()
 	return nil
 }
 
@@ -95,8 +95,80 @@ func (e *metricsExporter) shutdown(_ context.Context) error {
 	return nil
 }
 
+func (e *metricsExporter) initMetricMap(ms pmetric.Metrics) map[pmetric.MetricType]metricModel {
+	metricMap := make(map[pmetric.MetricType]metricModel, 5)
+
+	gaugeLen := 0
+	sumLen := 0
+	histogramLen := 0
+	exponentialHistogramLen := 0
+	summaryLen := 0
+
+	rms := ms.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		ilms := rm.ScopeMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			ilm := ilms.At(j)
+			ms := ilm.Metrics()
+			for k := 0; k < ms.Len(); k++ {
+				m := ms.At(k)
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					gaugeLen += m.Gauge().DataPoints().Len()
+				case pmetric.MetricTypeSum:
+					sumLen += m.Sum().DataPoints().Len()
+				case pmetric.MetricTypeHistogram:
+					histogramLen += m.Histogram().DataPoints().Len()
+				case pmetric.MetricTypeExponentialHistogram:
+					exponentialHistogramLen += m.ExponentialHistogram().DataPoints().Len()
+				case pmetric.MetricTypeSummary:
+					summaryLen += m.Summary().DataPoints().Len()
+				}
+			}
+		}
+	}
+
+	if gaugeLen > 0 {
+		gauge := &metricModelGauge{}
+		gauge.data = make([]*dMetricGauge, 0, gaugeLen)
+		gauge.lbl = e.generateMetricLabel(gauge)
+		metricMap[pmetric.MetricTypeGauge] = gauge
+	}
+
+	if sumLen > 0 {
+		sum := &metricModelSum{}
+		sum.data = make([]*dMetricSum, 0, sumLen)
+		sum.lbl = e.generateMetricLabel(sum)
+		metricMap[pmetric.MetricTypeSum] = sum
+	}
+
+	if histogramLen > 0 {
+		histogram := &metricModelHistogram{}
+		histogram.data = make([]*dMetricHistogram, 0, histogramLen)
+		histogram.lbl = e.generateMetricLabel(histogram)
+		metricMap[pmetric.MetricTypeHistogram] = histogram
+	}
+
+	if exponentialHistogramLen > 0 {
+		exponentialHistogram := &metricModelExponentialHistogram{}
+		exponentialHistogram.data = make([]*dMetricExponentialHistogram, 0, exponentialHistogramLen)
+		exponentialHistogram.lbl = e.generateMetricLabel(exponentialHistogram)
+		metricMap[pmetric.MetricTypeExponentialHistogram] = exponentialHistogram
+	}
+
+	if summaryLen > 0 {
+		summary := &metricModelSummary{}
+		summary.data = make([]*dMetricSummary, 0, summaryLen)
+		summary.lbl = e.generateMetricLabel(summary)
+		metricMap[pmetric.MetricTypeSummary] = summary
+	}
+
+	return metricMap
+}
+
 func (e *metricsExporter) pushMetricData(ctx context.Context, md pmetric.Metrics) error {
-	metricMap := initMetricMap(md.DataPointCount())
+	metricMap := e.initMetricMap(md)
 
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		resourceMetric := md.ResourceMetrics().At(i)
@@ -107,6 +179,11 @@ func (e *metricsExporter) pushMetricData(ctx context.Context, md pmetric.Metrics
 		if ok {
 			serviceName = v.AsString()
 		}
+		serviceInstance := ""
+		v, ok = resourceAttributes.Get(semconv.AttributeServiceInstanceID)
+		if ok {
+			serviceInstance = v.AsString()
+		}
 
 		for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
 			scopeMetric := resourceMetric.ScopeMetrics().At(j)
@@ -116,6 +193,7 @@ func (e *metricsExporter) pushMetricData(ctx context.Context, md pmetric.Metrics
 
 				dm := &dMetric{
 					ServiceName:        serviceName,
+					ServiceInstanceID:  serviceInstance,
 					MetricName:         metric.Name(),
 					MetricDescription:  metric.Description(),
 					MetricUnit:         metric.Unit(),
@@ -164,16 +242,12 @@ func (e *metricsExporter) pushMetricDataParallel(ctx context.Context, metricMap 
 }
 
 func (e *metricsExporter) pushMetricDataInternal(ctx context.Context, metrics metricModel) error {
-	if metrics.size() <= 0 {
-		return nil
-	}
-
 	marshal, err := metrics.bytes()
 	if err != nil {
 		return err
 	}
 
-	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Table.Metrics+metrics.tableSuffix(), marshal)
+	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Table.Metrics+metrics.tableSuffix(), marshal, metrics.label())
 	if err != nil {
 		return err
 	}
@@ -195,11 +269,23 @@ func (e *metricsExporter) pushMetricDataInternal(ctx context.Context, metrics me
 		return err
 	}
 
-	if !response.success() {
-		return fmt.Errorf("failed to push metric data: %s", response.Message)
+	if response.success() {
+		e.reporter.incrTotalRows(int64(metrics.size()))
+		e.reporter.incrTotalBytes(int64(len(marshal)))
+
+		if response.duplication() {
+			e.logger.Warn("label already exists", zap.String("label", metrics.label()), zap.Int("skipped", metrics.size()))
+		}
+
+		if e.cfg.LogResponse {
+			e.logger.Info("metric response:\n" + string(body))
+		} else {
+			e.logger.Debug("metric response:\n" + string(body))
+		}
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("failed to push metric data, response:%s", string(body))
 }
 
 func (e *metricsExporter) getNumberDataPointValue(dp pmetric.NumberDataPoint) float64 {
@@ -230,4 +316,8 @@ func (e *metricsExporter) getExemplarValue(ep pmetric.Exemplar) float64 {
 		e.logger.Warn("exemplar value type is invalid, use 0.0 as default")
 		return 0.0
 	}
+}
+
+func (e *metricsExporter) generateMetricLabel(m metricModel) string {
+	return generateLabel(e.cfg, e.cfg.Table.Metrics+m.tableSuffix())
 }

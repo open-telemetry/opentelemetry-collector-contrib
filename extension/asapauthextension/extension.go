@@ -10,11 +10,11 @@ import (
 
 	"bitbucket.org/atlassian/go-asap/v2"
 	"github.com/SermoDigital/jose/crypto"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"google.golang.org/grpc/credentials"
 )
 
-func createASAPClientAuthenticator(cfg *Config) (auth.Client, error) {
+func createASAPClientAuthenticator(cfg *Config) (extensionauth.Client, error) {
 	pk, err := asap.NewPrivateKey([]byte(cfg.PrivateKey))
 	if err != nil {
 		return nil, err
@@ -24,14 +24,14 @@ func createASAPClientAuthenticator(cfg *Config) (auth.Client, error) {
 	p := asap.NewCachingProvisioner(asap.NewProvisioner(
 		cfg.KeyID, cfg.TTL, cfg.Issuer, cfg.Audience, crypto.SigningMethodRS256))
 
-	return auth.NewClient(
-		auth.WithClientRoundTripper(func(base http.RoundTripper) (http.RoundTripper, error) {
+	return extensionauth.NewClient(
+		extensionauth.WithClientRoundTripper(func(base http.RoundTripper) (http.RoundTripper, error) {
 			return asap.NewTransportDecorator(p, pk)(base), nil
 		}),
-		auth.WithClientPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
+		extensionauth.WithClientPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
 			return &perRPCAuth{provisioner: p, privateKey: pk}, nil
 		}),
-	), nil
+	)
 }
 
 // perRPCAuth is a gRPC credentials.PerRPCCredentials implementation that returns an 'authorization' header.
