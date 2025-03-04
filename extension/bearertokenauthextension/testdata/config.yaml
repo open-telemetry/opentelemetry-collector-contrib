@@ -4,3 +4,27 @@ bearertokenauth/sometoken:
 bearertokenauth/withscheme:
   scheme: MyScheme
   token: "my-token"
+bearertokenauth/multipletokens:
+  scheme: "Bearer"
+  tokens:
+    - "token1"
+    - "thistokenalsoworks"
+bearertokenauth/withfilename:
+  scheme: "Bearer"
+  filename: "file-containing.token"
+bearertokenauth/both:
+  scheme: "Bearer"
+  token: "ignoredtoken"
+  filename: "file-containing.token"
+bearertokenauth/withtokensandfilename:
+  scheme: "Bearer"
+  tokens:
+    - "ignoredtoken1"
+    - "ignoredtoken2"
+  filename: "file-containing.token"
+bearertokenauth/tokensandtoken:
+  scheme: "Bearer"
+  tokens:
+    - "token1"
+    - "thistokenalsoworks"
+  token: "my-token"

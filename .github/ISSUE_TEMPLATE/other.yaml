@@ -126,6 +126,7 @@ body:
       - extension/sumologic
       - internal/aws
       - internal/collectd
+      - internal/common
       - internal/core
       - internal/datadog
       - internal/docker
@@ -301,6 +302,7 @@ body:
       - receiver/statsd
       - receiver/syslog
       - receiver/systemd
+      - receiver/tcpcheck
       - receiver/tcplog
       - receiver/tlscheck
       - receiver/udplog
@@ -309,6 +311,7 @@ body:
       - receiver/webhookevent
       - receiver/windowseventlog
       - receiver/windowsperfcounters
+      - receiver/windowsservice
       - receiver/zipkin
       - receiver/zookeeper
       - scraper/zookeeperscraper
