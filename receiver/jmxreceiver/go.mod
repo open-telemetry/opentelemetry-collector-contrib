@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.120.1
-	github.com/shirou/gopsutil/v4 v4.25.1
+	github.com/shirou/gopsutil/v4 v4.25.2
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.35.0
 	go.opentelemetry.io/collector/component v0.120.1-0.20250303102058-a9bca17f1a4c

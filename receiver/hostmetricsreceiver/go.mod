@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.120.1
 	github.com/prometheus-community/windows_exporter v0.27.2
 	github.com/prometheus/procfs v0.15.1
-	github.com/shirou/gopsutil/v4 v4.25.1
+	github.com/shirou/gopsutil/v4 v4.25.2
 	github.com/stretchr/testify v1.10.0
 	github.com/tilinna/clock v1.1.0
 	github.com/yusufpapurcu/wmi v1.2.4

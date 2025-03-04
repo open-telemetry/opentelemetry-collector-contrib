@@ -9,7 +9,7 @@ require (
 	github.com/docker/docker v27.5.1+incompatible
 	github.com/hashicorp/consul/api v1.31.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.120.1
-	github.com/shirou/gopsutil/v4 v4.25.1
+	github.com/shirou/gopsutil/v4 v4.25.2
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/semconv v0.120.1-0.20250303102058-a9bca17f1a4c
 	go.opentelemetry.io/otel v1.34.0
@@ -43,7 +43,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
