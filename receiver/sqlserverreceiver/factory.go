@@ -4,28 +4,40 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
+	"go.uber.org/zap"
 )
 
 var errConfigNotSQLServer = errors.New("config was not a sqlserver receiver config")
+
+func newCache(size int) *lru.Cache[string, int64] {
+	if size <= 0 {
+		size = 1
+	}
+	// lru will only returns error when the size is less than 0
+	cache, _ := lru.New[string, int64](size)
+	return cache
+}
 
 // NewFactory creates a factory for SQL Server receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -34,6 +46,10 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		LogsConfig: LogsConfig{
+			EnableQuerySample: false,
+		},
+		MaxQuerySampleCount: 1000,
 	}
 }
 
@@ -60,6 +76,15 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerPropertiesQuery(cfg.InstanceName))
 	}
 
+	return queries
+}
+
+func setupLogQueries(cfg *Config) []string {
+	var queries []string
+
+	if cfg.EnableQuerySample {
+		queries = append(queries, getSQLServerQuerySamplesQuery())
+	}
 	return queries
 }
 
@@ -97,12 +122,63 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 	for i, query := range queries {
 		id := component.NewIDWithName(metadata.Type, fmt.Sprintf("query-%d: %s", i, query))
 
+		cache := newCache(1)
+
 		sqlServerScraper := newSQLServerScraper(id, query,
 			sqlquery.TelemetryConfig{},
 			dbProviderFunc,
 			sqlquery.NewDbClient,
 			params,
-			cfg)
+			cfg,
+			cache)
+
+		scrapers = append(scrapers, sqlServerScraper)
+	}
+
+	return scrapers
+}
+
+// SQL Server scraper creation is split out into a separate method for the sake of testing.
+func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlServerScraperHelper {
+	if !directDBConnectionEnabled(cfg) {
+		params.Logger.Info("No direct connection will be made to the SQL Server: Configuration doesn't include some options.")
+		return nil
+	}
+
+	queries := setupLogQueries(cfg)
+	if len(queries) == 0 {
+		params.Logger.Info("No direct connection will be made to the SQL Server: No logs are enabled requiring it.")
+		return nil
+	}
+
+	// TODO: Test if this needs to be re-defined for each scraper
+	// This should be tested when there is more than one query being made.
+	dbProviderFunc := func() (*sql.DB, error) {
+		return sql.Open("sqlserver", getDBConnectionString(cfg))
+	}
+
+	var scrapers []*sqlServerScraperHelper
+	for i, query := range queries {
+		id := component.NewIDWithName(metadata.Type, fmt.Sprintf("logs-query-%d: %s", i, query))
+
+		var cache *lru.Cache[string, int64]
+		var err error
+
+		if query == getSQLServerQuerySamplesQuery() {
+			cache, err = lru.New[string, int64](int(cfg.MaxQuerySampleCount * 10))
+			if err != nil {
+				params.Logger.Error("Failed to create LRU cache, skipping the current scraper", zap.Error(err))
+				continue
+			}
+		}
+
+		sqlServerScraper := newSQLServerScraper(id, query,
+			sqlquery.TelemetryConfig{},
+			dbProviderFunc,
+			sqlquery.NewDbClient,
+			params,
+			cfg,
+			cache)
 
 		scrapers = append(scrapers, sqlServerScraper)
 	}
@@ -126,6 +202,32 @@ func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.Contr
 		}
 
 		opt := scraperhelper.AddScraper(metadata.Type, s)
+		opts = append(opts, opt)
+	}
+
+	return opts, nil
+}
+
+// Note: This method will fail silently if there is no work to do. This is an acceptable use case
+// as this receiver can still get information on Windows from performance counters without a direct
+// connection. Messages will be logged at the INFO level in such cases.
+func setupLogsScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.ControllerOption, error) {
+	sqlServerScrapers := setupSQLServerLogsScrapers(params, cfg)
+
+	var opts []scraperhelper.ControllerOption
+	for _, sqlScraper := range sqlServerScrapers {
+		s, err := scraper.NewLogs(sqlScraper.ScrapeLogs,
+			scraper.WithStart(sqlScraper.Start),
+			scraper.WithShutdown(sqlScraper.Shutdown))
+		if err != nil {
+			return nil, err
+		}
+
+		opt := scraperhelper.AddFactoryWithConfig(
+			scraper.NewFactory(metadata.Type, nil,
+				scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
+					return s, nil
+				}, component.StabilityLevelAlpha)), nil)
 		opts = append(opts, opt)
 	}
 
