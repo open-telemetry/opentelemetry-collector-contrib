@@ -97,10 +97,7 @@ func consumeResource(metadataReporter *inframetadata.Reporter, res pcommon.Resou
 }
 
 func enableMetricExportSerializer() error {
-	if err := featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), true); err != nil {
-		return err
-	}
-	return nil
+	return featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), true)
 }
 
 type factory struct {
