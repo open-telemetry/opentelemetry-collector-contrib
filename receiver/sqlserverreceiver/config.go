@@ -25,6 +25,8 @@ type Config struct {
 	InstanceName string `mapstructure:"instance_name"`
 	ComputerName string `mapstructure:"computer_name"`
 
+	MaxQuerySampleCount uint `mapstructure:"max_query_sample_count"`
+
 	// The following options currently do nothing. Functionality will be added in a future PR.
 	Password configopaque.String `mapstructure:"password"`
 	Port     uint                `mapstructure:"port"`
