@@ -6,14 +6,14 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.120.1
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.120.1-0.20250303102058-a9bca17f1a4c
+	go.opentelemetry.io/collector/component v1.27.0
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250303102058-a9bca17f1a4c
 	go.opentelemetry.io/collector/config/confighttp v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/confmap v1.26.1-0.20250303102058-a9bca17f1a4c
+	go.opentelemetry.io/collector/confmap v1.27.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/consumer v1.26.1-0.20250303102058-a9bca17f1a4c
+	go.opentelemetry.io/collector/consumer v1.27.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/pdata v1.26.1-0.20250303102058-a9bca17f1a4c
+	go.opentelemetry.io/collector/pdata v1.27.0
 	go.opentelemetry.io/collector/processor v0.120.1-0.20250303102058-a9bca17f1a4c
 	go.opentelemetry.io/collector/processor/processortest v0.120.1-0.20250303102058-a9bca17f1a4c
 	go.opentelemetry.io/otel/schema v0.0.12
@@ -48,14 +48,14 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/client v1.26.1-0.20250303102058-a9bca17f1a4c // indirect
+	go.opentelemetry.io/collector/client v1.27.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
 	go.opentelemetry.io/collector/config/configauth v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.26.1-0.20250303102058-a9bca17f1a4c // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.26.1-0.20250303102058-a9bca17f1a4c // indirect
-	go.opentelemetry.io/collector/config/configtls v1.26.1-0.20250303102058-a9bca17f1a4c // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.27.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.27.0 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.27.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
-	go.opentelemetry.io/collector/extension v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
+	go.opentelemetry.io/collector/extension v1.27.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250303102058-a9bca17f1a4c // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.120.1-0.20250303102058-a9bca17f1a4c // indirect

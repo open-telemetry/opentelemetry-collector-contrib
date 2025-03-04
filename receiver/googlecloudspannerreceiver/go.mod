@@ -7,13 +7,13 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.3.0
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.120.1-0.20250303102058-a9bca17f1a4c
+	go.opentelemetry.io/collector/component v1.27.0
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/confmap v1.26.1-0.20250303102058-a9bca17f1a4c
+	go.opentelemetry.io/collector/confmap v1.27.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/consumer v1.26.1-0.20250303102058-a9bca17f1a4c
+	go.opentelemetry.io/collector/consumer v1.27.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/pdata v1.26.1-0.20250303102058-a9bca17f1a4c
+	go.opentelemetry.io/collector/pdata v1.27.0
 	go.opentelemetry.io/collector/receiver v0.120.1-0.20250303102058-a9bca17f1a4c
 	go.opentelemetry.io/collector/receiver/receivertest v0.120.1-0.20250303102058-a9bca17f1a4c
 	go.opentelemetry.io/collector/scraper v0.120.1-0.20250303102058-a9bca17f1a4c

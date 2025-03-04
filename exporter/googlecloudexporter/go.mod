@@ -5,14 +5,14 @@ go 1.23.0
 require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.51.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.120.1-0.20250303102058-a9bca17f1a4c
+	go.opentelemetry.io/collector/component v1.27.0
 	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/confmap v1.26.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/consumer v1.26.1-0.20250303102058-a9bca17f1a4c
+	go.opentelemetry.io/collector/confmap v1.27.0
+	go.opentelemetry.io/collector/consumer v1.27.0
 	go.opentelemetry.io/collector/exporter v0.120.1-0.20250303102058-a9bca17f1a4c
 	go.opentelemetry.io/collector/exporter/exportertest v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/featuregate v1.26.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/pdata v1.26.1-0.20250303102058-a9bca17f1a4c
+	go.opentelemetry.io/collector/featuregate v1.27.0
+	go.opentelemetry.io/collector/pdata v1.27.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -55,12 +55,12 @@ require (
 	github.com/tidwall/tinylru v1.2.1 // indirect
 	github.com/tidwall/wal v1.1.8 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.26.1-0.20250303102058-a9bca17f1a4c // indirect
+	go.opentelemetry.io/collector/config/configretry v1.27.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
-	go.opentelemetry.io/collector/extension v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
+	go.opentelemetry.io/collector/extension v1.27.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
 	go.opentelemetry.io/collector/pipeline v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
