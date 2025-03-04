@@ -6,21 +6,21 @@ require (
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/jaegertracing/jaeger-idl v0.5.0
 	github.com/jonboulle/clockwork v0.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.121.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/component/componentstatus v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/config/configgrpc v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/config/confighttp v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/config/confignet v1.26.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/config/configopaque v1.26.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/config/configtls v1.26.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/confmap v1.26.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/confmap/xconfmap v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/extension v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/extension/extensiontest v0.120.1-0.20250303102058-a9bca17f1a4c
-	go.opentelemetry.io/collector/featuregate v1.26.1-0.20250303102058-a9bca17f1a4c
+	go.opentelemetry.io/collector/component v1.27.0
+	go.opentelemetry.io/collector/component/componentstatus v0.121.0
+	go.opentelemetry.io/collector/component/componenttest v0.121.0
+	go.opentelemetry.io/collector/config/configgrpc v0.121.0
+	go.opentelemetry.io/collector/config/confighttp v0.121.0
+	go.opentelemetry.io/collector/config/confignet v1.27.0
+	go.opentelemetry.io/collector/config/configopaque v1.27.0
+	go.opentelemetry.io/collector/config/configtls v1.27.0
+	go.opentelemetry.io/collector/confmap v1.27.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.121.0
+	go.opentelemetry.io/collector/extension v1.27.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.121.0
+	go.opentelemetry.io/collector/featuregate v1.27.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.70.0
@@ -49,12 +49,12 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/client v1.26.1-0.20250303102058-a9bca17f1a4c // indirect
-	go.opentelemetry.io/collector/config/configauth v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.26.1-0.20250303102058-a9bca17f1a4c // indirect
-	go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250303102058-a9bca17f1a4c // indirect
-	go.opentelemetry.io/collector/pdata v1.26.1-0.20250303102058-a9bca17f1a4c // indirect
-	go.opentelemetry.io/collector/pipeline v0.120.1-0.20250303102058-a9bca17f1a4c // indirect
+	go.opentelemetry.io/collector/client v1.27.0 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.121.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.27.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v0.121.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.27.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.121.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
@@ -78,9 +78,3 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-
-replace go.opentelemetry.io/collector/extension/extensionauth => go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250303102058-a9bca17f1a4c
-
-replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250303102058-a9bca17f1a4c
-
-replace go.opentelemetry.io/collector/service/hostcapabilities => go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250303102058-a9bca17f1a4c
