@@ -36,7 +36,7 @@ service:
             exporter:
               otlp:
                 protocol: http/protobuf
-                endpoint: {{.LogsEndpoint}}{{if .LogsHeaders}}
+                endpoint: {{.LogsEndpoint}}
                 {{- if .LogsHeaders}}
                 headers:
                 {{- range $k := .LogsHeaders}}
