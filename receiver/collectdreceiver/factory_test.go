@@ -26,7 +26,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	params := receivertest.NewNopSettingsWithType(metadata.Type)
+	params := receivertest.NewNopSettings(metadata.Type)
 	tReceiver, err := factory.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "receiver creation failed")

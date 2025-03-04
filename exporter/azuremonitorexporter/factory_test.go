@@ -20,7 +20,7 @@ func TestCreateTracesUsingSpecificTransportChannel(t *testing.T) {
 	// mock transport channel creation
 	f := &factory{}
 	ctx := context.Background()
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 	config := createDefaultConfig().(*Config)
 	config.ConnectionString = "InstrumentationKey=test-key;IngestionEndpoint=https://test-endpoint/"
 	exporter, err := f.createTracesExporter(ctx, params, config)
@@ -34,7 +34,7 @@ func TestCreateTracesUsingDefaultTransportChannel(t *testing.T) {
 	ctx := context.Background()
 	config := createDefaultConfig().(*Config)
 	config.ConnectionString = "InstrumentationKey=test-key;IngestionEndpoint=https://test-endpoint/"
-	exporter, err := f.createTracesExporter(ctx, exportertest.NewNopSettingsWithType(metadata.Type), config)
+	exporter, err := f.createTracesExporter(ctx, exportertest.NewNopSettings(metadata.Type), config)
 	assert.NotNil(t, exporter)
 	assert.NoError(t, err)
 }
@@ -43,7 +43,7 @@ func TestCreateTracesUsingBadConfig(t *testing.T) {
 	// We get the default transport channel creation, if we don't specify one during factory creation
 	f := factory{}
 	ctx := context.Background()
-	params := exportertest.NewNopSettingsWithType(metadata.Type)
+	params := exportertest.NewNopSettings(metadata.Type)
 
 	badConfig := &badConfig{}
 

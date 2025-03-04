@@ -10,7 +10,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 )
 
@@ -46,9 +46,9 @@ func makeHeadersFunc(logger *zap.Logger, serverCfg *OpAMPServer, host component.
 		return nil, fmt.Errorf("could not find auth extension %q", extID)
 	}
 
-	authExt, ok := ext.(auth.Client)
+	authExt, ok := ext.(extensionauth.Client)
 	if !ok {
-		return nil, fmt.Errorf("auth extension %q is not an auth.Client", extID)
+		return nil, fmt.Errorf("auth extension %q is not an extensionauth.Client", extID)
 	}
 
 	hcrt := &headerCaptureRoundTripper{}

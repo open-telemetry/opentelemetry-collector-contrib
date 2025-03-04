@@ -48,7 +48,7 @@ func TestNewLogs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newLogsProcessor(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), tt.nextConsumer, tt.cfg)
+			got, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), tt.nextConsumer, tt.cfg)
 			if tt.wantErr {
 				assert.Nil(t, got)
 				assert.Error(t, err)
@@ -172,7 +172,7 @@ func TestLogsSampling(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			processor, err := newLogsProcessor(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), sink, tt.cfg)
+			processor, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), sink, tt.cfg)
 			require.NoError(t, err)
 			logs := plog.NewLogs()
 			lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
@@ -392,7 +392,7 @@ func TestLogsSamplingState(t *testing.T) {
 				*cfg = *tt.cfg
 			}
 
-			set := processortest.NewNopSettingsWithType(metadata.Type)
+			set := processortest.NewNopSettings(metadata.Type)
 			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)
 
@@ -489,7 +489,7 @@ func TestLogsMissingRandomness(t *testing.T) {
 				}
 
 				sink := new(consumertest.LogsSink)
-				set := processortest.NewNopSettingsWithType(metadata.Type)
+				set := processortest.NewNopSettings(metadata.Type)
 				// Note: there is a debug-level log we are expecting when FailClosed
 				// causes a drop.
 				logger, observed := observer.New(zap.DebugLevel)

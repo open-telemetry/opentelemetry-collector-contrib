@@ -239,38 +239,42 @@ func validateMetricInfo[K any](mi MetricInfo, parser ottl.Parser[K]) error {
 		return fmt.Errorf("sum validation failed: %w", err)
 	}
 
-	// Exactly one metric should be defined
-	var (
-		metricsDefinedCount int
-		statements          []string
-	)
+	// Exactly one metric should be defined. Also, validate OTTL expressions,
+	// note that, here we only evaluate if statements are valid. Check for
+	// required statements are left to the other validations.
+	var metricsDefinedCount int
 	if mi.Histogram != nil {
 		metricsDefinedCount++
 		if mi.Histogram.Count != "" {
-			statements = append(statements, customottl.ConvertToStatement(mi.Histogram.Count))
+			if _, err := parser.ParseValueExpression(mi.Histogram.Count); err != nil {
+				return fmt.Errorf("failed to parse count OTTL expression for explicit histogram: %w", err)
+			}
 		}
-		statements = append(statements, customottl.ConvertToStatement(mi.Histogram.Value))
+		if _, err := parser.ParseValueExpression(mi.Histogram.Value); err != nil {
+			return fmt.Errorf("failed to parse value OTTL expression for explicit histogram: %w", err)
+		}
 	}
 	if mi.ExponentialHistogram != nil {
 		metricsDefinedCount++
 		if mi.ExponentialHistogram.Count != "" {
-			statements = append(statements, customottl.ConvertToStatement(mi.ExponentialHistogram.Count))
+			if _, err := parser.ParseValueExpression(mi.ExponentialHistogram.Count); err != nil {
+				return fmt.Errorf("failed to parse count OTTL expression for exponential histogram: %w", err)
+			}
 		}
-		statements = append(statements, customottl.ConvertToStatement(mi.ExponentialHistogram.Value))
+		if _, err := parser.ParseValueExpression(mi.ExponentialHistogram.Value); err != nil {
+			return fmt.Errorf("failed to parse value OTTL expression for exponential histogram: %w", err)
+		}
 	}
 	if mi.Sum != nil {
 		metricsDefinedCount++
-		statements = append(statements, customottl.ConvertToStatement(mi.Sum.Value))
+		if _, err := parser.ParseValueExpression(mi.Sum.Value); err != nil {
+			return fmt.Errorf("failed to parse value OTTL expression for summary: %w", err)
+		}
 	}
 	if metricsDefinedCount != 1 {
 		return fmt.Errorf("exactly one of the metrics must be defined, %d found", metricsDefinedCount)
 	}
 
-	// validate OTTL statements, note that, here we only evaluate if statements
-	// are valid. Check for required statements is left to the other validations.
-	if _, err := parser.ParseStatements(statements); err != nil {
-		return fmt.Errorf("failed to parse OTTL statements: %w", err)
-	}
 	// validate OTTL conditions
 	if _, err := parser.ParseConditions(mi.Conditions); err != nil {
 		return fmt.Errorf("failed to parse OTTL conditions: %w", err)
