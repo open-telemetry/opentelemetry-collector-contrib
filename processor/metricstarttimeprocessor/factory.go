@@ -9,8 +9,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/truereset"
 )
 
 // NewFactory creates a new metric start time processor factory.
@@ -21,10 +23,6 @@ func NewFactory() processor.Factory {
 		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability))
 }
 
-func createDefaultConfig() component.Config {
-	return &Config{}
-}
-
 // createMetricsProcessor creates a metrics processor based on provided config.
 func createMetricsProcessor(
 	ctx context.Context,
@@ -33,5 +31,14 @@ func createMetricsProcessor(
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
 	rCfg := cfg.(*Config)
-	return newMetricStartTimeProcessor(ctx, set, nextConsumer, rCfg)
+
+	adjuster := truereset.NewAdjuster(set.TelemetrySettings, rCfg.GCInterval)
+
+	return processorhelper.NewMetrics(
+		ctx,
+		set,
+		cfg,
+		nextConsumer,
+		adjuster.AdjustMetrics,
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }

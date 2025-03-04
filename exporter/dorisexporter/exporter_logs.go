@@ -21,10 +21,14 @@ import (
 //go:embed sql/logs_ddl.sql
 var logsDDL string
 
+//go:embed sql/logs_view.sql
+var logsView string
+
 // dLog Log to Doris
 type dLog struct {
 	ServiceName        string         `json:"service_name"`
 	Timestamp          string         `json:"timestamp"`
+	ServiceInstanceID  string         `json:"service_instance_id"`
 	TraceID            string         `json:"trace_id"`
 	SpanID             string         `json:"span_id"`
 	SeverityNumber     int32          `json:"severity_number"`
@@ -70,6 +74,12 @@ func (e *logsExporter) start(ctx context.Context, host component.Host) error {
 		if err != nil {
 			return err
 		}
+
+		view := fmt.Sprintf(logsView, e.cfg.Table.Logs, e.cfg.Table.Logs)
+		_, err = conn.ExecContext(ctx, view)
+		if err != nil {
+			e.logger.Warn("failed to create materialized view", zap.Error(err))
+		}
 	}
 
 	go e.reporter.report()
@@ -96,6 +106,11 @@ func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 		if ok {
 			serviceName = v.AsString()
 		}
+		serviceInstance := ""
+		v, ok = resourceAttributes.Get(semconv.AttributeServiceInstanceID)
+		if ok {
+			serviceInstance = v.AsString()
+		}
 
 		for j := 0; j < resourceLogs.ScopeLogs().Len(); j++ {
 			scopeLogs := resourceLogs.ScopeLogs().At(j)
@@ -106,6 +121,7 @@ func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 				log := &dLog{
 					ServiceName:        serviceName,
 					Timestamp:          e.formatTime(logRecord.Timestamp().AsTime()),
+					ServiceInstanceID:  serviceInstance,
 					TraceID:            traceutil.TraceIDToHexOrEmptyString(logRecord.TraceID()),
 					SpanID:             traceutil.SpanIDToHexOrEmptyString(logRecord.SpanID()),
 					SeverityNumber:     int32(logRecord.SeverityNumber()),
