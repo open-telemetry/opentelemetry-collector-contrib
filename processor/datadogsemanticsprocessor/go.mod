@@ -6,15 +6,15 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.61.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.27.0
-    go.opentelemetry.io/collector/component/componentstatus v0.121.0
-    go.opentelemetry.io/collector/component/componenttest v0.121.0
-    go.opentelemetry.io/collector/confmap v1.27.0
-    go.opentelemetry.io/collector/consumer v1.27.0
-    go.opentelemetry.io/collector/consumer/consumertest v0.121.0
-    go.opentelemetry.io/collector/pdata v1.27.0
-    go.opentelemetry.io/collector/processor v0.121.0
-    go.opentelemetry.io/collector/processor/processortest v0.121.0
-    go.opentelemetry.io/collector/semconv v0.121.0
+	go.opentelemetry.io/collector/component/componentstatus v0.121.0
+	go.opentelemetry.io/collector/component/componenttest v0.121.0
+	go.opentelemetry.io/collector/confmap v1.27.0
+	go.opentelemetry.io/collector/consumer v1.27.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.121.0
+	go.opentelemetry.io/collector/pdata v1.27.0
+	go.opentelemetry.io/collector/processor v0.121.0
+	go.opentelemetry.io/collector/processor/processortest v0.121.0
+	go.opentelemetry.io/collector/semconv v0.121.0
 )
 
 require (
@@ -63,11 +63,11 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.121.0 // indirect
-    go.opentelemetry.io/collector/consumer/xconsumer v0.121.0 // indirect
-    go.opentelemetry.io/collector/pdata/pprofile v0.121.0 // indirect
-    go.opentelemetry.io/collector/pdata/testdata v0.121.0 // indirect
-    go.opentelemetry.io/collector/pipeline v0.121.0 // indirect
-    go.opentelemetry.io/collector/processor/xprocessor v0.121.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.121.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.121.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.121.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.121.0 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.121.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
