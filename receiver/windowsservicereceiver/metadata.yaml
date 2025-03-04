@@ -10,16 +10,16 @@ status:
   unsupported_platforms: [darwin, linux]
 
 attributes:
-  windows.service.name:
+  name:
     description: The name of the windows Service being reported.
     type: string
-  windows.service.startup_mode:
+  startup_mode:
     description: Startup mode of Windows Service
     enum: [boot_start, system_start, auto_start, demand_start, disabled]
     type: string
   
 metrics:
-  windows.service:
+  windows.service.status:
     enabled: true
     description: Gauge value containing service status as an integer value.
     extended_documentation: >
@@ -35,7 +35,7 @@ metrics:
     unit: '{status}'
     gauge:
       value_type: int
-    attributes: [windows.service.name, windows.service.startup_mode]
+    attributes: [name, startup_mode]
 
 tests:
   config:

@@ -27,12 +27,12 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for windowsservice metrics.
 type MetricsConfig struct {
-	WindowsService MetricConfig `mapstructure:"windows.service"`
+	WindowsServiceStatus MetricConfig `mapstructure:"windows.service.status"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		WindowsService: MetricConfig{
+		WindowsServiceStatus: MetricConfig{
 			Enabled: true,
 		},
 	}

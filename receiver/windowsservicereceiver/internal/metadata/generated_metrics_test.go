@@ -61,7 +61,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordWindowsServiceDataPoint(ts, 1, "windows.service.name-val", AttributeWindowsServiceStartupModeBootStart)
+			mb.RecordWindowsServiceStatusDataPoint(ts, 1, "name-val", AttributeStartupModeBootStart)
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
@@ -85,9 +85,9 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
-				case "windows.service":
-					assert.False(t, validatedMetrics["windows.service"], "Found a duplicate in the metrics slice: windows.service")
-					validatedMetrics["windows.service"] = true
+				case "windows.service.status":
+					assert.False(t, validatedMetrics["windows.service.status"], "Found a duplicate in the metrics slice: windows.service.status")
+					validatedMetrics["windows.service.status"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Gauge value containing service status as an integer value.", ms.At(i).Description())
@@ -97,10 +97,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("windows.service.name")
+					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "windows.service.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("windows.service.startup_mode")
+					assert.EqualValues(t, "name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("startup_mode")
 					assert.True(t, ok)
 					assert.EqualValues(t, "boot_start", attrVal.Str())
 				}

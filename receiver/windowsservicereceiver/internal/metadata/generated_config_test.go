@@ -25,7 +25,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					WindowsService: MetricConfig{Enabled: true},
+					WindowsServiceStatus: MetricConfig{Enabled: true},
 				},
 			},
 		},
@@ -33,7 +33,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					WindowsService: MetricConfig{Enabled: false},
+					WindowsServiceStatus: MetricConfig{Enabled: false},
 				},
 			},
 		},

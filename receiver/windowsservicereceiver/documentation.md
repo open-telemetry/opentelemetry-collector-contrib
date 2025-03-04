@@ -12,7 +12,7 @@ metrics:
     enabled: false
 ```
 
-### windows.service
+### windows.service.status
 
 Gauge value containing service status as an integer value.
 
@@ -27,5 +27,5 @@ Gauge values map to service status as follows: 0 - Failed to retrieve service st
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| windows.service.name | The name of the windows Service being reported. | Any Str |
-| windows.service.startup_mode | Startup mode of Windows Service | Str: ``boot_start``, ``system_start``, ``auto_start``, ``demand_start``, ``disabled`` |
+| name | The name of the windows Service being reported. | Any Str |
+| startup_mode | Startup mode of Windows Service | Str: ``boot_start``, ``system_start``, ``auto_start``, ``demand_start``, ``disabled`` |
