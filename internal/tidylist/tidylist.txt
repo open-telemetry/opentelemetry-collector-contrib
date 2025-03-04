@@ -121,8 +121,6 @@ exporter/kineticaexporter
 exporter/loadbalancingexporter
 exporter/logicmonitorexporter
 exporter/logzioexporter
-pkg/translator/loki
-exporter/lokiexporter
 exporter/mezmoexporter
 exporter/opensearchexporter
 internal/grpcutil
@@ -193,6 +191,7 @@ internal/sqlquery
 internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
+pkg/translator/loki
 pkg/winperfcounters
 processor/attributesprocessor
 processor/coralogixprocessor
