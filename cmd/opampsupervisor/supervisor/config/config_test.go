@@ -442,8 +442,6 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 			capabilities: DefaultSupervisor().Capabilities,
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics |
-				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnLogs |
-				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnTraces |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth,
 		},

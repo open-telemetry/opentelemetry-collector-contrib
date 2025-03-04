@@ -1,7 +1,7 @@
 
 service:
   telemetry:
-{{if .TracesEndpoint}}
+{{- if .TracesEndpoint}}
     traces:
       processors:
         - batch:
@@ -15,7 +15,8 @@ service:
                   "{{$k.Key}}": "{{$k.Value}}"
                 {{- end}}
                 {{- end}}
-{{end}}
+{{- end}}
+{{- if .MetricsEndpoint}}
     metrics:
       readers:
         - periodic:
@@ -29,7 +30,8 @@ service:
                   "{{$k.Key}}": "{{$k.Value}}"
                 {{- end}}
                 {{- end}}
-{{if .LogsEndpoint}}
+{{- end}}
+{{- if .LogsEndpoint}}
     logs:
       processors:
         - batch:
@@ -43,4 +45,4 @@ service:
                   "{{$k.Key}}": "{{$k.Value}}"
                 {{- end}}
                 {{- end}}
-{{end}}
+{{- end}}

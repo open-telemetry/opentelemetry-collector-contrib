@@ -1158,7 +1158,7 @@ func TestSupervisor_findRandomPort(t *testing.T) {
 	require.NotZero(t, port)
 }
 
-func TestSupervisor_setupOwnMetrics(t *testing.T) {
+func TestSupervisor_setupOwnTelemetry(t *testing.T) {
 	testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 	t.Run("No DestinationEndpoint set", func(t *testing.T) {
 		s := Supervisor{
@@ -1188,9 +1188,9 @@ func TestSupervisor_setupOwnMetrics(t *testing.T) {
 
 		s.agentDescription = agentDesc
 
-		configChanged := s.setupOwnMetrics(context.Background(), &protobufs.TelemetryConnectionSettings{
+		configChanged := s.setupOwnTelemetry(context.Background(), &protobufs.ConnectionSettingsOffers{OwnMetrics: &protobufs.TelemetryConnectionSettings{
 			DestinationEndpoint: "",
-		})
+		}})
 
 		assert.True(t, configChanged)
 		assert.Empty(t, s.agentConfigOwnMetricsSection.Load().(string))
@@ -1225,7 +1225,7 @@ func TestSupervisor_setupOwnMetrics(t *testing.T) {
 
 		require.NoError(t, err)
 
-		configChanged := s.setupOwnMetrics(context.Background(), &protobufs.TelemetryConnectionSettings{
+		configChanged := s.setupOwnTelemetry(context.Background(), &protobufs.ConnectionSettingsOffers{OwnMetrics: &protobufs.TelemetryConnectionSettings{
 			DestinationEndpoint: "http://127.0.0.1:4318",
 			Headers: &protobufs.Headers{
 				Headers: []*protobufs.Header{
@@ -1233,7 +1233,7 @@ func TestSupervisor_setupOwnMetrics(t *testing.T) {
 					{Key: "testkey2", Value: "testval2"},
 				},
 			},
-		})
+		}})
 
 		expectedOwnMetricsSection := `
 service:
@@ -1368,15 +1368,23 @@ service:
 		marshalledRemoteCfg, err := proto.Marshal(remoteCfg)
 		require.NoError(t, err)
 
-		ownMetricsCfg := &protobufs.TelemetryConnectionSettings{
-			DestinationEndpoint: "localhost",
+		ownMetricsCfg := &protobufs.ConnectionSettingsOffers{
+			OwnMetrics: &protobufs.TelemetryConnectionSettings{
+				DestinationEndpoint: "localhost-metrics",
+			},
+			OwnLogs: &protobufs.TelemetryConnectionSettings{
+				DestinationEndpoint: "localhost-logs",
+			},
+			OwnTraces: &protobufs.TelemetryConnectionSettings{
+				DestinationEndpoint: "localhost-traces",
+			},
 		}
 
 		marshalledOwnMetricsCfg, err := proto.Marshal(ownMetricsCfg)
 		require.NoError(t, err)
 
 		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvRemoteConfigFile), marshalledRemoteCfg, 0o600))
-		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvOwnMetricsConfigFile), marshalledOwnMetricsCfg, 0o600))
+		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvOwnTelemetryConfigFile), marshalledOwnMetricsCfg, 0o600))
 
 		s := Supervisor{
 			telemetrySettings: component.TelemetrySettings{
