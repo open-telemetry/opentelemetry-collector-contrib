@@ -231,6 +231,7 @@ body:
       - receiver/elasticsearch
       - receiver/envoyals
       - receiver/expvar
+      - receiver/faro
       - receiver/filelog
       - receiver/filestats
       - receiver/flinkmetrics
