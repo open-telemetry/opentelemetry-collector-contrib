@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.120.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.0.0-00010101000000-000000000000
-	github.com/shirou/gopsutil/v4 v4.25.1
+	github.com/shirou/gopsutil/v4 v4.25.2
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.120.1-0.20250303102058-a9bca17f1a4c
 	go.opentelemetry.io/collector/component/componentstatus v0.120.1-0.20250303102058-a9bca17f1a4c
@@ -326,9 +326,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/rout
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics => ../../../internal/exp/metrics
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../../../internal/pdatautil
-
-replace go.opentelemetry.io/collector/extension/extensionauth => go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250303102058-a9bca17f1a4c
-
-replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250303102058-a9bca17f1a4c
-
-replace go.opentelemetry.io/collector/service/hostcapabilities => go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250303102058-a9bca17f1a4c

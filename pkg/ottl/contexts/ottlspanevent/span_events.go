@@ -57,8 +57,6 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 	return err
 }
 
-type Option func(*ottl.Parser[TransformContext])
-
 type TransformContextOption func(*TransformContext)
 
 func NewTransformContext(spanEvent ptrace.SpanEvent, span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSpans ptrace.ScopeSpans, resourceSpans ptrace.ResourceSpans, options ...TransformContextOption) TransformContext {
@@ -137,7 +135,7 @@ type pathExpressionParser struct {
 	cacheGetSetter    ottl.PathExpressionParser[TransformContext]
 }
 
-func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
+func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...ottl.Option[TransformContext]) (ottl.Parser[TransformContext], error) {
 	pep := pathExpressionParser{
 		telemetrySettings: telemetrySettings,
 		cacheGetSetter:    ctxcache.PathExpressionParser[TransformContext](getCache),
@@ -162,7 +160,7 @@ func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySet
 // otherwise an error is reported.
 //
 // Experimental: *NOTE* this option is subject to change or removal in the future.
-func EnablePathContextNames() Option {
+func EnablePathContextNames() ottl.Option[TransformContext] {
 	return func(p *ottl.Parser[TransformContext]) {
 		ottl.WithPathContextNames[TransformContext]([]string{
 			ctxspanevent.Name,
