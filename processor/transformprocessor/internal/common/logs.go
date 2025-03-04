@@ -100,7 +100,7 @@ func convertLogStatements(pc *ottl.ParserCollection[LogsConsumer], statements ot
 	if contextStatements.ErrorMode != "" {
 		errorMode = contextStatements.ErrorMode
 	}
-	var parserOptions []ottllog.Option
+	var parserOptions []ottl.Option[ottllog.TransformContext]
 	if contextStatements.Context == "" {
 		parserOptions = append(parserOptions, ottllog.EnablePathContextNames())
 	}

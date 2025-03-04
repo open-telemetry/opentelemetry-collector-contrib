@@ -202,7 +202,7 @@ func parseResourceContextStatements[R any](
 	if contextStatements.ErrorMode != "" {
 		errorMode = contextStatements.ErrorMode
 	}
-	var parserOptions []ottlresource.Option
+	var parserOptions []ottl.Option[ottlresource.TransformContext]
 	if contextStatements.Context == "" {
 		parserOptions = append(parserOptions, ottlresource.EnablePathContextNames())
 	}
@@ -228,7 +228,7 @@ func parseScopeContextStatements[R any](
 	if contextStatements.ErrorMode != "" {
 		errorMode = contextStatements.ErrorMode
 	}
-	var parserOptions []ottlscope.Option
+	var parserOptions []ottl.Option[ottlscope.TransformContext]
 	if contextStatements.Context == "" {
 		parserOptions = append(parserOptions, ottlscope.EnablePathContextNames())
 	}

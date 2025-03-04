@@ -148,7 +148,7 @@ func convertSpanStatements(pc *ottl.ParserCollection[TracesConsumer], statements
 	if contextStatements.ErrorMode != "" {
 		errorMode = contextStatements.ErrorMode
 	}
-	var parserOptions []ottlspan.Option
+	var parserOptions []ottl.Option[ottlspan.TransformContext]
 	if contextStatements.Context == "" {
 		parserOptions = append(parserOptions, ottlspan.EnablePathContextNames())
 	}
@@ -169,7 +169,7 @@ func convertSpanEventStatements(pc *ottl.ParserCollection[TracesConsumer], state
 	if contextStatements.ErrorMode != "" {
 		errorMode = contextStatements.ErrorMode
 	}
-	var parserOptions []ottlspanevent.Option
+	var parserOptions []ottl.Option[ottlspanevent.TransformContext]
 	if contextStatements.Context == "" {
 		parserOptions = append(parserOptions, ottlspanevent.EnablePathContextNames())
 	}
