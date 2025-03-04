@@ -4,8 +4,8 @@ go 1.23.0
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.144
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.64.0-rc.6
-	github.com/DataDog/datadog-agent/pkg/proto v0.64.0-rc.6
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.64.0-rc.7
+	github.com/DataDog/datadog-agent/pkg/proto v0.64.0-rc.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.121.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.121.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.121.0
@@ -49,91 +49,91 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
-	github.com/DataDog/datadog-agent/comp/core/config v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/comp/core/flare/types v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/comp/core/log/def v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/comp/core/secrets v0.64.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/core/config v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/comp/core/flare/types v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/comp/core/log/def v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/comp/core/secrets v0.64.0-rc.7 // indirect
 	github.com/DataDog/datadog-agent/comp/core/status v0.63.2 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/comp/core/telemetry v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/comp/def v0.64.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/comp/core/telemetry v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/comp/def v0.64.0-rc.7 // indirect
 	github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder v0.63.2 // indirect
 	github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.63.2 // indirect
-	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.64.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.64.0-rc.7 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.64.0-devel.0.20250218192636-64fdfe7ec366 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.65.0-devel.0.20250304124125-23a109221842 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.64.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.64.0-rc.7 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.63.2 // indirect
-	github.com/DataDog/datadog-agent/comp/trace/compression/def v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.64.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/comp/trace/compression/def v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.64.0-rc.7 // indirect
 	github.com/DataDog/datadog-agent/pkg/aggregator/ckey v0.63.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/api v0.63.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/env v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/mock v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/model v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/setup v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/structure v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/utils v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/fips v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/auditor v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/client v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/diagnostic v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/message v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/metrics v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/pipeline v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/processor v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/sds v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/sender v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/sources v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/logs/status/utils v0.64.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/env v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/mock v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/model v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/nodetreemodel v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/setup v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/structure v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/teeconfig v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/utils v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/fips v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/auditor v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/client v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/diagnostic v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/message v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/metrics v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/pipeline v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/processor v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/sds v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/sender v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/sources v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/logs/status/utils v0.64.0-rc.7 // indirect
 	github.com/DataDog/datadog-agent/pkg/metrics v0.63.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.0-rc.7 // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.63.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.63.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.64.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.64.0-rc.7 // indirect
 	github.com/DataDog/datadog-agent/pkg/serializer v0.63.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/status/health v0.64.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/status/health v0.64.0-rc.7 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagger/types v0.63.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/tagset v0.63.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/telemetry v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/backoff v0.64.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/telemetry v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/backoff v0.64.0-rc.7 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/buf v0.63.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.64.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.64.0-rc.7 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/common v0.63.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/compression v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/executable v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/fxutil v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/http v0.64.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/compression v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/executable v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/fxutil v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/http v0.64.0-rc.7 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/json v0.63.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/option v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.64.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/option v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.64.0-rc.7 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/sort v0.63.2 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/startstop v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/statstracker v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/system v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/winutil v0.64.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.64.0-rc.6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/startstop v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/statstracker v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/system v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/winutil v0.64.0-rc.7 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.64.0-rc.7 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.35.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.6.0 // indirect
 	github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240816154533-f7f9beb53a42 // indirect
-	github.com/DataDog/go-sqllexer v0.1.1 // indirect
+	github.com/DataDog/go-sqllexer v0.1.3 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/mmh3 v0.0.0-20210722141835-012dc69a9e49 // indirect
@@ -154,19 +154,19 @@ require (
 	github.com/antchfx/xpath v1.3.3 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/aws/aws-sdk-go v1.55.6 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.36.2 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.29.7 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.60 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.29 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.33 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.33 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.36.3 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.29.8 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.61 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.30 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.204.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.207.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.14 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.24.16 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.15 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.33.15 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.15 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.25.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.29.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.33.16 // indirect
 	github.com/aws/smithy-go v1.22.2 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -175,7 +175,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
-	github.com/cncf/xds/go v0.0.0-20240905190251-b4127c9b8d78 // indirect
+	github.com/cncf/xds/go v0.0.0-20241223141626-cff3c89139a3 // indirect
 	github.com/containerd/cgroups/v3 v3.0.5 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -190,8 +190,8 @@ require (
 	github.com/elastic/go-grok v0.3.1 // indirect
 	github.com/elastic/lunes v0.1.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
-	github.com/envoyproxy/go-control-plane v0.13.1 // indirect
-	github.com/envoyproxy/protoc-gen-validate v1.1.0 // indirect
+	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
+	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
@@ -427,7 +427,7 @@ require (
 	google.golang.org/api v0.199.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250224174004-546df14abb99 // indirect
-	google.golang.org/grpc v1.70.0 // indirect
+	google.golang.org/grpc v1.71.0 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
