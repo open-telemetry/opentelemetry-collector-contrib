@@ -390,6 +390,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 		// https://cortexmetrics.io/docs/apis/#remote-api
 		req.Header.Add("Content-Encoding", "snappy")
 		req.Header.Set("Content-Type", "application/x-protobuf")
+		req.Header.Set("User-Agent", prwe.userAgentHeader)
 
 		switch {
 		// If feature flag not enabled support only RW1
