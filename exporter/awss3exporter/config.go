@@ -97,6 +97,7 @@ func (c *Config) Validate() error {
 
 	if !validCannedACLs[c.S3Uploader.CannedACL] {
 		errs = multierr.Append(errs, errors.New("invalid CannedACL"))
+
 	}
 
 	compression := c.S3Uploader.Compression
