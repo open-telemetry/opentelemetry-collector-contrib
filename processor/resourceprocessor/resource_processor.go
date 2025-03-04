@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
@@ -41,4 +42,12 @@ func (rp *resourceProcessor) processLogs(ctx context.Context, ld plog.Logs) (plo
 		rp.attrProc.Process(ctx, rp.logger, rls.At(i).Resource().Attributes())
 	}
 	return ld, nil
+}
+
+func (rp *resourceProcessor) processProfiles(ctx context.Context, pd pprofile.Profiles) (pprofile.Profiles, error) {
+	rps := pd.ResourceProfiles()
+	for i := 0; i < rps.Len(); i++ {
+		rp.attrProc.Process(ctx, rp.logger, rps.At(i).Resource().Attributes())
+	}
+	return pd, nil
 }

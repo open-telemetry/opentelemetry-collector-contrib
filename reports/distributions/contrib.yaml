@@ -201,6 +201,7 @@ components:
         - sshcheck
         - statsd
         - syslog
+        - tcpcheck
         - tcplog
         - tlscheck
         - udplog
@@ -209,6 +210,7 @@ components:
         - webhookevent
         - windowseventlog
         - windowsperfcounters
+        - windowsservice
         - zipkin
         - zookeeper
     scraper:
