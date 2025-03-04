@@ -132,6 +132,7 @@ body:
       - extension/sumologic
       - internal/aws
       - internal/collectd
+      - internal/common
       - internal/core
       - internal/datadog
       - internal/docker

@@ -11,8 +11,8 @@ require (
 	github.com/prometheus/common v0.62.0
 	github.com/prometheus/prometheus v0.300.1
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.26.1-0.20250226024140-8099e51f9a77
-	go.opentelemetry.io/collector/semconv v0.120.1-0.20250226024140-8099e51f9a77
+	go.opentelemetry.io/collector/pdata v1.26.1-0.20250303102058-a9bca17f1a4c
+	go.opentelemetry.io/collector/semconv v0.120.1-0.20250303102058-a9bca17f1a4c
 	go.uber.org/goleak v1.3.0
 )
 
@@ -33,7 +33,7 @@ require (
 	github.com/prometheus/client_golang v1.20.5 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.26.1-0.20250226024140-8099e51f9a77 // indirect
+	go.opentelemetry.io/collector/featuregate v1.26.1-0.20250303102058-a9bca17f1a4c // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
@@ -63,9 +63,3 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../golden
-
-replace go.opentelemetry.io/collector/extension/extensionauth => go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250226024140-8099e51f9a77
-
-replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250226024140-8099e51f9a77
-
-replace go.opentelemetry.io/collector/service/hostcapabilities => go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250226024140-8099e51f9a77
