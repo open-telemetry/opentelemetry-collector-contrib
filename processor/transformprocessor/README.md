@@ -385,7 +385,7 @@ Examples:
 
 The `convert_summary_quantile_val_to_gauge` function creates a new Gauge metric and injects each of the Summary's quantiles into a single Gauge datapoint.
 
-`attributeKey` is an optional string representing the key of the Gauge datapoint attribute, which value represents the quantile value. The default value is `quantile`.
+`attributeKey` is an optional string that specifies the attribute key holding the quantile value for each corresponding output data point. The default key is `quantile`.
 
 The name for the new metric will be `<summary metric name>`. The fields that are copied are: `timestamp`, `starttimestamp`, `attributes`, `unit` and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 
