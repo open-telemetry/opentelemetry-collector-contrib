@@ -9,7 +9,7 @@ require (
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.26.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.26.0
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.26.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.27.0
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.29.8
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.30

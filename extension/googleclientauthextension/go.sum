@@ -6,6 +6,8 @@ cloud.google.com/go/compute/metadata v0.6.0 h1:A6hENjEsCDtC1k8byVsgwvVcioamEHvZ4
 cloud.google.com/go/compute/metadata v0.6.0/go.mod h1:FjyFAW1MW0C203CEOMDTu3Dk1FlqW3Rga40jzHL4hfg=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.50.0 h1:2/CfWr87qKUhxejtfT1yVn+/OBxu6Aq0P134NY/dhwQ=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.50.0/go.mod h1:9Uu/2BbiXj4t8eoK7PDbRItTWjCJaLRYCkwH6zwyWLM=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.51.0 h1:JuexSDG/0ReNGY79+oSixm1Jvvw8RaPdCgTgaNaRPnE=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.51.0/go.mod h1:Re7+md/pstjLoSssSuPDSnijX7m9aqYiqmA1lGECv9Y=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg=
