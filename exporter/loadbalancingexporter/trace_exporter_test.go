@@ -383,7 +383,6 @@ func TestAttributeBasedRouting(t *testing.T) {
 			},
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			res, err := routingIdentifiersFromTraces(tc.batch, attrRouting, tc.attributes)
 			assert.NoError(t, err)
