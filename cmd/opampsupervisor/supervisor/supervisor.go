@@ -1371,7 +1371,7 @@ func (s *Supervisor) Shutdown() {
 	}
 
 	if err := s.shutdownTelemetry(); err != nil {
-		s.telemetrySettings.Logger.Error("Could not shot down self telemetry", zap.Error(err))
+		s.telemetrySettings.Logger.Error("Could not shut down self telemetry", zap.Error(err))
 	}
 
 	if s.healthCheckTicker != nil {
