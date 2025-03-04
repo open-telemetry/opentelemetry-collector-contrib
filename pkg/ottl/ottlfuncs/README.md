@@ -237,7 +237,7 @@ the result would be
 ```
 
 **Note:**
-Please note that when the `resolveConflicts` parameter set to `true`, the flattening of arrays is managed differently.
+Please note that when the `resolveConflicts` parameter is set to `true`, the flattening of arrays is managed differently.
 With conflict resolution enabled, arrays and any potentially conflicting keys are handled in a standardized manner. Specifically, a `.<number>` suffix is added to the first conflicting key, with the `number` incrementing for each additional conflict.
 
 Examples:
