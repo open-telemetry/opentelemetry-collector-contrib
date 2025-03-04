@@ -20,7 +20,7 @@ type comprehensionContext[K any] struct {
 	index          int
 }
 
-// An expression like `[{yield} for {list} where {cond}]`.
+// An expression like `[{yield} for {id} in {list} if {cond}]`.
 type comprehensionExpr[K any] struct {
 	currentValueID string
 	// The list we're iterating over.
@@ -173,17 +173,17 @@ func (w *wrappedKey[K]) String(ctx context.Context, kCtx K) (*string, error) {
 	return w.k.String(ctx, wrapCtx)
 }
 
-type wrapedPath[K any] struct {
+type wrappedPath[K any] struct {
 	p Path[comprehensionContext[any]]
 }
 
 // Context implements Path.
-func (w *wrapedPath[K]) Context() string {
+func (w *wrappedPath[K]) Context() string {
 	return w.p.Context()
 }
 
 // Keys implements Path.
-func (w *wrapedPath[K]) Keys() []Key[K] {
+func (w *wrappedPath[K]) Keys() []Key[K] {
 	keys := w.p.Keys()
 	result := make([]Key[K], len(keys))
 	for i, key := range keys {
@@ -193,17 +193,17 @@ func (w *wrapedPath[K]) Keys() []Key[K] {
 }
 
 // Name implements Path.
-func (w *wrapedPath[K]) Name() string {
+func (w *wrappedPath[K]) Name() string {
 	return w.p.Name()
 }
 
 // Next implements Path.
-func (w *wrapedPath[K]) Next() Path[K] {
-	return &wrapedPath[K]{w.p.Next()}
+func (w *wrappedPath[K]) Next() Path[K] {
+	return &wrappedPath[K]{w.p.Next()}
 }
 
 // String implements Path.
-func (w *wrapedPath[K]) String() string {
+func (w *wrappedPath[K]) String() string {
 	return w.p.String()
 }
 
@@ -241,7 +241,7 @@ func newComprehensionParser[K any](p *Parser[K], ident string) (Parser[comprehen
 				},
 			}, nil
 		}
-		var forcedPath Path[K] = &wrapedPath[K]{path}
+		var forcedPath Path[K] = &wrappedPath[K]{path}
 		res, err := p.pathParser(forcedPath)
 		if err != nil {
 			return nil, err

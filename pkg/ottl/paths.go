@@ -29,6 +29,7 @@ func (v *grammarPathVisitor) visitListComprehension(c *listComprehension) {
 		}
 	}
 }
+
 func (v *grammarPathVisitor) visitPath(value *path) {
 	v.paths = append(v.paths, *value)
 }
