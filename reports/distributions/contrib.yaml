@@ -208,6 +208,7 @@ components:
         - webhookevent
         - windowseventlog
         - windowsperfcounters
+        - windowsservice
         - zipkin
         - zookeeper
     scraper:

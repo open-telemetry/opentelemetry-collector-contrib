@@ -14,7 +14,7 @@ capabilities:
   reports_remote_config: true
 
 agent:
-  executable: ../../bin/otelcontribcol_darwin_amd64
+  executable: ../../bin/otelcontribcol_darwin_arm64
 
 storage:
   directory: .

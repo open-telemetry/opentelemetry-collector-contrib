@@ -15,10 +15,13 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/service/telemetry"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -167,14 +170,17 @@ func (o OpAMPServer) Validate() error {
 }
 
 type Agent struct {
-	Executable              string           `mapstructure:"executable"`
-	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
-	Description             AgentDescription `mapstructure:"description"`
-	ConfigApplyTimeout      time.Duration    `mapstructure:"config_apply_timeout"`
-	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
-	HealthCheckPort         int              `mapstructure:"health_check_port"`
-	OpAMPServerPort         int              `mapstructure:"opamp_server_port"`
-	PassthroughLogs         bool             `mapstructure:"passthrough_logs"`
+	Executable              string            `mapstructure:"executable"`
+	OrphanDetectionInterval time.Duration     `mapstructure:"orphan_detection_interval"`
+	Description             AgentDescription  `mapstructure:"description"`
+	ConfigApplyTimeout      time.Duration     `mapstructure:"config_apply_timeout"`
+	BootstrapTimeout        time.Duration     `mapstructure:"bootstrap_timeout"`
+	HealthCheckPort         int               `mapstructure:"health_check_port"`
+	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
+	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
+	ConfigFiles             []string          `mapstructure:"config_files"`
+	Arguments               []string          `mapstructure:"args"`
+	Env                     map[string]string `mapstructure:"env"`
 }
 
 func (a Agent) Validate() error {
@@ -218,12 +224,21 @@ type AgentDescription struct {
 type Telemetry struct {
 	// TODO: Add more telemetry options
 	// Issue here: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35582
-	Logs Logs `mapstructure:"logs"`
+	Logs    Logs                   `mapstructure:"logs"`
+	Metrics Metrics                `mapstructure:"metrics"`
+	Traces  telemetry.TracesConfig `mapstructure:"traces"`
+
+	Resource map[string]*string `mapstructure:"resource"`
 }
 
 type Logs struct {
 	Level       zapcore.Level `mapstructure:"level"`
 	OutputPaths []string      `mapstructure:"output_paths"`
+}
+
+type Metrics struct {
+	Level   configtelemetry.Level `mapstructure:"level"`
+	Readers []config.MetricReader `mapstructure:"readers"`
 }
 
 // DefaultSupervisor returns the default supervisor config
