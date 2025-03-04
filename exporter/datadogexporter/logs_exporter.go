@@ -133,7 +133,7 @@ func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err err
 		}
 	}
 
-	payloads := exp.translator.MapLogs(ctx, ld, nil)
+	payloads := exp.translator.MapLogs(ctx, ld, attributes.NewGatewayUsage())
 	hosts := make(map[string]struct{})
 
 	for _, payload := range payloads {
