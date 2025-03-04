@@ -25,18 +25,18 @@ type s3manager struct {
 	builder      *PartitionKeyBuilder
 	uploader     *manager.Uploader
 	storageClass s3types.StorageClass
-	cannedACL    s3types.ObjectCannedACL
+	acl          s3types.ObjectCannedACL
 }
 
 var _ Manager = (*s3manager)(nil)
 
-func NewS3Manager(bucket string, builder *PartitionKeyBuilder, service *s3.Client, storageClass s3types.StorageClass, cannedACL s3types.ObjectCannedACL) Manager {
+func NewS3Manager(bucket string, builder *PartitionKeyBuilder, service *s3.Client, storageClass s3types.StorageClass, acl s3types.ObjectCannedACL) Manager {
 	return &s3manager{
 		bucket:       bucket,
 		builder:      builder,
 		uploader:     manager.NewUploader(service),
 		storageClass: storageClass,
-		cannedACL:    cannedACL,
+		acl:          acl,
 	}
 }
 
@@ -63,7 +63,7 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte) error {
 		Body:            content,
 		ContentEncoding: aws.String(encoding),
 		StorageClass:    sw.storageClass,
-		ACL:             sw.cannedACL,
+		ACL:             sw.acl,
 	})
 
 	return err

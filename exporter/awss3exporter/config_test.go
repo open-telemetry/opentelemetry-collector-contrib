@@ -44,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 			S3Bucket:          "foo",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			StorageClass:      "STANDARD",
-			CannedACL:         "private",
+			ACL:               "private",
 		},
 		MarshalerName: "otlp_json",
 	}, e,
@@ -80,7 +80,7 @@ func TestConfig(t *testing.T) {
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD",
-			CannedACL:         "private",
+			ACL:               "private",
 		},
 		MarshalerName: "otlp_json",
 	}, e,
@@ -112,7 +112,7 @@ func TestConfigS3StorageClass(t *testing.T) {
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD_IA",
-			CannedACL:         "private",
+			ACL:               "private",
 		},
 		QueueSettings: queueCfg,
 		MarshalerName: "otlp_json",
@@ -120,7 +120,7 @@ func TestConfigS3StorageClass(t *testing.T) {
 	)
 }
 
-func TestConfigS3CannedACL(t *testing.T) {
+func TestConfigS3ACL(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
 	assert.NoError(t, err)
 
@@ -145,7 +145,7 @@ func TestConfigS3CannedACL(t *testing.T) {
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Endpoint:          "http://endpoint.com",
 			StorageClass:      "STANDARD_IA",
-			CannedACL:         "private",
+			ACL:               "private",
 		},
 		QueueSettings: queueCfg,
 		MarshalerName: "otlp_json",
@@ -181,7 +181,7 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 			S3ForcePathStyle:  true,
 			DisableSSL:        true,
 			StorageClass:      "STANDARD",
-			CannedACL:         "private",
+			ACL:               "private",
 		},
 		MarshalerName: "otlp_json",
 	}, e,
@@ -293,7 +293,7 @@ func TestMarshallerName(t *testing.T) {
 			S3Bucket:          "foo",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			StorageClass:      "STANDARD",
-			CannedACL:         "private",
+			ACL:               "private",
 		},
 		MarshalerName: "sumo_ic",
 	}, e,
@@ -308,7 +308,7 @@ func TestMarshallerName(t *testing.T) {
 			S3Bucket:          "bar",
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			StorageClass:      "STANDARD",
-			CannedACL:         "private",
+			ACL:               "private",
 		},
 		MarshalerName: "otlp_proto",
 	}, e,
@@ -340,7 +340,7 @@ func TestCompressionName(t *testing.T) {
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Compression:       "gzip",
 			StorageClass:      "STANDARD",
-			CannedACL:         "private",
+			ACL:               "private",
 		},
 		MarshalerName: "otlp_json",
 	}, e,
@@ -356,7 +356,7 @@ func TestCompressionName(t *testing.T) {
 			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			Compression:       "none",
 			StorageClass:      "STANDARD",
-			CannedACL:         "private",
+			ACL:               "private",
 		},
 		MarshalerName: "otlp_proto",
 	}, e,

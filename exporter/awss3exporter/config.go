@@ -32,8 +32,8 @@ type S3UploaderConfig struct {
 	S3ForcePathStyle bool `mapstructure:"s3_force_path_style"`
 	// DisableSLL forces communication to happen via HTTP instead of HTTPS.
 	DisableSSL bool `mapstructure:"disable_ssl"`
-	// CannedACL is the canned ACL to use when uploading objects.
-	CannedACL string `mapstructure:"canned_acl"`
+	// ACL is the canned ACL to use when uploading objects.
+	ACL string `mapstructure:"acl"`
 
 	StorageClass string `mapstructure:"storage_class"`
 	// Compression sets the algorithm used to process the payload
@@ -42,7 +42,7 @@ type S3UploaderConfig struct {
 	Compression configcompression.Type `mapstructure:"compression"`
 }
 
-type MarshalerType string
+type MarshalerType string  
 
 const (
 	OtlpProtobuf MarshalerType = "otlp_proto"
@@ -74,7 +74,7 @@ func (c *Config) Validate() error {
 		"DEEP_ARCHIVE":        true,
 	}
 
-	validCannedACLs := map[string]bool{
+	validACLs := map[string]bool{
 		"private":                   true,
 		"public-read":               true,
 		"public-read-write":         true,
@@ -95,8 +95,8 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, errors.New("invalid StorageClass"))
 	}
 
-	if !validCannedACLs[c.S3Uploader.CannedACL] {
-		errs = multierr.Append(errs, errors.New("invalid CannedACL"))
+	if !validACLs[c.S3Uploader.ACL] {
+		errs = multierr.Append(errs, errors.New("invalid ACL"))
 	}
 
 	compression := c.S3Uploader.Compression
