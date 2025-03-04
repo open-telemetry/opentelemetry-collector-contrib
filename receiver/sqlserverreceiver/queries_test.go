@@ -69,3 +69,32 @@ func TestQueryContents(t *testing.T) {
 		})
 	}
 }
+
+func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
+	queryTests := []struct {
+		name                     string
+		instanceName             string
+		maxQuerySampleCount      uint
+		getQuery                 func() string
+		expectedQueryValFilename string
+	}{
+		{
+			name:                     "Test query sample query",
+			instanceName:             "",
+			maxQuerySampleCount:      1000,
+			getQuery:                 getSQLServerQuerySamplesQuery,
+			expectedQueryValFilename: "testQuerySampleQuery.txt",
+		},
+	}
+
+	for _, tt := range queryTests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectedBytes, err := os.ReadFile(path.Join("./testdata", tt.expectedQueryValFilename))
+			require.NoError(t, err)
+			// Replace all will fix newlines when testing on Windows
+			expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
+			actual := tt.getQuery()
+			require.Equal(t, expected, actual)
+		})
+	}
+}
