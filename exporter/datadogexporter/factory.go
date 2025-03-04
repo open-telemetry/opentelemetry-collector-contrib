@@ -328,7 +328,7 @@ func (f *factory) createMetricsExporter(
 			})
 		}
 		set.Logger.Info("Using Datadog serializerexporter for metric export")
-		sf := serializerexporter.NewFactory()
+		sf := serializerexporter.NewFactoryWithType(metadata.Type.String())
 		ex := &serializerexporter.ExporterConfig{
 			Metrics: serializerexporter.MetricsConfig{
 				Metrics: cfg.Metrics,
