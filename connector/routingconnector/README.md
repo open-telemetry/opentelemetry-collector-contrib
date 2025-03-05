@@ -47,6 +47,8 @@ The following settings are available:
 ### Supported [OTTL] functions
 
 - [IsMatch](../../pkg/ottl/ottlfuncs/README.md#IsMatch)
+- [IsString](../../pkg/ottl/ottlfuncs/README.md#IsString)
+- [IsMap](../../pkg/ottl/ottlfuncs/README.md#IsMap)
 - [delete_key](../../pkg/ottl/ottlfuncs/README.md#delete_key)
 - [delete_matching_keys](../../pkg/ottl/ottlfuncs/README.md#delete_matching_keys)
 

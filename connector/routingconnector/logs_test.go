@@ -434,6 +434,9 @@ func TestLogsConnectorDetailed(t *testing.T) {
 	isLogX := `body == "logX"`
 	isLogY := `body == "logY"`
 
+	isBodyString := `IsString(body) == true`
+	isBodyMap := `IsMap(body) == true`
+
 	isScopeCFromLowerContext := `instrumentation_scope.name == "scopeC"`
 	isScopeDFromLowerContext := `instrumentation_scope.name == "scopeD"`
 
@@ -846,6 +849,30 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			expectSink1: plogutiltest.NewLogs("AB", "CD", "E"),
 			expectSinkD: plog.Logs{},
 		},
+		{
+			name: "log/with_is_string_condition",
+			cfg: testConfig(
+				withRoute("log", isBodyString, idSink0),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "log/with_is_map_condition",
+			cfg: testConfig(
+				withRoute("log", isBodyMap, idSink0),
+				withDefault(idSinkD),
+			),
+			input: plogutiltest.NewLogsFromOpts(
+				plogutiltest.Resource("A", plogutiltest.Scope("B", setLogRecordMap(plogutiltest.LogRecord("C"), "key", "value"))),
+			),
+			expectSink0: plogutiltest.NewLogsFromOpts(
+				plogutiltest.Resource("A", plogutiltest.Scope("B", setLogRecordMap(plogutiltest.LogRecord("C"), "key", "value"))),
+			),
+			expectSinkD: plog.Logs{},
+		},
 	}
 
 	for _, tt := range testCases {
@@ -885,4 +912,9 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			assertExpected(&sinkD, tt.expectSinkD, "sinkD")
 		})
 	}
+}
+
+func setLogRecordMap(lr plog.LogRecord, key, value string) plog.LogRecord {
+	lr.Body().SetEmptyMap().PutStr(key, value)
+	return lr
 }

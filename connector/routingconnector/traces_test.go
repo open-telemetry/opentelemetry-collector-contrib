@@ -409,6 +409,9 @@ func TestTracesConnectorDetailed(t *testing.T) {
 	isResourceX := `attributes["resourceName"] == "resourceX"`
 	isResourceY := `attributes["resourceName"] == "resourceY"`
 
+	isResourceString := `IsString(attributes["resourceName"]) == true`
+	isAttributesMap := `IsMap(attributes) == true`
+
 	isSpanE := `name == "spanE"`
 	isSpanF := `name == "spanF"`
 	isSpanX := `name == "spanX"`
@@ -610,6 +613,26 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
 			expectSink0: ptrace.Traces{},
 			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "resource/with_is_string_condition",
+			cfg: testConfig(
+				withRoute("resource", isResourceString, idSink0),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "resource/with_is_map_condition",
+			cfg: testConfig(
+				withRoute("resource", isAttributesMap, idSink0),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectSinkD: ptrace.Traces{},
 		},
 		{
