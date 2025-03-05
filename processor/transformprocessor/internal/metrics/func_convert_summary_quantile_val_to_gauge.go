@@ -16,6 +16,7 @@ import (
 
 type convertSummaryQuantileValToGaugeArguments struct {
 	AttributeKey ottl.Optional[string]
+	Suffix       ottl.Optional[string]
 }
 
 func newConvertSummaryQuantileValToGaugeFactory() ottl.Factory[ottlmetric.TransformContext] {
@@ -29,10 +30,14 @@ func createConvertSummaryQuantileValToGaugeFunction(_ ottl.FunctionContext, oArg
 		return nil, fmt.Errorf("convertSummaryQuantileValToGaugeFactory args must be of type *convertSummaryQuantileValToGaugeArguments")
 	}
 
-	return convertSummaryQuantileValToGauge(args.AttributeKey)
+	return convertSummaryQuantileValToGauge(args.AttributeKey, args.Suffix)
 }
 
-func convertSummaryQuantileValToGauge(attrKey ottl.Optional[string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func convertSummaryQuantileValToGauge(attrKey ottl.Optional[string], suffix ottl.Optional[string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+	metricNameSuffix := ".quantiles"
+	if !suffix.IsEmpty() {
+		metricNameSuffix = suffix.Get()
+	}
 	attributeKey := "quantile"
 	if !attrKey.IsEmpty() {
 		attributeKey = attrKey.Get()
@@ -45,7 +50,7 @@ func convertSummaryQuantileValToGauge(attrKey ottl.Optional[string]) (ottl.ExprF
 
 		gaugeMetric := tCtx.GetMetrics().AppendEmpty()
 		gaugeMetric.SetDescription(metric.Description())
-		gaugeMetric.SetName(metric.Name())
+		gaugeMetric.SetName(metric.Name() + metricNameSuffix)
 		gaugeMetric.SetUnit(metric.Unit())
 		gauge := gaugeMetric.SetEmptyGauge()
 
