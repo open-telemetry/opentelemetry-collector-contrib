@@ -330,7 +330,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 
 func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context, topQueryCount uint) (plog.Logs, error) {
 	// Constants are the column names of the database status
-	const dbPrefix = "db."
+	const dbPrefix = "sqlserver."
 	const totalElapsedTime = "total_elapsed_time"
 	const rowsReturned = "total_rows"
 	const totalWorkerTime = "total_worker_time"
@@ -491,7 +491,9 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			err = fmt.Errorf("row %d: %w", i, err)
 			errs = append(errs, err)
 		}
-		record.Attributes().PutStr(dbPrefix+queryText, obfuscatedSQL)
+		// Follow the semantic conventions for DB
+		// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/attributes-registry/db.md
+		record.Attributes().PutStr("db.query.text", obfuscatedSQL)
 
 		// handling `query_plan`
 		obfuscatedQueryPlan, err := obfuscateXMLPlan(row[queryPlan])
