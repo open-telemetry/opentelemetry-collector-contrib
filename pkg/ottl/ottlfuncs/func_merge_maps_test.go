@@ -218,7 +218,7 @@ func Test_MergeMaps(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := mergeMaps[pcommon.Map](targetGetter, ottl.NewTestingOptional[ottl.PMapGetter[pcommon.Map]](tt.source), tt.strategy, ottl.NewTestingOptional[ottl.PMapSliceGetter[pcommon.Map]](tt.sources))
+			exprFunc, err := mergeMaps[pcommon.Map](targetGetter, ottl.NewTestingOptional[ottl.PMapGetter[pcommon.Map]](tt.source), ottl.NewTestingOptional(tt.strategy), ottl.NewTestingOptional[ottl.PMapSliceGetter[pcommon.Map]](tt.sources))
 			assert.NoError(t, err)
 
 			result, err := exprFunc(context.Background(), scenarioMap)
@@ -245,7 +245,7 @@ func Test_MergeMaps_bad_target(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := mergeMaps[any](target, input, "insert", ottl.Optional[ottl.PMapSliceGetter[any]]{})
+	exprFunc, err := mergeMaps[any](target, input, ottl.NewTestingOptional("insert"), ottl.Optional[ottl.PMapSliceGetter[any]]{})
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
@@ -263,7 +263,7 @@ func Test_MergeMaps_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := mergeMaps[any](target, input, "insert", ottl.Optional[ottl.PMapSliceGetter[any]]{})
+	exprFunc, err := mergeMaps[any](target, input, ottl.NewTestingOptional("insert"), ottl.Optional[ottl.PMapSliceGetter[any]]{})
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, input)
 	assert.Error(t, err)
@@ -286,8 +286,52 @@ func Test_MergeMaps_bad_input_sources(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := mergeMaps[any](target, input, "insert", sources)
+	exprFunc, err := mergeMaps[any](target, input, ottl.NewTestingOptional("insert"), sources)
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, input)
+	assert.Error(t, err)
+}
+
+func Test_MergeMaps_bad_input_missing_source_sources(t *testing.T) {
+	input := ottl.NewTestingOptional[ottl.PMapGetter[any]](ottl.StandardPMapGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return nil, nil
+		},
+	})
+	sources := ottl.NewTestingOptional[ottl.PMapSliceGetter[any]](ottl.StandardPMapSliceGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return nil, nil
+		},
+	})
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(_ context.Context, tCtx any) (any, error) {
+			return tCtx, nil
+		},
+	}
+
+	exprFunc, err := mergeMaps[any](target, input, ottl.NewTestingOptional("insert"), sources)
+	assert.NoError(t, err)
+	_, err = exprFunc(nil, input)
+	assert.Error(t, err)
+}
+
+func Test_MergeMaps_bad_strategy(t *testing.T) {
+	input := ottl.NewTestingOptional[ottl.PMapGetter[any]](ottl.StandardPMapGetter[any]{
+		Getter: func(_ context.Context, tCtx any) (any, error) {
+			return tCtx, nil
+		},
+	})
+	sources := ottl.NewTestingOptional[ottl.PMapSliceGetter[any]](ottl.StandardPMapSliceGetter[any]{
+		Getter: func(_ context.Context, tCtx any) (any, error) {
+			return tCtx, nil
+		},
+	})
+	target := &ottl.StandardPMapGetter[any]{
+		Getter: func(_ context.Context, tCtx any) (any, error) {
+			return tCtx, nil
+		},
+	}
+
+	_, err := mergeMaps[any](target, input, ottl.NewTestingOptional("strategy"), sources)
 	assert.Error(t, err)
 }
