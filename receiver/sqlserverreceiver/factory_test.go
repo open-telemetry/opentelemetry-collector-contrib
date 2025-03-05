@@ -42,12 +42,14 @@ func TestFactory(t *testing.T) {
 						InitialDelay:       time.Second,
 					},
 					LogsConfig: LogsConfig{
-						EnableTopQueryCollection: false,
+						TopQueryCollection: TopQueryCollection{
+							EnableTopQueryCollection: false,
+							LookbackTime:             uint(2 * 10),
+							MaxQuerySampleCount:      1000,
+							TopQueryCount:            200,
+						},
 					},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-					LookbackTime:         uint(2 * 10),
-					MaxQuerySampleCount:  1000,
-					TopQueryCount:        200,
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())

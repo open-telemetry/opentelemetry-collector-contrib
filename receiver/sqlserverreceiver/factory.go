@@ -51,11 +51,13 @@ func createDefaultConfig() component.Config {
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		LogsConfig: LogsConfig{
-			EnableTopQueryCollection: false,
+			TopQueryCollection: TopQueryCollection{
+				EnableTopQueryCollection: false,
+				LookbackTime:             uint(2 * cfg.CollectionInterval / time.Second),
+				MaxQuerySampleCount:      1000,
+				TopQueryCount:            200,
+			},
 		},
-		LookbackTime:        uint(2 * cfg.CollectionInterval / time.Second),
-		MaxQuerySampleCount: 1000,
-		TopQueryCount:       200,
 	}
 }
 
