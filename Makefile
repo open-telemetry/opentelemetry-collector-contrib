@@ -155,11 +155,11 @@ gotest-with-cover:
 
 .PHONY: gotest-with-junit
 gotest-with-junit:
-	@$(MAKE) for-all-target TARGET="test-with-junit"
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-junit"
 
 .PHONY: gotest-with-junit-and-cover
 gotest-with-junit-and-cover:
-	@$(MAKE) for-all-target TARGET="test-with-junit-and-cover"
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-junit-and-cover"
 
 .PHONY: gobuildtest
 gobuildtest:
