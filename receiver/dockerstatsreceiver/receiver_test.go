@@ -126,6 +126,8 @@ const (
 )
 
 func TestResolveDockerEndpoint(t *testing.T) {
+	const dockerHostEnv = "DOCKER_HOST"
+
 	tests := []struct {
 		name        string
 		cfg         Config
@@ -147,17 +149,11 @@ func TestResolveDockerEndpoint(t *testing.T) {
 			description: "Should return the value of the DOCKER_HOST environment variable.",
 		},
 		{
-			name:        "Default endpoint",
+			name:        "Empty config and empty env",
 			cfg:         Config{},
-			expected:    defaultEndpoint,
-			description: "Should return the default endpoint if no config or env variable is set.",
-		},
-		{
-			name:        "Empty DOCKER_HOST env variable",
-			cfg:         Config{},
-			env:         "", // Explicitly set to empty string
-			expected:    defaultEndpoint,
-			description: "Should return the default endpoint if DOCKER_HOST is empty.",
+			env:         "",
+			expected:    "",
+			description: "Should return an empty string if no endpoint is set.",
 		},
 		{
 			name:        "Config takes precedence over DOCKER_HOST",
@@ -171,9 +167,7 @@ func TestResolveDockerEndpoint(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv(dockerHostEnv, tt.env)
-
 			assert.Equal(t, tt.expected, tt.cfg.resolveDockerEndpoint(), tt.description)
-
 		})
 	}
 }

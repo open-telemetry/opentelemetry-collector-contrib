@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types"
 	dtypes "github.com/docker/docker/api/types"
 	ctypes "github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -56,25 +57,20 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 	}
 }
 
-const (
-	defaultEndpoint = "unix:///var/run/docker.sock"
-	dockerHostEnv   = "DOCKER_HOST"
-)
-
 func (c *Config) resolveDockerEndpoint() string {
 	if c.Endpoint != "" {
 		return c.Endpoint
 	}
-
-	if dockerHost := os.Getenv(dockerHostEnv); dockerHost != "" {
-		return dockerHost
-	}
-	return defaultEndpoint
+	return os.Getenv("DOCKER_HOST")
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
+	var opts []client.Opt
+	if r.config.Config.Endpoint == "" {
+		opts = append(opts, client.WithHostFromEnv())
+	}
 	var err error
-	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger)
+	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger, opts...)
 	if err != nil {
 		return err
 	}
