@@ -34,10 +34,10 @@ func TestMetricAccumulator(t *testing.T) {
 	podsMetadata, _ := metadataProvider.Pods()
 	k8sMetadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, NodeCapacity{}, nil)
 	mbs := &metadata.MetricsBuilders{
-		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
-		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
-		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
-		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
+		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 	}
 	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, k8sMetadata, ValidMetricGroups, mbs))
 	// Disable all groups
@@ -149,9 +149,9 @@ func TestUptime(t *testing.T) {
 	cfg.Metrics.ContainerUptime.Enabled = true
 
 	mbs := &metadata.MetricsBuilders{
-		NodeMetricsBuilder:      metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings()),
-		PodMetricsBuilder:       metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings()),
-		ContainerMetricsBuilder: metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings()),
+		NodeMetricsBuilder:      metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		PodMetricsBuilder:       metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
 	}
 
 	metrics := indexedFakeMetrics(MetricsData(zap.NewNop(), summary, Metadata{}, mgs, mbs))
@@ -215,10 +215,10 @@ func fakeMetrics() []pmetric.Metrics {
 		NodeMetricGroup:      true,
 	}
 	mbs := &metadata.MetricsBuilders{
-		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
-		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
-		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
-		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
+		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
+		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 	}
 	return MetricsData(zap.NewNop(), summary, Metadata{}, mgs, mbs)
 }

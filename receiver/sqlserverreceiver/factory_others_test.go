@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
 func TestCreateMetricsOtherOS(t *testing.T) {
@@ -36,7 +38,7 @@ func TestCreateMetricsOtherOS(t *testing.T) {
 				require.True(t, directDBConnectionEnabled(cfg))
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
-				params := receivertest.NewNopSettings()
+				params := receivertest.NewNopSettings(metadata.Type)
 				scrapers, err := setupScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
@@ -56,7 +58,7 @@ func TestCreateMetricsOtherOS(t *testing.T) {
 
 				r, err := factory.CreateMetrics(
 					context.Background(),
-					receivertest.NewNopSettings(),
+					receivertest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),
 				)
