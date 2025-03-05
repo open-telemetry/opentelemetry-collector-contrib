@@ -95,6 +95,7 @@ body:
       - extension/cgroupruntime
       - extension/encoding
       - extension/encoding/avrologencoding
+      - extension/encoding/awscloudwatchmetricstreamsencoding
       - extension/encoding/googlecloudlogentryencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
