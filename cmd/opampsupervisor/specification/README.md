@@ -102,6 +102,10 @@ capabilities:
   # the Server.
   reports_own_logs: # true if unspecified
   
+  # The Collector will report own traces to the destination specified by
+  # the Server.
+  reports_own_traces: # true if unspecified
+  
   # The Collector will accept connections settings for exporters
   # from the Server.
   accepts_other_connection_settings: # false if unspecified
